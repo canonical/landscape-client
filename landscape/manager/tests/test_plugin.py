@@ -1,3 +1,5 @@
+from twisted.internet.defer import Deferred
+
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.helpers import ManagerHelper
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
@@ -72,3 +74,28 @@ class BrokerPluginTest(LandscapeTest):
 
         result = plugin.call_with_operation_result(message, operation)
         return result.addCallback(assert_urgency)
+
+    def test_callable_returning_a_deferred(self):
+        """
+        The callable parameter can return a C{Deferred}.
+        """
+        plugin = ManagerPlugin()
+        plugin.register(self.manager)
+        broker_service = self.broker_service
+        broker_service.message_store.set_accepted_types(["operation-result"])
+        message = {"operation-id": 12312}
+        deferred = Deferred()
+        operation = lambda: deferred
+
+        def assert_messages(ignored):
+            messages = broker_service.message_store.get_pending_messages()
+            self.assertMessages(messages,
+                                [{"type": "operation-result",
+                                  "result-text": "blah",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 12312}])
+
+        result = plugin.call_with_operation_result(message, operation)
+        result.addCallback(assert_messages)
+        deferred.callback("blah")
+        return result

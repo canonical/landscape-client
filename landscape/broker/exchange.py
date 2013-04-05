@@ -12,7 +12,7 @@ import time
 import logging
 from landscape.lib.hashlib import md5
 
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.message import got_next_expected, ANCIENT
 from landscape.log import format_delta
@@ -173,19 +173,16 @@ class MessageExchange(object):
     def exchange(self):
         """Send pending messages to the server and process responses.
 
-        An C{pre-exchange} reactor event will be emitted just before the
+        A C{pre-exchange} reactor event will be emitted just before the
         actual exchange takes place.
 
         An C{exchange-done} or C{exchange-failed} reactor event will be
         emitted after a successful or failed exchange.
 
         @return: A L{Deferred} that is fired when exchange has completed.
-
-        XXX Actually that is a lie right now. It returns before exchange is
-        actually complete.
         """
         if self._exchanging:
-            return
+            return succeed(None)
 
         self._exchanging = True
 
@@ -200,6 +197,8 @@ class MessageExchange(object):
         else:
             logging.info("Starting message exchange with %s."
                          % self._transport.get_url())
+
+        deferred = Deferred()
 
         def handle_result(result):
             self._exchanging = False
@@ -216,14 +215,13 @@ class MessageExchange(object):
             self._reactor.fire("exchange-done")
             logging.info("Message exchange completed in %s.",
                          format_delta(time.time() - start_time))
+            deferred.callback(None)
 
         self._reactor.call_in_thread(handle_result, None,
                                      self._transport.exchange, payload,
                                      self._registration_info.secure_id,
                                      payload.get("server-api"))
-        # exchange will eventually return a Deferred, especially when
-        # mp-better-transport-factoring is merged.
-        return succeed(None)
+        return deferred
 
     def is_urgent(self):
         """Return a bool showing whether there is an urgent exchange scheduled.
