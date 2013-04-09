@@ -1,4 +1,96 @@
-"""Message storage."""
+"""Message storage.
+
+The sequencing system we use in the message store may be quite confusing
+if you haven't looked at it in the last 10 minutes. For that reason, let's
+review the mechanics here.
+
+Our goal is to implement a reasonably robust system for delivering messages
+from us to our peer. The system should be smart enough to recover if the peer
+happens to lose messages that we have already sent, provided that these
+messages are not too old (we'll see below what 'too old' means).
+
+Messages added to the store are identified by increasing natural numbers, the
+first message added is identified by 0, the second by 1, and so on. We call
+"sequence" the number identifying the next message that we want to send. For
+example, if the store has been added ten messages (that we represent with
+uppercase letters) and we want start sending the first of them, our store
+would like like::
+
+    sequence: 0
+    messages: A, B, C, D, E, F, G, H, I, J
+              ^
+
+The "^" marker is what we call "pending offset" and is the displacement of the
+message we want to send next from the first message we have in the store.
+
+Let's say we now send to our peer a batch of 3 sequential messages. In the
+payload we include the body of the messages being sent and the sequence, which
+identifies the first message of the batch. In this case the payload would look
+like (pseudo-code)::
+
+    (sequence: 0, messages: A, B, C)
+
+If everything works fine on the other end, our peer replies with a payload that
+would like::
+
+    (next-expected-sequence: 4)
+
+meaning that the peer as received all the three messages that we sent, an so
+the next message it expects to receive is the one identified by the number 4.
+At this point we update both our pending offset and our sequence values, and
+the store now looks like::
+
+    sequence: 4
+    messages: A, B, C, D, E, F, G, H, I, J
+                       ^
+
+Great, now let's pretend that we send another batch, this time with five
+messages::
+
+    (sequence: 4, messages: D, E, F, G, H)
+
+Our peer receives them fine responding with a payload looking like::
+
+    (next-expected-sequence: 9)
+
+meaning that it received all the eight messages we sent so far and it's waiting
+for the ninth. This is the second successful batch that we send in a row, so we
+can be reasonably confident that at least the messages in the first batch are
+not really needed anymore. We delete them and we update our sequence and
+pending offset accordingly::
+
+    sequence: 9
+    messages: D, E, F, G, H, I, J
+                             ^
+
+Note that we still want to keep around the messages we sent in the very last
+batch, just in case. Indeed we now try to send a third batch with the last two
+messages that we have, but our peer surprisingly replies us with this payload::
+
+    (next-expected-sequence: 6)
+
+Ouch! This means that something bad happened and our peer has somehow lost not
+only the two messages that we sent in the last batch, but also the last three
+messages of the former batch :(
+
+Luckly we've kept enough old messages around that we can try to send them
+again, we update our sequence and pending offset and the store looks like::
+
+    sequence: 6
+    messages: D, E, F, G, H, I, J
+                    ^
+
+We can now start again sending messages using the same strategy.
+
+Note however that in the worst case scenario we could receive from our peer
+a next-expected-sequence value which is so old to be outside our buffer
+of already-sent messages. In that case there is now way we can recover the
+lost messages, and we'll just send the oldest one that we have.
+
+See L{MessageStore} for details about how messages are stored on the file
+system and L{landscape.lib.message.got_next_expected} to check how the
+strategy for updating the pending offset and the sequence is implemented.
+"""
 
 import time
 import itertools
@@ -16,24 +108,15 @@ BROKEN = "b"
 class MessageStore(object):
     """A message store which stores its messages in a file system hierarchy.
 
-    The sequencing system we use in the message store may be quite
-    confusing if you haven't looked at it in the last 10 minutes.  For
-    that reason, let's review the terminology here.
+    Beside the "sequence" and the "pending offset" values described in the
+    module docstring above, the L{MessageStore} also stores what we call
+    "server sequence", which is the next message number expected by the
+    *client* itself (because we are in turn the peer of a specular message
+    system running in the server, which tries to deliver messages to us).
 
-    Assume we have 10 messages in the store, which we label by
-    the following uppercase letters::
-
-        A, B, C, D, E, F, G, H, I, J
-                 ^
-
-    Let's say that the next message we should send to the server is D.
-    What we call "pending offset" is the displacement from the first
-    message, which in our example above would be 3.  What we call
-    "sequence" is the number that the server expects us to label message
-    D as.  It could be pretty much any natural number, depending on the
-    history of our exchanges with the server.  What we call "server
-    sequence", is the next message number expected by the *client* itself,
-    and is entirely unrelated to the stored messages.
+    The server sequence is entirely unrelated to the stored messages, but is
+    incremented when successfully receiving messages from the server, in the
+    very same way described above but with the roles inverted.
 
     @param persist: a L{Persist} used to save state parameters like the
         accepted message types, sequence, server uuid etc.
