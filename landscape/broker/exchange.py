@@ -342,6 +342,9 @@ class MessageExchange(object):
         next_expected = result.get("next-expected-sequence")
         old_sequence = message_store.get_sequence()
         if next_expected is None:
+            # If the server doesn't specify anything for the next-expected
+            # value, just assume that it processed all messages that we sent
+            # fine.
             next_expected = message_store.get_sequence()
             next_expected += len(payload["messages"])
 
