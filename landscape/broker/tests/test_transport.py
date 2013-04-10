@@ -79,11 +79,13 @@ class HTTPTransportTest(LandscapeTest):
         transport = HTTPTransport(
             None, "http://localhost:%d/" % (port.getHost().port,))
         result = deferToThread(transport.exchange, "HI", computer_id="34",
-                               message_api="X.Y")
+                               exchange_token="abcd-efgh", message_api="X.Y")
 
         def got_result(ignored):
             self.assertEqual(r.request.received_headers["x-computer-id"],
                              "34")
+            self.assertEqual(r.request.received_headers["x-exchange-token"],
+                             "abcd-efgh")
             self.assertEqual(r.request.received_headers["user-agent"],
                              "landscape-client/%s" % (VERSION,))
             self.assertEqual(r.request.received_headers["x-message-api"],

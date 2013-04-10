@@ -2,6 +2,7 @@
 import time
 import logging
 import pprint
+import uuid
 
 import pycurl
 
@@ -31,17 +32,20 @@ class HTTPTransport(object):
         """Set the URL of the remote message system."""
         self._url = url
 
-    def _curl(self, payload, computer_id, message_api):
+    def _curl(self, payload, computer_id, exchange_token, message_api):
         headers = {"X-Message-API": message_api,
                    "User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream"}
         if computer_id:
             headers["X-Computer-ID"] = computer_id
+        if exchange_token:
+            headers["X-Exchange-Token"] = str(exchange_token)
         curl = pycurl.Curl()
         return (curl, fetch(self._url, post=True, data=payload,
                             headers=headers, cainfo=self._pubkey, curl=curl))
 
-    def exchange(self, payload, computer_id=None, message_api=SERVER_API):
+    def exchange(self, payload, computer_id=None, exchange_token=None,
+                 message_api=SERVER_API):
         """Exchange message data with the server.
 
         @param payload: The object to send, it must be L{bpickle}-compatible.
@@ -60,7 +64,8 @@ class HTTPTransport(object):
             start_time = time.time()
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
                 logging.debug("Sending payload:\n%s", pprint.pformat(payload))
-            curly, data = self._curl(spayload, computer_id, message_api)
+            curly, data = self._curl(spayload, computer_id, exchange_token,
+                                     message_api)
             logging.info("Sent %d bytes and received %d bytes in %s.",
                          len(spayload), len(data),
                          format_delta(time.time() - start_time))
@@ -95,6 +100,7 @@ class FakeTransport(object):
         self._current_response = 0
         self.next_expected_sequence = 0
         self.computer_id = None
+        self.exchange_token = None
         self.message_api = None
         self.extra = {}
         self._url = url
@@ -106,9 +112,11 @@ class FakeTransport(object):
     def set_url(self, url):
         self._url = url
 
-    def exchange(self, payload, computer_id=None, message_api=SERVER_API):
+    def exchange(self, payload, computer_id=None, exchange_token=None,
+                 message_api=SERVER_API):
         self.payloads.append(payload)
         self.computer_id = computer_id
+        self.exchange_token = exchange_token
         self.message_api = message_api
         self.next_expected_sequence += len(payload.get("messages", []))
 
@@ -119,6 +127,7 @@ class FakeTransport(object):
             response = []
 
         result = {"next-expected-sequence": self.next_expected_sequence,
+                  "next-exchange-token": unicode(uuid.uuid4()),
                   "messages": response}
         result.update(self.extra)
         return result
