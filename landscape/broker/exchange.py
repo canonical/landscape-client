@@ -392,9 +392,20 @@ class MessageExchange(object):
                          format_delta(time.time() - start_time))
             deferred.callback(None)
 
-        # Get the token given us by the server at the last exchange, it
-        # will be None for the first exchange or if something bad happened,
-        # see below.
+        self._reactor.call_in_thread(handle_result, None,
+                                     self._transport.exchange, payload,
+                                     self._registration_info.secure_id,
+                                     self._get_exchange_token(),
+                                     payload.get("server-api"))
+        return deferred
+
+    def _get_exchange_token(self):
+        """Get the token given us by the server at the last exchange.
+
+        It will be C{None} if we are not fully registered yet or if something
+        bad happened during the last exchange and we could not get the token
+        that the server had given us.
+        """
         exchange_token = self._message_store.get_exchange_token()
 
         # Before starting the exchange set the saved token to None. This will
@@ -406,12 +417,7 @@ class MessageExchange(object):
         self._message_store.set_exchange_token(None)
         self._message_store.commit()
 
-        self._reactor.call_in_thread(handle_result, None,
-                                     self._transport.exchange, payload,
-                                     self._registration_info.secure_id,
-                                     exchange_token,
-                                     payload.get("server-api"))
-        return deferred
+        return exchange_token
 
     def is_urgent(self):
         """Return a bool showing whether there is an urgent exchange scheduled.
