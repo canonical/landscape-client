@@ -399,26 +399,6 @@ class MessageExchange(object):
                                      payload.get("server-api"))
         return deferred
 
-    def _get_exchange_token(self):
-        """Get the token given us by the server at the last exchange.
-
-        It will be C{None} if we are not fully registered yet or if something
-        bad happened during the last exchange and we could not get the token
-        that the server had given us.
-        """
-        exchange_token = self._message_store.get_exchange_token()
-
-        # Before starting the exchange set the saved token to None. This will
-        # prevent us from locking ourselves out if the exchange fails or if we
-        # crash badly, while the server has saved a new token that we couldn't
-        # receive or persist (this works because if the token is None the
-        # server will be forgiving and will authenticate us based only on the
-        # secure ID we provide).
-        self._message_store.set_exchange_token(None)
-        self._message_store.commit()
-
-        return exchange_token
-
     def is_urgent(self):
         """Return a bool showing whether there is an urgent exchange scheduled.
         """
@@ -463,6 +443,26 @@ class MessageExchange(object):
 
             self._exchange_id = self._reactor.call_later(interval,
                                                          self.exchange)
+
+    def _get_exchange_token(self):
+        """Get the token given us by the server at the last exchange.
+
+        It will be C{None} if we are not fully registered yet or if something
+        bad happened during the last exchange and we could not get the token
+        that the server had given us.
+        """
+        exchange_token = self._message_store.get_exchange_token()
+
+        # Before starting the exchange set the saved token to None. This will
+        # prevent us from locking ourselves out if the exchange fails or if we
+        # crash badly, while the server has saved a new token that we couldn't
+        # receive or persist (this works because if the token is None the
+        # server will be forgiving and will authenticate us based only on the
+        # secure ID we provide).
+        self._message_store.set_exchange_token(None)
+        self._message_store.commit()
+
+        return exchange_token
 
     def _notify_impending_exchange(self):
         self._reactor.fire("impending-exchange")
