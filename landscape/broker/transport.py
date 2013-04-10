@@ -51,6 +51,9 @@ class HTTPTransport(object):
         @param payload: The object to send, it must be L{bpickle}-compatible.
         @param computer_id: The computer ID to send the message as (see
             also L{Identity}).
+        @param exchange_token: The token that the server has given us at the
+            last exchange. It's used to prove that we are still the same
+            client.
 
         @type: C{dict}
         @return: The server's response to sent message or C{None} in case
