@@ -399,8 +399,8 @@ class MessageExchange(object):
 
         # Before starting the exchange set the saved token to None. This will
         # prevent us from locking ourselves out if the exchange fails or if we
-        # crash badly and the server has saved a new token that we were unable
-        # to receive or persist (this works because if the token is None the
+        # crash badly, while the server has saved a new token that we couldn't
+        # receive or persist (this works because if the token is None the
         # server will be forgiving and will authenticate us based only on the
         # secure ID we provide).
         self._message_store.set_exchange_token(None)
