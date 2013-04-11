@@ -18,6 +18,7 @@ class BrokerServerProtocol(ComponentProtocol):
                ["fire_event",
                 "get_accepted_message_types",
                 "get_server_uuid",
+                "get_session_id",
                 "is_message_pending",
                 "register",
                 "register_client",
@@ -26,7 +27,8 @@ class BrokerServerProtocol(ComponentProtocol):
                 "send_message",
                 "stop_clients",
                 "listen_events",
-                "stop_exchanger"])
+                "stop_exchanger",
+                ])
 
 
 class BrokerServerProtocolFactory(ComponentProtocolFactory):
@@ -95,7 +97,7 @@ class FakeRemoteBroker(object):
 class BrokerClientProtocol(ComponentProtocol):
     """Communication protocol between a client and the broker."""
 
-    methods = (ComponentProtocol.methods + ["fire_event", "message"])
+    methods = (ComponentProtocol.methods + ["fire_event", "message", "get_session_id"])
 
 
 class BrokerClientProtocolFactory(ComponentProtocolFactory):

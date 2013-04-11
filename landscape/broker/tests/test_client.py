@@ -26,6 +26,11 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.assertIs(plugin.client, self.client)
 
+    def test_registering_plugin_gets_session_id(self):
+        plugin = BrokerClientPlugin()
+        self.client.add(plugin)
+        self.assertIsNot(None, plugin._session_id)
+
     def test_get_plugins(self):
         """
         The L{BrokerClient.get_plugins} method returns a list
@@ -79,6 +84,7 @@ class BrokerClientTest(LandscapeTest):
         self.expect(plugin.run()).count(1)
         self.mocker.replay()
         self.client.add(plugin)
+        self.client.reactor.advance(plugin.run_interval)
 
     def test_register_message(self):
         """
