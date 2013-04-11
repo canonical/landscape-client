@@ -52,7 +52,20 @@ class BrokerServerTest(LandscapeTest):
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertTrue(self.exchanger.is_urgent())
 
+    def test_send_message_wont_send_with_invalid_session_id(self):
+        """
+        The L{BrokerServer.send_message} call will silently drop messages
+        that have invalid session ids as they must have been generated
+        prior to the last resync request - this guards against out of
+        context data being sent to the server.
+        """
+        message = {"type": "test"}
+        self.mstore.set_accepted_types(["test"])
+        self.broker.send_message(message, "Not Valid")
+        self.assertMessages(self.mstore.get_pending_messages(), [])
+
     def test_is_pending(self):
+
         """
         The L{BrokerServer.is_pending} method indicates if a message with
         the given id is pending waiting for delivery in the message store.
