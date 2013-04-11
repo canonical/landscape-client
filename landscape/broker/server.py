@@ -105,16 +105,18 @@ class BrokerServer(object):
         """Return the connector for the given C{name} or C{None}."""
         return self._connectors.get(self.get_client(name))
 
-    def send_message(self, message, urgent=False):
+    def send_message(self, message, session_id, urgent=False):
         """Queue C{message} for delivery to the server at the next exchange.
 
         @param message: The message C{dict} to send to the server.  It must
             have a C{type} key and be compatible with C{landscape.lib.bpickle}.
+        @param session_id: 
         @param urgent: If C{True}, exchange urgently, otherwise exchange
             during the next regularly scheduled exchange.
         @return: The message identifier created when queuing C{message}.
         """
-        return self._exchanger.send(message, urgent=urgent)
+        if self._message_store.is_valid_session_id(session_id):
+            return self._exchanger.send(message, urgent=urgent)
 
     def is_message_pending(self, message_id):
         """Indicate if a message with given C{message_id} is pending."""
