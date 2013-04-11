@@ -457,3 +457,11 @@ class MessageStoreTest(LandscapeTest):
         """
         session_id = self.store.get_session_id()
         self.assertTrue(self.store.is_valid_session_id(session_id))
+
+    def test_unknown_session_ids_are_not_valid(self):
+        """
+        If the provided session id is not in the persisted list of session
+        ids then it can not be validated with C{is_valid_session_id}.
+        """
+        session_id = "I've got a lovely bunch of coconuts"
+        self.assertFalse(self.store.is_valid_session_id(session_id))
