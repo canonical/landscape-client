@@ -337,8 +337,18 @@ class RegistrationHandler(object):
 
     def _handle_unknown_id(self, message):
         id = self._identity
-        logging.info("Client has unknown secure-id for account %s."
-                     % id.account_name)
+        clone = message.get("clone-of")
+        if clone is None:
+            logging.info("Client has unknown secure-id for account %s."
+                         % id.account_name)
+        else:
+            logging.info("Client is clone of computer %s" % clone)
+            # Set a new computer title so when a registration request will be
+            # made, the pending computer UI will indicate that this is a clone
+            # of another computer. There's no need to persist the changes since
+            # a new registration will be requested immediately.
+            title = "%s (clone of %s)" % (self._config.computer_title, clone)
+            self._config.computer_title = title
         id.secure_id = None
         id.insecure_id = None
 

@@ -113,6 +113,18 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.identity.secure_id, None)
         self.assertEqual(self.identity.insecure_id, None)
 
+    def test_unknown_id_with_clone(self):
+        """
+        If the server reports us that we are a clone of another computer, then
+        set our computer's title accordingly.
+        """
+        self.config.computer_title = "Wu"
+        self.mstore.set_accepted_types(["register"])
+        self.exchanger.handle_message({"type": "unknown-id", "clone-of": "Wu"})
+        self.assertEqual("Wu (clone of Wu)", self.config.computer_title)
+        self.assertIn("Client is clone of computer Wu",
+                      self.logfile.getvalue())
+
     def test_should_register(self):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
