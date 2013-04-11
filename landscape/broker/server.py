@@ -62,6 +62,12 @@ class BrokerServer(object):
         """Return C{True}."""
         return True
 
+    def get_session_id(self):
+        """
+        Get a unique session ID from the L{MessageStore}.
+        """
+        return self._message_store.get_session_id()
+
     def register_client(self, name):
         """Register a broker client called C{name}.
 

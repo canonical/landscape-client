@@ -30,14 +30,24 @@ class BrokerServerTest(LandscapeTest):
         """
         self.assertTrue(self.broker.ping())
 
+    def test_get_session_id(self):
+        """
+        The L{BrokerServer.get_session_id} method gets a unique
+        session ID from the L{MessageStore}.
+        """
+        session_id1 = self.broker.get_session_id()
+        session_id2 = self.broker.get_session_id()
+        self.assertNotEqual(session_id1, session_id2)
+
     def test_send_message(self):
+
         """
         The L{BrokerServer.send_message} method forwards a message to the
         broker's exchanger.
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        self.broker.send_message(message)
+        self.broker.send_message(message, self.broker.get_session_id())
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertFalse(self.exchanger.is_urgent())
 
@@ -48,7 +58,8 @@ class BrokerServerTest(LandscapeTest):
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        self.broker.send_message(message, True)
+        self.broker.send_message(message, self.broker.get_session_id(),
+                                 True)
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertTrue(self.exchanger.is_urgent())
 
@@ -73,7 +84,8 @@ class BrokerServerTest(LandscapeTest):
         self.assertFalse(self.broker.is_message_pending(123))
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        message_id = self.broker.send_message(message)
+        message_id = self.broker.send_message(message,
+                                              self.broker.get_session_id())
         self.assertTrue(self.broker.is_message_pending(message_id))
 
     def test_register_client(self):
