@@ -441,3 +441,11 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(self.store.get_pending_messages(), [])
 
         self.assertFalse(self.store.is_pending(id))
+
+    def test_get_session_id(self):
+        """
+        Test that we can get a unique session id.
+        """
+        session_id1 = self.store.get_session_id()
+        session_id2 = self.store.get_session_id()
+        self.assertNotEqual(session_id1, session_id2)

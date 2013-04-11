@@ -96,6 +96,7 @@ import time
 import itertools
 import logging
 import os
+import uuid
 
 from landscape.lib import bpickle
 from landscape import SERVER_API
@@ -413,6 +414,11 @@ class MessageStore(object):
     def _add_flags(self, path, flags):
         self._set_flags(path, self._get_flags(path) + flags)
 
+    def get_session_id(self):
+        """
+        Generate a unique session identifier, persist it and return it.
+        """
+        return uuid.uuid4().int
 
 def get_default_message_store(*args, **kwargs):
     """
