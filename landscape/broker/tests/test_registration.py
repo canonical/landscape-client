@@ -121,7 +121,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Wu"
         self.mstore.set_accepted_types(["register"])
         self.exchanger.handle_message({"type": "unknown-id", "clone-of": "Wu"})
-        self.assertEqual("Wu (clone of Wu)", self.config.computer_title)
+        self.assertEqual("Wu (clone)", self.config.computer_title)
         self.assertIn("Client is clone of computer Wu",
                       self.logfile.getvalue())
 

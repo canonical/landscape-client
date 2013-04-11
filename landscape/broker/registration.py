@@ -347,7 +347,11 @@ class RegistrationHandler(object):
             # made, the pending computer UI will indicate that this is a clone
             # of another computer. There's no need to persist the changes since
             # a new registration will be requested immediately.
-            title = "%s (clone of %s)" % (self._config.computer_title, clone)
+            if clone == self._config.computer_title:
+                title = "%s (clone)" % self._config.computer_title
+            else:
+                title = "%s (clone of %s)" % (self._config.computer_title,
+                                              clone)
             self._config.computer_title = title
         id.secure_id = None
         id.insecure_id = None
