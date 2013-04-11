@@ -449,3 +449,11 @@ class MessageStoreTest(LandscapeTest):
         session_id1 = self.store.get_session_id()
         session_id2 = self.store.get_session_id()
         self.assertNotEqual(session_id1, session_id2)
+
+    def test_persisted_session_ids_are_valid(self):
+        """
+        Test that generated session ids are persisted in the message store
+        and can be validated with C{is_valid_session_id}.
+        """
+        session_id = self.store.get_session_id()
+        self.assertTrue(self.store.is_valid_session_id(session_id))

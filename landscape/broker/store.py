@@ -414,11 +414,27 @@ class MessageStore(object):
     def _add_flags(self, path, flags):
         self._set_flags(path, self._get_flags(path) + flags)
 
-    def get_session_id(self):
+    def get_session_id(self, scope=None):
         """
         Generate a unique session identifier, persist it and return it.
         """
-        return uuid.uuid4().int
+        scopes = self._persist.get("session-ids", {})
+        session_id = uuid.uuid4().int
+        session_ids = scopes.get(scope, [])
+        session_ids.insert(0, session_id)
+        scopes[scope] = session_ids
+        self._persist.set("session-ids", scopes)
+        return session_id
+
+    def is_valid_session_id(self, session_id, scope=None):
+        """
+        Returns L{True} if the provided L{session_id} is known by this
+        L{MessageStore}.
+        """
+        scopes = self._persist.get("session-ids", {})
+        session_ids = scopes.get(scope, [])
+        return session_id in session_ids
+
 
 def get_default_message_store(*args, **kwargs):
     """
