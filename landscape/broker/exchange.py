@@ -332,6 +332,7 @@ class MessageExchange(object):
         self._reactor.fire("resynchronize-clients")
 
     def _resynchronize(self):
+        self._message_store.drop_session_ids()
         self.schedule_exchange(urgent=True)
 
     def _handle_set_intervals(self, message):
