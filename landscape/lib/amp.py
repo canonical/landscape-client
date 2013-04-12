@@ -1,4 +1,57 @@
-"""Expose the methods of a remote object over AMP."""
+"""Expose the methods of a remote object over AMP.
+
+This module implements an AMP-based protocol for performing remote procedure
+calls in a convenient and easy way. It's conceptually similar to DBus in that
+it supports exposing a Python object to a remote process, with communication
+happening over plain Unix domain sockets.
+
+For example let's say we have a Python process "A" that creates an instance of
+this class::
+
+    class Greeter(object):
+
+        def hello(self, name):
+            return "hi %s!" % name
+
+    greeter = Greeter()
+
+Process A can "publish" the greeter object by defining which methods are
+exposed remotely and opening a Unix socket for incoming connections::
+
+    class GreeterProtocol(MethodCallProtocol):
+
+        methods = ["hello"]
+
+    factory = MethodCallFactory(object=greeter)
+    factory.protocol = GreeterProtocol
+    reactor.listenUNIX("/some/socket/path", factory)
+
+Then a second Python process "B" can connect to that socket and build a
+"remote" greeter object, i.e. a proxy that forwards method calls to the
+real greeter object living in process A::
+
+    connector = ClientCreator(reactor, GreeterProtocol)
+    connected = connector.connectUNIX("/some/socket/path")
+
+    def got_connection(protocol):
+
+        remote_greeter = RemoteObject(protocol)
+
+        deferred = remote_greeter.hello("Ted")
+        deferred.addCallback(lambda result: ... # result == "hi Ted!")
+
+    connected.addCallback(got_connection)
+
+Note that when invoking a method via the remote proxy, the parameters
+are required to be serializable with bpickle, so that they can be sent
+over the wire.
+
+See also::
+
+    http://twistedmatrix.com/documents/current/core/howto/amp.html
+
+for more details about the Twisted AMP protocol.
+"""
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.protocol import ReconnectingClientFactory
@@ -378,7 +431,7 @@ class RemoteObject(object):
             the given deferred.
         """
         is_method_call_error = failure.type is MethodCallError
-        dont_retry = self._retry_on_reconnect == False
+        dont_retry = self._retry_on_reconnect is False
 
         if is_method_call_error or dont_retry:
             # This means either that the connection is working, and a
