@@ -126,7 +126,7 @@ class UnixReactorMixin(object):
     """
 
     def listen_unix(self, socket, factory):
-        """Start listen on a Unix socket."""
+        """Start listening on a Unix socket."""
         return self._reactor.listenUNIX(socket, factory, wantPID=True)
 
 
@@ -326,7 +326,7 @@ class FakeReactor(EventHandlingReactorMixin, UnixReactorMixin):
             super(FakeReactor, self).cancel_call(id)
 
     def call_when_running(self, f):
-        raise NotImplemented("The FakeReactor doesn't implement this.""")
+        raise NotImplemented("The FakeReactor doesn't implement this.")
 
     def call_in_main(self, f, *args, **kwargs):
         """Schedule a function for execution in the main thread."""
