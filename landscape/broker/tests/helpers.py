@@ -1,3 +1,10 @@
+"""Test helpers for wiring together the various components in the broker stack.
+
+Each test helper sets up a particular component in the stack of the broker
+dependencies. The lowest-level component is a L{BrokerConfiguration} instance,
+the highest-level ones are a full L{BrokerServer} exposed over AMP and
+connected to remote test L{BrokerClient}.
+"""
 import os
 
 from landscape.lib.fetch import fetch_async
@@ -19,10 +26,13 @@ from landscape.broker.client import BrokerClient
 
 
 class BrokerConfigurationHelper(object):
-    """
+    """Setup a L{BrokerConfiguration} instance with some test config values.
+
     The following attributes will be set on your test case:
-      - config: A sample L{BrokerConfiguration}.
-      - config_filename: The name of the configuration file that was used to
+
+      - C{config}: A sample L{BrokerConfiguration}.
+
+      - C{config_filename}: The name of the configuration file that was used to
         generate the above C{config}.
     """
 
@@ -50,21 +60,30 @@ class BrokerConfigurationHelper(object):
 
 
 class ExchangeHelper(BrokerConfigurationHelper):
-    """
+    """Setup a L{MessageExchange} instance along with its dependencies.
+
     This helper uses the sample broker configuration provided by the
     L{BrokerConfigurationHelper} to create all the components needed by
-    a L{MessageExchange}.  The following attributes will be set on your
-    test case:
-      - exchanger: A L{MessageExchange} using a L{FakeReactor} and a
+    a L{MessageExchange}.
+
+    The following attributes will be set on your test case:
+
+      - C{exchanger}: A L{MessageExchange} using a L{FakeReactor} and a
         L{FakeTransport}.
-      - reactor: The L{FakeReactor} used by the C{exchager}.
-      - transport: The L{FakeTransport} used by the C{exchanger}.
-      - identity: The L{Identity} used by the C{exchanger} and based
+
+      - C{reactor}: The L{FakeReactor} used by the C{exchager}.
+
+      - C{transport}: The L{FakeTransport} used by the C{exchanger}.
+
+      - C{identity}: The L{Identity} used by the C{exchanger} and based
         on the sample configuration.
-      - mstore: The L{MessageStore} used by the C{exchanger} and based
+
+      - C{mstore}: The L{MessageStore} used by the C{exchanger} and based
         on the sample configuration.
-      - persist: The L{Persist} object used by C{mstore} and C{identity}.
-      - persit_filename: Path to the file holding the C{persist} data.
+
+      - C{persist}: The L{Persist} object used by C{mstore} and C{identity}.
+
+      - C{persit_filename}: Path to the file holding the C{persist} data.
     """
 
     def set_up(self, test_case):
@@ -85,13 +104,17 @@ class ExchangeHelper(BrokerConfigurationHelper):
 
 
 class RegistrationHelper(ExchangeHelper):
-    """
-    This helper adds a registration handler to the L{ExchangeHelper}.  If the
-    test case has C{cloud} class attribute, the C{handler} will be configured
-    for a cloud registration.  The following attributes will be set in your
-    test case:
-      - handler: A L{RegistrationHandler}
-      - fetch_func: The C{fetch_async} function used by the C{handler}, it
+    """Setup a L{RegistrationHandler} instance along with its dependencies.
+
+    This helper adds a L{RegistrationHandler} instance to L{ExchangeHelper}. If
+    the test case has C{cloud} class attribute, the L{RegistrationHandler}
+    will be configured for a cloud registration.
+
+    The following attributes will be set in your test case:
+
+      - C{handler}: A L{RegistrationHandler}.
+
+      - C{fetch_func}: The C{fetch_async} function used by the C{handler}, it
         can be customised by test cases.
     """
 
@@ -112,10 +135,13 @@ class RegistrationHelper(ExchangeHelper):
 
 
 class BrokerServerHelper(RegistrationHelper):
-    """
-    This helper adds a broker server to the L{RegistrationHelper}.  The
-    following attributes will be set in your test case:
-      - broker: A L{BrokerServer}.
+    """Setup a L{BrokerServer} instance.
+
+    This helper adds a L{BrokerServer} to the L{RegistrationHelper}.
+
+    The following attributes will be set in your test case:
+
+      - C{broker}: A L{BrokerServer}.
     """
 
     def set_up(self, test_case):
@@ -126,10 +152,25 @@ class BrokerServerHelper(RegistrationHelper):
 
 
 class RemoteBrokerHelper(BrokerServerHelper):
-    """
-    This helper adds a connected L{RemoteBroker} to a L{BrokerServerHelper}.
+    """Setup a connected L{RemoteBroker}.
+
+    This helper extends L{BrokerServerHelper}.by adding a L{RemoteBroker} which
+    exposes the L{BrokerServer} instance remotely via our AMP-based machinery.
+
+    IMPORTANT: note that the connection is created using a *real* Unix socket,
+    calling L{FakeReactor.call_unix} which in turn defers to the *real* Twisted
+    reactor. This means that all calls to the L{RemoteBroker} instance will
+    be truly asynchronous and tests will need to return deferreds in order to
+    let the reactor run. See also::
+
+        http://twistedmatrix.com/documents/current/core/howto/testing.html
+
+    and the "Leave the Reactor as you found it" paragraph to understand how
+    to write tests interacting with the reactor.
+
     The following attributes will be set in your test case:
-      - remote: A C{RemoteObject} connected to the broker server.
+
+      - C{remote}: A C{RemoteObject} connected to the broker server.
     """
 
     def set_up(self, test_case):
@@ -156,11 +197,20 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
 
 class BrokerClientHelper(RemoteBrokerHelper):
-    """
-    This helper adds a L{BrokerClient} connected  to a L{BrokerServerHelper}.
+    """Setup a connected L{BrokerClient}.
+
+    This helper adds a L{BrokerClient} connected to a L{BrokerServerHelper} via
+    its C{broker} attribute, which is the L{RemoteBroker} instance setup by
+    the L{RemoteBrokerHelper}.
+
     The following attributes will be set in your test case:
-      - client: A connected L{BrokerClient}
-      - client_reactor: The L{FakeReactor} used by the client
+
+      - C{client}: A connected L{BrokerClient}.
+
+      - C{client_reactor}: The L{FakeReactor} used by the client. Note that
+        this needs to be different from the C{reactor} attribute, which is
+        the L{FakeReactor} used by the L{BrokerServer}, so tests can emulate
+        events firing in different processes.
     """
 
     def set_up(self, test_case):
@@ -177,11 +227,15 @@ class BrokerClientHelper(RemoteBrokerHelper):
 
 
 class RemoteClientHelper(BrokerClientHelper):
-    """
-    This helper adds a connected and registered L{RemoteClient} to a
-    L{BrokerClientHelper}.
+    """Setup a connected and registered L{RemoteClient}.
+
+    This helper extends L{BrokerClientHelper} by registering the test
+    L{BrokerClient} against the L{BrokerServer} which will then be able to
+    talk to it via our AMP-based machinery.
+    .
     The following attributes will be set in your test case:
-      - remote_client: A C{RemoteClient} connected to a registered client.
+
+      - C{remote_client}: A C{RemoteClient} connected to a registered client.
     """
 
     def set_up(self, test_case):
