@@ -439,9 +439,9 @@ class MessageStore(object):
         """
         Drop all session ids.
         """
-        scopes = self.pesist.get("session-ids", {})
+        scopes = self._persist.get("session-ids", {})
         scopes[scope] = []
-        self.persist.set("session-ids", scopes)
+        self._persist.set("session-ids", scopes)
 
 
 def get_default_message_store(*args, **kwargs):
