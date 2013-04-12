@@ -200,6 +200,14 @@ class MessageStore(object):
         """Change the known UUID from the server we're communicating to."""
         self._persist.set("server_uuid", uuid)
 
+    def get_exchange_token(self):
+        """Get the authentication token to use for the next exchange."""
+        return self._persist.get("exchange_token")
+
+    def set_exchange_token(self, token):
+        """Set the authentication token to use for the next exchange."""
+        self._persist.set("exchange_token", token)
+
     def get_pending_offset(self):
         """Get the current pending offset."""
         return self._persist.get("pending_offset", 0)

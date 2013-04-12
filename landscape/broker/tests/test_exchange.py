@@ -242,7 +242,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "data", "data": 3})
 
         # next one, server will respond with 1!
-        def desynched_send_data(payload, computer_id=None, message_api=None):
+        def desynched_send_data(*args, **kwargs):
             self.transport.next_expected_sequence = 1
             return {"next-expected-sequence": 1}
 
@@ -381,7 +381,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.set_accepted_types(["data"])
         self.mstore.add({"type": "data", "data": 0})
 
-        def desynched_send_data(payload, computer_id=None, message_api=None):
+        def desynched_send_data(*args, **kwargs):
             self.transport.next_expected_sequence = 0
             return {"next-expected-sequence": 0}
 
@@ -475,6 +475,33 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(payload.get("client-api"), CLIENT_API)
         self.assertEqual(payload.get("server-api"), "2.0")
         self.assertEqual(self.transport.message_api, "2.0")
+
+    def test_exchange_token(self):
+        """
+        When sending messages to the server, the exchanger provides the
+        token that the server itself gave it during the former exchange.
+        """
+        self.exchanger.exchange()
+        self.assertIs(None, self.transport.exchange_token)
+        exchange_token = self.mstore.get_exchange_token()
+        self.assertIsNot(None, exchange_token)
+        self.exchanger.exchange()
+        self.assertEqual(exchange_token, self.transport.exchange_token)
+
+    def test_reset_exchange_token_on_failure(self):
+        """
+        If an exchange fails we set the value of the next exchange token to
+        C{None}, so we can authenticate ourselves even if we couldn't receive
+        a valid token.
+        """
+        self.mstore.set_exchange_token("abcd-efgh")
+        self.mstore.commit()
+        self.transport.exchange = lambda *args, **kwargs: None
+        self.exchanger.exchange()
+        # Check that the change was persisted
+        persist = Persist(filename=self.persist_filename)
+        store = MessageStore(persist, self.config.message_store_path)
+        self.assertIs(None, store.get_exchange_token())
 
     def test_include_total_messages_none(self):
         """
@@ -611,7 +638,7 @@ class MessageExchangeTest(LandscapeTest):
         exchanger raises an exception.
         """
 
-        def failed_send_data(payload, computer_id=None, message_api=None):
+        def failed_send_data(*args, **kwargs):
             return None
 
         self.transport.exchange = failed_send_data
