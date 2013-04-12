@@ -40,6 +40,17 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.fire("resynchronize-clients")
         self.assertTrue(self.exchanger.is_urgent())
 
+    def test_that_resynchronize_drops_session_ids(self):
+        """
+        When a resynchronisation event occurs all preexisting messages
+        should no longer be sent, dropping the existing session ids
+        will stop the messages from being sent.
+        """
+        session_id = self.mstore.get_session_id()
+        self.assertTrue(self.mstore.is_valid_session_id(session_id))
+        self.reactor.fire("resynchronize-clients")
+        self.assertFalse(self.mstore.is_valid_session_id(session_id))        
+
     def test_send(self):
         """
         The send method should cause a message to show up in the next exchange.
