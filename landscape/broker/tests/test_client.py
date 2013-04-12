@@ -2,6 +2,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
+from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
 from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
@@ -10,6 +11,10 @@ from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
 class BrokerClientTest(LandscapeTest):
 
     helpers = [BrokerClientHelper]
+
+    def _make_fake_plugin_get_session_id(self, plugin):
+        plugin._session_id = 12345L
+        plugin._get_session_id_and_run = lambda: plugin._do_run()
 
     def test_ping(self):
         """
@@ -23,13 +28,17 @@ class BrokerClientTest(LandscapeTest):
         plugin, and calls the plugin's C{register} method.
         """
         plugin = BrokerClientPlugin()
+        self._make_fake_plugin_get_session_id(plugin)
         self.client.add(plugin)
         self.assertIs(plugin.client, self.client)
 
     def test_registering_plugin_gets_session_id(self):
         plugin = BrokerClientPlugin()
+        deferred_mock = self.mocker.proxy(Deferred())
+        self.client.broker.get_session_id = lambda : deferred_mock
+        self.expect(deferred_mock.addCallback(ANY).count(1))
+        self.mocker.replay()
         self.client.add(plugin)
-        self.assertIsNot(None, plugin._session_id)
 
     def test_get_plugins(self):
         """
@@ -79,12 +88,13 @@ class BrokerClientTest(LandscapeTest):
         the plugin will be run immediately at registration.
         """
         plugin = BrokerClientPlugin()
+        self._make_fake_plugin_get_session_id(plugin)
         plugin.run = self.mocker.mock()
         plugin.run_immediately = True
         self.expect(plugin.run()).count(1)
         self.mocker.replay()
         self.client.add(plugin)
-        self.client.reactor.advance(plugin.run_interval)
+        # self.client.reactor.advance(plugin.run_interval)
 
     def test_register_message(self):
         """

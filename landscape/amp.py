@@ -1,6 +1,14 @@
 """Communication between components in different services via twisted AMP.
 
-See also L{landscape.lib.amp}.
+The Landscape client is composed by several processes that need to talk to
+each other. For example the monitor and manager processes need to talk to
+the broker in order to ask it to add new messages to the outgoing queue, and
+the broker needs to talk to them in order to dispatch them incoming messages
+from the server.
+
+This module implements a few conveniences built around L{landscape.lib.amp} to
+let the various services connect to each other in an easy and idiomatic way,
+and have them respond to standard requests like "ping" or "exit".
 """
 import os
 import logging

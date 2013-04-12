@@ -1,12 +1,181 @@
 """Manage outgoing and incoming messages when communicating with the server.
 
-The L{MessageExchange} is the place where messages are sent to go out to the
-Landscape server. It accumulates messages in its L{MessageStore} and
-periodically delivers them to the server.
+The protocol to communicate between the client and the server has been designed
+to be very robust so that messages are not lost. In addition it is (vaguely)
+symmetric, as the client and server need to send messages both ways.
 
-It is also the place where messages coming from the server are handled. For
-each message type the L{MessageExchange} supports setting an handler that
-will be invoked when a message of the that type is received.
+Client->Server Payload
+======================
+
+All message payloads are bpickled with L{landscape.lib.bpickle.dumps}. Client
+to server payloads are C{dict}s of the form::
+
+  {'server-api': SERVER_API_VERSION,
+   'client-api': CLIENT_API_VERSION,
+   'sequence': SEQUENCE_NUMBER,
+   'accepted-types': SERVER_ACCEPTED_TYPES_DIGEST,
+   'messages': MESSAGES,
+   'total-messages': TOTAL_COUNT_OF_PENDING_MESSAGES,
+   'next-expected-sequence': EXPECTED_SEQUENCE_NUMBER,
+   'client-accepted-types': CLIENT_ACCEPTED_TYPES (optional)}
+
+The values have the following semantics:
+
+  - C{SERVER_API_VERSION}: The API version that is required on the server
+    in order to process the messages in this payload (the schema and semantics
+    of message types are usually different for different API versions).
+
+  - C{CLIENT_API_VERSION}: The API version of the client, hinting the server
+    about the schema and semantics of the messages types accepted by the client
+    (see below).
+
+  - C{SEQUENCE_NUMBER}: A monotonically increasing nonnegative integer. The
+    meaning of this is described below.
+
+  - C{SERVER_ACCEPTED_TYPES_DIGEST}: A hash of the message types that the
+    client thinks are currently accepted by the server. The server can use it
+    to know whether to send the client a new up-to-date list of accepted
+    message types.
+
+  - C{MESSAGES}: A python list of messages, described below.
+
+  - C{TOTAL_COUNT_OF_PENDING_MESSAGES}: The total number of messages in the
+    client outgoing queue. This is includes the number of messages being sent
+    in this payload, plus any other messages still pending and not included
+    here.
+
+  - C{EXPECTED_SEQUENCE_NUMBER}: The sequence number which the client expects
+    the next message sent from the server to have.
+
+  - C{CLIENT_ACCEPTED_TYPES}: Optionally, a list of message types that the
+    client accepts. The server is supposed to send the client only messages of
+    this type. It will be inlcuded in the payload only if the hash that the
+    server sends us is out-of-date. This behavior is simmetric with respect to
+    the C{SERVER_ACCEPTED_TYPES_DIGEST} field described above.
+
+Server->Client Payload
+======================
+
+The payloads that the server sends to not-yet-registered clients (i.e. clients
+that don't provide a secure ID associated with a computer) are C{dict}s of the
+form::
+
+  {'server-uuid': SERVER_UUID,
+   'messages': MESSAGES}
+
+where:
+
+  - C{SERVER_UUID}: A string identifying the particular Landscape server the
+    client is talking to.
+
+  - C{MESSAGES}: A python list of messages, described below.
+
+Additionally, payloads to registered clients will include these fields::
+
+  {'next-expected-sequence': EXPECTED_SEQUENCE_NUMBER,
+   'client-accepted-types-hash': CLIENT_ACCEPTED_TYPES_DIGEST,
+
+where:
+
+  - C{EXPECTED_SEQUENCE_NUMBER}: The sequence number which the server expects
+    the next message sent from the client to have.
+
+  - C{CLIENT_ACCEPTED_TYPES_DIGEST}: A hash of the message types that the
+    server thinks are currently accepted by the client. The client can use it
+    to know whether to send to the server an up-to-date list the message types
+    it now accepts (see CLIENT_ACCEPTED_TYPES in the client->server payload).
+
+Individual Messages
+===================
+
+A message is a C{dict} with required and optional keys. Messages are packed
+into Python lists and set as the value of the 'messages' key in the payload.
+
+The C{dict} of a single message is of the form::
+
+  {'type': MESSAGE_TYPE,
+   ...}
+
+where:
+
+  - C{MESSAGE_TYPE}: A simple string, which lets the server decide what handler
+    to dispatch the message to, also considering the SERVER_API_VERSION value.
+
+  - C{...}: Other entries specific to the type of message.
+
+Message Sequencing
+==================
+
+A message numbering system is built in to the protocol to ensure robustness of
+client/server communication. The way this works is not totally symmetrical, as
+the client must connect to the server via HTTP, but the ordering that things
+happen in over the course of many connections remains the same (see also
+L{landscape.broker.store} for more concrete examples):
+
+  - Receiver tells Sender which sequence number it expects the next batch of
+    messages to start with.
+
+  - Sender gives some messages to Receiver, specifying the sequence number of
+    the first message. If the expected and actual sequence numbers are out of
+    synch, Sender resynchronizes in a certain way.
+
+The client and server must play the part of *both* of these roles on every
+interaction, but it simplifies things to talk about them in terms of a single
+role at a time.
+
+When the client connects to the server, it does the following things acting
+in the role of Sender (which is by far its more burdened role):
+
+  - Send a payload containing messages and a sequence number. The sequence
+    number should be the same number that the server gave as
+    next-expected-sequence in the prior connection, or 0 if there was no
+    previous connection.
+
+  - Get back a next-expected-sequence from the server. If that value is is not
+    len(messages) + previous-next-expected, then resynchronize.
+
+It does the following when acting as Receiver:
+
+  - Send a payload containing a next-expected-sequence, which should be the
+    sequence number of the first message that the server responds with. This
+    value should be previous-next-expected + len(previous_messages).
+
+  - Receive some messages from the server, and process them immediately.
+
+When the server is acting as Sender, it does the following:
+
+  - Wait for a payload with next-expected-sequence from the client.
+
+  - Perhaps resynchronize if next-expected-sequence is unexpected.
+
+  - Respond with a payload of messages to the client. No sequence identifier
+    is given for this payload of messages, because it would be redundant with
+    data that has already passed over the wire (received from the client)
+    during the very same TCP connection.
+
+When the server is acting as a Receiver, it does the following:
+
+  - Wait for a payload with a sequence identifier and a load of messages.
+  - Respond with a next-expected-sequence.
+
+There are two interesting exceptional cases which must be handled with
+resynchronization:
+
+  1. Messages received with sequence numbers less than the next expected
+     sequence number should be discarded, and further messages starting at
+     the expected sequence numbers should be processed.
+
+  2. If the sequence number is higher than what the receiver expected, then
+     no messages are processed and the receiver responds with the same
+     {'next-expected-sequence': N}, so that the sender can resynchronize
+     itself.
+
+This implies that the receiver must record the sequence number of the last
+successfully processed message, in order for it to respond to the sender
+with that number. In addition, the sender must save outbound messages even
+after they have been delivered over the transport, until the sender receives
+a next-expected-sequence higher than the outbound message. The details of
+this logic are described in L{landscape.broker.store}.
 """
 import time
 import logging
@@ -22,11 +191,17 @@ from landscape import SERVER_API, CLIENT_API
 class MessageExchange(object):
     """Schedule and handle message exchanges with the server.
 
-    An exchange is an HTTP POST request, whose body contains outgoing messages
-    and whose response contains incoming messages.
-    """
+    The L{MessageExchange} is the place where messages are sent to go out
+    to the Landscape server. It accumulates messages in its L{MessageStore}
+    and periodically delivers them to the server.
 
-    plugin_name = "message-exchange"
+    It is also the place where messages coming from the server are handled. For
+    each message type the L{MessageExchange} supports setting an handler that
+    will be invoked when a message of the that type is received.
+
+    An exchange is performed with an HTTP POST request, whose body contains
+    outgoing messages and whose response contains incoming messages.
+    """
 
     def __init__(self, reactor, store, transport, registration_info,
                  exchange_store, config,  max_messages=100):
@@ -307,10 +482,10 @@ class MessageExchange(object):
         payload = {"server-api": server_api,
                    "client-api": CLIENT_API,
                    "sequence": store.get_sequence(),
+                   "accepted-types": accepted_types_digest,
                    "messages": messages,
                    "total-messages": total_messages,
                    "next-expected-sequence": store.get_server_sequence(),
-                   "accepted-types": accepted_types_digest,
                   }
         accepted_client_types = self.get_client_accepted_message_types()
         accepted_client_types_hash = self._hash_types(accepted_client_types)

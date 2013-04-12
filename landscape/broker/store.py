@@ -435,6 +435,10 @@ class MessageStore(object):
         session_ids = scopes.get(scope, [])
         return session_id in session_ids
 
+    def drop_session_ids(self, scope=None):
+        """
+        """
+
 
 def get_default_message_store(*args, **kwargs):
     """

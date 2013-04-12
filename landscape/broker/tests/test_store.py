@@ -465,3 +465,11 @@ class MessageStoreTest(LandscapeTest):
         """
         session_id = "I've got a lovely bunch of coconuts"
         self.assertFalse(self.store.is_valid_session_id(session_id))
+
+    def test_drop_session_ids(self):
+        """
+        Session ids can be dropped on demand.
+        """
+        session_id = self.store.get_session_id()
+        self.store.drop_session_ids()
+        self.assertFalse(self.store.is_valid_session_id(session_id))
