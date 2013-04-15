@@ -129,19 +129,6 @@ class Words(object):
         return deferred
 
 
-METHODS = ("empty",
-           "motd",
-           "capitalize",
-           "is_short",
-           "concatenate",
-           "lower_case",
-           "multiply_alphabetically",
-           "translate",
-           "meaning_of_life",
-           "guess",
-           "google")
-
-
 class WordsProtocol(MethodCallProtocol):
 
     methods = ["empty",
@@ -157,6 +144,9 @@ class WordsProtocol(MethodCallProtocol):
                "google"]
 
     timeout = 0.2
+
+
+METHODS = WordsProtocol.methods
 
 
 class WordsFactory(MethodCallFactory):

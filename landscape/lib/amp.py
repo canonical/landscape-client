@@ -391,6 +391,8 @@ class RemoteObject(object):
         self._timeout = timeout
         self._pending_requests = {}
         if self._factory:
+            # XXX temporary hack to emulate the behavior of this code before
+            # MethodCallReceiver was introduced
             self._reactor = factory.reactor
             self._factory.add_notifier(self._handle_reconnect)
 
@@ -547,6 +549,8 @@ class RemoteObjectConnector(object):
         # handle reconnections.
         self._factory.remove_notifier(self._success, self._failure)
         sender = MethodCallSender(result, self._reactor)
+        # XXX temporary hack to emulate the behavior of this code before
+        # MethodCallReceiver was introduced
         self._kwargs["factory"] = self._factory
         self._remote = self.remote(sender, *self._args, **self._kwargs)
         self._connected.callback(self._remote)
