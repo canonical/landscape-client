@@ -118,7 +118,7 @@ class RemoteComponentConnectorTest(LandscapeTest):
             ports.append(self.reactor.listen_unix(socket, factory))
 
         def connected(remote):
-            remote._protocol.transport.loseConnection()
+            remote._sender._protocol.transport.loseConnection()
             ports[0].stopListening()
             self.reactor._reactor.callLater(0.01, listen_again)
 

@@ -202,7 +202,7 @@ class RemoteBrokerTest(LandscapeTest):
         """
         Trying to call an non-exposed broker method results in a failure.
         """
-        result = self.remote._protocol.send_method_call(
+        result = self.remote._sender.send_method_call(
             method="get_clients", args=[], kwargs={})
         return self.assertFailure(result, MethodCallError)
 
@@ -263,6 +263,6 @@ class RemoteClientTest(LandscapeTest):
         """
         Trying to call an non-exposed client method results in a failure.
         """
-        result = self.remote_client._protocol.send_method_call(
+        result = self.remote_client._sender.send_method_call(
             method="get_plugins", args=[], kwargs={})
         return self.assertFailure(result, MethodCallError)

@@ -58,7 +58,7 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python.failure import Failure
 
 from twisted.protocols.amp import (
-    Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH)
+    Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
 
@@ -112,19 +112,25 @@ class MethodCallChunk(Command):
 
 
 class MethodCallServerProtocol(AMP):
+    """XXX Placeholder"""
+
+
+class MethodCallClientProtocol(AMP):
+    """XXX Placeholder"""
+
+
+class MethodCallReceiver(CommandLocator):
     """Expose methods of a local object over AMP.
 
-    The object to be exposed is expected to be the C{object} attribute of our
-    protocol factory.
-
-    @cvar methods: The list of exposed object's methods that can be called with
-        the protocol. It must be defined by sub-classes.
+    @param object: The Python object to be exposed.
+    @param methods: The list of the object's methods that can be called
+         remotely.
     """
 
-    methods = []
-
-    def __init__(self):
-        AMP.__init__(self)
+    def __init__(self, object, methods):
+        CommandLocator.__init__(self)
+        self._object = object
+        self._methods = methods
         self._pending_chunks = {}
 
     @MethodCall.responder
@@ -152,10 +158,10 @@ class MethodCallServerProtocol(AMP):
 
         args, kwargs = loads(arguments)
 
-        if not method in self.methods:
+        if not method in self._methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
-        method_func = getattr(self.factory.object, method)
+        method_func = getattr(self._object, method)
 
         def handle_result(result):
             return {"result": self._check_result(result)}
@@ -189,7 +195,7 @@ class MethodCallServerProtocol(AMP):
         return result
 
 
-class MethodCallClientProtocol(AMP):
+class MethodCallSender(object):
     """Calls methods of a remote object over L{AMP}.
 
     @note: If the remote method returns a deferred, the associated local
@@ -202,8 +208,9 @@ class MethodCallClientProtocol(AMP):
     timeout = 60
     chunk_size = MAX_VALUE_LENGTH
 
-    def __init__(self):
-        AMP.__init__(self)
+    def __init__(self, protocol, clock):
+        self._protocol = protocol
+        self._clock = clock
         self._pending_responses = []
         self._sequence = 0
 
@@ -233,9 +240,9 @@ class MethodCallClientProtocol(AMP):
             # The peer didn't respond on time, raise an error.
             deferred.errback(MethodCallError("timeout"))
 
-        call = self.factory.reactor.callLater(self.timeout, handle_timeout)
+        call = self._clock.callLater(self.timeout, handle_timeout)
 
-        result = self.callRemote(command, **kwargs)
+        result = self._protocol.callRemote(command, **kwargs)
         result.addBoth(handle_response)
         return deferred
 
@@ -259,7 +266,7 @@ class MethodCallClientProtocol(AMP):
             for chunk in chunks[:-1]:
 
                 def create_send_chunk(sequence, chunk):
-                    send_chunk = lambda x: self.callRemote(
+                    send_chunk = lambda x: self._protocol.callRemote(
                         MethodCallChunk, sequence=sequence, chunk=chunk)
                     return send_chunk
 
@@ -286,7 +293,7 @@ class MethodCallProtocol(MethodCallServerProtocol, MethodCallClientProtocol):
 class MethodCallFactory(ReconnectingClientFactory):
     """
     Factory for L{MethodCallProtocol}s exposing an object or connecting to
-    to L{MethodCall} servers.
+    L{MethodCall} servers.
 
     When used to connect, if the connection fails or is lost the factory
     will keep retrying to establish it.
@@ -346,8 +353,14 @@ class MethodCallFactory(ReconnectingClientFactory):
 
     def buildProtocol(self, addr):
         self.resetDelay()
-        protocol = self.protocol()
-        protocol.factory = self
+        if self.object is not None:
+            # XXX temporary hack to emulate the behavior of this code before
+            # MethodCallReceiver was introduced
+            locator = MethodCallReceiver(self.object, self.protocol.methods)
+            protocol = AMP(locator=locator)
+            protocol.factory = self
+        else:
+            protocol = ReconnectingClientFactory.buildProtocol(self, addr)
         self.notify_success(protocol)
         return protocol
 
@@ -360,7 +373,8 @@ class RemoteObject(object):
     the remote object exposed by the peer.
     """
 
-    def __init__(self, protocol, retry_on_reconnect=False, timeout=None):
+    def __init__(self, sender, retry_on_reconnect=False, timeout=None,
+                 factory=None):
         """
         @param protocol: A reference to a connected L{AMP} protocol instance,
             which will be used to send L{MethodCall} commands.
@@ -371,13 +385,14 @@ class RemoteObject(object):
             can't perform them again successfully within this number of
             seconds, they will errback with a L{MethodCallError}.
         """
-        self._protocol = protocol
-        self._factory = protocol.factory
-        self._reactor = protocol.factory.reactor
+        self._sender = sender
+        self._factory = factory
         self._retry_on_reconnect = retry_on_reconnect
         self._timeout = timeout
         self._pending_requests = {}
-        self._factory.add_notifier(self._handle_reconnect)
+        if self._factory:
+            self._reactor = factory.reactor
+            self._factory.add_notifier(self._handle_reconnect)
 
     def __getattr__(self, method):
         """Return a function sending a L{MethodCall} for the given C{method}.
@@ -389,9 +404,9 @@ class RemoteObject(object):
         """
 
         def send_method_call(*args, **kwargs):
-            result = self._protocol.send_method_call(method=method,
-                                                     args=args,
-                                                     kwargs=kwargs)
+            result = self._sender.send_method_call(method=method,
+                                                   args=args,
+                                                   kwargs=kwargs)
             deferred = Deferred()
             result.addCallback(self._handle_response, deferred)
             result.addErrback(self._handle_failure, method, args, kwargs,
@@ -461,7 +476,7 @@ class RemoteObject(object):
 
         @param protocol: The newly connected protocol instance.
         """
-        self._protocol = protocol
+        self._sender._protocol = protocol
         if self._retry_on_reconnect:
             self._retry()
 
@@ -477,7 +492,7 @@ class RemoteObject(object):
 
         while requests:
             deferred, (method, args, kwargs, call) = requests.popitem()
-            result = self._protocol.send_method_call(method, args, kwargs)
+            result = self._sender.send_method_call(method, args, kwargs)
             result.addCallback(self._handle_response,
                                deferred=deferred, call=call)
             result.addErrback(self._handle_failure, method, args, kwargs,
@@ -531,7 +546,9 @@ class RemoteObjectConnector(object):
         # We did our job, remove our own notifier and let the remote object
         # handle reconnections.
         self._factory.remove_notifier(self._success, self._failure)
-        self._remote = self.remote(result, *self._args, **self._kwargs)
+        sender = MethodCallSender(result, self._reactor)
+        self._kwargs["factory"] = self._factory
+        self._remote = self.remote(sender, *self._args, **self._kwargs)
         self._connected.callback(self._remote)
 
     def _failure(self, failure):
@@ -543,6 +560,6 @@ class RemoteObjectConnector(object):
         if self._factory:
             self._factory.stopTrying()
         if self._remote:
-            if self._remote._protocol.transport:
-                self._remote._protocol.transport.loseConnection()
+            if self._remote._sender._protocol.transport:
+                self._remote._sender._protocol.transport.loseConnection()
             self._remote = None
