@@ -12,7 +12,7 @@ class LoadTest(LandscapeTest):
         self.sysinfo.add(self.load)
 
     def test_run_returns_succeeded_deferred(self):
-        self.assertDeferredSucceeded(self.load.run())
+        self.assertIs(None, self.successResultOf(self.load.run()))
 
     def test_run_adds_header(self):
         mock = self.mocker.replace("os.getloadavg")

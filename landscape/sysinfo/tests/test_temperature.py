@@ -14,7 +14,7 @@ class TemperatureTest(ThermalZoneTest):
         self.sysinfo.add(self.temperature)
 
     def test_run_returns_succeeded_deferred(self):
-        self.assertDeferredSucceeded(self.temperature.run())
+        self.assertIs(None, self.successResultOf(self.temperature.run()))
 
     def test_run_adds_header(self):
         self.write_thermal_zone("THM0", "51 C")

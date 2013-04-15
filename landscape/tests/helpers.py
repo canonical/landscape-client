@@ -109,6 +109,44 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         HelperTestCase.tearDown(self)
         MockerTestCase.tearDown(self)
 
+    def successResultOf(self, deferred):
+        """See C{twisted.trial._synctest._Assertions.successResultOf}.
+
+        This is a copy of the original method, which is available only
+        since Twisted 12.3.0 (from 2012-12-20).
+        """
+        result = []
+        deferred.addBoth(result.append)
+        if not result:
+            self.fail(
+                "Success result expected on %r, found no result instead" % (
+                    deferred,))
+        elif isinstance(result[0], failure.Failure):
+            self.fail(
+                "Success result expected on %r, "
+                "found failure result (%r) instead" % (deferred, result[0]))
+        else:
+            return result[0]
+
+    def failureResultOf(self, deferred):
+        """See C{twisted.trial._synctest._Assertions.failureResultOf}.
+
+        This is a copy of the original method, which is available only
+        since Twisted 12.3.0 (from 2012-12-20).
+        """
+        result = []
+        deferred.addBoth(result.append)
+        if not result:
+            self.fail(
+                "Failure result expected on %r, found no result instead" % (
+                    deferred,))
+        elif not isinstance(result[0], failure.Failure):
+            self.fail(
+                "Failure result expected on %r, "
+                "found success result (%r) instead" % (deferred, result[0]))
+        else:
+            return result[0]
+
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
