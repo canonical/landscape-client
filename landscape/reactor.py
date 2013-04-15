@@ -5,11 +5,7 @@ import time
 import sys
 import logging
 import bisect
-import socket
 
-from twisted.test.proto_helpers import FakeDatagramTransport
-from twisted.internet.defer import succeed, fail
-from twisted.internet.error import DNSLookupError
 from twisted.internet.threads import deferToThread
 
 from landscape.log import format_object
@@ -37,7 +33,14 @@ class EventID(object):
 
 
 class EventHandlingReactorMixin(object):
-    """Fire events identified by strings and register handlers for them."""
+    """Fire events identified by strings and register handlers for them.
+
+    Note that event handlers are executed synchronously when the C{fire} method
+    is called, so unit-tests can generally exercise events without needing to
+    run the real Twisted reactor (except of course if the event handlers
+    themselves contain asynchronous calls that need the Twisted reactor
+    running).
+    """
 
     def __init__(self):
         super(EventHandlingReactorMixin, self).__init__()
@@ -107,16 +110,106 @@ class EventHandlingReactorMixin(object):
             raise InvalidID("EventID instance expected, received %r" % id)
 
 
-class ThreadedCallsReactorMixin(object):
-    """Schedule functions for execution in the main thread or in new ones."""
+class UnixReactorMixin(object):
+    """Support listening on Unix domain sockets.
+
+    Note that this mixin uses the *real* Twisted reactor to open a *real*
+    socket.
+
+    Since it is used by *both* L{TwistedReactor} and L{FakeReactor}, this
+    means that the latter is not really fake in this sense and that unit
+    tests involving calls to this method won't be synchronous anymore.
+
+    For example, many tests under L{landscape.broker.tests} use C{listen_unix}
+    to setup a "real" remote broker and exercise the RPC/AMP functionality. See
+    in particular L{landscape.broker.tests.helpers.RemoteBrokerHelper}.
+    """
+
+    def listen_unix(self, socket, factory):
+        """Start listening on a Unix socket."""
+        return self._reactor.listenUNIX(socket, factory, wantPID=True)
+
+
+class ReactorID(object):
+
+    def __init__(self, timeout):
+        self._timeout = timeout
+
+
+class TwistedReactor(EventHandlingReactorMixin, UnixReactorMixin):
+    """Wrap and add functionalities to the Twisted C{reactor}.
+
+    This essentially a facade around the C{twisted.internet.reactor} and
+    will delegate to it for mostly everything except event handling features
+    which are implemented using L{EventHandlingReactorMixin}.
+    """
 
     def __init__(self):
-        super(ThreadedCallsReactorMixin, self).__init__()
-        self._threaded_callbacks = []
+        from twisted.internet import reactor
+        from twisted.internet.task import LoopingCall
+        self._LoopingCall = LoopingCall
+        self._reactor = reactor
+        self._cleanup()
+        self.callFromThread = reactor.callFromThread
+        super(TwistedReactor, self).__init__()
+
+    def time(self):
+        """Get current time.
+
+        @see L{time.time}
+        """
+        return time.time()
+
+    def call_later(self, *args, **kwargs):
+        """Call a function later.
+
+        Simply call C{callLater(*args, **kwargs)} and return its result.
+
+        @see: L{twisted.internet.interfaces.IReactorTime.callLater}.
+
+        """
+        return self._reactor.callLater(*args, **kwargs)
+
+    def call_every(self, seconds, f, *args, **kwargs):
+        """Call a function repeatedly.
+
+        Create a new L{twisted.internet.task.LoopingCall} object and
+        start it.
+
+        @return: the created C{LoopingCall} object.
+        """
+        lc = self._LoopingCall(f, *args, **kwargs)
+        lc.start(seconds, now=False)
+        return lc
+
+    def cancel_call(self, id):
+        """Cancel a scheduled function or event handler.
+
+        @param id: The function call or handler to remove. It can be an
+            L{EventID}, a L{LoopingCall} or a C{IDelayedCall}, as returned
+            by L{call_on}, L{call_every} and L{call_later} respectively.
+        """
+        if isinstance(id, EventID):
+            return EventHandlingReactorMixin.cancel_call(self, id)
+        if isinstance(id, self._LoopingCall):
+            return id.stop()
+        if id.active():
+            id.cancel()
+
+    def call_when_running(self, f):
+        """Schedule a function to be called when the reactor starts running."""
+        self._reactor.callWhenRunning(f)
 
     def call_in_main(self, f, *args, **kwargs):
-        """Schedule a function for execution in the main thread."""
-        self._threaded_callbacks.append(lambda: f(*args, **kwargs))
+        """Cause a function to be executed by the reactor thread.
+
+        @param f: The callable object to execute.
+        @param args: The arguments to call it with.
+        @param kwargs: The keyword arguments to call it with.
+
+        @see: L{twisted.internet.interfaces.IReactorThreads.callFromThread}
+        """
+        self._reactor.callFromThread(f, *args, **kwargs)
 
     def call_in_thread(self, callback, errback, f, *args, **kwargs):
         """
@@ -146,6 +239,149 @@ class ThreadedCallsReactorMixin(object):
         deferred.addCallback(on_success)
         deferred.addErrback(on_failure)
 
+    def run(self):
+        """Start the reactor, a C{"run"} event will be fired."""
+
+        self.fire("run")
+        self._reactor.run()
+        self.fire("stop")
+
+    def stop(self):
+        """Stop the reactor, a C{"stop"} event will be fired."""
+        self._reactor.stop()
+        self._cleanup()
+
+    def _cleanup(self):
+        # Since the reactor is global, we should clean it up when we
+        # initialize one of our wrappers.
+        for call in self._reactor.getDelayedCalls():
+            if call.active():
+                call.cancel()
+
+
+class FakeReactorID(object):
+
+    def __init__(self, data):
+        self.active = True
+        self._data = data
+
+
+class FakeReactor(EventHandlingReactorMixin, UnixReactorMixin):
+    """A fake reactor with the same API of L{TwistedReactor}.
+
+    This reactor emulates the asychronous interface of L{TwistedReactor}, but
+    implementing it in a synchronous way, for easier unit-testing.
+
+    Note that the C{listen_unix} method is *not* emulated, but rather inherited
+    blindly from L{UnixReactorMixin}, this means that there's no way to control
+    it in a synchronous way (see the docstring of the mixin). A better approach
+    would be to fake the AMP transport (i.e. fake the twisted abstractions
+    around Unix sockets), and implement a fake version C{listen_unix}, but this
+    hasn't been done yet.
+    """
+
+    def __init__(self):
+        super(FakeReactor, self).__init__()
+        self._current_time = 0
+        self._calls = []
+        self.hosts = {}
+        self._threaded_callbacks = []
+
+        # We need a reference to the Twisted reactor as well to
+        # let Landscape services listen to Unix sockets
+        from twisted.internet import reactor
+        self._reactor = reactor
+
+    def time(self):
+        return float(self._current_time)
+
+    def call_later(self, seconds, f, *args, **kwargs):
+        scheduled_time = self._current_time + seconds
+        call = (scheduled_time, f, args, kwargs)
+        bisect.insort_left(self._calls, call)
+        return FakeReactorID(call)
+
+    def call_every(self, seconds, f, *args, **kwargs):
+
+        def fake():
+            # update the call so that cancellation will continue
+            # working with the same ID. And do it *before* the call
+            # because the call might cancel it!
+            call._data = self.call_later(seconds, fake)._data
+            try:
+                f(*args, **kwargs)
+            except:
+                if call.active:
+                    self.cancel_call(call)
+                raise
+        call = self.call_later(seconds, fake)
+        return call
+
+    def cancel_call(self, id):
+        if type(id) is FakeReactorID:
+            if id._data in self._calls:
+                self._calls.remove(id._data)
+            id.active = False
+        else:
+            super(FakeReactor, self).cancel_call(id)
+
+    def call_when_running(self, f):
+        raise NotImplemented("The FakeReactor doesn't implement this.")
+
+    def call_in_main(self, f, *args, **kwargs):
+        """Schedule a function for execution in the main thread."""
+        self._threaded_callbacks.append(lambda: f(*args, **kwargs))
+
+    def call_in_thread(self, callback, errback, f, *args, **kwargs):
+        """Emulate L{TwistedReactor.call_in_thread} without spawning threads.
+
+        Note that running threaded callbacks here doesn't reflect reality,
+        since they're usually run while the main reactor loop is active. At
+        the same time, this is convenient as it means we don't need to run
+        the the real Twisted reactor with to test actions performed on
+        completion of specific events (e.g. L{MessageExchange.exchange} uses
+        call_in_thread to run the HTTP request in a separate thread, because
+        we use libcurl which is blocking). IOW, it's easier to test things
+        synchronously.
+        """
+        self._in_thread(callback, errback, f, args, kwargs)
+        self._run_threaded_callbacks()
+
+    def run(self):
+        """Continuously advance this reactor until reactor.stop() is called."""
+        self.fire("run")
+        self._running = True
+        while self._running:
+            self.advance(self._calls[0][0])
+        self.fire("stop")
+
+    def stop(self):
+        self._running = False
+
+    def advance(self, seconds):
+        """Advance this reactor C{seconds} into the future.
+
+        This method is not part of the L{TwistedReactor} API and is specific
+        to L{FakeReactor}. It's meant to be used only in unit tests for
+        advancing time and triggering the relevant scheduled calls (see
+        also C{call_later} and C{call_every}).
+        """
+        while (self._calls and self._calls[0][0]
+               <= self._current_time + seconds):
+            call = self._calls.pop(0)
+            # If we find a call within the time we're advancing,
+            # before calling it, let's advance the time *just* to
+            # when that call is expecting to be run, so that if it
+            # schedules any calls itself they will be relative to
+            # the correct time.
+            seconds -= call[0] - self._current_time
+            self._current_time = call[0]
+            try:
+                call[1](*call[2], **call[3])
+            except Exception, e:
+                logging.exception(e)
+        self._current_time += seconds
+
     def _in_thread(self, callback, errback, f, args, kwargs):
         try:
             result = f(*args, **kwargs)
@@ -172,254 +408,3 @@ class ThreadedCallsReactorMixin(object):
 
     def _unhook_threaded_callbacks(self):
         self.cancel_call(self._run_threaded_callbacks_id)
-
-
-class UnixReactorMixin(object):
-
-    def listen_unix(self, socket, factory):
-        """Start listen on a Unix socket."""
-        return self._reactor.listenUNIX(socket, factory, wantPID=True)
-
-
-class ReactorID(object):
-
-    def __init__(self, timeout):
-        self._timeout = timeout
-
-
-class FakeReactorID(object):
-
-    def __init__(self, data):
-        self.active = True
-        self._data = data
-
-
-class FakeReactor(EventHandlingReactorMixin,
-                  ThreadedCallsReactorMixin, UnixReactorMixin):
-    """
-    @ivar udp_transports: dict of {port: (protocol, transport)}
-    @ivar hosts: Dict of {hostname: ip}. Users should populate this
-        and L{resolve} will use it.
-    """
-
-    def __init__(self):
-        super(FakeReactor, self).__init__()
-        self._current_time = 0
-        self._calls = []
-        self.udp_transports = {}
-        self.hosts = {}
-
-        # We need a reference to the Twisted reactor as well to
-        # let Landscape services listen to Unix sockets
-        from twisted.internet import reactor
-        self._reactor = reactor
-
-    def time(self):
-        return float(self._current_time)
-
-    def call_later(self, seconds, f, *args, **kwargs):
-        scheduled_time = self._current_time + seconds
-        call = (scheduled_time, f, args, kwargs)
-        bisect.insort_left(self._calls, call)
-        return FakeReactorID(call)
-
-    def cancel_call(self, id):
-        if type(id) is FakeReactorID:
-            if id._data in self._calls:
-                self._calls.remove(id._data)
-            id.active = False
-        else:
-            super(FakeReactor, self).cancel_call(id)
-
-    def call_every(self, seconds, f, *args, **kwargs):
-
-        def fake():
-            # update the call so that cancellation will continue
-            # working with the same ID. And do it *before* the call
-            # because the call might cancel it!
-            call._data = self.call_later(seconds, fake)._data
-            try:
-                f(*args, **kwargs)
-            except:
-                if call.active:
-                    self.cancel_call(call)
-                raise
-        call = self.call_later(seconds, fake)
-        return call
-
-    def call_in_thread(self, callback, errback, f, *args, **kwargs):
-        self._in_thread(callback, errback, f, args, kwargs)
-
-        # Running threaded callbacks here doesn't reflect reality, since
-        # they're usually run while the main reactor loop is active.
-        # At the same time, this is convenient as it means we don't need
-        # to run the the reactor with all registered handlers to test for
-        # actions performed on completion of specific events (e.g. firing
-        # exchange will fire exchange-done when ready). IOW, it's easier
-        # to test things synchronously.
-        self._run_threaded_callbacks()
-
-    def advance(self, seconds):
-        """Advance this reactor C{seconds} into the future.
-
-        This is the preferred method for advancing time in your unit tests.
-        """
-        while (self._calls and self._calls[0][0]
-               <= self._current_time + seconds):
-            call = self._calls.pop(0)
-            # If we find a call within the time we're advancing,
-            # before calling it, let's advance the time *just* to
-            # when that call is expecting to be run, so that if it
-            # schedules any calls itself they will be relative to
-            # the correct time.
-            seconds -= call[0] - self._current_time
-            self._current_time = call[0]
-            try:
-                call[1](*call[2], **call[3])
-            except Exception, e:
-                logging.exception(e)
-        self._current_time += seconds
-
-    def run(self):
-        """Continuously advance this reactor until reactor.stop() is called."""
-        self.fire("run")
-        self._running = True
-        while self._running:
-            self.advance(self._calls[0][0])
-        self.fire("stop")
-
-    def stop(self):
-        self._running = False
-
-    def listen_udp(self, port, protocol):
-        """
-        Connect the given protocol with a fake transport, and keep the
-        transport in C{self.udp_transports}.
-        """
-        transport = FakeDatagramTransport()
-        self.udp_transports[port] = (protocol, transport)
-        protocol.makeConnection(transport)
-
-    def resolve(self, hostname):
-        """Look up the hostname in C{self.hosts}.
-
-        @return: A Deferred resulting in the IP address.
-        """
-        try:
-            # is it an IP address?
-            socket.inet_aton(hostname)
-        except socket.error:  # no
-            if hostname in self.hosts:
-                return succeed(self.hosts[hostname])
-            else:
-                return fail(DNSLookupError(hostname))
-        else:  # yes
-            return succeed(hostname)
-
-
-class TwistedReactor(EventHandlingReactorMixin,
-                     ThreadedCallsReactorMixin, UnixReactorMixin):
-    """Wrap and add functionalities to the Twisted C{reactor}."""
-
-    def __init__(self):
-        from twisted.internet import reactor
-        from twisted.internet.task import LoopingCall
-        self._LoopingCall = LoopingCall
-        self._reactor = reactor
-        self._cleanup()
-        self.callFromThread = reactor.callFromThread
-        super(TwistedReactor, self).__init__()
-
-    def _cleanup(self):
-        # Since the reactor is global, we should clean it up when we
-        # initialize one of our wrappers.
-        for call in self._reactor.getDelayedCalls():
-            if call.active():
-                call.cancel()
-
-    def call_later(self, *args, **kwargs):
-        """Call a function later.
-
-        Simply call C{callLater(*args, **kwargs)} and return its result.
-
-        @see: L{twisted.internet.interfaces.IReactorTime.callLater}.
-
-        """
-        return self._reactor.callLater(*args, **kwargs)
-
-    def call_every(self, seconds, f, *args, **kwargs):
-        """Call a function repeatedly.
-
-        Create a new L{twisted.internet.task.LoopingCall} object and
-        start it.
-
-        @return: the created C{LoopingCall} object.
-        """
-        lc = self._LoopingCall(f, *args, **kwargs)
-        lc.start(seconds, now=False)
-        return lc
-
-    def call_when_running(self, f):
-        """Schedule a function to be called when the reactor starts running."""
-        self._reactor.callWhenRunning(f)
-
-    def cancel_call(self, id):
-        """Cancel a scheduled function or event handler.
-
-        @param id: The function call or handler to remove. It can be an
-            L{EventID}, a L{LoopingCall} or a C{IDelayedCall}, as returned
-            by L{call_on}, L{call_every} and L{call_later} respectively.
-        """
-        if isinstance(id, EventID):
-            return EventHandlingReactorMixin.cancel_call(self, id)
-        if isinstance(id, self._LoopingCall):
-            return id.stop()
-        if id.active():
-            id.cancel()
-
-    def call_in_main(self, f, *args, **kwargs):
-        """Cause a function to be executed by the reactor thread.
-
-        @param f: The callable object to execute.
-        @param args: The arguments to call it with.
-        @param kwargs: The keyword arguments to call it with.
-
-        @see: L{twisted.internet.interfaces.IReactorThreads.callFromThread}
-        """
-        self._reactor.callFromThread(f, *args, **kwargs)
-
-    def run(self):
-        """Start the reactor, a C{"run"} event will be fired."""
-
-        self.fire("run")
-        self._reactor.run()
-        self.fire("stop")
-
-    def stop(self):
-        """Stop the reactor, a C{"stop"} event will be fired."""
-        self._reactor.stop()
-        self._cleanup()
-
-    def time(self):
-        """Get current time.
-
-        @see L{time.time}
-        """
-        return time.time()
-
-    def listen_udp(self, port, protocol):
-        """Connect the given protocol with a UDP transport.
-
-        @see L{twisted.internet.interfaces.IReactorUDP.listenUDP}.
-        """
-        return self._reactor.listenUDP(port, protocol)
-
-    def resolve(self, host):
-        """Look up the IP of the given host.
-
-        @return: A L{Deferred} resulting in the hostname.
-
-        @see L{twisted.internet.interfaces.IReactorCore.resolve}.
-
-        """
-        return self._reactor.resolve(host)

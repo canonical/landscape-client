@@ -14,7 +14,7 @@ class NetworkTest(LandscapeTest):
 
     def test_run_returns_succeeded_deferred(self):
         """L{Network.run} always returns a succeeded C{Deferred}."""
-        self.assertDeferredSucceeded(self.network.run())
+        self.assertIs(None, self.successResultOf(self.network.run()))
 
     def test_run_adds_header(self):
         """
