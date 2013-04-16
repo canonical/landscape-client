@@ -1,15 +1,56 @@
 from twisted.internet import reactor
+from twisted.internet.protocol import Factory
 from twisted.internet.defer import Deferred, DeferredList
-from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
 from twisted.internet.task import Clock
+from twisted.protocols.amp import AMP
 
-from landscape.lib.twisted_util import gather_results
 from landscape.lib.amp import (
     MethodCallError, MethodCallProtocol, MethodCallFactory, RemoteObject,
-    RemoteObjectConnector)
+    RemoteObjectConnector, MethodCallReceiver, MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import KWARGS
+
+
+class FakeTransport(object):
+    """Accumulate written data into a list."""
+
+    def __init__(self):
+        self.stream = []
+
+    def write(self, data):
+        self.stream.append(data)
+
+    def loseConnection(self):
+        raise NotImplemented()
+
+    def getPeer(self):
+        pass
+
+    def getHost(self):
+        pass
+
+
+class FakeConnection(object):
+    """Simulate a connection between a client and a server protocol."""
+
+    def __init__(self, client, server):
+        self.client = client
+        self.server = server
+        self.server.makeConnection(FakeTransport())
+        self.client.makeConnection(FakeTransport())
+
+    def flush(self):
+        """
+        Notify the server of any data written by the client and viceversa.
+        """
+        while True:
+            if self.client.transport.stream:
+                self.server.dataReceived(self.client.transport.stream.pop(0))
+            elif self.server.transport.stream:
+                self.client.dataReceived(self.server.transport.stream.pop(0))
+            else:
+                break
 
 
 class WordsException(Exception):
@@ -18,6 +59,9 @@ class WordsException(Exception):
 
 class Words(object):
     """Test class to be used as target object of a L{MethodCallProtocol}."""
+
+    def __init__(self, clock=None):
+        self._clock = clock
 
     def secret(self):
         raise RuntimeError("I'm not supposed to be called!")
@@ -68,11 +112,12 @@ class Words(object):
     def google(self, word):
         deferred = Deferred()
         if word == "Landscape":
-            reactor.callLater(0.01, lambda: deferred.callback("Cool!"))
+            self._clock.callLater(0.01, lambda: deferred.callback("Cool!"))
         elif word == "Easy query":
             deferred.callback("Done!")
         elif word == "Weird stuff":
-            reactor.callLater(0.01, lambda: deferred.errback(Exception("bad")))
+            error = Exception("bad")
+            self._clock.callLater(0.01, lambda: deferred.errback(error))
         elif word == "Censored":
             deferred.errback(Exception("very bad"))
         elif word == "Long query":
@@ -80,7 +125,7 @@ class Words(object):
             pass
         elif word == "Slowish query":
             # Fire the result after a while.
-            reactor.callLater(0.05, lambda: deferred.callback("Done!"))
+            self._clock.callLater(120.0, lambda: deferred.callback("Done!"))
         return deferred
 
 
@@ -101,6 +146,9 @@ class WordsProtocol(MethodCallProtocol):
     timeout = 0.2
 
 
+METHODS = WordsProtocol.methods
+
+
 class WordsFactory(MethodCallFactory):
 
     protocol = WordsProtocol
@@ -112,94 +160,91 @@ class RemoteWordsConnector(RemoteObjectConnector):
     factory = WordsFactory
 
 
-class MethodCallProtocolTest(LandscapeTest):
+class MethodCallTest(LandscapeTest):
 
     def setUp(self):
-        super(MethodCallProtocolTest, self).setUp()
-        socket = self.mktemp()
-        factory = WordsFactory(object=Words(), reactor=reactor)
-        self.port = reactor.listenUNIX(socket, factory)
-
-        def set_protocol(protocol):
-            self.protocol = protocol
-            self.protocol.factory = factory
-
-        connector = ClientCreator(reactor, WordsProtocol)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_protocol)
-
-    def tearDown(self):
-        self.protocol.transport.loseConnection()
-        self.port.stopListening()
-        super(MethodCallProtocolTest, self).tearDown()
+        super(MethodCallTest, self).setUp()
+        server = AMP(locator=MethodCallReceiver(Words(), METHODS))
+        client = AMP()
+        self.connection = FakeConnection(client, server)
+        self.clock = Clock()
+        self.sender = MethodCallSender(client, self.clock)
 
     def test_with_forbidden_method(self):
         """
         If a method is not included in L{MethodCallProtocol.methods} it
         can't be called.
         """
-        result = self.protocol.send_method_call(method="secret",
+        deferred = self.sender.send_method_call(method="secret",
                                                 args=[],
                                                 kwargs={})
-        return self.assertFailure(result, MethodCallError)
+        self.connection.flush()
+        self.failureResultOf(deferred).trap(MethodCallError)
 
     def test_with_no_arguments(self):
         """
         A connected client can issue a L{MethodCall} without arguments and
         with an empty response.
         """
-        result = self.protocol.send_method_call(method="empty",
+        deferred = self.sender.send_method_call(method="empty",
                                                 args=[],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": None})
+        self.connection.flush()
+        self.assertEqual({"result": None}, self.successResultOf(deferred))
 
     def test_with_return_value(self):
         """
         A connected client can issue a L{MethodCall} targeted to an
         object method with a return value.
         """
-        result = self.protocol.send_method_call(method="motd",
+        deferred = self.sender.send_method_call(method="motd",
                                                 args=[],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "Words are cool"})
+        self.connection.flush()
+        self.assertEqual({"result": "Words are cool"},
+                         self.successResultOf(deferred))
 
     def test_with_one_argument(self):
         """
         A connected AMP client can issue a L{MethodCall} with one argument and
         a response value.
         """
-        result = self.protocol.send_method_call(method="capitalize",
+        deferred = self.sender.send_method_call(method="capitalize",
                                                 args=["john"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "John"})
+        self.connection.flush()
+        self.assertEqual({"result": "John"}, self.successResultOf(deferred))
 
     def test_with_boolean_return_value(self):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
-        result = self.protocol.send_method_call(method="is_short",
+        deferred = self.sender.send_method_call(method="is_short",
                                                 args=["hi"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": True})
+        self.connection.flush()
+        self.assertEqual({"result": True}, self.successResultOf(deferred))
 
     def test_with_many_arguments(self):
         """
         A connected client can issue a L{MethodCall} with many arguments.
         """
-        result = self.protocol.send_method_call(method="concatenate",
-                                                args=["You ", "rock"],
+        deferred = self.sender.send_method_call(method="concatenate",
+                                                args=["We ", "rock"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "You rock"})
+        self.connection.flush()
+        self.assertEqual({"result": "We rock"}, self.successResultOf(deferred))
 
     def test_with_default_arguments(self):
         """
         A connected client can issue a L{MethodCall} for methods having
         default arguments.
         """
-        result = self.protocol.send_method_call(method="lower_case",
+        deferred = self.sender.send_method_call(method="lower_case",
                                                 args=["OHH"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "ohh"})
+        self.connection.flush()
+        self.assertEqual({"result": "ohh"}, self.successResultOf(deferred))
 
     def test_with_overriden_default_arguments(self):
         """
@@ -207,130 +252,133 @@ class MethodCallProtocolTest(LandscapeTest):
         having default values in the target object.  If a value is specified by
         the caller it will be used in place of the default value
         """
-        result = self.protocol.send_method_call(method="lower_case",
+        deferred = self.sender.send_method_call(method="lower_case",
                                                 args=["OHH"],
                                                 kwargs={"index": 2})
-        return self.assertSuccess(result, {"result": "OHh"})
+        self.connection.flush()
+        self.assertEqual({"result": "OHh"}, self.successResultOf(deferred))
 
     def test_with_dictionary_arguments(self):
         """
         Method arguments passed to a L{MethodCall} can be dictionaries.
         """
-        result = self.protocol.send_method_call(method="multiply_"
+        deferred = self.sender.send_method_call(method="multiply_"
                                                        "alphabetically",
                                                 args=[{"foo": 2, "bar": 3}],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "barbarbarfoofoo"})
+        self.connection.flush()
+        self.assertEqual({"result": "barbarbarfoofoo"},
+                         self.successResultOf(deferred))
 
     def test_with_non_serializable_return_value(self):
         """
         If the target object method returns an object that can't be serialized,
         the L{MethodCall} result is C{None}.
         """
-        result = self.protocol.send_method_call(method="meaning_of_life",
+        deferred = self.sender.send_method_call(method="meaning_of_life",
                                                 args=[],
                                                 kwargs={})
-        return self.assertFailure(result, MethodCallError)
+        self.connection.flush()
+        self.failureResultOf(deferred).trap(MethodCallError)
 
     def test_with_long_argument(self):
         """
         The L{MethodCall} protocol supports sending method calls with arguments
         bigger than the maximum AMP parameter value size.
         """
-        result = self.protocol.send_method_call(method="is_short",
+        deferred = self.sender.send_method_call(method="is_short",
                                                 args=["!" * 65535],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": False})
+        self.connection.flush()
+        self.assertEqual({"result": False}, self.successResultOf(deferred))
 
     def test_with_long_argument_multiple_calls(self):
         """
         The L{MethodCall} protocol supports concurrently sending multiple
         method calls with arguments bigger than the maximum AMP value size.
         """
-        result1 = self.protocol.send_method_call(method="is_short",
+        deferred1 = self.sender.send_method_call(method="is_short",
                                                  args=["!" * 80000],
                                                  kwargs={})
-        result2 = self.protocol.send_method_call(method="is_short",
+        deferred2 = self.sender.send_method_call(method="is_short",
                                                  args=["*" * 90000],
                                                  kwargs={})
 
-        return gather_results(
-            [self.assertSuccess(result1, {"result": False}),
-             self.assertSuccess(result2, {"result": False})])
+        self.connection.flush()
+        self.assertEqual({"result": False}, self.successResultOf(deferred1))
+        self.assertEqual({"result": False}, self.successResultOf(deferred2))
 
     def test_translate(self):
         """
         If the target object method raises an exception, the remote call fails
         with a L{MethodCallError}.
         """
-        result = self.protocol.send_method_call(method="translate",
+        deferred = self.sender.send_method_call(method="translate",
                                                 args=["hi"],
                                                 kwargs={})
-        return self.assertFailure(result, MethodCallError)
+        self.connection.flush()
+        self.failureResultOf(deferred).trap(MethodCallError)
 
 
 class RemoteObjectTest(LandscapeTest):
 
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
-        socket = self.mktemp()
-        server_factory = WordsFactory(object=Words())
-        self.port = reactor.listenUNIX(socket, server_factory)
+        self.clock = Clock()
+        server = AMP(locator=MethodCallReceiver(Words(self.clock), METHODS))
+        client = AMP()
+        self.connection = FakeConnection(client, server)
+        sender = MethodCallSender(client, self.clock)
+        send_method_call = sender.send_method_call
 
-        def set_remote(protocol):
-            self.protocol = protocol
-            self.words = RemoteObject(protocol)
-            client_factory.stopTrying()
+        def synchronous_send_method_call(method, args=[], kwargs={}):
+            # Transparently flush the connection after a send_method_call
+            # invokation
+            deferred = send_method_call(method, args=args, kwargs=kwargs)
+            self.connection.flush()
+            return deferred
 
-        connected = Deferred()
-        connected.addCallback(set_remote)
-        client_factory = WordsFactory(reactor=reactor)
-        client_factory.add_notifier(connected.callback)
-        reactor.connectUNIX(socket, client_factory)
-        return connected
-
-    def tearDown(self):
-        self.protocol.transport.loseConnection()
-        self.port.stopListening()
-        super(RemoteObjectTest, self).tearDown()
+        sender.send_method_call = synchronous_send_method_call
+        self.words = RemoteObject(sender)
 
     def test_method_call_sender_with_forbidden_method(self):
         """
         A L{RemoteObject} can send L{MethodCall}s without arguments and withj
         an empty response.
         """
-        result = self.words.secret()
-        return self.assertFailure(result, MethodCallError)
+        deferred = self.words.secret()
+        self.failureResultOf(deferred).trap(MethodCallError)
 
     def test_with_no_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s without arguments and withj
         an empty response.
         """
-        return self.assertSuccess(self.words.empty())
+        deferred = self.words.empty()
+        self.assertIs(None, self.successResultOf(deferred))
 
     def test_with_return_value(self):
         """
         A L{RemoteObject} can send L{MethodCall}s without arguments and get
         back the value of the commands's response.
         """
-        result = self.words.motd()
-        return self.assertSuccess(result, "Words are cool")
+        deferred = self.words.motd()
+        self.assertEqual("Words are cool", self.successResultOf(deferred))
 
     def test_with_one_argument(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with one argument and get
         the response value.
         """
-        result = self.words.capitalize("john")
-        return self.assertSuccess(result, "John")
+        deferred = self.words.capitalize("john")
+        self.assertEqual("John", self.successResultOf(deferred))
 
     def test_with_one_keyword_argument(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with a named argument.
         """
-        result = self.words.capitalize(word="john")
-        return self.assertSuccess(result, "John")
+        deferred = self.words.capitalize(word="john")
+        self.assertEqual("John", self.successResultOf(deferred))
 
     def test_with_boolean_return_value(self):
         """
@@ -342,103 +390,129 @@ class RemoteObjectTest(LandscapeTest):
         """
         A L{RemoteObject} can send L{MethodCall}s with more than one argument.
         """
-        result = self.words.concatenate("You ", "rock")
-        return self.assertSuccess(result, "You rock")
+        deferred = self.words.concatenate("You ", "rock")
+        self.assertEqual("You rock", self.successResultOf(deferred))
 
     def test_with_many_keyword_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with several
         named arguments.
         """
-        result = self.words.concatenate(word2="rock", word1="You ")
-        return self.assertSuccess(result, "You rock")
+        deferred = self.words.concatenate(word2="rock", word1="You ")
+        self.assertEqual("You rock", self.successResultOf(deferred))
 
     def test_with_default_arguments(self):
         """
         A L{RemoteObject} can send a L{MethodCall} having an argument with
         a default value.
         """
-        result = self.words.lower_case("OHH")
-        return self.assertSuccess(result, "ohh")
+        deferred = self.words.lower_case("OHH")
+        self.assertEqual("ohh", self.successResultOf(deferred))
 
     def test_with_overriden_default_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s overriding the default
         value of an argument.
         """
-        result = self.words.lower_case("OHH", 2)
-        return self.assertSuccess(result, "OHh")
+        deferred = self.words.lower_case("OHH", 2)
+        self.assertEqual("OHh", self.successResultOf(deferred))
 
     def test_with_dictionary_arguments(self):
         """
         A L{RemoteObject} can send a L{MethodCall}s for methods requiring
         a dictionary arguments.
         """
-        result = self.words.multiply_alphabetically({"foo": 2, "bar": 3})
-        return self.assertSuccess(result, "barbarbarfoofoo")
+        deferred = self.words.multiply_alphabetically({"foo": 2, "bar": 3})
+        self.assertEqual("barbarbarfoofoo", self.successResultOf(deferred))
 
     def test_with_generic_args_and_kwargs(self):
         """
         A L{RemoteObject} behaves well with L{MethodCall}s for methods
         having generic C{*args} and C{**kwargs} arguments.
         """
-        result = self.words.guess("word", "cool", value=4)
-        return self.assertSuccess(result, "Guessed!")
+        deferred = self.words.guess("word", "cool", value=4)
+        self.assertEqual("Guessed!", self.successResultOf(deferred))
 
-    def test_with_success_full_deferred(self):
+    def test_with_successful_deferred(self):
         """
         If the target object method returns a L{Deferred}, it is handled
         transparently.
         """
-        result = self.words.google("Landscape")
-        return self.assertSuccess(result, "Cool!")
+        result = []
+        deferred = self.words.google("Landscape")
+        deferred.addCallback(result.append)
+
+        # At this point the receiver is waiting for method to complete, so
+        # the deferred has not fired yet
+        self.assertEqual([], result)
+
+        # Simulate time advancing and the receiver responding
+        self.clock.advance(0.5)
+        self.connection.flush()
+
+        self.assertEqual(["Cool!"], result)
 
     def test_with_failing_deferred(self):
         """
         If the target object method returns a failing L{Deferred}, a
         L{MethodCallError} is raised.
         """
-        result = self.words.google("Weird stuff")
-        return self.assertFailure(result, MethodCallError)
+        result = []
+        deferred = self.words.google("Weird stuff")
+        deferred.addErrback(result.append)
+
+        # At this point the receiver is waiting for method to complete, so
+        # the deferred has not fired yet
+        self.assertEqual([], result)
+
+        # Simulate time advancing and the receiver responding
+        self.clock.advance(0.5)
+        self.connection.flush()
+
+        [failure] = result
+        failure.trap(MethodCallError)
 
     def test_with_already_callback_deferred(self):
         """
         The target object method can return an already fired L{Deferred}.
         """
-        result = self.words.google("Easy query")
-        return self.assertSuccess(result, "Done!")
+        deferred = self.words.google("Easy query")
+        self.assertEqual("Done!", self.successResultOf(deferred))
 
     def test_with_already_errback_deferred(self):
         """
         If the target object method can return an already failed L{Deferred}.
         """
-        result = self.words.google("Censored")
-        return self.assertFailure(result, MethodCallError)
+        deferred = self.words.google("Censored")
+        self.failureResultOf(deferred).trap(MethodCallError)
 
     def test_with_deferred_timeout(self):
         """
         If the peer protocol doesn't send a response for a deferred within
         the given timeout, the method call fails.
         """
-        result = self.words.google("Long query")
-        return self.assertFailure(result, MethodCallError)
+        result = []
+        deferred = self.words.google("Long query")
+        deferred.addErrback(result.append)
+
+        self.clock.advance(60.0)
+
+        [failure] = result
+        failure.trap(MethodCallError)
 
     def test_with_late_response(self):
         """
         If the peer protocol sends a late response for a request that has
         already timeout, that response is ignored.
         """
-        self.protocol.timeout = 0.01
-        result = self.words.google("Slowish query")
-        self.assertFailure(result, MethodCallError)
+        result = []
+        deferred = self.words.google("Slowish query")
+        deferred.addErrback(result.append)
 
-        def assert_late_response_is_handled(ignored):
-            deferred = Deferred()
-            # We wait a bit to be sure that the late response gets delivered
-            reactor.callLater(0.1, lambda: deferred.callback(None))
-            return deferred
+        self.clock.advance(120.0)
 
-        return result.addCallback(assert_late_response_is_handled)
+        [failure] = result
+        failure.trap(MethodCallError)
 
 
 class MethodCallFactoryTest(LandscapeTest):
@@ -510,16 +584,15 @@ class MethodCallFactoryTest(LandscapeTest):
         self.factory.clientConnectionFailed(object(), "failure")
         self.clock.advance(0)
 
-    if Clock is None:
-        skip = "task module not available"
-
 
 class RemoteObjectConnectorTest(LandscapeTest):
 
     def setUp(self):
         super(RemoteObjectConnectorTest, self).setUp()
         self.socket = self.mktemp()
-        self.server_factory = WordsFactory(object=Words())
+        self.server_factory = Factory()
+        self.server_factory.protocol = lambda: (
+            AMP(locator=MethodCallReceiver(Words(reactor), METHODS)))
         self.port = reactor.listenUNIX(self.socket, self.server_factory)
         self.connector = RemoteWordsConnector(reactor, self.socket,
                                               retry_on_reconnect=True,
@@ -596,7 +669,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         If the connection is lost, the L{RemoteObject} created by the creator
         will transparently handle the reconnection.
         """
-        self.words._protocol.transport.loseConnection()
+        self.words._sender._protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -625,7 +698,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         will transparently retry to perform the L{MethodCall} requests that
         failed due to the broken connection.
         """
-        self.words._protocol.transport.loseConnection()
+        self.words._sender._protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -640,7 +713,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         the L{RemoteObject} will properly propagate the error to the original
         caller.
         """
-        self.words._protocol.transport.loseConnection()
+        self.words._sender._protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -660,12 +733,12 @@ class RemoteObjectConnectorTest(LandscapeTest):
         connection is ready. If for whatever reason the connection drops
         again very quickly, the C{_retry} method will behave as expected.
         """
-        self.words._protocol.transport.loseConnection()
+        self.words._sender._protocol.transport.loseConnection()
         self.port.stopListening()
 
         def handle_reconnect(protocol):
             # In this precise moment we have a newly connected protocol
-            self.words._protocol = protocol
+            self.words._sender._protocol = protocol
 
             # Pretend that the connection is lost again very quickly
             protocol.transport.loseConnection()
@@ -700,7 +773,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         will be all eventually completed when the connection gets established
         again.
         """
-        self.words._protocol.transport.loseConnection()
+        self.words._sender._protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -731,7 +804,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         retry to perform requests which failed because the connection was
         lost, however requests made after a reconnection will still succeed.
         """
-        self.words._protocol.transport.loseConnection()
+        self.words._sender._protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -756,7 +829,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         L{MethodCall}s after that amount of seconds, without retrying them when
         the connection established again.
         """
-        self.words._protocol.transport.loseConnection()
+        self.words._sender._protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
