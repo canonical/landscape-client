@@ -18,29 +18,23 @@ this class::
 Process A can "publish" the greeter object by defining which methods are
 exposed remotely and opening a Unix socket for incoming connections::
 
-    class GreeterProtocol(MethodCallProtocol):
-
-        methods = ["hello"]
-
-    factory = MethodCallFactory(object=greeter)
-    factory.protocol = GreeterProtocol
+    factory = MethodCallServerFactory(greeter, ["hello"])
     reactor.listenUNIX("/some/socket/path", factory)
 
 Then a second Python process "B" can connect to that socket and build a
 "remote" greeter object, i.e. a proxy that forwards method calls to the
 real greeter object living in process A::
 
-    connector = ClientCreator(reactor, GreeterProtocol)
-    connected = connector.connectUNIX("/some/socket/path")
+    factory = MethodCallClientFactory()
+    reactor.connectUNIX("/some/socket/path", factory)
 
-    def got_connection(protocol):
-
-        remote_greeter = RemoteObject(protocol)
-
+    def got_remote(remote_greeter):
         deferred = remote_greeter.hello("Ted")
         deferred.addCallback(lambda result: ... # result == "hi Ted!")
 
-    connected.addCallback(got_connection)
+        factory.deferred.addCallback(do_other_stuff)
+
+    factory.getRemoteObject().addCallback(got_remote)
 
 Note that when invoking a method via the remote proxy, the parameters
 are required to be serializable with bpickle, so that they can be sent
@@ -109,14 +103,6 @@ class MethodCallChunk(Command):
     response = [("result", Integer())]
 
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
-
-
-class MethodCallServerProtocol(AMP):
-    """XXX Placeholder"""
-
-
-class MethodCallClientProtocol(AMP):
-    """XXX Placeholder"""
 
 
 class MethodCallReceiver(CommandLocator):
@@ -196,22 +182,20 @@ class MethodCallReceiver(CommandLocator):
 
 
 class MethodCallSender(object):
-    """Calls methods of a remote object over L{AMP}.
+    """Call methods on a remote object over L{AMP} and return the result.
 
-    @note: If the remote method returns a deferred, the associated local
-        deferred returned by L{send_method_call} will result in the same
-        callback value of the remote deferred.
-    @cvar timeout: A timeout for remote methods returning L{Deferred}s, if a
-        response for the deferred is not received within this amount of
-        seconds, the remote method call will errback with a L{MethodCallError}.
+    @param protocol: A connected C{AMP} protocol.
+    @param clock: An object implementing the C{IReactorTime} interface.
+
+    @ivar timeout: A timeout for remote method class, see L{send_method_call}.
     """
     timeout = 60
-    chunk_size = MAX_VALUE_LENGTH
+
+    _chunk_size = MAX_VALUE_LENGTH
 
     def __init__(self, protocol, clock):
-        self._protocol = protocol
-        self._clock = clock
-        self._pending_responses = []
+        self.protocol = protocol
+        self.clock = clock
         self._sequence = 0
 
     def _create_sequence(self):
@@ -223,8 +207,8 @@ class MethodCallSender(object):
         """Send an L{AMP} command that will errback in case of a timeout.
 
         @return: A deferred resulting in the command's response (or failure) if
-            the peer responds within L{MethodClientProtocol.timeout} seconds,
-            or that errbacks with a L{MethodCallError} otherwise.
+            the peer responds within C{self.timeout} seconds, or that errbacks
+            with a L{MethodCallError} otherwise.
         """
         deferred = Deferred()
 
@@ -240,25 +224,32 @@ class MethodCallSender(object):
             # The peer didn't respond on time, raise an error.
             deferred.errback(MethodCallError("timeout"))
 
-        call = self._clock.callLater(self.timeout, handle_timeout)
+        call = self.clock.callLater(self.timeout, handle_timeout)
 
-        result = self._protocol.callRemote(command, **kwargs)
+        result = self.protocol.callRemote(command, **kwargs)
         result.addBoth(handle_response)
         return deferred
 
     def send_method_call(self, method, args=[], kwargs={}):
         """Send a L{MethodCall} command with the given arguments.
 
+        If a response from the server is not received within C{self.timeout}
+        seconds, the returned deferred will errback with a L{MethodCallError}.
+
         @param method: The name of the remote method to invoke.
         @param args: The positional arguments to pass to the remote method.
         @param kwargs: The keyword arguments to pass to the remote method.
+
+        @return: A C{Deferred} firing with the return value of the method
+            invoked on the remote object. If the remote method itself returns
+            a deferred, we fire with the callback value of such deferred.
         """
         arguments = dumps((args, kwargs))
         sequence = self._create_sequence()
 
         # Split the given arguments in one or more chunks
-        chunks = [arguments[i:i + self.chunk_size]
-                  for i in xrange(0, len(arguments), self.chunk_size)]
+        chunks = [arguments[i:i + self._chunk_size]
+                  for i in xrange(0, len(arguments), self._chunk_size)]
 
         result = Deferred()
         if len(chunks) > 1:
@@ -266,7 +257,7 @@ class MethodCallSender(object):
             for chunk in chunks[:-1]:
 
                 def create_send_chunk(sequence, chunk):
-                    send_chunk = lambda x: self._protocol.callRemote(
+                    send_chunk = lambda x: self.protocol.callRemote(
                         MethodCallChunk, sequence=sequence, chunk=chunk)
                     return send_chunk
 
@@ -278,8 +269,17 @@ class MethodCallSender(object):
                 MethodCall, sequence=sequence, method=method, arguments=chunk)
 
         result.addCallback(send_last_chunk)
+        result.addCallback(lambda response: response["result"])
         result.callback(None)
         return result
+
+
+class MethodCallServerProtocol(AMP):
+    """XXX Placeholder"""
+
+
+class MethodCallClientProtocol(AMP):
+    """XXX Placeholder"""
 
 
 class MethodCallProtocol(MethodCallServerProtocol, MethodCallClientProtocol):
@@ -410,22 +410,21 @@ class RemoteObject(object):
                                                    args=args,
                                                    kwargs=kwargs)
             deferred = Deferred()
-            result.addCallback(self._handle_response, deferred)
+            result.addCallback(self._handle_result, deferred)
             result.addErrback(self._handle_failure, method, args, kwargs,
                               deferred)
             return deferred
 
         return send_method_call
 
-    def _handle_response(self, response, deferred, call=None):
-        """Handles a successful L{MethodCall} response.
+    def _handle_result(self, result, deferred, call=None):
+        """Handles a successful C{send_method_call} result.
 
         @param response: The L{MethodCall} response.
         @param deferred: The deferred that was returned to the caller.
         @param call: If not C{None}, the scheduled timeout call associated with
             the given deferred.
         """
-        result = response["result"]
         if call is not None:
             call.cancel()  # This is a successful retry, cancel the timeout.
         deferred.callback(result)
@@ -478,7 +477,7 @@ class RemoteObject(object):
 
         @param protocol: The newly connected protocol instance.
         """
-        self._sender._protocol = protocol
+        self._sender.protocol = protocol
         if self._retry_on_reconnect:
             self._retry()
 
@@ -495,7 +494,7 @@ class RemoteObject(object):
         while requests:
             deferred, (method, args, kwargs, call) = requests.popitem()
             result = self._sender.send_method_call(method, args, kwargs)
-            result.addCallback(self._handle_response,
+            result.addCallback(self._handle_result,
                                deferred=deferred, call=call)
             result.addErrback(self._handle_failure, method, args, kwargs,
                               deferred=deferred, call=call)
@@ -564,6 +563,6 @@ class RemoteObjectConnector(object):
         if self._factory:
             self._factory.stopTrying()
         if self._remote:
-            if self._remote._sender._protocol.transport:
-                self._remote._sender._protocol.transport.loseConnection()
+            if self._remote._sender.protocol.transport:
+                self._remote._sender.protocol.transport.loseConnection()
             self._remote = None
