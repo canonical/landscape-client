@@ -345,14 +345,6 @@ class FakeBrokerServiceHelper(object):
             reactor_factory = FakeReactor
             transport_factory = FakeTransport
 
-            def stopService(service):
-                # We need to explictely stop listening to the socket
-                # because the reactor would still have active selectables
-                # at the end of the test otherwise
-                if os.path.exists(service.port.port):
-                    service.port.connectionLost(None)
-                super(FakeBrokerService, service).stopService()
-
         test_case.broker_service = FakeBrokerService(config)
         test_case.remote = FakeRemoteBroker(
             test_case.broker_service.exchanger,

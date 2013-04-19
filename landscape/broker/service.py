@@ -11,7 +11,7 @@ from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.ping import Pinger
 from landscape.broker.store import get_default_message_store
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import BrokerServerProtocolFactory
+from landscape.broker.amp import BrokerServerPublisher
 
 
 class BrokerService(LandscapeService):
@@ -65,21 +65,24 @@ class BrokerService(LandscapeService):
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store,
                                    self.pinger)
-        self.factory = BrokerServerProtocolFactory(object=self.broker)
+        self.publisher = BrokerServerPublisher(self.broker, self.reactor,
+                                               self.config)
 
     def startService(self):
         """Start the broker.
 
         Create a L{BrokerServer} listening on C{broker_socket_path} for clients
-        connecting with the L{BrokerClientProtocol}, and start the
+        connecting with the L{BrokerServerConnector}, and start the
         L{MessageExchange} and L{Pinger} services.
         """
         super(BrokerService, self).startService()
+        self.publisher.start()
         self.exchanger.start()
         self.pinger.start()
 
     def stopService(self):
         """Stop the broker."""
+        self.publisher.stop()
         self.exchanger.stop()
         self.pinger.stop()
         super(BrokerService, self).stopService()

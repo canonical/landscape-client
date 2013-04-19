@@ -46,7 +46,7 @@ for more details about the Twisted AMP protocol.
 """
 
 from twisted.internet.defer import Deferred, maybeDeferred, succeed
-from twisted.internet.protocol import ReconnectingClientFactory
+from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
 from twisted.python.failure import Failure
 
 from twisted.protocols.amp import (
@@ -423,6 +423,27 @@ class RemoteObject(object):
                               deferred=deferred, call=call)
 
 
+class MethodCallServerFactory(ServerFactory):
+
+    protocol = AMP
+
+    def __init__(self, object, methods):
+        """
+        @param object: The object exposed by the L{MethodCallProtocol}s
+            instances created by this factory.
+        @param reactor: The reactor used by the created protocols
+            to schedule notifications and timeouts.
+        """
+        self.object = object
+        self.methods = methods
+
+    def buildProtocol(self, addr):
+        locator = MethodCallReceiver(self.object, self.methods)
+        protocol = self.protocol(locator=locator)
+        protocol.factory = self
+        return protocol
+
+
 class MethodCallClientFactory(ReconnectingClientFactory):
     """
     Factory for L{MethodCallProtocol}s exposing an object or connecting to
@@ -551,6 +572,7 @@ class RemoteObjectConnector(object):
         self._socket_path = socket_path
         self._reactor = reactor
         self._factory = None
+        self._connector = None
 
     def connect(self, max_retries=None, factor=None):
         """Connect to a remote object exposed by a L{MethodCallProtocol}.
@@ -564,18 +586,20 @@ class RemoteObjectConnector(object):
             delay between subsequent retries should increase. Smaller values
             result in a faster reconnection attempts pace.
         """
-        self._factory = self.factory(reactor=self._reactor)
-        self._factory.maxRetries = max_retries
+        factory = self.factory(reactor=self._reactor)
+        factory.maxRetries = max_retries
         if factor:
-            self._factory.factor = factor
-        self._reactor.connectUNIX(self._socket_path, self._factory)
-        return self._factory.getRemoteObject()
+            factory.factor = factor
+        self._connector = self._reactor.connectUNIX(self._socket_path, factory)
+        return factory.getRemoteObject()
 
     def disconnect(self):
         """Disconnect the L{RemoteObject} that we have created."""
-        if self._factory:
-            self._factory.stopTrying()
-            remote = self._factory._remote
+        if self._connector is not None:
+            factory = self._connector.factory
+            factory.stopTrying()
+            # XXX we should be using self._connector.disconnect() here
+            remote = factory._remote
             if remote:
                 if remote._sender.protocol.transport:
                     remote._sender.protocol.transport.loseConnection()
