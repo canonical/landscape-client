@@ -32,8 +32,6 @@ real greeter object living in process A::
         deferred = remote_greeter.hello("Ted")
         deferred.addCallback(lambda result: ... # result == "hi Ted!")
 
-        factory.deferred.addCallback(do_other_stuff)
-
     factory.getRemoteObject().addCallback(got_remote)
 
 Note that when invoking a method via the remote proxy, the parameters
