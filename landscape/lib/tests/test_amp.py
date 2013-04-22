@@ -160,6 +160,19 @@ class RemoteWordsConnector(RemoteObjectConnector):
     factory = WordsFactory
 
 
+METHODS = ["empty",
+           "motd",
+           "capitalize",
+           "is_short",
+           "concatenate",
+           "lower_case",
+           "multiply_alphabetically",
+           "translate",
+           "meaning_of_life",
+           "guess",
+           "google"]
+
+
 class MethodCallTest(LandscapeTest):
 
     def setUp(self):
@@ -190,7 +203,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=[],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": None}, self.successResultOf(deferred))
+        self.assertIs(None, self.successResultOf(deferred))
 
     def test_with_return_value(self):
         """
@@ -201,8 +214,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=[],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": "Words are cool"},
-                         self.successResultOf(deferred))
+        self.assertEqual("Words are cool", self.successResultOf(deferred))
 
     def test_with_one_argument(self):
         """
@@ -213,7 +225,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=["john"],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": "John"}, self.successResultOf(deferred))
+        self.assertEqual("John", self.successResultOf(deferred))
 
     def test_with_boolean_return_value(self):
         """
@@ -223,7 +235,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=["hi"],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": True}, self.successResultOf(deferred))
+        self.assertTrue(self.successResultOf(deferred))
 
     def test_with_many_arguments(self):
         """
@@ -233,7 +245,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=["We ", "rock"],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": "We rock"}, self.successResultOf(deferred))
+        self.assertEqual("We rock", self.successResultOf(deferred))
 
     def test_with_default_arguments(self):
         """
@@ -244,7 +256,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=["OHH"],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": "ohh"}, self.successResultOf(deferred))
+        self.assertEqual("ohh", self.successResultOf(deferred))
 
     def test_with_overriden_default_arguments(self):
         """
@@ -256,7 +268,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=["OHH"],
                                                 kwargs={"index": 2})
         self.connection.flush()
-        self.assertEqual({"result": "OHh"}, self.successResultOf(deferred))
+        self.assertEqual("OHh", self.successResultOf(deferred))
 
     def test_with_dictionary_arguments(self):
         """
@@ -267,8 +279,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=[{"foo": 2, "bar": 3}],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": "barbarbarfoofoo"},
-                         self.successResultOf(deferred))
+        self.assertEqual("barbarbarfoofoo", self.successResultOf(deferred))
 
     def test_with_non_serializable_return_value(self):
         """
@@ -290,7 +301,7 @@ class MethodCallTest(LandscapeTest):
                                                 args=["!" * 65535],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual({"result": False}, self.successResultOf(deferred))
+        self.assertFalse(self.successResultOf(deferred))
 
     def test_with_long_argument_multiple_calls(self):
         """
@@ -305,8 +316,8 @@ class MethodCallTest(LandscapeTest):
                                                  kwargs={})
 
         self.connection.flush()
-        self.assertEqual({"result": False}, self.successResultOf(deferred1))
-        self.assertEqual({"result": False}, self.successResultOf(deferred2))
+        self.assertFalse(self.successResultOf(deferred1))
+        self.assertFalse(self.successResultOf(deferred2))
 
     def test_translate(self):
         """
@@ -339,14 +350,14 @@ class RemoteObjectTest(LandscapeTest):
             return deferred
 
         sender.send_method_call = synchronous_send_method_call
-        self.words = RemoteObject(sender)
+        self.remote = RemoteObject(sender)
 
     def test_method_call_sender_with_forbidden_method(self):
         """
         A L{RemoteObject} can send L{MethodCall}s without arguments and withj
         an empty response.
         """
-        deferred = self.words.secret()
+        deferred = self.remote.secret()
         self.failureResultOf(deferred).trap(MethodCallError)
 
     def test_with_no_arguments(self):
@@ -354,7 +365,7 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} can send L{MethodCall}s without arguments and withj
         an empty response.
         """
-        deferred = self.words.empty()
+        deferred = self.remote.empty()
         self.assertIs(None, self.successResultOf(deferred))
 
     def test_with_return_value(self):
@@ -362,7 +373,7 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} can send L{MethodCall}s without arguments and get
         back the value of the commands's response.
         """
-        deferred = self.words.motd()
+        deferred = self.remote.motd()
         self.assertEqual("Words are cool", self.successResultOf(deferred))
 
     def test_with_one_argument(self):
@@ -370,27 +381,27 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} can send L{MethodCall}s with one argument and get
         the response value.
         """
-        deferred = self.words.capitalize("john")
+        deferred = self.remote.capitalize("john")
         self.assertEqual("John", self.successResultOf(deferred))
 
     def test_with_one_keyword_argument(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with a named argument.
         """
-        deferred = self.words.capitalize(word="john")
+        deferred = self.remote.capitalize(word="john")
         self.assertEqual("John", self.successResultOf(deferred))
 
     def test_with_boolean_return_value(self):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
-        return self.assertSuccess(self.words.is_short("hi"), True)
+        return self.assertSuccess(self.remote.is_short("hi"), True)
 
     def test_with_many_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with more than one argument.
         """
-        deferred = self.words.concatenate("You ", "rock")
+        deferred = self.remote.concatenate("You ", "rock")
         self.assertEqual("You rock", self.successResultOf(deferred))
 
     def test_with_many_keyword_arguments(self):
@@ -398,7 +409,7 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} can send L{MethodCall}s with several
         named arguments.
         """
-        deferred = self.words.concatenate(word2="rock", word1="You ")
+        deferred = self.remote.concatenate(word2="rock", word1="You ")
         self.assertEqual("You rock", self.successResultOf(deferred))
 
     def test_with_default_arguments(self):
@@ -406,7 +417,7 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} can send a L{MethodCall} having an argument with
         a default value.
         """
-        deferred = self.words.lower_case("OHH")
+        deferred = self.remote.lower_case("OHH")
         self.assertEqual("ohh", self.successResultOf(deferred))
 
     def test_with_overriden_default_arguments(self):
@@ -414,7 +425,7 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} can send L{MethodCall}s overriding the default
         value of an argument.
         """
-        deferred = self.words.lower_case("OHH", 2)
+        deferred = self.remote.lower_case("OHH", 2)
         self.assertEqual("OHh", self.successResultOf(deferred))
 
     def test_with_dictionary_arguments(self):
@@ -422,7 +433,7 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} can send a L{MethodCall}s for methods requiring
         a dictionary arguments.
         """
-        deferred = self.words.multiply_alphabetically({"foo": 2, "bar": 3})
+        deferred = self.remote.multiply_alphabetically({"foo": 2, "bar": 3})
         self.assertEqual("barbarbarfoofoo", self.successResultOf(deferred))
 
     def test_with_generic_args_and_kwargs(self):
@@ -430,7 +441,7 @@ class RemoteObjectTest(LandscapeTest):
         A L{RemoteObject} behaves well with L{MethodCall}s for methods
         having generic C{*args} and C{**kwargs} arguments.
         """
-        deferred = self.words.guess("word", "cool", value=4)
+        deferred = self.remote.guess("word", "cool", value=4)
         self.assertEqual("Guessed!", self.successResultOf(deferred))
 
     def test_with_successful_deferred(self):
@@ -439,7 +450,7 @@ class RemoteObjectTest(LandscapeTest):
         transparently.
         """
         result = []
-        deferred = self.words.google("Landscape")
+        deferred = self.remote.google("Landscape")
         deferred.addCallback(result.append)
 
         # At this point the receiver is waiting for method to complete, so
@@ -458,7 +469,7 @@ class RemoteObjectTest(LandscapeTest):
         L{MethodCallError} is raised.
         """
         result = []
-        deferred = self.words.google("Weird stuff")
+        deferred = self.remote.google("Weird stuff")
         deferred.addErrback(result.append)
 
         # At this point the receiver is waiting for method to complete, so
@@ -476,14 +487,14 @@ class RemoteObjectTest(LandscapeTest):
         """
         The target object method can return an already fired L{Deferred}.
         """
-        deferred = self.words.google("Easy query")
+        deferred = self.remote.google("Easy query")
         self.assertEqual("Done!", self.successResultOf(deferred))
 
     def test_with_already_errback_deferred(self):
         """
         If the target object method can return an already failed L{Deferred}.
         """
-        deferred = self.words.google("Censored")
+        deferred = self.remote.google("Censored")
         self.failureResultOf(deferred).trap(MethodCallError)
 
     def test_with_deferred_timeout(self):
@@ -492,7 +503,7 @@ class RemoteObjectTest(LandscapeTest):
         the given timeout, the method call fails.
         """
         result = []
-        deferred = self.words.google("Long query")
+        deferred = self.remote.google("Long query")
         deferred.addErrback(result.append)
 
         self.clock.advance(60.0)
@@ -506,7 +517,7 @@ class RemoteObjectTest(LandscapeTest):
         already timeout, that response is ignored.
         """
         result = []
-        deferred = self.words.google("Slowish query")
+        deferred = self.remote.google("Slowish query")
         deferred.addErrback(result.append)
 
         self.clock.advance(120.0)
@@ -520,7 +531,7 @@ class MethodCallFactoryTest(LandscapeTest):
     def setUp(self):
         super(MethodCallFactoryTest, self).setUp()
         self.clock = Clock()
-        self.factory = WordsFactory(reactor=self.clock)
+        self.factory = MethodCallFactory(reactor=self.clock)
 
     def test_max_delay(self):
         """
@@ -669,7 +680,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         If the connection is lost, the L{RemoteObject} created by the creator
         will transparently handle the reconnection.
         """
-        self.words._sender._protocol.transport.loseConnection()
+        self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -698,7 +709,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         will transparently retry to perform the L{MethodCall} requests that
         failed due to the broken connection.
         """
-        self.words._sender._protocol.transport.loseConnection()
+        self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -713,7 +724,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         the L{RemoteObject} will properly propagate the error to the original
         caller.
         """
-        self.words._sender._protocol.transport.loseConnection()
+        self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -733,12 +744,12 @@ class RemoteObjectConnectorTest(LandscapeTest):
         connection is ready. If for whatever reason the connection drops
         again very quickly, the C{_retry} method will behave as expected.
         """
-        self.words._sender._protocol.transport.loseConnection()
+        self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
 
         def handle_reconnect(protocol):
             # In this precise moment we have a newly connected protocol
-            self.words._sender._protocol = protocol
+            self.words._sender.protocol = protocol
 
             # Pretend that the connection is lost again very quickly
             protocol.transport.loseConnection()
@@ -773,7 +784,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         will be all eventually completed when the connection gets established
         again.
         """
-        self.words._sender._protocol.transport.loseConnection()
+        self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -804,7 +815,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         retry to perform requests which failed because the connection was
         lost, however requests made after a reconnection will still succeed.
         """
-        self.words._sender._protocol.transport.loseConnection()
+        self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():
@@ -829,7 +840,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         L{MethodCall}s after that amount of seconds, without retrying them when
         the connection established again.
         """
-        self.words._sender._protocol.transport.loseConnection()
+        self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
 
         def restart_listening():

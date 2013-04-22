@@ -6,6 +6,7 @@ from cStringIO import StringIO
 
 from twisted.internet.defer import succeed, fail
 
+from landscape.lib.amp import MethodCallSender
 from landscape.reactor import TwistedReactor
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
@@ -19,7 +20,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
-from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
+from landscape.broker.amp import RemoteBroker
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -1784,7 +1785,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         reactor_mock = self.mocker.patch(TwistedReactor)
         remote_mock = self.mocker.patch(RemoteBroker)
 
-        protocol_mock = self.mocker.patch(BrokerClientProtocol)
+        protocol_mock = self.mocker.patch(MethodCallSender)
         protocol_mock.timeout
         self.mocker.result(0.1)
         self.mocker.count(0, None)
