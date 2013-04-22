@@ -1,11 +1,8 @@
-import os
-
 from twisted.internet.defer import fail
 
 from landscape.monitor.usermonitor import (
     UserMonitor, RemoteUserMonitorConnector)
-from landscape.manager.usermanager import (
-    UserManager, UserManagerProtocolFactory)
+from landscape.manager.usermanager import UserManager, UserManagerPublisher
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
@@ -56,15 +53,14 @@ class UserMonitorTest(LandscapeTest):
             "psmith:!:13348:0:99999:7:::\n"
             "sam:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
         self.user_manager = UserManager(shadow_file=self.shadow_file)
-        factory = UserManagerProtocolFactory(object=self.user_manager)
-        socket = os.path.join(self.config.sockets_path,
-                              UserManager.name + ".sock")
-        self.port = self.reactor.listen_unix(socket, factory)
+        self.publisher = UserManagerPublisher(self.user_manager, self.reactor,
+                                              self.config)
+        self.publisher.start()
         self.provider = FakeUserProvider()
         self.plugin = UserMonitor(self.provider)
 
     def tearDown(self):
-        self.port.stopListening()
+        self.publisher.stop()
         self.plugin.stop()
         return super(UserMonitorTest, self).tearDown()
 

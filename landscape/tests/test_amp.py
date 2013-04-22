@@ -1,12 +1,12 @@
-import os
-
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import ComponentProtocolFactory, RemoteComponentConnector
+from landscape.amp import (
+    ComponentProtocolClientFactory, RemoteComponentConnector,
+    ComponentPublisher)
 
 
 class TestComponent(object):
@@ -14,7 +14,7 @@ class TestComponent(object):
     name = "test"
 
 
-class TestComponentProtocolFactory(ComponentProtocolFactory):
+class TestComponentProtocolFactory(ComponentProtocolClientFactory):
 
     maxRetries = 0
     initialDelay = 0.01
@@ -34,10 +34,9 @@ class RemoteComponentTest(LandscapeTest):
         config = Configuration()
         config.data_path = self.makeDir()
         self.makeDir(path=config.sockets_path)
-        socket = os.path.join(config.sockets_path, "test.sock")
         self.component = TestComponent()
-        factory = ComponentProtocolFactory(object=self.component)
-        self.port = reactor.listen_unix(socket, factory)
+        self.publisher = ComponentPublisher(self.component, reactor, config)
+        self.publisher.start()
 
         self.connector = RemoteTestComponentConnector(reactor, config)
         connected = self.connector.connect()
@@ -46,7 +45,7 @@ class RemoteComponentTest(LandscapeTest):
 
     def tearDown(self):
         self.connector.disconnect()
-        self.port.stopListening()
+        self.publisher.stop()
         super(RemoteComponentTest, self).tearDown()
 
     def test_ping(self):
@@ -109,22 +108,21 @@ class RemoteComponentConnectorTest(LandscapeTest):
         An event is fired whenever the connection is established again after
         it has been lost.
         """
-        socket = os.path.join(self.config.sockets_path, "test.sock")
-        factory = ComponentProtocolFactory()
-        ports = []
-        ports.append(self.reactor.listen_unix(socket, factory))
+        component = TestComponent()
+        publisher = ComponentPublisher(component, self.reactor, self.config)
+        publisher.start()
 
         def listen_again():
-            ports.append(self.reactor.listen_unix(socket, factory))
+            publisher.start()
 
         def connected(remote):
             remote._sender.protocol.transport.loseConnection()
-            ports[0].stopListening()
+            publisher.stop()
             self.reactor._reactor.callLater(0.01, listen_again)
 
         def reconnected():
             self.connector.disconnect()
-            ports[1].stopListening()
+            publisher.stop()
             deferred.callback(None)
 
         deferred = Deferred()

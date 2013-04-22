@@ -3,8 +3,7 @@ import logging
 
 from landscape.lib.amp import RemoteObject
 from landscape.lib.encoding import encode_dict_if_needed
-from landscape.amp import (
-    ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
+from landscape.amp import ComponentPublisher, RemoteComponentConnector
 
 from landscape.user.management import UserManagement
 from landscape.manager.plugin import ManagerPlugin
@@ -29,7 +28,7 @@ class UserManager(ManagerPlugin):
                                "add-group-member": self._add_group_member,
                                "remove-group-member":
                                self._remove_group_member}
-        self._port = None
+        self._publisher = None
 
     def register(self, registry):
         """
@@ -39,10 +38,9 @@ class UserManager(ManagerPlugin):
         super(UserManager, self).register(registry)
         self._registry = registry
 
-        factory = UserManagerProtocolFactory(object=self)
-        socket = os.path.join(self.registry.config.sockets_path,
-                              self.name + ".sock")
-        self._port = self.registry.reactor.listen_unix(socket, factory)
+        self._publisher = UserManagerPublisher(self, self.registry.reactor,
+                                               self.registry.config)
+        self._publisher.start()
 
         for message_type in self._message_types:
             self._registry.register_message(message_type,
@@ -50,9 +48,9 @@ class UserManager(ManagerPlugin):
 
     def stop(self):
         """Stop listening for incoming AMP connections."""
-        if self._port:
-            self._port.stopListening()
-            self._port = None
+        if self._publisher:
+            self._publisher.stop()
+            self._publisher = None
 
     def get_locked_usernames(self):
         """Return a list of usernames with locked system accounts."""
@@ -154,23 +152,12 @@ class UserManager(ManagerPlugin):
         return self._management.remove_group(message["groupname"])
 
 
-class UserManagerProtocol(ComponentProtocol):
+class UserManagerPublisher(ComponentPublisher):
     """L{AMP}-based protocol for calling L{UserManager}'s methods remotely."""
 
     methods = ["get_locked_usernames"]
 
 
-class UserManagerProtocolFactory(ComponentProtocolFactory):
-
-    protocol = UserManagerProtocol
-
-
-class RemoteUserManager(RemoteObject):
-    """A connected remote L{UserManager}."""
-
-
 class RemoteUserManagerConnector(RemoteComponentConnector):
 
-    factory = ComponentProtocolFactory
-    remote = RemoteUserManager
     component = UserManager
