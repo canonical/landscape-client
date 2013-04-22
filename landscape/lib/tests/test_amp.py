@@ -6,9 +6,9 @@ from twisted.protocols.amp import AMP
 from twisted.python.failure import Failure
 
 from landscape.lib.amp import (
-    MethodCallError, MethodCallProtocol, MethodCallServerFactory,
-    MethodCallClientFactory, RemoteObject, RemoteObjectConnector,
-    MethodCallReceiver, MethodCallSender)
+    MethodCallError, MethodCallServerProtocol, MethodCallClientProtocol,
+    MethodCallServerFactory, MethodCallClientFactory, RemoteObject,
+    RemoteObjectConnector, MethodCallReceiver, MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -58,7 +58,9 @@ class WordsException(Exception):
 
 
 class Words(object):
-    """Test class to be used as target object of a L{MethodCallProtocol}."""
+    """
+    Test class to be used as target object of a L{MethodCallServerFactory}.
+    """
 
     def __init__(self, clock=None):
         self._clock = clock
@@ -129,29 +131,21 @@ class Words(object):
         return deferred
 
 
-class WordsProtocol(MethodCallProtocol):
-
-    methods = ["empty",
-               "motd",
-               "capitalize",
-               "is_short",
-               "concatenate",
-               "lower_case",
-               "multiply_alphabetically",
-               "translate",
-               "meaning_of_life",
-               "guess",
-               "google"]
-
-    timeout = 0.2
-
-
-METHODS = WordsProtocol.methods
+METHODS = ["empty",
+           "motd",
+           "capitalize",
+           "is_short",
+           "concatenate",
+           "lower_case",
+           "multiply_alphabetically",
+           "translate",
+           "meaning_of_life",
+           "guess",
+           "google"]
 
 
 class WordsFactory(MethodCallClientFactory):
 
-    protocol = WordsProtocol
     factor = 0.19
 
     retryOnReconnect = True
@@ -180,15 +174,15 @@ class MethodCallTest(LandscapeTest):
 
     def setUp(self):
         super(MethodCallTest, self).setUp()
-        server = AMP(locator=MethodCallReceiver(Words(), METHODS))
-        client = AMP()
+        server = MethodCallServerProtocol(Words(), METHODS)
+        client = MethodCallClientProtocol()
         self.connection = FakeConnection(client, server)
         self.clock = Clock()
         self.sender = MethodCallSender(client, self.clock)
 
     def test_with_forbidden_method(self):
         """
-        If a method is not included in L{MethodCallProtocol.methods} it
+        If a method is not included in L{MethodCallServerFactory.methods} it
         can't be called.
         """
         deferred = self.sender.send_method_call(method="secret",
@@ -339,12 +333,11 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         self.clock = Clock()
-        server = AMP(locator=MethodCallReceiver(Words(self.clock), METHODS))
-        client = AMP()
+        server = MethodCallServerProtocol(Words(self.clock), METHODS)
+        client = MethodCallClientProtocol()
+        client.factory = WordsFactory(self.clock)
+        self.remote = RemoteObject(client.factory)
         self.connection = FakeConnection(client, server)
-        factory = WordsFactory(self.clock)
-        self.remote = RemoteObject(factory)
-        factory.clientConnectionMade(client)
 
         send_method_call = self.remote._sender.send_method_call
 

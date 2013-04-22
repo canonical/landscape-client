@@ -44,13 +44,14 @@ See also::
 
 for more details about the Twisted AMP protocol.
 """
+from uuid import uuid4
 
 from twisted.internet.defer import Deferred, maybeDeferred, succeed
 from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
 from twisted.python.failure import Failure
 
 from twisted.protocols.amp import (
-    Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
+    Argument, String, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
 
@@ -77,9 +78,9 @@ class MethodCallError(Exception):
 
 
 class MethodCall(Command):
-    """Call a method on the object exposed by a L{MethodCallProtocol}."""
+    """Call a method on the object exposed by a L{MethodCallServerFactory}."""
 
-    arguments = [("sequence", Integer()),
+    arguments = [("uuid", String()),
                  ("method", String()),
                  ("arguments", String())]
 
@@ -95,10 +96,10 @@ class MethodCallChunk(Command):
     in several L{MethodCallChunk}s that are buffered on the receiver side.
     """
 
-    arguments = [("sequence", Integer()),
+    arguments = [("uuid", String()),
                  ("chunk", String())]
 
-    response = [("result", Integer())]
+    response = [("result", String())]
 
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
@@ -118,7 +119,7 @@ class MethodCallReceiver(CommandLocator):
         self._pending_chunks = {}
 
     @MethodCall.responder
-    def receive_method_call(self, sequence, method, arguments):
+    def receive_method_call(self, uuid, method, arguments):
         """Call an object's method with the given arguments.
 
         If a connected client sends a L{MethodCall} for method C{foo_bar}, then
@@ -134,7 +135,7 @@ class MethodCallReceiver(CommandLocator):
            by one or more L{MethodCallChunk}s, C{arguments} is the last chunk
            of data.
         """
-        chunks = self._pending_chunks.pop(sequence, None)
+        chunks = self._pending_chunks.pop(uuid, None)
         if chunks is not None:
             # We got some L{MethodCallChunk}s before, this is the last.
             chunks.append(arguments)
@@ -159,14 +160,14 @@ class MethodCallReceiver(CommandLocator):
         return deferred
 
     @MethodCallChunk.responder
-    def receive_method_call_chunk(self, sequence, chunk):
+    def receive_method_call_chunk(self, uuid, chunk):
         """Receive a part of a multi-chunk L{MethodCall}.
 
         Add the received C{chunk} to the buffer of the L{MethodCall} identified
         by C{sequence}.
         """
-        self._pending_chunks.setdefault(sequence, []).append(chunk)
-        return {"result": sequence}
+        self._pending_chunks.setdefault(uuid, []).append(chunk)
+        return {"result": uuid}
 
     def _check_result(self, result):
         """Check that the C{result} we're about to return is serializable.
@@ -194,12 +195,6 @@ class MethodCallSender(object):
     def __init__(self, protocol, clock):
         self.protocol = protocol
         self.clock = clock
-        self._sequence = 0
-
-    def _create_sequence(self):
-        """Return a unique sequence number for a L{MethodCall}."""
-        self._sequence += 1
-        return self._sequence
 
     def _call_remote_with_timeout(self, command, **kwargs):
         """Send an L{AMP} command that will errback in case of a timeout.
@@ -243,7 +238,7 @@ class MethodCallSender(object):
             a deferred, we fire with the callback value of such deferred.
         """
         arguments = dumps((args, kwargs))
-        sequence = self._create_sequence()
+        uuid = str(uuid4())
 
         # Split the given arguments in one or more chunks
         chunks = [arguments[i:i + self._chunk_size]
@@ -254,17 +249,17 @@ class MethodCallSender(object):
             # If we have N chunks, send the first N-1 as MethodCallChunk's
             for chunk in chunks[:-1]:
 
-                def create_send_chunk(sequence, chunk):
+                def create_send_chunk(uuid, chunk):
                     send_chunk = lambda x: self.protocol.callRemote(
-                        MethodCallChunk, sequence=sequence, chunk=chunk)
+                        MethodCallChunk, uuid=uuid, chunk=chunk)
                     return send_chunk
 
-                result.addCallback(create_send_chunk(sequence, chunk))
+                result.addCallback(create_send_chunk(uuid, chunk))
 
         def send_last_chunk(ignored):
             chunk = chunks[-1]
             return self._call_remote_with_timeout(
-                MethodCall, sequence=sequence, method=method, arguments=chunk)
+                MethodCall, uuid=uuid, method=method, arguments=chunk)
 
         result.addCallback(send_last_chunk)
         result.addCallback(lambda response: response["result"])
@@ -273,23 +268,21 @@ class MethodCallSender(object):
 
 
 class MethodCallServerProtocol(AMP):
-    """XXX Placeholder"""
+    """Receive L{MethodCall} commands over the wire and send back results."""
+
+    def __init__(self, object, methods):
+        AMP.__init__(self, locator=MethodCallReceiver(object, methods))
 
 
 class MethodCallClientProtocol(AMP):
     """Send L{MethodCall} commands over the wire using the AMP protocol."""
 
+    factory = None
+
     def connectionMade(self):
         """Notify our factory that we're ready to go."""
-        self.factory.clientConnectionMade(self)
-
-
-class MethodCallProtocol(MethodCallServerProtocol, MethodCallClientProtocol):
-    """Can be used both for sending and receiving L{MethodCall}s."""
-
-    def __init__(self):
-        MethodCallServerProtocol.__init__(self)
-        MethodCallClientProtocol.__init__(self)
+        if self.factory is not None:  # Factory can be None in unit-tests
+            self.factory.clientConnectionMade(self)
 
 
 class RemoteObject(object):
@@ -397,10 +390,7 @@ class RemoteObject(object):
 
         @param protocol: The newly connected protocol instance.
         """
-        if self._sender is None:
-            self._sender = MethodCallSender(protocol, self._factory.clock)
-        else:
-            self._sender.protocol = protocol
+        self._sender = MethodCallSender(protocol, self._factory.clock)
         if self._retry_on_reconnect:
             self._retry()
 
@@ -425,12 +415,12 @@ class RemoteObject(object):
 
 class MethodCallServerFactory(ServerFactory):
 
-    protocol = AMP
+    protocol = MethodCallServerProtocol
 
     def __init__(self, object, methods):
         """
-        @param object: The object exposed by the L{MethodCallProtocol}s
-            instances created by this factory.
+        @param object: The object exposed by the protocol instances
+            created by this factory.
         @param reactor: The reactor used by the created protocols
             to schedule notifications and timeouts.
         """
@@ -438,16 +428,15 @@ class MethodCallServerFactory(ServerFactory):
         self.methods = methods
 
     def buildProtocol(self, addr):
-        locator = MethodCallReceiver(self.object, self.methods)
-        protocol = self.protocol(locator=locator)
+        protocol = self.protocol(self.object, self.methods)
         protocol.factory = self
         return protocol
 
 
 class MethodCallClientFactory(ReconnectingClientFactory):
     """
-    Factory for L{MethodCallProtocol}s exposing an object or connecting to
-    L{MethodCall} servers.
+    Factory for L{MethodCallClientProtocol}s exposing an object or connecting
+    to L{MethodCall} servers.
 
     When used to connect, if the connection fails or is lost the factory
     will keep retrying to establish it.
@@ -475,14 +464,13 @@ class MethodCallClientFactory(ReconnectingClientFactory):
     retryOnReconnect = False
     retryTimeout = None
 
-    def __init__(self, reactor=None, object=None):
+    def __init__(self, reactor=None):
         """
         @param object: The object exposed by the L{MethodCallProtocol}s
             instances created by this factory.
         @param reactor: The reactor used by the created protocols
             to schedule notifications and timeouts.
         """
-        self.object = object  # XXX
         self.reactor = reactor
         self.clock = self.reactor
         self.delay = self.initialDelay
@@ -531,14 +519,7 @@ class MethodCallClientFactory(ReconnectingClientFactory):
 
     def buildProtocol(self, addr):
         self.resetDelay()
-        if self.object is not None:
-            # XXX temporary hack to emulate the behavior of this code before
-            # MethodCallReceiver was introduced
-            locator = MethodCallReceiver(self.object, self.protocol.methods)
-            protocol = AMP(locator=locator)
-            protocol.factory = self
-        else:
-            protocol = ReconnectingClientFactory.buildProtocol(self, addr)
+        protocol = ReconnectingClientFactory.buildProtocol(self, addr)
         return protocol
 
     def _fire_requests(self, result):
@@ -550,10 +531,6 @@ class MethodCallClientFactory(ReconnectingClientFactory):
 
         for deferred in requests:
             deferred.callback(result)
-
-
-class MethodCallFactory(MethodCallClientFactory):
-    """XXX placeholder"""
 
 
 class RemoteObjectConnector(object):
