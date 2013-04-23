@@ -51,12 +51,13 @@ class RemoteComponentConnector(RemoteObjectConnector):
 
     factory = ComponentProtocolFactory
 
-    def __init__(self, reactor, config, *args, **kwargs):
+    def __init__(self, reactor, config, retry_on_reconnect=False):
         self._twisted_reactor = reactor
+        self._retry_on_reconnect = retry_on_reconnect
         socket = os.path.join(config.sockets_path,
                               self.component.name + ".sock")
         super(RemoteComponentConnector, self).__init__(
-            self._twisted_reactor._reactor, socket, *args, **kwargs)
+            self._twisted_reactor._reactor, socket)
 
     def connect(self, max_retries=None, factor=None, quiet=False):
         """Connect to the remote Landscape component.
@@ -73,12 +74,15 @@ class RemoteComponentConnector(RemoteObjectConnector):
         @param quiet: A boolean indicating whether to log errors.
         """
 
-        def fire_reconnect(remote):
+        def fire_reconnect(ignored):
             self._twisted_reactor.fire("%s-reconnect" %
                                        self.component.name)
 
         def connected(remote):
-            self._factory.add_notifier(fire_reconnect)
+            # XXX temporary workaround till the AMP cleanup is completed, we
+            # will use the factory directly then.
+            remote._factory.retryOnReconnect = self._retry_on_reconnect
+            self._factory.notifyOnConnect(fire_reconnect)
             return remote
 
         def log_error(failure):

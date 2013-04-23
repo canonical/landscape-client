@@ -101,6 +101,7 @@ class BrokerClientProtocol(ComponentProtocol):
 class BrokerClientProtocolFactory(ComponentProtocolFactory):
 
     protocol = BrokerClientProtocol
+    remote = RemoteBroker
 
 
 class RemoteClient(RemoteObject):

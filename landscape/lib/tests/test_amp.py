@@ -4,12 +4,12 @@ from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.error import ConnectionDone, ConnectError
 from twisted.internet.task import Clock
 from twisted.protocols.amp import AMP
+from twisted.python.failure import Failure
 
 from landscape.lib.amp import (
-    MethodCallError, MethodCallProtocol, MethodCallFactory, RemoteObject,
+    MethodCallError, MethodCallProtocol, MethodCallClientFactory, RemoteObject,
     RemoteObjectConnector, MethodCallReceiver, MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
-from landscape.tests.mocker import KWARGS
 
 
 class FakeTransport(object):
@@ -149,10 +149,13 @@ class WordsProtocol(MethodCallProtocol):
 METHODS = WordsProtocol.methods
 
 
-class WordsFactory(MethodCallFactory):
+class WordsFactory(MethodCallClientFactory):
 
     protocol = WordsProtocol
     factor = 0.19
+
+    retryOnReconnect = True
+    retryTimeout = 0.7
 
 
 class RemoteWordsConnector(RemoteObjectConnector):
@@ -339,18 +342,20 @@ class RemoteObjectTest(LandscapeTest):
         server = AMP(locator=MethodCallReceiver(Words(self.clock), METHODS))
         client = AMP()
         self.connection = FakeConnection(client, server)
-        sender = MethodCallSender(client, self.clock)
-        send_method_call = sender.send_method_call
+        factory = WordsFactory(self.clock)
+        self.remote = RemoteObject(factory)
+        factory.clientConnectionMade(client)
+
+        send_method_call = self.remote._sender.send_method_call
 
         def synchronous_send_method_call(method, args=[], kwargs={}):
             # Transparently flush the connection after a send_method_call
-            # invokation
+            # invocation
             deferred = send_method_call(method, args=args, kwargs=kwargs)
             self.connection.flush()
             return deferred
 
-        sender.send_method_call = synchronous_send_method_call
-        self.remote = RemoteObject(sender)
+        self.remote._sender.send_method_call = synchronous_send_method_call
 
     def test_method_call_sender_with_forbidden_method(self):
         """
@@ -526,12 +531,12 @@ class RemoteObjectTest(LandscapeTest):
         failure.trap(MethodCallError)
 
 
-class MethodCallFactoryTest(LandscapeTest):
+class MethodCallClientFactoryTest(LandscapeTest):
 
     def setUp(self):
-        super(MethodCallFactoryTest, self).setUp()
+        super(MethodCallClientFactoryTest, self).setUp()
         self.clock = Clock()
-        self.factory = MethodCallFactory(reactor=self.clock)
+        self.factory = MethodCallClientFactory(reactor=self.clock)
 
     def test_max_delay(self):
         """
@@ -540,60 +545,67 @@ class MethodCallFactoryTest(LandscapeTest):
         """
         self.assertEqual(self.factory.maxDelay, 30)
 
-    def test_add_notifier(self):
+    def test_connect_notifier(self):
         """
-        The L{MethodCallClientFactory.add_notifier} method can be used to
-        add a callback function to be called when a connection is made and
-        a new protocol instance built.
+        The C{notifyOnConnect} method supports specifying a callback that
+        will be invoked when a connection has been established.
         """
-        protocol = self.factory.protocol()
-        self.factory.protocol = lambda: protocol
-        callback = self.mocker.mock()
-        callback(protocol)
-        self.mocker.replay()
-        self.factory.add_notifier(callback)
-        self.factory.buildProtocol(None)
-        self.clock.advance(0)
+        protocols = []
+        self.factory.notifyOnConnect(protocols.append)
+        protocol = self.factory.buildProtocol(None)
+        protocol.connectionMade()
+        self.assertEqual([protocol], protocols)
 
-    def test_remove_notifier(self):
+    def test_connect_notifier_with_reconnect(self):
         """
-        The L{MethodCallClientFactory.remove_notifier} method can be used to
-        remove a previously added notifier callback.
+        The C{notifyOnConnect} method will also callback when a connection is
+        re-established after it was lost.
         """
-        callback = lambda protocol: 1 / 0
-        self.factory.add_notifier(callback)
-        self.factory.remove_notifier(callback)
-        self.factory.buildProtocol(None)
-        self.clock.advance(0)
+        protocols = []
+        self.factory.notifyOnConnect(protocols.append)
+        protocol1 = self.factory.buildProtocol(None)
+        protocol1.connectionMade()
+        protocol2 = self.factory.buildProtocol(None)
+        protocol2.connectionMade()
+        self.assertEqual([protocol1, protocol2], protocols)
+
+    def test_get_remote_object(self):
+        """
+        The C{getRemoteObject} method returns a deferred firing with a
+        connected L{RemoteBroker}.
+        """
+        deferred = self.factory.getRemoteObject()
+        protocol = self.factory.buildProtocol(None)
+        protocol.connectionMade()
+        self.assertIsInstance(self.successResultOf(deferred), RemoteObject)
+
+    def test_get_remote_object_failure(self):
+        """
+        If the factory fails to establish a connection the deferreds returned
+        by C{getRemoteObject} will fail.
+        """
+        deferred = self.factory.getRemoteObject()
+        self.factory.continueTrying = False  # Don't retry
+        self.factory.clientConnectionFailed(None, Failure(ConnectError()))
+        self.failureResultOf(deferred).trap(ConnectError)
 
     def test_client_connection_failed(self):
         """
         The L{MethodCallClientFactory} keeps trying to connect if maxRetries
         is not reached.
         """
-        # This is sub-optimal but the ReconnectingFactory in Hardy's Twisted
-        # doesn't support task.Clock
-        self.factory.retry = self.mocker.mock()
-        self.factory.retry(KWARGS)
-        self.mocker.replay()
+        class FakeConnector(object):
+            called = False
+
+            def connect(self):
+                self.called = True
+
+        connector = FakeConnector()
         self.assertEqual(self.factory.retries, 0)
-        self.factory.clientConnectionFailed(None, None)
-
-    def test_client_connection_failed_with_max_retries_reached(self):
-        """
-        The L{MethodCallClientFactory} stops trying to connect if maxRetries
-        is reached.
-        """
-        callback = lambda protocol: 1 / 0
-        errback = self.mocker.mock()
-        errback("failure")
-        self.mocker.replay()
-
-        self.factory.add_notifier(callback, errback)
-        self.factory.maxRetries = 1
-        self.factory.retries = self.factory.maxRetries
-        self.factory.clientConnectionFailed(object(), "failure")
-        self.clock.advance(0)
+        self.factory.clientConnectionFailed(connector, None)
+        self.assertEqual(self.factory.retries, 1)
+        self.clock.advance(5)
+        self.assertTrue(connector.called)
 
 
 class RemoteObjectConnectorTest(LandscapeTest):
@@ -605,9 +617,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         self.server_factory.protocol = lambda: (
             AMP(locator=MethodCallReceiver(Words(reactor), METHODS)))
         self.port = reactor.listenUNIX(self.socket, self.server_factory)
-        self.connector = RemoteWordsConnector(reactor, self.socket,
-                                              retry_on_reconnect=True,
-                                              timeout=0.7)
+        self.connector = RemoteWordsConnector(reactor, self.socket)
 
         def set_remote(words):
             self.words = words
@@ -664,7 +674,6 @@ class RemoteObjectConnectorTest(LandscapeTest):
         """
         self.connector.disconnect()
         self.connector.disconnect()
-        self.assertIs(self.connector._remote, None)
 
     def test_disconnect_without_connect(self):
         """
@@ -746,8 +755,9 @@ class RemoteObjectConnectorTest(LandscapeTest):
         """
         self.words._sender.protocol.transport.loseConnection()
         self.port.stopListening()
+        real_handle_connect = self.words._handle_connect
 
-        def handle_reconnect(protocol):
+        def handle_connect(protocol):
             # In this precise moment we have a newly connected protocol
             self.words._sender.protocol = protocol
 
@@ -759,8 +769,8 @@ class RemoteObjectConnectorTest(LandscapeTest):
             reactor.callLater(0, self.words._retry)
 
             # Restore the real handler and start listening again very soon
-            self.connector._factory.remove_notifier(handle_reconnect)
-            self.connector._factory.add_notifier(self.words._handle_reconnect)
+            self.connector._factory.dontNotifyOnConnect(handle_connect)
+            self.connector._factory.notifyOnConnect(real_handle_connect)
             reactor.callLater(0.2, restart_listening)
 
         def restart_listening():
@@ -770,8 +780,8 @@ class RemoteObjectConnectorTest(LandscapeTest):
             self.assertEqual(str(error), "Forbidden method 'secret'")
 
         # Use our own reconnect handler
-        self.connector._factory.remove_notifier(self.words._handle_reconnect)
-        self.connector._factory.add_notifier(handle_reconnect)
+        self.connector._factory.dontNotifyOnConnect(real_handle_connect)
+        self.connector._factory.notifyOnConnect(handle_connect)
 
         reactor.callLater(0.2, restart_listening)
         result = self.words.secret()
@@ -828,7 +838,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
             return result
 
         reactor.callLater(0.1, restart_listening)
-        self.words._retry_on_reconnect = False
+        self.words._factory.retryOnReconnect = False
         result = self.words.empty()
         self.assertFailure(result, ConnectionDone)
         reconnected = Deferred()
