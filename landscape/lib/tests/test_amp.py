@@ -350,7 +350,7 @@ class RemoteObjectTest(LandscapeTest):
 
         def synchronous_send_method_call(method, args=[], kwargs={}):
             # Transparently flush the connection after a send_method_call
-            # invokation
+            # invocation
             deferred = send_method_call(method, args=args, kwargs=kwargs)
             self.connection.flush()
             return deferred
