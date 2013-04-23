@@ -326,6 +326,14 @@ class RemoteObject(object):
             result.addCallback(self._handle_result, deferred)
             result.addErrback(self._handle_failure, method, args, kwargs,
                               deferred)
+
+            if self._factory.connection is not None:
+                # Transparently flush the connection after a send_method_call
+                # invokation letting tests simulate a synchronous transport.
+                # This is needed because the Twisted's AMP implementation
+                # assume that the transport is asynchronous.
+                self._factory.connection.flush()
+
             return deferred
 
         return send_method_call
@@ -463,6 +471,8 @@ class MethodCallClientFactory(ReconnectingClientFactory):
 
     retryOnReconnect = False
     retryTimeout = None
+
+    connection = None
 
     def __init__(self, reactor=None):
         """

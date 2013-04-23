@@ -14,7 +14,11 @@ class BrokerServiceTest(LandscapeTest):
 
     def setUp(self):
         super(BrokerServiceTest, self).setUp()
-        self.service = BrokerService(self.config)
+
+        class FakeBrokerService(BrokerService):
+            reactor_factory = FakeReactor
+
+        self.service = FakeBrokerService(self.config)
 
     def test_persist(self):
         """

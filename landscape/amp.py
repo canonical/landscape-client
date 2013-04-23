@@ -17,14 +17,10 @@ from landscape.lib.amp import (
     MethodCallClientFactory, MethodCallServerFactory, RemoteObject)
 
 
-class ComponentProtocolClientFactory(MethodCallClientFactory):
-
-    initialDelay = 0.05
-
-
 class ComponentPublisher(object):
 
     methods = ("ping", "exit")
+    factory = MethodCallServerFactory
 
     def __init__(self, component, reactor, config):
         self._reactor = reactor
@@ -41,7 +37,7 @@ class ComponentPublisher(object):
         return self._port.stopListening()
 
 
-class RemoteComponentConnector(object):
+class ComponentConnector(object):
     """Utility superclass for creating connections with a Landscape component.
 
     @cvar component: The class of the component to connect to, it is expected
@@ -56,7 +52,7 @@ class RemoteComponentConnector(object):
     @see: L{MethodCallClientFactory}.
     """
 
-    factory = ComponentProtocolClientFactory
+    factory = MethodCallClientFactory
     remote = RemoteObject
 
     def __init__(self, reactor, config, retry_on_reconnect=False):
@@ -79,8 +75,8 @@ class RemoteComponentConnector(object):
             result in a faster reconnection attempts pace.
         @param quiet: A boolean indicating whether to log errors.
         """
-        reactor = self._reactor._reactor
-        factory = self.factory(reactor)
+        factory = self.factory(self._reactor._reactor)
+        factory.initialDelay = factory.delay = 0.05
         factory.retryOnReconnect = self._retry_on_reconnect
         factory.remote = self.remote
 
@@ -99,8 +95,8 @@ class RemoteComponentConnector(object):
         if factor:
             factory.factor = factor
         socket_path = _get_socket_path(self.component, self._config)
-        self._connector = reactor.connectUNIX(socket_path, factory)
         deferred = factory.getRemoteObject()
+        self._connector = self._reactor.connect_unix(socket_path, factory)
 
         if not quiet:
             deferred.addErrback(log_error)
@@ -139,7 +135,7 @@ class RemoteComponentsRegistry(object):
     def register(cls, connector_class):
         """Register a connector for a Landscape component.
 
-        @param connector_class: A sub-class of L{RemoteComponentConnector}
+        @param connector_class: A sub-class of L{ComponentConnector}
             that can be used to connect to a certain component.
         """
         cls._by_name[connector_class.component.name] = connector_class

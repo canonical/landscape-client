@@ -46,13 +46,6 @@ class MonitorServiceTest(LandscapeTest):
         starts the plugins and register the monitor as broker client.  It also
         start listening on its own socket for incoming connections.
         """
-        # FIXME: don't actually run the real register method, because at the
-        # moment the UserMonitor plugin still depends on DBus. We can probably
-        # drop this mocking once the AMP migration is completed.
-        for plugin in self.service.plugins:
-            plugin.register = self.mocker.mock()
-            plugin.register(ANY)
-        self.mocker.replay()
 
         def stop_service(ignored):
             [connector] = self.broker_service.broker.get_connectors()

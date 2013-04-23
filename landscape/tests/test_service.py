@@ -7,16 +7,11 @@ from twisted.internet.task import deferLater
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
-from landscape.amp import RemoteComponentConnector
 from landscape.tests.helpers import LandscapeTest
 
 
 class TestComponent(object):
     name = "monitor"
-
-
-class RemoteTestComponentCreator(RemoteComponentConnector):
-    component = TestComponent
 
 
 class TestService(LandscapeService):

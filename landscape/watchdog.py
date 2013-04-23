@@ -68,7 +68,7 @@ class Daemon(object):
     @cvar factor: The factor by which the delay between subsequent connection
         attempts will increase.
 
-    @param connector: The L{RemoteComponentConnector} of the daemon.
+    @param connector: The L{ComponentConnector} of the daemon.
     @param reactor: The reactor used to spawn the process and schedule timed
         calls.
     @param verbose: Optionally, report more information when running this

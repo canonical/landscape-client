@@ -1,7 +1,7 @@
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
-from landscape.amp import ComponentPublisher, RemoteComponentConnector
+from landscape.amp import ComponentPublisher, ComponentConnector
 
 from landscape.monitor.plugin import MonitorPlugin
 from landscape.user.changes import UserChanges
@@ -111,6 +111,6 @@ class UserMonitorPublisher(ComponentPublisher):
     methods = ["detect_changes"]
 
 
-class RemoteUserMonitorConnector(RemoteComponentConnector):
+class RemoteUserMonitorConnector(ComponentConnector):
 
     component = UserMonitor

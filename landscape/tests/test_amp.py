@@ -4,9 +4,7 @@ from twisted.internet.error import ConnectError
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import (
-    ComponentProtocolClientFactory, RemoteComponentConnector,
-    ComponentPublisher)
+from landscape.amp import ComponentPublisher, ComponentConnector
 
 
 class TestComponent(object):
@@ -14,22 +12,21 @@ class TestComponent(object):
     name = "test"
 
 
-class TestComponentProtocolFactory(ComponentProtocolClientFactory):
+class TestComponentConnector(ComponentConnector):
 
-    maxRetries = 0
-    initialDelay = 0.01
-
-
-class RemoteTestComponentConnector(RemoteComponentConnector):
-
-    factory = TestComponentProtocolFactory
     component = TestComponent
 
 
-class RemoteComponentTest(LandscapeTest):
+class FakeAMP(object):
+
+    def __init__(self, locator):
+        self._locator = locator
+
+
+class ComponentPublisherTest(LandscapeTest):
 
     def setUp(self):
-        super(RemoteComponentTest, self).setUp()
+        super(ComponentPublisherTest, self).setUp()
         reactor = FakeReactor()
         config = Configuration()
         config.data_path = self.makeDir()
@@ -38,7 +35,7 @@ class RemoteComponentTest(LandscapeTest):
         self.publisher = ComponentPublisher(self.component, reactor, config)
         self.publisher.start()
 
-        self.connector = RemoteTestComponentConnector(reactor, config)
+        self.connector = TestComponentConnector(reactor, config)
         connected = self.connector.connect()
         connected.addCallback(lambda remote: setattr(self, "remote", remote))
         return connected
@@ -46,7 +43,7 @@ class RemoteComponentTest(LandscapeTest):
     def tearDown(self):
         self.connector.disconnect()
         self.publisher.stop()
-        super(RemoteComponentTest, self).tearDown()
+        super(ComponentPublisherTest, self).tearDown()
 
     def test_ping(self):
         """
@@ -71,16 +68,15 @@ class RemoteComponentTest(LandscapeTest):
         return self.assertSuccess(result)
 
 
-class RemoteComponentConnectorTest(LandscapeTest):
+class ComponentConnectorTest(LandscapeTest):
 
     def setUp(self):
-        super(RemoteComponentConnectorTest, self).setUp()
+        super(ComponentConnectorTest, self).setUp()
         self.reactor = FakeReactor()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
         self.makeDir(path=self.config.sockets_path)
-        self.connector = RemoteTestComponentConnector(self.reactor,
-                                                      self.config)
+        self.connector = TestComponentConnector(self.reactor, self.config)
 
     def test_connect_logs_errors(self):
         """

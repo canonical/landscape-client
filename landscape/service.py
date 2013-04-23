@@ -42,15 +42,11 @@ class LandscapeService(Service, object):
             signal.signal(
                 signal.SIGUSR1,
                 lambda signal, frame: reactor.callFromThread(rotate_logs))
-        self.socket = os.path.join(self.config.sockets_path,
-                                   self.service_name + ".sock")
 
     def startService(self):
         Service.startService(self)
         logging.info("%s started with config %s" % (
             self.service_name.capitalize(), self.config.get_config_filename()))
-        if hasattr(self, "factory"):
-            self.port = self.reactor.listen_unix(self.socket, self.factory)
 
     def stopService(self):
         # We don't need to call port.stopListening(), because the reactor
