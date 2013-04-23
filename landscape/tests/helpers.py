@@ -363,17 +363,12 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
 
     def set_up(self, test_case):
         super(BrokerServiceHelper, self).set_up(test_case)
+        test_case.broker_service.startService()
         # Use different reactor to simulate separate processes
         self._connector = RemoteBrokerConnector(
             FakeReactor(), test_case.broker_service.config)
-
-        def set_remote(remote):
-            test_case.remote = remote
-            return remote
-
-        test_case.broker_service.startService()
-        connected = self._connector.connect()
-        return connected.addCallback(set_remote)
+        deferred = self._connector.connect()
+        test_case.remote = test_case.successResultOf(deferred)
 
     def tear_down(self, test_case):
         self._connector.disconnect()

@@ -36,20 +36,16 @@ class ReleaseUpgraderTest(LandscapeTest):
                EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-
-        def set_up(ignored):
-            self.config = ReleaseUpgraderConfiguration()
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-            os.mkdir(self.config.upgrade_tool_directory)
-            self.store = PackageStore(self.makeFile())
-            self.upgrader = ReleaseUpgrader(self.store, None,
-                                            self.remote, self.config)
-            service = self.broker_service
-            service.message_store.set_accepted_types(["operation-result"])
-
-        result = super(ReleaseUpgraderTest, self).setUp()
-        return result.addCallback(set_up)
+        super(ReleaseUpgraderTest, self).setUp()
+        self.config = ReleaseUpgraderConfiguration()
+        self.config.data_path = self.makeDir()
+        os.mkdir(self.config.package_directory)
+        os.mkdir(self.config.upgrade_tool_directory)
+        self.store = PackageStore(self.makeFile())
+        self.upgrader = ReleaseUpgrader(self.store, None,
+                                        self.remote, self.config)
+        service = self.broker_service
+        service.message_store.set_accepted_types(["operation-result"])
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
