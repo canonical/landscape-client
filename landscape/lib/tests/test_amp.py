@@ -1,5 +1,4 @@
 from twisted.internet import reactor
-from twisted.internet.protocol import Factory
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.error import ConnectionDone, ConnectError
 from twisted.internet.task import Clock
@@ -7,8 +6,9 @@ from twisted.protocols.amp import AMP
 from twisted.python.failure import Failure
 
 from landscape.lib.amp import (
-    MethodCallError, MethodCallProtocol, MethodCallClientFactory, RemoteObject,
-    RemoteObjectConnector, MethodCallReceiver, MethodCallSender)
+    MethodCallError, MethodCallProtocol, MethodCallServerFactory,
+    MethodCallClientFactory, RemoteObject, RemoteObjectConnector,
+    MethodCallReceiver, MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -613,9 +613,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectConnectorTest, self).setUp()
         self.socket = self.mktemp()
-        self.server_factory = Factory()
-        self.server_factory.protocol = lambda: (
-            AMP(locator=MethodCallReceiver(Words(reactor), METHODS)))
+        self.server_factory = MethodCallServerFactory(Words(reactor), METHODS)
         self.port = reactor.listenUNIX(self.socket, self.server_factory)
         self.connector = RemoteWordsConnector(reactor, self.socket)
 
@@ -662,7 +660,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         self.connector.disconnect()
 
         def assert_factor(ignored):
-            self.assertEqual(self.connector._factory.factor, 1.0)
+            self.assertEqual(self.connector._connector.factory.factor, 1.0)
 
         result = self.connector.connect(factor=1.0)
         return result.addCallback(assert_factor)
@@ -769,8 +767,8 @@ class RemoteObjectConnectorTest(LandscapeTest):
             reactor.callLater(0, self.words._retry)
 
             # Restore the real handler and start listening again very soon
-            self.connector._factory.dontNotifyOnConnect(handle_connect)
-            self.connector._factory.notifyOnConnect(real_handle_connect)
+            factory.dontNotifyOnConnect(handle_connect)
+            factory.notifyOnConnect(real_handle_connect)
             reactor.callLater(0.2, restart_listening)
 
         def restart_listening():
@@ -780,8 +778,9 @@ class RemoteObjectConnectorTest(LandscapeTest):
             self.assertEqual(str(error), "Forbidden method 'secret'")
 
         # Use our own reconnect handler
-        self.connector._factory.dontNotifyOnConnect(real_handle_connect)
-        self.connector._factory.notifyOnConnect(handle_connect)
+        factory = self.connector._connector.factory
+        factory.dontNotifyOnConnect(real_handle_connect)
+        factory.notifyOnConnect(handle_connect)
 
         reactor.callLater(0.2, restart_listening)
         result = self.words.secret()

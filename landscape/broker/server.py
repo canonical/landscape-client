@@ -66,7 +66,7 @@ class BrokerServer(object):
         """Register a broker client called C{name}.
 
         Various broker clients interact with the broker server, such as the
-        monitor for example, using the L{BrokerServerProtocol} for performing
+        monitor for example, using the L{BrokerServerConnector} for performing
         remote method calls on the L{BrokerServer}.
 
         They establish connectivity with the broker by connecting and
