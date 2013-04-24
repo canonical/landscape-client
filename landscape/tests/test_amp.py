@@ -1,5 +1,6 @@
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
+from twisted.internet.task import Clock
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
@@ -73,10 +74,24 @@ class ComponentConnectorTest(LandscapeTest):
     def setUp(self):
         super(ComponentConnectorTest, self).setUp()
         self.reactor = FakeReactor()
+        # XXX this should be dropped once the FakeReactor doesn't use the
+        # real reactor anymore under the hood.
+        self.reactor._reactor = Clock()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
         self.makeDir(path=self.config.sockets_path)
         self.connector = TestComponentConnector(self.reactor, self.config)
+
+    def test_connect_with_max_retries(self):
+        """
+        If C{max_retries} is passed to L{RemoteObjectConnector.connet},
+        then it will give up trying to connect after that amout of times.
+        """
+        self.log_helper.ignore_errors("Error while connecting to test")
+        deferred = self.connector.connect(max_retries=2)
+        self.assertNoResult(deferred)
+        return
+        self.failureResultOf(deferred).trap(ConnectError)
 
     def test_connect_logs_errors(self):
         """
@@ -104,25 +119,47 @@ class ComponentConnectorTest(LandscapeTest):
         An event is fired whenever the connection is established again after
         it has been lost.
         """
+        reconnects = []
+        self.reactor.call_on("test-reconnect", lambda: reconnects.append(True))
+
         component = TestComponent()
         publisher = ComponentPublisher(component, self.reactor, self.config)
         publisher.start()
+        deferred = self.connector.connect()
+        self.successResultOf(deferred)
+        self.connector._connector.disconnect()  # Simulate a disconnection
+        self.assertEqual([], reconnects)
+        self.reactor._reactor.advance(10)
+        self.assertEqual([True], reconnects)
 
-        def listen_again():
-            publisher.start()
+    def test_connect_with_factor(self):
+        """
+        If C{factor} is passed to the L{ComponentConnector.connect} method,
+        then the associated protocol factory will be set to that value.
+        """
+        component = TestComponent()
+        publisher = ComponentPublisher(component, self.reactor, self.config)
+        publisher.start()
+        deferred = self.connector.connect(factor=1.0)
+        remote = self.successResultOf(deferred)
+        self.assertEqual(1.0, remote._factory.factor)
 
-        def connected(remote):
-            remote._sender.protocol.transport.loseConnection()
-            publisher.stop()
-            self.reactor._reactor.callLater(0.01, listen_again)
+    def test_disconnect(self):
+        """
+        It is possible to call L{ComponentConnector.disconnect} multiple times,
+        even if the connection has been already closed.
+        """
+        component = TestComponent()
+        publisher = ComponentPublisher(component, self.reactor, self.config)
+        publisher.start()
+        self.connector.connect()
+        self.connector.disconnect()
+        self.connector.disconnect()
 
-        def reconnected():
-            self.connector.disconnect()
-            publisher.stop()
-            deferred.callback(None)
-
-        deferred = Deferred()
-        self.reactor.call_on("test-reconnect", reconnected)
-        result = self.connector.connect()
-        result.addCallback(connected)
-        return deferred
+    def test_disconnect_without_connect(self):
+        """
+        It is possible to call L{ComponentConnector.disconnect} even if the
+        connection was never established. In that case the method is
+        effectively a no-op.
+        """
+        self.connector.disconnect()

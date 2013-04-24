@@ -492,7 +492,7 @@ def decode_base64_ssl_public_certificate(config):
 
 
 def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
-    on_error=print_text):
+                                        on_error=print_text):
     """
     Fetch base64 encoded SSL CA certificate from the discovered landscape
     server and return that decoded info.

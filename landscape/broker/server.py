@@ -3,7 +3,7 @@ import logging
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
-from landscape.amp import RemoteComponentsRegistry
+from landscape.amp import ComponentsRegistry
 from landscape.manager.manager import FAILED
 
 
@@ -37,7 +37,7 @@ class BrokerServer(object):
     @param message_store: The broker's L{MessageStore}.
     """
     name = "broker"
-    connectors_registry = RemoteComponentsRegistry
+    connectors_registry = ComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store, pinger):
