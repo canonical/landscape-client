@@ -622,20 +622,21 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
         reactor = TwistedReactor()
     exit_with_error = []
 
-    def stop(error=None):
-        if not config.ok_no_register and error is not None:
-            exit_with_error.append(error)
+    def stop(errors):
+        if not config.ok_no_register:
+            for error in errors:
+                if error is not None:
+                    exit_with_error.append(error)
         connector.disconnect()
         reactor.stop()
 
     def failure():
         on_message("Invalid account name or "
                    "registration key.", error=True)
-        stop(2)
+        return 2
 
     def success():
         on_message("System successfully registered.")
-        stop()
 
     def exchange_failure():
         on_message("We were unable to contact the server. "
@@ -643,7 +644,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
                    "The landscape client will continue to try and contact "
                    "the server periodically.",
                    error=True)
-        stop(2)
+        return 2
 
     def handle_registration_errors(failure):
         # We'll get invalid credentials through the signal.
@@ -653,7 +654,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
     def catch_all(failure):
         on_message(failure.getTraceback(), error=True)
         on_message("Unknown error occurred.", error=True)
-        stop(2)
+        return 2
 
     on_message("Please wait... ", "")
 
@@ -670,14 +671,15 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
         # We consume errors here to ignore errors after the first one.
         # catch_all will be called for the very first deferred that fails.
         results = gather_results(deferreds, consume_errors=True)
-        return results.addErrback(catch_all)
+        results.addErrback(catch_all)
+        results.addCallback(stop)
 
     def got_error(failure):
         on_message("There was an error communicating with the Landscape"
                    " client.", error=True)
         on_message("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
-        stop(2)
+        stop([2])
 
     connector = RemoteBrokerConnector(reactor, config)
     result = connector.connect(max_retries=max_retries, quiet=True)

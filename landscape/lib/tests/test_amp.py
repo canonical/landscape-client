@@ -43,6 +43,8 @@ class FakeConnection(object):
         self.client.makeConnection(FakeTransport(self))
 
     def lose(self, connector, reason):
+        self.server.connectionLost(reason)
+        self.client.connectionLost(reason)
         self.client.factory.clientConnectionLost(connector, reason)
 
     def flush(self):
@@ -563,8 +565,6 @@ class RemoteObjectTest(LandscapeTest):
         the L{MethodCall} requests that failed due to the broken connections.
         """
         self.connector.disconnect()
-        self.connector.connection.client.connectionLost(
-            Failure(ConnectionDone()))
         deferred = self.remote.capitalize("john")
 
         # The deferred has not fired yet, because it's been put in the pending
@@ -584,8 +584,6 @@ class RemoteObjectTest(LandscapeTest):
         caller.
         """
         self.connector.disconnect()
-        self.connector.connection.client.connectionLost(
-            Failure(ConnectionDone()))
         deferred = self.remote.secret()
 
         # The deferred has not fired yet, because it's been put in the pending
