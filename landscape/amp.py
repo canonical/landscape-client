@@ -73,6 +73,7 @@ class RemoteComponentConnector(object):
     """
     component = None  # Must be defined by sub-classes
     factory = ComponentProtocolClientFactory
+    remote = RemoteObject
 
     def __init__(self, reactor, config, retry_on_reconnect=False):
         self._reactor = reactor
