@@ -2,36 +2,31 @@ from twisted.internet.defer import maybeDeferred, execute, succeed
 
 from landscape.lib.amp import RemoteObject, MethodCallArgument
 from landscape.amp import (
-    ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector,
-    RemoteComponentsRegistry)
+    RemoteComponentConnector, RemoteComponentsRegistry, ComponentPublisher)
 from landscape.broker.server import BrokerServer
 from landscape.broker.client import BrokerClient
 from landscape.monitor.monitor import Monitor
 from landscape.manager.manager import Manager
 
 
-class BrokerServerProtocol(ComponentProtocol):
+class BrokerServerPublisher(ComponentPublisher):
     """
     Communication protocol between the broker server and its clients.
     """
-    methods = (ComponentProtocol.methods +
-               ["fire_event",
-                "get_accepted_message_types",
-                "get_server_uuid",
-                "is_message_pending",
-                "register",
-                "register_client",
-                "register_client_accepted_message_type",
-                "reload_configuration",
-                "send_message",
-                "stop_clients",
-                "listen_events",
-                "stop_exchanger"])
 
-
-class BrokerServerProtocolFactory(ComponentProtocolFactory):
-
-    protocol = BrokerServerProtocol
+    methods = ComponentPublisher.methods + (
+        "fire_event",
+        "get_accepted_message_types",
+        "get_server_uuid",
+        "is_message_pending",
+        "register",
+        "register_client",
+        "register_client_accepted_message_type",
+        "reload_configuration",
+        "send_message",
+        "stop_clients",
+        "listen_events",
+        "stop_exchanger")
 
 
 class RemoteBroker(RemoteObject):
@@ -64,7 +59,6 @@ class FakeRemoteBroker(object):
     def __init__(self, exchanger, message_store, broker_server):
         self.exchanger = exchanger
         self.message_store = message_store
-        self.protocol = BrokerServerProtocol()
         self.broker_server = broker_server
 
     def __getattr__(self, name):
@@ -73,7 +67,7 @@ class FakeRemoteBroker(object):
         that they're encodable with AMP.
         """
         original = getattr(self.broker_server, name, None)
-        if (name in BrokerServerProtocol.methods
+        if (name in BrokerServerPublisher.methods
             and original is not None
             and callable(original)):
             def method(*args, **kwargs):
@@ -92,16 +86,13 @@ class FakeRemoteBroker(object):
         return succeed(None)
 
 
-class BrokerClientProtocol(ComponentProtocol):
-    """Communication protocol between a client and the broker."""
-
-    methods = (ComponentProtocol.methods + ["fire_event", "message"])
-
-
-class BrokerClientProtocolFactory(ComponentProtocolFactory):
-
-    protocol = BrokerClientProtocol
-    remote = RemoteBroker
+class BrokerClientPublisher(ComponentPublisher):
+    """
+    Communication protocol between the broker server and its clients.
+    """
+    methods = ComponentPublisher.methods + (
+        "fire_event",
+        "message")
 
 
 class RemoteClient(RemoteObject):
@@ -111,7 +102,6 @@ class RemoteClient(RemoteObject):
 class RemoteBrokerConnector(RemoteComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""
 
-    factory = BrokerClientProtocolFactory
     remote = RemoteBroker
     component = BrokerServer
 
@@ -119,7 +109,6 @@ class RemoteBrokerConnector(RemoteComponentConnector):
 class RemoteClientConnector(RemoteComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""
 
-    factory = BrokerServerProtocolFactory
     remote = RemoteClient
     component = BrokerClient
 

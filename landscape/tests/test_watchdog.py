@@ -1453,7 +1453,8 @@ from twisted.internet import reactor
 
 sys.path = %(path)r
 
-from landscape.broker.amp import BrokerServerProtocolFactory
+from landscape.lib.amp import MethodCallServerFactory
+from landscape.broker.amp import BrokerServerPublisher
 
 class StubBroker(object):
 
@@ -1464,7 +1465,8 @@ class StubBroker(object):
         reactor.callLater(1, reactor.stop)
 
 stub_broker = StubBroker()
-factory = BrokerServerProtocolFactory(object=stub_broker)
+methods = BrokerServerPublisher.methods
+factory = MethodCallServerFactory(stub_broker, methods)
 reactor.listenUNIX(%(socket)r, factory)
 reactor.run()
 """

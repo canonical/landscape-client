@@ -20,8 +20,7 @@ from landscape.broker.ping import Pinger
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import (
-    BrokerServerProtocolFactory, BrokerClientProtocolFactory,
-    RemoteBrokerConnector)
+    BrokerServerPublisher, BrokerClientPublisher, RemoteBrokerConnector)
 from landscape.broker.client import BrokerClient
 
 
@@ -176,12 +175,13 @@ class RemoteBrokerHelper(BrokerServerHelper):
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
 
-        factory = BrokerServerProtocolFactory(object=test_case.broker)
-        socket = os.path.join(test_case.config.sockets_path,
-                              BrokerServer.name + ".sock")
-        self._port = test_case.reactor.listen_unix(socket, factory)
+        self._publisher = BrokerServerPublisher(test_case.broker,
+                                                test_case.reactor,
+                                                test_case.config)
         self._connector = RemoteBrokerConnector(test_case.reactor,
                                                 test_case.config)
+
+        self._publisher.start()
 
         def set_remote(remote):
             test_case.remote = remote
@@ -192,7 +192,7 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
     def tear_down(self, test_case):
         self._connector.disconnect()
-        self._port.stopListening()
+        self._publisher.stop()
         super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
@@ -246,11 +246,10 @@ class RemoteClientHelper(BrokerClientHelper):
 
         def listen(ignored):
 
-            factory = BrokerClientProtocolFactory(object=test_case.client)
-            socket = os.path.join(test_case.config.sockets_path,
-                                  test_case.client.name + ".sock")
-            self._client_port = test_case.client_reactor.listen_unix(socket,
-                                                                     factory)
+            self._client_publisher = BrokerClientPublisher(test_case.client,
+                                                           test_case.reactor,
+                                                           test_case.config)
+            self._client_publisher.start()
             result = test_case.remote.register_client("client")
             return result.addCallback(set_remote_client)
 
@@ -259,5 +258,5 @@ class RemoteClientHelper(BrokerClientHelper):
 
     def tear_down(self, test_case):
         self._client_connector.disconnect()
-        self._client_port.stopListening()
+        self._client_publisher.stop()
         super(RemoteClientHelper, self).tear_down(test_case)

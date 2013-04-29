@@ -8,7 +8,7 @@ from twisted.application.app import startApplication
 from landscape.log import rotate_logs
 from landscape.reactor import TwistedReactor
 from landscape.deployment import get_versioned_persist, init_logging
-from landscape.amp import ComponentProtocol
+from landscape.amp import ComponentProtocol, ComponentPublisher
 
 
 class LandscapeService(Service, object):
@@ -50,7 +50,8 @@ class LandscapeService(Service, object):
         Service.startService(self)
         logging.info("%s started with config %s" % (
             self.service_name.capitalize(), self.config.get_config_filename()))
-        self.port = self.reactor.listen_unix(self.socket, self.factory)
+        if hasattr(self, "factory"):
+            self.port = self.reactor.listen_unix(self.socket, self.factory)
 
     def stopService(self):
         # We don't need to call port.stopListening(), because the reactor

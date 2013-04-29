@@ -7,8 +7,7 @@ from twisted.python.reflect import namedClass
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
-from landscape.broker.amp import (
-    BrokerClientProtocolFactory, RemoteBrokerConnector)
+from landscape.broker.amp import BrokerClientPublisher, RemoteBrokerConnector
 
 
 class MonitorService(LandscapeService):
@@ -26,7 +25,8 @@ class MonitorService(LandscapeService):
         self.plugins = self.get_plugins()
         self.monitor = Monitor(self.reactor, self.config, self.persist,
                                persist_filename=self.persist_filename)
-        self.factory = BrokerClientProtocolFactory(object=self.monitor)
+        self.publisher = BrokerClientPublisher(self.monitor, self.reactor,
+                                               self.config)
 
     def get_plugins(self):
         return [namedClass("landscape.monitor.%s.%s"
@@ -36,6 +36,7 @@ class MonitorService(LandscapeService):
     def startService(self):
         """Start the monitor."""
         super(MonitorService, self).startService()
+        self.publisher.start()
 
         def start_plugins(broker):
             self.broker = broker
@@ -54,6 +55,7 @@ class MonitorService(LandscapeService):
         The monitor is flushed to ensure that things like persist databases
         get saved to disk.
         """
+        self.publisher.stop()
         self.monitor.flush()
         self.connector.disconnect()
         super(MonitorService, self).stopService()
