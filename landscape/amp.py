@@ -23,6 +23,16 @@ class ComponentProtocolClientFactory(MethodCallClientFactory):
 
 
 class ComponentPublisher(object):
+    """Publish a Landscape client component using a UNIX socket.
+
+    Other Landscape client processes can then connect to the socket and invoke
+    methods on the component remotely, using L{MethodCall} commands.
+
+    @param component: The component to publish. It can be any Python object
+        implementing the methods listed in the C{methods} class variable.
+    @param reactor: The L{TwistedReactor} used to listen to the socket.
+    @param config: The L{Configuration} object used to build the socket path.
+    """
 
     methods = ("ping", "exit")
 
@@ -33,11 +43,13 @@ class ComponentPublisher(object):
         self._port = None
 
     def start(self):
+        """Start accepting connections."""
         factory = MethodCallServerFactory(self._component, self.methods)
         socket_path = _get_socket_path(self._component, self._config)
         self._port = self._reactor.listen_unix(socket_path, factory)
 
     def stop(self):
+        """Stop accepting connections."""
         return self._port.stopListening()
 
 
@@ -47,17 +59,20 @@ class RemoteComponentConnector(object):
     @cvar component: The class of the component to connect to, it is expected
         to define a C{name} class attribute, which will be used to find out
         the socket to use. It must be defined by sub-classes.
+    @cvar factory: The factory class to use for building protocols.
+    @cvar remote: The L{RemoteObject} class or sub-class used for building
+        remote objects.
 
     @param reactor: A L{TwistedReactor} object.
     @param config: A L{LandscapeConfiguration}.
-    @param args: Positional arguments for protocol factory constructor.
-    @param kwargs: Keyword arguments for protocol factory constructor.
+    @param retry_on_reconnect: If C{True} the remote object built by this
+        connector will retry L{MethodCall}s that failed due to lost
+        connections.
 
     @see: L{MethodCallClientFactory}.
     """
-
+    component = None  # Must be defined by sub-classes
     factory = ComponentProtocolClientFactory
-    remote = RemoteObject
 
     def __init__(self, reactor, config, retry_on_reconnect=False):
         self._reactor = reactor

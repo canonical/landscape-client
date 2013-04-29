@@ -414,15 +414,16 @@ class RemoteObject(object):
 
 
 class MethodCallServerFactory(ServerFactory):
+    """Expose a Python object using L{MethodCall} commands over C{AMP}."""
 
     protocol = MethodCallServerProtocol
 
     def __init__(self, object, methods):
         """
-        @param object: The object exposed by the protocol instances
-            created by this factory.
-        @param reactor: The reactor used by the created protocols
-            to schedule notifications and timeouts.
+        @param object: The object exposed by the L{MethodCallProtocol}s
+            instances created by this factory.
+        @param methods: A list of the names of the methods that remote peers
+            are allowed to call on the C{object} that we publish.
         """
         self.object = object
         self.methods = methods
