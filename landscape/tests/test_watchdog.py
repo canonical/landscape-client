@@ -1460,7 +1460,6 @@ class StubBroker(object):
         reactor.callLater(1, reactor.stop)
 
 stub_broker = StubBroker()
-# publisher = BrokerServerPublisher()
 methods = BrokerServerPublisher.methods
 factory = MethodCallServerFactory(stub_broker, methods)
 reactor.listenUNIX(%(socket)r, factory)
