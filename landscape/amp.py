@@ -14,24 +14,11 @@ import os
 import logging
 
 from landscape.lib.amp import (
-    MethodCallProtocol, MethodCallFactory, MethodCallServerFactory,
-    RemoteObject)
+    MethodCallClientFactory, MethodCallServerFactory, RemoteObject)
 
 
-class ComponentProtocol(MethodCallProtocol):
-    """Communication protocol between the various Landscape components.
+class ComponentProtocolClientFactory(MethodCallClientFactory):
 
-    It can be used both as server-side protocol for exposing the methods of a
-    certain Landscape component, or as client-side protocol for connecting to
-    another Landscape component we want to call the methods of.
-    """
-    methods = ["ping", "exit"]
-    timeout = 60
-
-
-class ComponentProtocolFactory(MethodCallFactory):
-
-    protocol = ComponentProtocol
     initialDelay = 0.05
 
 
@@ -85,7 +72,7 @@ class RemoteComponentConnector(object):
     @see: L{MethodCallClientFactory}.
     """
     component = None  # Must be defined by sub-classes
-    factory = ComponentProtocolFactory
+    factory = ComponentProtocolClientFactory
     remote = RemoteObject
 
     def __init__(self, reactor, config, retry_on_reconnect=False):

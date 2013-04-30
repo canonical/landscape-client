@@ -95,10 +95,6 @@ class BrokerClientPublisher(ComponentPublisher):
         "message")
 
 
-class RemoteClient(RemoteObject):
-    """A remote L{BrokerClient} connected to a L{BrokerServer}."""
-
-
 class RemoteBrokerConnector(RemoteComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""
 
@@ -109,7 +105,6 @@ class RemoteBrokerConnector(RemoteComponentConnector):
 class RemoteClientConnector(RemoteComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""
 
-    remote = RemoteClient
     component = BrokerClient
 
 

@@ -8,7 +8,6 @@ from twisted.application.app import startApplication
 from landscape.log import rotate_logs
 from landscape.reactor import TwistedReactor
 from landscape.deployment import get_versioned_persist, init_logging
-from landscape.amp import ComponentProtocol, ComponentPublisher
 
 
 class LandscapeService(Service, object):
@@ -90,7 +89,10 @@ def run_landscape_service(configuration_class, service_class, args):
     if configuration.clones > 0:
 
         # Increase the timeout of AMP's MethodCalls
-        ComponentProtocol.timeout = 300
+        # XXX: we should find a better way to expose this knot, and
+        # not set it globally on the class
+        from landscape.lib.amp import MethodCallSender
+        MethodCallSender.timeout = 300
 
         # Create clones here because TwistedReactor.__init__ would otherwise
         # cancel all scheduled delayed calls
