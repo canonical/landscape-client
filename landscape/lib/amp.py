@@ -51,7 +51,7 @@ from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
 from twisted.python.failure import Failure
 
 from twisted.protocols.amp import (
-    Argument, String, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
+    Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
 
@@ -78,9 +78,24 @@ class MethodCallError(Exception):
 
 
 class MethodCall(Command):
-    """Call a method on the object exposed by a L{MethodCallServerFactory}."""
+    """Call a method on the object exposed by a L{MethodCallServerFactory}.
 
-    arguments = [("uuid", String()),
+    The command arguments have the following semantics:
+
+    - C{sequence}: An integer uniquely indentifying a the L{MethodCall}
+      being issued. The name 'sequence' is a bit misleading because it's
+      really a uuid, since its values in practice are not in sequential
+      order, they are just random values. The name is kept just for backward
+      compatibility.
+
+    - C{method}: The name of the method to invoke on the remote object.
+
+    - C{arguments}: A BPickled binary tuple of the form C{(args, kwargs)},
+      where C{args} are the positional arguments to be passed to the method
+      and C{kwargs} the keyword ones.
+    """
+
+    arguments = [("sequence", Integer()),
                  ("method", String()),
                  ("arguments", String())]
 
@@ -94,12 +109,19 @@ class MethodCallChunk(Command):
 
     When a the arguments of a L{MethodCall} are bigger than 64k, they get split
     in several L{MethodCallChunk}s that are buffered on the receiver side.
+
+    The command arguments have the following semantics:
+
+    - C{sequence}: The unique integer associated with the L{MethodCall} that
+      this L{MethodCallChunk} is part of.
+    - C{chunk}: A portion of the big BPickle C{arguments} string which is
+      being split and buffered.
     """
 
-    arguments = [("uuid", String()),
+    arguments = [("sequence", Integer()),
                  ("chunk", String())]
 
-    response = [("result", String())]
+    response = [("result", Integer())]
 
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
@@ -119,7 +141,7 @@ class MethodCallReceiver(CommandLocator):
         self._pending_chunks = {}
 
     @MethodCall.responder
-    def receive_method_call(self, uuid, method, arguments):
+    def receive_method_call(self, sequence, method, arguments):
         """Call an object's method with the given arguments.
 
         If a connected client sends a L{MethodCall} for method C{foo_bar}, then
@@ -135,7 +157,7 @@ class MethodCallReceiver(CommandLocator):
            by one or more L{MethodCallChunk}s, C{arguments} is the last chunk
            of data.
         """
-        chunks = self._pending_chunks.pop(uuid, None)
+        chunks = self._pending_chunks.pop(sequence, None)
         if chunks is not None:
             # We got some L{MethodCallChunk}s before, this is the last.
             chunks.append(arguments)
@@ -160,14 +182,14 @@ class MethodCallReceiver(CommandLocator):
         return deferred
 
     @MethodCallChunk.responder
-    def receive_method_call_chunk(self, uuid, chunk):
+    def receive_method_call_chunk(self, sequence, chunk):
         """Receive a part of a multi-chunk L{MethodCall}.
 
         Add the received C{chunk} to the buffer of the L{MethodCall} identified
         by C{sequence}.
         """
-        self._pending_chunks.setdefault(uuid, []).append(chunk)
-        return {"result": uuid}
+        self._pending_chunks.setdefault(sequence, []).append(chunk)
+        return {"result": sequence}
 
     def _check_result(self, result):
         """Check that the C{result} we're about to return is serializable.
@@ -238,7 +260,7 @@ class MethodCallSender(object):
             a deferred, we fire with the callback value of such deferred.
         """
         arguments = dumps((args, kwargs))
-        uuid = str(uuid4())
+        sequence = uuid4().int
 
         # Split the given arguments in one or more chunks
         chunks = [arguments[i:i + self._chunk_size]
@@ -249,17 +271,17 @@ class MethodCallSender(object):
             # If we have N chunks, send the first N-1 as MethodCallChunk's
             for chunk in chunks[:-1]:
 
-                def create_send_chunk(uuid, chunk):
+                def create_send_chunk(sequence, chunk):
                     send_chunk = lambda x: self.protocol.callRemote(
-                        MethodCallChunk, uuid=uuid, chunk=chunk)
+                        MethodCallChunk, sequence=sequence, chunk=chunk)
                     return send_chunk
 
-                result.addCallback(create_send_chunk(uuid, chunk))
+                result.addCallback(create_send_chunk(sequence, chunk))
 
         def send_last_chunk(ignored):
             chunk = chunks[-1]
             return self._call_remote_with_timeout(
-                MethodCall, uuid=uuid, method=method, arguments=chunk)
+                MethodCall, sequence=sequence, method=method, arguments=chunk)
 
         result.addCallback(send_last_chunk)
         result.addCallback(lambda response: response["result"])
