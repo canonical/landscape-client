@@ -3,7 +3,7 @@
 This module implements an AMP-based protocol for performing remote procedure
 calls in a convenient and easy way. It's conceptually similar to DBus in that
 it supports exposing a Python object to a remote process, with communication
-happening over plain Unix domain sockets.
+happening over any Twisted-supported transport, e.g. Unix domain sockets.
 
 For example let's say we have a Python process "A" that creates an instance of
 this class::
@@ -35,8 +35,8 @@ real greeter object living in process A::
     factory.getRemoteObject().addCallback(got_remote)
 
 Note that when invoking a method via the remote proxy, the parameters
-are required to be serializable with bpickle, so that they can be sent
-over the wire.
+are required to be serializable with bpickle, so they can be sent over
+the wire.
 
 See also::
 
