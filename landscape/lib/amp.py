@@ -114,6 +114,7 @@ class MethodCallChunk(Command):
 
     - C{sequence}: The unique integer associated with the L{MethodCall} that
       this L{MethodCallChunk} is part of.
+
     - C{chunk}: A portion of the big BPickle C{arguments} string which is
       being split and buffered.
     """
