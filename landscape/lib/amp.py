@@ -479,9 +479,8 @@ class MethodCallClientFactory(ReconnectingClientFactory):
     @ivar protocol: The factory used to build protocol instances.
     @ivar remote: The factory used to build remote object instances.
     @ivar retryOnReconnect: If C{True}, the remote object returned by the
-        C{getRemoteObject} method will retry to perform again requests that
-        failed due to a lost connection, as soon as a new connection is
-        available.
+        C{getRemoteObject} method will retry requests that failed, as a
+        result of a lost connection, as soon as a new connection is available.
     @param retryTimeout: A timeout for retrying requests, if the remote object
         can't perform them again successfully within this number of seconds,
         they will errback with a L{MethodCallError}.

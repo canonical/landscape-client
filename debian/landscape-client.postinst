@@ -85,20 +85,6 @@ END
             chown landscape $CONFIG_FILE
         fi
 
-        # old monolithic clients have a single persist data file and a single
-        # package hash db.  This data should be migrated to the new format
-        # where each service has a persist and the package data is kept in a
-        # sqlite database.
-
-        DATA_BPICKLE=$DATA_DIR/client/data.bpickle
-        BROKER_BPICKLE=$DATA_DIR/client/broker.bpickle
-
-        if [ -f $DATA_BPICKLE -a ! -f $BROKER_BPICKLE ]; then
-            $PYTHON -c "from landscape.upgraders import legacy; legacy.migrate_data_file('$DATA_DIR/client')"
-            mv $DATA_BPICKLE $DATA_BPICKLE.migrated
-            echo "Old monolithic client data file migrated to new format."
-        fi
-
         # Remove statoverride for smart-update, if there's one
         smart_update=/usr/lib/landscape/smart-update
         if dpkg-statoverride --list $smart_update >/dev/null 2>&1; then
