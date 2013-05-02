@@ -292,7 +292,6 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
-        stop_exchanger = False
         needs_reboot = (message.get("reboot-if-necessary")
                         and os.path.exists(self.reboot_required_filename))
         stop_exchanger = needs_reboot
@@ -309,10 +308,11 @@ class PackageChanger(PackageTaskHandler):
             # broker.send_message guaranteed the message was saved to disk
             # before firing, but that's not the case, so we add an additional
             # delay.
-            deferred.addCallback(
-                lambda result: deferLater(reactor, 5, self._run_reboot))
-            stop_exchanger = True
+            deferred.addCallback(self._reboot_later)
         return deferred
+
+    def _reboot_later(self, result):
+        self._twisted_reactor.call_later(5, self._run_reboot)
 
     def _run_reboot(self):
         """
