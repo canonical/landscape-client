@@ -346,7 +346,7 @@ class RemoteObjectTest(LandscapeTest):
         client.factory = WordsFactory(self.clock)
         self.remote = RemoteObject(client.factory)
         self.connection = FakeConnection(client, server)
-        client.factory.connection = self.connection
+        client.factory.fake_connection = self.connection
 
     def test_method_call_sender_with_forbidden_method(self):
         """

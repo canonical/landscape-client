@@ -171,7 +171,7 @@ class RemoteBrokerTest(LandscapeTest):
         deferred = self.remote.listen_events(["event1", "event2"])
         self.reactor.call_later(0.05, self.reactor.fire, "event2")
         self.reactor.advance(0.05)
-        self.remote._factory.connection.flush()
+        self.remote._factory.fake_connection.flush()
         self.assertEqual("event2", self.successResultOf(deferred))
 
     def test_call_on_events(self):
@@ -188,7 +188,7 @@ class RemoteBrokerTest(LandscapeTest):
                                               "event2": callback2})
         self.reactor.call_later(0.05, self.reactor.fire, "event2")
         self.reactor.advance(0.05)
-        self.remote._factory.connection.flush()
+        self.remote._factory.fake_connection.flush()
         self.assertEqual(123, self.successResultOf(deferred))
 
     def test_fire_event(self):
