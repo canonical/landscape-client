@@ -314,13 +314,14 @@ class RemoteObject(object):
     Any method call on a L{RemoteObject} instance will return a L{Deferred}
     resulting in the return value of the same method call performed on
     the remote object exposed by the peer.
-
-    @param factory: The L{MethodCallClientFactory} used for connecting to
-        the other peer. Look there if you need to tweak the behavior of
-        this L{RemoteObject}.
     """
 
     def __init__(self, factory):
+        """
+        @param factory: The L{MethodCallClientFactory} used for connecting to
+            the other peer. Look there if you need to tweak the behavior of
+            this L{RemoteObject}.
+        """
         self._sender = None
         self._pending_requests = {}
         self._factory = factory
