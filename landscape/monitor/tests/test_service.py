@@ -1,4 +1,3 @@
-from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
 from landscape.reactor import FakeReactor
 from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
