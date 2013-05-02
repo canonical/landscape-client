@@ -182,13 +182,8 @@ class RemoteBrokerHelper(BrokerServerHelper):
                                                 test_case.config)
 
         self._publisher.start()
-
-        def set_remote(remote):
-            test_case.remote = remote
-            return remote
-
-        connected = self._connector.connect()
-        return connected.addCallback(set_remote)
+        deferred = self._connector.connect()
+        test_case.remote = test_case.successResultOf(deferred)
 
     def tear_down(self, test_case):
         self._connector.disconnect()
@@ -214,16 +209,12 @@ class BrokerClientHelper(RemoteBrokerHelper):
     """
 
     def set_up(self, test_case):
-
-        def set_client(remote):
-            # The client needs its own reactor to avoid infinite loops
-            # when the broker broadcasts and event
-            test_case.client_reactor = FakeReactor()
-            test_case.client = BrokerClient(test_case.client_reactor)
-            test_case.client.broker = remote
-
-        connected = super(BrokerClientHelper, self).set_up(test_case)
-        return connected.addCallback(set_client)
+        super(BrokerClientHelper, self).set_up(test_case)
+        # The client needs its own reactor to avoid infinite loops
+        # when the broker broadcasts and event
+        test_case.client_reactor = FakeReactor()
+        test_case.client = BrokerClient(test_case.client_reactor)
+        test_case.client.broker = test_case.remote
 
 
 class RemoteClientHelper(BrokerClientHelper):
@@ -239,22 +230,14 @@ class RemoteClientHelper(BrokerClientHelper):
     """
 
     def set_up(self, test_case):
-
-        def set_remote_client(ignored):
-            test_case.remote_client = test_case.broker.get_client("client")
-            self._client_connector = test_case.broker.get_connector("client")
-
-        def listen(ignored):
-
-            self._client_publisher = BrokerClientPublisher(test_case.client,
-                                                           test_case.reactor,
-                                                           test_case.config)
-            self._client_publisher.start()
-            result = test_case.remote.register_client("client")
-            return result.addCallback(set_remote_client)
-
-        connected = super(RemoteClientHelper, self).set_up(test_case)
-        return connected.addCallback(listen)
+        super(RemoteClientHelper, self).set_up(test_case)
+        self._client_publisher = BrokerClientPublisher(test_case.client,
+                                                       test_case.reactor,
+                                                       test_case.config)
+        self._client_publisher.start()
+        test_case.remote.register_client("client")
+        test_case.remote_client = test_case.broker.get_client("client")
+        self._client_connector = test_case.broker.get_connector("client")
 
     def tear_down(self, test_case):
         self._client_connector.disconnect()

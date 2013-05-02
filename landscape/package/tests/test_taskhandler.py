@@ -41,15 +41,11 @@ class PackageTaskHandlerTest(LandscapeTest):
     helpers = [AptFacadeHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-
-        def set_up(ignored):
-            self.config = PackageTaskHandlerConfiguration()
-            self.store = PackageStore(self.makeFile())
-            self.handler = PackageTaskHandler(
-                self.store, self.facade, self.remote, self.config)
-
-        result = super(PackageTaskHandlerTest, self).setUp()
-        return result.addCallback(set_up)
+        super(PackageTaskHandlerTest, self).setUp()
+        self.config = PackageTaskHandlerConfiguration()
+        self.store = PackageStore(self.makeFile())
+        self.handler = PackageTaskHandler(
+            self.store, self.facade, self.remote, self.config)
 
     def test_use_hash_id_db(self):
 

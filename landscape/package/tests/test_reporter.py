@@ -48,21 +48,17 @@ class PackageReporterAptTest(LandscapeTest):
     Facade = AptFacade
 
     def setUp(self):
-
-        def set_up(ignored):
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = PackageReporter(
-                self.store, self.facade, self.remote, self.config)
-            # Assume update-notifier-common stamp file is not present by
-            # default.
-            self.reporter.update_notifier_stamp = "/Not/Existing"
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-            self.check_stamp_file = self.config.detect_package_changes_stamp
-
-        result = super(PackageReporterAptTest, self).setUp()
-        return result.addCallback(set_up)
+        super(PackageReporterAptTest, self).setUp()
+        self.store = PackageStore(self.makeFile())
+        self.config = PackageReporterConfiguration()
+        self.reporter = PackageReporter(
+            self.store, self.facade, self.remote, self.config)
+        # Assume update-notifier-common stamp file is not present by
+        # default.
+        self.reporter.update_notifier_stamp = "/Not/Existing"
+        self.config.data_path = self.makeDir()
+        os.mkdir(self.config.package_directory)
+        self.check_stamp_file = self.config.detect_package_changes_stamp
 
     def _clear_repository(self):
         """Remove all packages from self.repository."""
@@ -1644,20 +1640,16 @@ class GlobalPackageReporterAptTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-
-        def set_up(ignored):
-            self.store = FakePackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = FakeGlobalReporter(
-                self.store, self.facade, self.remote, self.config)
-            # Assume update-notifier-common stamp file is not present by
-            # default.
-            self.reporter.update_notifier_stamp = "/Not/Existing"
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(GlobalPackageReporterAptTest, self).setUp()
-        return result.addCallback(set_up)
+        super(GlobalPackageReporterAptTest, self).setUp()
+        self.store = FakePackageStore(self.makeFile())
+        self.config = PackageReporterConfiguration()
+        self.reporter = FakeGlobalReporter(
+            self.store, self.facade, self.remote, self.config)
+        # Assume update-notifier-common stamp file is not present by
+        # default.
+        self.reporter.update_notifier_stamp = "/Not/Existing"
+        self.config.data_path = self.makeDir()
+        os.mkdir(self.config.package_directory)
 
     def test_store_messages(self):
         """
@@ -1695,20 +1687,16 @@ class FakePackageReporterTest(LandscapeTest):
     helpers = [EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-
-        def set_up(ignored):
-            self.store = FakePackageStore(self.makeFile())
-            global_file = self.makeFile()
-            self.global_store = FakePackageStore(global_file)
-            os.environ["FAKE_PACKAGE_STORE"] = global_file
-            self.config = PackageReporterConfiguration()
-            self.reporter = FakeReporter(
-                self.store, None, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(FakePackageReporterTest, self).setUp()
-        return result.addCallback(set_up)
+        super(FakePackageReporterTest, self).setUp()
+        self.store = FakePackageStore(self.makeFile())
+        global_file = self.makeFile()
+        self.global_store = FakePackageStore(global_file)
+        os.environ["FAKE_PACKAGE_STORE"] = global_file
+        self.config = PackageReporterConfiguration()
+        self.reporter = FakeReporter(
+            self.store, None, self.remote, self.config)
+        self.config.data_path = self.makeDir()
+        os.mkdir(self.config.package_directory)
 
     def test_send_messages(self):
         """

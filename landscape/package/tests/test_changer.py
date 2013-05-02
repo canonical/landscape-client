@@ -33,30 +33,25 @@ class AptPackageChangerTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-
-        def set_up(ignored):
-
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageChangerConfiguration()
-            self.config.data_path = self.makeDir()
-            self.process_factory = StubProcessFactory()
-            self.twisted_reactor = FakeReactor()
-            reboot_required_filename = self.makeFile("reboot required")
-            os.mkdir(self.config.package_directory)
-            os.mkdir(self.config.binaries_path)
-            touch_file(self.config.update_stamp_filename)
-            self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config,
-                process_factory=self.process_factory,
-                twisted_reactor=self.twisted_reactor,
-                reboot_required_filename=reboot_required_filename)
-            self.changer.update_notifier_stamp = "/Not/Existing"
-            service = self.broker_service
-            service.message_store.set_accepted_types(["change-packages-result",
-                                                      "operation-result"])
-
-        result = super(AptPackageChangerTest, self).setUp()
-        return result.addCallback(set_up)
+        super(AptPackageChangerTest, self).setUp()
+        self.store = PackageStore(self.makeFile())
+        self.config = PackageChangerConfiguration()
+        self.config.data_path = self.makeDir()
+        self.process_factory = StubProcessFactory()
+        self.twisted_reactor = FakeReactor()
+        reboot_required_filename = self.makeFile("reboot required")
+        os.mkdir(self.config.package_directory)
+        os.mkdir(self.config.binaries_path)
+        touch_file(self.config.update_stamp_filename)
+        self.changer = PackageChanger(
+            self.store, self.facade, self.remote, self.config,
+            process_factory=self.process_factory,
+            twisted_reactor=self.twisted_reactor,
+            reboot_required_filename=reboot_required_filename)
+        self.changer.update_notifier_stamp = "/Not/Existing"
+        service = self.broker_service
+        service.message_store.set_accepted_types(["change-packages-result",
+                                                  "operation-result"])
 
     def set_pkg1_installed(self):
         """Return the hash of a package that is installed."""
