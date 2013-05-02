@@ -6,6 +6,8 @@ import sys
 import logging
 import bisect
 
+from twisted.python.failure import Failure
+from twisted.internet.error import ConnectError
 from twisted.internet.threads import deferToThread
 
 from landscape.log import format_object
@@ -110,33 +112,13 @@ class EventHandlingReactorMixin(object):
             raise InvalidID("EventID instance expected, received %r" % id)
 
 
-class UnixReactorMixin(object):
-    """Support listening on Unix domain sockets.
-
-    Note that this mixin uses the *real* Twisted reactor to open a *real*
-    socket.
-
-    Since it is used by *both* L{TwistedReactor} and L{FakeReactor}, this
-    means that the latter is not really fake in this sense and that unit
-    tests involving calls to this method won't be synchronous anymore.
-
-    For example, many tests under L{landscape.broker.tests} use C{listen_unix}
-    to setup a "real" remote broker and exercise the RPC/AMP functionality. See
-    in particular L{landscape.broker.tests.helpers.RemoteBrokerHelper}.
-    """
-
-    def listen_unix(self, socket, factory):
-        """Start listening on a Unix socket."""
-        return self._reactor.listenUNIX(socket, factory, wantPID=True)
-
-
 class ReactorID(object):
 
     def __init__(self, timeout):
         self._timeout = timeout
 
 
-class TwistedReactor(EventHandlingReactorMixin, UnixReactorMixin):
+class TwistedReactor(EventHandlingReactorMixin):
     """Wrap and add functionalities to the Twisted C{reactor}.
 
     This essentially a facade around the C{twisted.internet.reactor} and
@@ -239,6 +221,14 @@ class TwistedReactor(EventHandlingReactorMixin, UnixReactorMixin):
         deferred.addCallback(on_success)
         deferred.addErrback(on_failure)
 
+    def listen_unix(self, socket, factory):
+        """Start listening on a Unix socket."""
+        return self._reactor.listenUNIX(socket, factory, wantPID=True)
+
+    def connect_unix(self, socket, factory):
+        """Connect to a Unix socket."""
+        return self._reactor.connectUNIX(socket, factory)
+
     def run(self):
         """Start the reactor, a C{"run"} event will be fired."""
 
@@ -266,7 +256,7 @@ class FakeReactorID(object):
         self._data = data
 
 
-class FakeReactor(EventHandlingReactorMixin, UnixReactorMixin):
+class FakeReactor(EventHandlingReactorMixin):
     """A fake reactor with the same API of L{TwistedReactor}.
 
     This reactor emulates the asychronous interface of L{TwistedReactor}, but
@@ -279,6 +269,10 @@ class FakeReactor(EventHandlingReactorMixin, UnixReactorMixin):
     around Unix sockets), and implement a fake version C{listen_unix}, but this
     hasn't been done yet.
     """
+    # XXX probably this shouldn't be a class attribute, but we need client-side
+    # FakeReactor instaces to be aware of listening sockets created by
+    # server-side FakeReactor instances.
+    _socket_paths = {}
 
     def __init__(self):
         super(FakeReactor, self).__init__()
@@ -287,8 +281,8 @@ class FakeReactor(EventHandlingReactorMixin, UnixReactorMixin):
         self.hosts = {}
         self._threaded_callbacks = []
 
-        # We need a reference to the Twisted reactor as well to
-        # let Landscape services listen to Unix sockets
+        # XXX we need a reference to the Twisted reactor as well because
+        # some tests use it
         from twisted.internet import reactor
         self._reactor = reactor
 
@@ -326,7 +320,8 @@ class FakeReactor(EventHandlingReactorMixin, UnixReactorMixin):
             super(FakeReactor, self).cancel_call(id)
 
     def call_when_running(self, f):
-        raise NotImplemented("The FakeReactor doesn't implement this.")
+        # Just schedule a call that will be kicked by the run() method.
+        self.call_later(0, f)
 
     def call_in_main(self, f, *args, **kwargs):
         """Schedule a function for execution in the main thread."""
@@ -346,6 +341,28 @@ class FakeReactor(EventHandlingReactorMixin, UnixReactorMixin):
         """
         self._in_thread(callback, errback, f, args, kwargs)
         self._run_threaded_callbacks()
+
+    def listen_unix(self, socket_path, factory):
+
+        class FakePort(object):
+
+            def stopListening(oself):
+                self._socket_paths.pop(socket_path)
+
+        self._socket_paths[socket_path] = factory
+        return FakePort()
+
+    def connect_unix(self, path, factory):
+        server = self._socket_paths.get(path)
+        from landscape.lib.tests.test_amp import FakeConnection
+        if server:
+            connection = FakeConnection(factory.buildProtocol(path),
+                                        server.buildProtocol(path))
+            factory.fake_connection = connection
+        else:
+            connector = object()  # Fake connector
+            failure = Failure(ConnectError("No such file or directory"))
+            factory.clientConnectionFailed(connector, failure)
 
     def run(self):
         """Continuously advance this reactor until reactor.stop() is called."""

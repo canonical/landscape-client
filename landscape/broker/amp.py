@@ -2,7 +2,7 @@ from twisted.internet.defer import maybeDeferred, execute, succeed
 
 from landscape.lib.amp import RemoteObject, MethodCallArgument
 from landscape.amp import (
-    RemoteComponentConnector, RemoteComponentsRegistry, ComponentPublisher)
+    ComponentConnector, RemoteComponentsRegistry, ComponentPublisher)
 from landscape.broker.server import BrokerServer
 from landscape.broker.client import BrokerClient
 from landscape.monitor.monitor import Monitor
@@ -95,14 +95,14 @@ class BrokerClientPublisher(ComponentPublisher):
         "message")
 
 
-class RemoteBrokerConnector(RemoteComponentConnector):
+class RemoteBrokerConnector(ComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""
 
     remote = RemoteBroker
     component = BrokerServer
 
 
-class RemoteClientConnector(RemoteComponentConnector):
+class RemoteClientConnector(ComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""
 
     component = BrokerClient

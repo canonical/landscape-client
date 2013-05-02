@@ -349,6 +349,14 @@ class RemoteObject(object):
             result.addCallback(self._handle_result, deferred)
             result.addErrback(self._handle_failure, method, args, kwargs,
                               deferred)
+
+            if self._factory.fake_connection is not None:
+                # Transparently flush the connection after a send_method_call
+                # invokation letting tests simulate a synchronous transport.
+                # This is needed because the Twisted's AMP implementation
+                # assume that the transport is asynchronous.
+                self._factory.fake_connection.flush()
+
             return deferred
 
         return send_method_call
@@ -486,6 +494,12 @@ class MethodCallClientFactory(ReconnectingClientFactory):
 
     retryOnReconnect = False
     retryTimeout = None
+
+    # XXX support exposing fake asynchronous connections created by tests, so
+    # they can be flushed transparently and emulate a synchronous behavior. See
+    # also http://twistedmatrix.com/trac/ticket/6502, once that's fixed this
+    # hack can be removed.
+    fake_connection = None
 
     def __init__(self, reactor=None):
         """

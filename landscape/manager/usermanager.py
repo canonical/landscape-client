@@ -1,9 +1,7 @@
-import os
 import logging
 
-from landscape.lib.amp import RemoteObject
 from landscape.lib.encoding import encode_dict_if_needed
-from landscape.amp import ComponentPublisher, RemoteComponentConnector
+from landscape.amp import ComponentPublisher, ComponentConnector
 
 from landscape.user.management import UserManagement
 from landscape.manager.plugin import ManagerPlugin
@@ -158,6 +156,6 @@ class UserManagerPublisher(ComponentPublisher):
     methods = ["get_locked_usernames"]
 
 
-class RemoteUserManagerConnector(RemoteComponentConnector):
+class RemoteUserManagerConnector(ComponentConnector):
 
     component = UserManager

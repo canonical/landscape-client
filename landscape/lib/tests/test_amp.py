@@ -1,28 +1,28 @@
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, DeferredList
-from twisted.internet.error import ConnectionDone, ConnectError
+from twisted.internet.error import ConnectError, ConnectionDone
 from twisted.internet.task import Clock
-from twisted.protocols.amp import AMP
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
 from landscape.lib.amp import (
     MethodCallError, MethodCallServerProtocol, MethodCallClientProtocol,
     MethodCallServerFactory, MethodCallClientFactory, RemoteObject,
-    RemoteObjectConnector, MethodCallReceiver, MethodCallSender)
+    RemoteObjectConnector, MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
 
 
 class FakeTransport(object):
     """Accumulate written data into a list."""
 
-    def __init__(self):
+    def __init__(self, connection):
         self.stream = []
+        self.connection = connection
 
     def write(self, data):
         self.stream.append(data)
 
     def loseConnection(self):
-        raise NotImplemented()
+        self.connection.disconnect()
 
     def getPeer(self):
         pass
@@ -37,8 +37,16 @@ class FakeConnection(object):
     def __init__(self, client, server):
         self.client = client
         self.server = server
-        self.server.makeConnection(FakeTransport())
-        self.client.makeConnection(FakeTransport())
+        self.connect()
+
+    def connect(self):
+        self.server.makeConnection(FakeTransport(self))
+        self.client.makeConnection(FakeTransport(self))
+
+    def disconnect(self):
+        reason = Failure(ConnectionDone())
+        connector = self
+        self.client.factory.clientConnectionLost(connector, reason)
 
     def flush(self):
         """
@@ -338,17 +346,7 @@ class RemoteObjectTest(LandscapeTest):
         client.factory = WordsFactory(self.clock)
         self.remote = RemoteObject(client.factory)
         self.connection = FakeConnection(client, server)
-
-        send_method_call = self.remote._sender.send_method_call
-
-        def synchronous_send_method_call(method, args=[], kwargs={}):
-            # Transparently flush the connection after a send_method_call
-            # invocation
-            deferred = send_method_call(method, args=args, kwargs=kwargs)
-            self.connection.flush()
-            return deferred
-
-        self.remote._sender.send_method_call = synchronous_send_method_call
+        client.factory.fake_connection = self.connection
 
     def test_method_call_sender_with_forbidden_method(self):
         """

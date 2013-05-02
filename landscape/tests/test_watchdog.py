@@ -22,7 +22,7 @@ from landscape.watchdog import (
 from landscape.lib.dns import discover_server
 from landscape.configuration import (
     fetch_base64_ssl_public_certificate, print_text)
-from landscape.amp import ComponentProtocolClientFactory, RemoteComponentConnector
+from landscape.amp import ComponentConnector
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.deployment import Configuration
 from landscape.reactor import TwistedReactor
@@ -472,15 +472,9 @@ class StubBroker(object):
     name = "broker"
 
 
-class StubBrokerProtocolFactory(ComponentProtocolClientFactory):
-
-    initialDelay = 0.1
-
-
-class RemoteStubBrokerConnector(RemoteComponentConnector):
+class RemoteStubBrokerConnector(ComponentConnector):
 
     component = StubBroker
-    factory = StubBrokerProtocolFactory
 
 
 class DaemonTestBase(LandscapeTest):
@@ -945,6 +939,7 @@ class DaemonBrokerTest(DaemonTestBase):
         return RemoteBrokerConnector
 
     def test_is_running(self):
+        self.daemon._connector._reactor = self.broker_service.reactor
         result = self.daemon.is_running()
         result.addCallback(self.assertTrue)
         return result

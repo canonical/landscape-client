@@ -1479,7 +1479,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.broker_service.reactor.advance(100)
             self.twisted_reactor.advance(10)
             payloads = self.broker_service.exchanger._transport.payloads
-            self.assertEqual(1, len(payloads))
+            self.assertEqual(0, len(payloads))
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]

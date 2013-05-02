@@ -276,10 +276,7 @@ def run_task_handler(cls, args, reactor=None):
 
     def finish():
         connector.disconnect()
-        # For some obscure reason our TwistedReactor.stop method calls
-        # reactor.crash() instead of reactor.stop(), which doesn't work
-        # here. Maybe TwistedReactor.stop should simply use reactor.stop().
-        reactor.call_later(0, reactor._reactor.stop)
+        reactor.call_later(0, reactor.stop)
 
     def got_error(failure):
         log_failure(failure)
