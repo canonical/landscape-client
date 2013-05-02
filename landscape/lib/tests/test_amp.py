@@ -79,7 +79,7 @@ class FakeConnector(object):
         # XXX Let the client factory be aware of this fake connection, so
         # it can flush it when needed. This is to workaround AMP not
         # supporting synchronous transports
-        self.client.connection = self.connection
+        self.client.fake_connection = self.connection
 
         self.connection.make()
 
@@ -614,7 +614,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
     def test_connect_notifier(self):
         """
         The C{notifyOnConnect} method supports specifying a callback that
-        will be invoked when a the connection has been established.
+        will be invoked when a connection has been established.
         """
         protocols = []
         self.factory.notifyOnConnect(protocols.append)
@@ -624,7 +624,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
 
     def test_connect_notifier_with_reconnect(self):
         """
-        The C{notifyOnConnect} fires the callbacks also then a connection is
+        The C{notifyOnConnect} method will also callback when a connection is
         re-established after it was lost.
         """
         protocols = []
