@@ -8,7 +8,6 @@ import grp
 
 from twisted.internet.defer import maybeDeferred, succeed
 from twisted.internet import reactor
-from twisted.internet.task import deferLater
 
 from landscape.constants import (
     SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT,
