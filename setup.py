@@ -59,8 +59,6 @@ setup(name="Landscape Client",
                "scripts/landscape-client-registration-mechanism",
                "scripts/landscape-client-settings-ui",
                "scripts/landscape-client-ui-install"],
-      ext_modules=[Extension("landscape.lib.initgroups",
-                             ["landscape/lib/initgroups.c"])],
       cmdclass={"build_i18n":  build_i18n.build_i18n,
                 "build": build_extra.build_extra,
                 "clean": clean_build_tree})

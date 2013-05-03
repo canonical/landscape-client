@@ -1,5 +1,3 @@
-import sys
-
 DEBIAN_REVISION = ""
 UPSTREAM_VERSION = "13.02"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
@@ -40,25 +38,3 @@ API = SERVER_API
 #  * Support per-exchange authentication tokens
 
 CLIENT_API = "3.5"
-
-from twisted.python import util
-
-
-def initgroups(uid, gid):
-    """Initializes the group access list.
-
-    It replaces the default implementation of Twisted which iterates other all
-    groups, using the system call C{initgroups} instead. This wrapper just
-    translates the numeric C{uid} to a user name understood by C{initgroups}.
-    """
-    import pwd
-    from landscape.lib.initgroups import initgroups as cinitgroups
-    return cinitgroups(pwd.getpwuid(uid).pw_name, gid)
-
-
-if "twisted.python._initgroups" not in sys.modules:
-    # Patch twisted initgroups implementation, which can result in very long
-    # calls to grp.getrlall(). See http://twistedmatrix.com/trac/ticket/3226
-    # We can remove that bit when Lucid is our oldest supported version
-    # (May 2013).
-    util.initgroups = initgroups
