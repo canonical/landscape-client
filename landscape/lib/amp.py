@@ -353,7 +353,7 @@ class RemoteObject(object):
 
         if self._factory.fake_connection is not None:
             # Transparently flush the connection after a send_method_call
-            # invokation letting tests simulate a synchronous transport.
+            # invocation letting tests simulate a synchronous transport.
             # This is needed because the Twisted's AMP implementation
             # assume that the transport is asynchronous.
             self._factory.fake_connection.flush()

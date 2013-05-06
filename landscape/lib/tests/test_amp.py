@@ -568,7 +568,7 @@ class RemoteObjectTest(LandscapeTest):
         deferred = self.remote.capitalize("john")
 
         # The deferred has not fired yet, because it's been put in the pending
-        # queue, till the call gets a chance to be retried upon reconnection
+        # queue, until the call gets a chance to be retried upon reconnection
         self.assertFalse(deferred.called)
 
         # Time passes and the factory successfully reconnects
@@ -587,7 +587,7 @@ class RemoteObjectTest(LandscapeTest):
         deferred = self.remote.secret()
 
         # The deferred has not fired yet, because it's been put in the pending
-        # queue, till the call gets a chance to be retried upon reconnection
+        # queue, until the call gets a chance to be retried upon reconnection
         self.assertFalse(deferred.called)
 
         # Time passes and the factory successfully reconnects
