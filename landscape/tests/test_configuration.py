@@ -5,8 +5,10 @@ from ConfigParser import ConfigParser
 from cStringIO import StringIO
 
 from twisted.internet.defer import succeed, fail
+from twisted.internet.task import Clock
 
-from landscape.reactor import TwistedReactor
+from landscape.lib.amp import MethodCallSender
+from landscape.reactor import TwistedReactor, FakeReactor
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
@@ -19,7 +21,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
-from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
+from landscape.broker.amp import RemoteBroker
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -1633,7 +1635,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(FakeReactor)
 
         # This must necessarily happen in the following order.
         self.mocker.order()
@@ -1644,8 +1646,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-
-        reactor_mock.run()
 
         # After a nice dance the configuration is reloaded.
         config_mock.reload()
@@ -1664,6 +1664,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         reactor_mock.stop()
 
+        # This is actually called after everything else since all deferreds
+        # are synchronous and callbacks will be executed immediately.
+        reactor_mock.run()
+
         # Nothing else is printed!
         print_text_mock(ANY)
         self.mocker.count(0)
@@ -1671,7 +1675,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(self.config, print_text, sys.exit)
+        return register(self.config, print_text, sys.exit,
+                        reactor=FakeReactor())
 
     def test_register_failure(self):
         """
@@ -1684,7 +1689,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(FakeReactor)
 
         # This must necessarily happen in the following order.
         self.mocker.order()
@@ -1695,8 +1700,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-
-        reactor_mock.run()
 
         # After a nice dance the configuration is reloaded.
         config_mock.reload()
@@ -1716,6 +1719,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         reactor_mock.stop()
 
+        # This is actually called after everything else since all deferreds
+        # are synchronous and callbacks will be executed immediately.
+        reactor_mock.run()
+
         # Nothing else is printed!
         print_text_mock(ANY)
         self.mocker.count(0)
@@ -1723,7 +1730,9 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(self.config, print_text, sys.exit)
+        exit = []
+        register(self.config, print_text, exit.append, reactor=FakeReactor())
+        self.assertEqual([2], exit)
 
     def test_register_exchange_failure(self):
         """
@@ -1735,7 +1744,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(FakeReactor)
 
         # This must necessarily happen in the following order.
         self.mocker.order()
@@ -1746,8 +1755,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-
-        reactor_mock.run()
 
         # After a nice dance the configuration is reloaded.
         config_mock.reload()
@@ -1766,6 +1773,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         reactor_mock.stop()
 
+        # This is actually called after everything else since all deferreds
+        # are synchronous and callbacks will be executed immediately.
+        reactor_mock.run()
+
         # Nothing else is printed!
         print_text_mock(ANY)
         self.mocker.count(0)
@@ -1773,7 +1784,9 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(self.config, print_text, sys.exit)
+        exit = []
+        register(self.config, print_text, exit.append, reactor=FakeReactor())
+        self.assertEqual([2], exit)
 
     def test_register_timeout_failure(self):
         service = self.broker_service
@@ -1781,10 +1794,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(FakeReactor)
         remote_mock = self.mocker.patch(RemoteBroker)
 
-        protocol_mock = self.mocker.patch(BrokerClientProtocol)
+        protocol_mock = self.mocker.patch(MethodCallSender)
         protocol_mock.timeout
         self.mocker.result(0.1)
         self.mocker.count(0, None)
@@ -1799,16 +1812,18 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock.sleep(ANY)
         self.mocker.count(1)
 
-        reactor_mock.run()
+        # After a nice dance the configuration is reloaded.
+        config_mock.reload()
 
         remote_mock.call_on_event(ANY)
         self.mocker.result(succeed(None))
 
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
-
         registration_mock.register()
         self.mocker.passthrough()
+
+        # This is actually called after everything else since all deferreds
+        # are synchronous and callbacks will be executed immediately.
+        reactor_mock.run()
 
         # Nothing else is printed!
         print_text_mock(ANY)
@@ -1817,7 +1832,12 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(self.config, print_text, sys.exit)
+        fake_reactor = FakeReactor()
+        fake_reactor._reactor = Clock()
+        deferred = register(self.config, print_text, sys.exit,
+                            reactor=fake_reactor)
+        fake_reactor._reactor.advance(100)
+        return deferred
 
     def test_register_bus_connection_failure(self):
         """
@@ -1992,14 +2012,13 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         remote_broker = self.mocker.mock()
 
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(FakeReactor)
 
         # This is unordered. It's just way too much of a pain.
         print_text_mock("Please wait... ", "")
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-        reactor_mock.run()
 
         # SNORE
         connector = connector_factory(ANY, configuration)
@@ -2024,10 +2043,12 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         # WHOAH DUDE. This waits for callLater(0, reactor.stop).
         connector.disconnect()
         reactor_mock.stop()
+        reactor_mock.run()
 
         self.mocker.replay()
 
-        return register(configuration, print_text, sys.exit, max_retries=0)
+        return register(configuration, print_text, sys.exit, max_retries=0,
+                        reactor=FakeReactor())
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):

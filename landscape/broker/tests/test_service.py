@@ -14,7 +14,11 @@ class BrokerServiceTest(LandscapeTest):
 
     def setUp(self):
         super(BrokerServiceTest, self).setUp()
-        self.service = BrokerService(self.config)
+
+        class FakeBrokerService(BrokerService):
+            reactor_factory = FakeReactor
+
+        self.service = FakeBrokerService(self.config)
 
     def test_persist(self):
         """
@@ -80,5 +84,4 @@ class BrokerServiceTest(LandscapeTest):
         connected.addCallback(lambda remote: remote.get_server_uuid())
         connected.addCallback(lambda x: connector.disconnect())
         connected.addCallback(lambda x: self.service.stopService())
-        connected.addCallback(lambda x: self.service.port.stopListening())
         return connected

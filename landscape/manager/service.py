@@ -2,8 +2,7 @@ from twisted.python.reflect import namedClass
 
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.manager.config import ManagerConfiguration
-from landscape.broker.amp import (
-    BrokerClientProtocolFactory, RemoteBrokerConnector)
+from landscape.broker.amp import BrokerClientPublisher, RemoteBrokerConnector
 from landscape.manager.manager import Manager
 
 
@@ -19,7 +18,8 @@ class ManagerService(LandscapeService):
         super(ManagerService, self).__init__(config)
         self.plugins = self.get_plugins()
         self.manager = Manager(self.reactor, self.config)
-        self.factory = BrokerClientProtocolFactory(object=self.manager)
+        self.publisher = BrokerClientPublisher(self.manager, self.reactor,
+                                               self.config)
 
     def get_plugins(self):
         """Return instances of all the plugins enabled in the configuration."""
@@ -37,6 +37,7 @@ class ManagerService(LandscapeService):
           - Add all configured plugins, that will in turn register themselves.
         """
         super(ManagerService, self).startService()
+        self.publisher.start()
 
         def start_plugins(broker):
             self.broker = broker
@@ -52,6 +53,7 @@ class ManagerService(LandscapeService):
     def stopService(self):
         """Stop the manager and close the connection with the broker."""
         self.connector.disconnect()
+        self.publisher.stop()
         super(ManagerService, self).stopService()
 
 

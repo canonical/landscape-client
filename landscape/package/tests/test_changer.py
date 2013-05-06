@@ -25,6 +25,7 @@ from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)
 from landscape.manager.manager import FAILED
+from landscape.manager.shutdownmanager import ShutdownFailedError
 from landscape.reactor import FakeReactor
 
 
@@ -33,30 +34,25 @@ class AptPackageChangerTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-
-        def set_up(ignored):
-
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageChangerConfiguration()
-            self.config.data_path = self.makeDir()
-            self.process_factory = StubProcessFactory()
-            self.twisted_reactor = FakeReactor()
-            reboot_required_filename = self.makeFile("reboot required")
-            os.mkdir(self.config.package_directory)
-            os.mkdir(self.config.binaries_path)
-            touch_file(self.config.update_stamp_filename)
-            self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config,
-                process_factory=self.process_factory,
-                twisted_reactor=self.twisted_reactor,
-                reboot_required_filename=reboot_required_filename)
-            self.changer.update_notifier_stamp = "/Not/Existing"
-            service = self.broker_service
-            service.message_store.set_accepted_types(["change-packages-result",
-                                                      "operation-result"])
-
-        result = super(AptPackageChangerTest, self).setUp()
-        return result.addCallback(set_up)
+        super(AptPackageChangerTest, self).setUp()
+        self.store = PackageStore(self.makeFile())
+        self.config = PackageChangerConfiguration()
+        self.config.data_path = self.makeDir()
+        self.process_factory = StubProcessFactory()
+        self.twisted_reactor = FakeReactor()
+        reboot_required_filename = self.makeFile("reboot required")
+        os.mkdir(self.config.package_directory)
+        os.mkdir(self.config.binaries_path)
+        touch_file(self.config.update_stamp_filename)
+        self.changer = PackageChanger(
+            self.store, self.facade, self.remote, self.config,
+            process_factory=self.process_factory,
+            twisted_reactor=self.twisted_reactor,
+            reboot_required_filename=reboot_required_filename)
+        self.changer.update_notifier_stamp = "/Not/Existing"
+        service = self.broker_service
+        service.message_store.set_accepted_types(["change-packages-result",
+                                                  "operation-result"])
 
     def set_pkg1_installed(self):
         """Return the hash of a package that is installed."""
@@ -1418,6 +1414,7 @@ class AptPackageChangerTest(LandscapeTest):
                                                  "asked for!",
                                   "type": "change-packages-result"}])
 
+        self.twisted_reactor.advance(5)
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.processEnded(Failure(ProcessDone(status=0)))
@@ -1446,12 +1443,13 @@ class AptPackageChangerTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(self.get_pending_messages(),
                                 [{"operation-id": 123,
-                                  "result-code": 100,
+                                  "result-code": 1,
                                   "result-text": "Yeah, I did whatever you've "
-                                                 "asked for!\r\nReboot "
-                                                 "failed.",
+                                                 "asked for!",
                                   "type": "change-packages-result"}])
+            self.log_helper.ignore_errors(ShutdownFailedError)
 
+        self.twisted_reactor.advance(5)
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))
@@ -1479,7 +1477,9 @@ class AptPackageChangerTest(LandscapeTest):
             self.broker_service.reactor.advance(100)
             self.twisted_reactor.advance(10)
             payloads = self.broker_service.exchanger._transport.payloads
-            self.assertEqual(1, len(payloads))
+            self.assertEqual(0, len(payloads))
+
+        self.twisted_reactor.advance(5)
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]

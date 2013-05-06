@@ -1,4 +1,3 @@
-from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
 from landscape.reactor import FakeReactor
 from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
@@ -46,21 +45,12 @@ class MonitorServiceTest(LandscapeTest):
         starts the plugins and register the monitor as broker client.  It also
         start listening on its own socket for incoming connections.
         """
-        # FIXME: don't actually run the real register method, because at the
-        # moment the UserMonitor plugin still depends on DBus. We can probably
-        # drop this mocking once the AMP migration is completed.
-        for plugin in self.service.plugins:
-            plugin.register = self.mocker.mock()
-            plugin.register(ANY)
-        self.mocker.replay()
 
         def stop_service(ignored):
             [connector] = self.broker_service.broker.get_connectors()
             connector.disconnect()
             self.service.stopService()
-            self.service.port.stopListening()
             self.broker_service.stopService()
-            self.broker_service.port.stopListening()
 
         def assert_broker_connection(ignored):
             self.assertEqual(len(self.broker_service.broker.get_clients()), 1)
@@ -81,8 +71,7 @@ class MonitorServiceTest(LandscapeTest):
         self.service.monitor.flush()
         self.service.connector = self.mocker.mock()
         self.service.connector.disconnect()
-        self.service.port = self.mocker.mock()
-        self.service.port.stopListening()
+        self.service.publisher = self.mocker.mock()
+        self.service.publisher.stop()
         self.mocker.replay()
         self.service.stopService()
-        self.service.port.stopListening()

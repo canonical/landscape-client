@@ -11,6 +11,7 @@ import unittest
 
 from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
+from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 
 from landscape.tests.subunit import run_isolated
@@ -108,6 +109,57 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         TestCase.tearDown(self)
         HelperTestCase.tearDown(self)
         MockerTestCase.tearDown(self)
+
+    def successResultOf(self, deferred):
+        """See C{twisted.trial._synctest._Assertions.successResultOf}.
+
+        This is a copy of the original method, which is available only
+        since Twisted 12.3.0 (from 2012-12-20).
+        """
+        result = []
+        deferred.addBoth(result.append)
+        if not result:
+            self.fail(
+                "Success result expected on %r, found no result instead" % (
+                    deferred,))
+        elif isinstance(result[0], Failure):
+            self.fail(
+                "Success result expected on %r, "
+                "found failure result (%r) instead" % (deferred, result[0]))
+        else:
+            return result[0]
+
+    def failureResultOf(self, deferred):
+        """See C{twisted.trial._synctest._Assertions.failureResultOf}.
+
+        This is a copy of the original method, which is available only
+        since Twisted 12.3.0 (from 2012-12-20).
+        """
+        result = []
+        deferred.addBoth(result.append)
+        if not result:
+            self.fail(
+                "Failure result expected on %r, found no result instead" % (
+                    deferred,))
+        elif not isinstance(result[0], Failure):
+            self.fail(
+                "Failure result expected on %r, "
+                "found success result (%r) instead" % (deferred, result[0]))
+        else:
+            return result[0]
+
+    def assertNoResult(self, deferred):
+        """See C{twisted.trial._synctest._Assertions.assertNoResult}.
+
+        This is a copy of the original method, which is available only
+        since Twisted 12.3.0 (from 2012-12-20).
+        """
+        result = []
+        deferred.addBoth(result.append)
+        if result:
+            self.fail(
+                "No result expected on %r, found %r instead" % (
+                    deferred, result[0]))
 
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
@@ -306,14 +358,6 @@ class FakeBrokerServiceHelper(object):
             reactor_factory = FakeReactor
             transport_factory = FakeTransport
 
-            def stopService(service):
-                # We need to explictely stop listening to the socket
-                # because the reactor would still have active selectables
-                # at the end of the test otherwise
-                if os.path.exists(service.port.port):
-                    service.port.connectionLost(None)
-                super(FakeBrokerService, service).stopService()
-
         test_case.broker_service = FakeBrokerService(config)
         test_case.remote = FakeRemoteBroker(
             test_case.broker_service.exchanger,
@@ -332,17 +376,12 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
 
     def set_up(self, test_case):
         super(BrokerServiceHelper, self).set_up(test_case)
+        test_case.broker_service.startService()
         # Use different reactor to simulate separate processes
         self._connector = RemoteBrokerConnector(
             FakeReactor(), test_case.broker_service.config)
-
-        def set_remote(remote):
-            test_case.remote = remote
-            return remote
-
-        test_case.broker_service.startService()
-        connected = self._connector.connect()
-        return connected.addCallback(set_remote)
+        deferred = self._connector.connect()
+        test_case.remote = test_case.successResultOf(deferred)
 
     def tear_down(self, test_case):
         self._connector.disconnect()
@@ -600,150 +639,3 @@ CapEff: 0000000000000000
         """Remove sample data for the process that matches C{process_id}."""
         process_dir = os.path.join(self._sample_dir, str(process_id))
         shutil.rmtree(process_dir)
-
-
-from twisted.python import log
-from twisted.python import failure
-from twisted.trial import reporter
-
-
-def install_trial_hack():
-    """
-    Trial's TestCase in Twisted 2.2 had a bug which would prevent
-    certain errors from being reported when being run in a non-trial
-    test runner. This function monkeypatches trial to fix the bug, and
-    only takes effect if using Twisted 2.2.
-    """
-    from twisted.trial.itrial import IReporter
-    if "addError" in IReporter:
-        # We have no need for this monkey patch with newer versions of Twisted.
-        return
-
-    def run(self, result):
-        """
-        Copied from twisted.trial.unittest.TestCase.run, but some
-        lines from Twisted 2.5.
-        """
-        log.msg("--> %s <--" % (self.id()))
-
-        # From Twisted 2.5
-        if not isinstance(result, reporter.TestResult):
-            result = PyUnitResultAdapter(result)
-        # End from Twisted 2.5
-
-        self._timedOut = False
-        if self._shared and self not in self.__class__._instances:
-            self.__class__._instances.add(self)
-        result.startTest(self)
-        if self.getSkip():  # don't run test methods that are marked as .skip
-            result.addSkip(self, self.getSkip())
-            result.stopTest(self)
-            return
-        # From twisted 2.5
-        if hasattr(self, "_installObserver"):
-            self._installObserver()
-        # End from Twisted 2.5
-        self._passed = False
-        first = False
-        if self._shared:
-            first = self._isFirst()
-            self.__class__._instancesRun.add(self)
-        if first:
-            d = self.deferSetUpClass(result)
-        else:
-            d = self.deferSetUp(None, result)
-        try:
-            self._wait(d)
-        finally:
-            self._cleanUp(result)
-            result.stopTest(self)
-            if self._shared and self._isLast():
-                self._initInstances()
-                self._classCleanUp(result)
-            if not self._shared:
-                self._classCleanUp(result)
-    TestCase.run = run
-
-### Copied from Twisted, to fix a bug in trial in Twisted 2.2! ###
-
-
-class UnsupportedTrialFeature(Exception):
-    """A feature of twisted.trial was used that pyunit cannot support."""
-
-
-class PyUnitResultAdapter(object):
-    """
-    Wrap a C{TestResult} from the standard library's C{unittest} so that it
-    supports the extended result types from Trial, and also supports
-    L{twisted.python.failure.Failure}s being passed to L{addError} and
-    L{addFailure}.
-
-    @param original: A C{TestResult} instance from C{unittest}.
-    """
-
-    def __init__(self, original):
-        self.original = original
-
-    def _exc_info(self, err):
-        if isinstance(err, failure.Failure):
-            # Unwrap the Failure into a exc_info tuple.
-            err = (err.type, err.value, err.tb)
-        return err
-
-    def startTest(self, method):
-        # We'll need this later in cleanupErrors.
-        self.__currentTest = method
-        self.original.startTest(method)
-
-    def stopTest(self, method):
-        self.original.stopTest(method)
-
-    def addFailure(self, test, fail):
-        self.original.addFailure(test, self._exc_info(fail))
-
-    def addError(self, test, error):
-        self.original.addError(test, self._exc_info(error))
-
-    def _unsupported(self, test, feature, info):
-        self.original.addFailure(
-            test,
-            (UnsupportedTrialFeature,
-             UnsupportedTrialFeature(feature, info),
-             None))
-
-    def addSkip(self, test, reason):
-        """
-        Report the skip as a failure.
-        """
-        self._unsupported(test, 'skip', reason)
-
-    def addUnexpectedSuccess(self, test, todo):
-        """
-        Report the unexpected success as a failure.
-        """
-        self._unsupported(test, 'unexpected success', todo)
-
-    def addExpectedFailure(self, test, error):
-        """
-        Report the expected failure (i.e. todo) as a failure.
-        """
-        self._unsupported(test, 'expected failure', error)
-
-    def addSuccess(self, test):
-        self.original.addSuccess(test)
-
-    def upDownError(self, method, error, warn, printStatus):
-        pass
-
-    def cleanupErrors(self, errs):
-        # Let's consider cleanupErrors as REAL errors. In recent
-        # Twisted this is the default behavior, and cleanupErrors
-        # isn't even called.
-        self.addError(self.__currentTest, errs)
-
-    def startSuite(self, name):
-        pass
-
-### END COPY FROM TWISTED ###
-
-install_trial_hack()

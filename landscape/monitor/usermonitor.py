@@ -1,11 +1,7 @@
-import os
-
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
-from landscape.lib.amp import RemoteObject
-from landscape.amp import (
-    ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
+from landscape.amp import ComponentPublisher, ComponentConnector
 
 from landscape.monitor.plugin import MonitorPlugin
 from landscape.user.changes import UserChanges
@@ -25,23 +21,22 @@ class UserMonitor(MonitorPlugin):
         if provider is None:
             provider = UserProvider()
         self._provider = provider
-        self._port = None
+        self._publisher = None
 
     def register(self, registry):
         super(UserMonitor, self).register(registry)
 
         self.call_on_accepted("users", self._run_detect_changes, None)
 
-        factory = UserMonitorProtocolFactory(object=self)
-        socket = os.path.join(self.registry.config.sockets_path,
-                              self.name + ".sock")
-        self._port = self.registry.reactor.listen_unix(socket, factory)
+        self._publisher = UserMonitorPublisher(self, self.registry.reactor,
+                                               self.registry.config)
+        self._publisher.start()
 
     def stop(self):
         """Stop listening for incoming AMP connections."""
-        if self._port:
-            self._port.stopListening()
-            self._port = None
+        if self._publisher:
+            self._publisher.stop()
+            self._publisher = None
 
     def _resynchronize(self):
         """Resynchronize user and group data."""
@@ -110,23 +105,12 @@ class UserMonitor(MonitorPlugin):
             return result
 
 
-class UserMonitorProtocol(ComponentProtocol):
+class UserMonitorPublisher(ComponentPublisher):
     """L{AMP}-based protocol for calling L{UserMonitor}'s methods remotely."""
 
     methods = ["detect_changes"]
 
 
-class UserMonitorProtocolFactory(ComponentProtocolFactory):
+class RemoteUserMonitorConnector(ComponentConnector):
 
-    protocol = UserMonitorProtocol
-
-
-class RemoteUserMonitor(RemoteObject):
-    """A connected remote L{UserMonitor}."""
-
-
-class RemoteUserMonitorConnector(RemoteComponentConnector):
-
-    factory = ComponentProtocolFactory
-    remote = RemoteUserMonitor
     component = UserMonitor

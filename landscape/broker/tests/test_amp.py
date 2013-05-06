@@ -44,7 +44,8 @@ class RemoteBrokerTest(LandscapeTest):
             self.assertMessages(self.mstore.get_pending_messages(),
                                 [message])
 
-        result = self.remote.send_message(message)
+        session_id = 1234
+        result = self.remote.send_message(message, session_id)
         return result.addCallback(assert_response)
 
     def test_send_message_with_urgent(self):
@@ -168,9 +169,11 @@ class RemoteBrokerTest(LandscapeTest):
         L{RemoteBroker.listen_events} returns a deferred which fires when
         the first of the given events occurs in the broker reactor.
         """
-        result = self.remote.listen_events(["event1", "event2"])
-        self.reactor._reactor.callLater(0.05, self.reactor.fire, "event2")
-        return self.assertSuccess(result, "event2")
+        deferred = self.remote.listen_events(["event1", "event2"])
+        self.reactor.call_later(0.05, self.reactor.fire, "event2")
+        self.reactor.advance(0.05)
+        self.remote._factory.fake_connection.flush()
+        self.assertEqual("event2", self.successResultOf(deferred))
 
     def test_call_on_events(self):
         """
@@ -182,10 +185,12 @@ class RemoteBrokerTest(LandscapeTest):
         callback2 = self.mocker.mock()
         self.expect(callback2()).result(123)
         self.mocker.replay()
-        result = self.remote.call_on_event({"event1": callback1,
-                                            "event2": callback2})
-        self.reactor._reactor.callLater(0.05, self.reactor.fire, "event2")
-        return self.assertSuccess(result, 123)
+        deferred = self.remote.call_on_event({"event1": callback1,
+                                              "event2": callback2})
+        self.reactor.call_later(0.05, self.reactor.fire, "event2")
+        self.reactor.advance(0.05)
+        self.remote._factory.fake_connection.flush()
+        self.assertEqual(123, self.successResultOf(deferred))
 
     def test_fire_event(self):
         """
@@ -202,9 +207,8 @@ class RemoteBrokerTest(LandscapeTest):
         """
         Trying to call an non-exposed broker method results in a failure.
         """
-        result = self.remote._protocol.send_method_call(
-            method="get_clients", args=[], kwargs={})
-        return self.assertFailure(result, MethodCallError)
+        deferred = self.remote.get_clients()
+        self.failureResultOf(deferred).trap(MethodCallError)
 
 
 class RemoteClientTest(LandscapeTest):
@@ -263,6 +267,5 @@ class RemoteClientTest(LandscapeTest):
         """
         Trying to call an non-exposed client method results in a failure.
         """
-        result = self.remote_client._protocol.send_method_call(
-            method="get_plugins", args=[], kwargs={})
-        return self.assertFailure(result, MethodCallError)
+        deferred = self.remote_client.get_plugins()
+        self.failureResultOf(deferred).trap(MethodCallError)

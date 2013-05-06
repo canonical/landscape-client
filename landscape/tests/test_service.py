@@ -7,18 +7,11 @@ from twisted.internet.task import deferLater
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
-from landscape.amp import (
-    ComponentProtocolFactory, RemoteComponentConnector)
 from landscape.tests.helpers import LandscapeTest
-from landscape.tests.mocker import ANY
 
 
 class TestComponent(object):
     name = "monitor"
-
-
-class RemoteTestComponentCreator(RemoteComponentConnector):
-    component = TestComponent
 
 
 class TestService(LandscapeService):
@@ -108,34 +101,3 @@ class LandscapeServiceTest(LandscapeTest):
 
         handler = signal.getsignal(signal.SIGUSR1)
         self.assertFalse(handler)
-
-    def test_start_stop_service(self):
-        """
-        The L{startService} and makes the service start listening on a
-        socket for incoming connections.
-        """
-        service = TestService(self.config)
-        service.factory = ComponentProtocolFactory()
-        service.startService()
-        connector = RemoteTestComponentCreator(self.reactor, self.config)
-
-        def assert_port(ignored):
-            self.assertTrue(service.port.connected)
-            connector.disconnect()
-            service.stopService()
-            return service.port.stopListening()
-
-        connected = connector.connect()
-        return connected.addCallback(assert_port)
-
-    def test_start_uses_want_pid(self):
-        """
-        The L{startService} method sets the C{wantPID} flag when listening,
-        in order to remove stale socket files from previous runs.
-        """
-        service = TestService(self.config)
-        service.factory = ComponentProtocolFactory(self.reactor, self.config)
-        service.reactor._reactor = self.mocker.mock()
-        service.reactor._reactor.listenUNIX(ANY, ANY, wantPID=True)
-        self.mocker.replay()
-        service.startService()

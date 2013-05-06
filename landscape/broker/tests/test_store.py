@@ -71,6 +71,19 @@ class MessageStoreTest(LandscapeTest):
         store = self.create_store()
         self.assertEqual(store.get_server_uuid(), "abcd-efgh")
 
+    def test_get_set_exchange_token(self):
+        """
+        The next-exchange-token value can be persisted and retrieved.
+        """
+        self.assertEqual(self.store.get_exchange_token(), None)
+        self.store.set_exchange_token("abcd-efgh")
+        self.assertEqual(self.store.get_exchange_token(), "abcd-efgh")
+
+        # Ensure it's actually saved.
+        self.store.commit()
+        store = self.create_store()
+        self.assertEqual(store.get_exchange_token(), "abcd-efgh")
+
     def test_get_pending_offset(self):
         self.assertEqual(self.store.get_pending_offset(), 0)
         self.store.set_pending_offset(3)

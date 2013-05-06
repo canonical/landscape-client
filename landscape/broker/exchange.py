@@ -396,6 +396,7 @@ class MessageExchange(object):
         self._reactor.call_in_thread(handle_result, None,
                                      self._transport.exchange, payload,
                                      self._registration_info.secure_id,
+                                     self._get_exchange_token(),
                                      payload.get("server-api"))
         return deferred
 
@@ -444,6 +445,26 @@ class MessageExchange(object):
             self._exchange_id = self._reactor.call_later(interval,
                                                          self.exchange)
 
+    def _get_exchange_token(self):
+        """Get the token given us by the server at the last exchange.
+
+        It will be C{None} if we are not fully registered yet or if something
+        bad happened during the last exchange and we could not get the token
+        that the server had given us.
+        """
+        exchange_token = self._message_store.get_exchange_token()
+
+        # Before starting the exchange set the saved token to None. This will
+        # prevent us from locking ourselves out if the exchange fails or if we
+        # crash badly, while the server has saved a new token that we couldn't
+        # receive or persist (this works because if the token is None the
+        # server will be forgiving and will authenticate us based only on the
+        # secure ID we provide).
+        self._message_store.set_exchange_token(None)
+        self._message_store.commit()
+
+        return exchange_token
+
     def _notify_impending_exchange(self):
         self._reactor.fire("impending-exchange")
 
@@ -486,8 +507,7 @@ class MessageExchange(object):
                    "accepted-types": accepted_types_digest,
                    "messages": messages,
                    "total-messages": total_messages,
-                   "next-expected-sequence": store.get_server_sequence(),
-                  }
+                   "next-expected-sequence": store.get_server_sequence()}
         accepted_client_types = self.get_client_accepted_message_types()
         accepted_client_types_hash = self._hash_types(accepted_client_types)
         if accepted_client_types_hash != self._client_accepted_types_hash:
@@ -525,7 +545,6 @@ class MessageExchange(object):
             next_expected += len(payload["messages"])
 
         message_store_state = got_next_expected(message_store, next_expected)
-        message_store.commit()
         if message_store_state == ANCIENT:
             # The server has probably lost some data we sent it. The
             # slate has been wiped clean (by got_next_expected), now
@@ -537,6 +556,11 @@ class MessageExchange(object):
             self.send({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
 
+        # Save the exchange token that the server has sent us. We will provide
+        # it at the next exchange to prove that we're still the same client.
+        # See also landscape.broker.transport.
+        message_store.set_exchange_token(result.get("next-exchange-token"))
+
         old_uuid = message_store.get_server_uuid()
         new_uuid = result.get("server-uuid")
         if new_uuid != old_uuid:
@@ -544,6 +568,8 @@ class MessageExchange(object):
                          % (old_uuid, new_uuid))
             self._reactor.fire("server-uuid-changed", old_uuid, new_uuid)
             message_store.set_server_uuid(new_uuid)
+
+        message_store.commit()
 
         sequence = message_store.get_server_sequence()
         for message in result.get("messages", ()):

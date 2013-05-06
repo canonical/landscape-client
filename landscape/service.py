@@ -1,4 +1,3 @@
-import os
 import logging
 import signal
 
@@ -8,7 +7,6 @@ from twisted.application.app import startApplication
 from landscape.log import rotate_logs
 from landscape.reactor import TwistedReactor
 from landscape.deployment import get_versioned_persist, init_logging
-from landscape.amp import ComponentProtocol
 
 
 class LandscapeService(Service, object):
@@ -43,14 +41,11 @@ class LandscapeService(Service, object):
             signal.signal(
                 signal.SIGUSR1,
                 lambda signal, frame: reactor.callFromThread(rotate_logs))
-        self.socket = os.path.join(self.config.sockets_path,
-                                   self.service_name + ".sock")
 
     def startService(self):
         Service.startService(self)
         logging.info("%s started with config %s" % (
             self.service_name.capitalize(), self.config.get_config_filename()))
-        self.port = self.reactor.listen_unix(self.socket, self.factory)
 
     def stopService(self):
         # We don't need to call port.stopListening(), because the reactor
@@ -89,7 +84,10 @@ def run_landscape_service(configuration_class, service_class, args):
     if configuration.clones > 0:
 
         # Increase the timeout of AMP's MethodCalls
-        ComponentProtocol.timeout = 300
+        # XXX: we should find a better way to expose this knot, and
+        # not set it globally on the class
+        from landscape.lib.amp import MethodCallSender
+        MethodCallSender.timeout = 300
 
         # Create clones here because TwistedReactor.__init__ would otherwise
         # cancel all scheduled delayed calls

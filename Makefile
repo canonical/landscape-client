@@ -48,7 +48,6 @@ clean:
 	-rm docs/api -rf;
 	-rm man/\*.1 -rf
 	-rm sdist -rf
-	-rm -f landscape/lib/initgroups.so
 
 doc: docs/api/twisted/pickle
 	mkdir -p docs/api

@@ -15,6 +15,7 @@ from landscape.constants import (
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
 from landscape.lib.fs import create_file
+from landscape.lib.log import log_failure
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
@@ -61,8 +62,6 @@ class PackageChanger(PackageTaskHandler):
     config_factory = PackageChangerConfiguration
 
     queue_name = "changer"
-
-    reboot_failed = False
 
     def __init__(self, store, facade, remote, config, process_factory=reactor,
                  twisted_reactor=None,
@@ -292,36 +291,42 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
-        if (message.get("reboot-if-necessary")
-            and os.path.exists(self.reboot_required_filename)):
-            # Reboot the system returning the package changes result first.
-            deferred = self._run_reboot().addCallback(
-                self._send_response, message, result, stop_exchanger=True)
-            deferred.addErrback(self._send_response, message, result)
-            return deferred
+        needs_reboot = (message.get("reboot-if-necessary")
+                        and os.path.exists(self.reboot_required_filename))
+        stop_exchanger = needs_reboot
 
-        return self._send_response(None, message, result)
+        deferred = self._send_response(None, message, result,
+                                       stop_exchanger=stop_exchanger)
+        if needs_reboot:
+            # Reboot the system after a short delay after the response has been
+            # sent to the broker. This is to allow the broker time to save the
+            # message to its on-disk queue before starting the reboot, which
+            # will stop the landscape-client process.
+
+            # It would be nice if the Deferred returned from
+            # broker.send_message guaranteed the message was saved to disk
+            # before firing, but that's not the case, so we add an additional
+            # delay.
+            deferred.addCallback(self._reboot_later)
+        return deferred
+
+    def _reboot_later(self, result):
+        self._twisted_reactor.call_later(5, self._run_reboot)
 
     def _run_reboot(self):
         """
         Create a C{ShutdownProcessProtocol} and return its result deferred.
         """
-        protocol = ShutdownProcessProtocol(delay=60)
-        minutes = "+%d" % (protocol.delay // 60,)
+        protocol = ShutdownProcessProtocol()
+        minutes = "now"
         protocol.set_timeout(self._twisted_reactor)
         protocol.result.addCallback(self._log_reboot, minutes)
-        protocol.result.addErrback(self._set_reboot_failed)
+        protocol.result.addErrback(log_failure, "Reboot failed.")
         args = ["/sbin/shutdown", "-r", minutes,
                 "Landscape is rebooting the system"]
         self._process_factory.spawnProcess(
             protocol, "/sbin/shutdown", args=args)
         return protocol.result
-
-    def _set_reboot_failed(self, result):
-        """
-        Reboot failed. Set the C{reboot_failed} flag to signalize the failure.
-        """
-        self.reboot_failed = True
 
     def _log_reboot(self, result, minutes):
         """Log the reboot."""
@@ -336,14 +341,9 @@ class PackageChanger(PackageTaskHandler):
         response = {"type": "change-packages-result",
                     "operation-id": message.get("operation-id")}
 
-        if self.reboot_failed:
-            response["result-code"] = ERROR_RESULT
-        else:
-            response["result-code"] = package_change_result.code
+        response["result-code"] = package_change_result.code
         if package_change_result.text:
             response["result-text"] = package_change_result.text
-            if self.reboot_failed:
-                response["result-text"] += u"\r\nReboot failed."
         if package_change_result.installs:
             response["must-install"] = sorted(package_change_result.installs)
         if package_change_result.removals:
@@ -354,6 +354,7 @@ class PackageChanger(PackageTaskHandler):
 
         deferred = self._broker.send_message(response, True)
         if stop_exchanger:
+            logging.info("stopping exchanger due to imminent reboot.")
             deferred.addCallback(lambda _: self._broker.stop_exchanger())
         return deferred
 

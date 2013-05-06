@@ -34,7 +34,7 @@ class BrokerClientPlugin(object):
         self._get_session_id_and_run()
 
 
-    def _got_session_id(session_id):
+    def _got_session_id(self, session_id):
         self._session_id = session_id
         self._do_run()
 

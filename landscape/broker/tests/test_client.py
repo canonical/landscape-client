@@ -34,11 +34,8 @@ class BrokerClientTest(LandscapeTest):
 
     def test_registering_plugin_gets_session_id(self):
         plugin = BrokerClientPlugin()
-        deferred_mock = self.mocker.proxy(Deferred())
-        self.client.broker.get_session_id = lambda : deferred_mock
-        self.expect(deferred_mock.addCallback(ANY).count(1))
-        self.mocker.replay()
         self.client.add(plugin)
+        self.assertIsNot(None, plugin._session_id)
 
     def test_get_plugins(self):
         """

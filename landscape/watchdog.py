@@ -28,7 +28,6 @@ from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
-from landscape.amp import ComponentProtocol
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import TwistedReactor
@@ -69,7 +68,7 @@ class Daemon(object):
     @cvar factor: The factor by which the delay between subsequent connection
         attempts will increase.
 
-    @param connector: The L{RemoteComponentConnector} of the daemon.
+    @param connector: The L{ComponentConnector} of the daemon.
     @param reactor: The reactor used to spawn the process and schedule timed
         calls.
     @param verbose: Optionally, report more information when running this
@@ -555,8 +554,11 @@ class WatchDogService(Service):
             setrlimit(RLIMIT_NOFILE, (self._config.clones * 100,
                                       self._config.clones * 200))
 
-            # Increase the timeout of AMP's MethodCalls
-            ComponentProtocol.timeout = 300
+            # Increase the timeout of AMP's MethodCalls.
+            # XXX: we should find a better way to expose this knot, and
+            # not set it globally on the class
+            from landscape.lib.amp import MethodCallSender
+            MethodCallSender.timeout = 300
 
             # Create clones log and data directories
             for i in range(self._config.clones):
