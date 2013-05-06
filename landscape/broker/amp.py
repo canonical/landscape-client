@@ -2,7 +2,7 @@ from twisted.internet.defer import maybeDeferred, execute, succeed
 
 from landscape.lib.amp import RemoteObject, MethodCallArgument
 from landscape.amp import (
-    ComponentConnector, RemoteComponentsRegistry, ComponentPublisher)
+    ComponentConnector, ComponentsRegistry, ComponentPublisher)
 from landscape.broker.server import BrokerServer
 from landscape.broker.client import BrokerClient
 from landscape.monitor.monitor import Monitor
@@ -119,7 +119,7 @@ class RemoteManagerConnector(RemoteClientConnector):
 
     component = Manager
 
-RemoteComponentsRegistry.register(RemoteBrokerConnector)
-RemoteComponentsRegistry.register(RemoteClientConnector)
-RemoteComponentsRegistry.register(RemoteMonitorConnector)
-RemoteComponentsRegistry.register(RemoteManagerConnector)
+ComponentsRegistry.register(RemoteBrokerConnector)
+ComponentsRegistry.register(RemoteClientConnector)
+ComponentsRegistry.register(RemoteMonitorConnector)
+ComponentsRegistry.register(RemoteManagerConnector)

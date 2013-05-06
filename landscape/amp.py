@@ -95,6 +95,9 @@ class ComponentConnector(object):
         factory.initialDelay = factory.delay = 0.05
         factory.retryOnReconnect = self._retry_on_reconnect
         factory.remote = self.remote
+        factory.maxRetries = max_retries
+        if factor:
+            factory.factor = factor
 
         def fire_reconnect(ignored):
             self._reactor.fire("%s-reconnect" % self.component.name)
@@ -107,9 +110,6 @@ class ComponentConnector(object):
             logging.error("Error while connecting to %s", self.component.name)
             return failure
 
-        factory.maxRetries = max_retries
-        if factor:
-            factory.factor = factor
         socket_path = _get_socket_path(self.component, self._config)
         deferred = factory.getRemoteObject()
         self._connector = self._reactor.connect_unix(socket_path, factory)
@@ -124,14 +124,11 @@ class ComponentConnector(object):
         if self._connector is not None:
             factory = self._connector.factory
             factory.stopTrying()
-            # XXX we should be using self._connector.disconnect() here
-            remote = factory._remote
-            if remote:
-                if remote._sender.protocol.transport:
-                    remote._sender.protocol.transport.loseConnection()
+            self._connector.disconnect()
+            self._connector = None
 
 
-class RemoteComponentsRegistry(object):
+class ComponentsRegistry(object):
     """
     A global registry for looking up Landscape component connectors by name.
     """

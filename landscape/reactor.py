@@ -354,15 +354,15 @@ class FakeReactor(EventHandlingReactorMixin):
 
     def connect_unix(self, path, factory):
         server = self._socket_paths.get(path)
-        from landscape.lib.tests.test_amp import FakeConnection
+        from landscape.lib.tests.test_amp import FakeConnector
         if server:
-            connection = FakeConnection(factory.buildProtocol(path),
-                                        server.buildProtocol(path))
-            factory.fake_connection = connection
+            connector = FakeConnector(factory, server)
+            connector.connect()
         else:
             connector = object()  # Fake connector
             failure = Failure(ConnectError("No such file or directory"))
             factory.clientConnectionFailed(connector, failure)
+        return connector
 
     def run(self):
         """Continuously advance this reactor until reactor.stop() is called."""

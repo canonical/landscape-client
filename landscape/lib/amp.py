@@ -318,14 +318,9 @@ class RemoteObject(object):
 
     def __init__(self, factory):
         """
-        @param protocol: A reference to a connected L{AMP} protocol instance,
-            which will be used to send L{MethodCall} commands.
-        @param retry_on_reconnect: If C{True}, this L{RemoteObject} will retry
-            to perform again requests that failed due to a lost connection, as
-            soon as a new connection is available.
-        @param timeout: A timeout for failed requests, if the L{RemoteObject}
-            can't perform them again successfully within this number of
-            seconds, they will errback with a L{MethodCallError}.
+        @param factory: The L{MethodCallClientFactory} used for connecting to
+            the other peer. Look there if you need to tweak the behavior of
+            this L{RemoteObject}.
         """
         self._sender = None
         self._pending_requests = {}
@@ -340,26 +335,28 @@ class RemoteObject(object):
         keyword arguments it was called with, and returning a L{Deferred}
         resulting in the L{MethodCall}'s response value.
         """
-
         def send_method_call(*args, **kwargs):
-            result = self._sender.send_method_call(method=method,
-                                                   args=args,
-                                                   kwargs=kwargs)
             deferred = Deferred()
-            result.addCallback(self._handle_result, deferred)
-            result.addErrback(self._handle_failure, method, args, kwargs,
-                              deferred)
-
-            if self._factory.fake_connection is not None:
-                # Transparently flush the connection after a send_method_call
-                # invokation letting tests simulate a synchronous transport.
-                # This is needed because the Twisted's AMP implementation
-                # assume that the transport is asynchronous.
-                self._factory.fake_connection.flush()
-
+            self._send_method_call(method, args, kwargs, deferred)
             return deferred
 
         return send_method_call
+
+    def _send_method_call(self, method, args, kwargs, deferred, call=None):
+        """Send a L{MethodCall} command, adding callbacks to handle retries."""
+        result = self._sender.send_method_call(method=method,
+                                               args=args,
+                                               kwargs=kwargs)
+        result.addCallback(self._handle_result, deferred, call=call)
+        result.addErrback(self._handle_failure, method, args, kwargs,
+                          deferred, call=call)
+
+        if self._factory.fake_connection is not None:
+            # Transparently flush the connection after a send_method_call
+            # invocation letting tests simulate a synchronous transport.
+            # This is needed because the Twisted's AMP implementation
+            # assume that the transport is asynchronous.
+            self._factory.fake_connection.flush()
 
     def _handle_result(self, result, deferred, call=None):
         """Handles a successful C{send_method_call} result.
@@ -437,11 +434,7 @@ class RemoteObject(object):
 
         while requests:
             deferred, (method, args, kwargs, call) = requests.popitem()
-            result = self._sender.send_method_call(method, args, kwargs)
-            result.addCallback(self._handle_result,
-                               deferred=deferred, call=call)
-            result.addErrback(self._handle_failure, method, args, kwargs,
-                              deferred=deferred, call=call)
+            self._send_method_call(method, args, kwargs, deferred, call=call)
 
 
 class MethodCallServerFactory(ServerFactory):
@@ -501,15 +494,14 @@ class MethodCallClientFactory(ReconnectingClientFactory):
     # hack can be removed.
     fake_connection = None
 
-    def __init__(self, reactor=None):
+    def __init__(self, clock):
         """
         @param object: The object exposed by the L{MethodCallProtocol}s
             instances created by this factory.
         @param reactor: The reactor used by the created protocols
             to schedule notifications and timeouts.
         """
-        self.reactor = reactor
-        self.clock = self.reactor
+        self.clock = clock
         self.delay = self.initialDelay
         self._connects = []
         self._requests = []
@@ -600,7 +592,7 @@ class RemoteObjectConnector(object):
             delay between subsequent retries should increase. Smaller values
             result in a faster reconnection attempts pace.
         """
-        factory = self.factory(reactor=self._reactor)
+        factory = self.factory(self._reactor)
         factory.maxRetries = max_retries
         if factor:
             factory.factor = factor

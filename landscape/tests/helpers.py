@@ -148,6 +148,19 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         else:
             return result[0]
 
+    def assertNoResult(self, deferred):
+        """See C{twisted.trial._synctest._Assertions.assertNoResult}.
+
+        This is a copy of the original method, which is available only
+        since Twisted 12.3.0 (from 2012-12-20).
+        """
+        result = []
+        deferred.addBoth(result.append)
+        if result:
+            self.fail(
+                "No result expected on %r, found %r instead" % (
+                    deferred, result[0]))
+
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
