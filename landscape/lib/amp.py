@@ -314,13 +314,14 @@ class RemoteObject(object):
     Any method call on a L{RemoteObject} instance will return a L{Deferred}
     resulting in the return value of the same method call performed on
     the remote object exposed by the peer.
-
-    @param factory: The L{MethodCallClientFactory} used for connecting to
-        the other peer. Look there if you need to tweak the behavior of
-        this L{RemoteObject}.
     """
 
     def __init__(self, factory):
+        """
+        @param factory: The L{MethodCallClientFactory} used for connecting to
+            the other peer. Look there if you need to tweak the behavior of
+            this L{RemoteObject}.
+        """
         self._sender = None
         self._pending_requests = {}
         self._factory = factory
@@ -350,12 +351,12 @@ class RemoteObject(object):
         result.addErrback(self._handle_failure, method, args, kwargs,
                           deferred, call=call)
 
-        if self._factory.connection is not None:
+        if self._factory.fake_connection is not None:
             # Transparently flush the connection after a send_method_call
-            # invokation letting tests simulate a synchronous transport.
+            # invocation letting tests simulate a synchronous transport.
             # This is needed because the Twisted's AMP implementation
             # assume that the transport is asynchronous.
-            self._factory.connection.flush()
+            self._factory.fake_connection.flush()
 
     def _handle_result(self, result, deferred, call=None):
         """Handles a successful C{send_method_call} result.
@@ -471,9 +472,8 @@ class MethodCallClientFactory(ReconnectingClientFactory):
     @ivar protocol: The factory used to build protocol instances.
     @ivar remote: The factory used to build remote object instances.
     @ivar retryOnReconnect: If C{True}, the remote object returned by the
-        C{getRemoteObject} method will retry to perform again requests that
-        failed due to a lost connection, as soon as a new connection is
-        available.
+        C{getRemoteObject} method will retry requests that failed, as a
+        result of a lost connection, as soon as a new connection is available.
     @param retryTimeout: A timeout for retrying requests, if the remote object
         can't perform them again successfully within this number of seconds,
         they will errback with a L{MethodCallError}.
@@ -488,7 +488,11 @@ class MethodCallClientFactory(ReconnectingClientFactory):
     retryOnReconnect = False
     retryTimeout = None
 
-    connection = None
+    # XXX support exposing fake asynchronous connections created by tests, so
+    # they can be flushed transparently and emulate a synchronous behavior. See
+    # also http://twistedmatrix.com/trac/ticket/6502, once that's fixed this
+    # hack can be removed.
+    fake_connection = None
 
     def __init__(self, clock):
         """

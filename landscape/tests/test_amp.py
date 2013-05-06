@@ -84,8 +84,8 @@ class ComponentConnectorTest(LandscapeTest):
 
     def test_connect_with_max_retries(self):
         """
-        If C{max_retries} is passed to L{RemoteObjectConnector.connet},
-        then it will give up trying to connect after that amout of times.
+        If C{max_retries} is passed to L{RemoteObjectConnector.connect},
+        then it will give up trying to connect after that amount of times.
         """
         self.log_helper.ignore_errors("Error while connecting to test")
         deferred = self.connector.connect(max_retries=2)

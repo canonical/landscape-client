@@ -269,6 +269,9 @@ class FakeReactor(EventHandlingReactorMixin):
     around Unix sockets), and implement a fake version C{listen_unix}, but this
     hasn't been done yet.
     """
+    # XXX probably this shouldn't be a class attribute, but we need client-side
+    # FakeReactor instaces to be aware of listening sockets created by
+    # server-side FakeReactor instances.
     _socket_paths = {}
 
     def __init__(self):
