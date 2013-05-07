@@ -1,13 +1,14 @@
 from twisted.internet import reactor
 from twisted.internet.error import ConnectError, ConnectionDone
 from twisted.internet.task import Clock
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase
 
 from landscape.lib.amp import (
     MethodCallError, MethodCallServerProtocol, MethodCallClientProtocol,
     MethodCallServerFactory, MethodCallClientFactory, RemoteObject,
-    RemoteObjectConnector, MethodCallSender)
+    MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -163,32 +164,6 @@ class Words(object):
             # Fire the result after a while.
             self._clock.callLater(120.0, lambda: deferred.callback("Done!"))
         return deferred
-
-
-METHODS = ["empty",
-           "motd",
-           "capitalize",
-           "is_short",
-           "concatenate",
-           "lower_case",
-           "multiply_alphabetically",
-           "translate",
-           "meaning_of_life",
-           "guess",
-           "google"]
-
-
-class WordsFactory(MethodCallClientFactory):
-
-    factor = 0.19
-
-    retryOnReconnect = True
-    retryTimeout = 0.7
-
-
-class RemoteWordsConnector(RemoteObjectConnector):
-
-    factory = WordsFactory
 
 
 METHODS = ["empty",
@@ -368,7 +343,7 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         self.clock = Clock()
-        self.factory = WordsFactory(self.clock)
+        self.factory = MethodCallClientFactory(self.clock)
         server_factory = MethodCallServerFactory(Words(self.clock), METHODS)
         self.connector = FakeConnector(self.factory, server_factory)
         self.connector.connect()
@@ -564,6 +539,8 @@ class RemoteObjectTest(LandscapeTest):
         factory, the L{RemoteObject} will transparently retry to perform
         the L{MethodCall} requests that failed due to the broken connections.
         """
+        self.factory.factor = 0.19
+        self.factory.retryOnReconnect = True
         self.connector.disconnect()
         deferred = self.remote.capitalize("john")
 
@@ -583,6 +560,8 @@ class RemoteObjectTest(LandscapeTest):
         the L{RemoteObject} will properly propagate the error to the original
         caller.
         """
+        self.factory.factor = 0.19
+        self.factory.retryOnReconnect = True
         self.connector.disconnect()
         deferred = self.remote.secret()
 
@@ -689,151 +668,217 @@ class MethodCallClientFactoryTest(LandscapeTest):
         self.assertIsNone(self.successResultOf(deferred))
 
 
-class RemoteObjectConnectorTest(LandscapeTest):
+class MethodCallFunctionalTest(TestCase):
 
     def setUp(self):
-        super(RemoteObjectConnectorTest, self).setUp()
+        super(MethodCallFunctionalTest, self).setUp()
         self.socket = self.mktemp()
-        self.server_factory = MethodCallServerFactory(Words(reactor), METHODS)
-        self.port = reactor.listenUNIX(self.socket, self.server_factory)
-        self.connector = RemoteWordsConnector(reactor, self.socket)
-
-        def set_remote(words):
-            self.words = words
-
-        connected = self.connector.connect()
-        return connected.addCallback(set_remote)
+        self.server = MethodCallServerFactory(Words(reactor), METHODS)
+        self.client = MethodCallClientFactory(reactor)
+        self.port = reactor.listenUNIX(self.socket, self.server)
+        #self.client.maxRetries = 0  # By default, don't try to reconnect
 
     def tearDown(self):
-        self.connector.disconnect()
+        super(MethodCallFunctionalTest, self).tearDown()
         self.port.stopListening()
-        super(RemoteObjectConnectorTest, self).tearDown()
 
+    @inlineCallbacks
     def test_connect(self):
         """
         The L{RemoteObject} resulting form the deferred returned by
-        L{RemoteObjectConnector.connect} is properly connected to the
-        remote peer.
+        L{MethodCallClientFactory.getRemoteObject} is properly connected
+        to the remote peer.
         """
-        return self.assertSuccess(self.words.empty())
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
+        result = yield remote.capitalize("john")
+        self.assertEqual(result, "John")
+        self.client.stopTrying()
+        connector.disconnect()
 
+    @inlineCallbacks
+    def test_connect_with_max_retries(self):
+        """
+        If L{MethodCallClientFactory.maxRetries} is set, then the factory
+        will give up trying to connect after that amout of times.
+        """
+        self.port.stopListening()
+        self.client.maxRetries = 0
+        reactor.connectUNIX(self.socket, self.client)
+        yield self.assertFailure(self.client.getRemoteObject(), ConnectError)
+
+    @inlineCallbacks
+    def test_reconnect(self):
+        """
+        If the connection is lost, the L{RemoteObject} created by the factory
+        will transparently handle the reconnection.
+        """
+        self.client.factor = 0.01  # Try reconnecting very quickly
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
+
+        # Disconnect and wait till we connect again
+        deferred = Deferred()
+        self.client.notifyOnConnect(deferred.callback)
+        connector.disconnect()
+        yield deferred
+
+        # The remote object is still working
+        result = yield remote.capitalize("john")
+        self.assertEqual(result, "John")
+        self.client.stopTrying()
+        connector.disconnect()
+
+    @inlineCallbacks
+    def test_retry(self):
+        """
+        If the connection is lost, the L{RemoteObject} created by the creator
+        will transparently retry to perform the L{MethodCall} requests that
+        failed due to the broken connection.
+        """
+        self.client.factor = 0.01  # Try reconnecting very quickly
+        self.client.retryOnReconnect = True
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
+
+        # Disconnect
+        connector.disconnect()
+
+        # This call will fail but it's transparently retried
+        result = yield remote.capitalize("john")
+        self.assertEqual(result, "John")
+        self.client.stopTrying()
+        connector.disconnect()
+
+    @inlineCallbacks
+    def test_retry_with_method_call_error(self):
+        """
+        If a retried L{MethodCall} request fails due to a L{MethodCallError},
+        the L{RemoteObject} will properly propagate the error to the original
+        caller.
+        """
+        self.client.factor = 0.01  # Try reconnecting very quickly
+        self.client.retryOnReconnect = True
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
+
+        # Disconnect
+        connector.disconnect()
+
+        # A method call error is not retried
+        yield self.assertFailure(remote.secret(), MethodCallError)
+        self.client.stopTrying()
+        connector.disconnect()
+
+    @inlineCallbacks
     def test_wb_retry_with_while_still_disconnected(self):
         """
         The L{RemoteObject._retry} method gets called as soon as a new
         connection is ready. If for whatever reason the connection drops
         again very quickly, the C{_retry} method will behave as expected.
         """
-        self.words._sender.protocol.transport.loseConnection()
-        self.port.stopListening()
-        real_handle_connect = self.words._handle_connect
+        self.client.factor = 0.01  # Try reconnecting very quickly
+        self.client.retryOnReconnect = True
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
 
-        def handle_connect(protocol):
+        # Disconnect
+        connector.disconnect()
+
+        def handle_reconnect(protocol):
             # In this precise moment we have a newly connected protocol
-            self.words._sender.protocol = protocol
+            remote._sender.protocol = protocol
 
             # Pretend that the connection is lost again very quickly
             protocol.transport.loseConnection()
-            self.port.stopListening()
 
             # Force RemoteObject._retry to run using a disconnected protocol
-            reactor.callLater(0, self.words._retry)
+            reactor.callLater(0, remote._retry)
 
             # Restore the real handler and start listening again very soon
-            factory.dontNotifyOnConnect(handle_connect)
-            factory.notifyOnConnect(real_handle_connect)
-            reactor.callLater(0.2, restart_listening)
-
-        def restart_listening():
-            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            self.client.dontNotifyOnConnect(handle_reconnect)
+            self.client.notifyOnConnect(remote._handle_connect)
 
         def assert_failure(error):
             self.assertEqual(str(error), "Forbidden method 'secret'")
 
         # Use our own reconnect handler
-        factory = self.connector._connector.factory
-        factory.dontNotifyOnConnect(real_handle_connect)
-        factory.notifyOnConnect(handle_connect)
+        self.client.dontNotifyOnConnect(remote._handle_connect)
+        self.client.notifyOnConnect(handle_reconnect)
 
-        reactor.callLater(0.2, restart_listening)
-        result = self.words.secret()
-        self.assertFailure(result, MethodCallError)
-        return result.addCallback(assert_failure)
+        error = yield self.assertFailure(remote.secret(), MethodCallError)
+        self.assertEqual(str(error), "Forbidden method 'secret'")
 
+        self.client.stopTrying()
+        connector.disconnect()
+
+    @inlineCallbacks
     def test_retry_with_many_method_calls(self):
         """
         If several L{MethodCall} requests were issued while disconnected, they
         will be all eventually completed when the connection gets established
         again.
         """
-        self.words._sender.protocol.transport.loseConnection()
-        self.port.stopListening()
+        self.client.factor = 0.01  # Try reconnecting very quickly
+        self.client.retryOnReconnect = True
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
 
-        def restart_listening():
-            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+        # Disconnect
+        connector.disconnect()
 
-        def assert_guess(response):
-            self.assertEqual(response, "Guessed!")
+        result1 = yield remote.guess("word", "cool", value=4)
+        result2 = yield remote.motd()
 
-        def assert_secret(failure):
-            self.assertEqual(str(failure.value), "Forbidden method 'secret'")
+        self.assertEqual(result1, "Guessed!")
+        self.assertEqual(result2, "Words are cool")
+        self.client.stopTrying()
+        connector.disconnect()
 
-        def assert_motd(response):
-            self.assertEqual(response, "Words are cool")
-
-        reactor.callLater(0.1, restart_listening)
-
-        results = [self.words.guess("word", "cool", value=4),
-                   self.words.secret(),
-                   self.words.motd()]
-        results[0].addCallback(assert_guess)
-        results[1].addErrback(assert_secret)
-        results[2].addCallback(assert_motd)
-        return DeferredList(results)
-
+    @inlineCallbacks
     def test_retry_without_retry_on_reconnect(self):
         """
-        If C{retry_on_reconnect} is C{False}, the L{RemoteObject} object won't
+        If C{retryOnReconnect} is C{False}, the L{RemoteObject} object won't
         retry to perform requests which failed because the connection was
         lost, however requests made after a reconnection will still succeed.
         """
-        self.words._sender.protocol.transport.loseConnection()
-        self.port.stopListening()
+        self.client.factor = 0.01  # Try reconnecting very quickly
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
 
-        def restart_listening():
-            self.port = reactor.listenUNIX(self.socket, self.server_factory)
-            reactor.callLater(0.3, assert_reconnected)
+        # Disconnect
+        deferred = Deferred()
+        self.client.notifyOnConnect(deferred.callback)
+        connector.disconnect()
 
-        def assert_reconnected():
-            result = self.words.empty()
-            result.addCallback(lambda x: reconnected.callback(None))
-            return result
+        yield self.assertFailure(remote.modt(), ConnectionDone)
 
-        reactor.callLater(0.1, restart_listening)
-        self.words._factory.retryOnReconnect = False
-        result = self.words.empty()
-        self.assertFailure(result, ConnectionDone)
-        reconnected = Deferred()
-        return result.addCallback(lambda x: reconnected)
+        # Wait for reconnection and peform another call
+        yield deferred
+        result = yield remote.motd()
+        self.assertEqual(result, "Words are cool")
 
+        self.client.stopTrying()
+        connector.disconnect()
+
+    @inlineCallbacks
     def test_retry_with_timeout(self):
         """
-        If a C{timeout} is set, the L{RemoteObject} object will errback failed
-        L{MethodCall}s after that amount of seconds, without retrying them when
-        the connection established again.
+        If a C{retryTimeout} is set, the L{RemoteObject} object will errback
+        failed L{MethodCall}s after that amount of seconds, without retrying
+        them when the connection established again.
         """
-        self.words._sender.protocol.transport.loseConnection()
-        self.port.stopListening()
+        self.client.retryOnReconnect = True
+        self.client.retryTimeout = 0.1
+        self.client.factor = 1  # Reconnect slower than timeout
+        connector = reactor.connectUNIX(self.socket, self.client)
+        remote = yield self.client.getRemoteObject()
 
-        def restart_listening():
-            self.port = reactor.listenUNIX(self.socket, self.server_factory)
-            reactor.callLater(0.1, reconnected.callback, None)
+        # Disconnect
+        connector.disconnect()
 
-        def assert_failure(error):
-            self.assertEqual(str(error), "timeout")
-            return reconnected
+        error = yield self.assertFailure(remote.modt(), MethodCallError)
+        self.assertEqual("timeout", str(error))
 
-        reactor.callLater(0.9, restart_listening)
-        result = self.words.empty()
-        self.assertFailure(result, MethodCallError)
-        reconnected = Deferred()
-        return result.addCallback(assert_failure)
+        self.client.stopTrying()
+        connector.disconnect()

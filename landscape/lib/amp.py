@@ -3,7 +3,7 @@
 This module implements an AMP-based protocol for performing remote procedure
 calls in a convenient and easy way. It's conceptually similar to DBus in that
 it supports exposing a Python object to a remote process, with communication
-happening over plain Unix domain sockets.
+happening over any Twisted-supported transport, e.g. Unix domain sockets.
 
 For example let's say we have a Python process "A" that creates an instance of
 this class::
@@ -35,8 +35,8 @@ real greeter object living in process A::
     factory.getRemoteObject().addCallback(got_remote)
 
 Note that when invoking a method via the remote proxy, the parameters
-are required to be serializable with bpickle, so that they can be sent
-over the wire.
+are required to be serializable with bpickle, so they can be sent over
+the wire.
 
 See also::
 
@@ -130,14 +130,14 @@ class MethodCallChunk(Command):
 class MethodCallReceiver(CommandLocator):
     """Expose methods of a local object over AMP.
 
-    @param object: The Python object to be exposed.
+    @param obj: The Python object to be exposed.
     @param methods: The list of the object's methods that can be called
          remotely.
     """
 
-    def __init__(self, object, methods):
+    def __init__(self, obj, methods):
         CommandLocator.__init__(self)
-        self._object = object
+        self._object = obj
         self._methods = methods
         self._pending_chunks = {}
 
@@ -293,8 +293,8 @@ class MethodCallSender(object):
 class MethodCallServerProtocol(AMP):
     """Receive L{MethodCall} commands over the wire and send back results."""
 
-    def __init__(self, object, methods):
-        AMP.__init__(self, locator=MethodCallReceiver(object, methods))
+    def __init__(self, obj, methods):
+        AMP.__init__(self, locator=MethodCallReceiver(obj, methods))
 
 
 class MethodCallClientProtocol(AMP):
@@ -419,7 +419,7 @@ class RemoteObject(object):
         @param protocol: The newly connected protocol instance.
         """
         self._sender = MethodCallSender(protocol, self._factory.clock)
-        if self._retry_on_reconnect:
+        if self._factory.retryOnReconnect:
             self._retry()
 
     def _retry(self):
@@ -442,14 +442,14 @@ class MethodCallServerFactory(ServerFactory):
 
     protocol = MethodCallServerProtocol
 
-    def __init__(self, object, methods):
+    def __init__(self, obj, methods):
         """
         @param object: The object exposed by the L{MethodCallProtocol}s
             instances created by this factory.
         @param methods: A list of the names of the methods that remote peers
             are allowed to call on the C{object} that we publish.
         """
-        self.object = object
+        self.object = obj
         self.methods = methods
 
     def buildProtocol(self, addr):
@@ -560,52 +560,3 @@ class MethodCallClientFactory(ReconnectingClientFactory):
 
         for deferred in requests:
             deferred.callback(result)
-
-
-class RemoteObjectConnector(object):
-    """Connect to remote objects exposed by a L{MethodCallProtocol}."""
-
-    factory = MethodCallClientFactory
-    remote = RemoteObject
-
-    def __init__(self, reactor, socket_path):
-        """
-        @param reactor: A reactor able to connect to Unix sockets.
-        @param socket: The path to the socket we want to connect to.
-        @param args: Arguments to be passed to the created L{RemoteObject}.
-        @param kwargs: Keyword arguments for the created L{RemoteObject}.
-        """
-        self._socket_path = socket_path
-        self._reactor = reactor
-        self._factory = None
-        self._connector = None
-
-    def connect(self, max_retries=None, factor=None):
-        """Connect to a remote object exposed by a L{MethodCallProtocol}.
-
-        This method will connect to the socket provided in the constructor
-        and return a L{Deferred} resulting in a connected L{RemoteObject}.
-
-        @param max_retries: If not C{None} give up try to connect after this
-            amount of times, otherwise keep trying to connect forever.
-        @param factor: Optionally a float indicating by which factor the
-            delay between subsequent retries should increase. Smaller values
-            result in a faster reconnection attempts pace.
-        """
-        factory = self.factory(self._reactor)
-        factory.maxRetries = max_retries
-        if factor:
-            factory.factor = factor
-        self._connector = self._reactor.connectUNIX(self._socket_path, factory)
-        return factory.getRemoteObject()
-
-    def disconnect(self):
-        """Disconnect the L{RemoteObject} that we have created."""
-        if self._connector is not None:
-            factory = self._connector.factory
-            factory.stopTrying()
-            # XXX we should be using self._connector.disconnect() here
-            remote = factory._remote
-            if remote:
-                if remote._sender.protocol.transport:
-                    remote._sender.protocol.transport.loseConnection()
