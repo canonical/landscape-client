@@ -49,12 +49,8 @@ class AptFacadeTest(LandscapeTest):
 
     def setUp(self):
         super(AptFacadeTest, self).setUp()
-        self.addCleanup(setattr, AptFacade, "max_dpkg_retries",
-                        AptFacade.max_dpkg_retries)
-        AptFacade.max_dpkg_retries = 0
-        self.addCleanup(setattr, AptFacade, "dpkg_retry_sleep",
-                        AptFacade.dpkg_retry_sleep)
-        AptFacade.dpkg_retry_sleep = 0
+        self.facade.max_dpkg_retries = 0
+        self.facade.dpkg_retry_sleep = 0
 
     def version_sortkey(self, version):
         """Return a key by which a Version object can be sorted."""
@@ -1054,7 +1050,7 @@ class AptFacadeTest(LandscapeTest):
         """
         Test that changes are retried with the given exception type.
         """
-        AptFacade.max_dpkg_retries = 1
+        self.facade.max_dpkg_retries = 1
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
