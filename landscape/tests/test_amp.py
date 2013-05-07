@@ -1,11 +1,10 @@
-from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
 from twisted.internet.task import Clock
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import ComponentPublisher, ComponentConnector, remote
+from landscape.amp import ComponentPublisher, ComponentConnector
 
 
 class TestComponent(object):

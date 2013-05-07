@@ -72,7 +72,12 @@ def remote(method):
     method.amp_exposed = method.__name__
     return method
 
+
 def remote_named(name):
+    """
+    A decorator for marking a method as remotely accessible while specifying a
+    name other than the method's name.
+    """
     def decorator(method):
         method.amp_exposed = name
         return method
