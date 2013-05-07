@@ -5,6 +5,7 @@ from twisted.internet.defer import Deferred
 from landscape.lib.twisted_util import gather_results
 from landscape.amp import ComponentsRegistry
 from landscape.manager.manager import FAILED
+from landscape.amp import remote
 
 
 def event(method):
@@ -58,10 +59,12 @@ class BrokerServer(object):
         reactor.call_on("package-data-changed", self.package_data_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
 
+    @remote
     def ping(self):
         """Return C{True}."""
         return True
 
+    @remote
     def register_client(self, name):
         """Register a broker client called C{name}.
 
@@ -105,6 +108,7 @@ class BrokerServer(object):
         """Return the connector for the given C{name} or C{None}."""
         return self._connectors.get(self.get_client(name))
 
+    @remote
     def send_message(self, message, urgent=False):
         """Queue C{message} for delivery to the server at the next exchange.
 
@@ -116,10 +120,12 @@ class BrokerServer(object):
         """
         return self._exchanger.send(message, urgent=urgent)
 
+    @remote
     def is_message_pending(self, message_id):
         """Indicate if a message with given C{message_id} is pending."""
         return self._message_store.is_pending(message_id)
 
+    @remote
     def stop_clients(self):
         """Tell all the clients to exit."""
         results = []
@@ -129,6 +135,7 @@ class BrokerServer(object):
         result = gather_results(results, consume_errors=True)
         return result.addCallback(lambda ignored: None)
 
+    @remote
     def reload_configuration(self):
         """Reload the configuration file, and stop all clients."""
         self._config.reload()
@@ -136,6 +143,7 @@ class BrokerServer(object):
         # notice configuration changes.
         return self.stop_clients()
 
+    @remote
     def register(self):
         """Attempt to register with the Landscape server.
 
@@ -143,14 +151,17 @@ class BrokerServer(object):
         """
         return self._registration.register()
 
+    @remote
     def get_accepted_message_types(self):
         """Return the message types accepted by the Landscape server."""
         return self._message_store.get_accepted_types()
 
+    @remote
     def get_server_uuid(self):
         """Return the uuid of the Landscape server we're pointing at."""
         return self._message_store.get_server_uuid()
 
+    @remote
     def register_client_accepted_message_type(self, type):
         """Register a new message type which can be accepted by this client.
 
@@ -158,10 +169,12 @@ class BrokerServer(object):
         """
         self._exchanger.register_client_accepted_message_type(type)
 
+    @remote
     def fire_event(self, event_type):
         """Fire an event in the broker reactor."""
         self._reactor.fire(event_type)
 
+    @remote
     def exit(self):
         """Request a graceful exit from the broker server.
 
@@ -195,6 +208,7 @@ class BrokerServer(object):
     def impending_exchange(self):
         """Broadcast an C{impending-exchange} event to the clients."""
 
+    @remote
     def listen_events(self, event_types):
         """
         Return a C{Deferred} that fires when the first event occurs among the
@@ -271,6 +285,7 @@ support this feature.
                 "operation-id": opid}
             self._exchanger.send(response, urgent=True)
 
+    @remote
     def stop_exchanger(self):
         """
         Stop exchaging messages with the message server.
