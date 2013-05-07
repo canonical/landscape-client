@@ -6,6 +6,7 @@ import tempfile
 import apt_pkg
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
+from apt.cache import LockFailedException
 
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fs import read_file, create_file
@@ -50,7 +51,7 @@ class AptFacadeTest(LandscapeTest):
         super(AptFacadeTest, self).setUp()
         self.addCleanup(setattr, AptFacade, "max_dpkg_retries",
                         AptFacade.max_dpkg_retries)
-        AptFacade.max_dpkg_retries = 1
+        AptFacade.max_dpkg_retries = 0
         self.addCleanup(setattr, AptFacade, "dpkg_retry_sleep",
                         AptFacade.dpkg_retry_sleep)
         AptFacade.dpkg_retry_sleep = 0
@@ -1043,11 +1044,51 @@ class AptFacadeTest(LandscapeTest):
             TransactionError, self.facade.perform_changes)
         output = [
             line.rstrip()
-            for line in exception.args[0].splitlines()if line.strip()]
+            for line in exception.args[0].splitlines() if line.strip()]
         self.assertEqual(
             ["Oops", "Package operation log:", "Stdout output",
              "Stderr output", "Stdout output again"],
             output)
+
+    def _test_retry_changes(self, error_type):
+        """
+        Test that changes are retried with the given exception type.
+        """
+        AptFacade.max_dpkg_retries = 1
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+
+        def commit1(fetch_progress, install_progress):
+            self.facade._cache.commit = commit2
+            os.write(2, "bad stuff!\n")
+            raise error_type("Oops")
+
+        def commit2(fetch_progress, install_progress):
+            install_progress.dpkg_exited = True
+            os.write(1, "good stuff!")
+
+        self.facade._cache.commit = commit1
+        output = [
+            line.rstrip()
+            for line in self.facade.perform_changes().splitlines()
+            if line.strip()]
+        self.assertEqual(["bad stuff!", "good stuff!"], output)
+
+    def test_retry_changes_system_error(self):
+        """
+        Changes are retried in the event of a SystemError.
+        """
+        self._test_retry_changes(SystemError)
+
+    def test_retry_changes_lock_failed(self):
+        """
+        Changes are retried in the event of a L{LockFailedException}.
+        """
+        self._test_retry_changes(LockFailedException)
 
     def test_perform_changes_dpkg_error_real(self):
         """
@@ -1085,6 +1126,7 @@ class AptFacadeTest(LandscapeTest):
     def test_prevent_dpkg_apport_error_system_error(self):
         """
         C{_prevent_dpkg_apport_error} prevents the Apport excepthook
+
         from being called when a SystemError happens, since SystemErrors
         are expected to happen and will be caught in the Apt C binding..
         """

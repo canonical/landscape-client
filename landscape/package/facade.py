@@ -625,41 +625,43 @@ class AptFacade(object):
         os.dup2(fd, 1)
         os.dup2(fd, 2)
         install_progress = LandscapeInstallProgress()
-        # Since others (charms) might be installing packages on this system
-        # We need to retry a bit in case dpkg is locked in progress
-        dpkg_tries = 0
-        while dpkg_tries < self.max_dpkg_retries:
-            error = None
-            if dpkg_tries > 0:
-                logging.warning(
-                    "dpkg process might be in use. Retrying package changes. "
-                    "%d retries remaining."
-                    % (self.max_dpkg_retries - dpkg_tries))
-            dpkg_tries += 1
-            try:
-                self._cache.commit(
-                    fetch_progress=LandscapeAcquireProgress(fetch_output),
-                    install_progress=install_progress)
-                if not install_progress.dpkg_exited:
-                    raise SystemError("dpkg didn't exit cleanly.")
-                result_text = (
-                    fetch_output.getvalue() + read_file(install_output_path))
-                break
-            except (apt.cache.LockFailedException, SystemError), error:
-                result_text = (
-                    fetch_output.getvalue() + read_file(install_output_path))
-                error = TransactionError(error.args[0] +
-                                         "\n\nPackage operation log:\n" +
-                                         result_text)
-                # Yeah, sleeping isn't kosher according to Twisted, but this
-                # code is run in the package-changer, which doesn't have any
-                # concurrency going on.
-                time.sleep(self.dpkg_retry_sleep)
-
-        # Restore stdout and stderr.
-        os.dup2(old_stdout, 1)
-        os.dup2(old_stderr, 2)
-        os.remove(install_output_path)
+        try:
+            # Since others (charms) might be installing packages on this system
+            # We need to retry a bit in case dpkg is locked in progress
+            dpkg_tries = 0
+            while dpkg_tries <= self.max_dpkg_retries:
+                error = None
+                if dpkg_tries > 0:
+                    # Yeah, sleeping isn't kosher according to Twisted, but
+                    # this code is run in the package-changer, which doesn't
+                    # have any concurrency going on.
+                    time.sleep(self.dpkg_retry_sleep)
+                    logging.warning(
+                        "dpkg process might be in use. "
+                        "Retrying package changes. %d retries remaining."
+                        % (self.max_dpkg_retries - dpkg_tries))
+                dpkg_tries += 1
+                try:
+                    self._cache.commit(
+                        fetch_progress=LandscapeAcquireProgress(fetch_output),
+                        install_progress=install_progress)
+                    if not install_progress.dpkg_exited:
+                        raise SystemError("dpkg didn't exit cleanly.")
+                except (apt.cache.LockFailedException, SystemError), error:
+                    result_text = (fetch_output.getvalue()
+                                   + read_file(install_output_path))
+                    error = TransactionError(error.args[0] +
+                                             "\n\nPackage operation log:\n" +
+                                             result_text)
+                else:
+                    result_text = (fetch_output.getvalue()
+                                   + read_file(install_output_path))
+                    break
+        finally:
+            # Restore stdout and stderr.
+            os.dup2(old_stdout, 1)
+            os.dup2(old_stderr, 2)
+            os.remove(install_output_path)
 
         # RADIX need tests for this repeat logic
         if error is not None:
