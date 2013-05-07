@@ -119,8 +119,8 @@ class AptFacade(object):
         database.
     """
 
-    max_dpkg_retries = 12   # number of dpkg retries before we give up
-    dpkg_retry_sleep = 5    # seconds
+    max_dpkg_retries = 12  # number of dpkg retries before we give up
+    dpkg_retry_sleep = 5
     _dpkg_status = "/var/lib/dpkg/status"
 
     def __init__(self, root=None):
@@ -657,15 +657,13 @@ class AptFacade(object):
                     result_text = (fetch_output.getvalue()
                                    + read_file(install_output_path))
                     break
+            if error is not None:
+                raise error
         finally:
             # Restore stdout and stderr.
             os.dup2(old_stdout, 1)
             os.dup2(old_stderr, 2)
             os.remove(install_output_path)
-
-        # RADIX need tests for this repeat logic
-        if error is not None:
-            raise error
 
         return result_text
 
