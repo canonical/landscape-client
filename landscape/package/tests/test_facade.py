@@ -46,6 +46,15 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper, EnvironSaverHelper]
 
+    def setUp(self):
+        super(AptFacadeTest, self).setUp()
+        self.addCleanup(setattr, AptFacade, "max_dpkg_retries",
+                        AptFacade.max_dpkg_retries)
+        AptFacade.max_dpkg_retries = 1
+        self.addCleanup(setattr, AptFacade, "dpkg_retry_sleep",
+                        AptFacade.dpkg_retry_sleep)
+        AptFacade.dpkg_retry_sleep = 0
+
     def version_sortkey(self, version):
         """Return a key by which a Version object can be sorted."""
         return (version.package, version)
@@ -1055,6 +1064,7 @@ class AptFacadeTest(LandscapeTest):
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_remove(foo)
         self.assertRaises(TransactionError, self.facade.perform_changes)
+        self.log_helper.ignore_errors(SystemError)
 
     def test_perform_changes_dpkg_error_retains_excepthook(self):
         """
