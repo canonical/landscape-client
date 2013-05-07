@@ -5,7 +5,7 @@ from twisted.internet.task import Clock
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import ComponentPublisher, ComponentConnector
+from landscape.amp import ComponentPublisher, ComponentConnector, remote
 
 
 class TestComponent(object):
@@ -22,51 +22,6 @@ class FakeAMP(object):
 
     def __init__(self, locator):
         self._locator = locator
-
-
-class ComponentPublisherTest(LandscapeTest):
-
-    def setUp(self):
-        super(ComponentPublisherTest, self).setUp()
-        reactor = FakeReactor()
-        config = Configuration()
-        config.data_path = self.makeDir()
-        self.makeDir(path=config.sockets_path)
-        self.component = TestComponent()
-        self.publisher = ComponentPublisher(self.component, reactor, config)
-        self.publisher.start()
-
-        self.connector = TestComponentConnector(reactor, config)
-        connected = self.connector.connect()
-        connected.addCallback(lambda remote: setattr(self, "remote", remote))
-        return connected
-
-    def tearDown(self):
-        self.connector.disconnect()
-        self.publisher.stop()
-        super(ComponentPublisherTest, self).tearDown()
-
-    def test_ping(self):
-        """
-        The L{ComponentProtocol} exposes the C{ping} method of a
-        remote Landscape component.
-        """
-        self.component.ping = self.mocker.mock()
-        self.expect(self.component.ping()).result(True)
-        self.mocker.replay()
-        result = self.remote.ping()
-        return self.assertSuccess(result, True)
-
-    def test_exit(self):
-        """
-        The L{ComponentProtocol} exposes the C{exit} method of a
-        remote Landscape component.
-        """
-        self.component.exit = self.mocker.mock()
-        self.component.exit()
-        self.mocker.replay()
-        result = self.remote.exit()
-        return self.assertSuccess(result)
 
 
 class ComponentConnectorTest(LandscapeTest):

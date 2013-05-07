@@ -1,7 +1,7 @@
 import logging
 
 from landscape.lib.encoding import encode_dict_if_needed
-from landscape.amp import ComponentPublisher, ComponentConnector
+from landscape.amp import ComponentConnector, ComponentPublisher, remote
 
 from landscape.user.management import UserManagement
 from landscape.manager.plugin import ManagerPlugin
@@ -36,8 +36,8 @@ class UserManager(ManagerPlugin):
         super(UserManager, self).register(registry)
         self._registry = registry
 
-        self._publisher = UserManagerPublisher(self, self.registry.reactor,
-                                               self.registry.config)
+        self._publisher = ComponentPublisher(self, self.registry.reactor,
+                                             self.registry.config)
         self._publisher.start()
 
         for message_type in self._message_types:
@@ -50,6 +50,7 @@ class UserManager(ManagerPlugin):
             self._publisher.stop()
             self._publisher = None
 
+    @remote
     def get_locked_usernames(self):
         """Return a list of usernames with locked system accounts."""
         locked_users = []
@@ -148,12 +149,6 @@ class UserManager(ManagerPlugin):
     def _remove_group(self, message):
         """Run an C{remove-group} operation."""
         return self._management.remove_group(message["groupname"])
-
-
-class UserManagerPublisher(ComponentPublisher):
-    """L{AMP}-based protocol for calling L{UserManager}'s methods remotely."""
-
-    methods = ["get_locked_usernames"]
 
 
 class RemoteUserManagerConnector(ComponentConnector):
