@@ -1105,7 +1105,6 @@ class AptFacadeTest(LandscapeTest):
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_remove(foo)
         self.assertRaises(TransactionError, self.facade.perform_changes)
-        self.log_helper.ignore_errors(SystemError)
 
     def test_perform_changes_dpkg_error_retains_excepthook(self):
         """
@@ -1126,7 +1125,6 @@ class AptFacadeTest(LandscapeTest):
     def test_prevent_dpkg_apport_error_system_error(self):
         """
         C{_prevent_dpkg_apport_error} prevents the Apport excepthook
-
         from being called when a SystemError happens, since SystemErrors
         are expected to happen and will be caught in the Apt C binding..
         """
