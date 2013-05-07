@@ -130,14 +130,14 @@ class MethodCallChunk(Command):
 class MethodCallReceiver(CommandLocator):
     """Expose methods of a local object over AMP.
 
-    @param object: The Python object to be exposed.
+    @param obj: The Python object to be exposed.
     @param methods: The list of the object's methods that can be called
          remotely.
     """
 
-    def __init__(self, object, methods):
+    def __init__(self, obj, methods):
         CommandLocator.__init__(self)
-        self._object = object
+        self._object = obj
         self._methods = methods
         self._pending_chunks = {}
 
@@ -293,8 +293,8 @@ class MethodCallSender(object):
 class MethodCallServerProtocol(AMP):
     """Receive L{MethodCall} commands over the wire and send back results."""
 
-    def __init__(self, object, methods):
-        AMP.__init__(self, locator=MethodCallReceiver(object, methods))
+    def __init__(self, obj, methods):
+        AMP.__init__(self, locator=MethodCallReceiver(obj, methods))
 
 
 class MethodCallClientProtocol(AMP):
@@ -442,14 +442,14 @@ class MethodCallServerFactory(ServerFactory):
 
     protocol = MethodCallServerProtocol
 
-    def __init__(self, object, methods):
+    def __init__(self, obj, methods):
         """
         @param object: The object exposed by the L{MethodCallProtocol}s
             instances created by this factory.
         @param methods: A list of the names of the methods that remote peers
             are allowed to call on the C{object} that we publish.
         """
-        self.object = object
+        self.object = obj
         self.methods = methods
 
     def buildProtocol(self, addr):
