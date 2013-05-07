@@ -37,16 +37,15 @@ class RemoteBrokerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
 
-        def assert_response(message_id):
-            self.assertTrue(isinstance(message_id, int))
-            self.assertTrue(self.mstore.is_pending(message_id))
-            self.assertFalse(self.exchanger.is_urgent())
-            self.assertMessages(self.mstore.get_pending_messages(),
-                                [message])
+        session_id = self.successResultOf(self.remote.get_session_id())
+        message_id = self.successResultOf(
+            self.remote.send_message(message, session_id))
 
-        session_id = 1234
-        result = self.remote.send_message(message, session_id)
-        return result.addCallback(assert_response)
+        self.assertTrue(isinstance(message_id, int))
+        self.assertTrue(self.mstore.is_pending(message_id))
+        self.assertFalse(self.exchanger.is_urgent())
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [message])
 
     def test_send_message_with_urgent(self):
         """
@@ -54,12 +53,11 @@ class RemoteBrokerTest(LandscapeTest):
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-
-        def assert_response(message_id):
-            self.assertTrue(self.exchanger.is_urgent())
-
-        result = self.remote.send_message(message, urgent=True)
-        return result.addCallback(assert_response)
+        session_id = self.successResultOf(self.remote.get_session_id())
+        message_id = self.successResultOf(self.remote.send_message(
+            message, session_id, urgent=True))
+        self.assertTrue(isinstance(message_id, int))
+        self.assertTrue(self.exchanger.is_urgent())
 
     def test_is_message_pending(self):
         """

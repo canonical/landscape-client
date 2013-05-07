@@ -91,7 +91,6 @@ class BrokerClientTest(LandscapeTest):
         self.expect(plugin.run()).count(1)
         self.mocker.replay()
         self.client.add(plugin)
-        # self.client.reactor.advance(plugin.run_interval)
 
     def test_register_message(self):
         """
