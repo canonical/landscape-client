@@ -49,7 +49,8 @@ class ManagerPlugin(BrokerClientPlugin):
                       "operation-id": message["operation-id"]}
             if text:
                 result["result-text"] = text
-            return self.manager.broker.send_message(result, urgent=True)
+            return self.manager.broker.send_message(
+                result, self._session_id, urgent=True)
 
         deferred.addCallback(success)
         deferred.addErrback(failure)

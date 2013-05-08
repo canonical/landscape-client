@@ -81,7 +81,8 @@ class PackageReporter(PackageTaskHandler):
         return result
 
     def send_message(self, message):
-        return self._broker.send_message(message, True)
+        return self._broker.send_message(
+            message, self._broker.get_session_id(), True)
 
     def fetch_hash_id_db(self):
         """
