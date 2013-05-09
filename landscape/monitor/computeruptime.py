@@ -137,7 +137,9 @@ class ComputerUptime(MonitorPlugin):
             filename = self._wtmp_file + ".1"
             if os.path.isfile(filename):
                 broker.call_if_accepted("computer-uptime",
-                                        self.send_message, filename, urgent)
+                                        self.send_message,
+                                        filename,
+                                        urgent)
 
         if os.path.isfile(self._wtmp_file):
             broker.call_if_accepted("computer-uptime", self.send_message,
@@ -147,7 +149,7 @@ class ComputerUptime(MonitorPlugin):
         message = self._create_message(filename)
         if "shutdown-times" in message or "startup-times" in message:
             message["type"] = "computer-uptime"
-            self.registry.broker.send_message(message, urgent=urgent)
+            self.registry.broker.send_message(message, self._session_id, urgent=urgent)
 
     def _create_message(self, filename):
         """Generate a message with new startup and shutdown times."""
