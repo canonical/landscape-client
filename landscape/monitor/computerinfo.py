@@ -39,14 +39,16 @@ class ComputerInfo(MonitorPlugin):
         if message:
             message["type"] = "computer-info"
             logging.info("Queueing message with updated computer info.")
-            self.registry.broker.send_message(message, urgent=urgent)
+            self.registry.broker.send_message(message, self._session_id,
+                                              urgent=urgent)
 
     def send_distribution_message(self, urgent=False):
         message = self._create_distribution_info_message()
         if message:
             message["type"] = "distribution-info"
             logging.info("Queueing message with updated distribution info.")
-            self.registry.broker.send_message(message, urgent=urgent)
+            self.registry.broker.send_message(message, self._session_id,
+                                              urgent=urgent)
 
     def exchange(self, urgent=False):
         broker = self.registry.broker

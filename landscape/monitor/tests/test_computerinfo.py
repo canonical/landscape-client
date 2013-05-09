@@ -295,7 +295,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.monitor.add(plugin)
 
         remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, urgent=True)
+        remote_broker_mock.send_message(ANY, ANY, urgent=True)
         self.mocker.replay()
 
         self.mstore.set_accepted_types(["computer-info"])
@@ -307,7 +307,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.monitor.add(plugin)
 
         remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, urgent=True)
+        remote_broker_mock.send_message(ANY, ANY, urgent=True)
         self.mocker.replay()
 
         self.mstore.set_accepted_types(["distribution-info"])
