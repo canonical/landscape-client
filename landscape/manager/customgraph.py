@@ -164,7 +164,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 "values": [], "error": u"", "script-hash": script_hash}
         self._data = new_data
 
-        self.registry.broker.send_message(message, urgent=urgent)
+        self.registry.broker.send_message(message, self._session_id, urgent=urgent)
 
     def _handle_data(self, output, graph_id, now):
         if graph_id not in self._data:
