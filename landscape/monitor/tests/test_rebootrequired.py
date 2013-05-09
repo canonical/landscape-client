@@ -105,7 +105,7 @@ class RebootRequiredTest(LandscapeTest):
         C{reboot-required} messages.
         """
         broker_mock = self.mocker.replace(self.remote)
-        broker_mock.send_message(ANY, urgent=True)
+        broker_mock.send_message(ANY, ANY, urgent=True)
         self.mocker.replay()
         self.plugin.run()
         self.mstore.set_accepted_types([])
