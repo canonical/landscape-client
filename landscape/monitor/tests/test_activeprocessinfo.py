@@ -434,7 +434,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.monitor.add(plugin)
 
         broker_mock = self.mocker.replace(self.monitor.broker)
-        broker_mock.send_message(ANY, urgent=ANY)
+        broker_mock.send_message(ANY, ANY, urgent=ANY)
         self.mocker.result(fail(MyException()))
         self.mocker.replay()
 
