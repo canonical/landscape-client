@@ -34,7 +34,9 @@ class HardwareInventory(MonitorPlugin):
         devices = self.create_message()
         if devices:
             message = {"type": "hardware-inventory", "devices": devices}
-            result = self.registry.broker.send_message(message, urgent=urgent)
+            result = self.registry.broker.send_message(message,
+                                                       self._session_id,
+                                                       urgent=urgent)
             result.addCallback(self.persist_data)
             result.addErrback(log_failure)
             logging.info("Queueing a message with hardware-inventory "

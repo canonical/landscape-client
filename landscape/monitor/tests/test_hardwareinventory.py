@@ -225,7 +225,7 @@ class HardwareInventoryTest(LandscapeTest):
 
     def test_call_on_accepted(self):
         remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, urgent=True)
+        remote_broker_mock.send_message(ANY, ANY, urgent=True)
         self.mocker.result(succeed(None))
         self.mocker.replay()
 
@@ -259,7 +259,7 @@ class HardwareInventoryTest(LandscapeTest):
         self.log_helper.ignore_errors(MyException)
 
         broker_mock = self.mocker.replace(self.monitor.broker)
-        broker_mock.send_message(ANY, urgent=ANY)
+        broker_mock.send_message(ANY, ANY, urgent=ANY)
         self.mocker.result(fail(MyException()))
         self.mocker.replay()
 
