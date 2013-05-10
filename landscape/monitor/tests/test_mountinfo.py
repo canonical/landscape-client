@@ -5,6 +5,7 @@ from twisted.internet.defer import succeed
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
 from landscape.tests.mocker import ANY
+from landscape.lib.disk import is_device_removable
 
 
 mb = lambda x: x * 1024 * 1024
@@ -321,7 +322,19 @@ addr=ennui 0 0
         self.assertEqual(message, None)
 
     def test_ignore_removable_partitions(self):
-        raise NotImplemented
+        """
+        "Removable" partitions are not reported to the server.
+        """
+        self.mocker.replace(is_device_removable)
+        self.mocker.result(True)
+        self.mocker.replay()
+        filename = self.makeFile("""\
+/dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0""")
+        plugin = self.get_mount_info(mtab_file=filename)
+        self.monitor.add(plugin)
+        plugin.run()
+        message = plugin.create_mount_info_message()
+        self.assertEqual(message, None)
 
     def test_ignore_removable_devices(self):
         raise NotImplemented
