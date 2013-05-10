@@ -312,7 +312,7 @@ class UserMonitorTest(LandscapeTest):
 
         self.broker_service.message_store.set_accepted_types(["users"])
         self.monitor.broker.send_message = self.mocker.mock()
-        self.monitor.broker.send_message(ANY, urgent=True)
+        self.monitor.broker.send_message(ANY, ANY, urgent=True)
         self.mocker.result(fail(RuntimeError()))
         self.mocker.replay()
 
