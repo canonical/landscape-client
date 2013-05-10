@@ -64,7 +64,7 @@ class UpdateManager(MonitorPlugin):
             "prompt": prompt}
         logging.info("Queueing message with updated "
                      "update-manager status.")
-        return self.registry.broker.send_message(message)
+        return self.registry.broker.send_message(message, self._session_id)
 
     def run(self):
         """
