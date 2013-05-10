@@ -81,7 +81,8 @@ class MountInfo(MonitorPlugin):
 
     def send_messages(self, urgent=False):
         for message in self.create_messages():
-            d = self.registry.broker.send_message(message, urgent=urgent)
+            d = self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent)
             if message["type"] == "mount-info":
                 d.addCallback(lambda x: self.persist_mount_info())
 
