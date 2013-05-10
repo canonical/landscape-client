@@ -89,10 +89,12 @@ def get_device_removable_file_path(device):
 
     [device_name] = device.split("/")[-1:]  # /dev/sda1 -> sda1
     matched = EXTRACT_DEVICE.match(device_name)  # sda1 -> sda
+    if not matched:
+        return None
+
     device_name = matched.groups()[0]
 
     removable_file = os.path.join("/sys/block/", device_name, "removable")
-
     return removable_file
 
 
@@ -104,9 +106,15 @@ def is_device_removable(device, path=None):
     if path is None:
         path = get_device_removable_file_path(device)
 
+    if path is None:
+        return False
+
     contents = None
-    with open(path, "r") as f:
-        contents = f.readline()
+    try:
+        with open(path, "r") as f:
+            contents = f.readline()
+    except IOError:
+        return False
 
     if "1" in contents:
         return True

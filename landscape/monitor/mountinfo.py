@@ -15,7 +15,7 @@ class MountInfo(MonitorPlugin):
 
     def __init__(self, interval=300, monitor_interval=60 * 60,
                  mounts_file="/proc/mounts", create_time=time.time,
-                 statvfs=None, hal_manager=None, mtab_file="/etc/mtab"):
+                 statvfs=None, mtab_file="/etc/mtab"):
         self.run_interval = interval
         self._monitor_interval = monitor_interval
         self._create_time = create_time

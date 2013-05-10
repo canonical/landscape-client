@@ -157,3 +157,11 @@ class RemovableDiskTest(LandscapeTest):
         device = "/dev/sdb1"
         path = self.makeFile("Some garbage")
         self.assertFalse(is_device_removable(device, path=path))
+
+    def test_is_device_removable_path_doesnt_exist(self):
+        """
+        When given a non-existing path, report the device as not removable.
+        """
+        device = "/dev/sdb1"
+        path = "/what/ever"
+        self.assertFalse(is_device_removable(device, path=path))

@@ -3,7 +3,6 @@ import tempfile
 from twisted.internet.defer import succeed
 
 from landscape.monitor.mountinfo import MountInfo
-from landscape.tests.test_hal import MockHALManager, MockRealHALDevice
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
 from landscape.tests.mocker import ANY
 
@@ -22,8 +21,6 @@ class MountInfoTest(LandscapeTest):
         self.log_helper.ignore_errors("Typelib file for namespace")
 
     def get_mount_info(self, *args, **kwargs):
-        hal_devices = kwargs.pop("hal_devices", [])
-        kwargs["hal_manager"] = MockHALManager(hal_devices)
         if "statvfs" not in kwargs:
             kwargs["statvfs"] = lambda path: (0,) * 10
         return MountInfo(*args, **kwargs)
@@ -324,105 +321,10 @@ addr=ennui 0 0
         self.assertEqual(message, None)
 
     def test_ignore_removable_partitions(self):
-        """
-        Partitions on removable devices don't directly report
-        storage.removable : True, but they do point to their parent and the
-        parent will be marked removable if appropriate.
-        """
-        devices = [MockRealHALDevice({"info.udi": "wubble",
-                                      "block.device": "/dev/scd",
-                                      "storage.removable": True}),
-                   MockRealHALDevice({"info.udi": "wubble0",
-                                      "block.device": "/dev/scd0",
-                                      "info.parent": "wubble"})]
-
-        filename = self.makeFile("""\
-/dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, hal_devices=devices,
-                                     mtab_file=filename)
-        self.monitor.add(plugin)
-        plugin.run()
-
-        message = plugin.create_mount_info_message()
-        self.assertEqual(message, None)
+        raise NotImplemented
 
     def test_ignore_removable_devices(self):
-        """
-        The mount info plugin should only report data about
-        non-removable devices.
-        """
-        devices = [MockRealHALDevice({"info.udi": "wubble",
-                                      "block.device": "/dev/scd0",
-                                      "storage.removable": True})]
-        filename = self.makeFile("""\
-/dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, hal_devices=devices,
-                                     mtab_file=filename)
-        self.monitor.add(plugin)
-        plugin.run()
-
-        message = plugin.create_mount_info_message()
-        self.assertEqual(message, None)
-
-    def test_ignore_removable_devices_gudev(self):
-        """
-        The mount info plugin uses gudev to retrieve removable information
-        about devices.
-        """
-        filename = self.makeFile("""\
-/dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename,
-                                     mtab_file=filename)
-        plugin._hal_manager = None
-
-        class MockDevice(object):
-            def get_sysfs_attr_as_boolean(self, attr):
-                if attr == "removable":
-                    return True
-
-        class MockGudevClient(object):
-            def query_by_device_file(self, name):
-                if name == "/dev/scd0":
-                    return MockDevice()
-
-        plugin._gudev_client = MockGudevClient()
-        self.monitor.add(plugin)
-        plugin.run()
-
-        message = plugin.create_mount_info_message()
-        self.assertEqual(message, None)
-
-    def test_ignore_multiparented_removable_devices(self):
-        """
-        Some removable devices might be the grand-children of a device that is
-        marked as "storage.removable".
-        """
-        devices = [MockRealHALDevice({"info.udi": "wubble",
-                                      "block.device": "/dev/scd",
-                                      "storage.removable": True}),
-                   MockRealHALDevice({"info.udi": "wubble0",
-                                      "block.device": "/dev/scd0",
-                                      "info.parent": "wubble"}),
-                   MockRealHALDevice({"info.udi": "wubble0a",
-                                      "block.device": "/dev/scd0a",
-                                      "info.parent": "wubble0"}),
-                   MockRealHALDevice({"info.udi": "wubble0b",
-                                      "block.device": "/dev/scd0b",
-                                      "info.parent": "wubble0"})]
-
-        filename = self.makeFile("""\
-/dev/scd0a /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, hal_devices=devices,
-                                     mtab_file=filename)
-        self.monitor.add(plugin)
-        plugin.run()
-
-        message = plugin.create_mount_info_message()
-        self.assertEqual(message, None)
+        raise NotImplemented
 
     def test_sample_free_space(self):
         """Test collecting information about free space."""
