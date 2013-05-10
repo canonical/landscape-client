@@ -1,6 +1,8 @@
 import os
 
-from landscape.lib.disk import get_filesystem_for_path, get_mount_info
+from landscape.lib.disk import (
+    get_filesystem_for_path, get_mount_info, is_device_removable,
+    get_device_removable_file_path)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -101,3 +103,57 @@ class DiskUtilitiesTest(LandscapeTest):
         expected = {"device": "/dev/sda1", "mount-point": "/home",
                     "filesystem": "ext4", "total-space": 3, "free-space": 1}
         self.assertEqual([expected], result)
+
+
+class RemovableDiskTest(LandscapeTest):
+
+    def test_get_device_removable_file_path(self):
+        device = "/dev/sdb"
+        expected = "/sys/block/sdb/removable"
+        result = get_device_removable_file_path(device)
+        self.assertEqual(expected, result)
+
+    def test_get_device_removable_file_path_with_partition(self):
+        device = "/dev/sdb1"
+        expected = "/sys/block/sdb/removable"
+        result = get_device_removable_file_path(device)
+        self.assertEqual(expected, result)
+
+    def test_get_device_removable_file_path_without_dev(self):
+        device = "sdb1"
+        expected = "/sys/block/sdb/removable"
+        result = get_device_removable_file_path(device)
+        self.assertEqual(expected, result)
+
+    def test_get_device_removable_file_path_with_none(self):
+        device = None
+        expected = None
+        result = get_device_removable_file_path(device)
+        self.assertEqual(expected, result)
+
+    def test_is_device_removable(self):
+        """
+        Given the path to a file, determine if it means the device is removable
+        or not.
+        """
+        device = "/dev/sdb1"
+        path = self.makeFile("1")
+        self.assertTrue(is_device_removable(device, path=path))
+
+    def test_is_device_removable_false(self):
+        """
+        Given the path to a file, determine if it means the device is removable
+        or not.
+        """
+        device = "/dev/sdb1"
+        path = self.makeFile("0")
+        self.assertFalse(is_device_removable(device, path=path))
+
+    def test_is_device_removable_garbage(self):
+        """
+        Given the path to a file, determine if it means the device is removable
+        or not.
+        """
+        device = "/dev/sdb1"
+        path = self.makeFile("Some garbage")
+        self.assertFalse(is_device_removable(device, path=path))

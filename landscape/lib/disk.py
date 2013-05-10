@@ -2,12 +2,16 @@ from __future__ import division
 
 import os
 import statvfs
+import re
 
 
 # List of filesystem types authorized when generating disk use statistics.
 STABLE_FILESYSTEMS = frozenset(
     ["ext", "ext2", "ext3", "ext4", "reiserfs", "ntfs", "msdos", "dos", "vfat",
      "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
+
+
+EXTRACT_DEVICE = re.compile("([a-z]+).*")
 
 
 def get_mount_info(mounts_file, statvfs_,
@@ -74,3 +78,36 @@ def get_filesystem_for_path(path, mounts_file, statvfs_):
                 or path_segments[:len(mount_segments)] == mount_segments):
                 candidate = info
     return candidate
+
+
+def get_device_removable_file_path(device):
+    """
+    A small utility to get a device's removable file path.
+    """
+    if not device:  # Shortcut the trivial case
+        return None
+
+    [device_name] = device.split("/")[-1:]  # /dev/sda1 -> sda1
+    matched = EXTRACT_DEVICE.match(device_name)  # sda1 -> sda
+    device_name = matched.groups()[0]
+
+    removable_file = os.path.join("/sys/block/", device_name, "removable")
+
+    return removable_file
+
+
+def is_device_removable(device, path=None):
+    """
+    This function returns wether a given device is removable or not by looking
+    at the corresponding /sys/block/<device>/removable file.
+    """
+    if path is None:
+        path = get_device_removable_file_path(device)
+
+    contents = None
+    with open(path, "r") as f:
+        contents = f.readline()
+
+    if "1" in contents:
+        return True
+    return False
