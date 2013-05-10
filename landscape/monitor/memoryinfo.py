@@ -42,7 +42,8 @@ class MemoryInfo(MonitorPlugin):
     def send_message(self, urgent=False):
         message = self.create_message()
         if len(message["memory-info"]):
-            self.registry.broker.send_message(message, urgent=urgent)
+            self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted("memory-info",
