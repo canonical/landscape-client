@@ -131,6 +131,18 @@ class RemovableDiskTest(LandscapeTest):
         result = get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
+    def test_get_device_removable_file_path_with_uuid(self):
+        device = "/dev/disk/by-uuid/8b2ec410-ebd2-49ec-bb3c-b8b13effab08"
+
+        readlink_mock = self.mocker.replace(os.readlink)
+        readlink_mock(device)
+        self.mocker.result("../../sda1")
+        self.mocker.replay()
+
+        expected = "/sys/block/sda/removable"
+        result = get_device_removable_file_path(device)
+        self.assertEqual(expected, result)
+
     def test_is_device_removable(self):
         """
         Given the path to a file, determine if it means the device is removable

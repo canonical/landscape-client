@@ -87,10 +87,14 @@ def get_device_removable_file_path(device):
     if not device:  # Shortcut the trivial case
         return None
 
+    # Is the drive mounted by uuid?
+    if "uuid" in device:
+        # Paths are in the form "/dev/disk/by-uuid/<uuid>". This is a symlink
+        # to the device file under /dev
+        device = os.readlink(device)  # /dev/disk/by-uuid/<uuid> -> ../../sda1
+
     [device_name] = device.split("/")[-1:]  # /dev/sda1 -> sda1
     matched = EXTRACT_DEVICE.match(device_name)  # sda1 -> sda
-    if not matched:
-        return None
 
     device_name = matched.groups()[0]
 
