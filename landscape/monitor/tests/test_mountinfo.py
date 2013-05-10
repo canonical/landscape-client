@@ -325,19 +325,18 @@ addr=ennui 0 0
         """
         "Removable" partitions are not reported to the server.
         """
-        self.mocker.replace(is_device_removable)
+        removable_mock = self.mocker.replace(is_device_removable)
+        removable_mock(ANY)
         self.mocker.result(True)
         self.mocker.replay()
+
         filename = self.makeFile("""\
-/dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0""")
-        plugin = self.get_mount_info(mtab_file=filename)
+/dev/hdc4 /mm xfs rw 0 0""")
+        plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
         self.monitor.add(plugin)
         plugin.run()
         message = plugin.create_mount_info_message()
         self.assertEqual(message, None)
-
-    def test_ignore_removable_devices(self):
-        raise NotImplemented
 
     def test_sample_free_space(self):
         """Test collecting information about free space."""
@@ -462,8 +461,15 @@ addr=ennui 0 0
 /opt /mnt none rw,bind 0 0
 /opt /media/Boot\\040OSX none rw,bind 0 0
 """)
+
+        removable_mock = self.mocker.replace(is_device_removable)
+        removable_mock(ANY)
+        self.mocker.result(False)
+        self.mocker.count(4)
+        self.mocker.replay()
         plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
                            statvfs=statvfs, mtab_file=mtab_filename)
+
         self.monitor.add(plugin)
         plugin.run()
         message = plugin.create_mount_info_message()
@@ -493,6 +499,13 @@ addr=ennui 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
 """)
+
+        removable_mock = self.mocker.replace(is_device_removable)
+        removable_mock(ANY)
+        self.mocker.result(False)
+        self.mocker.count(3)
+        self.mocker.replay()
+
         # mktemp isn't normally secure, due to race conditions, but in this
         # case, we don't actually create the file at all.
         mtab_filename = tempfile.mktemp()
@@ -537,6 +550,13 @@ addr=ennui 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /opt /mnt none rw,bind 0 0
 """)
+
+        removable_mock = self.mocker.replace(is_device_removable)
+        removable_mock(ANY)
+        self.mocker.result(False)
+        self.mocker.count(6)
+        self.mocker.replay()
+
         plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
                            statvfs=statvfs, mtab_file=mtab_filename)
         self.monitor.add(plugin)
