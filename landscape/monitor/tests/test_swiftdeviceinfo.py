@@ -186,7 +186,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
         self.reactor.advance(plugin.run_interval)
 
         remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, urgent=True)
+        remote_broker_mock.send_message(ANY, ANY, urgent=True)
         self.mocker.result(succeed(None))
         self.mocker.count(1)  # 1 send message is called for swift-device-info
         self.mocker.replay()
