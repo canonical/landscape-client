@@ -80,13 +80,37 @@ def get_filesystem_for_path(path, mounts_file, statvfs_):
     return candidate
 
 
-def get_device_removable_file_path(device):
+def is_device_removable(device):
     """
-    A small utility to get a device's removable file path.
-    """
-    if not device:  # Shortcut the trivial case
-        return None
+    This function returns wether a given device is removable or not by looking
+    at the corresponding /sys/block/<device>/removable file
 
+    @param device: The filesystem path to the device, e.g. /dev/sda1
+    """
+    path = _get_device_removable_file_path(device)
+
+    contents = None
+    try:
+        with open(path, "r") as f:
+            contents = f.readline()
+    except IOError:
+        return False
+
+    if "1" in contents:
+        return True
+    return False
+
+
+def _get_device_removable_file_path(device):
+    """
+    Get a device's "removable" file path.
+
+    This function figures out the C{/sys/block/<device>/removable} path
+    associated with the given device. The file at that path contains either
+    a "0" if the device is not removable, or a "1" if it is.
+
+    @param device: File system path of the device.
+    """
     # The device will be a symlink if the disk is mounted by uuid or by label.
     if os.path.islink(device):
         # Paths are in the form "/dev/disk/by-uuid/<uuid>" and symlink
@@ -101,25 +125,3 @@ def get_device_removable_file_path(device):
     removable_file = os.path.join("/sys/block/", device_name, "removable")
     return removable_file
 
-
-def is_device_removable(device, path=None):
-    """
-    This function returns wether a given device is removable or not by looking
-    at the corresponding /sys/block/<device>/removable file.
-    """
-    if path is None:
-        path = get_device_removable_file_path(device)
-
-    if path is None:
-        return False
-
-    contents = None
-    try:
-        with open(path, "r") as f:
-            contents = f.readline()
-    except IOError:
-        return False
-
-    if "1" in contents:
-        return True
-    return False

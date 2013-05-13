@@ -2,7 +2,7 @@ import os
 
 from landscape.lib.disk import (
     get_filesystem_for_path, get_mount_info, is_device_removable,
-    get_device_removable_file_path)
+    _get_device_removable_file_path)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -107,17 +107,17 @@ class DiskUtilitiesTest(LandscapeTest):
 
 class RemovableDiskTest(LandscapeTest):
 
-    def test_get_device_removable_file_path(self):
+    def test_wb_get_device_removable_file_path(self):
         """
         When passed a device in /dev, the get_device_removable_file_path
         function returns the corresponding removable file path in /sys/block.
         """
         device = "/dev/sdb"
         expected = "/sys/block/sdb/removable"
-        result = get_device_removable_file_path(device)
+        result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
-    def test_get_device_removable_file_path_with_partition(self):
+    def test_wb_get_device_removable_file_path_with_partition(self):
         """
         When passed a device in /dev with a partition number, the
         get_device_removable_file_path function returns the corresponding
@@ -125,10 +125,10 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/sdb1"
         expected = "/sys/block/sdb/removable"
-        result = get_device_removable_file_path(device)
+        result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
-    def test_get_device_removable_file_path_without_dev(self):
+    def test_wb_get_device_removable_file_path_without_dev(self):
         """
         When passed a device name (not the whole path), the
         get_device_removable_file_path function returns the corresponding
@@ -136,20 +136,10 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "sdb1"
         expected = "/sys/block/sdb/removable"
-        result = get_device_removable_file_path(device)
+        result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
-    def test_get_device_removable_file_path_with_none(self):
-        """
-        When passed None , the get_device_removable_file_path function returns
-        None.
-        """
-        device = None
-        expected = None
-        result = get_device_removable_file_path(device)
-        self.assertEqual(expected, result)
-
-    def test_get_device_removable_file_path_with_symlink(self):
+    def test_wb_get_device_removable_file_path_with_symlink(self):
         """
         When the device path passed to get_device_removable_file_path is a
         symlink (it's the case when disks are mounted by uuid or by label),
@@ -169,7 +159,7 @@ class RemovableDiskTest(LandscapeTest):
         self.mocker.replay()
 
         expected = "/sys/block/sda/removable"
-        result = get_device_removable_file_path(device)
+        result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
     def test_is_device_removable(self):
@@ -179,7 +169,13 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/sdb1"
         path = self.makeFile("1")
-        self.assertTrue(is_device_removable(device, path=path))
+
+        removable_mock = self.mocker.replace(_get_device_removable_file_path)
+        removable_mock(device)
+        self.mocker.result(path)
+        self.mocker.replay()
+
+        self.assertTrue(is_device_removable(device))
 
     def test_is_device_removable_false(self):
         """
@@ -188,7 +184,13 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/sdb1"
         path = self.makeFile("0")
-        self.assertFalse(is_device_removable(device, path=path))
+
+        removable_mock = self.mocker.replace(_get_device_removable_file_path)
+        removable_mock(device)
+        self.mocker.result(path)
+        self.mocker.replay()
+
+        self.assertFalse(is_device_removable(device))
 
     def test_is_device_removable_garbage(self):
         """
@@ -197,7 +199,13 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/sdb1"
         path = self.makeFile("Some garbage")
-        self.assertFalse(is_device_removable(device, path=path))
+
+        removable_mock = self.mocker.replace(_get_device_removable_file_path)
+        removable_mock(device)
+        self.mocker.result(path)
+        self.mocker.replay()
+
+        self.assertFalse(is_device_removable(device))
 
     def test_is_device_removable_path_doesnt_exist(self):
         """
@@ -205,4 +213,10 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/sdb1"
         path = "/what/ever"
-        self.assertFalse(is_device_removable(device, path=path))
+
+        removable_mock = self.mocker.replace(_get_device_removable_file_path)
+        removable_mock(device)
+        self.mocker.result(path)
+        self.mocker.replay()
+
+        self.assertFalse(is_device_removable(device))
