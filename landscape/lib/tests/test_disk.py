@@ -108,35 +108,64 @@ class DiskUtilitiesTest(LandscapeTest):
 class RemovableDiskTest(LandscapeTest):
 
     def test_get_device_removable_file_path(self):
+        """
+        When passed a device in /dev, the get_device_removable_file_path
+        function returns the corresponding removable file path in /sys/block.
+        """
         device = "/dev/sdb"
         expected = "/sys/block/sdb/removable"
         result = get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
     def test_get_device_removable_file_path_with_partition(self):
+        """
+        When passed a device in /dev with a partition number, the
+        get_device_removable_file_path function returns the corresponding
+        removable file path in /sys/block.
+        """
         device = "/dev/sdb1"
         expected = "/sys/block/sdb/removable"
         result = get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
     def test_get_device_removable_file_path_without_dev(self):
+        """
+        When passed a device name (not the whole path), the
+        get_device_removable_file_path function returns the corresponding
+        removable file path in /sys/block.
+        """
         device = "sdb1"
         expected = "/sys/block/sdb/removable"
         result = get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
     def test_get_device_removable_file_path_with_none(self):
+        """
+        When passed None , the get_device_removable_file_path function returns
+        None.
+        """
         device = None
         expected = None
         result = get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
-    def test_get_device_removable_file_path_with_uuid(self):
+    def test_get_device_removable_file_path_with_symlink(self):
+        """
+        When the device path passed to get_device_removable_file_path is a
+        symlink (it's the case when disks are mounted by uuid or by label),
+        the get_device_removable_file_path function returns the proper
+        corresponding file path in /sys/block.
+        """
         device = "/dev/disk/by-uuid/8b2ec410-ebd2-49ec-bb3c-b8b13effab08"
 
         readlink_mock = self.mocker.replace(os.readlink)
         readlink_mock(device)
         self.mocker.result("../../sda1")
+
+        is_link_mock = self.mocker.replace(os.path.islink)
+        is_link_mock(device)
+        self.mocker.result(True)
+
         self.mocker.replay()
 
         expected = "/sys/block/sda/removable"

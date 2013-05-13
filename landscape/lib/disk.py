@@ -87,9 +87,9 @@ def get_device_removable_file_path(device):
     if not device:  # Shortcut the trivial case
         return None
 
-    # Is the drive mounted by uuid?
-    if "uuid" in device:
-        # Paths are in the form "/dev/disk/by-uuid/<uuid>". This is a symlink
+    # The device will be a symlink if the disk is mounted by uuid or by label.
+    if os.path.islink(device):
+        # Paths are in the form "/dev/disk/by-uuid/<uuid>" and symlink
         # to the device file under /dev
         device = os.readlink(device)  # /dev/disk/by-uuid/<uuid> -> ../../sda1
 
