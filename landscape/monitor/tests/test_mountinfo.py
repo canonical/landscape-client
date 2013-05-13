@@ -96,6 +96,11 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 /dev/hde1 /mnt/bind none rw,bind 0 0
 /dev/sdb2 /media/Boot\\040OSX hfsplus rw 0 0
 """)
+        removable_mock = self.mocker.replace(is_device_removable)
+        removable_mock(ANY)
+        self.mocker.result(False)
+        self.mocker.count(4)
+        self.mocker.replay()
 
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
                                      create_time=self.reactor.time,
