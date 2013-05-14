@@ -1,7 +1,7 @@
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
-from landscape.amp import ComponentPublisher, ComponentConnector, remote_named
+from landscape.amp import ComponentPublisher, ComponentConnector, remote
 
 from landscape.monitor.plugin import MonitorPlugin
 from landscape.user.changes import UserChanges
@@ -43,12 +43,12 @@ class UserMonitor(MonitorPlugin):
         super(UserMonitor, self)._resynchronize()
         return self._run_detect_changes()
 
-    @remote_named("detect_changes")
-    def run(self, operation_id=None):
+    @remote
+    def detect_changes(self, operation_id=None):
         return self.registry.broker.call_if_accepted(
             "users", self._run_detect_changes, operation_id)
 
-    detect_changes = run
+    run = detect_changes
 
     def _run_detect_changes(self, operation_id=None):
         """

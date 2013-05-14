@@ -50,8 +50,7 @@ class ComponentPublisher(object):
 
 
 def get_remote_methods(klass):
-    """
-    Get all the remote methods declared on a class.
+    """Get all the remote methods declared on a class.
 
     @param klass: A class to search for AMP-exposed methods.
     """
@@ -71,17 +70,6 @@ def remote(method):
     """
     method.amp_exposed = method.__name__
     return method
-
-
-def remote_named(name):
-    """
-    A decorator for marking a method as remotely accessible while specifying a
-    name other than the method's name.
-    """
-    def decorator(method):
-        method.amp_exposed = name
-        return method
-    return decorator
 
 
 class ComponentConnector(object):
