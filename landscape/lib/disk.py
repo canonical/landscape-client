@@ -82,7 +82,7 @@ def get_filesystem_for_path(path, mounts_file, statvfs_):
 
 def is_device_removable(device):
     """
-    This function returns wether a given device is removable or not by looking
+    This function returns whether a given device is removable or not by looking
     at the corresponding /sys/block/<device>/removable file
 
     @param device: The filesystem path to the device, e.g. /dev/sda1
