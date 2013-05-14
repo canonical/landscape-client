@@ -114,6 +114,12 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/sdb"
         expected = "/sys/block/sdb/removable"
+
+        is_link_mock = self.mocker.replace(os.path.islink)
+        is_link_mock(device)
+        self.mocker.result(False)
+        self.mocker.replay()
+
         result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
@@ -125,6 +131,12 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/sdb1"
         expected = "/sys/block/sdb/removable"
+
+        is_link_mock = self.mocker.replace(os.path.islink)
+        is_link_mock(device)
+        self.mocker.result(False)
+        self.mocker.replay()
+
         result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
@@ -136,6 +148,12 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "sdb1"
         expected = "/sys/block/sdb/removable"
+
+        is_link_mock = self.mocker.replace(os.path.islink)
+        is_link_mock(device)
+        self.mocker.result(False)
+        self.mocker.replay()
+
         result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
 
@@ -161,6 +179,23 @@ class RemovableDiskTest(LandscapeTest):
         expected = "/sys/block/sda/removable"
         result = _get_device_removable_file_path(device)
         self.assertEqual(expected, result)
+
+    def test_wb_get_device_removable_file_path_raid_device(self):
+        """
+        When passed a more exotic device file, like for example a raid device
+        (e.g. /dev/cciss/c0d1p1), the _get_device_removable_file_path function
+        does not fail, and returns False.
+        """
+        device = "/dev/cciss/c0d0p0"
+
+        is_link_mock = self.mocker.replace(os.path.islink)
+        is_link_mock(device)
+        self.mocker.result(False)
+
+        self.mocker.replay()
+
+        result = _get_device_removable_file_path(device)
+        self.assertIs(None, result)
 
     def test_is_device_removable(self):
         """
@@ -217,6 +252,22 @@ class RemovableDiskTest(LandscapeTest):
         removable_mock = self.mocker.replace(_get_device_removable_file_path)
         removable_mock(device)
         self.mocker.result(path)
+        self.mocker.replay()
+
+        self.assertFalse(is_device_removable(device))
+
+    def test_is_removable_raid_device(self):
+        """
+        When passed the path to a raid device (e.g. /dev/cciss/c0d0p0), the
+        is_device_removable function returns False.
+        """
+
+        device = "/dev/cciss/c0d1p1"
+
+        is_link_mock = self.mocker.replace(os.path.islink)
+        is_link_mock(device)
+        self.mocker.result(False)
+
         self.mocker.replay()
 
         self.assertFalse(is_device_removable(device))

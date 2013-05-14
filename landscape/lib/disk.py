@@ -11,7 +11,7 @@ STABLE_FILESYSTEMS = frozenset(
      "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
 
 
-EXTRACT_DEVICE = re.compile("([a-z]+).*")
+EXTRACT_DEVICE = re.compile("([a-z]+)[0-9]*\Z")
 
 
 def get_mount_info(mounts_file, statvfs_,
@@ -89,6 +89,9 @@ def is_device_removable(device):
     """
     path = _get_device_removable_file_path(device)
 
+    if not path:
+        return False
+
     contents = None
     try:
         with open(path, "r") as f:
@@ -120,8 +123,10 @@ def _get_device_removable_file_path(device):
     [device_name] = device.split("/")[-1:]  # /dev/sda1 -> sda1
     matched = EXTRACT_DEVICE.match(device_name)  # sda1 -> sda
 
+    if not matched:
+        return None
+
     device_name = matched.groups()[0]
 
     removable_file = os.path.join("/sys/block/", device_name, "removable")
     return removable_file
-
