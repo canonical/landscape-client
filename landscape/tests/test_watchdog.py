@@ -498,7 +498,8 @@ class DaemonTestBase(LandscapeTest):
             self.config.data_path = self.makeDir()
             self.makeDir(path=self.config.sockets_path)
 
-        self.connector = self.connector_factory(LandscapeReactor(), self.config)
+        self.connector = self.connector_factory(LandscapeReactor(),
+                                                self.config)
         self.daemon = self.get_daemon()
 
     def tearDown(self):
