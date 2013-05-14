@@ -11,7 +11,7 @@ STABLE_FILESYSTEMS = frozenset(
      "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
 
 
-EXTRACT_DEVICE = re.compile("([a-z]+)[0-9]*\Z")
+EXTRACT_DEVICE = re.compile("([a-z]+)[0-9]*")
 
 
 def get_mount_info(mounts_file, statvfs_,
@@ -87,6 +87,11 @@ def is_device_removable(device):
 
     @param device: The filesystem path to the device, e.g. /dev/sda1
     """
+    # Shortcut the case where the device an SD card. The kernel/udev currently
+    # consider SD cards (mmcblk devices) to be non-removable.
+    if "mmcblk" in device:
+        return True
+
     path = _get_device_removable_file_path(device)
 
     if not path:
@@ -121,6 +126,7 @@ def _get_device_removable_file_path(device):
         device = os.readlink(device)  # /dev/disk/by-uuid/<uuid> -> ../../sda1
 
     [device_name] = device.split("/")[-1:]  # /dev/sda1 -> sda1
+
     matched = EXTRACT_DEVICE.match(device_name)  # sda1 -> sda
 
     if not matched:

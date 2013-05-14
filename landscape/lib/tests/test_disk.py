@@ -184,9 +184,12 @@ class RemovableDiskTest(LandscapeTest):
         """
         When passed a more exotic device file, like for example a raid device
         (e.g. /dev/cciss/c0d1p1), the _get_device_removable_file_path function
-        does not fail, and returns False.
+        does not fail, and returns the expected /sys/block/<device>/removable
+        path.
         """
         device = "/dev/cciss/c0d0p0"
+        # The expected path does not exists, but it doesn't matter here.
+        expected = "/sys/block/c/removable"
 
         is_link_mock = self.mocker.replace(os.path.islink)
         is_link_mock(device)
@@ -195,7 +198,7 @@ class RemovableDiskTest(LandscapeTest):
         self.mocker.replay()
 
         result = _get_device_removable_file_path(device)
-        self.assertIs(None, result)
+        self.assertEqual(expected, result)
 
     def test_is_device_removable(self):
         """
@@ -261,13 +264,19 @@ class RemovableDiskTest(LandscapeTest):
         When passed the path to a raid device (e.g. /dev/cciss/c0d0p0), the
         is_device_removable function returns False.
         """
-
         device = "/dev/cciss/c0d1p1"
 
         is_link_mock = self.mocker.replace(os.path.islink)
         is_link_mock(device)
         self.mocker.result(False)
-
         self.mocker.replay()
 
         self.assertFalse(is_device_removable(device))
+
+    def test_is_device_removable_memory_card(self):
+        """
+        The kernel/udev currently consider memory cards such as SD cards as non
+        removable
+        """
+        device = "/dev/mmcblk0p1"  # Device 0, parition 1
+        self.assertTrue(is_device_removable(device))
