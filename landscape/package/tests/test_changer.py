@@ -39,7 +39,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.config = PackageChangerConfiguration()
         self.config.data_path = self.makeDir()
         self.process_factory = StubProcessFactory()
-        self.twisted_reactor = FakeReactor()
+        self.landscape_reactor = FakeReactor()
         reboot_required_filename = self.makeFile("reboot required")
         os.mkdir(self.config.package_directory)
         os.mkdir(self.config.binaries_path)
@@ -47,7 +47,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer = PackageChanger(
             self.store, self.facade, self.remote, self.config,
             process_factory=self.process_factory,
-            twisted_reactor=self.twisted_reactor,
+            landscape_reactor=self.landscape_reactor,
             reboot_required_filename=reboot_required_filename)
         self.changer.update_notifier_stamp = "/Not/Existing"
         service = self.broker_service
@@ -1414,12 +1414,12 @@ class AptPackageChangerTest(LandscapeTest):
                                                  "asked for!",
                                   "type": "change-packages-result"}])
 
-        self.twisted_reactor.advance(5)
+        self.landscape_reactor.advance(5)
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.processEnded(Failure(ProcessDone(status=0)))
         self.broker_service.reactor.advance(100)
-        self.twisted_reactor.advance(10)
+        self.landscape_reactor.advance(10)
         return result.addCallback(got_result)
 
     def test_change_packages_with_failed_reboot(self):
@@ -1449,11 +1449,11 @@ class AptPackageChangerTest(LandscapeTest):
                                   "type": "change-packages-result"}])
             self.log_helper.ignore_errors(ShutdownFailedError)
 
-        self.twisted_reactor.advance(5)
+        self.landscape_reactor.advance(5)
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))
-        self.twisted_reactor.advance(10)
+        self.landscape_reactor.advance(10)
         return result.addCallback(got_result)
 
     def test_no_exchange_after_reboot(self):
@@ -1475,15 +1475,15 @@ class AptPackageChangerTest(LandscapeTest):
         def got_result(result):
             # Advance both reactors so the pending messages are exchanged.
             self.broker_service.reactor.advance(100)
-            self.twisted_reactor.advance(10)
+            self.landscape_reactor.advance(10)
             payloads = self.broker_service.exchanger._transport.payloads
             self.assertEqual(0, len(payloads))
 
-        self.twisted_reactor.advance(5)
+        self.landscape_reactor.advance(5)
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.processEnded(Failure(ProcessDone(status=0)))
         self.broker_service.reactor.advance(100)
-        self.twisted_reactor.advance(10)
+        self.landscape_reactor.advance(10)
         return result.addCallback(got_result)

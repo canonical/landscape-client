@@ -30,7 +30,7 @@ from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
 from landscape.log import rotate_logs
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
-from landscape.reactor import TwistedReactor
+from landscape.reactor import LandscapeReactor
 from landscape.lib.dns import discover_server
 from landscape.configuration import (
     fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
@@ -325,20 +325,20 @@ class WatchDog(object):
     def __init__(self, reactor=reactor, verbose=False, config=None,
                  broker=None, monitor=None, manager=None,
                  enabled_daemons=None):
-        twisted_reactor = TwistedReactor()
+        landscape_reactor = LandscapeReactor()
         if enabled_daemons is None:
             enabled_daemons = [Broker, Monitor, Manager]
         if broker is None and Broker in enabled_daemons:
             broker = Broker(
-                RemoteBrokerConnector(twisted_reactor, config),
+                RemoteBrokerConnector(landscape_reactor, config),
                 verbose=verbose, config=config.config)
         if monitor is None and Monitor in enabled_daemons:
             monitor = Monitor(
-                RemoteMonitorConnector(twisted_reactor, config),
+                RemoteMonitorConnector(landscape_reactor, config),
                 verbose=verbose, config=config.config)
         if manager is None and Manager in enabled_daemons:
             manager = Manager(
-                RemoteManagerConnector(twisted_reactor, config),
+                RemoteManagerConnector(landscape_reactor, config),
                 verbose=verbose, config=config.config)
 
         self.broker = broker

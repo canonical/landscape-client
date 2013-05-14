@@ -32,7 +32,7 @@ class BrokerServer(object):
     the L{BrokerProtocol}.
 
     @param config: The L{BrokerConfiguration} used by the broker.
-    @param reactor: The L{TwistedReactor} driving the broker's events.
+    @param reactor: The L{LandscapeReactor} driving the broker's events.
     @param exchange: The L{MessageExchange} to send messages with.
     @param registration: The {RegistrationHandler}.
     @param message_store: The broker's L{MessageStore}.

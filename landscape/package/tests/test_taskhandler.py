@@ -3,7 +3,7 @@ import os
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
-from landscape.reactor import TwistedReactor, FakeReactor
+from landscape.reactor import LandscapeReactor, FakeReactor
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
@@ -326,7 +326,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         init_logging_mock = self.mocker.replace("landscape.deployment"
                                                 ".init_logging",
                                                 passthrough=False)
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(LandscapeReactor)
         connector_mock = self.mocker.patch(RemoteBrokerConnector)
         HandlerMock = self.mocker.proxy(PackageTaskHandler)
 

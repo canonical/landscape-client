@@ -7,7 +7,7 @@ messaging service (see L{landscape.plugins.dbus_message}).
 import sys
 
 from landscape.lib.log import log_failure
-from landscape.reactor import TwistedReactor
+from landscape.reactor import LandscapeReactor
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.deployment import Configuration
 
@@ -70,7 +70,7 @@ def run(args=sys.argv):
     This function runs a Twisted reactor, prints various status
     messages, and exits the process.
     """
-    reactor = TwistedReactor()
+    reactor = LandscapeReactor()
     config = Configuration()
     config.load(args)
 
@@ -87,9 +87,9 @@ def run(args=sys.argv):
     result.addErrback(got_error)
     result.addBoth(lambda x: connector.disconnect())
 
-    # For some obscure reason our TwistedReactor.stop method calls
+    # For some obscure reason our LandscapeReactor.stop method calls
     # reactor.crash() instead of reactor.stop(), which doesn't work
-    # here. Maybe TwistedReactor.stop should simply use reactor.stop().
+    # here. Maybe LandscapeReactor.stop should simply use reactor.stop().
     result.addBoth(lambda ignored: reactor.call_later(
         0, reactor._reactor.stop))
 

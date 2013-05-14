@@ -5,7 +5,7 @@ from twisted.application.service import Application, Service
 from twisted.application.app import startApplication
 
 from landscape.log import rotate_logs
-from landscape.reactor import TwistedReactor
+from landscape.reactor import LandscapeReactor
 from landscape.deployment import get_versioned_persist, init_logging
 
 
@@ -17,12 +17,12 @@ class LandscapeService(Service, object):
     @cvar service_name: The lower-case name of the service. This is used to
         generate the bpickle and the Unix socket filenames.
     @ivar config: A L{Configuration} object.
-    @ivar reactor: A L{TwistedReactor} object.
+    @ivar reactor: A L{LandscapeReactor} object.
     @ivar persist: A L{Persist} object, if C{persist_filename} is defined.
     @ivar factory: A L{LandscapeComponentProtocolFactory}, it must be provided
         by instances of sub-classes.
     """
-    reactor_factory = TwistedReactor
+    reactor_factory = LandscapeReactor
     persist_filename = None
 
     def __init__(self, config):
@@ -61,7 +61,7 @@ def run_landscape_service(configuration_class, service_class, args):
     This function instantiates the specified L{LandscapeService} subclass and
     attaches the resulting service object to a Twisted C{Application}.  After
     that it starts the Twisted L{Application} and calls the
-    L{TwistedReactor.run} method of the L{LandscapeService}'s reactor.
+    L{LandscapeReactor.run} method of the L{LandscapeService}'s reactor.
 
     @param configuration_class: The service-specific subclass of
         L{Configuration} used to parse C{args} and build the C{service_class}
@@ -89,7 +89,7 @@ def run_landscape_service(configuration_class, service_class, args):
         from landscape.lib.amp import MethodCallSender
         MethodCallSender.timeout = 300
 
-        # Create clones here because TwistedReactor.__init__ would otherwise
+        # Create clones here because LandscapeReactor.__init__ would otherwise
         # cancel all scheduled delayed calls
         clones = []
         for i in range(configuration.clones):
