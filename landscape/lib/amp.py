@@ -216,8 +216,8 @@ class MethodCallSender(object):
     _chunk_size = MAX_VALUE_LENGTH
 
     def __init__(self, protocol, clock):
-        self.protocol = protocol
-        self.clock = clock
+        self._protocol = protocol
+        self._clock = clock
 
     def _call_remote_with_timeout(self, command, **kwargs):
         """Send an L{AMP} command that will errback in case of a timeout.
@@ -240,9 +240,9 @@ class MethodCallSender(object):
             # The peer didn't respond on time, raise an error.
             deferred.errback(MethodCallError("timeout"))
 
-        call = self.clock.callLater(self.timeout, handle_timeout)
+        call = self._clock.callLater(self.timeout, handle_timeout)
 
-        result = self.protocol.callRemote(command, **kwargs)
+        result = self._protocol.callRemote(command, **kwargs)
         result.addBoth(handle_response)
         return deferred
 
@@ -273,7 +273,7 @@ class MethodCallSender(object):
             for chunk in chunks[:-1]:
 
                 def create_send_chunk(sequence, chunk):
-                    send_chunk = lambda x: self.protocol.callRemote(
+                    send_chunk = lambda x: self._protocol.callRemote(
                         MethodCallChunk, sequence=sequence, chunk=chunk)
                     return send_chunk
 
