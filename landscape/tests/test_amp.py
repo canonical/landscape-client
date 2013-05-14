@@ -4,12 +4,20 @@ from twisted.internet.task import Clock
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import ComponentPublisher, ComponentConnector
+from landscape.amp import ComponentPublisher, ComponentConnector, remote
+from landscape.lib.amp import MethodCallError
 
 
 class TestComponent(object):
 
     name = "test"
+
+    @remote
+    def ping(self):
+        return True
+
+    def non_remote(self):
+        return False
 
 
 class TestComponentConnector(ComponentConnector):
@@ -21,6 +29,40 @@ class FakeAMP(object):
 
     def __init__(self, locator):
         self._locator = locator
+
+
+class ComponentPublisherTest(LandscapeTest):
+
+    def setUp(self):
+        super(ComponentPublisherTest, self).setUp()
+        reactor = FakeReactor()
+        config = Configuration()
+        config.data_path = self.makeDir()
+        self.makeDir(path=config.sockets_path)
+        self.component = TestComponent()
+        self.publisher = ComponentPublisher(self.component, reactor, config)
+        self.publisher.start()
+
+        self.connector = TestComponentConnector(reactor, config)
+        connected = self.connector.connect()
+        connected.addCallback(lambda remote: setattr(self, "remote", remote))
+        return connected
+
+    def tearDown(self):
+        self.connector.disconnect()
+        self.publisher.stop()
+        super(ComponentPublisherTest, self).tearDown()
+
+    def test_remote_methods(self):
+        """Methods decorated with @remote are accessible remotely."""
+        result = self.remote.ping()
+        return self.assertSuccess(result, True)
+
+    def test_protect_non_remote(self):
+        """Methods not decorated with @remote are not accessible remotely."""
+        result = self.remote.non_remote()
+        failure = self.failureResultOf(result)
+        self.assertTrue(failure.check(MethodCallError))
 
 
 class ComponentConnectorTest(LandscapeTest):
