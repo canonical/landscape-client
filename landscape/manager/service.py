@@ -2,7 +2,8 @@ from twisted.python.reflect import namedClass
 
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.manager.config import ManagerConfiguration
-from landscape.broker.amp import BrokerClientPublisher, RemoteBrokerConnector
+from landscape.broker.amp import RemoteBrokerConnector
+from landscape.amp import ComponentPublisher
 from landscape.manager.manager import Manager
 
 
@@ -18,8 +19,8 @@ class ManagerService(LandscapeService):
         super(ManagerService, self).__init__(config)
         self.plugins = self.get_plugins()
         self.manager = Manager(self.reactor, self.config)
-        self.publisher = BrokerClientPublisher(self.manager, self.reactor,
-                                               self.config)
+        self.publisher = ComponentPublisher(self.manager, self.reactor,
+                                            self.config)
 
     def get_plugins(self):
         """Return instances of all the plugins enabled in the configuration."""

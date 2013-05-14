@@ -29,7 +29,6 @@ class ComponentPublisher(object):
     @param config: The L{Configuration} object used to build the socket path.
     """
 
-    methods = ("ping", "exit")
     factory = MethodCallServerFactory
 
     def __init__(self, component, reactor, config):
@@ -37,6 +36,7 @@ class ComponentPublisher(object):
         self._config = config
         self._component = component
         self._port = None
+        self.methods = get_remote_methods(type(component)).keys()
 
     def start(self):
         """Start accepting connections."""
@@ -47,6 +47,29 @@ class ComponentPublisher(object):
     def stop(self):
         """Stop accepting connections."""
         return self._port.stopListening()
+
+
+def get_remote_methods(klass):
+    """Get all the remote methods declared on a class.
+
+    @param klass: A class to search for AMP-exposed methods.
+    """
+    remote_methods = {}
+    for attribute_name in dir(klass):
+        potential_method = getattr(klass, attribute_name)
+        name = getattr(potential_method, "amp_exposed", None)
+        if name is not None:
+            remote_methods[name] = potential_method
+    return remote_methods
+
+
+def remote(method):
+    """
+    A decorator for marking a method as remotely accessible as a method on a
+    component.
+    """
+    method.amp_exposed = method.__name__
+    return method
 
 
 class ComponentConnector(object):

@@ -1,16 +1,23 @@
-from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
 from twisted.internet.task import Clock
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import ComponentPublisher, ComponentConnector
+from landscape.amp import ComponentPublisher, ComponentConnector, remote
+from landscape.lib.amp import MethodCallError
 
 
 class TestComponent(object):
 
     name = "test"
+
+    @remote
+    def ping(self):
+        return True
+
+    def non_remote(self):
+        return False
 
 
 class TestComponentConnector(ComponentConnector):
@@ -46,27 +53,16 @@ class ComponentPublisherTest(LandscapeTest):
         self.publisher.stop()
         super(ComponentPublisherTest, self).tearDown()
 
-    def test_ping(self):
-        """
-        The L{ComponentProtocol} exposes the C{ping} method of a
-        remote Landscape component.
-        """
-        self.component.ping = self.mocker.mock()
-        self.expect(self.component.ping()).result(True)
-        self.mocker.replay()
+    def test_remote_methods(self):
+        """Methods decorated with @remote are accessible remotely."""
         result = self.remote.ping()
         return self.assertSuccess(result, True)
 
-    def test_exit(self):
-        """
-        The L{ComponentProtocol} exposes the C{exit} method of a
-        remote Landscape component.
-        """
-        self.component.exit = self.mocker.mock()
-        self.component.exit()
-        self.mocker.replay()
-        result = self.remote.exit()
-        return self.assertSuccess(result)
+    def test_protect_non_remote(self):
+        """Methods not decorated with @remote are not accessible remotely."""
+        result = self.remote.non_remote()
+        failure = self.failureResultOf(result)
+        self.assertTrue(failure.check(MethodCallError))
 
 
 class ComponentConnectorTest(LandscapeTest):

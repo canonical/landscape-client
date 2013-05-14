@@ -1,7 +1,7 @@
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
-from landscape.amp import ComponentPublisher, ComponentConnector
+from landscape.amp import ComponentPublisher, ComponentConnector, remote
 
 from landscape.monitor.plugin import MonitorPlugin
 from landscape.user.changes import UserChanges
@@ -28,8 +28,8 @@ class UserMonitor(MonitorPlugin):
 
         self.call_on_accepted("users", self._run_detect_changes, None)
 
-        self._publisher = UserMonitorPublisher(self, self.registry.reactor,
-                                               self.registry.config)
+        self._publisher = ComponentPublisher(self, self.registry.reactor,
+                                             self.registry.config)
         self._publisher.start()
 
     def stop(self):
@@ -43,11 +43,12 @@ class UserMonitor(MonitorPlugin):
         super(UserMonitor, self)._resynchronize()
         return self._run_detect_changes()
 
-    def run(self, operation_id=None):
+    @remote
+    def detect_changes(self, operation_id=None):
         return self.registry.broker.call_if_accepted(
             "users", self._run_detect_changes, operation_id)
 
-    detect_changes = run
+    run = detect_changes
 
     def _run_detect_changes(self, operation_id=None):
         """
@@ -103,12 +104,6 @@ class UserMonitor(MonitorPlugin):
             result.addCallback(update_snapshot)
             result.addErrback(log_error)
             return result
-
-
-class UserMonitorPublisher(ComponentPublisher):
-    """L{AMP}-based protocol for calling L{UserMonitor}'s methods remotely."""
-
-    methods = ["detect_changes"]
 
 
 class RemoteUserMonitorConnector(ComponentConnector):

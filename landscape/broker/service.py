@@ -3,6 +3,7 @@
 import os
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
+from landscape.amp import ComponentPublisher
 from landscape.broker.registration import RegistrationHandler, Identity
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.transport import HTTPTransport
@@ -11,7 +12,6 @@ from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.ping import Pinger
 from landscape.broker.store import get_default_message_store
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import BrokerServerPublisher
 
 
 class BrokerService(LandscapeService):
@@ -65,8 +65,8 @@ class BrokerService(LandscapeService):
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store,
                                    self.pinger)
-        self.publisher = BrokerServerPublisher(self.broker, self.reactor,
-                                               self.config)
+        self.publisher = ComponentPublisher(self.broker, self.reactor,
+                                            self.config)
 
     def startService(self):
         """Start the broker.
