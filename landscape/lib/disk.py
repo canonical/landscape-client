@@ -89,7 +89,7 @@ def is_device_removable(device):
     """
     # Shortcut the case where the device an SD card. The kernel/udev currently
     # consider SD cards (mmcblk devices) to be non-removable.
-    if "mmcblk" in device:
+    if os.path.basename(device).startswith("mmcblk"):
         return True
 
     path = _get_device_removable_file_path(device)
