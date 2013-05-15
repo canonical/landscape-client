@@ -20,7 +20,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError, HTTPCodeError
-from landscape.reactor import TwistedReactor
+from landscape.reactor import LandscapeReactor
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.amp import RemoteBrokerConnector
@@ -619,7 +619,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
         0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
    """
     if reactor is None:
-        reactor = TwistedReactor()
+        reactor = LandscapeReactor()
     exit_with_error = []
 
     def stop(errors):

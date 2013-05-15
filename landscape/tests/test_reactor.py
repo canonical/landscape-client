@@ -2,7 +2,7 @@ import thread
 import types
 import time
 
-from landscape.reactor import FakeReactor, TwistedReactor
+from landscape.reactor import FakeReactor, LandscapeReactor
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -402,10 +402,10 @@ class FakeReactorTest(LandscapeTest, ReactorTestMixin):
         self.assertEqual(reactor.time(), 13.5)
 
 
-class TwistedReactorTest(LandscapeTest, ReactorTestMixin):
+class LandscapeReactorTest(LandscapeTest, ReactorTestMixin):
 
     def get_reactor(self):
-        reactor = TwistedReactor()
+        reactor = LandscapeReactor()
         # It's not possible to stop the reactor in a Trial test, calling
         # reactor.crash instead
         saved_stop = reactor._reactor.stop

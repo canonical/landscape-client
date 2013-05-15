@@ -64,15 +64,15 @@ class PackageChanger(PackageTaskHandler):
     queue_name = "changer"
 
     def __init__(self, store, facade, remote, config, process_factory=reactor,
-                 twisted_reactor=None,
+                 landscape_reactor=None,
                  reboot_required_filename=REBOOT_REQUIRED_FILENAME):
         super(PackageChanger, self).__init__(store, facade, remote, config)
         self._process_factory = process_factory
-        if twisted_reactor is None:  # For testing purposes.
-            from landscape.reactor import TwistedReactor
-            self._twisted_reactor = TwistedReactor()
+        if landscape_reactor is None:  # For testing purposes.
+            from landscape.reactor import LandscapeReactor
+            self._landscape_reactor = LandscapeReactor()
         else:
-            self._twisted_reactor = twisted_reactor
+            self._landscape_reactor = landscape_reactor
         self.reboot_required_filename = reboot_required_filename
 
     def run(self):
@@ -311,7 +311,7 @@ class PackageChanger(PackageTaskHandler):
         return deferred
 
     def _reboot_later(self, result):
-        self._twisted_reactor.call_later(5, self._run_reboot)
+        self._landscape_reactor.call_later(5, self._run_reboot)
 
     def _run_reboot(self):
         """
@@ -319,7 +319,7 @@ class PackageChanger(PackageTaskHandler):
         """
         protocol = ShutdownProcessProtocol()
         minutes = "now"
-        protocol.set_timeout(self._twisted_reactor)
+        protocol.set_timeout(self._landscape_reactor)
         protocol.result.addCallback(self._log_reboot, minutes)
         protocol.result.addErrback(log_failure, "Reboot failed.")
         args = ["/sbin/shutdown", "-r", minutes,

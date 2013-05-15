@@ -25,7 +25,7 @@ class ComponentPublisher(object):
 
     @param component: The component to publish. It can be any Python object
         implementing the methods listed in the C{methods} class variable.
-    @param reactor: The L{TwistedReactor} used to listen to the socket.
+    @param reactor: The L{LandscapeReactor} used to listen to the socket.
     @param config: The L{Configuration} object used to build the socket path.
     """
 
@@ -82,7 +82,7 @@ class ComponentConnector(object):
     @cvar remote: The L{RemoteObject} class or sub-class used for building
         remote objects.
 
-    @param reactor: A L{TwistedReactor} object.
+    @param reactor: A L{LandscapeReactor} object.
     @param config: A L{LandscapeConfiguration}.
     @param retry_on_reconnect: If C{True} the remote object built by this
         connector will retry L{MethodCall}s that failed due to lost

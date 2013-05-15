@@ -67,7 +67,7 @@ class BrokerClient(object):
     @ivar broker: A reference to a connected L{RemoteBroker}, it must be set
         by the connecting machinery at service startup.
 
-    @param reactor: A L{TwistedReactor}.
+    @param reactor: A L{LandscapeReactor}.
     """
     name = "client"
 

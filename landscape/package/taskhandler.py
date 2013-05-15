@@ -7,7 +7,7 @@ from twisted.internet.defer import succeed, Deferred
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
-from landscape.reactor import TwistedReactor
+from landscape.reactor import LandscapeReactor
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.amp import RemoteBrokerConnector
@@ -241,7 +241,7 @@ def run_task_handler(cls, args, reactor=None):
     # please only pass reactor when you have totally mangled everything with
     # mocker. Otherwise bad things will happen.
     if reactor is None:
-        reactor = TwistedReactor()
+        reactor = LandscapeReactor()
 
     config = cls.config_factory()
     config.load(args)
