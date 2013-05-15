@@ -5,7 +5,6 @@ from twisted.internet.defer import succeed
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
 from landscape.tests.mocker import ANY
-from landscape.lib.disk import is_device_removable
 
 
 mb = lambda x: x * 1024 * 1024

@@ -109,7 +109,7 @@ class RemovableDiskTest(LandscapeTest):
 
     def test_wb_get_device_removable_file_path(self):
         """
-        When passed a device in /dev, the get_device_removable_file_path
+        When passed a device in /dev, the L{_get_device_removable_file_path}
         function returns the corresponding removable file path in /sys/block.
         """
         device = "/dev/sdb"
@@ -126,7 +126,7 @@ class RemovableDiskTest(LandscapeTest):
     def test_wb_get_device_removable_file_path_with_partition(self):
         """
         When passed a device in /dev with a partition number, the
-        get_device_removable_file_path function returns the corresponding
+        L{_get_device_removable_file_path} function returns the corresponding
         removable file path in /sys/block.
         """
         device = "/dev/sdb1"
@@ -143,7 +143,7 @@ class RemovableDiskTest(LandscapeTest):
     def test_wb_get_device_removable_file_path_without_dev(self):
         """
         When passed a device name (not the whole path), the
-        get_device_removable_file_path function returns the corresponding
+        L{_get_device_removable_file_path} function returns the corresponding
         removable file path in /sys/block.
         """
         device = "sdb1"
@@ -159,9 +159,9 @@ class RemovableDiskTest(LandscapeTest):
 
     def test_wb_get_device_removable_file_path_with_symlink(self):
         """
-        When the device path passed to get_device_removable_file_path is a
+        When the device path passed to L{_get_device_removable_file_path} is a
         symlink (it's the case when disks are mounted by uuid or by label),
-        the get_device_removable_file_path function returns the proper
+        the L{_get_device_removable_file_path} function returns the proper
         corresponding file path in /sys/block.
         """
         device = "/dev/disk/by-uuid/8b2ec410-ebd2-49ec-bb3c-b8b13effab08"
@@ -183,9 +183,9 @@ class RemovableDiskTest(LandscapeTest):
     def test_wb_get_device_removable_file_path_raid_device(self):
         """
         When passed a more exotic device file, like for example a raid device
-        (e.g. /dev/cciss/c0d1p1), the _get_device_removable_file_path function
-        does not fail, and returns the expected /sys/block/<device>/removable
-        path.
+        (e.g. /dev/cciss/c0d1p1), the L{_get_device_removable_file_path}
+        function does not fail, and returns the expected
+        /sys/block/<device>/removable path.
         """
         device = "/dev/cciss/c0d0p0"
         # The expected path does not exists, but it doesn't matter here.
