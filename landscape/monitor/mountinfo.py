@@ -28,6 +28,7 @@ class MountInfo(MonitorPlugin):
         self._free_space = []
         self._mount_info = []
         self._mount_info_to_persist = None
+        self.is_device_removable = is_device_removable
 
     def register(self, registry):
         super(MountInfo, self).register(registry)
@@ -114,7 +115,7 @@ class MountInfo(MonitorPlugin):
             mount_point = info["mount-point"]
             if (device.startswith("/dev/") and
                 not mount_point.startswith("/dev/") and
-                not is_device_removable(device) and
+                not self.is_device_removable(device) and
                 not mount_point in bound_mount_points):
                 yield info
 

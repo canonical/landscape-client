@@ -23,8 +23,11 @@ class MountInfoTest(LandscapeTest):
 
     def get_mount_info(self, *args, **kwargs):
         if "statvfs" not in kwargs:
-            kwargs["statvfs"] = lambda path: (0,) * 10
-        return MountInfo(*args, **kwargs)
+            kwargs["statvfs"] = lambda path: (0,) * 1000
+        plugin = MountInfo(*args, **kwargs)
+        # To make sure tests are isolated from the real system by default.
+        plugin.is_device_removable = lambda x: False
+        return plugin
 
     def test_read_proc_mounts(self):
         """
@@ -96,12 +99,6 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 /dev/hde1 /mnt/bind none rw,bind 0 0
 /dev/sdb2 /media/Boot\\040OSX hfsplus rw 0 0
 """)
-        removable_mock = self.mocker.replace(is_device_removable)
-        removable_mock(ANY)
-        self.mocker.result(False)
-        self.mocker.count(4)
-        self.mocker.replay()
-
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
                                      create_time=self.reactor.time,
                                      mtab_file=mtab_filename)
@@ -330,14 +327,12 @@ addr=ennui 0 0
         """
         "Removable" partitions are not reported to the server.
         """
-        removable_mock = self.mocker.replace(is_device_removable)
-        removable_mock(ANY)
-        self.mocker.result(True)
-        self.mocker.replay()
-
         filename = self.makeFile("""\
 /dev/hdc4 /mm xfs rw 0 0""")
         plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
+
+        plugin.is_device_removable = lambda x: True  # They are all removable
+
         self.monitor.add(plugin)
         plugin.run()
         message = plugin.create_mount_info_message()
@@ -466,12 +461,6 @@ addr=ennui 0 0
 /opt /mnt none rw,bind 0 0
 /opt /media/Boot\\040OSX none rw,bind 0 0
 """)
-
-        removable_mock = self.mocker.replace(is_device_removable)
-        removable_mock(ANY)
-        self.mocker.result(False)
-        self.mocker.count(4)
-        self.mocker.replay()
         plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
                            statvfs=statvfs, mtab_file=mtab_filename)
 
@@ -504,13 +493,6 @@ addr=ennui 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
 """)
-
-        removable_mock = self.mocker.replace(is_device_removable)
-        removable_mock(ANY)
-        self.mocker.result(False)
-        self.mocker.count(3)
-        self.mocker.replay()
-
         # mktemp isn't normally secure, due to race conditions, but in this
         # case, we don't actually create the file at all.
         mtab_filename = tempfile.mktemp()
@@ -555,12 +537,6 @@ addr=ennui 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /opt /mnt none rw,bind 0 0
 """)
-
-        removable_mock = self.mocker.replace(is_device_removable)
-        removable_mock(ANY)
-        self.mocker.result(False)
-        self.mocker.count(6)
-        self.mocker.replay()
 
         plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
                            statvfs=statvfs, mtab_file=mtab_filename)
