@@ -104,7 +104,7 @@ def is_device_removable(device):
     except IOError:
         return False
 
-    if "1" in contents:
+    if contents.strip() == "1":
         return True
     return False
 
