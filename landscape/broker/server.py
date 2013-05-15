@@ -3,9 +3,8 @@ import logging
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
-from landscape.amp import ComponentsRegistry
-from landscape.manager.manager import FAILED
 from landscape.amp import remote
+from landscape.manager.manager import FAILED
 
 
 def event(method):
@@ -38,10 +37,11 @@ class BrokerServer(object):
     @param message_store: The broker's L{MessageStore}.
     """
     name = "broker"
-    connectors_registry = ComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store, pinger):
+        from landscape.broker.amp import get_component_registry
+        self.connectors_registry = get_component_registry()
         self._config = config
         self._reactor = reactor
         self._exchanger = exchange
@@ -301,3 +301,5 @@ support this feature.
         """
         self._exchanger.stop()
         self._pinger.stop()
+
+
