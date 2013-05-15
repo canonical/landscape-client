@@ -13,7 +13,7 @@ from twisted.internet import reactor
 
 from landscape.lib.bpickle import loads
 from landscape.lib.lock import lock_path, LockError
-from landscape.reactor import TwistedReactor
+from landscape.reactor import LandscapeReactor
 from landscape.deployment import Configuration
 from landscape.broker.amp import RemoteBrokerConnector
 
@@ -60,8 +60,8 @@ class BrokerDBusObject(Object):
         def cb_done(ignored):
             return reactor.stop()
 
-        twisted_reactor = TwistedReactor()
-        connector = RemoteBrokerConnector(twisted_reactor, self.config)
+        landscape_reactor = LandscapeReactor()
+        connector = RemoteBrokerConnector(landscape_reactor, self.config)
         connected = connector.connect()
         connected.addCallback(cb_connected)
 
