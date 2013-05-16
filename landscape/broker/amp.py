@@ -91,9 +91,13 @@ class RemoteManagerConnector(RemoteClientConnector):
 
 
 def get_component_registry():
-    return {
-        "broker": RemoteBrokerConnector,
-        "client": RemoteClientConnector,
-        "monitor": RemoteMonitorConnector,
-        "manager": RemoteManagerConnector
-    }
+    """Get a mapping of component name to connectors, for all components."""
+    all_connectors = [
+        RemoteBrokerConnector,
+        RemoteClientConnector,
+        RemoteMonitorConnector,
+        RemoteManagerConnector
+    ]
+    return dict(
+        (connector.component.name, connector)
+        for connector in all_connectors)

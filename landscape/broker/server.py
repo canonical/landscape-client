@@ -301,5 +301,3 @@ support this feature.
         """
         self._exchanger.stop()
         self._pinger.stop()
-
-
