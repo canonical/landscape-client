@@ -151,31 +151,5 @@ class ComponentConnector(object):
             self._connector = None
 
 
-class ComponentsRegistry(object):
-    """
-    A global registry for looking up Landscape component connectors by name.
-    """
-
-    _by_name = {}
-
-    @classmethod
-    def get(cls, name):
-        """Get the connector class for the given Landscape component.
-
-        @param name: Name of the Landscape component we want to connect to, for
-           instance C{monitor} or C{manager}.
-        """
-        return cls._by_name[name]
-
-    @classmethod
-    def register(cls, connector_class):
-        """Register a connector for a Landscape component.
-
-        @param connector_class: A sub-class of L{ComponentConnector}
-            that can be used to connect to a certain component.
-        """
-        cls._by_name[connector_class.component.name] = connector_class
-
-
 def _get_socket_path(component, config):
     return os.path.join(config.sockets_path, component.name + ".sock")
