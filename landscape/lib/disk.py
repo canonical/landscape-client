@@ -2,12 +2,16 @@ from __future__ import division
 
 import os
 import statvfs
+import re
 
 
 # List of filesystem types authorized when generating disk use statistics.
 STABLE_FILESYSTEMS = frozenset(
     ["ext", "ext2", "ext3", "ext4", "reiserfs", "ntfs", "msdos", "dos", "vfat",
      "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
+
+
+EXTRACT_DEVICE = re.compile("([a-z]+)[0-9]*")
 
 
 def get_mount_info(mounts_file, statvfs_,
@@ -74,3 +78,61 @@ def get_filesystem_for_path(path, mounts_file, statvfs_):
                 or path_segments[:len(mount_segments)] == mount_segments):
                 candidate = info
     return candidate
+
+
+def is_device_removable(device):
+    """
+    This function returns whether a given device is removable or not by looking
+    at the corresponding /sys/block/<device>/removable file
+
+    @param device: The filesystem path to the device, e.g. /dev/sda1
+    """
+    # Shortcut the case where the device an SD card. The kernel/udev currently
+    # consider SD cards (mmcblk devices) to be non-removable.
+    if os.path.basename(device).startswith("mmcblk"):
+        return True
+
+    path = _get_device_removable_file_path(device)
+
+    if not path:
+        return False
+
+    contents = None
+    try:
+        with open(path, "r") as f:
+            contents = f.readline()
+    except IOError:
+        return False
+
+    if contents.strip() == "1":
+        return True
+    return False
+
+
+def _get_device_removable_file_path(device):
+    """
+    Get a device's "removable" file path.
+
+    This function figures out the C{/sys/block/<device>/removable} path
+    associated with the given device. The file at that path contains either
+    a "0" if the device is not removable, or a "1" if it is.
+
+    @param device: File system path of the device.
+    """
+    # The device will be a symlink if the disk is mounted by uuid or by label.
+    if os.path.islink(device):
+        # Paths are in the form "/dev/disk/by-uuid/<uuid>" and symlink
+        # to the device file under /dev
+        device = os.readlink(device)  # /dev/disk/by-uuid/<uuid> -> ../../sda1
+
+    [device_name] = device.split("/")[-1:]  # /dev/sda1 -> sda1
+
+    matched = EXTRACT_DEVICE.match(device_name)  # sda1 -> sda
+
+    if not matched:
+        return None
+
+    device_name = matched.groups()[0]
+
+    removable_file = os.path.join("/sys/block/", device_name, "removable")
+    return removable_file
