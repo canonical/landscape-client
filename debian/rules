@@ -64,10 +64,10 @@ install: build
 
 	python setup.py install --root $(root_dir) $(py_setup_install_args)
 
+	# Keep in mind that some installed files are defined in setup.py
 	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
 	install -D -o root -g root -m 644 debian/cloud-default.conf $(root_dir)/usr/share/landscape/cloud-default.conf
 	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)/usr/lib/landscape/apt-update
-	install -D -o root -g root -m 644 dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 
 binary-indep:
 # do nothing
