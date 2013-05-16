@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from distutils.core import setup, Extension
+from distutils.core import setup
 
 from landscape import UPSTREAM_VERSION
 
