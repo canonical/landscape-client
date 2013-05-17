@@ -6,6 +6,7 @@ import fcntl
 import socket
 import struct
 import errno
+import logging
 
 __all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
 
@@ -234,9 +235,11 @@ def get_network_interface_speed(sock, interface_name):
         res = status_cmd.tostring()
         speed, duplex = struct.unpack('12xHB28x', res)
     except IOError as e:
-        if e.errno != errno.EOPNOTSUPP:
+        if e.errno != errno.EOPNOTSUPP and e.errno != errno.EPERM:
             raise e
-        # e is "Operation not supported".
+        if e.errno == errno.EPERM:
+            logging.warn("Could not determine network interface speed, "
+                         "operation not permitted.")
         speed = -1
         duplex = False
 

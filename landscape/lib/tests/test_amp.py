@@ -554,7 +554,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
         connector.disconnect()
         self.clock.advance(5)
         deferred = remote.method()
-        self.assertIsNone(self.successResultOf(deferred))
+        self.assertIs(None, self.successResultOf(deferred))
 
 
 class MethodCallFunctionalTest(LandscapeTest):
