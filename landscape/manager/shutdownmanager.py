@@ -67,7 +67,8 @@ class ShutdownManager(ManagerPlugin):
                    "status": status,
                    "result-text": data,
                    "operation-id": operation_id}
-        return self.registry.broker.send_message(message, True)
+        return self.registry.broker.send_message(
+            message, self._session_id, True)
 
     def _get_command_and_args(self, protocol, reboot):
         """
