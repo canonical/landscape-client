@@ -31,7 +31,8 @@ class FakePackageManager(ManagerPlugin):
     def _handle(self, response):
         delay = self.randint(30, 300)
         self.registry.reactor.call_later(
-            delay, self.manager.broker.send_message, response, urgent=True)
+            delay, self.manager.broker.send_message, response,
+            self._session_id, urgent=True)
 
     def handle_change_packages(self, message):
         response = {"type": "change-packages-result",
