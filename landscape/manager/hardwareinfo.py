@@ -28,4 +28,4 @@ class HardwareInfo(ManagerPlugin):
 
     def _got_output(self, output):
         message = {"type": self.message_type, "data": output}
-        return self.registry.broker.send_message(message)
+        return self.registry.broker.send_message(message, self._session_id)
