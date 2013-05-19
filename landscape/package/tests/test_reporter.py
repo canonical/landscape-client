@@ -1710,8 +1710,9 @@ class FakePackageReporterTest(LandscapeTest):
         self.global_store.save_message(message)
 
         def check(ignore):
+            messages = message_store.get_pending_messages()
             self.assertMessages(
-                message_store.get_pending_messages(), [message])
+                messages, [message])
             stored = list(self.store._db.execute(
                 "SELECT id FROM message").fetchall())
             self.assertEqual(1, len(stored))
