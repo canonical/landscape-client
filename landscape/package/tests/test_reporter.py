@@ -53,6 +53,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.config = PackageReporterConfiguration()
         self.reporter = PackageReporter(
             self.store, self.facade, self.remote, self.config)
+        self.reporter.get_session_id()
         # Assume update-notifier-common stamp file is not present by
         # default.
         self.reporter.update_notifier_stamp = "/Not/Existing"
@@ -230,7 +231,7 @@ class PackageReporterAptTest(LandscapeTest):
         deferred.errback(Boom())
 
         remote_mock = self.mocker.patch(self.reporter._broker)
-        remote_mock.send_message(ANY, True)
+        remote_mock.send_message(ANY, ANY, True)
         self.mocker.result(deferred)
         self.mocker.replay()
 
@@ -732,7 +733,7 @@ class PackageReporterAptTest(LandscapeTest):
         deferred.errback(Boom())
 
         remote_mock = self.mocker.patch(self.reporter._broker)
-        remote_mock.send_message(ANY, True)
+        remote_mock.send_message(ANY, ANY, True)
         self.mocker.result(deferred)
         self.mocker.replay()
 
@@ -1663,6 +1664,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
 
         def do_test():
+            self.reporter.get_session_id()
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
