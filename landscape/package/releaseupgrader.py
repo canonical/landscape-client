@@ -83,7 +83,7 @@ class ReleaseUpgrader(PackageTaskHandler):
                 "The system is already running %s." % target_code_name, 1)
             logging.info("Queuing message with release upgrade failure to "
                          "exchange urgently.")
-            return self._broker.send_message(message, True)
+            return self._broker.send_message(message, self._session_id, True)
 
         tarball_url = message["upgrade-tool-tarball-url"]
         signature_url = message["upgrade-tool-signature-url"]
@@ -283,7 +283,7 @@ class ReleaseUpgrader(PackageTaskHandler):
                                                          text, code)
             logging.info("Queuing message with release upgrade results to "
                          "exchange urgently.")
-            return self._broker.send_message(message, True)
+            return self._broker.send_message(message, self._session_id, True)
 
         result.addCallback(send_operation_result)
         return result
@@ -319,7 +319,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         logging.info("Queuing message with release upgrade failure to "
                      "exchange urgently.")
 
-        return self._broker.send_message(message, True)
+        return self._broker.send_message(message, self._session_id, True)
 
     @staticmethod
     def find_command():

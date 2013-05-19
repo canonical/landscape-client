@@ -44,6 +44,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.store = PackageStore(self.makeFile())
         self.upgrader = ReleaseUpgrader(self.store, None,
                                         self.remote, self.config)
+        self.upgrader.get_session_id()
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
