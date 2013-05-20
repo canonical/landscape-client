@@ -235,11 +235,11 @@ def get_network_interface_speed(sock, interface_name):
         res = status_cmd.tostring()
         speed, duplex = struct.unpack('12xHB28x', res)
     except IOError as e:
-        if e.errno != errno.EOPNOTSUPP and e.errno != errno.EPERM:
-            raise e
         if e.errno == errno.EPERM:
             logging.warn("Could not determine network interface speed, "
                          "operation not permitted.")
+        elif e.errno != errno.EOPNOTSUPP:
+            raise e
         speed = -1
         duplex = False
 
