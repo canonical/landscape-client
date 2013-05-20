@@ -278,7 +278,7 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
     def test_get_network_interface_speed_not_permitted(self):
         """
         In some cases (lucid seems to be affected), the ioctl() call is not
-        allowed for the current user. In that case we intercept the error and
+        allowed for non-root users. In that case we intercept the error and
         not report the network speed.
         """
         sock = socket.socket(
