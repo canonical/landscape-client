@@ -118,10 +118,10 @@ class ReactorID(object):
         self._timeout = timeout
 
 
-class TwistedReactor(EventHandlingReactorMixin):
-    """Wrap and add functionalities to the Twisted C{reactor}.
+class LandscapeReactor(EventHandlingReactorMixin):
+    """Wrap and add functionalities to the Twisted reactor.
 
-    This essentially a facade around the C{twisted.internet.reactor} and
+    This is essentially a facade around the L{twisted.internet.reactor} and
     will delegate to it for mostly everything except event handling features
     which are implemented using L{EventHandlingReactorMixin}.
     """
@@ -133,7 +133,7 @@ class TwistedReactor(EventHandlingReactorMixin):
         self._reactor = reactor
         self._cleanup()
         self.callFromThread = reactor.callFromThread
-        super(TwistedReactor, self).__init__()
+        super(LandscapeReactor, self).__init__()
 
     def time(self):
         """Get current time.
@@ -257,9 +257,9 @@ class FakeReactorID(object):
 
 
 class FakeReactor(EventHandlingReactorMixin):
-    """A fake reactor with the same API of L{TwistedReactor}.
+    """A fake reactor with the same API of L{LandscapeReactor}.
 
-    This reactor emulates the asychronous interface of L{TwistedReactor}, but
+    This reactor emulates the asychronous interface of L{LandscapeReactor}, but
     implementing it in a synchronous way, for easier unit-testing.
 
     Note that the C{listen_unix} method is *not* emulated, but rather inherited
@@ -328,7 +328,7 @@ class FakeReactor(EventHandlingReactorMixin):
         self._threaded_callbacks.append(lambda: f(*args, **kwargs))
 
     def call_in_thread(self, callback, errback, f, *args, **kwargs):
-        """Emulate L{TwistedReactor.call_in_thread} without spawning threads.
+        """Emulate L{LandscapeReactor.call_in_thread} without spawning threads.
 
         Note that running threaded callbacks here doesn't reflect reality,
         since they're usually run while the main reactor loop is active. At
@@ -378,7 +378,7 @@ class FakeReactor(EventHandlingReactorMixin):
     def advance(self, seconds):
         """Advance this reactor C{seconds} into the future.
 
-        This method is not part of the L{TwistedReactor} API and is specific
+        This method is not part of the L{LandscapeReactor} API and is specific
         to L{FakeReactor}. It's meant to be used only in unit tests for
         advancing time and triggering the relevant scheduled calls (see
         also C{call_later} and C{call_every}).

@@ -11,6 +11,7 @@ from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 from landscape.watchdog import bootstrap_list
 from landscape.reactor import FakeReactor
+from landscape.amp import ComponentPublisher
 from landscape.broker.transport import FakeTransport
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.exchangestore import ExchangeStore
@@ -19,8 +20,7 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import (
-    BrokerServerPublisher, BrokerClientPublisher, RemoteBrokerConnector)
+from landscape.broker.amp import RemoteBrokerConnector
 from landscape.broker.client import BrokerClient
 
 
@@ -175,9 +175,9 @@ class RemoteBrokerHelper(BrokerServerHelper):
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
 
-        self._publisher = BrokerServerPublisher(test_case.broker,
-                                                test_case.reactor,
-                                                test_case.config)
+        self._publisher = ComponentPublisher(test_case.broker,
+                                             test_case.reactor,
+                                             test_case.config)
         self._connector = RemoteBrokerConnector(test_case.reactor,
                                                 test_case.config)
 
@@ -231,9 +231,9 @@ class RemoteClientHelper(BrokerClientHelper):
 
     def set_up(self, test_case):
         super(RemoteClientHelper, self).set_up(test_case)
-        self._client_publisher = BrokerClientPublisher(test_case.client,
-                                                       test_case.reactor,
-                                                       test_case.config)
+        self._client_publisher = ComponentPublisher(test_case.client,
+                                                    test_case.reactor,
+                                                    test_case.config)
         self._client_publisher.start()
         test_case.remote.register_client("client")
         test_case.remote_client = test_case.broker.get_client("client")

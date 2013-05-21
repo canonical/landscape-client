@@ -275,6 +275,28 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         self.assertEqual((-1, False),
                          get_network_interface_speed(sock, "eth0"))
 
+    def test_get_network_interface_speed_not_permitted(self):
+        """
+        In some cases (lucid seems to be affected), the ioctl() call is not
+        allowed for non-root users. In that case we intercept the error and
+        not report the network speed.
+        """
+        sock = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+        theerror = IOError()
+        theerror.errno = 1
+        theerror.message = "Operation not permitted"
+
+        # ioctl always raises
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.throw(theerror)
+
+        self.mocker.replay()
+
+        self.assertEqual((-1, False),
+                         get_network_interface_speed(sock, "eth0"))
+
     def test_get_network_interface_speed_other_io_error(self):
         """
         In case we get an IOError that is not "Operation not permitted", the

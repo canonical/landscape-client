@@ -4,6 +4,7 @@ from twisted.internet.defer import maybeDeferred
 
 from landscape.log import format_object
 from landscape.lib.twisted_util import gather_results
+from landscape.amp import remote
 
 
 class HandlerNotFoundError(Exception):
@@ -79,7 +80,7 @@ class BrokerClient(object):
     @ivar broker: A reference to a connected L{RemoteBroker}, it must be set
         by the connecting machinery at service startup.
 
-    @param reactor: A L{TwistedReactor}.
+    @param reactor: A L{LandscapeReactor}.
     """
     name = "client"
 
@@ -95,6 +96,7 @@ class BrokerClient(object):
         self.reactor.call_on("impending-exchange", self.notify_exchange)
         self.reactor.call_on("broker-reconnect", self.handle_reconnect)
 
+    @remote
     def ping(self):
         """Return C{True}"""
         return True
@@ -151,6 +153,7 @@ class BrokerClient(object):
             exception("Error running message handler for type %r: %r"
                       % (type, handler))
 
+    @remote
     def message(self, message):
         """Call C{dispatch_message} for the given C{message}.
 
@@ -176,6 +179,7 @@ class BrokerClient(object):
         info("Got notification of impending exchange. Notifying all plugins.")
         self.exchange()
 
+    @remote
     def fire_event(self, event_type, *args, **kwargs):
         """Fire an event of a given type.
 
@@ -206,6 +210,7 @@ class BrokerClient(object):
             self.broker.register_client_accepted_message_type(type)
         self.broker.register_client(self.name)
 
+    @remote
     def exit(self):
         """Stop the reactor and exit the process."""
         # Stop with a short delay to give a chance to reply to the caller when

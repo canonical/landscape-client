@@ -25,11 +25,10 @@ class ComponentPublisher(object):
 
     @param component: The component to publish. It can be any Python object
         implementing the methods listed in the C{methods} class variable.
-    @param reactor: The L{TwistedReactor} used to listen to the socket.
+    @param reactor: The L{LandscapeReactor} used to listen to the socket.
     @param config: The L{Configuration} object used to build the socket path.
     """
 
-    methods = ("ping", "exit")
     factory = MethodCallServerFactory
 
     def __init__(self, component, reactor, config):
@@ -37,6 +36,7 @@ class ComponentPublisher(object):
         self._config = config
         self._component = component
         self._port = None
+        self.methods = get_remote_methods(type(component)).keys()
 
     def start(self):
         """Start accepting connections."""
@@ -49,6 +49,29 @@ class ComponentPublisher(object):
         return self._port.stopListening()
 
 
+def get_remote_methods(klass):
+    """Get all the remote methods declared on a class.
+
+    @param klass: A class to search for AMP-exposed methods.
+    """
+    remote_methods = {}
+    for attribute_name in dir(klass):
+        potential_method = getattr(klass, attribute_name)
+        name = getattr(potential_method, "amp_exposed", None)
+        if name is not None:
+            remote_methods[name] = potential_method
+    return remote_methods
+
+
+def remote(method):
+    """
+    A decorator for marking a method as remotely accessible as a method on a
+    component.
+    """
+    method.amp_exposed = method.__name__
+    return method
+
+
 class ComponentConnector(object):
     """Utility superclass for creating connections with a Landscape component.
 
@@ -59,7 +82,7 @@ class ComponentConnector(object):
     @cvar remote: The L{RemoteObject} class or sub-class used for building
         remote objects.
 
-    @param reactor: A L{TwistedReactor} object.
+    @param reactor: A L{LandscapeReactor} object.
     @param config: A L{LandscapeConfiguration}.
     @param retry_on_reconnect: If C{True} the remote object built by this
         connector will retry L{MethodCall}s that failed due to lost
@@ -126,32 +149,6 @@ class ComponentConnector(object):
             factory.stopTrying()
             self._connector.disconnect()
             self._connector = None
-
-
-class ComponentsRegistry(object):
-    """
-    A global registry for looking up Landscape component connectors by name.
-    """
-
-    _by_name = {}
-
-    @classmethod
-    def get(cls, name):
-        """Get the connector class for the given Landscape component.
-
-        @param name: Name of the Landscape component we want to connect to, for
-           instance C{monitor} or C{manager}.
-        """
-        return cls._by_name[name]
-
-    @classmethod
-    def register(cls, connector_class):
-        """Register a connector for a Landscape component.
-
-        @param connector_class: A sub-class of L{ComponentConnector}
-            that can be used to connect to a certain component.
-        """
-        cls._by_name[connector_class.component.name] = connector_class
 
 
 def _get_socket_path(component, config):

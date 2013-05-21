@@ -1,8 +1,9 @@
 from twisted.internet.defer import fail
 
+from landscape.amp import ComponentPublisher
 from landscape.monitor.usermonitor import (
     UserMonitor, RemoteUserMonitorConnector)
-from landscape.manager.usermanager import UserManager, UserManagerPublisher
+from landscape.manager.usermanager import UserManager
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
@@ -53,8 +54,8 @@ class UserMonitorTest(LandscapeTest):
             "psmith:!:13348:0:99999:7:::\n"
             "sam:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
         self.user_manager = UserManager(shadow_file=self.shadow_file)
-        self.publisher = UserManagerPublisher(self.user_manager, self.reactor,
-                                              self.config)
+        self.publisher = ComponentPublisher(self.user_manager, self.reactor,
+                                            self.config)
         self.publisher.start()
         self.provider = FakeUserProvider()
         self.plugin = UserMonitor(self.provider)

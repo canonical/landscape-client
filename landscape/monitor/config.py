@@ -1,7 +1,7 @@
 from landscape.deployment import Configuration
 
 
-ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo", "HardwareInventory",
+ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo",
                "LoadAverage", "MemoryInfo", "MountInfo", "ProcessorInfo",
                "Temperature", "PackageMonitor", "UserMonitor",
                "RebootRequired", "AptPreferences", "NetworkActivity",

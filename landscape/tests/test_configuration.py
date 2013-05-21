@@ -8,7 +8,7 @@ from twisted.internet.defer import succeed, fail
 from twisted.internet.task import Clock
 
 from landscape.lib.amp import MethodCallSender
-from landscape.reactor import TwistedReactor, FakeReactor
+from landscape.reactor import LandscapeReactor, FakeReactor
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
@@ -1848,7 +1848,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         print_text_mock = self.mocker.replace(print_text)
         time_mock = self.mocker.replace("time")
         sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(LandscapeReactor)
 
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
@@ -1883,7 +1883,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         """
         print_text_mock = self.mocker.replace(print_text)
         time_mock = self.mocker.replace("time")
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(LandscapeReactor)
 
         print_text_mock(ARGS)
         time_mock.sleep(ANY)
@@ -1921,7 +1921,7 @@ class RegisterFunctionRetryTest(LandscapeConfigurationTest):
         print_text_mock = self.mocker.replace(print_text)
         time_mock = self.mocker.replace("time")
         sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(LandscapeReactor)
 
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
@@ -1966,7 +1966,7 @@ class RegisterFunctionRetryTest(LandscapeConfigurationTest):
         print_text_mock = self.mocker.replace(print_text)
         time_mock = self.mocker.replace("time")
         sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(TwistedReactor)
+        reactor_mock = self.mocker.patch(LandscapeReactor)
 
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)

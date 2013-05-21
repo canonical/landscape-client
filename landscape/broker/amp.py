@@ -1,33 +1,11 @@
 from twisted.internet.defer import maybeDeferred, execute, succeed
 
 from landscape.lib.amp import RemoteObject, MethodCallArgument
-from landscape.amp import (
-    ComponentConnector, ComponentsRegistry, ComponentPublisher)
+from landscape.amp import ComponentConnector, get_remote_methods
 from landscape.broker.server import BrokerServer
 from landscape.broker.client import BrokerClient
 from landscape.monitor.monitor import Monitor
 from landscape.manager.manager import Manager
-
-
-class BrokerServerPublisher(ComponentPublisher):
-    """
-    Communication protocol between the broker server and its clients.
-    """
-
-    methods = ComponentPublisher.methods + (
-        "fire_event",
-        "get_accepted_message_types",
-        "get_server_uuid",
-        "get_session_id",
-        "is_message_pending",
-        "register",
-        "register_client",
-        "register_client_accepted_message_type",
-        "reload_configuration",
-        "send_message",
-        "stop_clients",
-        "listen_events",
-        "stop_exchanger")
 
 
 class RemoteBroker(RemoteObject):
@@ -68,7 +46,7 @@ class FakeRemoteBroker(object):
         that they're encodable with AMP.
         """
         original = getattr(self.broker_server, name, None)
-        if (name in BrokerServerPublisher.methods
+        if (name in get_remote_methods(self.broker_server)
             and original is not None
             and callable(original)):
             def method(*args, **kwargs):
@@ -85,16 +63,6 @@ class FakeRemoteBroker(object):
         if type in self.message_store.get_accepted_types():
             return maybeDeferred(callable, *args)
         return succeed(None)
-
-
-class BrokerClientPublisher(ComponentPublisher):
-    """
-    Communication protocol between the broker server and its clients.
-    """
-    methods = ComponentPublisher.methods + (
-        "fire_event",
-        "message",
-        "get_session_id")
 
 
 class RemoteBrokerConnector(ComponentConnector):
@@ -121,7 +89,15 @@ class RemoteManagerConnector(RemoteClientConnector):
 
     component = Manager
 
-ComponentsRegistry.register(RemoteBrokerConnector)
-ComponentsRegistry.register(RemoteClientConnector)
-ComponentsRegistry.register(RemoteMonitorConnector)
-ComponentsRegistry.register(RemoteManagerConnector)
+
+def get_component_registry():
+    """Get a mapping of component name to connectors, for all components."""
+    all_connectors = [
+        RemoteBrokerConnector,
+        RemoteClientConnector,
+        RemoteMonitorConnector,
+        RemoteManagerConnector
+    ]
+    return dict(
+        (connector.component.name, connector)
+        for connector in all_connectors)

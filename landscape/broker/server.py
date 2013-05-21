@@ -3,7 +3,7 @@ import logging
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
-from landscape.amp import ComponentsRegistry
+from landscape.amp import remote
 from landscape.manager.manager import FAILED
 
 
@@ -31,16 +31,17 @@ class BrokerServer(object):
     the L{BrokerProtocol}.
 
     @param config: The L{BrokerConfiguration} used by the broker.
-    @param reactor: The L{TwistedReactor} driving the broker's events.
+    @param reactor: The L{LandscapeReactor} driving the broker's events.
     @param exchange: The L{MessageExchange} to send messages with.
     @param registration: The {RegistrationHandler}.
     @param message_store: The broker's L{MessageStore}.
     """
     name = "broker"
-    connectors_registry = ComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store, pinger):
+        from landscape.broker.amp import get_component_registry
+        self.connectors_registry = get_component_registry()
         self._config = config
         self._reactor = reactor
         self._exchanger = exchange
@@ -58,16 +59,19 @@ class BrokerServer(object):
         reactor.call_on("package-data-changed", self.package_data_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
 
+    @remote
     def ping(self):
         """Return C{True}."""
         return True
 
+    @remote
     def get_session_id(self):
         """
         Get a unique session ID from the L{MessageStore}.
         """
         return self._message_store.get_session_id()
 
+    @remote
     def register_client(self, name):
         """Register a broker client called C{name}.
 
@@ -111,12 +115,14 @@ class BrokerServer(object):
         """Return the connector for the given C{name} or C{None}."""
         return self._connectors.get(self.get_client(name))
 
+    @remote
     def send_message(self, message, session_id, urgent=False):
         """Queue C{message} for delivery to the server at the next exchange.
 
         @param message: The message C{dict} to send to the server.  It must
             have a C{type} key and be compatible with C{landscape.lib.bpickle}.
-        @param session_id: 
+        @param session_id: the current session ID.  You should acquire this
+            with C{get_session_id} before attempting to send a message.
         @param urgent: If C{True}, exchange urgently, otherwise exchange
             during the next regularly scheduled exchange.
         @return: The message identifier created when queuing C{message}.
@@ -124,10 +130,12 @@ class BrokerServer(object):
         if self._message_store.is_valid_session_id(session_id):
             return self._exchanger.send(message, urgent=urgent)
 
+    @remote
     def is_message_pending(self, message_id):
         """Indicate if a message with given C{message_id} is pending."""
         return self._message_store.is_pending(message_id)
 
+    @remote
     def stop_clients(self):
         """Tell all the clients to exit."""
         results = []
@@ -137,6 +145,7 @@ class BrokerServer(object):
         result = gather_results(results, consume_errors=True)
         return result.addCallback(lambda ignored: None)
 
+    @remote
     def reload_configuration(self):
         """Reload the configuration file, and stop all clients."""
         self._config.reload()
@@ -144,6 +153,7 @@ class BrokerServer(object):
         # notice configuration changes.
         return self.stop_clients()
 
+    @remote
     def register(self):
         """Attempt to register with the Landscape server.
 
@@ -151,14 +161,17 @@ class BrokerServer(object):
         """
         return self._registration.register()
 
+    @remote
     def get_accepted_message_types(self):
         """Return the message types accepted by the Landscape server."""
         return self._message_store.get_accepted_types()
 
+    @remote
     def get_server_uuid(self):
         """Return the uuid of the Landscape server we're pointing at."""
         return self._message_store.get_server_uuid()
 
+    @remote
     def register_client_accepted_message_type(self, type):
         """Register a new message type which can be accepted by this client.
 
@@ -166,10 +179,12 @@ class BrokerServer(object):
         """
         self._exchanger.register_client_accepted_message_type(type)
 
+    @remote
     def fire_event(self, event_type):
         """Fire an event in the broker reactor."""
         self._reactor.fire(event_type)
 
+    @remote
     def exit(self):
         """Request a graceful exit from the broker server.
 
@@ -203,6 +218,7 @@ class BrokerServer(object):
     def impending_exchange(self):
         """Broadcast an C{impending-exchange} event to the clients."""
 
+    @remote
     def listen_events(self, event_types):
         """
         Return a C{Deferred} that fires when the first event occurs among the
@@ -279,6 +295,7 @@ support this feature.
                 "operation-id": opid}
             self._exchanger.send(response, urgent=True)
 
+    @remote
     def stop_exchanger(self):
         """
         Stop exchaging messages with the message server.

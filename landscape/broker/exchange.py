@@ -206,7 +206,7 @@ class MessageExchange(object):
     def __init__(self, reactor, store, transport, registration_info,
                  exchange_store, config,  max_messages=100):
         """
-        @param reactor: The L{TwistedReactor} used to fire events in response
+        @param reactor: The L{LandscapeReactor} used to fire events in response
             to messages received by the server.
         @param store: The L{MessageStore} used to queue outgoing messages.
         @param transport: The L{HTTPTransport} used to deliver messages.
