@@ -66,8 +66,21 @@ class BrokerServer(object):
 
     @remote
     def get_session_id(self):
-        """
-        Get a unique session ID from the L{MessageStore}.
+        """Get a unique session ID from the L{MessageStore}.
+
+        Plugins like Hardware and Package Management and anything that relies
+        on synchronising state between the client and server (anything which
+        responds to a message with an activity-id counts here) will need to
+        request a "Session ID" from the broker.  When they send any
+        state-dependent messages, they will need to include this ID when
+        talking to the broker. The broker will use the message store to keep
+        track of the IDs that it hands out. These IDs will be dropped when a
+        global re-synchronisation occurs (which happens when the client
+        re-registers). If a plugin sends a message to the broker with an ID
+        that the broker doesn't know about, the message will be dropped.
+
+        This eliminates issues with out-of-date messages being sent after a
+        resynchronisation request.
         """
         return self._message_store.get_session_id()
 
