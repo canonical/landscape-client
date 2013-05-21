@@ -88,7 +88,7 @@ class ProcessorInfo(MonitorPlugin):
         if dirty:
             logging.info("Queueing message with updated processor info.")
             self.registry.broker.send_message(
-                message, self._session_id,urgent=urgent)
+                message, self._session_id, urgent=urgent)
 
     def run(self, urgent=False):
         """Create a message and put it on the message queue."""

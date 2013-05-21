@@ -425,8 +425,8 @@ class MessageStore(object):
     def get_session_id(self, scope=None):
         """Generate a unique session identifier, persist it and return it.
 
-        See also L{landscape.broker.server.BrokerServer.get_session_id} for more
-        information on what this is used for.
+        See also L{landscape.broker.server.BrokerServer.get_session_id} for
+        more information on what this is used for.
         """
         scopes = self._persist.get("session-ids", {})
         session_id = uuid.uuid4().int

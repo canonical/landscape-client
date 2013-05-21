@@ -49,7 +49,6 @@ class BrokerClientPlugin(object):
             if self.run_interval is not None:
                 self.client.reactor.call_every(self.run_interval, self.run)
 
- 
     @property
     def registry(self):
         """An alias for the C{client} attribute."""

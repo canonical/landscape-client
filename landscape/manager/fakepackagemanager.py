@@ -1,13 +1,5 @@
-import logging
-import os
 import random
 
-from twisted.internet.utils import getProcessOutput
-from twisted.internet.defer import succeed
-
-from landscape.package.store import PackageStore
-from landscape.package.changer import PackageChanger
-from landscape.package.releaseupgrader import ReleaseUpgrader
 from landscape.manager.plugin import ManagerPlugin
 from landscape.manager.manager import SUCCEEDED
 

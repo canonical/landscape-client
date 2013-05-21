@@ -49,7 +49,7 @@ class MessageExchangeTest(LandscapeTest):
         session_id = self.mstore.get_session_id()
         self.assertTrue(self.mstore.is_valid_session_id(session_id))
         self.reactor.fire("resynchronize-clients")
-        self.assertFalse(self.mstore.is_valid_session_id(session_id))        
+        self.assertFalse(self.mstore.is_valid_session_id(session_id))
 
     def test_send(self):
         """

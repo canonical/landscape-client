@@ -6,7 +6,7 @@ import os
 import glob
 import apt_pkg
 
-from twisted.internet.defer import (Deferred, succeed, inlineCallbacks)
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process

@@ -149,7 +149,8 @@ class ComputerUptime(MonitorPlugin):
         message = self._create_message(filename)
         if "shutdown-times" in message or "startup-times" in message:
             message["type"] = "computer-uptime"
-            self.registry.broker.send_message(message, self._session_id, urgent=urgent)
+            self.registry.broker.send_message(message, self._session_id,
+                                              urgent=urgent)
 
     def _create_message(self, filename):
         """Generate a message with new startup and shutdown times."""

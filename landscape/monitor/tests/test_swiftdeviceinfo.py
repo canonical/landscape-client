@@ -1,5 +1,3 @@
-import logging
-
 from twisted.internet.defer import succeed
 
 from landscape.lib.fetch import HTTPCodeError
