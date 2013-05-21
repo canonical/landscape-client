@@ -13,6 +13,10 @@ class BrokerClientTest(LandscapeTest):
     helpers = [BrokerClientHelper]
 
     def _make_fake_plugin_get_session_id(self, plugin):
+        """
+        Generate a fake session id and skip the attempt to generate a genuine
+        one during C{BrokerClientPlugin} registration.
+        """
         plugin._session_id = 12345L
         plugin._get_session_id_and_run = lambda: plugin._do_run()
 
@@ -33,6 +37,10 @@ class BrokerClientTest(LandscapeTest):
         self.assertIs(plugin.client, self.client)
 
     def test_registering_plugin_gets_session_id(self):
+        """
+        As part of the BrokerClientPlugin registration process, a session ID
+        is generated.
+        """
         plugin = BrokerClientPlugin()
         self.client.add(plugin)
         self.assertIsNot(None, plugin._session_id)
