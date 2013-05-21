@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""
+This script is needed in case the client is upgrading from a pre-AMP version
+using Dbus as the messaging mechanism (like the landscape-client package from
+the lucid archives).
+This allows the package changer to send package changes to the broker using
+Dbus.
+"""
 
 import os
 import dbus
