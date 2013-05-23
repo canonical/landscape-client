@@ -66,21 +66,27 @@ class BrokerServer(object):
 
     @remote
     def get_session_id(self):
-        """Get a unique session ID from the L{MessageStore}.
+        """Get a unique session ID to be used when sending messages.
 
-        Plugins like Hardware and Package Management and anything that relies
-        on synchronising state between the client and server (anything which
-        responds to a message with an activity-id counts here) will need to
-        request a "Session ID" from the broker.  When they send any
-        state-dependent messages, they will need to include this ID when
-        talking to the broker. The broker will use the message store to keep
-        track of the IDs that it hands out. These IDs will be dropped when a
-        global re-synchronisation occurs (which happens when the client
-        re-registers). If a plugin sends a message to the broker with an ID
-        that the broker doesn't know about, the message will be dropped.
+        Anything that wants to send a message to the server via the broker is
+        required to first acquire a session ID with this method. Such session
+        IDs must be passed to L{send_message} whenever sending a message.
 
-        This eliminates issues with out-of-date messages being sent after a
-        resynchronisation request.
+        The broker keeps track of the session IDs that it hands out and will
+        drop them when a re-synchronisation event occurs, along with all queued
+        messages that were sent using such expired session IDs.  Further
+        messages sent using expired IDs will be silently discarded.
+
+        For example each L{BrokerClientPlugin} calls this method to get a
+        session ID and use it when sending messages, until the plugin gets
+        notified of a re-synchronisation event and then asks for a new one.
+
+        This eliminates issues with out-of-date messages being delivered to the
+        server after a re-synchronisation requests. For example when the client
+        re-registers and gets a new computer ID we don't want to deliver queued
+        messages containing references to activity IDs of the old computer
+        (e.g. a message with the result of a "change-packages" activity
+        delivered before re-registering). See also #328005 and #1158822.
         """
         return self._message_store.get_session_id()
 
