@@ -436,7 +436,7 @@ class MessageStore(object):
             information, limited by scope.
         """
         scopes = self._persist.get("session-ids", {})
-        session_id = uuid.uuid4().int
+        session_id = str(uuid.uuid4())
         session_ids = scopes.get(scope, [])
         session_ids.insert(0, session_id)
         scopes[scope] = session_ids
