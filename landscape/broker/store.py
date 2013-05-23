@@ -422,7 +422,7 @@ class MessageStore(object):
     def _add_flags(self, path, flags):
         self._set_flags(path, self._get_flags(path) + flags)
 
-    def get_session_id(self, scope=None):
+    def get_session_id(self, scope="global"):
         """Generate a unique session identifier, persist it and return it.
 
         See also L{landscape.broker.server.BrokerServer.get_session_id} for
@@ -435,30 +435,30 @@ class MessageStore(object):
             this will allow us to re-synchronise only certain types of
             information, limited by scope.
         """
-        scopes = self._persist.get("session-ids", {})
+        session_ids = self._persist.get("session-ids", {})
         session_id = str(uuid.uuid4())
-        session_ids = scopes.get(scope, [])
-        session_ids.insert(0, session_id)
-        scopes[scope] = session_ids
-        self._persist.set("session-ids", scopes)
+        session_ids[session_id] = scope
+        self._persist.set("session-ids", session_ids)
         return session_id
 
-    def is_valid_session_id(self, session_id, scope=None):
+    def is_valid_session_id(self, session_id):
         """
         Returns L{True} if the provided L{session_id} is known by this
         L{MessageStore}.
         """
-        scopes = self._persist.get("session-ids", {})
-        session_ids = scopes.get(scope, [])
-        return session_id in session_ids
+        return session_id in self._persist.get("session-ids", {})
 
-    def drop_session_ids(self, scope=None):
+    def drop_session_ids(self, scope="global"):
         """
         Drop all session ids.
         """
-        scopes = self._persist.get("session-ids", {})
-        scopes[scope] = []
-        self._persist.set("session-ids", scopes)
+        new_session_ids = {}
+        if scope != "global":
+            session_ids = self._persist.get("session-ids", {})
+            for session_id, session_scope in session_ids.iteritems():
+                if session_scope != scope:
+                    new_session_ids[session_id] = session_scope
+        self._persist.set("session-ids", new_session_ids)
 
 
 def get_default_message_store(*args, **kwargs):
