@@ -455,11 +455,19 @@ class MessageStoreTest(LandscapeTest):
 
         self.assertFalse(self.store.is_pending(id))
 
-    def test_get_session_id(self):
-        """Test that we can get a unique session id.
+    def test_get_session_id_returns_the_same_id_for_the_same_scope(self):
+        """We get the same id returned from get_session_id when we used the
+        same scope.
+        """
+        global_session_id1 = self.store.get_session_id()
+        global_session_id2 = self.store.get_session_id()
+        self.assertEqual(global_session_id1, global_session_id2)
+
+    def test_get_session_id_unique_for_each_scope(self):
+        """We get a unique session id for differing scopes.
         """
         session_id1 = self.store.get_session_id()
-        session_id2 = self.store.get_session_id()
+        session_id2 = self.store.get_session_id(scope="other")
         self.assertNotEqual(session_id1, session_id2)
 
     def test_get_session_id_assigns_global_scope_when_none_is_provided(self):

@@ -425,7 +425,7 @@ class MessageStore(object):
     def get_session_id(self, scope="global"):
         """Generate a unique session identifier, persist it and return it.
 
-        See also L{landscape.broker.server.BrokerServer.get_session_id} for
+        See also L{landscape.broker.server.Broker Server.get_session_id} for
         more information on what this is used for.
 
         @param scope: A string identifying the scope of interest of requesting
@@ -436,6 +436,11 @@ class MessageStore(object):
             information, limited by scope.
         """
         session_ids = self._persist.get("session-ids", {})
+        for session_id, stored_scope in session_ids.iteritems():
+            # This loop should be relatively short as it's intent is to limit
+            # session-ids to one per scope.
+            if scope == stored_scope:
+                return session_id
         session_id = str(uuid.uuid4())
         session_ids[session_id] = scope
         self._persist.set("session-ids", session_ids)

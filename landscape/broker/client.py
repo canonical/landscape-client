@@ -41,14 +41,28 @@ class BrokerClientPlugin(object):
         self._get_session_id_and_run()
 
     def _got_session_id(self, session_id):
+        """Callback that receives a session_id.
+
+        When C{BrokeServer.get_session_id()} calls back we set the
+        C{_session_id} value for this object, which is required because we
+        cannot invoke a run until we can send messages, which requires us to
+        have a session id.
+        """
         self._session_id = session_id
         self._do_run()
 
     def _get_session_id_and_run(self):
+        """Ensure we receive a session_id before we run.
+
+        This method is split out so it's easier to isolate behaviour for
+        testing.
+        """
         deferred = self.client.broker.get_session_id()
         deferred.addCallback(self._got_session_id)
 
     def _do_run(self):
+        """Invoke the L{run} method on this object once setup tasks are
+        completed, post registration."""
         if getattr(self, "run", None) is not None:
             if self.run_immediately:
                 self.run()
