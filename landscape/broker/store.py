@@ -427,6 +427,13 @@ class MessageStore(object):
 
         See also L{landscape.broker.server.BrokerServer.get_session_id} for
         more information on what this is used for.
+
+        @param scope: A string identifying the scope of interest of requesting
+            object. Currently this is unused but it has been implemented in
+            preparation for a fix for bug #300278 so that we don't have to
+            change the persisted structure later.  When that fix is in place
+            this will allow us to re-synchronise only certain types of
+            information, limited by scope.
         """
         scopes = self._persist.get("session-ids", {})
         session_id = uuid.uuid4().int
