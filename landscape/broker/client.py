@@ -22,8 +22,14 @@ class BrokerClientPlugin(object):
 
     @cvar run_interval: The interval, in seconds, to execute the C{run} method.
         If set to C{None}, then C{run} will not be scheduled.
-    @cvar run_immediately: If C{True} the plugin will be run immediately after
-        it is registered.
+    @cvar run_immediately: If C{True} the plugin will be run immediately after it
+        is registered.
+    @ivar _session_id: the session id to be passed when sending messages via
+        the broker.  This variable is set during the registration process and
+        should only need to be renewed when a re-synchronisation request is
+        sent, attempt to call send message with the session id set to None will
+        result in the message being dropped, silently.  See
+        L{landscape.broker.server.BrokerServer.send_message} for more details.
     """
 
     run_interval = 5
