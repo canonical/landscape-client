@@ -64,6 +64,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "resynchronize"}])
+
     def test_send(self):
         """
         The send method should cause a message to show up in the next exchange.

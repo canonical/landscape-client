@@ -51,7 +51,7 @@ class BrokerServerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         session_id = self.broker.get_session_id()
-        self.broker.send_message(message, sesion_id)
+        self.broker.send_message(message, session_id)
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertFalse(self.exchanger.is_urgent())
 
