@@ -50,7 +50,8 @@ class BrokerServerTest(LandscapeTest):
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        self.broker.send_message(message, self.broker.get_session_id())
+        session_id = self.broker.get_session_id()
+        self.broker.send_message(message, sesion_id)
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertFalse(self.exchanger.is_urgent())
 
@@ -61,8 +62,8 @@ class BrokerServerTest(LandscapeTest):
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        self.broker.send_message(message, self.broker.get_session_id(),
-                                 True)
+        session_id = self.broker.get_session_id()
+        self.broker.send_message(message, session_id, urgent=True)
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertTrue(self.exchanger.is_urgent())
 
@@ -79,7 +80,6 @@ class BrokerServerTest(LandscapeTest):
         self.assertMessages(self.mstore.get_pending_messages(), [])
 
     def test_is_pending(self):
-
         """
         The L{BrokerServer.is_pending} method indicates if a message with
         the given id is pending waiting for delivery in the message store.
@@ -87,8 +87,8 @@ class BrokerServerTest(LandscapeTest):
         self.assertFalse(self.broker.is_message_pending(123))
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        message_id = self.broker.send_message(message,
-                                              self.broker.get_session_id())
+        session_id = self.broker.get_session_id()
+        message_id = self.broker.send_message(message, session_id)
         self.assertTrue(self.broker.is_message_pending(message_id))
 
     def test_register_client(self):
