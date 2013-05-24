@@ -51,6 +51,19 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.fire("resynchronize-clients")
         self.assertFalse(self.mstore.is_valid_session_id(session_id))
 
+    def test_that_resynchronize_deletes_existing_messages(self):
+        self.mstore.set_accepted_types(["empty", "data", "resynchronize"])
+        # Do three generations of messages, so we "lose" the 0th message
+        for i in range(3):
+            self.mstore.add({"type": "empty"})
+            self.exchanger.exchange()
+        # the server loses some data
+        self.transport.next_expected_sequence = 0
+        # This exchange call will notice the server is asking for an old
+        # message and fire the event:
+        self.exchanger.exchange()
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "resynchronize"}])
     def test_send(self):
         """
         The send method should cause a message to show up in the next exchange.
@@ -348,8 +361,7 @@ class MessageExchangeTest(LandscapeTest):
         # message and fire the event:
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "empty"},
-                             {"type": "resynchronize"},
+                            [{"type": "resynchronize"},
                              {"type": "data", "data": 999}])
 
     def test_resynchronize_msg_causes_resynchronize_response_then_event(self):

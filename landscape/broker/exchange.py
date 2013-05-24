@@ -327,6 +327,12 @@ class MessageExchange(object):
             self._reactor.fire("message-type-acceptance-changed", type, True)
 
     def _handle_resynchronize(self, message):
+        # We should drop all the existing messages in the queue as their
+        # session IDs will now have been invalidated post-validation. It's
+        # important that we do this before we send the resynchronize
+        # response to the queue, else it will also be deleted.
+        self._message_store.delete_all_messages()
+
         opid = message["operation-id"]
         self.send({"type": "resynchronize", "operation-id": opid})
         self._reactor.fire("resynchronize-clients")
@@ -556,6 +562,12 @@ class MessageExchange(object):
             # up-to-date data.
             logging.info("Server asked for ancient data: resynchronizing all "
                          "state with the server.")
+            # During the handling of resynchronize clients we'll drop all
+            # existing session ids (see _resynchronize below), all existing
+            # messages will be against old session IDs and should not be
+            # sent. Therefore we delete them, which must happen prior to
+            # queuing the resynchronize message, else it to will be deleted.
+            self._message_store.delete_all_messages()
             self.send({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
 

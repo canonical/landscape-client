@@ -32,12 +32,15 @@ class BrokerServerTest(LandscapeTest):
 
     def test_get_session_id(self):
         """
-        The L{BrokerServer.get_session_id} method gets a unique
-        session ID from the L{MessageStore}.
+        The L{BrokerServer.get_session_id} method gets the same
+        session ID from the L{MessageStore} until it is dropped.
         """
         session_id1 = self.broker.get_session_id()
         session_id2 = self.broker.get_session_id()
-        self.assertNotEqual(session_id1, session_id2)
+        self.assertEqual(session_id1, session_id2)
+        self.mstore.drop_session_ids()
+        session_id3 = self.broker.get_session_id()
+        self.assertNotEqual(session_id1, session_id3)
 
     def test_send_message(self):
 
