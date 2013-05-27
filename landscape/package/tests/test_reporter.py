@@ -1588,8 +1588,7 @@ class PackageReporterAptTest(LandscapeTest):
         If a monitored file is not changed (touched), the method returns
         False.
         """
-        touch_file(self.check_stamp_file)
-
+        touch_file(self.check_stamp_file, offset=2)
         result = self.reporter._package_state_has_changed()
         self.assertFalse(result)
 
