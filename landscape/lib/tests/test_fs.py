@@ -1,4 +1,5 @@
 import os
+import time
 
 from landscape.tests.helpers import LandscapeTest
 
@@ -60,6 +61,19 @@ class TouchFileTest(LandscapeTest):
         path = self.makeFile()
         touch_file(path)
         touch_file(path)
+        self.assertFileContent(path, "")
+
+    def test_touch_file_with_offset_seconds(self):
+        """
+        The L{touch_file} function can be called with a offset in seconds that
+        will be reflected in the access and modification times of the file.
+        """
+        path = self.makeFile()
+        utime_mock = self.mocker.replace("os.utime")
+        expected_time = long(time.time() - 1)
+        self.expect(utime_mock(path, (expected_time, expected_time)))
+        self.mocker.replay()
+        touch_file(path, offset_seconds=-1)
         self.assertFileContent(path, "")
 
 
