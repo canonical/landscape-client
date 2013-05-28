@@ -52,8 +52,9 @@ def touch_file(path, offset_seconds=None):
     """Touch a file, creating it if it doesn't exist.
 
     @param path: the path to the file to be touched.
-    @param offset_seconds: an signed integer number of seconds to offset the atime and
-       mtime of the file from the current time.
+    @param offset_seconds: a signed integer number of seconds to offset the
+        atime and mtime of the file from the current time.
+
     """
     fd = open(path, "a")
     fd.close()
