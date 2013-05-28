@@ -49,7 +49,12 @@ def read_file(path, limit=None):
 
 
 def touch_file(path, offset=None):
-    """Touch a file, creating it if it doesn't exist."""
+    """Touch a file, creating it if it doesn't exist.
+
+    @param path: the path to the file to be touched.
+    @param offset: an signed integer number of seconds to offset the atime and
+       mtime of the file from the current time.
+    """
     fd = open(path, "a")
     fd.close()
     if offset is not None:
