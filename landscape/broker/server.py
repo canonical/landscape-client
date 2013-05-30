@@ -141,8 +141,7 @@ class BrokerServer(object):
         @param message: The message C{dict} to send to the server.  It must
             have a C{type} key and be compatible with C{landscape.lib.bpickle}.
         @param session_id: A session ID.  You should acquire this
-            with C{get_session_id} before attempting to send a message.  If the
-            session ID is expired the message will be silently discarded.
+            with C{get_session_id} before attempting to send a message.
         @param urgent: If C{True}, exchange urgently, otherwise exchange
             during the next regularly scheduled exchange.
         @return: The message identifier created when queuing C{message}.
