@@ -73,9 +73,8 @@ class BrokerServer(object):
         IDs must be passed to L{send_message} whenever sending a message.
 
         The broker keeps track of the session IDs that it hands out and will
-        drop them when a re-synchronisation event occurs, along with all queued
-        messages that were sent using such expired session IDs.  Further
-        messages sent using expired IDs will be silently discarded.
+        drop them when a re-synchronisation event occurs.  Further messages
+        sent using expired IDs will be silently discarded.
 
         For example each L{BrokerClientPlugin} calls this method to get a
         session ID and use it when sending messages, until the plugin gets
@@ -87,6 +86,7 @@ class BrokerServer(object):
         messages containing references to activity IDs of the old computer
         (e.g. a message with the result of a "change-packages" activity
         delivered before re-registering). See also #328005 and #1158822.
+
         """
         return self._message_store.get_session_id()
 
