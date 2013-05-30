@@ -11,14 +11,6 @@ class BrokerClientTest(LandscapeTest):
 
     helpers = [BrokerClientHelper]
 
-    def _make_fake_plugin_get_session_id(self, plugin):
-        """
-        Generate a fake session id and skip the attempt to generate a genuine
-        one during C{BrokerClientPlugin} registration.
-        """
-        plugin._session_id = 12345L
-        plugin._get_session_id_and_run = lambda: plugin._do_run()
-
     def test_ping(self):
         """
         The L{BrokerClient.ping} method always returns C{True}.
@@ -31,7 +23,6 @@ class BrokerClientTest(LandscapeTest):
         plugin, and calls the plugin's C{register} method.
         """
         plugin = BrokerClientPlugin()
-        self._make_fake_plugin_get_session_id(plugin)
         self.client.add(plugin)
         self.assertIs(plugin.client, self.client)
 
@@ -92,7 +83,6 @@ class BrokerClientTest(LandscapeTest):
         the plugin will be run immediately at registration.
         """
         plugin = BrokerClientPlugin()
-        self._make_fake_plugin_get_session_id(plugin)
         plugin.run = self.mocker.mock()
         plugin.run_immediately = True
         self.expect(plugin.run()).count(1)
