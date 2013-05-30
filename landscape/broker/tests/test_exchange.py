@@ -63,7 +63,8 @@ class MessageExchangeTest(LandscapeTest):
         # message and fire the event:
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "resynchronize"}])
+                            [{"type": "empty"},
+                             {"type": "resynchronize"}])
 
     def test_send(self):
         """
@@ -362,7 +363,8 @@ class MessageExchangeTest(LandscapeTest):
         # message and fire the event:
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "resynchronize"},
+                            [{"type": "empty"},
+                             {"type": "resynchronize"},
                              {"type": "data", "data": 999}])
 
     def test_resynchronize_msg_causes_resynchronize_response_then_event(self):
