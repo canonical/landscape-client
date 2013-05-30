@@ -81,8 +81,8 @@ class BrokerServer(object):
         notified of a re-synchronisation event and then asks for a new one.
 
         This eliminates issues with out-of-date messages being delivered to the
-        server after a re-synchronisation requests. For example when the client
-        re-registers and gets a new computer ID we don't want to deliver queued
+        server after a re-synchronisation request. For example when the client
+        re-registers and gets a new computer ID we don't want to deliver
         messages containing references to activity IDs of the old computer
         (e.g. a message with the result of a "change-packages" activity
         delivered before re-registering). See also #328005 and #1158822.
