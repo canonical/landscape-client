@@ -87,7 +87,8 @@ class BrokerServerTest(LandscapeTest):
         """
         message = {"type", "test"}
         self.mstore.set_accepted_types(["test"])
-        self.assertRaises(RuntimeError, self.broker.send_message, message, None)
+        self.assertRaises(
+            RuntimeError, self.broker.send_message, message, None)
 
     def test_is_pending(self):
         """

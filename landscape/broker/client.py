@@ -32,11 +32,9 @@ class BrokerClientPlugin(object):
         silently. See L{landscape.broker.server.BrokerServer.send_message} for
         more details.
     """
-
     run_interval = 5
     run_immediately = False
     _session_id = None
-
 
     def _got_session_id(self, session_id):
         """Save the session ID and invoke the C{run} method.
@@ -51,7 +49,6 @@ class BrokerClientPlugin(object):
                 self.run()
             if self.run_interval is not None:
                 self.client.reactor.call_every(self.run_interval, self.run)
-
 
     def register(self, client):
         self.client = client

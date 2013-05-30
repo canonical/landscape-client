@@ -11,6 +11,7 @@ from landscape.broker.ping import Pinger
 from landscape.broker.registration import RegistrationHandler
 from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
 from landscape.broker.tests.helpers import ExchangeHelper
+from landscape.broker.server import BrokerServer
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -46,25 +47,17 @@ class MessageExchangeTest(LandscapeTest):
         expired, so any new messages being sent with those IDs will be
         discarded.
         """
-        session_id = self.mstore.get_session_id()
-        self.assertTrue(self.mstore.is_valid_session_id(session_id))
-        self.reactor.fire("resynchronize-clients")
-        self.assertFalse(self.mstore.is_valid_session_id(session_id))
+        broker = BrokerServer(self.config, self.reactor,
+                              self.exchanger, None,
+                              self.mstore, None)
 
-    def test_that_resynchronize_deletes_existing_messages(self):
-        self.mstore.set_accepted_types(["empty", "data", "resynchronize"])
-        # Do three generations of messages, so we "lose" the 0th message
-        for i in range(3):
-            self.mstore.add({"type": "empty"})
-            self.exchanger.exchange()
-        # the server loses some data
-        self.transport.next_expected_sequence = 0
-        # This exchange call will notice the server is asking for an old
-        # message and fire the event:
+        session_id = self.mstore.get_session_id()
+        self.mstore.set_accepted_types(["empty"])
+        self.reactor.fire("resynchronize-clients")
+        broker.send_message({"type": "empty"}, session_id)
         self.exchanger.exchange()
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "empty"},
-                             {"type": "resynchronize"}])
+        messages = self.transport.payloads[0]["messages"]
+        self.assertMessages(messages, [])
 
     def test_send(self):
         """
