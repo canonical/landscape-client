@@ -147,6 +147,9 @@ class BrokerServer(object):
             during the next regularly scheduled exchange.
         @return: The message identifier created when queuing C{message}.
         """
+        if session_id is None:
+            raise RuntimeError(
+                "Session ID must be set before attempting to send a message")
         if self._message_store.is_valid_session_id(session_id):
             return self._exchanger.send(message, urgent=urgent)
 

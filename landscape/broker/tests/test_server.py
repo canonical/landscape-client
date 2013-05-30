@@ -79,6 +79,16 @@ class BrokerServerTest(LandscapeTest):
         self.broker.send_message(message, "Not Valid")
         self.assertMessages(self.mstore.get_pending_messages(), [])
 
+    def test_send_message_with_none_as_session_id_raises(self):
+        """
+        We should never call C{send_message} without first obtaining a session
+        id.  Attempts to do so should raise to alert the developer to their
+        mistake.
+        """
+        message = {"type", "test"}
+        self.mstore.set_accepted_types(["test"])
+        self.assertRaises(RuntimeError, self.broker.send_message, message, None)
+
     def test_is_pending(self):
         """
         The L{BrokerServer.is_pending} method indicates if a message with
