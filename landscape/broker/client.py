@@ -37,25 +37,26 @@ class BrokerClientPlugin(object):
     run_immediately = False
     _session_id = None
 
+
+    def _got_session_id(self, session_id):
+        """Save the session ID and invoke the C{run} method.
+
+        We set the C{_session_id} attribute on the instance because it's
+        required in order to send messages.  See
+        L{BrokerService.get_session_id}.
+        """
+        self._session_id = session_id
+        if getattr(self, "run", None) is not None:
+            if self.run_immediately:
+                self.run()
+            if self.run_interval is not None:
+                self.client.reactor.call_every(self.run_interval, self.run)
+
+
     def register(self, client):
         self.client = client
-
-        def _got_session_id(session_id):
-            """Save the session ID and invoke the C{run} method.
-
-            We set the C{_session_id} attribute on the instance because it's
-            required in order to send messages.  See
-            L{BrokerService.get_session_id}.
-            """
-            self._session_id = session_id
-            if getattr(self, "run", None) is not None:
-                if self.run_immediately:
-                    self.run()
-                if self.run_interval is not None:
-                    self.client.reactor.call_every(self.run_interval, self.run)
-
         deferred = self.client.broker.get_session_id()
-        deferred.addCallback(_got_session_id)
+        deferred.addCallback(self._got_session_id)
 
     @property
     def registry(self):
