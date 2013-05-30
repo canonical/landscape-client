@@ -25,7 +25,7 @@ class BrokerClientPlugin(object):
     @cvar run_immediately: If C{True} the plugin will be run immediately after
         it is registered.
     @ivar _session_id: the session id to be passed when sending messages via
-        the broker.  This variable is set during the registration process and
+        the broker.  This variable is set by the C{register} method and
         should only need to be renewed when a re-synchronisation request is
         sent, attempt to call send message with the session id set to None will
         result in the message being dropped, silently.  See
