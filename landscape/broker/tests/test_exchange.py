@@ -42,9 +42,9 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_that_resynchronize_drops_session_ids(self):
         """
-        When a resynchronisation event occurs all preexisting messages
-        should no longer be sent, dropping the existing session ids
-        will stop the messages from being sent.
+        When a resynchronisation event occurs all existing session IDs are
+        expired, so any new messages being sent with those IDs will be
+        discarded.
         """
         session_id = self.mstore.get_session_id()
         self.assertTrue(self.mstore.is_valid_session_id(session_id))
