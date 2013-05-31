@@ -29,6 +29,7 @@ class PackageSkeleton(object):
     description = None
     size = None
     installed_size = None
+    _overridden_hash = None
 
     def __init__(self, type, name, version):
         self.type = type
@@ -40,11 +41,27 @@ class PackageSkeleton(object):
         self.relations.append((type, info))
 
     def get_hash(self):
+        """Calculate the package hash.
+
+        If C{set_hash} has been used, that hash will be returned and the
+        hash won't be the calculated value.
+        """
+        if self._overridden_hash is not None:
+            return self._overridden_hash
         digest = sha1("[%d %s %s]" % (self.type, self.name, self.version))
         self.relations.sort()
         for pair in self.relations:
             digest.update("[%d %s]" % pair)
         return digest.digest()
+
+    def set_hash(self, package_hash):
+        """Set the hash to an explicit value.
+
+        This should be used when the hash is previously known and can't
+        be calculated from the relations anymore.
+        """
+        self._overridden_hash = package_hash
+
 
 
 def relation_to_string(relation_tuple):
