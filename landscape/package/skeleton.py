@@ -29,7 +29,7 @@ class PackageSkeleton(object):
     description = None
     size = None
     installed_size = None
-    _overridden_hash = None
+    _hash = None
 
     def __init__(self, type, name, version):
         self.type = type
@@ -46,8 +46,8 @@ class PackageSkeleton(object):
         If C{set_hash} has been used, that hash will be returned and the
         hash won't be the calculated value.
         """
-        if self._overridden_hash is not None:
-            return self._overridden_hash
+        if self._hash is not None:
+            return self._hash
         digest = sha1("[%d %s %s]" % (self.type, self.name, self.version))
         self.relations.sort()
         for pair in self.relations:
@@ -60,7 +60,7 @@ class PackageSkeleton(object):
         This should be used when the hash is previously known and can't
         be calculated from the relations anymore.
         """
-        self._overridden_hash = package_hash
+        self._hash = package_hash
 
 
 
