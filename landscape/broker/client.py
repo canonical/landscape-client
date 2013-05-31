@@ -71,7 +71,6 @@ class BrokerClientPlugin(object):
                 self.client.reactor.call_every(self.run_interval, self.run)
 
 
-
 class BrokerClient(object):
     """Basic plugin registry for clients that have to deal with the broker.
 
