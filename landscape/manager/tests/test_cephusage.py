@@ -1,6 +1,7 @@
 import os
 import json
 
+from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.manager.cephusage import CephUsage
 
@@ -73,7 +74,7 @@ class CephUsagePluginTest(LandscapeTest):
         def return_none():
             return None
 
-        plugin._get_ceph_command_output = return_none
+        plugin._get_status_command_output = return_none
 
         self.manager.add(plugin)
 
@@ -90,7 +91,7 @@ class CephUsagePluginTest(LandscapeTest):
         def return_output():
             return SAMPLE_OUTPUT
 
-        plugin._get_ceph_command_output = return_output
+        plugin._get_status_command_output = return_output
 
         self.manager.add(plugin)
 
@@ -107,7 +108,7 @@ class CephUsagePluginTest(LandscapeTest):
         def return_output():
             return SAMPLE_OLD_OUTPUT
 
-        plugin._get_ceph_command_output = return_output
+        plugin._get_status_command_output = return_output
 
         self.manager.add(plugin)
 
@@ -124,7 +125,7 @@ class CephUsagePluginTest(LandscapeTest):
         def return_output():
             return SAMPLE_NEW_TEMPLATE % (0, 100, 100)
 
-        plugin._get_ceph_command_output = return_output
+        plugin._get_status_command_output = return_output
 
         self.manager.add(plugin)
 
@@ -141,7 +142,7 @@ class CephUsagePluginTest(LandscapeTest):
         def return_output():
             return SAMPLE_NEW_TEMPLATE % (100, 0, 100)
 
-        plugin._get_ceph_command_output = return_output
+        plugin._get_status_command_output = return_output
 
         self.manager.add(plugin)
 
@@ -160,7 +161,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         def return_output():
             return output
-        plugin._get_ceph_command_output = return_output
+        plugin._get_status_command_output = return_output
 
         self.manager.add(plugin)
 
@@ -349,9 +350,14 @@ class CephUsagePluginTest(LandscapeTest):
         def return_full_disk():
             return SAMPLE_NEW_TEMPLATE % (100, 0, 100)
 
-        plugin._ceph_config = "/etc/hosts"
+        # The config file must be present for the plugin to run.
+        ceph_client_dir = os.path.join(self.config.data_path, "ceph-client")
+        ceph_conf = os.path.join(ceph_client_dir, "ceph.landscape-client.conf")
+        os.mkdir(ceph_client_dir)
+        touch_file(ceph_conf)
+        plugin._ceph_config = ceph_conf
         plugin._get_quorum_command_output = return_quorum
-        plugin._get_ceph_command_output = return_full_disk
+        plugin._get_status_command_output = return_full_disk
 
         self.manager.add(plugin)
 

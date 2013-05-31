@@ -33,10 +33,14 @@ class CephUsage(ManagerPlugin):
         self._ceph_usage_points = []
         self._ceph_ring_id = None
         self._create_time = create_time
-        self._ceph_config = CEPH_CONFIG_FILE
+        self._ceph_config = None
 
     def register(self, registry):
         super(CephUsage, self).register(registry)
+        self._ceph_config = os.path.join(
+            self.registry.config.data_path, "ceph-client",
+            "ceph.landscape-client.conf")
+
         self.registry.reactor.call_every(self._interval, self.run)
 
         self._persist_filename = os.path.join(self.registry.config.data_path,
@@ -81,11 +85,10 @@ class CephUsage(ManagerPlugin):
     def run(self):
         self._monitor.ping()
 
-        config_file = self._ceph_config
-        # Check if a ceph config file is available. No need to run anything
-        # if we know that we're not on a Ceph monitor node anyway.
-        if not os.path.exists(config_file):
-            # There is no config file - it's not a ceph machine.
+        # Check if a ceph config file is available. If it's not , it's not a
+        # ceph machine or ceph is set up yet. No need to run anything in this
+        # case.
+        if self._ceph_config is None or not os.path.exists(self._ceph_config):
             return None
 
         # Extract the ceph ring Id and cache it.
@@ -97,8 +100,8 @@ class CephUsage(ManagerPlugin):
 
         step_data = None
         if new_ceph_usage is not None:
-            step_data = self._accumulate(new_timestamp, new_ceph_usage,
-                                        ACCUMULATOR_KEY)
+            step_data = self._accumulate(
+                new_timestamp, new_ceph_usage, ACCUMULATOR_KEY)
         if step_data is not None:
             self._ceph_usage_points.append(step_data)
 
@@ -107,7 +110,7 @@ class CephUsage(ManagerPlugin):
         Grab the ceph usage data by parsing the output of the "ceph status"
         command output.
         """
-        output = self._get_ceph_command_output()
+        output = self._get_status_command_output()
 
         if output is None:
             return None
@@ -126,14 +129,8 @@ class CephUsage(ManagerPlugin):
 
         return filled / float(total)
 
-    def _get_ceph_command_output(self):
-        try:
-            output = run_command("ceph status")
-        except (OSError, CommandError):
-            # If the command line client isn't available, we assume it's not
-            # a ceph monitor machine.
-            return None
-        return output
+    def _get_status_command_output(self):
+        return self._run_ceph_command("status")
 
     def _get_ceph_ring_id(self):
         output = self._get_quorum_command_output()
@@ -149,10 +146,21 @@ class CephUsage(ManagerPlugin):
         return ring_id
 
     def _get_quorum_command_output(self):
+        return self._run_ceph_command("quorum_status")
+
+    def _run_ceph_command(self, *args):
+        """
+        Run the ceph command with the specified options using landscape ceph
+        key The keyring is expected to contain a key for the
+        "client.landscape-client" id.
+        """
+        command = [
+            "ceph", "--conf", self._ceph_config, "--id", "landscape-client"]
+        command.extend(args)
         try:
-            output = run_command("ceph quorum_status")
+            output = run_command(" ".join(command))
         except (OSError, CommandError):
-            # If the command line client isn't available, we assume it's not
-            # a ceph monitor machine.
+            # If the command line client isn't available, we assume it's not a
+            # ceph monitor machine.
             return None
         return output
