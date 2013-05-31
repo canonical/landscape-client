@@ -1,7 +1,7 @@
 from landscape.package.skeleton import (
-    build_skeleton_apt, DEB_PROVIDES,
+    build_skeleton_apt, DEB_PROVIDES, DEB_PACKAGE,
     DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,
-    DEB_CONFLICTS)
+    DEB_CONFLICTS, PackageSkeleton)
 
 from landscape.package.tests.helpers import (
     AptFacadeHelper, HASH1, create_simple_repository, create_deb,
@@ -258,3 +258,27 @@ class SkeletonAptTest(LandscapeTest):
             (DEB_UPGRADES, "or-relations < 1.0")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_OR_RELATIONS, skeleton.get_hash())
+
+
+class SkeletonTest(LandscapeTest):
+
+    def test_skeleton_set_hash(self):
+        """
+        If the hash is explictly set using C{set_hash}, C{get_hash}
+        won't recalculate the hash.
+        """
+        skeleton = PackageSkeleton(DEB_PACKAGE, "package", "1.0")
+        skeleton.set_hash("explicit-hash")
+        self.assertEqual("explicit-hash", skeleton.get_hash())
+
+    def test_skeleton_unset_hash(self):
+        """
+        If the hash is explictly set using C{set_hash}, it can be unset
+        again by passing in None, which means that C{get_hash} will
+        recalculate the hash again.
+        """
+        skeleton = PackageSkeleton(DEB_PACKAGE, "package", "1.0")
+        calculated_hash = skeleton.get_hash()
+        skeleton.set_hash("explicit-hash")
+        skeleton.set_hash(None)
+        self.assertEqual(calculated_hash, skeleton.get_hash())
