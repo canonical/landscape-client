@@ -477,7 +477,7 @@ class MessageStoreTest(LandscapeTest):
         session_id = self.store.get_session_id()
         persisted_ids = self.store._persist.get('session-ids')
         scope = persisted_ids[session_id]
-        self.assertEqual("global", scope)
+        self.assertIs(None, scope)
 
     def test_get_session_id_with_scope(self):
         """Test that we can generate a session id within a limited scope."""
@@ -510,7 +510,7 @@ class MessageStoreTest(LandscapeTest):
         self.store.drop_session_ids()
         self.assertFalse(self.store.is_valid_session_id(session_id))
 
-    def test_drop_session_ids_drops_all_scopes_when_scope_is_global(self):
+    def test_drop_session_ids_drops_all_scopes_with_no_scope_parameter(self):
         """When C{drop_session_ids} is called with no scope then all
         session_ids are dropped.
         """

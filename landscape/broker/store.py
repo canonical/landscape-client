@@ -422,7 +422,7 @@ class MessageStore(object):
     def _add_flags(self, path, flags):
         self._set_flags(path, self._get_flags(path) + flags)
 
-    def get_session_id(self, scope="global"):
+    def get_session_id(self, scope=None):
         """Generate a unique session identifier, persist it and return it.
 
         See also L{landscape.broker.server.Broker Server.get_session_id} for
@@ -438,8 +438,10 @@ class MessageStore(object):
         session_ids = self._persist.get("session-ids", {})
         for session_id, stored_scope in session_ids.iteritems():
             # This loop should be relatively short as it's intent is to limit
-            # session-ids to one per scope.
-            if scope == stored_scope:
+            # session-ids to one per scope.  The or condition here is not
+            # strictly necessary, but we *should* do "is" comparisons when we
+            # can (so says PEP 8).
+            if scope is stored_scope or scope == stored_scope:
                 return session_id
         session_id = str(uuid.uuid4())
         session_ids[session_id] = scope
@@ -453,12 +455,12 @@ class MessageStore(object):
         """
         return session_id in self._persist.get("session-ids", {})
 
-    def drop_session_ids(self, scope="global"):
+    def drop_session_ids(self, scope=None):
         """
         Drop all session ids.
         """
         new_session_ids = {}
-        if scope != "global":
+        if scope is not None:
             session_ids = self._persist.get("session-ids", {})
             for session_id, session_scope in session_ids.iteritems():
                 if session_scope != scope:
