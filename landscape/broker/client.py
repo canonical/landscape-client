@@ -27,9 +27,7 @@ class BrokerClientPlugin(object):
     @ivar _session_id: the session id to be passed when sending messages via
         the broker.  This variable is set by the C{register} method and
         should only need to be renewed when a re-synchronisation request is
-        sent, attempt to call C{self.client.broker.send_message} with the
-        session id set to None will result in the message being dropped,
-        silently. See L{landscape.broker.server.BrokerServer.send_message} for
+        sent. See L{landscape.broker.server.BrokerServer.send_message} for
         more details.
     """
     run_interval = 5
