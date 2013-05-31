@@ -59,6 +59,10 @@ class PackageSkeleton(object):
 
         This should be used when the hash is previously known and can't
         be calculated from the relations anymore.
+
+        The only use case for this is package resurrection. We're
+        planning on getting rid of package resurrection, and this code
+        can be removed when that is done.
         """
         self._hash = package_hash
 
