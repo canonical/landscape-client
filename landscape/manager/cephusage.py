@@ -11,7 +11,6 @@ from landscape.lib.persist import Persist
 from landscape.manager.plugin import ManagerPlugin
 
 ACCUMULATOR_KEY = "ceph-usage-accumulator"
-CEPH_CONFIG_FILE = "/etc/ceph/ceph.conf"
 
 EXP = re.compile(".*pgmap.*data, (\d+) MB used, (\d+) MB / (\d+) MB avail.*",
                  flags=re.S)
