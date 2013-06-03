@@ -1,6 +1,7 @@
 #!/usr/bin/make -f
 
 dist_release := $(shell lsb_release -cs)
+dist_release := hardy  # XXX: TEMP
 ifneq ($(dist_release),dapper)
 	use_pycentral = yes
 endif
@@ -88,13 +89,6 @@ binary-arch: build install
 	dh_fixperms
 	dh_shlibdeps
 
-# hardy only
-ifneq (,$(findstring $(dist_release),hardy))
-	# We depend on bug-fixed versions pycurl on hardy
-	echo "extra:Depends=python-pycurl" >> $(landscape_client_substvars)
-	# The python-image-store-proxy package is needed for the eucalyptus plugin
-	echo "extra:Suggests=python-image-store-proxy" >> $(landscape_common_substvars)
-endif
 # lucid only
 ifneq (,$(filter $(dist_release),lucid))
 	# We want libpam-modules in lucid

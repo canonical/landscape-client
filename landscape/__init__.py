@@ -1,5 +1,5 @@
-DEBIAN_REVISION = ""
-UPSTREAM_VERSION = "13.02"
+DEBIAN_REVISION = "-0ubuntu0"
+UPSTREAM_VERSION = "13.02+bzr683"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
 # The "server-api" field of outgoing messages will be set to this value, and
