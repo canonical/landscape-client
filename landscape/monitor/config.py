@@ -5,7 +5,8 @@ ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo",
                "LoadAverage", "MemoryInfo", "MountInfo", "ProcessorInfo",
                "Temperature", "PackageMonitor", "UserMonitor",
                "RebootRequired", "AptPreferences", "NetworkActivity",
-               "NetworkDevice", "UpdateManager", "CPUUsage", "SwiftDeviceInfo"]
+               "NetworkDevice", "UpdateManager", "CPUUsage", "SwiftDeviceInfo",
+               "CephUsage"]
 
 
 class MonitorConfiguration(Configuration):
