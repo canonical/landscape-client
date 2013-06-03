@@ -5,6 +5,9 @@ using Dbus as the messaging mechanism (like the landscape-client package from
 the lucid archives).
 This allows the package changer to send package changes to the broker using
 Dbus.
+
+This will only be run for old packages depending on DBus, we don't need to
+depend on DBus in the current version.
 """
 
 import os
@@ -46,7 +49,6 @@ class BrokerDBusObject(Object):
     to the newer AMP-based one, for letting the old package-changer process
     performing the upgrade communicate with the new version of the client.
     """
-
     bus_name = BUS_NAME
     object_path = OBJECT_PATH
 
