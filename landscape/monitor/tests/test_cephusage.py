@@ -71,12 +71,7 @@ class CephUsagePluginTest(LandscapeTest):
         C{_get_ceph_usage} method returns None.
         """
         plugin = CephUsage(create_time=self.reactor.time)
-
-        def return_none():
-            return None
-
-        plugin._get_status_command_output = return_none
-
+        plugin._get_status_command_output = lambda: None
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
@@ -88,12 +83,7 @@ class CephUsagePluginTest(LandscapeTest):
         returns the percentage of used space.
         """
         plugin = CephUsage(create_time=self.reactor.time)
-
-        def return_output():
-            return SAMPLE_OUTPUT
-
-        plugin._get_status_command_output = return_output
-
+        plugin._get_status_command_output = lambda: SAMPLE_OUTPUT
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
@@ -105,12 +95,7 @@ class CephUsagePluginTest(LandscapeTest):
         format (the output changed around version 0.56.1)
         """
         plugin = CephUsage(create_time=self.reactor.time)
-
-        def return_output():
-            return SAMPLE_OLD_OUTPUT
-
-        plugin._get_status_command_output = return_output
-
+        plugin._get_status_command_output = lambda: SAMPLE_OLD_OUTPUT
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
@@ -122,12 +107,8 @@ class CephUsagePluginTest(LandscapeTest):
         _get_ceph_usage method returns 0.0 .
         """
         plugin = CephUsage(create_time=self.reactor.time)
-
-        def return_output():
-            return SAMPLE_NEW_TEMPLATE % (0, 100, 100)
-
-        plugin._get_status_command_output = return_output
-
+        plugin._get_status_command_output = (
+            lambda: SAMPLE_NEW_TEMPLATE % (0, 100, 100))
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
@@ -139,12 +120,8 @@ class CephUsagePluginTest(LandscapeTest):
         _get_ceph_usage method returns 1.0 .
         """
         plugin = CephUsage(create_time=self.reactor.time)
-
-        def return_output():
-            return SAMPLE_NEW_TEMPLATE % (100, 0, 100)
-
-        plugin._get_status_command_output = return_output
-
+        plugin._get_status_command_output = (
+            lambda: SAMPLE_NEW_TEMPLATE % (100, 0, 100))
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
@@ -160,10 +137,7 @@ class CephUsagePluginTest(LandscapeTest):
         error = "Could not parse command output: '%s'" % output
         self.log_helper.ignore_errors(error)
 
-        def return_output():
-            return output
-        plugin._get_status_command_output = return_output
-
+        plugin._get_status_command_output = lambda: output
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
@@ -262,11 +236,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         uuid = "i-am-a-uuid"
 
-        def return_output():
-            return SAMPLE_QUORUM % uuid
-
-        plugin._get_quorum_command_output = return_output
-
+        plugin._get_quorum_command_output = lambda: SAMPLE_QUORUM % uuid
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_ring_id()
@@ -304,11 +274,7 @@ class CephUsagePluginTest(LandscapeTest):
         error = "Could not get ring_id from output: 'Blah\nblah'."
         self.log_helper.ignore_errors(error)
 
-        def return_output():
-            return "Blah\nblah"
-
-        plugin._get_quorum_command_output = return_output
-
+        plugin._get_quorum_command_output = lambda: "Blah\nblah"
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_ring_id()
@@ -321,12 +287,7 @@ class CephUsagePluginTest(LandscapeTest):
         returns None and logs no error.
         """
         plugin = CephUsage(create_time=self.reactor.time)
-
-        def return_output():
-            return None
-
-        plugin._get_quorum_command_output = return_output
-
+        plugin._get_quorum_command_output = lambda: None
         self.monitor.add(plugin)
 
         result = plugin._get_ceph_ring_id()
@@ -347,21 +308,16 @@ class CephUsagePluginTest(LandscapeTest):
 
         uuid = "i-am-a-unique-snowflake"
 
-        def return_quorum():
-            return SAMPLE_QUORUM % uuid
-
-        def return_full_disk():
-            return SAMPLE_NEW_TEMPLATE % (100, 0, 100)
-
         # The config file must be present for the plugin to run.
         ceph_client_dir = os.path.join(self.config.data_path, "ceph-client")
         ceph_conf = os.path.join(ceph_client_dir, "ceph.landscape-client.conf")
         os.mkdir(ceph_client_dir)
         touch_file(ceph_conf)
         plugin._ceph_config = ceph_conf
-        plugin._get_quorum_command_output = return_quorum
-        plugin._get_status_command_output = return_full_disk
 
+        plugin._get_quorum_command_output = lambda: SAMPLE_QUORUM % uuid
+        plugin._get_status_command_output = (
+            lambda: SAMPLE_NEW_TEMPLATE % (100, 0, 100))
         self.monitor.add(plugin)
 
         self.reactor.advance(monitor_interval * 2)
