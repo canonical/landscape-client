@@ -7,6 +7,9 @@ from landscape import UPSTREAM_VERSION
 from DistUtilsExtra.command import build_extra, build_i18n
 from DistUtilsExtra.auto import clean_build_tree
 
+# This is just because the path is hard to line-break.
+glib_path = [
+    "glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml"]
 
 setup(name="Landscape Client",
       version=UPSTREAM_VERSION,
@@ -42,8 +45,7 @@ setup(name="Landscape Client",
             "dbus-1/landscape.conf"]),
           ("/usr/share/icons/hicolor/scalable/apps/",
            ["icons/preferences-management-service.svg"]),
-          ("/usr/share/glib-2.0/schemas/",
-           ["glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml"])],
+          ("/usr/share/glib-2.0/schemas/", glib_path)],
       scripts=["scripts/landscape-client",
                "scripts/landscape-config",
                "scripts/landscape-message",
