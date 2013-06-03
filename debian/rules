@@ -88,15 +88,6 @@ binary-arch: build install
 	dh_fixperms
 	dh_shlibdeps
 
-# lucid only
-ifneq (,$(filter $(dist_release),lucid))
-	# We want libpam-modules in lucid
-	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3)" >> $(landscape_common_substvars)
-endif
-# not hardy, not lucid
-ifeq (,$(filter $(dist_release),hardy lucid))
-	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3)" >> $(landscape_common_substvars)
-endif
 # from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
 ifneq (,$(filter $(dist_release),hardy lucid oneiric precise))
 	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)

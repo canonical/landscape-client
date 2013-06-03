@@ -19,7 +19,8 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lsb-base,
          adduser,
          bc,
-         lshw
+         lshw,
+         libpam-modules
 Suggests: ${extra:Suggests}
 # added/changed when we moved the sysinfo manpage from client to common
 # in r582. There is no accompaining "Breaks" because -client requires
