@@ -2,8 +2,8 @@ import os
 import json
 
 from landscape.lib.fs import touch_file
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.manager.cephusage import CephUsage
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.monitor.cephusage import CephUsage
 
 
 SAMPLE_OLD_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
@@ -58,7 +58,7 @@ SAMPLE_QUORUM_OUTPUT = SAMPLE_QUORUM % "ecbb8960-0e21-11e2-b495-83a88f44db01"
 
 
 class CephUsagePluginTest(LandscapeTest):
-    helpers = [ManagerHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         super(CephUsagePluginTest, self).setUp()
@@ -76,7 +76,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_status_command_output = return_none
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
         self.assertIs(None, result)
@@ -93,7 +93,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_status_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
         self.assertEqual(0.12029780564263323, result)
@@ -110,7 +110,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_status_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
         self.assertEqual(0.12029780564263323, result)
@@ -127,7 +127,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_status_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
         self.assertEqual(0.0, result)
@@ -144,7 +144,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_status_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
         self.assertEqual(1.0, result)
@@ -163,7 +163,7 @@ class CephUsagePluginTest(LandscapeTest):
             return output
         plugin._get_status_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_usage()
         self.assertEqual(None, result)
@@ -177,9 +177,9 @@ class CephUsagePluginTest(LandscapeTest):
         self.mstore.set_accepted_types(["ceph-usage"])
 
         plugin = CephUsage(create_time=self.reactor.time)
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
-        self.manager.exchange()
+        self.monitor.exchange()
         self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
     def test_exchange_messages(self):
@@ -193,9 +193,9 @@ class CephUsagePluginTest(LandscapeTest):
         plugin = CephUsage(create_time=self.reactor.time)
         plugin._ceph_usage_points = [(60, 1.0)]
         plugin._ceph_ring_id = ring_id
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
-        self.manager.exchange()
+        self.monitor.exchange()
 
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "ceph-usage",
@@ -207,7 +207,7 @@ class CephUsagePluginTest(LandscapeTest):
         Calling create_message returns an expected message.
         """
         plugin = CephUsage(create_time=self.reactor.time)
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         ring_id = "blah"
         plugin._ceph_usage_points = []
@@ -238,15 +238,16 @@ class CephUsagePluginTest(LandscapeTest):
         accepting their type.
         """
         interval = 30
-        exchange_interval = 300
+        monitor_interval = 300
 
-        plugin = CephUsage(create_time=self.reactor.time,
-                          interval=interval, exchange_interval=300)
+        plugin = CephUsage(
+            interval=interval, monitor_interval=monitor_interval,
+            create_time=self.reactor.time)
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
-        self.reactor.advance(exchange_interval * 2)
-        self.manager.exchange()
+        self.reactor.advance(monitor_interval * 2)
+        self.monitor.exchange()
 
         self.mstore.set_accepted_types(["ceph-usage"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
@@ -265,7 +266,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_quorum_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_ring_id()
         self.assertEqual(uuid, result)
@@ -287,7 +288,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_quorum_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_ring_id()
         self.assertEqual(None, result)
@@ -307,7 +308,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_quorum_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_ring_id()
         self.assertEqual(None, result)
@@ -325,7 +326,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         plugin._get_quorum_command_output = return_output
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         result = plugin._get_ceph_ring_id()
         self.assertEqual(None, result)
@@ -337,11 +338,12 @@ class CephUsagePluginTest(LandscapeTest):
         The _ceph_ring_id member of the plugin is also filled with the output
         of the _get_ceph_ring_id method.
         """
-        exchange_interval = 300
-        interval = exchange_interval
-        plugin = CephUsage(create_time=self.reactor.time,
-                           exchange_interval=exchange_interval,
-                           interval=interval)
+        monitor_interval = 300
+        interval = monitor_interval
+        plugin = CephUsage(
+            interval=interval, monitor_interval=monitor_interval,
+            create_time=self.reactor.time)
+
         uuid = "i-am-a-unique-snowflake"
 
         def return_quorum():
@@ -359,28 +361,12 @@ class CephUsagePluginTest(LandscapeTest):
         plugin._get_quorum_command_output = return_quorum
         plugin._get_status_command_output = return_full_disk
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
-        self.reactor.advance(exchange_interval * 2)
+        self.reactor.advance(monitor_interval * 2)
 
         self.assertEqual([(300, 1.0), (600, 1.0)], plugin._ceph_usage_points)
         self.assertEqual(uuid, plugin._ceph_ring_id)
-
-    def test_flush_persists_data_to_disk(self):
-        """
-        The plugin's C{flush} method is called every C{flush_interval} and
-        creates the perists file.
-        """
-        flush_interval = self.config.flush_interval
-        persist_filename = os.path.join(self.config.data_path, "ceph.bpickle")
-
-        self.assertFalse(os.path.exists(persist_filename))
-        plugin = CephUsage(create_time=self.reactor.time)
-        self.manager.add(plugin)
-
-        self.reactor.advance(flush_interval)
-
-        self.assertTrue(os.path.exists(persist_filename))
 
     def test_resynchronize_message_calls_resynchronize_method(self):
         """
@@ -395,7 +381,7 @@ class CephUsagePluginTest(LandscapeTest):
             self.called = True
         plugin._resynchronize = stub_resynchronize
 
-        self.manager.add(plugin)
+        self.monitor.add(plugin)
 
         self.reactor.fire("resynchronize")
 
