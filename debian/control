@@ -41,6 +41,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
          python-twisted-web,
          python-twisted-names,
+         python-pycurl,
          landscape-common (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: The Landscape administration system client
