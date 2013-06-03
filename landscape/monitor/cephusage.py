@@ -63,8 +63,8 @@ class CephUsage(MonitorPlugin):
             self.registry.broker.send_message(message, urgent=urgent)
 
     def exchange(self, urgent=False):
-        self.registry.broker.call_if_accepted("ceph-usage",
-                                              self.send_message, urgent)
+        self.registry.broker.call_if_accepted(
+            "ceph-usage", self.send_message, urgent)
 
     def run(self):
         self._monitor.ping()
@@ -133,8 +133,8 @@ class CephUsage(MonitorPlugin):
     def _run_ceph_command(self, *args):
         """
         Run the ceph command with the specified options using landscape ceph
-        key.  The keyring is expected to contain a key for the
-        "client.landscape-client" id.
+        key.  The keyring is expected to contain a configuration stanza with a
+        key for the "client.landscape-client" id.
         """
         command = [
             "ceph", "--conf", self._ceph_config, "--id", "landscape-client"]
