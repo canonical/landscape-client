@@ -15,6 +15,7 @@ class CephUsage(MonitorPlugin):
     Plugin that captures Ceph usage information. This only works if the client
     runs on one of the Ceph monitor nodes, and it noops otherwise.
     """
+
     persist_name = "ceph-usage"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None

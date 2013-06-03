@@ -6,53 +6,54 @@ from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.cephusage import CephUsage
 
 
-SAMPLE_OLD_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
-"unclean\n"
-"monmap e2: 3 mons at {server-269703f4-5217-495a-b7f2-b3b3473c1719="
-"10.55.60.238:6789/0,server-3f370698-f3b0-4cbe-8db9-a18e304c952b="
-"10.55.60.141:6789/0,server-f635fa07-e36f-453c-b3d5-b4ce86fbc6ff="
-"10.55.60.241:6789/0}, election epoch 8, quorum 0,1,2 "
-"server-269703f4-5217-495a-b7f2-b3b3473c1719,"
-"server-3f370698-f3b0-4cbe-8db9-a18e304c952b,"
-"server-f635fa07-e36f-453c-b3d5-b4ce86fbc6ff\n   "
-"osdmap e9: 3 osds: 3 up, 3 in\n    "
-"pgmap v114: 192 pgs: 186 active+clean, 6 active+degraded; "
-"0 bytes data, %s MB used, %s MB / %s MB avail\n   "
-"mdsmap e1: 0/0/1 up\n\n")
+SAMPLE_OLD_TEMPLATE = (
+    "   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
+    "unclean\n"
+    "monmap e2: 3 mons at {server-269703f4-5217-495a-b7f2-b3b3473c1719="
+    "10.55.60.238:6789/0,server-3f370698-f3b0-4cbe-8db9-a18e304c952b="
+    "10.55.60.141:6789/0,server-f635fa07-e36f-453c-b3d5-b4ce86fbc6ff="
+    "10.55.60.241:6789/0}, election epoch 8, quorum 0,1,2 "
+    "server-269703f4-5217-495a-b7f2-b3b3473c1719,"
+    "server-3f370698-f3b0-4cbe-8db9-a18e304c952b,"
+    "server-f635fa07-e36f-453c-b3d5-b4ce86fbc6ff\n   "
+    "osdmap e9: 3 osds: 3 up, 3 in\n    "
+    "pgmap v114: 192 pgs: 186 active+clean, 6 active+degraded; "
+    "0 bytes data, %s MB used, %s MB / %s MB avail\n   "
+    "mdsmap e1: 0/0/1 up\n\n")
 
-SAMPLE_NEW_TEMPLATE = ("health HEALTH_OK\n"
-"   monmap e2: 3 mons at {inst-007=192.168.64.139:6789/0,"
-"inst-008=192.168.64.140:6789/0,inst-009=192.168.64.141:6789/0}, "
-"election epoch 6, quorum 0,1,2 inst-007,inst-008,inst-009\n"
-"   osdmap e28: 3 osds: 3 up, 3 in\n"
-"    pgmap v193861: 208 pgs: 208 active+clean; 5514 MB data, %s MB used, "
-"%s MB / %s MB avail; 1739KB/s wr, 54op/s\n"
-"   mdsmap e1: 0/0/1 up\n")
+SAMPLE_NEW_TEMPLATE = (
+    "health HEALTH_OK\n"
+    "   monmap e2: 3 mons at {inst-007=192.168.64.139:6789/0,"
+    "inst-008=192.168.64.140:6789/0,inst-009=192.168.64.141:6789/0}, "
+    "election epoch 6, quorum 0,1,2 inst-007,inst-008,inst-009\n"
+    "   osdmap e28: 3 osds: 3 up, 3 in\n"
+    "    pgmap v193861: 208 pgs: 208 active+clean; 5514 MB data, %s MB used, "
+    "%s MB / %s MB avail; 1739KB/s wr, 54op/s\n"
+    "   mdsmap e1: 0/0/1 up\n")
 
 SAMPLE_OUTPUT = SAMPLE_NEW_TEMPLATE % (4296, 53880, 61248)
 SAMPLE_OLD_OUTPUT = SAMPLE_OLD_TEMPLATE % (4296, 53880, 61248)
 
-SAMPLE_QUORUM = (''
-'{ "election_epoch": 8,\n'
-'  "quorum": [\n'
-'        0,\n'
-'        1,\n'
-'        2],\n'
-'  "monmap": { "epoch": 2,\n'
-'      "fsid": "%s",\n'
-'      "modified": "2013-01-13 16:58:00.141737",\n'
-'      "created": "0.000000",\n'
-'      "mons": [\n'
-'            { "rank": 0,\n'
-'              "name": "server-1be72d64-0ff2-4ac1-ad13-1c06c8201011",\n'
-'              "addr": "10.55.60.188:6789\/0"},\n'
-'            { "rank": 1,\n'
-'              "name": "server-e847f147-ed13-46c2-8e6d-768aa32657ab",\n'
-'              "addr": "10.55.60.202:6789\/0"},\n'
-'            { "rank": 2,\n'
-'              "name": "server-3c831a0b-51d5-43a9-95d5-63644f0965cc",\n'
-'              "addr": "10.55.60.205:6789\/0"}]}}\n'
-)
+SAMPLE_QUORUM = (
+    '{ "election_epoch": 8,\n'
+    '  "quorum": [\n'
+    '        0,\n'
+    '        1,\n'
+    '        2],\n'
+    '  "monmap": { "epoch": 2,\n'
+    '      "fsid": "%s",\n'
+    '      "modified": "2013-01-13 16:58:00.141737",\n'
+    '      "created": "0.000000",\n'
+    '      "mons": [\n'
+    '            { "rank": 0,\n'
+    '              "name": "server-1be72d64-0ff2-4ac1-ad13-1c06c8201011",\n'
+    '              "addr": "10.55.60.188:6789\/0"},\n'
+    '            { "rank": 1,\n'
+    '              "name": "server-e847f147-ed13-46c2-8e6d-768aa32657ab",\n'
+    '              "addr": "10.55.60.202:6789\/0"},\n'
+    '            { "rank": 2,\n'
+    '              "name": "server-3c831a0b-51d5-43a9-95d5-63644f0965cc",\n'
+    '              "addr": "10.55.60.205:6789\/0"}]}}\n')
 
 SAMPLE_QUORUM_OUTPUT = SAMPLE_QUORUM % "ecbb8960-0e21-11e2-b495-83a88f44db01"
 
