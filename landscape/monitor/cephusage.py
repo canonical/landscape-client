@@ -14,6 +14,20 @@ class CephUsage(MonitorPlugin):
     """
     Plugin that captures Ceph usage information. This only works if the client
     runs on one of the Ceph monitor nodes, and it noops otherwise.
+
+    The plugin requires the 'ceph' command to be available, which is run with a
+    config file in <data_path>/ceph-client/ceph.landscape-client.conf with the
+    following config:
+
+    [global]
+    auth supported = cephx
+    keyring = <keyring-file>
+    mon host = <ip>:6789
+
+    The configured keyring can be generated with:
+
+    ceph-authtool <keyring-file> --create-keyring
+        --name=client.landscape-client --add-key=<key>
     """
 
     persist_name = "ceph-usage"
