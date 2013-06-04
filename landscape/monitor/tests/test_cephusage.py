@@ -216,7 +216,8 @@ class CephUsagePluginTest(LandscapeTest):
         """
         uuid = "i-am-a-uuid"
         self.plugin._get_quorum_command_output = lambda: SAMPLE_QUORUM % uuid
-        self.assertEqual(uuid, self.plugin._get_ceph_ring_id())
+        self.assertEqual(
+            uuid, self.successResultOf(self.plugin._get_ceph_ring_id()))
 
     def test_wb_get_ceph_ring_id_valid_json_no_information(self):
         """
@@ -233,8 +234,8 @@ class CephUsagePluginTest(LandscapeTest):
             return json.dumps(data)
 
         self.plugin._get_quorum_command_output = return_output
-
-        self.assertIs(None, self.plugin._get_ceph_ring_id())
+        self.assertIs(
+            None, self.successResultOf(self.plugin._get_ceph_ring_id()))
 
     def test_wb_get_ceph_ring_id_no_information(self):
         """
@@ -246,7 +247,8 @@ class CephUsagePluginTest(LandscapeTest):
         self.log_helper.ignore_errors(error)
 
         self.plugin._get_quorum_command_output = lambda: "Blah\nblah"
-        self.assertIs(None, self.plugin._get_ceph_ring_id())
+        self.assertIs(
+            None, self.successResultOf(self.plugin._get_ceph_ring_id()))
 
     def test_wb_get_ceph_ring_id_command_exception(self):
         """
@@ -255,7 +257,8 @@ class CephUsagePluginTest(LandscapeTest):
         returns None and logs no error.
         """
         self.plugin._get_quorum_command_output = lambda: None
-        self.assertIs(None, self.plugin._get_ceph_ring_id())
+        self.assertIs(
+            None, self.successResultOf(self.plugin._get_ceph_ring_id()))
 
     def test_plugin_run(self):
         """

@@ -4,9 +4,11 @@ import json
 import logging
 import re
 
+from twisted.internet.defer import inlineCallbacks, returnValue
+
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
-from landscape.lib.command import run_command, CommandError
+from landscape.lib.twisted_util import spawn_process
 from landscape.monitor.plugin import MonitorPlugin
 
 
@@ -83,6 +85,7 @@ class CephUsage(MonitorPlugin):
         self.registry.broker.call_if_accepted(
             "ceph-usage", self.send_message, urgent)
 
+    @inlineCallbacks
     def run(self):
         self._monitor.ping()
 
@@ -90,14 +93,14 @@ class CephUsage(MonitorPlugin):
         # ceph machine or ceph is set up yet. No need to run anything in this
         # case.
         if self._ceph_config is None or not os.path.exists(self._ceph_config):
-            return None
+            returnValue(None)
 
         # Extract the ceph ring Id and cache it.
         if self._ceph_ring_id is None:
-            self._ceph_ring_id = self._get_ceph_ring_id()
+            self._ceph_ring_id = yield self._get_ceph_ring_id()
 
         new_timestamp = int(self._create_time())
-        new_ceph_usage = self._get_ceph_usage()
+        new_ceph_usage = yield self._get_ceph_usage()
 
         step_data = None
         if new_ceph_usage is not None:
@@ -130,10 +133,11 @@ class CephUsage(MonitorPlugin):
     def _get_status_command_output(self):
         return self._run_ceph_command("status")
 
+    @inlineCallbacks
     def _get_ceph_ring_id(self):
-        output = self._get_quorum_command_output()
+        output = yield self._get_quorum_command_output()
         if output is None:
-            return None
+            returnValue(None)
 
         try:
             quorum_status = json.loads(output)
@@ -141,8 +145,8 @@ class CephUsage(MonitorPlugin):
         except:
             logging.error(
                 "Could not get ring_id from output: '%s'." % output)
-            return None
-        return ring_id
+            returnValue(None)
+        returnValue(ring_id)
 
     def _get_quorum_command_output(self):
         return self._run_ceph_command("quorum_status")
@@ -153,13 +157,11 @@ class CephUsage(MonitorPlugin):
         key.  The keyring is expected to contain a configuration stanza with a
         key for the "client.landscape-client" id.
         """
-        command = [
-            "ceph", "--conf", self._ceph_config, "--id", "landscape-client"]
-        command.extend(args)
-        try:
-            output = run_command(" ".join(command))
-        except (OSError, CommandError):
-            # If the command line client isn't available, we assume it's not a
-            # ceph monitor machine.
-            return None
-        return output
+        params = ["--conf", self._ceph_config, "--id", "landscape-client"]
+        params.extend(args)
+        deferred = spawn_process("ceph", args=params)
+        # If the command line client isn't available, we assume it's not a ceph
+        # monitor machine.
+        deferred.addCallback(
+            lambda (out, err, code): out if code == 0 else None)
+        return deferred
