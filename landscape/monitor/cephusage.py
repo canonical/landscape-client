@@ -28,6 +28,9 @@ class CephUsage(MonitorPlugin):
 
     ceph-authtool <keyring-file> --create-keyring
         --name=client.landscape-client --add-key=<key>
+
+    The landscape-client charm automatically provides the client configuration
+    and key when deployed as subordinate of a ceph node.
     """
 
     persist_name = "ceph-usage"

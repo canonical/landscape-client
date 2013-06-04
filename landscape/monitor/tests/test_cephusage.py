@@ -66,7 +66,7 @@ class CephUsagePluginTest(LandscapeTest):
         self.mstore = self.broker_service.message_store
         self.plugin = CephUsage(create_time=self.reactor.time)
 
-    def test_get_ceph_usage_if_command_not_found(self):
+    def test_wb_get_ceph_usage_if_command_not_found(self):
         """
         When the ceph command cannot be found or accessed, the
         C{_get_ceph_usage} method returns None.
@@ -76,7 +76,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.assertIs(None, self.plugin._get_ceph_usage())
 
-    def test_get_ceph_usage(self):
+    def test_wb_get_ceph_usage(self):
         """
         When the ceph command call returns output, the _get_ceph_usage method
         returns the percentage of used space.
@@ -86,7 +86,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.assertEqual(0.12029780564263323, self.plugin._get_ceph_usage())
 
-    def test_get_ceph_usage_old_format(self):
+    def test_wb_get_ceph_usage_old_format(self):
         """
         The _get_ceph_usage method understands command output in the "old"
         format (the output changed around version 0.56.1)
@@ -96,7 +96,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.assertEqual(0.12029780564263323, self.plugin._get_ceph_usage())
 
-    def test_get_ceph_usage_empty_disk(self):
+    def test_wb_get_ceph_usage_empty_disk(self):
         """
         When the ceph command call returns output for empty disks, the
         _get_ceph_usage method returns 0.0 .
@@ -107,7 +107,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.assertEqual(0.0, self.plugin._get_ceph_usage())
 
-    def test_get_ceph_usage_full_disk(self):
+    def test_wb_get_ceph_usage_full_disk(self):
         """
         When the ceph command call returns output for empty disks, the
         _get_ceph_usage method returns 1.0 .
@@ -118,7 +118,7 @@ class CephUsagePluginTest(LandscapeTest):
         self.monitor.add(self.plugin)
         self.assertEqual(1.0, self.plugin._get_ceph_usage())
 
-    def test_get_ceph_usage_no_information(self):
+    def test_wb_get_ceph_usage_no_information(self):
         """
         When the ceph command outputs something that does not contain the
         disk usage information, the _get_ceph_usage method returns None.
@@ -209,7 +209,7 @@ class CephUsagePluginTest(LandscapeTest):
         self.mstore.set_accepted_types(["ceph-usage"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
-    def test_get_ceph_ring_id(self):
+    def test_wb_get_ceph_ring_id(self):
         """
         When given a well formatted command output, the _get_ceph_ring_id()
         method returns the correct ring_id.
@@ -218,7 +218,7 @@ class CephUsagePluginTest(LandscapeTest):
         self.plugin._get_quorum_command_output = lambda: SAMPLE_QUORUM % uuid
         self.assertEqual(uuid, self.plugin._get_ceph_ring_id())
 
-    def test_get_ceph_ring_id_valid_json_no_information(self):
+    def test_wb_get_ceph_ring_id_valid_json_no_information(self):
         """
         When the _get_quorum_command_output method returns something without
         the ring uuid information present but that is valid JSON, the
@@ -236,7 +236,7 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.assertIs(None, self.plugin._get_ceph_ring_id())
 
-    def test_get_ceph_ring_id_no_information(self):
+    def test_wb_get_ceph_ring_id_no_information(self):
         """
         When the _get_quorum_command_output method returns something without
         the ring uuid information present, the _get_ceph_ring_id method returns
@@ -248,7 +248,7 @@ class CephUsagePluginTest(LandscapeTest):
         self.plugin._get_quorum_command_output = lambda: "Blah\nblah"
         self.assertIs(None, self.plugin._get_ceph_ring_id())
 
-    def test_get_ceph_ring_id_command_exception(self):
+    def test_wb_get_ceph_ring_id_command_exception(self):
         """
         When the _get_quorum_command_output method returns None (if an
         exception happened for example), the _get_ceph_ring_id method
