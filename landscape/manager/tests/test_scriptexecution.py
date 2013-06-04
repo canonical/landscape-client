@@ -160,13 +160,16 @@ class RunScriptTests(LandscapeTest):
         We should be setting the umask to 0022 before executing a script, and
         restoring it to the previous value when finishing.
         """
+        # Get original umask.
+        old_umask = os.umask(0)
+        os.umask(old_umask)
         mock_umask = self.mocker.replace("os.umask")
         mock_umask(0022)
-        self.mocker.result(0077)
-        mock_umask(0077)
+        self.mocker.result(old_umask)
+        mock_umask(old_umask)
         self.mocker.replay()
         result = self.plugin.run_script("/bin/sh", "umask")
-        result.addCallback(self.assertEqual, "0022\n")
+        result.addCallback(self.assertEqual, "%04o\n" % old_umask)
         return result
 
     def test_restore_umask_in_event_of_error(self):
