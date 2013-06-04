@@ -10,5 +10,4 @@ usr/bin/landscape-release-upgrader
 usr/bin/landscape-is-cloud-managed
 usr/bin/landscape-dbus-proxy
 usr/share/landscape/cloud-default.conf
-etc/dbus-1/system.d/landscape.conf
 usr/lib/landscape

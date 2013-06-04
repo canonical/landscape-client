@@ -64,10 +64,10 @@ install: build
 
 	python setup.py install --root $(root_dir) $(py_setup_install_args)
 
+	# Keep in mind that some installed files are defined in setup.py
 	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
 	install -D -o root -g root -m 644 debian/cloud-default.conf $(root_dir)/usr/share/landscape/cloud-default.conf
 	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)/usr/lib/landscape/apt-update
-	install -D -o root -g root -m 644 dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 
 binary-indep:
 # do nothing
@@ -88,29 +88,8 @@ binary-arch: build install
 	dh_fixperms
 	dh_shlibdeps
 
-# hardy only
-ifneq (,$(findstring $(dist_release),hardy))
-	# We depend on bug-fixed versions of python-dbus and pycurl on hardy
-	echo "extra:Depends=python-dbus" >> $(landscape_common_substvars)
-	echo "extra:Depends=python-pycurl, hal" >> $(landscape_client_substvars)
-	# The python-image-store-proxy package is needed for the eucalyptus plugin
-	echo "extra:Suggests=python-image-store-proxy" >> $(landscape_common_substvars)
-endif
-# lucid only
-ifneq (,$(filter $(dist_release),lucid))
-	# We want libpam-modules in lucid
-	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-dbus" >> $(landscape_common_substvars)
-	echo "extra:Depends=python-pycurl, hal" >> $(landscape_client_substvars)
-endif
-# not hardy, not lucid
-ifeq (,$(filter $(dist_release),hardy lucid))
-	# Starting natty, no more hal or dbus
-	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3)" >> $(landscape_common_substvars)
-	echo "extra:Depends=python-pycurl, gir1.2-gudev-1.0 (>= 165-0ubuntu2), python-gi" >> $(landscape_client_substvars)
-	echo "extra:Suggests=python-dbus, hal" >> $(landscape_client_substvars)
-endif
 # from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
-ifneq (,$(filter $(dist_release),hardy lucid oneiric precise))
+ifneq (,$(filter $(dist_release),lucid precise))
 	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
 endif
 

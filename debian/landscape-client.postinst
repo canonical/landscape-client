@@ -108,7 +108,8 @@ END
             rm $very_old_cron_job
         fi
 
-        # Check if we're upgrading from a D-Bus version
+        # Check if we're upgrading from a D-Bus version like the client in the
+        # lucid archives.
         if ! [ -z $2 ]; then
             if dpkg --compare-versions $2 lt 1.5.1; then
                 # Launch a proxy service that will forward requests over DBus
