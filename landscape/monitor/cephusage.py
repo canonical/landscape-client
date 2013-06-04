@@ -115,38 +115,44 @@ class CephUsage(MonitorPlugin):
         Grab the ceph usage data by parsing the output of the "ceph status"
         command output.
         """
-        output = self._get_status_command_output()
-        if output is None:
-            return None
 
-        result = self._usage_regexp.match(output)
-        if not result:
-            logging.error("Could not parse command output: '%s'." % output)
-            return None
+        def parse(output):
+            if output is None:
+                return None
 
-        (used, available, total) = result.groups()
-        # Note: used + available is NOT equal to total (there is some used
-        # space for duplication and system info etc...)
-        filled = int(total) - int(available)
-        return filled / float(total)
+            result = self._usage_regexp.match(output)
+            if not result:
+                logging.error("Could not parse command output: '%s'." % output)
+                return None
+
+            (used, available, total) = result.groups()
+            # Note: used + available is NOT equal to total (there is some used
+            # space for duplication and system info etc...)
+            filled = int(total) - int(available)
+            return filled / float(total)
+
+        return self._get_status_command_output().addCallback(parse)
 
     def _get_status_command_output(self):
         return self._run_ceph_command("status")
 
-    @inlineCallbacks
     def _get_ceph_ring_id(self):
-        output = yield self._get_quorum_command_output()
-        if output is None:
-            returnValue(None)
+        """Extract ceph ring id from ceph command output."""
 
-        try:
-            quorum_status = json.loads(output)
-            ring_id = quorum_status["monmap"]["fsid"]
-        except:
-            logging.error(
-                "Could not get ring_id from output: '%s'." % output)
-            returnValue(None)
-        returnValue(ring_id)
+        def parse(output):
+            if output is None:
+                return  None
+
+            try:
+                quorum_status = json.loads(output)
+                ring_id = quorum_status["monmap"]["fsid"]
+            except:
+                logging.error(
+                    "Could not get ring_id from output: '%s'." % output)
+                return None
+            return ring_id
+
+        return self._get_quorum_command_output().addCallback(parse)
 
     def _get_quorum_command_output(self):
         return self._run_ceph_command("quorum_status")

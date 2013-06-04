@@ -1,6 +1,8 @@
 import os
 import json
 
+from twisted.internet.defer import succeed
+
 from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.cephusage import CephUsage
@@ -71,30 +73,36 @@ class CephUsagePluginTest(LandscapeTest):
         When the ceph command cannot be found or accessed, the
         C{_get_ceph_usage} method returns None.
         """
-        self.plugin._get_status_command_output = lambda: None
+        self.plugin._get_status_command_output = lambda: succeed(None)
         self.monitor.add(self.plugin)
 
-        self.assertIs(None, self.plugin._get_ceph_usage())
+        self.assertIs(
+            None, self.successResultOf(self.plugin._get_ceph_usage()))
 
     def test_wb_get_ceph_usage(self):
         """
         When the ceph command call returns output, the _get_ceph_usage method
         returns the percentage of used space.
         """
-        self.plugin._get_status_command_output = lambda: SAMPLE_OUTPUT
+        self.plugin._get_status_command_output = lambda: succeed(SAMPLE_OUTPUT)
         self.monitor.add(self.plugin)
 
-        self.assertEqual(0.12029780564263323, self.plugin._get_ceph_usage())
+        self.assertEqual(
+            0.12029780564263323,
+            self.successResultOf(self.plugin._get_ceph_usage()))
 
     def test_wb_get_ceph_usage_old_format(self):
         """
         The _get_ceph_usage method understands command output in the "old"
         format (the output changed around version 0.56.1)
         """
-        self.plugin._get_status_command_output = lambda: SAMPLE_OLD_OUTPUT
+        self.plugin._get_status_command_output = (
+            lambda: succeed(SAMPLE_OLD_OUTPUT))
         self.monitor.add(self.plugin)
 
-        self.assertEqual(0.12029780564263323, self.plugin._get_ceph_usage())
+        self.assertEqual(
+            0.12029780564263323,
+            self.successResultOf(self.plugin._get_ceph_usage()))
 
     def test_wb_get_ceph_usage_empty_disk(self):
         """
@@ -102,10 +110,11 @@ class CephUsagePluginTest(LandscapeTest):
         _get_ceph_usage method returns 0.0 .
         """
         self.plugin._get_status_command_output = (
-            lambda: SAMPLE_NEW_TEMPLATE % (0, 100, 100))
+            lambda: succeed(SAMPLE_NEW_TEMPLATE % (0, 100, 100)))
         self.monitor.add(self.plugin)
 
-        self.assertEqual(0.0, self.plugin._get_ceph_usage())
+        self.assertEqual(
+            0.0, self.successResultOf(self.plugin._get_ceph_usage()))
 
     def test_wb_get_ceph_usage_full_disk(self):
         """
@@ -113,10 +122,11 @@ class CephUsagePluginTest(LandscapeTest):
         _get_ceph_usage method returns 1.0 .
         """
         self.plugin._get_status_command_output = (
-            lambda: SAMPLE_NEW_TEMPLATE % (100, 0, 100))
+            lambda: succeed(SAMPLE_NEW_TEMPLATE % (100, 0, 100)))
 
         self.monitor.add(self.plugin)
-        self.assertEqual(1.0, self.plugin._get_ceph_usage())
+        self.assertEqual(
+            1.0, self.successResultOf(self.plugin._get_ceph_usage()))
 
     def test_wb_get_ceph_usage_no_information(self):
         """
@@ -127,10 +137,11 @@ class CephUsagePluginTest(LandscapeTest):
         error = "Could not parse command output: '%s'" % output
         self.log_helper.ignore_errors(error)
 
-        self.plugin._get_status_command_output = lambda: output
+        self.plugin._get_status_command_output = lambda: succeed(output)
 
         self.monitor.add(self.plugin)
-        self.assertIs(None, self.plugin._get_ceph_usage())
+        self.assertIs(
+            None, self.successResultOf(self.plugin._get_ceph_usage()))
 
     def test_never_exchange_empty_messages(self):
         """
@@ -215,7 +226,8 @@ class CephUsagePluginTest(LandscapeTest):
         method returns the correct ring_id.
         """
         uuid = "i-am-a-uuid"
-        self.plugin._get_quorum_command_output = lambda: SAMPLE_QUORUM % uuid
+        self.plugin._get_quorum_command_output = (
+            lambda: succeed(SAMPLE_QUORUM % uuid))
         self.assertEqual(
             uuid, self.successResultOf(self.plugin._get_ceph_ring_id()))
 
@@ -231,7 +243,7 @@ class CephUsagePluginTest(LandscapeTest):
         def return_output():
             # Valid JSON - just without the info we're looking for.
             data = {"election_epoch": 8}
-            return json.dumps(data)
+            return succeed(json.dumps(data))
 
         self.plugin._get_quorum_command_output = return_output
         self.assertIs(
@@ -246,7 +258,7 @@ class CephUsagePluginTest(LandscapeTest):
         error = "Could not get ring_id from output: 'Blah\nblah'."
         self.log_helper.ignore_errors(error)
 
-        self.plugin._get_quorum_command_output = lambda: "Blah\nblah"
+        self.plugin._get_quorum_command_output = lambda: succeed("Blah\nblah")
         self.assertIs(
             None, self.successResultOf(self.plugin._get_ceph_ring_id()))
 
@@ -256,7 +268,7 @@ class CephUsagePluginTest(LandscapeTest):
         exception happened for example), the _get_ceph_ring_id method
         returns None and logs no error.
         """
-        self.plugin._get_quorum_command_output = lambda: None
+        self.plugin._get_quorum_command_output = lambda: succeed(None)
         self.assertIs(
             None, self.successResultOf(self.plugin._get_ceph_ring_id()))
 
@@ -282,9 +294,10 @@ class CephUsagePluginTest(LandscapeTest):
         touch_file(ceph_conf)
         plugin._ceph_config = ceph_conf
 
-        plugin._get_quorum_command_output = lambda: SAMPLE_QUORUM % uuid
+        plugin._get_quorum_command_output = (
+            lambda: succeed(SAMPLE_QUORUM % uuid))
         plugin._get_status_command_output = (
-            lambda: SAMPLE_NEW_TEMPLATE % (100, 0, 100))
+            lambda: succeed(SAMPLE_NEW_TEMPLATE % (100, 0, 100)))
         self.monitor.add(plugin)
 
         self.reactor.advance(monitor_interval * 2)
