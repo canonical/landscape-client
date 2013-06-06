@@ -27,8 +27,7 @@ class ComputerInfo(MonitorPlugin):
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
-        self._meta_data_path = os.path.join(registry.config.data_path,
-                                            "meta-data.d")
+        self._meta_data_path = registry.config.meta_data_path
         self.call_on_accepted("computer-info",
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",

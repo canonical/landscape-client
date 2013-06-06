@@ -365,6 +365,14 @@ class Configuration(BaseConfiguration):
         """Return the path to the directory where Unix sockets are created."""
         return os.path.join(self.data_path, "sockets")
 
+    @property
+    def meta_data_path(self):
+        """
+        Return the path to the directory where additional meta-data files can
+        be stored.
+        """
+        return os.path.join(self.data_path, "meta-data.d")
+
 
 def get_versioned_persist(service):
     """Get a L{Persist} database with upgrade rules applied.
