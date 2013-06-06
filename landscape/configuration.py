@@ -541,6 +541,8 @@ def setup(config):
     If we are not configured to be silent then interrogate the user to provide
     necessary details for registration.
     """
+    bootstrap_tree(config)
+
     sysvconfig = SysVConfig()
     if not config.no_start:
         if config.silent:
@@ -577,6 +579,15 @@ def setup(config):
             sys.exit(exit_code)
 
 
+def bootstrap_tree(config):
+    """Create the client directories tree."""
+    bootstrap_list = [
+        BootstrapDirectory("$data_path", "landscape", "root", 0755),
+        BootstrapDirectory("$meta_data_path", "landscape", "landscape", 0755)]
+    BootstrapList(bootstrap_list).bootstrap(
+        data_path=config.data_path, meta_data_path=config.meta_data_path)
+
+
 def store_public_key_data(config, certificate_data):
     """
     Write out the data from the SSL certificate provided to us, either from a
@@ -588,8 +599,6 @@ def store_public_key_data(config, certificate_data):
     @return the L{BrokerConfiguration} object that was passed in, updated to
     reflect the path of the ssl_public_key file.
     """
-    if not os.path.exists(config.data_path):
-        os.mkdir(config.data_path)
     key_filename = os.path.join(config.data_path,
         os.path.basename(config.get_config_filename() + ".ssl_public_key"))
     print_text("Writing SSL CA certificate to %s..." % key_filename)
@@ -707,15 +716,6 @@ def main(args):
 
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
-
-    if config.init:
-        # In init mode, just create directories and exit.
-        bootstrap_list = [
-            BootstrapDirectory("$data_path", "landscape", "root", 0755),
-            BootstrapDirectory(
-                "$data_path/meta-data.d", "landscape", "landscape", 0755)]
-        BootstrapList(bootstrap_list).bootstrap(data_path=config.data_path)
-        sys.exit(0)
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:

@@ -644,6 +644,9 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.mocker.count(0, None)
         self.mocker.result(0)
 
+        self.mocker.replace("landscape.configuration.bootstrap_tree")(ANY)
+        self.mocker.count(0, None)
+
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
         config_file = self.makeFile("")
@@ -704,6 +707,21 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.assertEqual(config.https_proxy, "https://new.proxy")
         self.assertEqual(config.include_manager_plugins, "")
         self.assertEqual(config.tags, u"glasgow, laptop")
+
+    def xxx(self):
+        self.mocker.replace("pwd.getpwnam")("landscape")
+        self.mocker.count(0, None)
+
+        class FakePwNam(object):
+            pw_uid = 1234
+            pw_gid = 1234
+
+        self.mocker.result(FakePwNam())
+
+        self.mocker.replace("os.chown")(ANY, 1234, 0)
+        self.mocker.count(0, None)
+        self.mocker.replace("os.chown")(ANY, 1234, 1234)
+        self.mocker.count(0, None)
 
     def test_silent_setup(self):
         """
@@ -2060,7 +2078,9 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         configuration file with .ssl_public_key.
         """
         config = self.get_config([])
-        key_filename = os.path.join(config.data_path,
+        os.mkdir(config.data_path)
+        key_filename = os.path.join(
+            config.data_path,
             os.path.basename(config.get_config_filename()) + ".ssl_public_key")
 
         print_text_mock = self.mocker.replace(print_text)
@@ -2071,25 +2091,6 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         self.assertEqual(key_filename,
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
-
-    def test_store_public_key_data_doesnt_create_dir_if_present(self):
-        """
-        If the data-path directory already exists, L{store_public_key_data}
-        doesn't fail.
-        """
-        config = self.get_config([])
-        key_filename = os.path.join(
-            config.data_path,
-            os.path.basename(config.get_config_filename()) + ".ssl_public_key")
-        os.mkdir(config.data_path)
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock(
-            "Writing SSL CA certificate to %s..." % key_filename)
-        self.mocker.replay()
-
-        self.assertEqual(
-            key_filename, store_public_key_data(config, "123456789"))
 
     def test_fetch_base64_ssl(self):
         """
