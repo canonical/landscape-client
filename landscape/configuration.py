@@ -699,18 +699,14 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
 
 def main(args):
     config = LandscapeSetupConfiguration()
-    if args in (["-h"], ["--help"]):
-        # We let landscape-config --help to be run as normal user
-        config.load(args)
-
-    if os.getuid() != 0:
-        sys.exit("landscape-config must be run as root.")
-
     try:
         config.load(args)
     except ImportOptionError, error:
         print_text(str(error), error=True)
         sys.exit(1)
+
+    if os.getuid() != 0:
+        sys.exit("landscape-config must be run as root.")
 
     if config.init:
         # In init mode, just create directories and exit.
