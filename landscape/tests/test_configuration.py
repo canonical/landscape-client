@@ -15,7 +15,7 @@ from landscape.configuration import (
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
-    fetch_base64_ssl_public_certificate)
+    fetch_base64_ssl_public_certificate, bootstrap_tree)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -26,8 +26,9 @@ from landscape.broker.amp import RemoteBroker
 
 class LandscapeConfigurationTest(LandscapeTest):
 
-    def get_config(self, args):
-        data_path = os.path.join(self.makeDir(), "client")
+    def get_config(self, args, data_path=None):
+        if data_path is None:
+            data_path = os.path.join(self.makeDir(), "client")
 
         if "--config" not in args and "-c" not in args:
             filename = self.makeFile("""
@@ -634,6 +635,27 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.run()
 
 
+class BootstrapTreeTest(LandscapeConfigurationTest):
+
+    def test_bootstrap_tree(self):
+        """
+        The L{bootstrap_tree} method creates the client dir and /meta-data.d
+        under it with the correct permissions.
+        """
+        client_path = self.makeDir()
+        meta_data_path = os.path.join(client_path, "meta-data.d")
+
+        mock_chmod = self.mocker.replace("os.chmod")
+        mock_chmod(client_path, 0755)
+        mock_chmod(meta_data_path, 0755)
+        self.mocker.replay()
+
+        config = self.get_config([], data_path=client_path)
+        bootstrap_tree(config)
+        self.assertTrue(os.path.isdir(client_path))
+        self.assertTrue(os.path.isdir(meta_data_path))
+
+
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     helpers = [EnvironSaverHelper]
@@ -644,6 +666,8 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.mocker.count(0, None)
         self.mocker.result(0)
 
+        # Make bootstrap_tree a no-op as a a non-root user can' change
+        # ownership.
         self.mocker.replace("landscape.configuration.bootstrap_tree")(ANY)
         self.mocker.count(0, None)
 
