@@ -20,6 +20,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError, HTTPCodeError
+from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.reactor import LandscapeReactor
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.config import BrokerConfiguration
@@ -154,6 +155,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_option("--disable", action="store_true", default=False,
                           help="Stop running clients and disable start at "
                                "boot.")
+        parser.add_option("--init", action="store_true", default=False,
+                          help="Set up the client directories structure.")
         return parser
 
 
@@ -708,6 +711,15 @@ def main(args):
     except ImportOptionError, error:
         print_text(str(error), error=True)
         sys.exit(1)
+
+    if config.init:
+        # In init mode, just create directories and exit.
+        bootstrap_list = [
+            BootstrapDirectory("$data_path", "landscape", "root", 0755),
+            BootstrapDirectory(
+                "$data_path/meta-data.d", "landscape", "landscape", 0755)]
+        BootstrapList(bootstrap_list).bootstrap(data_path=config.data_path)
+        sys.exit(0)
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:
