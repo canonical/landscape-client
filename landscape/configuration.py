@@ -156,7 +156,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                           help="Stop running clients and disable start at "
                                "boot.")
         parser.add_option("--init", action="store_true", default=False,
-                          help="Set up the client directories structure.")
+                          help="Set up the client directories structure "
+                               "and exit.")
         return parser
 
 
@@ -716,6 +717,10 @@ def main(args):
 
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
+
+    if config.init:
+        bootstrap_tree(config)
+        sys.exit(0)
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:
