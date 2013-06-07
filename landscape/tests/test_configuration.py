@@ -639,7 +639,7 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
 
     def test_bootstrap_tree(self):
         """
-        The L{bootstrap_tree} method creates the client dir and /meta-data.d
+        The L{bootstrap_tree} function creates the client dir and /meta-data.d
         under it with the correct permissions.
         """
         client_path = self.makeDir()
@@ -731,21 +731,6 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.assertEqual(config.https_proxy, "https://new.proxy")
         self.assertEqual(config.include_manager_plugins, "")
         self.assertEqual(config.tags, u"glasgow, laptop")
-
-    def xxx(self):
-        self.mocker.replace("pwd.getpwnam")("landscape")
-        self.mocker.count(0, None)
-
-        class FakePwNam(object):
-            pw_uid = 1234
-            pw_gid = 1234
-
-        self.mocker.result(FakePwNam())
-
-        self.mocker.replace("os.chown")(ANY, 1234, 0)
-        self.mocker.count(0, None)
-        self.mocker.replace("os.chown")(ANY, 1234, 1234)
-        self.mocker.count(0, None)
 
     def test_silent_setup(self):
         """
