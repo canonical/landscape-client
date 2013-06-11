@@ -20,6 +20,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError, HTTPCodeError
+from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.reactor import LandscapeReactor
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.config import BrokerConfiguration
@@ -154,6 +155,9 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_option("--disable", action="store_true", default=False,
                           help="Stop running clients and disable start at "
                                "boot.")
+        parser.add_option("--init", action="store_true", default=False,
+                          help="Set up the client directories structure "
+                               "and exit.")
         return parser
 
 
@@ -538,6 +542,8 @@ def setup(config):
     If we are not configured to be silent then interrogate the user to provide
     necessary details for registration.
     """
+    bootstrap_tree(config)
+
     sysvconfig = SysVConfig()
     if not config.no_start:
         if config.silent:
@@ -574,6 +580,15 @@ def setup(config):
             sys.exit(exit_code)
 
 
+def bootstrap_tree(config):
+    """Create the client directories tree."""
+    bootstrap_list = [
+        BootstrapDirectory("$data_path", "landscape", "root", 0755),
+        BootstrapDirectory("$meta_data_path", "landscape", "landscape", 0755)]
+    BootstrapList(bootstrap_list).bootstrap(
+        data_path=config.data_path, meta_data_path=config.meta_data_path)
+
+
 def store_public_key_data(config, certificate_data):
     """
     Write out the data from the SSL certificate provided to us, either from a
@@ -585,8 +600,6 @@ def store_public_key_data(config, certificate_data):
     @return the L{BrokerConfiguration} object that was passed in, updated to
     reflect the path of the ssl_public_key file.
     """
-    if not os.path.exists(config.data_path):
-        os.mkdir(config.data_path)
     key_filename = os.path.join(config.data_path,
         os.path.basename(config.get_config_filename() + ".ssl_public_key"))
     print_text("Writing SSL CA certificate to %s..." % key_filename)
@@ -696,18 +709,18 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
 
 def main(args):
     config = LandscapeSetupConfiguration()
-    if args in (["-h"], ["--help"]):
-        # We let landscape-config --help to be run as normal user
-        config.load(args)
-
-    if os.getuid() != 0:
-        sys.exit("landscape-config must be run as root.")
-
     try:
         config.load(args)
     except ImportOptionError, error:
         print_text(str(error), error=True)
         sys.exit(1)
+
+    if os.getuid() != 0:
+        sys.exit("landscape-config must be run as root.")
+
+    if config.init:
+        bootstrap_tree(config)
+        sys.exit(0)
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:

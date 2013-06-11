@@ -340,7 +340,8 @@ class ConfigurationTest(LandscapeTest):
     def test_ping_url_default(self):
         """Ensure parse_args sets appropriate ping_url default."""
         options = self.parser.parse_args([])[0]
-        self.assertEqual(options.ping_url, "http://landscape.canonical.com/ping")
+        self.assertEqual(
+            options.ping_url, "http://landscape.canonical.com/ping")
 
     def test_ssl_public_key_option(self):
         """Ensure options.ssl_public_key option can be read by parse_args."""
@@ -498,6 +499,15 @@ class ConfigurationTest(LandscapeTest):
         """
         self.assertEqual(self.config.sockets_path,
                          "/var/lib/landscape/client/sockets")
+
+    def test_meta_data_path(self):
+        """
+        The L{Configuration.meta_data_path} property returns the path to the
+        socket directory.
+        """
+        self.assertEqual(
+            "/var/lib/landscape/client/meta-data.d",
+            self.config.meta_data_path)
 
     def test_clone(self):
         """The L{Configuration.clone} method clones a configuration."""
