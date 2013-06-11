@@ -666,7 +666,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.mocker.count(0, None)
         self.mocker.result(0)
 
-        # Make bootstrap_tree a no-op as a a non-root user can' change
+        # Make bootstrap_tree a no-op as a a non-root user can't change
         # ownership.
         self.mocker.replace("landscape.configuration.bootstrap_tree")(ANY)
         self.mocker.count(0, None)
