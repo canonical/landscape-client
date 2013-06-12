@@ -1335,6 +1335,20 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
+    def test_import_from_unreadable_file(self):
+        self.mocker.replay()
+        import_filename = self.makeFile("[client]\nfoo=bar", basename="import_config")
+        # Remove read permissions
+        os.chmod(import_filename, os.stat(import_filename).st_mode - 0444)
+        try:
+            self.get_config(["--import", import_filename])
+        except ImportOptionError, error:
+            expected_message = ("Couldn't read configuration from %s." %
+                                import_filename)
+            self.assertIn(expected_message, str(error))
+        else:
+            self.fail("ImportOptionError not raised")
+
     def test_import_from_file_preserves_old_options(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
