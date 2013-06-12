@@ -96,7 +96,10 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                     raise ImportOptionError("File %s doesn't exist." %
                                             self.import_from)
                 else:
-                    parser.read(self.import_from)
+                    succesfully_read_files = parser.read(self.import_from)
+                    if self.import_from not in succesfully_read_files:
+                        raise ImportOptionError(
+                            "Couldn't read configuration from %s." % self.import_from)
             except ConfigParserError, error:
                 raise ImportOptionError(str(error))
 
