@@ -70,9 +70,6 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
     unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
                        "import_from")
 
-    def __init__(self):
-        super(LandscapeSetupConfiguration, self).__init__()
-
     def _load_external_options(self):
         """Handle the --import parameter.
 
