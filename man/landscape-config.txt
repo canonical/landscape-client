@@ -67,9 +67,9 @@ OPTIONS
                            enter: ALL.
   --server-autodiscovery=BOOLEAN    Whether to enable server autodiscovery or not.
                            Defaults to "False".
-  --autodiscovery-srv-query-string=QUERY    The autodicovery string for DNS SRV
+  --autodiscovery-srv-query-string=QUERY    The autodiscovery string for DNS SRV
                            queries. Defaults to "_landscape._tcp.localdomain".
-  --autodiscover-a-query-string=QUERY   The autodicovery string for DNS A queries.
+  --autodiscover-a-query-string=QUERY   The autodiscovery string for DNS A queries.
                            Defaults to "landscape.localdomain".
   --include-manager-plugins=PLUGINS   A comma-separated list of manager 
                            plugins to load explicitly.
@@ -78,7 +78,7 @@ OPTIONS
                            registered.
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
-  --opt=OTP                The one-time passowrd (OTP) to use in cloud configuration.
+  --otp=OTP                The one-time password (OTP) to use in cloud configuration.
 
 CLOUD
 
