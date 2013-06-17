@@ -1336,8 +1336,10 @@ registration_key = shared-secret
             self.fail("ImportOptionError not raised")
 
     def test_import_from_unreadable_file(self):
-        """Error is raised when unable to read configuration from
-        specified file"""
+        """
+        An error is raised when unable to read configuration from the
+        specified file.
+        """
         self.mocker.replay()
         import_filename = self.makeFile(
             "[client]\nfoo=bar", basename="import_config")
