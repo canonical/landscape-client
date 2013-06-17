@@ -10,7 +10,7 @@ DESCRIPTION
 The landscape-client is the client program for the landscape system
 management software. The client is responsible for communicating
 system information to the landscape server and executing remote
-managment commands on the system.
+management commands on the system.
 
 OPTIONS 
   --version                  Show program's version number and exit.
@@ -25,7 +25,7 @@ OPTIONS
                              '/var/log/landscape').
   --log-level=LOG_LEVEL      One of debug, info, warning, error or critical.
   -u URL, --url=URL          The server URL to connect to.
-  --ping-url=PING_URL        The URL to perform lightweight exhange initiation
+  --ping-url=PING_URL        The URL to perform lightweight exchange initiation
                              with.
   -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY    The public SSL key to 
                              verify the server. Only used if the given server
