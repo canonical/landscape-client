@@ -70,9 +70,6 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
     unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
                        "import_from")
 
-    def __init__(self):
-        super(LandscapeSetupConfiguration, self).__init__()
-
     def _load_external_options(self):
         """Handle the --import parameter.
 
@@ -96,7 +93,11 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                     raise ImportOptionError("File %s doesn't exist." %
                                             self.import_from)
                 else:
-                    parser.read(self.import_from)
+                    succesfully_read_files = parser.read(self.import_from)
+                    if self.import_from not in succesfully_read_files:
+                        raise ImportOptionError(
+                            "Couldn't read configuration from %s." %
+                            self.import_from)
             except ConfigParserError, error:
                 raise ImportOptionError(str(error))
 
