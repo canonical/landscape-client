@@ -1,3 +1,17 @@
+landscape-client (13.06-0ubuntu0.13.10.0) precise; urgency=low
+
+  * New upstream version (LP: #1190510)
+   - New metadata exchange mechanism allows clients to send any key-value data to the landscape server (LP: #1123932)
+   - Network devices now report their maximum theoretical speeds, and duplex status to landscape-server (LP: #1126330, LP: #1130130)
+   - Landscape.client is now HA aware when HA is implemented using juju charms (LP: #1122508)
+   - The landscape client will now trigger a reboot if server sends a reboot-required message. (LP: #1133005)
+   - Big AMP code cleanup and refactoring in order to improve testing, improve performance and ease future maintainability (LP: #1165047, LP: #1169102, LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669)
+   - Added logic to detect cloned (virtual) computers (LP: #1161856)
+   - The landscape-client and landscape-common packages do not use or depend on dbus code anymore, and some legacy plugins using dbus were removed. (LP: #1175553, LP: #1180691)
+   - The ceph manager plugin is now a monitor plugin and thus does not require root privileges anymore. (LP: #1186973)
+
+ -- Chris Glass <christopher.glass@canonical.com>  Mon, 17 Jun 2013 12:40:31 +0000
+
 landscape-client (13.02-0ubuntu0) quantal; urgency=low
 
   * Fake changelog entry to bump version.
