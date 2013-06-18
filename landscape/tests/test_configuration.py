@@ -2047,7 +2047,6 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         printed and the program exits.
         """
         configuration = LandscapeSetupConfiguration()
-        configuration.ok_no_register = True
 
         # We'll just mock the remote here to have it raise an exception.
         connector_factory = self.mocker.replace(
@@ -2090,8 +2089,10 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        return register(configuration, print_text, sys.exit, max_retries=0,
-                        reactor=FakeReactor())
+        exit = []
+        register(configuration, print_text, exit.append, max_retries=0,
+                 reactor=FakeReactor())
+        self.assertEqual(exit, [2])
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):

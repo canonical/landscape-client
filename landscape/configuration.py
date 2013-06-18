@@ -668,7 +668,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
     def catch_all(failure):
         on_message(failure.getTraceback(), error=True)
         on_message("Unknown error occurred.", error=True)
-        return 2
+        return [2]
 
     on_message("Please wait... ", "")
 
