@@ -1,8 +1,7 @@
 import logging
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, gatherResults
 
-from landscape.lib.twisted_util import gather_results
 from landscape.amp import remote
 from landscape.manager.manager import FAILED
 
@@ -20,7 +19,7 @@ def event(method):
         fired = []
         for client in self.get_clients():
             fired.append(client.fire_event(event_type, *args, **kwargs))
-        return gather_results(fired)
+        return gatherResults(fired)
 
     return broadcast_event
 
@@ -132,7 +131,7 @@ class BrokerServer(object):
         # FIXME: check whether the client are still alive
         for client in self.get_clients():
             results.append(client.exit())
-        result = gather_results(results, consume_errors=True)
+        result = gatherResults(results, consumeErrors=True)
         return result.addCallback(lambda ignored: None)
 
     @remote
@@ -255,7 +254,7 @@ class BrokerServer(object):
         results = []
         for client in self.get_clients():
             results.append(client.message(message))
-        result = gather_results(results)
+        result = gatherResults(results)
         return result.addCallback(self._message_delivered, message)
 
     def _message_delivered(self, results, message):

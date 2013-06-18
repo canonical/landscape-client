@@ -4,8 +4,8 @@ import math
 import os
 
 from twisted.python.failure import Failure
+from twisted.internet.defer import gatherResults
 
-from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.plugin import PluginRegistry
 
@@ -102,7 +102,7 @@ class SysInfoPluginRegistry(PluginRegistry):
             else:
                 result.addErrback(self._log_plugin_error, plugin)
                 deferreds.append(result)
-        return gather_results(deferreds).addCallback(self._report_error_note)
+        return gatherResults(deferreds).addCallback(self._report_error_note)
 
     def _log_plugin_error(self, failure, plugin):
         self._plugin_error = True
