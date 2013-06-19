@@ -1,4 +1,4 @@
-landscape-client (13.05.1-0ubuntu0.13.10.0) precise; urgency=low
+landscape-client (13.06-0ubuntu1) precise; urgency=low
 
   * New upstream version (LP: #1190510)
    - New metadata exchange mechanism allows clients to send any key-value data to the landscape server (LP: #1123932)
