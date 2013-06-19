@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 
+from twisted.internet.defer import gatherResults
+
 from landscape.lib.persist import Persist
-from landscape.lib.twisted_util import gather_results
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import (
@@ -443,7 +444,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                                       "delete-home": True,
                                                       "type": "remove-user",
                                                       "operation-id": 40}))
-        return gather_results(results).addCallback(handle_callback)
+        return gatherResults(results).addCallback(handle_callback)
 
     def test_failing_remove_user_event(self):
         """
