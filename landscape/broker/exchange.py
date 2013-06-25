@@ -4,6 +4,131 @@ The protocol to communicate between the client and the server has been designed
 to be very robust so that messages are not lost. In addition it is (vaguely)
 symmetric, as the client and server need to send messages both ways.
 
+Exchange Sequence
+=================
+
+ 1. BrokerService    -->  MessageExchange                : Start
+
+ 2. MessageExchange  -->  MessageExchange                : Schedule exchange
+
+ 3. [signal]         <--  MessageExchange                : Signal "pre-exchange"
+
+ 4. [optional]                                           : Do registration
+    (See L{landscape.broker.registration})               : sequence
+
+ 5. MessageExchange  -->  MessageStore                   : Request pending
+                                                         : messages
+
+ 6. MessageExchange  <--  MessageStore                   : return( Messages )
+
+ 7. MessageExchange  -->  HTTPTransport                  : Exchange
+
+ 8. HTTPTransport    -->  {Server}LandscapeMessageSystem : HTTP POST
+
+ 9. [Scope: Server]
+ |
+ |  9.1 LandscapeMessageSystem --> ComputerMessageAPI    : run
+ |
+ |  9.2 [If: message is consistent with expected sequence]
+ |    |
+ |    | 9.2.1 [Handle message]
+ |    |       (See server code)
+ |    |
+ |    |-[Else]
+ |    |
+ |    | 9.2.2 ComputerMessageAPI --> Computer            : request
+ |    |                                                  : Resynchronize
+ |    |
+ |    | 9.2.3 Computer           --> Computer            : Create
+ |    |                                                  : ResynchronizeRequest
+ |    |                                                  : activity
+ |    |
+ |    --[End If]
+ |
+ | 9.3 ComputerMessageAPI     --> Computer               : get deliverable
+ |                                                       : activities
+ |
+ | 9.4 ComputerMessageAPI     <-- Computer               : return activities
+ |
+ | 9.5 [Loop over activities]
+ |   |
+ |   | 9.5.1 ComputerMessageAPI  --> Activity            : deliver
+ |   |
+ |   | 9.5.2 Activity            --> MessageStore        : add activity message
+ |   |
+ |   --[End Loop]
+ |
+ | 9.6 ComputerMessageAPI     --> MessageStore           : get pending messages
+ |
+ | 9.7 ComputerMessageAPI     <-- MessageStore           : return messages
+ |
+ | 9.8 LandscapeMessageSystem <-- ComputerMessageAPI     : return payload
+ |                                                       : (See below)
+ |
+ -- [End Scope]
+
+10. HTTPTransport    -->  {Server}LandscapeMessageSystem : HTTP response
+                                                         : with payload
+
+11. MessageExchange  <--  HTTPTransport                  : response
+
+12. [If: server says it expects a very old message]
+ |
+ |  12.1 [event]              <-- MessageExchange        : event
+ |       (See L{landscape.broker.server})                : "resynchronize-
+ |                                                       : clients"
+ |
+ -- [End if]
+
+13. [Loop: over messages in payload]
+ |
+ |  13.1 [event]             <-- MessageExchange         : event
+ |                                                       : message (message)
+ |
+ |  13.2 [Switch: on message type]
+ |     |
+ |     |- 13.2.1 [Case: message type is "accepted-types"]
+ |     |       |
+ |     |       | 13.2.1.1 MessageExchange -> MessageStore
+ |     |       |                                         : set accepted types
+ |     |       |
+ |     |       | 13.2.1.2 MessageExchange -> MessageExchange
+ |     |       |                                         : schedule urgent
+ |     |       |                                         : exchange
+ |     |       --[End Case]
+ |     |
+ |     |- 13.2.2 [Case: message type is "resynchronize"]
+ |     |       |
+ |     |       | 13.2.2.1 [event]         <- MessageExchange
+ |     |       |        (See L{landscape.broker.server}) : event
+ |     |       |                                         : "resynchronize-
+ |     |       |                                         : clients"
+ |     |       |
+ |     |       | 13.2.2.2 MessageExchange -> MessageStore
+ |     |       |                                         : add "resynchronize"
+ |     |       |                                         : message
+ |     |       |
+ |     |       | 13.2.2.3 MessageExchange -> MessageExchange
+ |     |       |                                         : schedule urgent
+ |     |       |                                         : exchange
+ |     |       |
+ |     |       --[End Case]
+ |     |
+ |     |- 13.2.3 [Case: message type is "set-intervals"]
+ |     |       |
+ |     |       | 13.2.3.1 MessageExchange -> BrokerConfiguration
+ |     |       |                                         : set exchange
+ |     |       |                                         :  interval
+ |     |       |
+ |     |       --[End Case]
+ |     |
+ |     -- [End Switch]
+ |
+ -- [End Loop]
+
+14. Schedule exchange
+
+
 Client->Server Payload
 ======================
 
