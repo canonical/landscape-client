@@ -1,3 +1,43 @@
+"""
+The C{BrokerServer} bridges client side plugins to the C{MessageExchange}.
+It provides then with a mechanism to send messages to the server and, likewise,
+triggers those plugins to take action when a exchange is impending or
+resynchronisaton is required.
+
+Each client plugin has to be registered using the
+L{BrokerServer.register_client} method, after which two way communications is
+possible between the C{BrokerServer} and the client.
+
+Resynchronisation Sequence
+==========================
+
+
+ (See L{landscape.broker.exchange} sequence diagram for origin of the
+ "resynchronize-clients" event).
+
+ 1. [event 1]               --->  BrokerServer        : Event
+                                                      : "resynchronize-clients"
+
+ 2. [event 2]               <---  BrokerServer        : Broadcast event
+                                                      : "resynchronize"
+
+ 3. [optional: various C{BrowserClientPlugin}s respond
+               to the "resynchronize" event to reset
+               themselves and start report afresh.]
+     (See: L{landscape.monitor.packagemonitor.PackageMonitor}
+           L{landscape.monitor.plugin.MonitorPlugin}
+           L{landscape.manager.keystonetoken.KeystoneToken}
+           L{landscape.monitor.activeprocessinfo.ActiveProcessInfo} )
+
+
+ 4. [event 1]               ---> MessageExchange      : Event
+    (NOTE, this is the same event as step 1.)         : "resynchronize-clients"
+
+ 5. MessageExchange         ---> MessageExchange      : Schedule urgent
+                                                      : exchange
+
+"""
+
 import logging
 
 from twisted.internet.defer import Deferred, gatherResults
