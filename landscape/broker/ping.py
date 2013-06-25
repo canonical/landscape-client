@@ -5,28 +5,27 @@ small HTTP requests asking if we should do a full exchange.
 PING SEQUENCE:
 ==============
 
-
-1. BrokerService |----- start -----> Pinger
+1. BrokerService --> Pinger              :  Start
 
 2. [Loop forever]
 
-   2.1 Pinger     |----- Schedule ping ------> PingClient
+   2.1 Pinger     --> PingClient         :  Schedule Ping
 
-   2.2 PingClient |----- Ping ---------------> {Server} WebPing
+   2.2 PingClient --> {Server} WebPing   :  Ping
 
-   2.3 PingClient <----- Messages waiting? --| {Server} WebPing
+   2.3 PingClient <-- {Server} WebPing   :  return(messages waiting? [Boolean])
 
-   2.4 Pinger     <----- Messages waiting? --| PingClient
+   2.4 Pinger     <-- PingClient         :  return(messages waiting? [Boolean])
 
-   2.5 [if: Messages waiting = True ]
+   2.5 [if: messages waiting == True ]
 
-      2.5.1 Pinger    |-- Schedule urgent exchange ---> MessageExchange
+       2.5.1 Pinger --> MessageExchange  :  Schedule urgent exchange
 
-   [end if]
+       [end if]
 
-   2.6 [Wait for ping_interval to expire]
+   2.6 [Wait for ping interval to expire]
 
-[end loop]
+   [end loop]
 
 """
 
