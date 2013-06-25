@@ -39,7 +39,7 @@ power management:
 
     def make_cpuinfo(self, flags=""):
         """Build a sample /proc/cpuinfo with specified processor flags."""
-        cpuinfo_path = os.path.join(self.root_path, "proc", "cpuinfo")
+        cpuinfo_path = os.path.join(self.root_path, "proc/cpuinfo")
         self.makeFile(
             path=cpuinfo_path, content=self.sample_cpuinfo.format(flags=flags))
 
@@ -72,7 +72,7 @@ power management:
         L{get_vm_info} should return 'xen' when /sys/bus/xen exists and has
         devices.
         """
-        devices_xen_path = os.path.join(self.sys_path, "bus", "xen", "devices")
+        devices_xen_path = os.path.join(self.sys_path, "bus/xen/devices")
         self.makeDir(path=devices_xen_path)
         foo_devices_path = os.path.join(devices_xen_path, "foo")
         self.makeFile(path=foo_devices_path, content="bar")
@@ -97,7 +97,7 @@ power management:
 
         # The content of sys_vendor is not checked if the "hypervisor" flag is
         # not present.
-        dmi_path = os.path.join(self.root_path, "sys", "class", "dmi", "id")
+        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
         self.makeDir(path=dmi_path)
         self.makeFile(
             path=os.path.join(dmi_path, "sys_vendor"), content="Bochs")
@@ -111,7 +111,7 @@ power management:
         """
         self.make_cpuinfo(flags="fpu hypervisor vme")
 
-        dmi_path = os.path.join(self.root_path, "sys", "class", "dmi", "id")
+        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
         self.makeDir(path=dmi_path)
         self.makeFile(
             path=os.path.join(dmi_path, "sys_vendor"), content="Bochs")
@@ -125,7 +125,7 @@ power management:
         """
         self.make_cpuinfo(flags="fpu hypervisor vme")
 
-        dmi_path = os.path.join(self.root_path, "sys", "class", "dmi", "id")
+        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
         self.makeDir(path=dmi_path)
         self.makeFile(
             path=os.path.join(dmi_path, "sys_vendor"), content="VMware, Inc.")
@@ -139,7 +139,7 @@ power management:
         """
         self.make_cpuinfo(flags="fpu hypervisor vme")
 
-        devices_xen_path = os.path.join(self.sys_path, "bus", "xen", "devices")
+        devices_xen_path = os.path.join(self.sys_path, "bus/xen/devices")
         self.makeDir(path=devices_xen_path)
 
         self.assertEqual("", get_vm_info(root_path=self.root_path))
@@ -150,7 +150,7 @@ power management:
         """
         self.make_cpuinfo(flags="fpu hypervisor vme")
 
-        dmi_path = os.path.join(self.root_path, "sys", "class", "dmi", "id")
+        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
         self.makeDir(path=dmi_path)
         self.makeFile(
             path=os.path.join(dmi_path, "sys_vendor"),
