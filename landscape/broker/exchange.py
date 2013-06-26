@@ -118,7 +118,7 @@ Exchange Sequence
  |     |       |
  |     |       | 13.2.3.1 MessageExchange -> BrokerConfiguration
  |     |       |                                         : set exchange
- |     |       |                                         :  interval
+ |     |       |                                         : interval
  |     |       |
  |     |       --[End Case]
  |     |
