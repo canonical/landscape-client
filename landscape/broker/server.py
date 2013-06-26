@@ -1,6 +1,6 @@
 """
 The C{BrokerServer} bridges client side plugins to the C{MessageExchange}.
-It provides then with a mechanism to send messages to the server and, likewise,
+It provides them with a mechanism to send messages to the server and, likewise,
 triggers those plugins to take action when a exchange is impending or
 resynchronisaton is required.
 
