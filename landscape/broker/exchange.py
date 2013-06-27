@@ -243,7 +243,7 @@ Exchange Sequence
  |
  -- [End Scope]
 
-10. HTTPTransport    -->  {Server}LandscapeMessageSystem : HTTP response
+10. HTTPTransport    <--  {Server}LandscapeMessageSystem : HTTP response
                                                          : with payload
 
 11. MessageExchange  <--  HTTPTransport                  : response
