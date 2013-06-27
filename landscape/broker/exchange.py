@@ -184,7 +184,7 @@ Exchange Sequence
 
  2. MessageExchange  -->  MessageExchange                : Schedule exchange
 
- 3. [signal]         <--  MessageExchange                : Signal "pre-exchange"
+ 3. [event]          <--  MessageExchange                : Fire "pre-exchange"
 
  4. [optional]                                           : Do registration
     (See L{landscape.broker.registration})               : sequence
