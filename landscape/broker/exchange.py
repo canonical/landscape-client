@@ -206,8 +206,8 @@ Exchange Sequence
  |
  |   9.3 FunctionHandler        --> Callable             : call
  |       ( See also server code at:
- |             - L{canonical.landscape.message.handlers}
- |             - L{canonical.message.handler.FunctionHandler} )
+ |             - C{canonical.landscape.message.handlers}
+ |             - C{canonical.message.handler.FunctionHandler} )
  |
  |
  |   9.4 [If: the callable raises ConsistencyError]

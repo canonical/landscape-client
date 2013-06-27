@@ -21,7 +21,7 @@ Resynchronisation Sequence
  2. [event 2]               <---  BrokerServer        : Broadcast event
                                                       : "resynchronize"
 
- 3. [optional: various C{BrowserClientPlugin}s respond
+ 3. [optional: various L{BrowserClientPlugin}s respond
                to the "resynchronize" event to reset
                themselves and start report afresh.]
      (See: L{landscape.monitor.packagemonitor.PackageMonitor}
