@@ -40,15 +40,19 @@ def get_vm_info(root_path="/"):
                 has_hypervisor_flag = True
                 break
 
-    if has_hypervisor_flag:
-        sys_vendor_path = join_root_path("sys/class/dmi/id/sys_vendor")
-        if os.path.exists(sys_vendor_path):
-            content = read_file(sys_vendor_path)
-            if "VMware, Inc." in content:
-                return "vmware"
-            elif "Microsoft Corporation" in content:
-                return "hyperv"
-            elif "Bochs" in content or "OpenStack" in content:
-                return "kvm"
+    if not has_hypervisor_flag:
+        return ""
+
+    sys_vendor_path = join_root_path("sys/class/dmi/id/sys_vendor")
+    if not os.path.exists(sys_vendor_path):
+        return ""
+
+    content = read_file(sys_vendor_path)
+    if "VMware, Inc." in content:
+        return "vmware"
+    elif "Microsoft Corporation" in content:
+        return "hyperv"
+    elif "Bochs" in content or "OpenStack" in content:
+        return "kvm"
 
     return ""

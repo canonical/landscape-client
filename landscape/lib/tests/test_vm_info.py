@@ -171,3 +171,17 @@ power management:
             path=os.path.join(dmi_path, "sys_vendor"),
             content="Microsoft Corporation")
         self.assertEqual("hyperv", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_with_other_vendor(self):
+        """
+        L{get_vm_info} should return an empty when the sys_vendor is unknown.
+        """
+        self.make_cpuinfo(flags="fpu hypervisor vme")
+
+        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
+        self.makeDir(path=dmi_path)
+        self.makeFile(
+            path=os.path.join(dmi_path, "sys_vendor"),
+            content="Some other vendor")
+
+        self.assertEqual("", get_vm_info(root_path=self.root_path))
