@@ -48,7 +48,7 @@ def get_vm_info(root_path="/"):
                 return "vmware"
             elif "Microsoft Corporation" in content:
                 return "hyperv"
-            elif "Bochs" in content:
+            elif "Bochs" in content or "Openstack" in content:
                 return "kvm"
 
     return ""

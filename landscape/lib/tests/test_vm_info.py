@@ -118,6 +118,21 @@ power management:
 
         self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_openstack_sys_vendor(self):
+        """
+        L{get_vm_info} should return "kvm" when we detect the sys_vendor is
+        Openstack.
+        """
+        self.make_cpuinfo(flags="fpu hypervisor vme")
+
+        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
+        self.makeDir(path=dmi_path)
+        self.makeFile(
+            path=os.path.join(dmi_path, "sys_vendor"),
+            content="Openstack foundation")
+
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_vmware_sys_vendor(self):
         """
         L{get_vm_info} should return "vmware" when we detect the sys_vendor is
