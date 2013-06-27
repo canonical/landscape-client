@@ -11,9 +11,10 @@ possible between the C{BrokerServer} and the C{BrokerClient}.
 Resynchronisation Sequence
 ==========================
 
+See L{landscape.broker.exchange} sequence diagram for origin of the "resynchronize-clients" event.
 
- (See L{landscape.broker.exchange} sequence diagram for origin of the
- "resynchronize-clients" event).
+Diagram::
+
 
  1. [event 1]               --->  BrokerServer        : Event
                                                       : "resynchronize-clients"
@@ -31,7 +32,10 @@ Resynchronisation Sequence
 
 
  4. [event 1]               ---> MessageExchange      : Event
-    (NOTE, this is the same event as step 1.)         : "resynchronize-clients"
+    (NOTE, this is the same event as step 1           : "resynchronize-clients"
+     it is handled by both BrokerServer and
+     MessageExchange.
+     See MessageExchange._resynchronize )
 
  5. MessageExchange         ---> MessageExchange      : Schedule urgent
                                                       : exchange
