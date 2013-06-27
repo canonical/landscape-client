@@ -1,12 +1,12 @@
 """Bridge client side plugins to the C{MessageExchange}.
 
-The C{BrokerServer} provides C{BrokerClients} with a mechanism to send messages
+The C{BrokerServer} provides C{BrokerClient}s with a mechanism to send messages
 to the server and, likewise, triggers those plugins to take action when a
 exchange is impending or resynchronisaton is required.
 
-Each client plugin has to be registered using the
+Each C{BrokerClient} has to be registered using the
 L{BrokerServer.register_client} method, after which two way communications is
-possible between the C{BrokerServer} and the client.
+possible between the C{BrokerServer} and the C{BrokerClient}.
 
 Resynchronisation Sequence
 ==========================
