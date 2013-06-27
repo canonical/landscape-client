@@ -2,8 +2,8 @@
 Implementation of a lightweight exchange-triggering mechanism via
 small HTTP requests asking if we should do a full exchange.
 
-PING SEQUENCE:
-==============
+Ping Sequence
+=============
 
 1. BrokerService --> Pinger              :  Start
 
