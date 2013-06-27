@@ -27,42 +27,45 @@ Exchange Sequence
 
  9. [Scope: Server]
  |
- |  9.1 LandscapeMessageSystem --> ComputerMessageAPI    : run
+ |   9.1 LandscapeMessageSystem --> ComputerMessageAPI   : run
  |
- |  9.2 [If: message is consistent with expected sequence]
- |    |
- |    | 9.2.1 [Handle message]
- |    |       (See server code)
- |    |
- |    |-[Else]
- |    |
- |    | 9.2.2 ComputerMessageAPI --> Computer            : request
- |    |                                                  : Resynchronize
- |    |
- |    | 9.2.3 Computer           --> Computer            : Create
- |    |                                                  : ResynchronizeRequest
- |    |                                                  : activity
- |    |
- |    --[End If]
+ |   9.2 ComputerMessageAPI     --> FunctionHandler      : handle
  |
- | 9.3 ComputerMessageAPI     --> Computer               : get deliverable
+ |   9.3 FunctionHandler        --> Callable             : call
+ |       ( See also server code at:
+ |             - L{canonical.landscape.message.handlers}
+ |             - L{canonical.message.handler.FunctionHandler} )
+ |
+ |
+ |   9.4 [If: the callable raises ConsistencyError]
+ |     |
+ |     | 9.4.1 ComputerMessageAPI --> Computer           : request
+ |     |                                                 : Resynchronize
+ |     |
+ |     | 9.4.2 Computer           --> Computer           : Create
+ |     |                                                 : ResynchronizeRequest
+ |     |                                                 : activity
+ |     |
+ |     --[End If]
+ |
+ |  9.5 ComputerMessageAPI     --> Computer              : get deliverable
  |                                                       : activities
  |
- | 9.4 ComputerMessageAPI     <-- Computer               : return activities
+ |  9.6 ComputerMessageAPI     <-- Computer              : return activities
  |
- | 9.5 [Loop over activities]
- |   |
- |   | 9.5.1 ComputerMessageAPI  --> Activity            : deliver
- |   |
- |   | 9.5.2 Activity            --> MessageStore        : add activity message
- |   |
- |   --[End Loop]
+ |  9.7 [Loop over activities]
+ |    |
+ |    | 9.7.1 ComputerMessageAPI  --> Activity           : deliver
+ |    |
+ |    | 9.7.2 Activity            --> MessageStore       : add activity message
+ |    |
+ |    --[End Loop]
  |
- | 9.6 ComputerMessageAPI     --> MessageStore           : get pending messages
+ |  9.8 ComputerMessageAPI     --> MessageStore          : get pending messages
  |
- | 9.7 ComputerMessageAPI     <-- MessageStore           : return messages
+ |  9.9 ComputerMessageAPI     <-- MessageStore          : return messages
  |
- | 9.8 LandscapeMessageSystem <-- ComputerMessageAPI     : return payload
+ | 9.10 LandscapeMessageSystem <-- ComputerMessageAPI    : return payload
  |                                                       : (See below)
  |
  -- [End Scope]
