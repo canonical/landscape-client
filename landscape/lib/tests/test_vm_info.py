@@ -129,7 +129,7 @@ power management:
         self.makeDir(path=dmi_path)
         self.makeFile(
             path=os.path.join(dmi_path, "sys_vendor"),
-            content="Openstack foundation")
+            content="OpenStack Foundation")
 
         self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
 
