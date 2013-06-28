@@ -174,7 +174,8 @@ power management:
 
     def test_get_vm_info_with_other_vendor(self):
         """
-        L{get_vm_info} should return an empty when the sys_vendor is unknown.
+        L{get_vm_info} should return an empty string when the sys_vendor is
+        unknown.
         """
         self.make_cpuinfo(flags="fpu hypervisor vme")
 
