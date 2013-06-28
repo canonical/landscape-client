@@ -11,7 +11,8 @@ possible between the C{BrokerServer} and the C{BrokerClient}.
 Resynchronisation Sequence
 ==========================
 
-See L{landscape.broker.exchange} sequence diagram for origin of the "resynchronize-clients" event.
+See L{landscape.broker.exchange} sequence diagram for origin of the
+"resynchronize-clients" event.
 
 Diagram::
 
