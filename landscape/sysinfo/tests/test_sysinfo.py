@@ -218,6 +218,7 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         """
         uid_mock = self.mocker.replace("os.getuid")
         uid_mock()
+        self.mocker.count(1, max=None)
         self.mocker.result(0)
         self.mocker.replay()
         self.log_helper.ignore_errors(ZeroDivisionError)

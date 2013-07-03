@@ -1,9 +1,8 @@
 from logging import info, exception
 
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import maybeDeferred, gatherResults
 
 from landscape.log import format_object
-from landscape.lib.twisted_util import gather_results
 from landscape.amp import remote
 
 
@@ -195,7 +194,7 @@ class BrokerClient(object):
             results = self.reactor.fire((event_type, message_type), acceptance)
         else:
             results = self.reactor.fire(event_type, *args, **kwargs)
-        return gather_results([
+        return gatherResults([
             maybeDeferred(lambda x: x, result) for result in results])
 
     def handle_reconnect(self):

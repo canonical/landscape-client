@@ -1,6 +1,7 @@
 """File-system utils"""
 
 import os
+import time
 
 
 def create_file(path, content):
@@ -47,8 +48,19 @@ def read_file(path, limit=None):
     return content
 
 
-def touch_file(path):
-    """Touch a file, creating it if it doesn't exist."""
+def touch_file(path, offset_seconds=None):
+    """Touch a file, creating it if it doesn't exist.
+
+    @param path: the path to the file to be touched.
+    @param offset_seconds: a signed integer number of seconds to offset the
+        atime and mtime of the file from the current time.
+
+    """
     fd = open(path, "a")
     fd.close()
-    os.utime(path, None)
+    if offset_seconds is not None:
+        offset_time = long(time.time()) + offset_seconds
+        touch_time = (offset_time, offset_time)
+    else:
+        touch_time = None
+    os.utime(path, touch_time)

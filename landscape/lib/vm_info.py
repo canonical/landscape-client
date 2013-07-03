@@ -3,6 +3,8 @@ Network introspection utilities using ioctl and the /proc filesystem.
 """
 import os
 
+from landscape.lib.fs import read_file
+
 
 def get_vm_info(root_path="/"):
     """
@@ -16,11 +18,10 @@ def get_vm_info(root_path="/"):
 
     xen_paths = ["proc/sys/xen", "proc/xen"]
     xen_paths = map(join_root_path, xen_paths)
+    vz_path = join_root_path("proc/vz")
 
-    vz_path = os.path.join(root_path, "proc/vz")
     if os.path.exists(vz_path):
         return "openvz"
-
     elif filter(os.path.exists, xen_paths):
         return "xen"
 
@@ -30,27 +31,28 @@ def get_vm_info(root_path="/"):
     if os.path.isdir(sys_xen_path) and os.listdir(sys_xen_path):
         return "xen"
 
-    cpu_info_path = os.path.join(root_path, "proc/cpuinfo")
+    has_hypervisor_flag = False
+    cpu_info_path = join_root_path("proc/cpuinfo")
     if os.path.exists(cpu_info_path):
-        try:
-            fd = open(cpu_info_path)
-            cpuinfo = fd.read()
-            if "QEMU Virtual CPU" in cpuinfo:
-                return "kvm"
-        finally:
-            fd.close()
+        content = read_file(cpu_info_path)
+        for line in content.split("\n"):
+            if line.startswith("flags") and "hypervisor" in line:
+                has_hypervisor_flag = True
+                break
 
-    sys_vendor_path = os.path.join(root_path, "sys", "class", "dmi", "id",
-                                   "sys_vendor")
-    if os.path.exists(sys_vendor_path):
-        try:
-            fd = open(sys_vendor_path)
-            file_content = fd.read()
-            if "VMware, Inc." in file_content:
-                return "vmware"
-            elif "Microsoft Corporation" in file_content:
-                return "hyperv"
-        finally:
-            fd.close()
+    if not has_hypervisor_flag:
+        return ""
+
+    sys_vendor_path = join_root_path("sys/class/dmi/id/sys_vendor")
+    if not os.path.exists(sys_vendor_path):
+        return ""
+
+    content = read_file(sys_vendor_path)
+    if "VMware, Inc." in content:
+        return "vmware"
+    elif "Microsoft Corporation" in content:
+        return "hyperv"
+    elif "Bochs" in content or "OpenStack" in content:
+        return "kvm"
 
     return ""

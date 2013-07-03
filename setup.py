@@ -1,12 +1,15 @@
 #!/usr/bin/python
 
-from distutils.core import setup, Extension
+from distutils.core import setup
 
 from landscape import UPSTREAM_VERSION
 
 from DistUtilsExtra.command import build_extra, build_i18n
 from DistUtilsExtra.auto import clean_build_tree
 
+# This is just because the path is hard to line-break.
+glib_path = [
+    "glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml"]
 
 setup(name="Landscape Client",
       version=UPSTREAM_VERSION,
@@ -35,14 +38,14 @@ setup(name="Landscape Client",
       data_files=[
           ("/usr/share/dbus-1/system-services/",
            ["dbus-1/com.canonical.LandscapeClientSettings.service",
-          "dbus-1/com.canonical.LandscapeClientRegistration.service"]),
+            "dbus-1/com.canonical.LandscapeClientRegistration.service"]),
           ("/etc/dbus-1/system.d/",
            ["dbus-1/com.canonical.LandscapeClientSettings.conf",
-            "dbus-1/com.canonical.LandscapeClientRegistration.conf"]),
+            "dbus-1/com.canonical.LandscapeClientRegistration.conf",
+            "dbus-1/landscape.conf"]),
           ("/usr/share/icons/hicolor/scalable/apps/",
            ["icons/preferences-management-service.svg"]),
-          ("/usr/share/glib-2.0/schemas/",
-           ["glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml"])],
+          ("/usr/share/glib-2.0/schemas/", glib_path)],
       scripts=["scripts/landscape-client",
                "scripts/landscape-config",
                "scripts/landscape-message",

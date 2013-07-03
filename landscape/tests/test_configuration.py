@@ -15,7 +15,7 @@ from landscape.configuration import (
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
-    fetch_base64_ssl_public_certificate)
+    fetch_base64_ssl_public_certificate, bootstrap_tree)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -26,8 +26,9 @@ from landscape.broker.amp import RemoteBroker
 
 class LandscapeConfigurationTest(LandscapeTest):
 
-    def get_config(self, args):
-        data_path = os.path.join(self.makeDir(), "client")
+    def get_config(self, args, data_path=None):
+        if data_path is None:
+            data_path = os.path.join(self.makeDir(), "client")
 
         if "--config" not in args and "-c" not in args:
             filename = self.makeFile("""
@@ -634,6 +635,27 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.run()
 
 
+class BootstrapTreeTest(LandscapeConfigurationTest):
+
+    def test_bootstrap_tree(self):
+        """
+        The L{bootstrap_tree} function creates the client dir and /meta-data.d
+        under it with the correct permissions.
+        """
+        client_path = self.makeDir()
+        meta_data_path = os.path.join(client_path, "meta-data.d")
+
+        mock_chmod = self.mocker.replace("os.chmod")
+        mock_chmod(client_path, 0755)
+        mock_chmod(meta_data_path, 0755)
+        self.mocker.replay()
+
+        config = self.get_config([], data_path=client_path)
+        bootstrap_tree(config)
+        self.assertTrue(os.path.isdir(client_path))
+        self.assertTrue(os.path.isdir(meta_data_path))
+
+
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     helpers = [EnvironSaverHelper]
@@ -643,6 +665,11 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.mocker.replace("os.getuid")()
         self.mocker.count(0, None)
         self.mocker.result(0)
+
+        # Make bootstrap_tree a no-op as a a non-root user can't change
+        # ownership.
+        self.mocker.replace("landscape.configuration.bootstrap_tree")(ANY)
+        self.mocker.count(0, None)
 
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
@@ -1307,6 +1334,22 @@ registration_key = shared-secret
             self.assertIn("File contains no section headers.", str(error))
         else:
             self.fail("ImportOptionError not raised")
+
+    def test_import_from_unreadable_file(self):
+        """
+        An error is raised when unable to read configuration from the
+        specified file.
+        """
+        self.mocker.replay()
+        import_filename = self.makeFile(
+            "[client]\nfoo=bar", basename="import_config")
+        # Remove read permissions
+        os.chmod(import_filename, os.stat(import_filename).st_mode - 0444)
+        error = self.assertRaises(
+            ImportOptionError, self.get_config, ["--import", import_filename])
+        expected_message = ("Couldn't read configuration from %s." %
+                            import_filename)
+        self.assertEqual(str(error), expected_message)
 
     def test_import_from_file_preserves_old_options(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -2004,7 +2047,6 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         printed and the program exits.
         """
         configuration = LandscapeSetupConfiguration()
-        configuration.ok_no_register = True
 
         # We'll just mock the remote here to have it raise an exception.
         connector_factory = self.mocker.replace(
@@ -2047,8 +2089,10 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        return register(configuration, print_text, sys.exit, max_retries=0,
-                        reactor=FakeReactor())
+        exit = []
+        register(configuration, print_text, exit.append, max_retries=0,
+                 reactor=FakeReactor())
+        self.assertEqual(exit, [2])
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):
@@ -2060,7 +2104,9 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         configuration file with .ssl_public_key.
         """
         config = self.get_config([])
-        key_filename = os.path.join(config.data_path,
+        os.mkdir(config.data_path)
+        key_filename = os.path.join(
+            config.data_path,
             os.path.basename(config.get_config_filename()) + ".ssl_public_key")
 
         print_text_mock = self.mocker.replace(print_text)
@@ -2071,25 +2117,6 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         self.assertEqual(key_filename,
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
-
-    def test_store_public_key_data_doesnt_create_dir_if_present(self):
-        """
-        If the data-path directory already exists, L{store_public_key_data}
-        doesn't fail.
-        """
-        config = self.get_config([])
-        key_filename = os.path.join(
-            config.data_path,
-            os.path.basename(config.get_config_filename()) + ".ssl_public_key")
-        os.mkdir(config.data_path)
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock(
-            "Writing SSL CA certificate to %s..." % key_filename)
-        self.mocker.replay()
-
-        self.assertEqual(
-            key_filename, store_public_key_data(config, "123456789"))
 
     def test_fetch_base64_ssl(self):
         """

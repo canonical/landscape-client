@@ -1,8 +1,52 @@
+"""Bridge client side plugins to the C{MessageExchange}.
+
+The C{BrokerServer} provides C{BrokerClient}s with a mechanism to send messages
+to the server and, likewise, triggers those plugins to take action when a
+exchange is impending or resynchronisaton is required.
+
+Each C{BrokerClient} has to be registered using the
+L{BrokerServer.register_client} method, after which two way communications is
+possible between the C{BrokerServer} and the C{BrokerClient}.
+
+Resynchronisation Sequence
+==========================
+
+See L{landscape.broker.exchange} sequence diagram for origin of the
+"resynchronize-clients" event.
+
+Diagram::
+
+
+ 1. [event 1]               --->  BrokerServer        : Event
+                                                      : "resynchronize-clients"
+
+ 2. [event 2]               <---  BrokerServer        : Broadcast event
+                                                      : "resynchronize"
+
+ 3. [optional: various L{BrowserClientPlugin}s respond
+               to the "resynchronize" event to reset
+               themselves and start report afresh.]
+     (See: L{landscape.monitor.packagemonitor.PackageMonitor}
+           L{landscape.monitor.plugin.MonitorPlugin}
+           L{landscape.manager.keystonetoken.KeystoneToken}
+           L{landscape.monitor.activeprocessinfo.ActiveProcessInfo} )
+
+
+ 4. [event 1]               ---> MessageExchange      : Event
+    (NOTE, this is the same event as step 1           : "resynchronize-clients"
+     it is handled by both BrokerServer and
+     MessageExchange.
+     See MessageExchange._resynchronize )
+
+ 5. MessageExchange         ---> MessageExchange      : Schedule urgent
+                                                      : exchange
+
+"""
+
 import logging
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, gatherResults
 
-from landscape.lib.twisted_util import gather_results
 from landscape.amp import remote
 from landscape.manager.manager import FAILED
 
@@ -20,7 +64,7 @@ def event(method):
         fired = []
         for client in self.get_clients():
             fired.append(client.fire_event(event_type, *args, **kwargs))
-        return gather_results(fired)
+        return gatherResults(fired)
 
     return broadcast_event
 
@@ -164,7 +208,7 @@ class BrokerServer(object):
         # FIXME: check whether the client are still alive
         for client in self.get_clients():
             results.append(client.exit())
-        result = gather_results(results, consume_errors=True)
+        result = gatherResults(results, consumeErrors=True)
         return result.addCallback(lambda ignored: None)
 
     @remote
@@ -287,7 +331,7 @@ class BrokerServer(object):
         results = []
         for client in self.get_clients():
             results.append(client.message(message))
-        result = gather_results(results)
+        result = gatherResults(results)
         return result.addCallback(self._message_delivered, message)
 
     def _message_delivered(self, results, message):

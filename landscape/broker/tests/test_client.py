@@ -1,7 +1,6 @@
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, gatherResults
 
-from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
 from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
@@ -102,7 +101,7 @@ class BrokerClientTest(LandscapeTest):
                 self.exchanger.get_client_accepted_message_types(),
                 sorted(["bar", "foo"] + DEFAULT_ACCEPTED_TYPES))
 
-        return gather_results([result1, result2]).addCallback(got_result)
+        return gatherResults([result1, result2]).addCallback(got_result)
 
     def test_dispatch_message(self):
         """
@@ -298,7 +297,7 @@ class BrokerClientTest(LandscapeTest):
             self.mocker.replay()
             self.client_reactor.fire("broker-reconnect")
 
-        return gather_results([result1, result2]).addCallback(got_result)
+        return gatherResults([result1, result2]).addCallback(got_result)
 
     def test_exit(self):
         """

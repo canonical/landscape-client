@@ -1,17 +1,9 @@
-from twisted.internet.defer import DeferredList, Deferred
+from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
 
 import cStringIO
-
-
-def gather_results(deferreds, consume_errors=False):
-    d = DeferredList(deferreds, fireOnOneErrback=1,
-                     consumeErrors=consume_errors)
-    d.addCallback(lambda r: [x[1] for x in r])
-    d.addErrback(lambda f: f.value.subFailure)
-    return d
 
 
 class AllOutputProcessProtocol(ProcessProtocol):

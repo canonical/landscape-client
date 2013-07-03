@@ -16,14 +16,13 @@ from logging import warning, info, error
 from resource import setrlimit, RLIMIT_NOFILE
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import Deferred, succeed, gatherResults
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.error import ProcessExitedAlready
 from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
 from landscape.deployment import init_logging, Configuration
-from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
@@ -373,7 +372,7 @@ class WatchDog(object):
 
         def got_all_results(r):
             return [x[1] for x in r if x[0]]
-        return gather_results(results).addCallback(got_all_results)
+        return gatherResults(results).addCallback(got_all_results)
 
     def start(self):
         """
@@ -423,7 +422,7 @@ class WatchDog(object):
 
         def reschedule(ignored):
             self._checking = self.reactor.callLater(5, self._check)
-        gather_results(all_running).addBoth(reschedule)
+        gatherResults(all_running).addBoth(reschedule)
 
     def request_exit(self):
         if self._checking is not None and self._checking.active():
@@ -445,7 +444,7 @@ class WatchDog(object):
                 error("Couldn't request that broker gracefully shut down; "
                       "killing forcefully.")
                 results = [x.stop() for x in self.daemons]
-            return gather_results(results)
+            return gatherResults(results)
 
         result = self.broker.request_exit()
         return result.addCallback(terminate_processes)

@@ -1,6 +1,36 @@
 """
 Implementation of a lightweight exchange-triggering mechanism via
 small HTTP requests asking if we should do a full exchange.
+
+Ping Sequence
+=============
+
+Diagram::
+
+  1. BrokerService --> Pinger              :  Start
+
+  2. [Loop forever]
+  |
+  |  2.1 Pinger     --> PingClient         :  Schedule Ping
+  |
+  |  2.2 PingClient --> {Server} WebPing   :  Ping
+  |
+  |  2.3 PingClient <-- {Server} WebPing   :  return(messages waiting?
+  |                                        :    [Boolean])
+  |
+  |  2.4 Pinger     <-- PingClient         :  return(messages waiting?
+  |                                             [Boolean])
+  |
+  |  2.5 [If: messages waiting == True ]
+  |    |
+  |    |  2.5.1 Pinger --> MessageExchange  :  Schedule urgent exchange
+  |    |
+  |    --[End If]
+  |
+  |  2.6 [Wait: for ping interval to expire]
+  |
+  --[End Loop]
+
 """
 
 import urllib

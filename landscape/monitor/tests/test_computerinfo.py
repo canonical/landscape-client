@@ -339,8 +339,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         This allows, for example, the landscape-client charm to send
         information about the juju environment to the landscape server.
         """
-        meta_data_dir = os.path.join(
-            self.monitor.config.data_path, "meta-data.d")
+        meta_data_dir = self.monitor.config.meta_data_path
         os.mkdir(meta_data_dir)
         create_file(os.path.join(meta_data_dir, "juju-env-uuid"), "uuid1")
         create_file(os.path.join(meta_data_dir, "juju-unit-name"), "unit/0")
@@ -361,8 +360,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         L{ComputerInfo} doesn't include the extra-meta-data key if there
         is no meta-data.d directory.
         """
-        meta_data_dir = os.path.join(
-            self.monitor.config.data_path, "meta-data.d")
+        meta_data_dir = self.monitor.config.meta_data_path
         self.assertFalse(os.path.exists(meta_data_dir))
         self.mstore.set_accepted_types(["computer-info"])
 
@@ -378,8 +376,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         L{ComputerInfo} doesn't include the extra-meta-data key if the
         meta-data.d directory doesn't contain any files.
         """
-        meta_data_dir = os.path.join(
-            self.monitor.config.data_path, "meta-data.d")
+        meta_data_dir = self.monitor.config.meta_data_path
         os.mkdir(meta_data_dir)
         self.mstore.set_accepted_types(["computer-info"])
 
