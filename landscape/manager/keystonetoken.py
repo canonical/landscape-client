@@ -30,11 +30,12 @@ class KeystoneToken(DataWatcher):
         self.registry.reactor.call_every(self.registry.config.flush_interval,
                                          self.flush)
 
-    def _resynchronize(self):
+    def _resynchronize(self, scopes):
         """
         Recreate the persist upon C{_resynchronize}.
         """
-        self._persist.remove("data")
+        if len(scopes) == 0 or "openstack" in scopes:
+            self._persist.remove("data")
 
     def flush(self):
         self._persist.save(self._persist_filename)
