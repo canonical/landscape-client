@@ -352,8 +352,8 @@ class ActiveProcessInfoTest(LandscapeTest):
 
     def test_resynchronize_event(self):
         """
-        When a C{resynchronize} event occurs we should clear the information
-        held in memory by the activeprocess monitor.
+        When a C{resynchronize} event occurs, with 'process' scope, we should clear
+        the information held in memory by the activeprocess monitor.
         """
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
                                  started_after_boot=1030, process_name="init")
@@ -406,12 +406,100 @@ class ActiveProcessInfoTest(LandscapeTest):
         # No new messages should be pending
         self.assertMessages(messages, expected_messages)
 
-        self.reactor.fire("resynchronize")
+        process_scope = ["process"]
+        self.reactor.fire("resynchronize", process_scope)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         # The resynchronisation should cause the same messages to be generated
         # again.
         expected_messages.extend(expected_messages)
+        self.assertMessages(messages, expected_messages)
+
+    def test_resynchronize_event_with_global_scope(self):
+        """
+        When a C{resynchronize} event occurs, with 'global' scope, we should
+        act as if we have received it with 'package' scope.
+        """
+        self.builder.create_data(672, self.builder.TRACING_STOP,
+                                 uid=1000, gid=1000, started_after_boot=1120,
+                                 process_name="blarpy")
+
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
+                                   jiffies=10, boot_time=0)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+
+        expected_messages = [{"add-processes": [
+                               {"gid": 1000,
+                                "name": u"blarpy",
+                                "pid": 672,
+                                "start-time": 112,
+                                "state": "t",
+                                "uid": 1000,
+                                "vm-size": 11676,
+                                "percent-cpu": 0.0}],
+                              "kill-all-processes": True,
+                              "type": "active-process-info"}]
+
+        self.assertMessages(messages, expected_messages)
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        # No new messages should be pending
+        self.assertMessages(messages, expected_messages)
+
+        global_scope = []
+        self.reactor.fire("resynchronize", global_scope)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        # The resynchronisation should cause the same messages to be generated
+        # again.
+        expected_messages.extend(expected_messages)
+        self.assertMessages(messages, expected_messages)
+
+    def test_do_not_resynchronize_with_other_scope(self):
+        """
+        When a C{resynchronize} event occurs, with an irrelevant scope, we should
+        do nothing.
+        """
+        self.builder.create_data(672, self.builder.TRACING_STOP,
+                                 uid=1000, gid=1000, started_after_boot=1120,
+                                 process_name="blarpy")
+
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
+                                   jiffies=10, boot_time=0)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+
+        expected_messages = [{"add-processes": [
+                               {"gid": 1000,
+                                "name": u"blarpy",
+                                "pid": 672,
+                                "start-time": 112,
+                                "state": "t",
+                                "uid": 1000,
+                                "vm-size": 11676,
+                                "percent-cpu": 0.0}],
+                              "kill-all-processes": True,
+                              "type": "active-process-info"}]
+
+        self.assertMessages(messages, expected_messages)
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        # No new messages should be pending
+        self.assertMessages(messages, expected_messages)
+
+        disk_scope = ["disk"]
+        self.reactor.fire("resynchronize", disk_scope)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        # The resynchronisation should not have fired, so we won't see any
+        # additional messages here.
         self.assertMessages(messages, expected_messages)
 
     def test_do_not_persist_changes_when_send_message_fails(self):
