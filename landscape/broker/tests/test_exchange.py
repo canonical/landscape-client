@@ -56,7 +56,8 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.set_accepted_types(["empty"])
         global_scope = []
         self.reactor.fire("resynchronize-clients", global_scope)
-        broker.send_message({"type": "empty"}, session_id)
+        broker.send_message({"type": "empty"}, disk_session_id)
+        broker.send_message({"type": "empty"}, package_session_id)
         self.exchanger.exchange()
         messages = self.transport.payloads[0]["messages"]
         self.assertMessages(messages, [])

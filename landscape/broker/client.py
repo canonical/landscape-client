@@ -32,7 +32,7 @@ class BrokerClientPlugin(object):
     run_interval = 5
     run_immediately = False
     _session_id = None
-    scope = None # Global scope
+    scope = None  # Global scope
 
     def register(self, client):
         self.client = client
