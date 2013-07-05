@@ -9,6 +9,7 @@ from landscape.monitor.plugin import DataWatcher
 class ActiveProcessInfo(DataWatcher):
 
     message_type = "active-process-info"
+    scope = "process"
 
     def __init__(self, proc_dir="/proc", boot_time=None, jiffies=None,
                  uptime=None, popen=subprocess.Popen):
@@ -29,11 +30,12 @@ class ActiveProcessInfo(DataWatcher):
         self.call_on_accepted(self.message_type, self.exchange, True)
         self.registry.reactor.call_on("resynchronize", self._resynchronize)
 
-    def _resynchronize(self):
+    def _resynchronize(self, scopes):
         """Resynchronize active process data."""
-        self._first_run = True
-        self._persist_processes = {}
-        self._previous_processes = {}
+        if len(scopes) == 0 or self.scope in scopes:
+            self._first_run = True
+            self._persist_processes = {}
+            self._previous_processes = {}
 
     def get_message(self):
         message = {}
