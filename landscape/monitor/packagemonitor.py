@@ -11,6 +11,7 @@ from landscape.monitor.plugin import MonitorPlugin
 class PackageMonitor(MonitorPlugin):
 
     run_interval = 1800
+    scope = "package"
 
     def __init__(self, package_store_filename=None):
         super(PackageMonitor, self).__init__()
@@ -129,7 +130,7 @@ class PackageMonitor(MonitorPlugin):
         if output:
             logging.warning("Package reporter output:\n%s" % output)
 
-    def _resynchronize(self):
+    def _resynchronize(self, scope):
         """
         Remove all tasks *except* the resynchronize task.  This is
         because if we clear all tasks, then add the resynchronize,
@@ -141,9 +142,12 @@ class PackageMonitor(MonitorPlugin):
         resynchronize task and not causing sqlite to reset the serial
         key.
         """
-        task = self._package_store.add_task("reporter",
-                                            {"type": "resynchronize"})
-        self._package_store.clear_tasks(except_tasks=(task,))
+        # Ensure this resynchronize event is in our scope.  The empty list is
+        # global scope.
+        if len(scope) == 0 or self.scope in scope:
+            task = self._package_store.add_task("reporter",
+                                                {"type": "resynchronize"})
+            self._package_store.clear_tasks(except_tasks=(task,))
 
     def _server_uuid_changed(self, old_uuid, new_uuid):
         """Called when the broker sends a server-uuid-changed event.
