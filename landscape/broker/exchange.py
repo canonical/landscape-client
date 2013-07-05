@@ -461,10 +461,16 @@ class MessageExchange(object):
 
     def _handle_resynchronize(self, message):
         opid = message["operation-id"]
-        self.send({"type": "resynchronize", "operation-id": opid})
-        self._reactor.fire("resynchronize-clients")
+        if "scopes" in message:
+            scopes = message["scopes"]
+        else:
+            scopes = []
+        self.send({"type": "resynchronize",
+                   "operation-id": opid,
+                   "scopes": scopes})
+        self._reactor.fire("resynchronize-clients", scopes)
 
-    def _resynchronize(self):
+    def _resynchronize(self, scopes):
         # When re-synchronisation occurs we don't want any previous messages
         # being sent to the server, dropping the existing session_ids means
         # that messages sent with those IDs will be dropped by the broker.
@@ -689,9 +695,10 @@ class MessageExchange(object):
             # up-to-date data.
             logging.info("Server asked for ancient data: resynchronizing all "
                          "state with the server.")
-
-            self.send({"type": "resynchronize"})
-            self._reactor.fire("resynchronize-clients")
+            global_scope = []
+            self.send({"type": "resynchronize",
+                       "scopes": global_scope})
+            self._reactor.fire("resynchronize-clients", global_scope)
 
         # Save the exchange token that the server has sent us. We will provide
         # it at the next exchange to prove that we're still the same client.
