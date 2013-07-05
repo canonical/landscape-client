@@ -32,10 +32,11 @@ class BrokerClientPlugin(object):
     run_interval = 5
     run_immediately = False
     _session_id = None
+    scope = None # Global scope
 
     def register(self, client):
         self.client = client
-        deferred = self.client.broker.get_session_id()
+        deferred = self.client.broker.get_session_id(scope=self.scope)
         deferred.addCallback(self._got_session_id)
 
     @property

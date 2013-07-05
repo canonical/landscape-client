@@ -34,6 +34,18 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.assertIsNot(None, plugin._session_id)
 
+    def test_registered_plugin_uses_correct_scope(self):
+        """
+        When we register a plugin we use that plugin's scope variable when
+        getting a session id.
+        """
+        test_session_id = self.successResultOf(
+            self.client.broker.get_session_id(scope="test"))
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+        self.assertEqual(test_session_id, plugin._session_id)
+
     def test_get_plugins(self):
         """
         The L{BrokerClient.get_plugins} method returns a list
