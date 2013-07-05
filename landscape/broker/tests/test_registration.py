@@ -401,8 +401,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         results = []
 
-        def append():
-            results.append(True)
+        def append(scopes):
+            results.append(scopes)
 
         self.reactor.call_on("resynchronize-clients", append)
 
@@ -412,7 +412,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
-        self.assertEqual(results, [True])
+        # This assertion does two thing, it checks both that the callback fired
+        # and that it was passed global scope (the empty list) for
+        # resynchronisation.
+        self.assertEqual(results, [[]])
 
     def test_register_deferred_called_on_failed(self):
         # We don't want informational messages.
