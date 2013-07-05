@@ -2,7 +2,7 @@ from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
 from landscape.lib.fetch import fetch_async
-from landscape.schema import Message, Int
+from landscape.schema import Message, Int, List, String
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
@@ -38,7 +38,7 @@ class MessageExchangeTest(LandscapeTest):
         to be scheduled.
         """
         self.assertFalse(self.exchanger.is_urgent())
-        self.reactor.fire("resynchronize-clients")
+        self.reactor.fire("resynchronize-clients", [])
         self.assertTrue(self.exchanger.is_urgent())
 
     def test_that_resynchronize_drops_session_ids(self):
@@ -344,7 +344,7 @@ class MessageExchangeTest(LandscapeTest):
         # the server loses some data
         self.transport.next_expected_sequence = 0
 
-        def resynchronize():
+        def resynchronize(scopes):
             # We'll add a message to the message store here, since this is what
             # is commonly done in a resynchronize callback. This message added
             # should come AFTER the "resynchronize" message that is generated
@@ -357,7 +357,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "empty"},
-                             {"type": "resynchronize"},
+                             {"type": "resynchronize", "scopes": []},
                              {"type": "data", "data": 999}])
 
     def test_resynchronize_msg_causes_resynchronize_response_then_event(self):
@@ -369,7 +369,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["empty", "resynchronize"])
 
-        def resynchronized():
+        def resynchronized(scopes):
             self.mstore.add({"type": "empty"})
         self.reactor.call_on("resynchronize-clients", resynchronized)
 
@@ -378,8 +378,37 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "resynchronize",
-                              "operation-id": 123},
+                              "operation-id": 123,
+                              "scopes": []},
                              {"type": "empty"}])
+
+    def test_scopes_are_copied_from_incoming_resynchronize_messages(self):
+        """
+        If an incoming message of type 'reysnchronize' contains a 'scopes' key,
+        then it's value is copied into the return 'resynchronize' message and
+        into the "resynchronize-clients" event.
+        """
+        self.mstore.add_schema(Message("resynchronize-clients",
+                                       {"scopes": List(String())}))
+
+        self.mstore.set_accepted_types(["resynchronize-clients",
+                                        "resynchronize"])
+
+        def resynchronized(scopes):
+            self.mstore.add({"type": "resynchronize-clients",
+                             "scopes": scopes})
+        self.reactor.call_on("resynchronize-clients", resynchronized)
+
+        self.transport.responses.append([{"type": "resynchronize",
+                                          "operation-id": 123,
+                                          "scopes": ["disk", "users"]}])
+        self.exchanger.exchange()
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "resynchronize",
+                              "operation-id": 123,
+                              "scopes": ["disk", "users"]},
+                             {"type": "resynchronize-clients",
+                              "scopes": ["disk", "users"]}])
 
     def test_no_urgency_when_server_expects_current_message(self):
         """
