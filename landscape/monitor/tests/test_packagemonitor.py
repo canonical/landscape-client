@@ -200,15 +200,18 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_resynchronize(self):
         """
-        If a 'resynchronize' reactor event is fired, the package
-        monitor should clear all queued tasks and queue a task that
+        If a 'resynchronize' reactor event is fired with 'package' scope, the
+        package monitor should clear all queued tasks and queue a task that
         tells the report to clear out the rest of the package data.
         """
         self.monitor.add(self.package_monitor)
         message = {"type": "package-ids", "ids": [None], "request-id": 1}
         self.package_store.add_task("reporter", message)
 
-        self.monitor.reactor.fire("resynchronize")
+        # The server doesn't currently send 'package' scope, but we should
+        # support it in case we change that in the future.
+        package_scope = ["package"]
+        self.monitor.reactor.fire("resynchronize", package_scope)
 
         # The next task should be the resynchronize message.
         task = self.package_store.get_next_task("reporter")
@@ -224,6 +227,39 @@ class PackageMonitorTest(LandscapeTest):
         task.remove()
         task = self.package_store.get_next_task("reporter")
         self.assertEqual(task, None)
+
+    def test_resynchronize_on_global_scope(self):
+        """
+        If a 'resynchronize' reactor event is fired with global scope (the empty
+        list) , the package monitor should act as if it were an event with
+        'package' scope.
+        """
+        self.monitor.add(self.package_monitor)
+        message = {"type": "package-ids", "ids": [None], "request-id": 1}
+        self.package_store.add_task("reporter", message)
+
+        global_scope = []
+        self.monitor.reactor.fire("resynchronize", global_scope)
+
+        # The next task should be the resynchronize message.
+        task = self.package_store.get_next_task("reporter")
+        self.assertEqual(task.data, {"type": "resynchronize"})
+
+    def test_not_resynchronize_with_other_scope(self):
+        """
+        If a 'resynchronize' reactor event is fired with an irrelevant scope,
+        the package monitor should not respond to this.
+        """
+        self.monitor.add(self.package_monitor)
+        message = {"type": "package-ids", "ids": [None], "request-id": 1}
+        self.package_store.add_task("reporter", message)
+
+        disk_scope = ["disk"]
+        self.monitor.reactor.fire("resynchronize", disk_scope)
+
+        # The next task should *not* be the resynchronize message.
+        task = self.package_store.get_next_task("reporter")
+        self.assertNotEqual(task.data, {"type": "resynchronize"})
 
     def test_spawn_reporter_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
