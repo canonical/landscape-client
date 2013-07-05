@@ -14,6 +14,7 @@ class MonitorPlugin(BrokerClientPlugin):
     """
 
     persist_name = None
+    scope = None
 
     def register(self, monitor):
         super(MonitorPlugin, self).register(monitor)
@@ -23,8 +24,9 @@ class MonitorPlugin(BrokerClientPlugin):
         else:
             self._persist = None
 
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
+    def _resynchronize(self, scopes):
+        if len(scopes) == 0 or self.scope in scopes:
+            self.registry.persist.remove(self.persist_name)
 
     @property
     def persist(self):

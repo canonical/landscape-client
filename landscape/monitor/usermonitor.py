@@ -14,6 +14,7 @@ class UserMonitor(MonitorPlugin):
     """
 
     persist_name = "users"
+    scope = "users"
     run_interval = 3600  # 1 hour
     name = "usermonitor"
 
@@ -38,10 +39,11 @@ class UserMonitor(MonitorPlugin):
             self._publisher.stop()
             self._publisher = None
 
-    def _resynchronize(self):
+    def _resynchronize(self, scopes):
         """Resynchronize user and group data."""
-        super(UserMonitor, self)._resynchronize()
-        return self._run_detect_changes()
+        super(UserMonitor, self)._resynchronize(scopes)
+        if len(scopes) == 0 or self.scope in scopes:
+            return self._run_detect_changes()
 
     @remote
     def detect_changes(self, operation_id=None):

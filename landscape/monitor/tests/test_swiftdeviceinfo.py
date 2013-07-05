@@ -136,7 +136,8 @@ class SwiftDeviceInfoTest(LandscapeTest):
 
         plugin.run()
         plugin.exchange()
-        self.reactor.fire("resynchronize")
+        openstack_scope = ["openstack"]
+        self.reactor.fire("resynchronize", openstack_scope)
         plugin.run()
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
