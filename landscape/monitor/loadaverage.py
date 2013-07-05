@@ -47,7 +47,8 @@ class LoadAverage(MonitorPlugin):
     def send_message(self, urgent=False):
         message = self.create_message()
         if len(message["load-averages"]):
-            self.registry.broker.send_message(message, urgent=urgent)
+            self.registry.broker.send_message(message, self._session_id,
+                                              urgent=urgent)
 
     def run(self):
         self._monitor.ping()

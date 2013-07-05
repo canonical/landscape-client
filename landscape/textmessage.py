@@ -32,9 +32,14 @@ def send_message(text, broker):
         the message.
     @return: A L{Deferred} which will fire with the result of the send.
     """
+    def got_session_id(session_id):
+        response = broker.send_message(message, session_id, True)
+        return response
+
     message = {"type": "text-message", "message": text}
-    response = broker.send_message(message, True)
-    return response
+    result = broker.get_session_id()
+    result.addCallback(got_session_id)
+    return result
 
 
 def got_result(result):

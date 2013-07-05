@@ -1,13 +1,5 @@
-import logging
-import os
 import random
 
-from twisted.internet.utils import getProcessOutput
-from twisted.internet.defer import succeed
-
-from landscape.package.store import PackageStore
-from landscape.package.changer import PackageChanger
-from landscape.package.releaseupgrader import ReleaseUpgrader
 from landscape.manager.plugin import ManagerPlugin
 from landscape.manager.manager import SUCCEEDED
 
@@ -31,7 +23,8 @@ class FakePackageManager(ManagerPlugin):
     def _handle(self, response):
         delay = self.randint(30, 300)
         self.registry.reactor.call_later(
-            delay, self.manager.broker.send_message, response, urgent=True)
+            delay, self.manager.broker.send_message, response,
+            self._session_id, urgent=True)
 
     def handle_change_packages(self, message):
         response = {"type": "change-packages-result",

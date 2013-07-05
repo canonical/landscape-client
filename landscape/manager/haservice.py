@@ -73,7 +73,8 @@ class HAService(ManagerPlugin):
                 message["result-text"] = data.decode("utf-8", "replace")
             else:
                 message["result-text"] = data.decode("utf-8", "replace")
-        return self.registry.broker.send_message(message, True)
+        return self.registry.broker.send_message(
+            message, self._session_id, True)
 
     def _respond_success(self, data, message, operation_id):
         logging.info(message)

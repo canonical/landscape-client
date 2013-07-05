@@ -25,6 +25,15 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.assertIs(plugin.client, self.client)
 
+    def test_registering_plugin_gets_session_id(self):
+        """
+        As part of the BrokerClientPlugin registration process, a session ID
+        is generated.
+        """
+        plugin = BrokerClientPlugin()
+        self.client.add(plugin)
+        self.assertIsNot(None, plugin._session_id)
+
     def test_get_plugins(self):
         """
         The L{BrokerClient.get_plugins} method returns a list

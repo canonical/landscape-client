@@ -91,7 +91,7 @@ Prompt=never
         C{update-manager} messages.
         """
         broker_mock = self.mocker.replace(self.remote)
-        broker_mock.send_message(ANY)
+        broker_mock.send_message(ANY, ANY)
         self.mocker.replay()
         self.plugin.run()
         self.mstore.set_accepted_types([])

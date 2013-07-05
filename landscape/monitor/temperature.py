@@ -56,7 +56,8 @@ class Temperature(MonitorPlugin):
 
     def send_messages(self, urgent):
         for message in self.create_messages():
-            self.registry.broker.send_message(message, urgent=urgent)
+            self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted("temperature",

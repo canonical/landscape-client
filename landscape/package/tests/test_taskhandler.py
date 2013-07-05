@@ -154,6 +154,18 @@ class PackageTaskHandlerTest(LandscapeTest):
         result.addCallback(callback)
         return result
 
+    def test_get_session_id(self):
+        """
+        L{get_session_id} returns a session ID.
+        """
+
+        def assertHaveSessionId(session_id):
+            self.assertTrue(session_id is not None)
+
+        result = self.handler.get_session_id()
+        result.addCallback(assertHaveSessionId)
+        return result
+
     def test_use_hash_id_db_undetermined_arch(self):
 
         # Fake uuid and codename

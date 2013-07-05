@@ -66,7 +66,8 @@ class DataWatcher(MonitorPlugin):
         if message is not None:
             info("Queueing a message with updated data watcher info "
                  "for %s.", format_object(self))
-            result = self.registry.broker.send_message(message, urgent=urgent)
+            result = self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent)
 
             def persist_data(message_id):
                 self.persist_data()

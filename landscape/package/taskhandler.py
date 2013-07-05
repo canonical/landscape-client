@@ -103,6 +103,7 @@ class PackageTaskHandler(object):
         self._broker = remote_broker
         self._config = config
         self._count = 0
+        self._session_id = None
 
     def run(self):
         return self.handle_tasks()
@@ -234,6 +235,16 @@ class PackageTaskHandler(object):
 
         result = self._broker.get_server_uuid()
         result.addCallback(got_server_uuid)
+        return result
+
+    def get_session_id(self):
+
+        def got_session_id(session_id):
+            self._session_id = session_id
+            return session_id
+
+        result = self._broker.get_session_id()
+        result.addCallback(got_session_id)
         return result
 
 

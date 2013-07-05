@@ -151,7 +151,7 @@ class AptPreferencesTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["apt-preferences"])
         broker_mock = self.mocker.replace(self.remote)
-        broker_mock.send_message(ANY, urgent=True)
+        broker_mock.send_message(ANY, ANY, urgent=True)
         self.mocker.result(succeed(None))
         self.mocker.replay()
         preferences_filename = os.path.join(self.etc_apt_directory,

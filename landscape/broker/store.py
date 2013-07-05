@@ -96,6 +96,7 @@ import time
 import itertools
 import logging
 import os
+import uuid
 
 from landscape.lib import bpickle
 from landscape import SERVER_API
@@ -420,6 +421,51 @@ class MessageStore(object):
 
     def _add_flags(self, path, flags):
         self._set_flags(path, self._get_flags(path) + flags)
+
+    def get_session_id(self, scope=None):
+        """Generate a unique session identifier, persist it and return it.
+
+        See also L{landscape.broker.server.Broker Server.get_session_id} for
+        more information on what this is used for.
+
+        @param scope: A string identifying the scope of interest of requesting
+            object. Currently this is unused but it has been implemented in
+            preparation for a fix for bug #300278 so that we don't have to
+            change the persisted structure later.  When that fix is in place
+            this will allow us to re-synchronise only certain types of
+            information, limited by scope.
+        """
+        session_ids = self._persist.get("session-ids", {})
+        for session_id, stored_scope in session_ids.iteritems():
+            # This loop should be relatively short as it's intent is to limit
+            # session-ids to one per scope.  The or condition here is not
+            # strictly necessary, but we *should* do "is" comparisons when we
+            # can (so says PEP 8).
+            if scope is stored_scope or scope == stored_scope:
+                return session_id
+        session_id = str(uuid.uuid4())
+        session_ids[session_id] = scope
+        self._persist.set("session-ids", session_ids)
+        return session_id
+
+    def is_valid_session_id(self, session_id):
+        """
+        Returns L{True} if the provided L{session_id} is known by this
+        L{MessageStore}.
+        """
+        return session_id in self._persist.get("session-ids", {})
+
+    def drop_session_ids(self, scope=None):
+        """
+        Drop all session ids.
+        """
+        new_session_ids = {}
+        if scope is not None:
+            session_ids = self._persist.get("session-ids", {})
+            for session_id, session_scope in session_ids.iteritems():
+                if session_scope != scope:
+                    new_session_ids[session_id] = session_scope
+        self._persist.set("session-ids", new_session_ids)
 
 
 def get_default_message_store(*args, **kwargs):

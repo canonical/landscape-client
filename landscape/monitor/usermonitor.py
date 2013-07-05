@@ -100,7 +100,8 @@ class UserMonitor(MonitorPlugin):
             message["type"] = "users"
             if operation_id:
                 message["operation-id"] = operation_id
-            result = self.registry.broker.send_message(message, urgent=True)
+            result = self.registry.broker.send_message(
+                message, self._session_id, urgent=True)
             result.addCallback(update_snapshot)
             result.addErrback(log_error)
             return result

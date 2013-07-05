@@ -11,6 +11,7 @@ from landscape.broker.ping import Pinger
 from landscape.broker.registration import RegistrationHandler
 from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
 from landscape.broker.tests.helpers import ExchangeHelper
+from landscape.broker.server import BrokerServer
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -39,6 +40,24 @@ class MessageExchangeTest(LandscapeTest):
         self.assertFalse(self.exchanger.is_urgent())
         self.reactor.fire("resynchronize-clients")
         self.assertTrue(self.exchanger.is_urgent())
+
+    def test_that_resynchronize_drops_session_ids(self):
+        """
+        When a resynchronisation event occurs all existing session IDs are
+        expired, so any new messages being sent with those IDs will be
+        discarded.
+        """
+        broker = BrokerServer(self.config, self.reactor,
+                              self.exchanger, None,
+                              self.mstore, None)
+
+        session_id = self.mstore.get_session_id()
+        self.mstore.set_accepted_types(["empty"])
+        self.reactor.fire("resynchronize-clients")
+        broker.send_message({"type": "empty"}, session_id)
+        self.exchanger.exchange()
+        messages = self.transport.payloads[0]["messages"]
+        self.assertMessages(messages, [])
 
     def test_send(self):
         """

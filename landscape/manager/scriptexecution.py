@@ -156,7 +156,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                    "operation-id": opid}
         if result_code:
             message["result-code"] = result_code
-        return self.registry.broker.send_message(message, True)
+        return self.registry.broker.send_message(
+            message, self._session_id, True)
 
     def _handle_execute_script(self, message):
         opid = message["operation-id"]

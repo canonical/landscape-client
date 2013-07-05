@@ -53,7 +53,8 @@ class SwiftDeviceInfo(MonitorPlugin):
         message = self.create_swift_device_info_message()
         if message:
             logging.info("Queueing message with updated swift device info.")
-            d = self.registry.broker.send_message(message, urgent=urgent)
+            d = self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent)
             d.addCallback(lambda x: self.persist_swift_info())
 
     def exchange(self):

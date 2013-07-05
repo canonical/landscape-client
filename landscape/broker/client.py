@@ -17,24 +17,26 @@ class BrokerClientPlugin(object):
     reactor handlers in the idiomatic way.
 
     If C{run} is defined on subclasses, it will be called every C{run_interval}
-    seconds after being registered.
+    +seconds after being registered.
 
     @cvar run_interval: The interval, in seconds, to execute the C{run} method.
         If set to C{None}, then C{run} will not be scheduled.
     @cvar run_immediately: If C{True} the plugin will be run immediately after
         it is registered.
+    @ivar _session_id: the session id to be passed when sending messages via
+        the broker.  This variable is set by the C{register} method and
+        should only need to be renewed when a re-synchronisation request is
+        sent. See L{landscape.broker.server.BrokerServer.send_message} for
+        more details.
     """
-
     run_interval = 5
     run_immediately = False
+    _session_id = None
 
     def register(self, client):
         self.client = client
-        if getattr(self, "run", None) is not None:
-            if self.run_immediately:
-                self.run()
-            if self.run_interval is not None:
-                self.client.reactor.call_every(self.run_interval, self.run)
+        deferred = self.client.broker.get_session_id()
+        deferred.addCallback(self._got_session_id)
 
     @property
     def registry(self):
@@ -52,6 +54,20 @@ class BrokerClientPlugin(object):
 
         self.client.reactor.call_on(("message-type-acceptance-changed", type),
                                     acceptance_changed)
+
+    def _got_session_id(self, session_id):
+        """Save the session ID and invoke the C{run} method.
+
+        We set the C{_session_id} attribute on the instance because it's
+        required in order to send messages.  See
+        L{BrokerService.get_session_id}.
+        """
+        self._session_id = session_id
+        if getattr(self, "run", None) is not None:
+            if self.run_immediately:
+                self.run()
+            if self.run_interval is not None:
+                self.client.reactor.call_every(self.run_interval, self.run)
 
 
 class BrokerClient(object):

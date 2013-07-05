@@ -123,7 +123,7 @@ class DataWatcherTest(LandscapeTest):
         make sure it sends the message urgently.
         """
         remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, urgent=True)
+        remote_broker_mock.send_message(ANY, ANY, urgent=True)
         self.mocker.result(succeed(None))
         self.mocker.replay()
 

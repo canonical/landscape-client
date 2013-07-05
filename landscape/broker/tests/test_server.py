@@ -30,14 +30,28 @@ class BrokerServerTest(LandscapeTest):
         """
         self.assertTrue(self.broker.ping())
 
+    def test_get_session_id(self):
+        """
+        The L{BrokerServer.get_session_id} method gets the same
+        session ID from the L{MessageStore} until it is dropped.
+        """
+        session_id1 = self.broker.get_session_id()
+        session_id2 = self.broker.get_session_id()
+        self.assertEqual(session_id1, session_id2)
+        self.mstore.drop_session_ids()
+        session_id3 = self.broker.get_session_id()
+        self.assertNotEqual(session_id1, session_id3)
+
     def test_send_message(self):
+
         """
         The L{BrokerServer.send_message} method forwards a message to the
         broker's exchanger.
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        self.broker.send_message(message)
+        session_id = self.broker.get_session_id()
+        self.broker.send_message(message, session_id)
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertFalse(self.exchanger.is_urgent())
 
@@ -48,9 +62,33 @@ class BrokerServerTest(LandscapeTest):
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        self.broker.send_message(message, True)
+        session_id = self.broker.get_session_id()
+        self.broker.send_message(message, session_id, urgent=True)
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertTrue(self.exchanger.is_urgent())
+
+    def test_send_message_wont_send_with_invalid_session_id(self):
+        """
+        The L{BrokerServer.send_message} call will silently drop messages
+        that have invalid session ids as they must have been generated
+        prior to the last resync request - this guards against out of
+        context data being sent to the server.
+        """
+        message = {"type": "test"}
+        self.mstore.set_accepted_types(["test"])
+        self.broker.send_message(message, "Not Valid")
+        self.assertMessages(self.mstore.get_pending_messages(), [])
+
+    def test_send_message_with_none_as_session_id_raises(self):
+        """
+        We should never call C{send_message} without first obtaining a session
+        id.  Attempts to do so should raise to alert the developer to their
+        mistake.
+        """
+        message = {"type", "test"}
+        self.mstore.set_accepted_types(["test"])
+        self.assertRaises(
+            RuntimeError, self.broker.send_message, message, None)
 
     def test_is_pending(self):
         """
@@ -60,7 +98,8 @@ class BrokerServerTest(LandscapeTest):
         self.assertFalse(self.broker.is_message_pending(123))
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
-        message_id = self.broker.send_message(message)
+        session_id = self.broker.get_session_id()
+        message_id = self.broker.send_message(message, session_id)
         self.assertTrue(self.broker.is_message_pending(message_id))
 
     def test_register_client(self):

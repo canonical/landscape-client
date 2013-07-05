@@ -454,3 +454,79 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(self.store.get_pending_messages(), [])
 
         self.assertFalse(self.store.is_pending(id))
+
+    def test_get_session_id_returns_the_same_id_for_the_same_scope(self):
+        """We get the same id returned from get_session_id when we used the
+        same scope.
+        """
+        global_session_id1 = self.store.get_session_id()
+        global_session_id2 = self.store.get_session_id()
+        self.assertEqual(global_session_id1, global_session_id2)
+
+    def test_get_session_id_unique_for_each_scope(self):
+        """We get a unique session id for differing scopes.
+        """
+        session_id1 = self.store.get_session_id()
+        session_id2 = self.store.get_session_id(scope="other")
+        self.assertNotEqual(session_id1, session_id2)
+
+    def test_get_session_id_assigns_global_scope_when_none_is_provided(self):
+        """Test that get_session_id puts session ids in global scope by
+        default.
+        """
+        session_id = self.store.get_session_id()
+        persisted_ids = self.store._persist.get('session-ids')
+        scope = persisted_ids[session_id]
+        self.assertIs(None, scope)
+
+    def test_get_session_id_with_scope(self):
+        """Test that we can generate a session id within a limited scope."""
+        session_id = self.store.get_session_id(scope="hwinfo")
+        persisted_ids = self.store._persist.get('session-ids')
+        scope = persisted_ids[session_id]
+        self.assertEqual("hwinfo", scope)
+
+    def test_persisted_session_ids_are_valid(self):
+        """
+        Test that generated session ids are persisted in the message store
+        and can be validated with C{is_valid_session_id}.
+        """
+        session_id = self.store.get_session_id()
+        self.assertTrue(self.store.is_valid_session_id(session_id))
+
+    def test_unknown_session_ids_are_not_valid(self):
+        """
+        If the provided session id is not in the persisted list of session
+        ids then it can not be validated with C{is_valid_session_id}.
+        """
+        session_id = "I've got a lovely bunch of coconuts"
+        self.assertFalse(self.store.is_valid_session_id(session_id))
+
+    def test_drop_session_ids(self):
+        """
+        Session ids can be dropped on demand.
+        """
+        session_id = self.store.get_session_id()
+        self.store.drop_session_ids()
+        self.assertFalse(self.store.is_valid_session_id(session_id))
+
+    def test_drop_session_ids_drops_all_scopes_with_no_scope_parameter(self):
+        """When C{drop_session_ids} is called with no scope then all
+        session_ids are dropped.
+        """
+        session_id1 = self.store.get_session_id()
+        session_id2 = self.store.get_session_id(scope="hwinfo")
+        self.store.drop_session_ids()
+        self.assertFalse(self.store.is_valid_session_id(session_id1))
+        self.assertFalse(self.store.is_valid_session_id(session_id2))
+
+    def test_drop_session_ids_with_scope_drops_only_that_scope(self):
+        """Calling C{drop_session_ids} with a scope only deletes session_ids
+        within that scope."""
+        global_session_id = self.store.get_session_id()
+        hwinfo_session_id = self.store.get_session_id(scope="hwinfo")
+        package_session_id = self.store.get_session_id(scope="package")
+        self.store.drop_session_ids(scope="hwinfo")
+        self.assertTrue(self.store.is_valid_session_id(global_session_id))
+        self.assertFalse(self.store.is_valid_session_id(hwinfo_session_id))
+        self.assertTrue(self.store.is_valid_session_id(package_session_id))

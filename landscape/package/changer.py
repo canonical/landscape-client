@@ -135,7 +135,7 @@ class PackageChanger(PackageTaskHandler):
                        "result-code": ERROR_RESULT,
                        "result-text": "Package data has changed. "
                                       "Please retry the operation."}
-            return self._broker.send_message(message)
+            return self._broker.send_message(message, self._session_id)
         else:
             raise PackageTaskError()
 
@@ -352,7 +352,7 @@ class PackageChanger(PackageTaskHandler):
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")
 
-        deferred = self._broker.send_message(response, True)
+        deferred = self._broker.send_message(response, self._session_id, True)
         if stop_exchanger:
             logging.info("stopping exchanger due to imminent reboot.")
             deferred.addCallback(lambda _: self._broker.stop_exchanger())
@@ -370,7 +370,7 @@ class PackageChanger(PackageTaskHandler):
             "status": FAILED,
             "result-text": "This client doesn't support package locks.",
             "result-code": 1}
-        return self._broker.send_message(response, True)
+        return self._broker.send_message(response, self._session_id, True)
 
     @staticmethod
     def find_command():

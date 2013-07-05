@@ -50,6 +50,7 @@ class AptPackageChangerTest(LandscapeTest):
             landscape_reactor=self.landscape_reactor,
             reboot_required_filename=reboot_required_filename)
         self.changer.update_notifier_stamp = "/Not/Existing"
+        self.changer.get_session_id()
         service = self.broker_service
         service.message_store.set_accepted_types(["change-packages-result",
                                                   "operation-result"])

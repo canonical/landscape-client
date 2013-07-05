@@ -50,12 +50,15 @@ class PackageReporter(PackageTaskHandler):
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
+    _session_id = None
     _got_task = False
 
     def run(self):
         self._got_task = False
 
         result = Deferred()
+        # Set us up to communicate properly
+        result.addCallback(lambda x: self.get_session_id())
 
         result.addCallback(lambda x: self.run_apt_update())
 
@@ -81,7 +84,8 @@ class PackageReporter(PackageTaskHandler):
         return result
 
     def send_message(self, message):
-        return self._broker.send_message(message, True)
+        return self._broker.send_message(
+            message, self._session_id, True)
 
     def fetch_hash_id_db(self):
         """
@@ -643,6 +647,8 @@ class FakeReporter(PackageReporter):
 
     def run(self):
         result = succeed(None)
+
+        result.addCallback(lambda x: self.get_session_id())
 
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
