@@ -135,8 +135,7 @@ class DataWatcherTest(LandscapeTest):
 
     def test_get_message(self):
         self.assertEqual(self.plugin.get_message(),
-
-        {"type": "wubble", "wubblestuff": 1})
+                         {"type": "wubble", "wubblestuff": 1})
 
     def test_get_message_unchanging(self):
         self.assertEqual(self.plugin.get_message(),
