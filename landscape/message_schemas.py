@@ -141,7 +141,7 @@ RESYNCHRONIZE = Message(
      "scopes": List(String())},
     # operation-id is only there if it's a response to a server-initiated
     # resynchronize.
-    optional=["operation-id"])
+    optional=["operation-id", "scopes"])
 
 MOUNT_ACTIVITY = Message("mount-activity", {
     "activities": List(Tuple(Float(), utf8, Bool()))})
