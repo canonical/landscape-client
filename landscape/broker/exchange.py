@@ -461,10 +461,7 @@ class MessageExchange(object):
 
     def _handle_resynchronize(self, message):
         opid = message["operation-id"]
-        if "scopes" in message:
-            scopes = message["scopes"]
-        else:
-            scopes = []
+        scopes = message.get("scopes", [])
         self.send({"type": "resynchronize",
                    "operation-id": opid,
                    "scopes": scopes})
