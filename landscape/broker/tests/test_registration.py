@@ -398,7 +398,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue(), "")
 
     def test_resynchronize_fired_when_registration_done(self):
-
+        """
+        When we call C{register} this should trigger a "resynchronize-clients"
+        event with global scope.
+        """
         results = []
 
         def append(scopes):
@@ -412,9 +415,6 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
-        # This assertion does two thing, it checks both that the callback fired
-        # and that it was passed global scope (the empty list) for
-        # resynchronisation.
         self.assertEqual(results, [[]])
 
     def test_register_deferred_called_on_failed(self):
