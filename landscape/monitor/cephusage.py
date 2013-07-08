@@ -36,7 +36,7 @@ class CephUsage(MonitorPlugin):
     """
 
     persist_name = "ceph-usage"
-    scope = "openstack"
+    scope = "storage"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
