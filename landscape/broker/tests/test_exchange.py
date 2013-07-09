@@ -53,7 +53,7 @@ class MessageExchangeTest(LandscapeTest):
 
         session_id = self.mstore.get_session_id()
         self.mstore.set_accepted_types(["empty"])
-        global_scope = []
+        global_scope = None
         self.reactor.fire("resynchronize-clients", global_scope)
         broker.send_message({"type": "empty"}, session_id)
         self.exchanger.exchange()
@@ -358,7 +358,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "empty"},
-                             {"type": "resynchronize", "scopes": []},
+                             {"type": "resynchronize"},
                              {"type": "data", "data": 999}])
 
     def test_resynchronize_msg_causes_resynchronize_response_then_event(self):
@@ -379,8 +379,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "resynchronize",
-                              "operation-id": 123,
-                              "scopes": []},
+                              "operation-id": 123},
                              {"type": "empty"}])
 
     def test_scopes_are_copied_from_incoming_resynchronize_messages(self):
@@ -406,8 +405,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "resynchronize",
-                              "operation-id": 123,
-                              "scopes": ["disk", "users"]},
+                              "operation-id": 123},
                              {"type": "resynchronize-clients",
                               "scopes": ["disk", "users"]}])
 
