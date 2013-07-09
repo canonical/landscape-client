@@ -36,5 +36,9 @@ API = SERVER_API
 #
 # 3.5:
 #  * Support per-exchange authentication tokens
+#
+# 3.6:
+#  * Handle scopes in resynchronize requests
 
-CLIENT_API = "3.5"
+
+CLIENT_API = "3.6"
