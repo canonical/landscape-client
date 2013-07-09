@@ -404,7 +404,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         results = []
 
-        def append(scopes):
+        def append(scopes=None):
             results.append(scopes)
 
         self.reactor.call_on("resynchronize-clients", append)

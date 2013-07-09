@@ -38,7 +38,7 @@ class MessageExchangeTest(LandscapeTest):
         to be scheduled.
         """
         self.assertFalse(self.exchanger.is_urgent())
-        self.reactor.fire("resynchronize-clients", [])
+        self.reactor.fire("resynchronize-clients")
         self.assertTrue(self.exchanger.is_urgent())
 
     def test_that_resynchronize_drops_session_ids(self):
@@ -53,8 +53,7 @@ class MessageExchangeTest(LandscapeTest):
 
         session_id = self.mstore.get_session_id()
         self.mstore.set_accepted_types(["empty"])
-        global_scope = None
-        self.reactor.fire("resynchronize-clients", global_scope)
+        self.reactor.fire("resynchronize-clients")
         broker.send_message({"type": "empty"}, session_id)
         self.exchanger.exchange()
         messages = self.transport.payloads[0]["messages"]
@@ -345,7 +344,7 @@ class MessageExchangeTest(LandscapeTest):
         # the server loses some data
         self.transport.next_expected_sequence = 0
 
-        def resynchronize(scopes):
+        def resynchronize(scopes=None):
             # We'll add a message to the message store here, since this is what
             # is commonly done in a resynchronize callback. This message added
             # should come AFTER the "resynchronize" message that is generated
@@ -370,7 +369,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["empty", "resynchronize"])
 
-        def resynchronized(scopes):
+        def resynchronized(scopes=None):
             self.mstore.add({"type": "empty"})
         self.reactor.call_on("resynchronize-clients", resynchronized)
 
@@ -394,7 +393,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.set_accepted_types(["resynchronize-clients",
                                         "resynchronize"])
 
-        def resynchronized(scopes):
+        def resynchronized(scopes=None):
             self.mstore.add({"type": "resynchronize-clients",
                              "scopes": scopes})
         self.reactor.call_on("resynchronize-clients", resynchronized)
