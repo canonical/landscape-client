@@ -415,7 +415,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
-        self.assertEqual(results, [[]])
+        self.assertEqual(results, [None])
 
     def test_register_deferred_called_on_failed(self):
         # We don't want informational messages.
