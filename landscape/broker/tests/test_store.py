@@ -545,4 +545,3 @@ class MessageStoreTest(LandscapeTest):
         self.assertFalse(self.store.is_valid_session_id(disk_session_id))
         self.assertFalse(self.store.is_valid_session_id(hwinfo_session_id))
         self.assertTrue(self.store.is_valid_session_id(package_session_id))
-
