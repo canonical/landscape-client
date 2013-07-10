@@ -415,6 +415,20 @@ class ActiveProcessInfoTest(LandscapeTest):
         expected_messages.extend(expected_messages)
         self.assertMessages(messages, expected_messages)
 
+    def test_resynchronize_event_resets_session_id(self):
+        """
+        When a C{resynchronize} event occurs a new session id is acquired so
+        that future messages can be sent.
+        """
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
+                                   jiffies=10, boot_time=0)
+        self.monitor.add(plugin)
+        session_id = plugin._session_id
+        plugin.client.broker.message_store.drop_session_ids()
+        self.reactor.fire("resynchronize")
+        plugin.exchange()
+        self.assertNotEqual(session_id, plugin._session_id)
+
     def test_resynchronize_event_with_global_scope(self):
         """
         When a C{resynchronize} event occurs, with 'global' scope, we should
