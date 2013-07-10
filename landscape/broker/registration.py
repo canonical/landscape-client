@@ -329,8 +329,7 @@ class RegistrationHandler(object):
                      id.secure_id[-10:], id.account_name)
         logging.debug("Using new secure-id: %s", id.secure_id)
         self._reactor.fire("registration-done")
-        global_scope = []
-        self._reactor.fire("resynchronize-clients", global_scope)
+        self._reactor.fire("resynchronize-clients")
 
     def _handle_registration(self, message):
         if message["info"] == "unknown-account":
