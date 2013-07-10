@@ -85,7 +85,7 @@ class BrokerServerTest(LandscapeTest):
         id.  Attempts to do so should raise to alert the developer to their
         mistake.
         """
-        message = {"type", "test"}
+        message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.assertRaises(
             RuntimeError, self.broker.send_message, message, None)
