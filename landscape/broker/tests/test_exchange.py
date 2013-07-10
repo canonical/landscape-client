@@ -386,26 +386,20 @@ class MessageExchangeTest(LandscapeTest):
         If an incoming message of type 'reysnchronize' contains a 'scopes' key,
         then it's value is copied into the "resynchronize-clients" event.
         """
-        self.mstore.add_schema(Message("resynchronize-clients",
-                                       {"scopes": List(String())}))
-
-        self.mstore.set_accepted_types(["resynchronize-clients",
-                                        "resynchronize"])
+        fired_scopes = []
+        self.mstore.set_accepted_types(["reysnchronize"])
 
         def resynchronized(scopes=None):
-            self.mstore.add({"type": "resynchronize-clients",
-                             "scopes": scopes})
+            fired_scopes.extend(scopes)
+
+
         self.reactor.call_on("resynchronize-clients", resynchronized)
 
         self.transport.responses.append([{"type": "resynchronize",
                                           "operation-id": 123,
                                           "scopes": ["disk", "users"]}])
         self.exchanger.exchange()
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "resynchronize",
-                              "operation-id": 123},
-                             {"type": "resynchronize-clients",
-                              "scopes": ["disk", "users"]}])
+        self.assertEqual(["disk", "users"], fired_scopes)
 
     def test_no_urgency_when_server_expects_current_message(self):
         """
