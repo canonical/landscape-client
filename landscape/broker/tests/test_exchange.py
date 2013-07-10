@@ -384,8 +384,7 @@ class MessageExchangeTest(LandscapeTest):
     def test_scopes_are_copied_from_incoming_resynchronize_messages(self):
         """
         If an incoming message of type 'reysnchronize' contains a 'scopes' key,
-        then it's value is copied into the return 'resynchronize' message and
-        into the "resynchronize-clients" event.
+        then it's value is copied into the "resynchronize-clients" event.
         """
         self.mstore.add_schema(Message("resynchronize-clients",
                                        {"scopes": List(String())}))
