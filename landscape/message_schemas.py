@@ -136,8 +136,7 @@ MEMORY_INFO = Message("memory-info", {
     })
 
 RESYNCHRONIZE = Message(
-    "resynchronize",
-    {"operation-id": Int()},
+    "resynchronize", {"operation-id": Int()},
     # operation-id is only there if it's a response to a server-initiated
     # resynchronize.
     optional=["operation-id"])
