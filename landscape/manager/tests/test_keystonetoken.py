@@ -5,7 +5,6 @@ from landscape.manager.keystonetoken import KeystoneToken
 from landscape.tests.helpers import ManagerHelper
 
 
-
 class FakePersist(object):
 
     def __init__(self):
@@ -122,7 +121,8 @@ class KeystoneTokenTest(LandscapeTest):
 
     def test_do_not_resynchronize_with_other_scope(self):
         """
-        If the reactor fires a "resynchronize", with an irrelevant scope, we do nothing
+        If the reactor fires a "resynchronize", with an irrelevant scope, we do
+        nothing.
         """
         self.manager.add(self.plugin)
         self.plugin._persist = FakePersist()
