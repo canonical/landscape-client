@@ -368,6 +368,27 @@ class ReactorTestMixin(object):
         self.assertEqual(called[2], "g")
         self.assertEqual(called[3], thread.get_ident())
 
+    def test_cancelling_handlers(self):
+        """
+        If a handler modifies the list of handlers in-flight, the initial list
+        of handlers is still used (and all handlers are executed).
+        """
+        reactor = self.get_reactor()
+        calls = []
+
+        def handler_1():
+            reactor.cancel_call(event_id)
+
+        def handler_2():
+            calls.append(True)
+
+        # This call cancels itself.
+        event_id = reactor.call_on("foobar", handler_1)
+        reactor.call_on("foobar", handler_2)
+
+        reactor.fire("foobar")
+        self.assertEqual([True], calls)
+
 
 class FakeReactorTest(LandscapeTest, ReactorTestMixin):
 
