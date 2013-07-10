@@ -2,7 +2,7 @@ from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
 from landscape.lib.fetch import fetch_async
-from landscape.schema import Message, Int, List, String
+from landscape.schema import Message, Int
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
@@ -391,7 +391,6 @@ class MessageExchangeTest(LandscapeTest):
 
         def resynchronized(scopes=None):
             fired_scopes.extend(scopes)
-
 
         self.reactor.call_on("resynchronize-clients", resynchronized)
 
