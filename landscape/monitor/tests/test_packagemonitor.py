@@ -230,9 +230,9 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_resynchronize_on_global_scope(self):
         """
-        If a 'resynchronize' reactor event is fired with global scope (the empty
-        list) , the package monitor should act as if it were an event with
-        'package' scope.
+        If a 'resynchronize' reactor event is fired with global scope (the
+        empty list) , the package monitor should act as if it were an event
+        with 'package' scope.
         """
         self.monitor.add(self.package_monitor)
         message = {"type": "package-ids", "ids": [None], "request-id": 1}
