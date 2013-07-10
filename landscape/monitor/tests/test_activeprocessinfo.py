@@ -352,8 +352,8 @@ class ActiveProcessInfoTest(LandscapeTest):
 
     def test_resynchronize_event(self):
         """
-        When a C{resynchronize} event occurs, with 'process' scope, we should clear
-        the information held in memory by the activeprocess monitor.
+        When a C{resynchronize} event occurs, with 'process' scope, we should
+        clear the information held in memory by the activeprocess monitor.
         """
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
                                  started_after_boot=1030, process_name="init")
@@ -461,8 +461,8 @@ class ActiveProcessInfoTest(LandscapeTest):
 
     def test_do_not_resynchronize_with_other_scope(self):
         """
-        When a C{resynchronize} event occurs, with an irrelevant scope, we should
-        do nothing.
+        When a C{resynchronize} event occurs, with an irrelevant scope, we
+        should do nothing.
         """
         self.builder.create_data(672, self.builder.TRACING_STOP,
                                  uid=1000, gid=1000, started_after_boot=1120,
