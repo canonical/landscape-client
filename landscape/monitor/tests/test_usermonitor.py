@@ -137,8 +137,7 @@ class UserMonitorTest(LandscapeTest):
                                     "username": u"jdoe", "work-phone": None}],
                                     "type": "users"}])
         self.broker_service.message_store.delete_all_messages()
-        global_scope = []
-        deferred = self.monitor.reactor.fire("resynchronize", global_scope)[0]
+        deferred = self.monitor.reactor.fire("resynchronize")[0]
         self.successResultOf(deferred)
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),

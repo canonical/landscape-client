@@ -39,10 +39,10 @@ class UserMonitor(MonitorPlugin):
             self._publisher.stop()
             self._publisher = None
 
-    def _resynchronize(self, scopes):
+    def _resynchronize(self, scopes=None):
         """Resynchronize user and group data."""
         super(UserMonitor, self)._resynchronize(scopes)
-        if len(scopes) == 0 or self.scope in scopes:
+        if scopes is None or self.scope in scopes:
             return self._run_detect_changes()
 
     @remote

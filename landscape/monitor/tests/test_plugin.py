@@ -75,8 +75,7 @@ class MonitorPluginTest(LandscapeTest):
         plugin.register(self.monitor)
         plugin.persist.set("hi", "there")
         self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
-        global_scope = []
-        self.reactor.fire("resynchronize", global_scope)
+        self.reactor.fire("resynchronize")
         self.assertIsNone(self.monitor.persist.get("wubble"))
 
     def test_resynchronize_gets_new_session_id(self):
