@@ -130,7 +130,7 @@ class PackageMonitor(MonitorPlugin):
         if output:
             logging.warning("Package reporter output:\n%s" % output)
 
-    def _resynchronize(self, scope):
+    def _resynchronize(self, scopes):
         """
         Remove all tasks *except* the resynchronize task.  This is
         because if we clear all tasks, then add the resynchronize,
@@ -144,7 +144,7 @@ class PackageMonitor(MonitorPlugin):
         """
         # Ensure this resynchronize event is in our scope.  The empty list is
         # global scope.
-        if len(scope) == 0 or self.scope in scope:
+        if len(scopes) == 0 or self.scope in scopes:
             task = self._package_store.add_task("reporter",
                                                 {"type": "resynchronize"})
             self._package_store.clear_tasks(except_tasks=(task,))
