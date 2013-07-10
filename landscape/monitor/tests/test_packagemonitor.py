@@ -242,6 +242,19 @@ class PackageMonitorTest(LandscapeTest):
 
         self.assertSingleReporterTask({"type": "resynchronize"}, 2)
 
+    def test_resynchronize_gets_new_session_id(self):
+        """
+        When a 'resynchronize' reactor event is fired, the C{PackageMonitor}
+        acquires a new session ID (as the old one will be blocked).
+        """
+        self.monitor.add(self.package_monitor)
+        session_id = self.package_monitor._session_id
+        self.createReporterTask()
+
+        self.package_monitor.client.broker.message_store.drop_session_ids()
+        self.monitor.reactor.fire("resynchronize", None)
+        self.assertNotEqual(session_id, self.package_monitor._session_id)
+
     def test_resynchronize_on_global_scope(self):
         """
         If a 'resynchronize' reactor event is fired with global scope (the

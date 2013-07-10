@@ -130,7 +130,7 @@ class PackageMonitor(MonitorPlugin):
         if output:
             logging.warning("Package reporter output:\n%s" % output)
 
-    def _resynchronize(self, scopes):
+    def _resynchronize(self, scopes=None):
         """
         Remove all tasks *except* the resynchronize task.  This is
         because if we clear all tasks, then add the resynchronize,
@@ -144,10 +144,12 @@ class PackageMonitor(MonitorPlugin):
         """
         # Ensure this resynchronize event is in our scope.  The empty list is
         # global scope.
-        if len(scopes) == 0 or self.scope in scopes:
+        if scopes is None or self.scope in scopes:
             task = self._package_store.add_task("reporter",
                                                 {"type": "resynchronize"})
             self._package_store.clear_tasks(except_tasks=(task,))
+            deferred = self.client.broker.get_session_id()
+            deferred.addCallback(self._got_session_id)
 
     def _server_uuid_changed(self, old_uuid, new_uuid):
         """Called when the broker sends a server-uuid-changed event.
