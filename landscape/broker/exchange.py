@@ -462,8 +462,7 @@ class MessageExchange(object):
     def _handle_resynchronize(self, message):
         opid = message["operation-id"]
         scopes = message.get("scopes")
-        self.send({"type": "resynchronize",
-                   "operation-id": opid})
+        self.send({"type": "resynchronize", "operation-id": opid})
         self._reactor.fire("resynchronize-clients", scopes=scopes)
 
     def _resynchronize(self, scopes=None):
