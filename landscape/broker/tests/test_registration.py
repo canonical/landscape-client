@@ -398,11 +398,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue(), "")
 
     def test_resynchronize_fired_when_registration_done(self):
-
+        """
+        When we call C{register} this should trigger a "resynchronize-clients"
+        event with global scope.
+        """
         results = []
 
-        def append():
-            results.append(True)
+        def append(scopes=None):
+            results.append(scopes)
 
         self.reactor.call_on("resynchronize-clients", append)
 
@@ -412,7 +415,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
-        self.assertEqual(results, [True])
+        self.assertEqual(results, [None])
 
     def test_register_deferred_called_on_failed(self):
         # We don't want informational messages.

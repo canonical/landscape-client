@@ -344,7 +344,7 @@ class MessageExchangeTest(LandscapeTest):
         # the server loses some data
         self.transport.next_expected_sequence = 0
 
-        def resynchronize():
+        def resynchronize(scopes=None):
             # We'll add a message to the message store here, since this is what
             # is commonly done in a resynchronize callback. This message added
             # should come AFTER the "resynchronize" message that is generated
@@ -369,7 +369,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["empty", "resynchronize"])
 
-        def resynchronized():
+        def resynchronized(scopes=None):
             self.mstore.add({"type": "empty"})
         self.reactor.call_on("resynchronize-clients", resynchronized)
 
@@ -380,6 +380,25 @@ class MessageExchangeTest(LandscapeTest):
                             [{"type": "resynchronize",
                               "operation-id": 123},
                              {"type": "empty"}])
+
+    def test_scopes_are_copied_from_incoming_resynchronize_messages(self):
+        """
+        If an incoming message of type 'reysnchronize' contains a 'scopes' key,
+        then it's value is copied into the "resynchronize-clients" event.
+        """
+        fired_scopes = []
+        self.mstore.set_accepted_types(["reysnchronize"])
+
+        def resynchronized(scopes=None):
+            fired_scopes.extend(scopes)
+
+        self.reactor.call_on("resynchronize-clients", resynchronized)
+
+        self.transport.responses.append([{"type": "resynchronize",
+                                          "operation-id": 123,
+                                          "scopes": ["disk", "users"]}])
+        self.exchanger.exchange()
+        self.assertEqual(["disk", "users"], fired_scopes)
 
     def test_no_urgency_when_server_expects_current_message(self):
         """

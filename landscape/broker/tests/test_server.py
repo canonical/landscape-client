@@ -371,10 +371,11 @@ class EventTest(LandscapeTest):
         event to all connected clients.
         """
         callback = self.mocker.mock()
-        self.expect(callback()).result("foo")
+        self.expect(callback(["foo"])).result("foo")
         self.mocker.replay()
         self.client_reactor.call_on("resynchronize", callback)
-        return self.assertSuccess(self.broker.resynchronize(), [["foo"]])
+        return self.assertSuccess(self.broker.resynchronize(["foo"]),
+                                  [["foo"]])
 
     def test_impending_exchange(self):
         """

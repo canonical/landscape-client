@@ -461,10 +461,11 @@ class MessageExchange(object):
 
     def _handle_resynchronize(self, message):
         opid = message["operation-id"]
+        scopes = message.get("scopes")
         self.send({"type": "resynchronize", "operation-id": opid})
-        self._reactor.fire("resynchronize-clients")
+        self._reactor.fire("resynchronize-clients", scopes=scopes)
 
-    def _resynchronize(self):
+    def _resynchronize(self, scopes=None):
         # When re-synchronisation occurs we don't want any previous messages
         # being sent to the server, dropping the existing session_ids means
         # that messages sent with those IDs will be dropped by the broker.
@@ -689,7 +690,6 @@ class MessageExchange(object):
             # up-to-date data.
             logging.info("Server asked for ancient data: resynchronizing all "
                          "state with the server.")
-
             self.send({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
 
