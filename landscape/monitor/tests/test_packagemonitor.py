@@ -50,6 +50,7 @@ class PackageMonitorTest(LandscapeTest):
         task = self.package_store.get_next_task("reporter")
         self.assertEqual(task, None)
 
+
     def test_create_default_store_upon_message_handling(self):
         """
         If the package sqlite database file doesn't exist yet, it is created
