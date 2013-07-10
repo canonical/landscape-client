@@ -23,6 +23,34 @@ class PackageMonitorTest(LandscapeTest):
 
         self.package_monitor = PackageMonitor(self.package_store_filename)
 
+    def createReporterTask(self):
+        """
+        Put a task for the package reported into the package store.
+        """
+        message = {"type": "package-ids", "ids": [None], "request-id": 1}
+        self.package_store.add_task("reporter", message)
+
+    def assertSingleReporterTask(self, data, task_id):
+        """
+        Check that we have exactly one task, that it contains the right data
+        and that it's ID matches our expectation.
+        """
+        # The next task should contain the passed data.
+        task = self.package_store.get_next_task("reporter")
+        self.assertEqual(task.data, data)
+
+        # We want to make sure it has the correct id of 2 so that we
+        # know it's not a new task that the reporter could possibly
+        # remove by accident.
+        self.assertEqual(task.id, task_id)
+
+        # Let's remove that task and make sure there are no more tasks
+        # in the queue.
+        task.remove()
+        task = self.package_store.get_next_task("reporter")
+        self.assertEqual(task, None)
+
+
     def test_create_default_store_upon_message_handling(self):
         """
         If the package sqlite database file doesn't exist yet, it is created
@@ -205,28 +233,14 @@ class PackageMonitorTest(LandscapeTest):
         tells the report to clear out the rest of the package data.
         """
         self.monitor.add(self.package_monitor)
-        message = {"type": "package-ids", "ids": [None], "request-id": 1}
-        self.package_store.add_task("reporter", message)
+        self.createReporterTask()
 
         # The server doesn't currently send 'package' scope, but we should
         # support it in case we change that in the future.
         package_scope = ["package"]
         self.monitor.reactor.fire("resynchronize", package_scope)
 
-        # The next task should be the resynchronize message.
-        task = self.package_store.get_next_task("reporter")
-        self.assertEqual(task.data, {"type": "resynchronize"})
-
-        # We want to make sure it has the correct id of 2 so that we
-        # know it's not a new task that the reporter could possibly
-        # remove by accident.
-        self.assertEqual(task.id, 2)
-
-        # Let's remove that task and make sure there are no more tasks
-        # in the queue.
-        task.remove()
-        task = self.package_store.get_next_task("reporter")
-        self.assertEqual(task, None)
+        self.assertSingleReporterTask({"type": "resynchronize"}, 2)
 
     def test_resynchronize_on_global_scope(self):
         """
@@ -235,15 +249,13 @@ class PackageMonitorTest(LandscapeTest):
         with 'package' scope.
         """
         self.monitor.add(self.package_monitor)
-        message = {"type": "package-ids", "ids": [None], "request-id": 1}
-        self.package_store.add_task("reporter", message)
+        self.createReporterTask()
 
         global_scope = []
         self.monitor.reactor.fire("resynchronize", global_scope)
 
         # The next task should be the resynchronize message.
-        task = self.package_store.get_next_task("reporter")
-        self.assertEqual(task.data, {"type": "resynchronize"})
+        self.assertSingleReporterTask({"type": "resynchronize"}, 2)
 
     def test_not_resynchronize_with_other_scope(self):
         """
@@ -251,15 +263,14 @@ class PackageMonitorTest(LandscapeTest):
         the package monitor should not respond to this.
         """
         self.monitor.add(self.package_monitor)
-        message = {"type": "package-ids", "ids": [None], "request-id": 1}
-        self.package_store.add_task("reporter", message)
+        self.createReporterTask()
 
         disk_scope = ["disk"]
         self.monitor.reactor.fire("resynchronize", disk_scope)
 
         # The next task should *not* be the resynchronize message.
-        task = self.package_store.get_next_task("reporter")
-        self.assertNotEqual(task.data, {"type": "resynchronize"})
+        self.assertSingleReporterTask(
+            {'ids': [None], 'request-id': 1, 'type': 'package-ids'}, 1)
 
     def test_spawn_reporter_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
