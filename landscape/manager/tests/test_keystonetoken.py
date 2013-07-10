@@ -108,6 +108,18 @@ class KeystoneTokenTest(LandscapeTest):
         self.reactor.fire("resynchronize", openstack_scope)
         self.assertTrue(self.plugin._persist.called)
 
+    def test_resynchronize_gets_new_session_id(self):
+        """
+        If L{KeystoneToken} reacts to a "resynchronize" event it should get a
+        new session id as part of the process.
+        """
+        self.manager.add(self.plugin)
+        session_id = self.plugin._session_id
+        self.plugin._persist = FakePersist()
+        self.plugin.client.broker.message_store.drop_session_ids()
+        self.reactor.fire("resynchronize", None)
+        self.assertNotEqual(session_id, self.plugin._session_id)
+
     def test_resynchronize_with_global_scope(self):
         """
         If the reactor fires a "resynchronize", with global scope, we act as if
@@ -115,8 +127,7 @@ class KeystoneTokenTest(LandscapeTest):
         """
         self.manager.add(self.plugin)
         self.plugin._persist = FakePersist()
-        global_scope = []
-        self.reactor.fire("resynchronize", global_scope)
+        self.reactor.fire("resynchronize", None)
         self.assertTrue(self.plugin._persist.called)
 
     def test_do_not_resynchronize_with_other_scope(self):

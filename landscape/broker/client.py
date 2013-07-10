@@ -35,6 +35,9 @@ class BrokerClientPlugin(object):
 
     def register(self, client):
         self.client = client
+        self._get_session_id()
+
+    def _get_session_id(self):
         deferred = self.client.broker.get_session_id()
         deferred.addCallback(self._got_session_id)
 
