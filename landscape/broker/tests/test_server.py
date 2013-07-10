@@ -284,6 +284,15 @@ class BrokerServerTest(LandscapeTest):
         self.assertEqual(self.reactor.fire("event"), [])
         return self.assertSuccess(result, "event")
 
+    def test_listen_events_call_cancellation(self):
+        """
+        The L{BrokerServer.listen_events} cleanly cancels event calls for
+        unfired events, without interfering with unrelated handlers.
+        """
+        self.broker.listen_events(["event"])
+        self.reactor.call_on("event", lambda: 123)  # Unrelated handler
+        self.assertEqual(self.reactor.fire("event"), [None, 123])
+
     def test_stop_exchanger(self):
         """
         The L{BrokerServer.stop_exchanger} stops the exchanger so no further
