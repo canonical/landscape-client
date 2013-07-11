@@ -510,8 +510,8 @@ class MessageStoreTest(LandscapeTest):
         self.store.drop_session_ids()
         self.assertFalse(self.store.is_valid_session_id(session_id))
 
-    def test_drop_session_ids_drops_all_scopes_with_no_scope_parameter(self):
-        """When C{drop_session_ids} is called with no scope then all
+    def test_drop_session_ids_drops_all_scopes_with_no_scopes_parameter(self):
+        """When C{drop_session_ids} is called with no scopes then all
         session_ids are dropped.
         """
         session_id1 = self.store.get_session_id()
@@ -526,7 +526,22 @@ class MessageStoreTest(LandscapeTest):
         global_session_id = self.store.get_session_id()
         hwinfo_session_id = self.store.get_session_id(scope="hwinfo")
         package_session_id = self.store.get_session_id(scope="package")
-        self.store.drop_session_ids(scope="hwinfo")
+        self.store.drop_session_ids(scopes=["hwinfo"])
         self.assertTrue(self.store.is_valid_session_id(global_session_id))
+        self.assertFalse(self.store.is_valid_session_id(hwinfo_session_id))
+        self.assertTrue(self.store.is_valid_session_id(package_session_id))
+
+    def test_drop_multiple_scopes(self):
+        """
+        If we pass multiple scopes into C{drop_session_ids} then those scopes
+        are all dropped but no other are.
+        """
+        global_session_id = self.store.get_session_id()
+        disk_session_id = self.store.get_session_id(scope="disk")
+        hwinfo_session_id = self.store.get_session_id(scope="hwinfo")
+        package_session_id = self.store.get_session_id(scope="package")
+        self.store.drop_session_ids(scopes=["hwinfo", "disk"])
+        self.assertTrue(self.store.is_valid_session_id(global_session_id))
+        self.assertFalse(self.store.is_valid_session_id(disk_session_id))
         self.assertFalse(self.store.is_valid_session_id(hwinfo_session_id))
         self.assertTrue(self.store.is_valid_session_id(package_session_id))
