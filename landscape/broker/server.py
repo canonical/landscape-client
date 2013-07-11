@@ -109,7 +109,7 @@ class BrokerServer(object):
         return True
 
     @remote
-    def get_session_id(self):
+    def get_session_id(self, scope=None):
         """Get a unique session ID to be used when sending messages.
 
         Anything that wants to send a message to the server via the broker is
@@ -132,7 +132,7 @@ class BrokerServer(object):
         delivered before re-registering). See also #328005 and #1158822.
 
         """
-        return self._message_store.get_session_id()
+        return self._message_store.get_session_id(scope=scope)
 
     @remote
     def register_client(self, name):
