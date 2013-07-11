@@ -97,7 +97,7 @@ class BrokerServerTest(LandscapeTest):
         id.  Attempts to do so should raise to alert the developer to their
         mistake.
         """
-        message = {"type", "test"}
+        message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.assertRaises(
             RuntimeError, self.broker.send_message, message, None)
@@ -334,6 +334,15 @@ class BrokerServerTest(LandscapeTest):
         self.assertEqual(self.reactor.fire("event"), [None])
         self.assertEqual(self.reactor.fire("event"), [])
         return self.assertSuccess(result, "event")
+
+    def test_listen_events_call_cancellation(self):
+        """
+        The L{BrokerServer.listen_events} cleanly cancels event calls for
+        unfired events, without interfering with unrelated handlers.
+        """
+        self.broker.listen_events(["event"])
+        self.reactor.call_on("event", lambda: 123)  # Unrelated handler
+        self.assertEqual(self.reactor.fire("event"), [None, 123])
 
     def test_stop_exchanger(self):
         """
