@@ -4,7 +4,6 @@ from twisted.internet.defer import Deferred, gatherResults
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
 from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
-from landscape.broker.amp import FakeRemoteBroker
 
 
 class BrokerClientTest(LandscapeTest):
@@ -111,6 +110,31 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.client_reactor.advance(plugin.run_interval)
         self.client_reactor.advance(plugin.run_interval)
+
+    def test_run_interval_blocked_during_resynch(self):
+        """
+        During resynchronisation we want to block the C{run} method so that we
+        don't send any new messages with old session ids, or with state in an
+        indeterminate condition.
+        """
+        runs = []
+
+        plugin = BrokerClientPlugin()
+        self.client.add(plugin)
+        session_id = plugin._session_id
+
+        def fake_run():
+            runs.append(plugin._session_id)
+
+        def resynchronized(scopes):
+            self.assertNotEqual([session_id], runs)
+            self.assertEqual([plugin._session_id], runs)
+
+        plugin.run = fake_run
+        self.mstore.drop_session_ids()
+        deferred = plugin._resynchronize()
+        self.client_reactor.advance(plugin.run_interval)
+        deferred.addCallback(resynchronized)
 
     def test_run_immediately(self):
         """
@@ -344,4 +368,3 @@ class BrokerClientTest(LandscapeTest):
         self.mocker.replay()
         self.client.exit()
         self.client.reactor.advance(0.1)
-
