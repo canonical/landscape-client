@@ -64,6 +64,12 @@ class BrokerClientPlugin(object):
         deferred = self.client.broker.get_session_id()
         deferred.addCallback(self._got_session_id)
 
+    def _reset(self):
+        """
+        Reset plugin state
+        """
+        #  Sub-classes should implement _reset to clear down data for resynchronisation.
+
     def _got_session_id(self, session_id):
         """Save the session ID and invoke the C{run} method.
 

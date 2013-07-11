@@ -48,6 +48,10 @@ class BrokerClientTest(LandscapeTest):
         self.assertEqual(test_session_id, plugin._session_id)
 
     def test_resynchronizing_refreshes_session_id(self):
+        """
+        When a 'reysnchronize' event fires a new session ID is acquired as the
+        old one will be removed.
+        """
         plugin = BrokerClientPlugin()
         plugin.scope = "test"
         self.client.add(plugin)
@@ -55,6 +59,16 @@ class BrokerClientTest(LandscapeTest):
         self.mstore.drop_session_ids()
         self.client_reactor.fire("resynchronize")
         self.assertNotEqual(session_id, plugin._session_id)
+
+    def test_resynchronize_calls_reset(self):
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+
+        plugin._resest = self.mocker.mock()
+        self.expect(plugin._reset())
+        self.mocker.replay()
+        self.client_reactor.fire("resynchronize")
 
     def test_get_plugins(self):
         """
