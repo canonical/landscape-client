@@ -20,15 +20,11 @@ class MonitorPlugin(BrokerClientPlugin):
         super(MonitorPlugin, self).register(monitor)
         if self.persist_name is not None:
             self._persist = self.monitor.persist.root_at(self.persist_name)
-            self.registry.reactor.call_on("resynchronize", self._resynchronize)
         else:
             self._persist = None
 
-    def _resynchronize(self, scopes=None):
-        if scopes is None or self.scope in scopes:
-            self.registry.persist.remove(self.persist_name)
-            deferred = self.client.broker.get_session_id()
-            deferred.addCallback(self._got_session_id)
+    def _reset(self):
+        self.registry.persist.remove(self.persist_name)
 
     @property
     def persist(self):

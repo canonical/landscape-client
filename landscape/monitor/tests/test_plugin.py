@@ -78,19 +78,6 @@ class MonitorPluginTest(LandscapeTest):
         self.reactor.fire("resynchronize")
         self.assertIsNone(self.monitor.persist.get("wubble"))
 
-    def test_resynchronize_gets_new_session_id(self):
-        """
-        If a 'resynchronize' event fires the C{MonitorPlugin} gets a new
-        session ID.
-        """
-        plugin = MonitorPlugin()
-        plugin.persist_name = "wubble"
-        plugin.register(self.monitor)
-        session_id = plugin._session_id
-        plugin.client.broker.message_store.drop_session_ids()
-        self.reactor.fire("resynchronize")
-        self.assertNotEqual(session_id, plugin._session_id)
-
     def test_resynchronize_with_provided_scope(self):
         """
         If a 'resynchronize' event fires with the provided scope, we clear down
