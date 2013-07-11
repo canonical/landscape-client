@@ -36,6 +36,7 @@ class BrokerClientPlugin(object):
 
     def register(self, client):
         self.client = client
+        self.client.reactor.call_on("resynchronize", self._resynchronize)
         deferred = self.client.broker.get_session_id(scope=self.scope)
         deferred.addCallback(self._got_session_id)
 
@@ -55,6 +56,13 @@ class BrokerClientPlugin(object):
 
         self.client.reactor.call_on(("message-type-acceptance-changed", type),
                                     acceptance_changed)
+
+    def _resynchronize(self, scopes=None):
+        if not (scopes is None or self.scope in scopes):
+            # This resynchronize event is out of scope for us. Do nothing
+            return
+        deferred = self.client.broker.get_session_id()
+        deferred.addCallback(self._got_session_id)
 
     def _got_session_id(self, session_id):
         """Save the session ID and invoke the C{run} method.

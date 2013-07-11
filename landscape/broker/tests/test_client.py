@@ -4,6 +4,7 @@ from twisted.internet.defer import Deferred, gatherResults
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
 from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
+from landscape.broker.amp import FakeRemoteBroker
 
 
 class BrokerClientTest(LandscapeTest):
@@ -45,6 +46,15 @@ class BrokerClientTest(LandscapeTest):
         plugin.scope = "test"
         self.client.add(plugin)
         self.assertEqual(test_session_id, plugin._session_id)
+
+    def test_resynchronizing_refreshes_session_id(self):
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+        session_id = plugin._session_id
+        self.mstore.drop_session_ids()
+        self.client_reactor.fire("resynchronize")
+        self.assertNotEqual(session_id, plugin._session_id)
 
     def test_get_plugins(self):
         """
@@ -320,3 +330,4 @@ class BrokerClientTest(LandscapeTest):
         self.mocker.replay()
         self.client.exit()
         self.client.reactor.advance(0.1)
+
