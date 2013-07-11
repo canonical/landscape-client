@@ -22,7 +22,6 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-
 # changed when we moved the /etc/dbus-1/system.d/landscape.conf file from -client to
 # -client-ui in r682. There is no accompaining "Breaks" because -client-ui requires
 # the exact same version of -client, which will trigger the upgrade
