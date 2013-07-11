@@ -34,6 +34,41 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.assertIsNot(None, plugin._session_id)
 
+    def test_registered_plugin_uses_correct_scope(self):
+        """
+        When we register a plugin we use that plugin's scope variable when
+        getting a session id.
+        """
+        test_session_id = self.successResultOf(
+            self.client.broker.get_session_id(scope="test"))
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+        self.assertEqual(test_session_id, plugin._session_id)
+
+    def test_resynchronizing_refreshes_session_id(self):
+        """
+        When a 'reysnchronize' event fires a new session ID is acquired as the
+        old one will be removed.
+        """
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+        session_id = plugin._session_id
+        self.mstore.drop_session_ids()
+        self.client_reactor.fire("resynchronize")
+        self.assertNotEqual(session_id, plugin._session_id)
+
+    def test_resynchronize_calls_reset(self):
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+
+        plugin._resest = self.mocker.mock()
+        self.expect(plugin._reset())
+        self.mocker.replay()
+        self.client_reactor.fire("resynchronize")
+
     def test_get_plugins(self):
         """
         The L{BrokerClient.get_plugins} method returns a list
@@ -75,6 +110,31 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.client_reactor.advance(plugin.run_interval)
         self.client_reactor.advance(plugin.run_interval)
+
+    def test_run_interval_blocked_during_resynch(self):
+        """
+        During resynchronisation we want to block the C{run} method so that we
+        don't send any new messages with old session ids, or with state in an
+        indeterminate condition.
+        """
+        runs = []
+
+        plugin = BrokerClientPlugin()
+        self.client.add(plugin)
+        session_id = plugin._session_id
+
+        def fake_run():
+            runs.append(plugin._session_id)
+
+        def resynchronized(scopes):
+            self.assertNotEqual([session_id], runs)
+            self.assertEqual([plugin._session_id], runs)
+
+        plugin.run = fake_run
+        self.mstore.drop_session_ids()
+        deferred = plugin._resynchronize()
+        self.client_reactor.advance(plugin.run_interval)
+        deferred.addCallback(resynchronized)
 
     def test_run_immediately(self):
         """

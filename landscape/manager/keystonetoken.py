@@ -17,6 +17,7 @@ class KeystoneToken(DataWatcher):
     message_type = "keystone-token"
     message_key = "data"
     run_interval = 60 * 15
+    scope = "openstack"
 
     def __init__(self, keystone_config_file=KEYSTONE_CONFIG_FILE):
         self._keystone_config_file = keystone_config_file
@@ -26,17 +27,14 @@ class KeystoneToken(DataWatcher):
         self._persist_filename = os.path.join(self.registry.config.data_path,
                                               "keystone.bpickle")
         self._persist = Persist(filename=self._persist_filename)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.registry.reactor.call_every(self.registry.config.flush_interval,
                                          self.flush)
 
-    def _resynchronize(self, scopes=None):
+    def _reset(self):
         """
-        Recreate the persist upon C{_resynchronize}.
+        Reset the persist.
         """
-        if scopes is None or "openstack" in scopes:
-            self._persist.remove("data")
-            self._get_session_id()
+        self._persist.remove("data")
 
     def flush(self):
         self._persist.save(self._persist_filename)

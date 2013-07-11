@@ -31,14 +31,14 @@ class BrokerClientPlugin(object):
     """
     run_interval = 5
     run_immediately = False
+    scope = None  # Global scope
     _session_id = None
+    _loop = None
 
     def register(self, client):
         self.client = client
-        self._get_session_id()
-
-    def _get_session_id(self):
-        deferred = self.client.broker.get_session_id()
+        self.client.reactor.call_on("resynchronize", self._resynchronize)
+        deferred = self.client.broker.get_session_id(scope=self.scope)
         deferred.addCallback(self._got_session_id)
 
     @property
@@ -58,6 +58,24 @@ class BrokerClientPlugin(object):
         self.client.reactor.call_on(("message-type-acceptance-changed", type),
                                     acceptance_changed)
 
+    def _resynchronize(self, scopes=None):
+        if not (scopes is None or self.scope in scopes):
+            # This resynchronize event is out of scope for us. Do nothing
+            return
+        if self._loop is not None:
+            self._loop.cancel()
+        self._reset()
+        deferred = self.client.broker.get_session_id()
+        deferred.addCallback(self._got_session_id)
+        return deferred
+
+    def _reset(self):
+        """
+        Reset plugin state
+        """
+        #  Sub-classes should implement _reset to clear down data for
+        #  resynchronisation
+
     def _got_session_id(self, session_id):
         """Save the session ID and invoke the C{run} method.
 
@@ -70,7 +88,8 @@ class BrokerClientPlugin(object):
             if self.run_immediately:
                 self.run()
             if self.run_interval is not None:
-                self.client.reactor.call_every(self.run_interval, self.run)
+                self._loop = self.client.reactor.call_every(self.run_interval,
+                                                            self.run)
 
 
 class BrokerClient(object):

@@ -97,10 +97,10 @@ class KeystoneTokenTest(LandscapeTest):
         self.reactor.advance(flush_interval)
         self.assertTrue(os.path.exists(persist_filename))
 
-    def test_resynchronize_message_calls_resynchronize_method(self):
+    def test_resynchronize_message_calls_reset_method(self):
         """
         If the reactor fires a "resynchronize", with 'openstack' scope, the
-        C{_resynchronize} method on the keystone plugin object is called.
+        C{_reset} method on the keystone plugin object is called.
         """
         self.manager.add(self.plugin)
         self.plugin._persist = FakePersist()
@@ -117,7 +117,7 @@ class KeystoneTokenTest(LandscapeTest):
         session_id = self.plugin._session_id
         self.plugin._persist = FakePersist()
         self.plugin.client.broker.message_store.drop_session_ids()
-        self.reactor.fire("resynchronize", None)
+        self.reactor.fire("resynchronize")
         self.assertNotEqual(session_id, self.plugin._session_id)
 
     def test_resynchronize_with_global_scope(self):
@@ -127,7 +127,7 @@ class KeystoneTokenTest(LandscapeTest):
         """
         self.manager.add(self.plugin)
         self.plugin._persist = FakePersist()
-        self.reactor.fire("resynchronize", None)
+        self.reactor.fire("resynchronize")
         self.assertTrue(self.plugin._persist.called)
 
     def test_do_not_resynchronize_with_other_scope(self):

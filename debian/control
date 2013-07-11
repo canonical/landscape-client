@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 7), po-debconf, python-dev, python-central | python-support, lsb-release, gawk, python-twisted-core, python-distutils-extra
+Build-Depends: debhelper (>= 7), po-debconf, python-dev, lsb-release, gawk, python-twisted-core, python-distutils-extra
 Standards-Version: 3.8.2
 XS-Python-Version: >= 2.4, << 2.8
 
@@ -22,12 +22,12 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-# added/changed when we moved the sysinfo manpage from client to common
-# in r582. There is no accompaining "Breaks" because -client requires
-# the exact same version of -common, which will trigger the upgrade
+# changed when we moved the /etc/dbus-1/system.d/landscape.conf file from -client to
+# -client-ui in r682. There is no accompaining "Breaks" because -client-ui requires
+# the exact same version of -client, which will trigger the upgrade
 # and avoid the case discussed in
 # http://www.debian.org/doc/debian-policy/footnotes.html#f53
-Replaces: landscape-client (<< 12.09+bzr582)
+Replaces: landscape-client (<< 13.06+bzr682)
 Description: The Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a

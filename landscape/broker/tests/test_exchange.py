@@ -43,21 +43,44 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_that_resynchronize_drops_session_ids(self):
         """
-        When a resynchronisation event occurs all existing session IDs are
-        expired, so any new messages being sent with those IDs will be
-        discarded.
+        When a resynchronisation event occurs with global scope all existing
+        session IDs are expired, so any new messages being sent with those IDs
+        will be discarded.
         """
         broker = BrokerServer(self.config, self.reactor,
                               self.exchanger, None,
                               self.mstore, None)
 
-        session_id = self.mstore.get_session_id()
+        disk_session_id = self.mstore.get_session_id(scope="disk")
+        package_session_id = self.mstore.get_session_id(scope="package")
         self.mstore.set_accepted_types(["empty"])
-        self.reactor.fire("resynchronize-clients")
-        broker.send_message({"type": "empty"}, session_id)
+        global_scope = []
+        self.reactor.fire("resynchronize-clients", global_scope)
+        broker.send_message({"type": "empty"}, disk_session_id)
+        broker.send_message({"type": "empty"}, package_session_id)
         self.exchanger.exchange()
         messages = self.transport.payloads[0]["messages"]
         self.assertMessages(messages, [])
+
+    def test_that_resynchronize_drops_scoped_session_ids_only(self):
+        """
+        When a resynchronisation event occurs with a scope existing session IDs
+        for that scope are expired, all other session IDs are unaffected.
+        """
+        broker = BrokerServer(self.config, self.reactor,
+                              self.exchanger, None,
+                              self.mstore, None)
+
+        disk_session_id = self.mstore.get_session_id(scope="disk")
+        package_session_id = self.mstore.get_session_id(scope="package")
+        self.mstore.set_accepted_types(["empty"])
+        disk_scope = ["disk"]
+        self.reactor.fire("resynchronize-clients", disk_scope)
+        broker.send_message({"type": "empty"}, disk_session_id)
+        broker.send_message({"type": "empty"}, package_session_id)
+        self.exchanger.exchange()
+        messages = self.transport.payloads[0]["messages"]
+        self.assertMessages(messages, [{"type": "empty"}])
 
     def test_send(self):
         """

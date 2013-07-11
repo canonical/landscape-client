@@ -53,7 +53,7 @@ class FakeRemoteBroker(object):
                 for arg in args:
                     assert MethodCallArgument.check(arg)
                 for k, v in kwargs.iteritems():
-                    assert MethodCallArgument.check(arg)
+                    assert MethodCallArgument.check(v)
                 return execute(original, *args, **kwargs)
             return method
         else:
