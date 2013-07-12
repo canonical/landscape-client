@@ -431,8 +431,8 @@ class ActiveProcessInfoTest(LandscapeTest):
 
     def test_resynchronize_event_with_global_scope(self):
         """
-        When a C{resynchronize} event occurs, with 'global' scope, we should
-        act as if we have received it with 'package' scope.
+        When a C{resynchronize} event occurs the L{_reset} method should be
+        called on L{ActiveProcessInfo}. 
         """
         self.builder.create_data(672, self.builder.TRACING_STOP,
                                  uid=1000, gid=1000, started_after_boot=1120,
@@ -464,8 +464,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         # No new messages should be pending
         self.assertMessages(messages, expected_messages)
 
-        global_scope = []
-        self.reactor.fire("resynchronize", global_scope)
+        self.reactor.fire("resynchronize")
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         # The resynchronisation should cause the same messages to be generated

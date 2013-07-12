@@ -28,16 +28,12 @@ class ActiveProcessInfo(DataWatcher):
     def register(self, manager):
         super(ActiveProcessInfo, self).register(manager)
         self.call_on_accepted(self.message_type, self.exchange, True)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
 
-    def _resynchronize(self, scopes=None):
-        """Resynchronize active process data."""
-        if scopes is None or self.scope in scopes:
-            self._first_run = True
-            self._persist_processes = {}
-            self._previous_processes = {}
-            deferred = self.client.broker.get_session_id()
-            deferred.addCallback(self._got_session_id)
+    def _reset(self):
+        """Reset active process data."""
+        self._first_run = True
+        self._persist_processes = {}
+        self._previous_processes = {}
 
     def get_message(self):
         message = {}
