@@ -141,8 +141,6 @@ class PackageMonitor(MonitorPlugin):
         resynchronize task and not causing sqlite to reset the serial
         key.
         """
-        # Ensure this resynchronize event is in our scope.  The empty list is
-        # global scope.
         task = self._package_store.add_task("reporter",
                                             {"type": "resynchronize"})
         self._package_store.clear_tasks(except_tasks=(task,))

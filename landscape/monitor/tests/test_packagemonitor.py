@@ -251,7 +251,7 @@ class PackageMonitorTest(LandscapeTest):
         self.createReporterTask()
 
         self.package_monitor.client.broker.message_store.drop_session_ids()
-        self.monitor.reactor.fire("resynchronize", None)
+        self.monitor.reactor.fire("resynchronize")
         self.assertNotEqual(session_id, self.package_monitor._session_id)
 
     def test_resynchronize_on_global_scope(self):
@@ -263,8 +263,7 @@ class PackageMonitorTest(LandscapeTest):
         self.monitor.add(self.package_monitor)
         self.createReporterTask()
 
-        global_scope = []
-        self.monitor.reactor.fire("resynchronize", global_scope)
+        self.monitor.reactor.fire("resynchronize")
 
         # The next task should be the resynchronize message.
         self.assertSingleReporterTask({"type": "resynchronize"}, 2)
