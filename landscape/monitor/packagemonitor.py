@@ -129,7 +129,7 @@ class PackageMonitor(MonitorPlugin):
         if output:
             logging.warning("Package reporter output:\n%s" % output)
 
-    def _resynchronize(self):
+    def _reset(self):
         """
         Remove all tasks *except* the resynchronize task.  This is
         because if we clear all tasks, then add the resynchronize,
@@ -141,6 +141,7 @@ class PackageMonitor(MonitorPlugin):
         resynchronize task and not causing sqlite to reset the serial
         key.
         """
+        print "FOOO"
         task = self._package_store.add_task("reporter",
                                             {"type": "resynchronize"})
         self._package_store.clear_tasks(except_tasks=(task,))
