@@ -36,7 +36,6 @@ class PackageMonitor(MonitorPlugin):
 
         registry.register_message("package-ids",
                                   self._enqueue_message_as_reporter_task)
-        registry.reactor.call_on("resynchronize", self._resynchronize)
         registry.reactor.call_on("server-uuid-changed",
                                  self._server_uuid_changed)
         self.call_on_accepted("packages", self.spawn_reporter)
@@ -130,7 +129,7 @@ class PackageMonitor(MonitorPlugin):
         if output:
             logging.warning("Package reporter output:\n%s" % output)
 
-    def _resynchronize(self, scopes=None):
+    def _reset(self):
         """
         Remove all tasks *except* the resynchronize task.  This is
         because if we clear all tasks, then add the resynchronize,
@@ -144,12 +143,9 @@ class PackageMonitor(MonitorPlugin):
         """
         # Ensure this resynchronize event is in our scope.  The empty list is
         # global scope.
-        if scopes is None or self.scope in scopes:
-            task = self._package_store.add_task("reporter",
-                                                {"type": "resynchronize"})
-            self._package_store.clear_tasks(except_tasks=(task,))
-            deferred = self.client.broker.get_session_id()
-            deferred.addCallback(self._got_session_id)
+        task = self._package_store.add_task("reporter",
+                                            {"type": "resynchronize"})
+        self._package_store.clear_tasks(except_tasks=(task,))
 
     def _server_uuid_changed(self, old_uuid, new_uuid):
         """Called when the broker sends a server-uuid-changed event.

@@ -59,6 +59,7 @@ class BrokerClientPlugin(object):
                                     acceptance_changed)
 
     def _resynchronize(self, scopes=None):
+        print "foo"
         if not (scopes is None or self.scope in scopes):
             # This resynchronize event is out of scope for us. Do nothing
             return
