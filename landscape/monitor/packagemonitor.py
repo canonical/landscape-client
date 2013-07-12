@@ -35,7 +35,6 @@ class PackageMonitor(MonitorPlugin):
 
         registry.register_message("package-ids",
                                   self._enqueue_message_as_reporter_task)
-        registry.reactor.call_on("resynchronize", self._resynchronize)
         registry.reactor.call_on("server-uuid-changed",
                                  self._server_uuid_changed)
         self.call_on_accepted("packages", self.spawn_reporter)
@@ -141,7 +140,6 @@ class PackageMonitor(MonitorPlugin):
         resynchronize task and not causing sqlite to reset the serial
         key.
         """
-        print "FOOO"
         task = self._package_store.add_task("reporter",
                                             {"type": "resynchronize"})
         self._package_store.clear_tasks(except_tasks=(task,))
