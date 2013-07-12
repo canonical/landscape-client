@@ -1488,3 +1488,14 @@ class AptPackageChangerTest(LandscapeTest):
         self.broker_service.reactor.advance(100)
         self.landscape_reactor.advance(10)
         return result.addCallback(got_result)
+
+    def test_run_gets_session_id(self):
+        """
+        Invoking L{PackageChanger.run} results in the session ID being fetched.
+        """
+        def assert_session_id(ignored):
+            self.assertIsNotNone(self.changer._session_id)
+
+        self.changer._session_id = None
+        result = self.changer.run()
+        return result.addCallback(assert_session_id)
