@@ -33,6 +33,7 @@ class ProcessorInfo(MonitorPlugin):
     """
 
     persist_name = "processor-info"
+    scope = "cpu"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 

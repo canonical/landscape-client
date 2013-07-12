@@ -11,6 +11,7 @@ class Temperature(MonitorPlugin):
     """Capture thermal zone temperatures and trip point settings."""
 
     persist_name = "temperature"
+    scope = "temperature"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 

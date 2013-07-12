@@ -10,6 +10,7 @@ class LoadAverage(MonitorPlugin):
     """Plugin captures information about load average."""
 
     persist_name = "load-average"
+    scope = "load"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 

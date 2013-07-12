@@ -20,6 +20,7 @@ class NetworkActivity(MonitorPlugin):
     persist_name = message_type
     run_interval = 30
     _rollover_maxint = 0
+    scope = "network"
 
     max_network_items_to_exchange = 200
 

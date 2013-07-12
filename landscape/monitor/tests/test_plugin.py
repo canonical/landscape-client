@@ -65,6 +65,49 @@ class MonitorPluginTest(LandscapeTest):
         plugin.call_on_accepted("type", callback)
         self.reactor.fire(("message-type-acceptance-changed", "type"), False)
 
+    def test_resynchronize_with_global_scope(self):
+        """
+        If a 'resynchronize' event fires with global scope, we clear down the
+        persist.
+        """
+        plugin = MonitorPlugin()
+        plugin.persist_name = "wubble"
+        plugin.register(self.monitor)
+        plugin.persist.set("hi", "there")
+        self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
+        self.reactor.fire("resynchronize")
+        self.assertIsNone(self.monitor.persist.get("wubble"))
+
+    def test_resynchronize_with_provided_scope(self):
+        """
+        If a 'resynchronize' event fires with the provided scope, we clear down
+        the persist.
+        """
+        plugin = MonitorPlugin()
+        plugin.persist_name = "wubble"
+        plugin.scope = "frujical"
+        plugin.register(self.monitor)
+        plugin.persist.set("hi", "there")
+        self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
+        frujical_scope = ["frujical"]
+        self.reactor.fire("resynchronize", frujical_scope)
+        self.assertIsNone(self.monitor.persist.get("wubble"))
+
+    def test_do_not_resynchronize_with_other_scope(self):
+        """
+        If a 'resynchronize' event fires with an irrelevant scope, we do
+        nothing.
+        """
+        plugin = MonitorPlugin()
+        plugin.persist_name = "wubble"
+        plugin.scope = "frujical"
+        plugin.register(self.monitor)
+        plugin.persist.set("hi", "there")
+        self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
+        chrutfup_scope = ["chrutfup"]
+        self.reactor.fire("resynchronize", chrutfup_scope)
+        self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
+
 
 class StubDataWatchingPlugin(DataWatcher):
 

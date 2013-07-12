@@ -12,6 +12,7 @@ from landscape.monitor.plugin import MonitorPlugin
 class SwiftDeviceInfo(MonitorPlugin):
 
     persist_name = "swift-device-info"
+    scope = "storage"
 
     def __init__(self, interval=300, monitor_interval=60 * 60,
                  create_time=time.time,

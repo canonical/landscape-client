@@ -17,6 +17,7 @@ class RebootRequired(MonitorPlugin):
     """
 
     persist_name = "reboot-required"
+    scope = "package"
     run_interval = 900  # 15 minutes
     run_immediately = True
 

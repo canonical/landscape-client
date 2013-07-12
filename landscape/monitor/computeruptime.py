@@ -113,6 +113,7 @@ class ComputerUptime(MonitorPlugin):
     """Plugin reports information about computer uptime."""
 
     persist_name = "computer-uptime"
+    scope = "computer"
 
     def __init__(self, wtmp_file="/var/log/wtmp"):
         self._first_run = True
