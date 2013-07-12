@@ -99,8 +99,8 @@ class UserMonitorTest(LandscapeTest):
                                     "username": u"jdoe", "work-phone": None}],
                                     "type": "users"}])
         self.broker_service.message_store.delete_all_messages()
-        users_scope = ["users"]
-        deferred = self.monitor.reactor.fire("resynchronize", users_scope)[0]
+        deferred = self.monitor.reactor.fire(
+            "resynchronize", scopes=["users"])[0]
         self.successResultOf(deferred)
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
@@ -174,8 +174,7 @@ class UserMonitorTest(LandscapeTest):
                                     "username": u"jdoe", "work-phone": None}],
                   "type": "users"}])
         self.broker_service.message_store.delete_all_messages()
-        disk_scope = ["disk"]
-        self.monitor.reactor.fire("resynchronize", disk_scope)[0]
+        self.monitor.reactor.fire("resynchronize", scopes=["disk"])[0]
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
             [])
