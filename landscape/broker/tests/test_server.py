@@ -42,6 +42,18 @@ class BrokerServerTest(LandscapeTest):
         session_id3 = self.broker.get_session_id()
         self.assertNotEqual(session_id1, session_id3)
 
+    def test_get_session_id_with_scope(self):
+        """
+        The L{BrokerServer.get_session_id} method gets the same session ID from
+        the L{MessageStore} for the same scope, but a new session ID for a new
+        scope.
+        """
+        disk_session_id1 = self.broker.get_session_id(scope="disk")
+        disk_session_id2 = self.broker.get_session_id(scope="disk")
+        users_session_id = self.broker.get_session_id(scope="users")
+        self.assertEqual(disk_session_id1, disk_session_id2)
+        self.assertNotEqual(disk_session_id1, users_session_id)
+
     def test_send_message(self):
 
         """
@@ -85,7 +97,7 @@ class BrokerServerTest(LandscapeTest):
         id.  Attempts to do so should raise to alert the developer to their
         mistake.
         """
-        message = {"type", "test"}
+        message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.assertRaises(
             RuntimeError, self.broker.send_message, message, None)
@@ -322,6 +334,15 @@ class BrokerServerTest(LandscapeTest):
         self.assertEqual(self.reactor.fire("event"), [None])
         self.assertEqual(self.reactor.fire("event"), [])
         return self.assertSuccess(result, "event")
+
+    def test_listen_events_call_cancellation(self):
+        """
+        The L{BrokerServer.listen_events} cleanly cancels event calls for
+        unfired events, without interfering with unrelated handlers.
+        """
+        self.broker.listen_events(["event"])
+        self.reactor.call_on("event", lambda: 123)  # Unrelated handler
+        self.assertEqual(self.reactor.fire("event"), [None, 123])
 
     def test_stop_exchanger(self):
         """

@@ -11,6 +11,7 @@ class NetworkDevice(DataWatcher):
     message_type = "network-device"
     message_key = "devices"
     persist_name = message_type
+    scope = "network"
 
     def __init__(self, device_info=get_active_device_info):
         super(NetworkDevice, self).__init__()

@@ -469,7 +469,7 @@ class MessageExchange(object):
         # When re-synchronisation occurs we don't want any previous messages
         # being sent to the server, dropping the existing session_ids means
         # that messages sent with those IDs will be dropped by the broker.
-        self._message_store.drop_session_ids()
+        self._message_store.drop_session_ids(scopes)
         self.schedule_exchange(urgent=True)
 
     def _handle_set_intervals(self, message):

@@ -15,6 +15,7 @@ class ComputerInfo(MonitorPlugin):
     """Plugin captures and reports basic computer information."""
 
     persist_name = "computer-info"
+    scope = "computer"
 
     def __init__(self, get_fqdn=get_fqdn,
                  meminfo_file="/proc/meminfo",

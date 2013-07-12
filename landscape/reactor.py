@@ -81,7 +81,11 @@ class EventHandlingReactorMixin(object):
         """
         logging.debug("Started firing %s.", event_type)
         results = []
-        for handler, priority in self._event_handlers.get(event_type, ()):
+        # Make a copy of the handlers that are registered at this point in
+        # time, so we have a stable list in case handlers are cancelled
+        # dynamically by executing the handlers themselves.
+        handlers = list(self._event_handlers.get(event_type, ()))
+        for handler, priority in handlers:
             try:
                 logging.debug("Calling %s for %s with priority %d.",
                               format_object(handler), event_type, priority)
@@ -254,6 +258,9 @@ class FakeReactorID(object):
     def __init__(self, data):
         self.active = True
         self._data = data
+
+    def cancel(self):
+        self.active = False
 
 
 class FakeReactor(EventHandlingReactorMixin):

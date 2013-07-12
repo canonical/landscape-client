@@ -455,15 +455,15 @@ class MessageStore(object):
         """
         return session_id in self._persist.get("session-ids", {})
 
-    def drop_session_ids(self, scope=None):
+    def drop_session_ids(self, scopes=None):
         """
         Drop all session ids.
         """
         new_session_ids = {}
-        if scope is not None:
+        if scopes:
             session_ids = self._persist.get("session-ids", {})
             for session_id, session_scope in session_ids.iteritems():
-                if session_scope != scope:
+                if session_scope not in scopes:
                     new_session_ids[session_id] = session_scope
         self._persist.set("session-ids", new_session_ids)
 

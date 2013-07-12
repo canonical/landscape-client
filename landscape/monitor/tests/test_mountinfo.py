@@ -422,7 +422,8 @@ addr=ennui 0 0
 
         plugin.run()
         plugin.exchange()
-        self.reactor.fire("resynchronize")
+        disk_scope = ["disk"]
+        self.reactor.fire("resynchronize", disk_scope)
         plugin.run()
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
