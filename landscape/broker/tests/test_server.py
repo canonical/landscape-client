@@ -42,6 +42,18 @@ class BrokerServerTest(LandscapeTest):
         session_id3 = self.broker.get_session_id()
         self.assertNotEqual(session_id1, session_id3)
 
+    def test_get_session_id_with_scope(self):
+        """
+        The L{BrokerServer.get_session_id} method gets the same session ID from
+        the L{MessageStore} for the same scope, but a new session ID for a new
+        scope.
+        """
+        disk_session_id1 = self.broker.get_session_id(scope="disk")
+        disk_session_id2 = self.broker.get_session_id(scope="disk")
+        users_session_id = self.broker.get_session_id(scope="users")
+        self.assertEqual(disk_session_id1, disk_session_id2)
+        self.assertNotEqual(disk_session_id1, users_session_id)
+
     def test_send_message(self):
 
         """
