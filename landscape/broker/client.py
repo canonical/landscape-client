@@ -74,7 +74,7 @@ class BrokerClientPlugin(object):
         # Therefore we pause any calls to L{run} by cancelling L{_loop}, this
         # will be restarted in L{_got_session_id}.
         if self._loop is not None:
-            self._loop.cancel()
+            self.client.reactor.cancel_call(self._loop)
 
         # Do any state clean up required by the plugin.
         self._reset()
