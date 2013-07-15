@@ -59,12 +59,26 @@ class BrokerClientPlugin(object):
                                     acceptance_changed)
 
     def _resynchronize(self, scopes=None):
+        """
+        Handle the 'resynchronize' event.  Subclasses should do any clear-down
+        operations specific to their state within an implementation of the
+        L{_reset} method.
+        """
         if not (scopes is None or self.scope in scopes):
             # This resynchronize event is out of scope for us. Do nothing
             return
+
+        # Because the broker will drop session
+        # IDs already associated to scope of the resynchronisation, it isn't safe
+        # to send messages until the client has received a new session ID.
+        # Therefore we pause any calls to L{run} by cancelling L{_loop}, this
+        # will be restarted in L{_got_session_id}.
         if self._loop is not None:
             self._loop.cancel()
+
+        # Do any state clean up required by the plugin.
         self._reset()
+
         deferred = self.client.broker.get_session_id()
         deferred.addCallback(self._got_session_id)
         return deferred
