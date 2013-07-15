@@ -639,3 +639,17 @@ CapEff: 0000000000000000
         """Remove sample data for the process that matches C{process_id}."""
         process_dir = os.path.join(self._sample_dir, str(process_id))
         shutil.rmtree(process_dir)
+
+
+class FakePersist(object):
+    """
+    Incompletely fake a C{landscape.lib.Persist} to simplify higher level tests
+    that result in an attempt to clear down persisted data.
+    """
+
+    def __init__(self):
+        self.called = False
+
+    def remove(self, key):
+        self.called = True
+

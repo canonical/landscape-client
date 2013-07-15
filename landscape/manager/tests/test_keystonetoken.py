@@ -2,16 +2,7 @@ import os
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.manager.keystonetoken import KeystoneToken
-from landscape.tests.helpers import ManagerHelper
-
-
-class FakePersist(object):
-
-    def __init__(self):
-        self.called = False
-
-    def remove(self, key):
-        self.called = True
+from landscape.tests.helpers import ManagerHelper, FakePersist
 
 
 class KeystoneTokenTest(LandscapeTest):
