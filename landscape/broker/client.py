@@ -85,10 +85,11 @@ class BrokerClientPlugin(object):
 
     def _reset(self):
         """
-        Reset plugin state
+        Reset plugin specific state.
+
+        Sub-classes should override this method to clear down data for
+        resynchronisation.  Sub-classes with no state can simply ignore this.
         """
-        #  Sub-classes should implement _reset to clear down data for
-        #  resynchronisation
 
     def _got_session_id(self, session_id):
         """Save the session ID and invoke the C{run} method.
