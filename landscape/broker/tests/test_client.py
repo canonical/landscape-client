@@ -119,7 +119,6 @@ class BrokerClientTest(LandscapeTest):
         """
         runs = []
         session_ids = []
-        call = 0
 
         def fake_run():
             runs.append(plugin._session_id)

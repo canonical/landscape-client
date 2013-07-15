@@ -68,11 +68,11 @@ class BrokerClientPlugin(object):
             # This resynchronize event is out of scope for us. Do nothing
             return
 
-        # Because the broker will drop session
-        # IDs already associated to scope of the resynchronisation, it isn't safe
-        # to send messages until the client has received a new session ID.
-        # Therefore we pause any calls to L{run} by cancelling L{_loop}, this
-        # will be restarted in L{_got_session_id}.
+        # Because the broker will drop session IDs already associated to scope
+        # of the resynchronisation, it isn't safe to send messages until the
+        # client has received a new session ID.  Therefore we pause any calls
+        # to L{run} by cancelling L{_loop}, this will be restarted in
+        # L{_got_session_id}.
         if self._loop is not None:
             self.client.reactor.cancel_call(self._loop)
 
