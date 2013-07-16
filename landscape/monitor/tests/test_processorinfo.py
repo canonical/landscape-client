@@ -53,8 +53,7 @@ class ResynchTest(LandscapeTest):
         plugin = ProcessorInfo()
         self.monitor.add(plugin)
         plugin.run()
-        cpu_scope = ["cpu"]
-        self.reactor.fire("resynchronize", cpu_scope)
+        self.reactor.fire("resynchronize", scopes=["cpu"])
         plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 2)

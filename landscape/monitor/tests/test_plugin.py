@@ -89,8 +89,7 @@ class MonitorPluginTest(LandscapeTest):
         plugin.register(self.monitor)
         plugin.persist.set("hi", "there")
         self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
-        frujical_scope = ["frujical"]
-        self.reactor.fire("resynchronize", frujical_scope)
+        self.reactor.fire("resynchronize", scopes=["frujical"])
         self.assertIsNone(self.monitor.persist.get("wubble"))
 
     def test_do_not_resynchronize_with_other_scope(self):
@@ -104,8 +103,7 @@ class MonitorPluginTest(LandscapeTest):
         plugin.register(self.monitor)
         plugin.persist.set("hi", "there")
         self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
-        chrutfup_scope = ["chrutfup"]
-        self.reactor.fire("resynchronize", chrutfup_scope)
+        self.reactor.fire("resynchronize", scopes=["chrutfup"])
         self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
 
 

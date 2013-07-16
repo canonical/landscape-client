@@ -214,10 +214,8 @@ class PackageMonitorTest(LandscapeTest):
         task = self.package_store.get_next_task("reporter")
         self.assertEqual(task.data, {"type": "resynchronize"})
 
-        # We want to make sure it has the correct id of 2 so that we
-        # know it's not a new task that the reporter could possibly
-        # remove by accident.
-        self.assertEqual(task.id, 2)
+        # We want to make sure it is not the first message
+        self.assertNotEqual(task.id, 1)
 
         # Let's remove that task and make sure there are no more tasks
         # in the queue.
