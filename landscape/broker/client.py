@@ -79,7 +79,7 @@ class BrokerClientPlugin(object):
         # Do any state clean up required by the plugin.
         self._reset()
 
-        deferred = self.client.broker.get_session_id()
+        deferred = self.client.broker.get_session_id(scope=self.scope)
         deferred.addCallback(self._got_session_id)
         return deferred
 

@@ -118,40 +118,70 @@ class BrokerClientTest(LandscapeTest):
         indeterminate condition.
         """
         runs = []
-        session_ids = []
-
-        def fake_run():
-            runs.append(plugin._session_id)
-
-        def fake_get_session_id(scope=None):
-            deferred = Deferred()
-            session_ids.append(1)
-            self.client_reactor.call_later(2,
-                                           deferred.callback,
-                                          len(session_ids))
-            return deferred
-
         plugin = BrokerClientPlugin()
-        plugin.run = fake_run
-        self.client.broker.get_session_id = fake_get_session_id
+        plugin.run_immediately = True
+        plugin.run = lambda: runs.append(True)
         self.client.add(plugin)
 
-        def resynchronized(scopes):
-            # We should have called get_session_id exactly twice, resulting in
-            # the session ID being set to 2.
-            self.assertEqual(2, plugin._session_id)
-            # The runs list can be arbitrarily long, but it must contain only
-            # the session ID 2, because it should not have been running prior
-            # to the _got_session_id callback handler firing at the end of
-            # resynchronisation.
-            self.assertTrue(all(
-                map(lambda elm: elm == plugin._session_id, runs)))
+        # At this point the plugin has already run once and has scheduled as
+        # second run in plugin.run_interval seconds.
+        self.assertEquals(runs, [True])
 
-        deferred = plugin._resynchronize()
-        deferred.addCallback(resynchronized)
+        # Mock out get_session_id so that it doesn't complete synchronously
+        deferred = Deferred()
+        self.client.broker.get_session_id = lambda scope: deferred
+        self.client_reactor.fire("resynchronize")
+
+        # The scheduled run has been cancelled, and even if plugin.run_interval
+        # seconds elapse the plugin won't run again.
         self.client_reactor.advance(plugin.run_interval)
-        self.assertEqual([], runs)
-        self.client_reactor.advance(2)
+        self.assertEquals(runs, [True])
+
+        # Finally get_session_id completes and the plugin runs again.
+        deferred.callback(123)
+        self.assertEquals(runs, [True, True])
+
+    # def test_run_interval_blocked_during_resynch(self):
+    #     """
+    #     During resynchronisation we want to block the C{run} method so that we
+    #     don't send any new messages with old session ids, or with state in an
+    #     indeterminate condition.
+    #     """
+    #     runs = []
+    #     session_ids = []
+
+    #     def fake_run():
+    #         runs.append(plugin._session_id)
+
+    #     def fake_get_session_id(scope=None):
+    #         deferred = Deferred()
+    #         session_ids.append(1)
+    #         self.client_reactor.call_later(2,
+    #                                        deferred.callback,
+    #                                       len(session_ids))
+    #         return deferred
+
+    #     plugin = BrokerClientPlugin()
+    #     plugin.run = fake_run
+    #     self.client.broker.get_session_id = fake_get_session_id
+    #     self.client.add(plugin)
+
+    #     def resynchronized(scopes):
+    #         # We should have called get_session_id exactly twice, resulting in
+    #         # the session ID being set to 2.
+    #         self.assertEqual(2, plugin._session_id)
+    #         # The runs list can be arbitrarily long, but it must contain only
+    #         # the session ID 2, because it should not have been running prior
+    #         # to the _got_session_id callback handler firing at the end of
+    #         # resynchronisation.
+    #         self.assertTrue(all(
+    #             map(lambda elm: elm == plugin._session_id, runs)))
+
+    #     deferred = plugin._resynchronize()
+    #     deferred.addCallback(resynchronized)
+    #     self.client_reactor.advance(plugin.run_interval)
+    #     self.assertEqual([], runs)
+    #     self.client_reactor.advance(2)
 
     def test_run_immediately(self):
         """
