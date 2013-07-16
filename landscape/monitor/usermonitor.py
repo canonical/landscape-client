@@ -38,11 +38,6 @@ class UserMonitor(MonitorPlugin):
             self._publisher.stop()
             self._publisher = None
 
-    def _resynchronize(self):
-        """Resynchronize user and group data."""
-        super(UserMonitor, self)._resynchronize()
-        return self._run_detect_changes()
-
     @remote
     def detect_changes(self, operation_id=None):
         return self.registry.broker.call_if_accepted(

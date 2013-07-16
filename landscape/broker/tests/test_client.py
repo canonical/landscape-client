@@ -46,6 +46,29 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.assertEqual(test_session_id, plugin._session_id)
 
+    def test_resynchronizing_refreshes_session_id(self):
+        """
+        When a 'reysnchronize' event fires a new session ID is acquired as the
+        old one will be removed.
+        """
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+        session_id = plugin._session_id
+        self.mstore.drop_session_ids()
+        self.client_reactor.fire("resynchronize")
+        self.assertNotEqual(session_id, plugin._session_id)
+
+    def test_resynchronize_calls_reset(self):
+        plugin = BrokerClientPlugin()
+        plugin.scope = "test"
+        self.client.add(plugin)
+
+        plugin._resest = self.mocker.mock()
+        self.expect(plugin._reset())
+        self.mocker.replay()
+        self.client_reactor.fire("resynchronize")
+
     def test_get_plugins(self):
         """
         The L{BrokerClient.get_plugins} method returns a list
@@ -87,6 +110,36 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.client_reactor.advance(plugin.run_interval)
         self.client_reactor.advance(plugin.run_interval)
+
+    def test_run_interval_blocked_during_resynch(self):
+        """
+        During resynchronisation we want to block the C{run} method so that we
+        don't send any new messages with old session ids, or with state in an
+        indeterminate condition.
+        """
+        runs = []
+        plugin = BrokerClientPlugin()
+        plugin.run_immediately = True
+        plugin.run = lambda: runs.append(True)
+        self.client.add(plugin)
+
+        # At this point the plugin has already run once and has scheduled as
+        # second run in plugin.run_interval seconds.
+        self.assertEquals(runs, [True])
+
+        # Mock out get_session_id so that it doesn't complete synchronously
+        deferred = Deferred()
+        self.client.broker.get_session_id = lambda scope: deferred
+        self.client_reactor.fire("resynchronize")
+
+        # The scheduled run has been cancelled, and even if plugin.run_interval
+        # seconds elapse the plugin won't run again.
+        self.client_reactor.advance(plugin.run_interval)
+        self.assertEquals(runs, [True])
+
+        # Finally get_session_id completes and the plugin runs again.
+        deferred.callback(123)
+        self.assertEquals(runs, [True, True])
 
     def test_run_immediately(self):
         """
