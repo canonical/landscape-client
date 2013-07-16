@@ -141,48 +141,6 @@ class BrokerClientTest(LandscapeTest):
         deferred.callback(123)
         self.assertEquals(runs, [True, True])
 
-    # def test_run_interval_blocked_during_resynch(self):
-    #     """
-    #     During resynchronisation we want to block the C{run} method so that we
-    #     don't send any new messages with old session ids, or with state in an
-    #     indeterminate condition.
-    #     """
-    #     runs = []
-    #     session_ids = []
-
-    #     def fake_run():
-    #         runs.append(plugin._session_id)
-
-    #     def fake_get_session_id(scope=None):
-    #         deferred = Deferred()
-    #         session_ids.append(1)
-    #         self.client_reactor.call_later(2,
-    #                                        deferred.callback,
-    #                                       len(session_ids))
-    #         return deferred
-
-    #     plugin = BrokerClientPlugin()
-    #     plugin.run = fake_run
-    #     self.client.broker.get_session_id = fake_get_session_id
-    #     self.client.add(plugin)
-
-    #     def resynchronized(scopes):
-    #         # We should have called get_session_id exactly twice, resulting in
-    #         # the session ID being set to 2.
-    #         self.assertEqual(2, plugin._session_id)
-    #         # The runs list can be arbitrarily long, but it must contain only
-    #         # the session ID 2, because it should not have been running prior
-    #         # to the _got_session_id callback handler firing at the end of
-    #         # resynchronisation.
-    #         self.assertTrue(all(
-    #             map(lambda elm: elm == plugin._session_id, runs)))
-
-    #     deferred = plugin._resynchronize()
-    #     deferred.addCallback(resynchronized)
-    #     self.client_reactor.advance(plugin.run_interval)
-    #     self.assertEqual([], runs)
-    #     self.client_reactor.advance(2)
-
     def test_run_immediately(self):
         """
         If a plugin has a C{run} method and C{run_immediately} is C{True},
