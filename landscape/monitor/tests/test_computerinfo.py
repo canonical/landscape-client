@@ -278,7 +278,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                               root_path=self.makeDir())
         self.monitor.add(plugin)
         plugin.exchange()
-        self.reactor.fire("resynchronize")
+        self.reactor.fire("resynchronize", scopes=["computer"])
         plugin.exchange()
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,

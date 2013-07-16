@@ -117,7 +117,7 @@ class RebootRequiredTest(LandscapeTest):
         data.
         """
         self.plugin.run()
-        self.reactor.fire("resynchronize")
+        self.reactor.fire("resynchronize", scopes=["package"])
         self.plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 2)

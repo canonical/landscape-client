@@ -35,7 +35,6 @@ class PackageMonitor(MonitorPlugin):
 
         registry.register_message("package-ids",
                                   self._enqueue_message_as_reporter_task)
-        registry.reactor.call_on("resynchronize", self._resynchronize)
         registry.reactor.call_on("server-uuid-changed",
                                  self._server_uuid_changed)
         self.call_on_accepted("packages", self.spawn_reporter)
@@ -129,7 +128,7 @@ class PackageMonitor(MonitorPlugin):
         if output:
             logging.warning("Package reporter output:\n%s" % output)
 
-    def _resynchronize(self):
+    def _reset(self):
         """
         Remove all tasks *except* the resynchronize task.  This is
         because if we clear all tasks, then add the resynchronize,

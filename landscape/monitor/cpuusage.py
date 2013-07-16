@@ -14,6 +14,7 @@ class CPUUsage(MonitorPlugin):
     Plugin that captures CPU usage information.
     """
     persist_name = "cpu-usage"
+    scope = "cpu"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
