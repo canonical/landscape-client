@@ -118,23 +118,28 @@ class BrokerClientTest(LandscapeTest):
         indeterminate condition.
         """
         runs = []
-
         plugin = BrokerClientPlugin()
+        plugin.run_immediately = True
+        plugin.run = lambda: runs.append(True)
         self.client.add(plugin)
-        session_id = plugin._session_id
 
-        def fake_run():
-            runs.append(plugin._session_id)
+        # At this point the plugin has already run once and has scheduled as
+        # second run in plugin.run_interval seconds.
+        self.assertEquals(runs, [True])
 
-        def resynchronized(scopes):
-            self.assertNotEqual([session_id], runs)
-            self.assertEqual([plugin._session_id], runs)
+        # Mock out get_session_id so that it doesn't complete synchronously
+        deferred = Deferred()
+        self.client.broker.get_session_id = lambda scope: deferred
+        self.client_reactor.fire("resynchronize")
 
-        plugin.run = fake_run
-        self.mstore.drop_session_ids()
-        deferred = plugin._resynchronize()
+        # The scheduled run has been cancelled, and even if plugin.run_interval
+        # seconds elapse the plugin won't run again.
         self.client_reactor.advance(plugin.run_interval)
-        deferred.addCallback(resynchronized)
+        self.assertEquals(runs, [True])
+
+        # Finally get_session_id completes and the plugin runs again.
+        deferred.callback(123)
+        self.assertEquals(runs, [True, True])
 
     def test_run_immediately(self):
         """

@@ -259,9 +259,6 @@ class FakeReactorID(object):
         self.active = True
         self._data = data
 
-    def cancel(self):
-        self.active = False
-
 
 class FakeReactor(EventHandlingReactorMixin):
     """A fake reactor with the same API of L{LandscapeReactor}.
