@@ -14,6 +14,7 @@ class UserMonitor(MonitorPlugin):
     """
 
     persist_name = "users"
+    scope = "users"
     run_interval = 3600  # 1 hour
     name = "usermonitor"
 
@@ -37,6 +38,11 @@ class UserMonitor(MonitorPlugin):
         if self._publisher:
             self._publisher.stop()
             self._publisher = None
+
+    def _reset(self):
+        """Reset user and group data."""
+        super(UserMonitor, self)._reset()
+        return self._run_detect_changes()
 
     @remote
     def detect_changes(self, operation_id=None):

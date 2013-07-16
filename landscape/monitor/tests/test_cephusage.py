@@ -305,16 +305,17 @@ class CephUsagePluginTest(LandscapeTest):
         self.assertEqual([(300, 1.0), (600, 1.0)], plugin._ceph_usage_points)
         self.assertEqual(uuid, plugin._ceph_ring_id)
 
-    def test_resynchronize_message_calls_resynchronize_method(self):
+    def test_resynchronize_message_calls_reset_method(self):
         """
-        If the reactor fires a "resynchronize" even the C{_resynchronize}
+        If the reactor fires a "resynchronize" even the C{_reset}
         method on the ceph plugin object is called.
         """
         self.called = False
 
-        def stub_resynchronize():
+        def stub_reset():
             self.called = True
-        self.plugin._resynchronize = stub_resynchronize
+
+        self.plugin._reset = stub_reset
 
         self.monitor.add(self.plugin)
 

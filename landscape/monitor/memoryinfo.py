@@ -11,6 +11,7 @@ class MemoryInfo(MonitorPlugin):
     """Plugin captures information about free memory and free swap."""
 
     persist_name = "memory-info"
+    scope = "memory"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 

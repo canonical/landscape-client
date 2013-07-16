@@ -10,6 +10,7 @@ from landscape.monitor.plugin import MonitorPlugin
 class MountInfo(MonitorPlugin):
 
     persist_name = "mount-info"
+    scope = "disk"
 
     max_free_space_items_to_exchange = 200
 
