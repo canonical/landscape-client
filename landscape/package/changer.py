@@ -84,6 +84,7 @@ class PackageChanger(PackageTaskHandler):
             return succeed(None)
 
         result = self.use_hash_id_db()
+        result.addCallback(lambda x: self.get_session_id())
         result.addCallback(lambda x: self.handle_tasks())
         result.addCallback(lambda x: self.run_package_reporter())
         return result
