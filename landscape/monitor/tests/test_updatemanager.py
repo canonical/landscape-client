@@ -103,8 +103,7 @@ Prompt=never
         data.
         """
         self.plugin.run()
-        package_scope = ["package"]
-        self.reactor.fire("resynchronize", package_scope)
+        self.reactor.fire("resynchronize", scopes=["package"])
         self.plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 2)

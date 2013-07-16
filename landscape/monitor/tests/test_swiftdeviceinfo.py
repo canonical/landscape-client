@@ -136,8 +136,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
 
         plugin.run()
         plugin.exchange()
-        storage_scope = ["storage"]
-        self.reactor.fire("resynchronize", storage_scope)
+        self.reactor.fire("resynchronize", scopes=["storage"])
         plugin.run()
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
