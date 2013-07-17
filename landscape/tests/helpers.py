@@ -652,4 +652,3 @@ class FakePersist(object):
 
     def remove(self, key):
         self.called = True
-
