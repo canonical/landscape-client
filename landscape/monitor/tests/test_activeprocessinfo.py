@@ -432,7 +432,7 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_resynchronize_event_with_global_scope(self):
         """
         When a C{resynchronize} event occurs the L{_reset} method should be
-        called on L{ActiveProcessInfo}. 
+        called on L{ActiveProcessInfo}.
         """
         self.builder.create_data(672, self.builder.TRACING_STOP,
                                  uid=1000, gid=1000, started_after_boot=1120,
