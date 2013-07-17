@@ -2,7 +2,7 @@ import os
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.manager.keystonetoken import KeystoneToken
-from landscape.tests.helpers import ManagerHelper
+from landscape.tests.helpers import ManagerHelper, FakePersist
 
 
 class KeystoneTokenTest(LandscapeTest):
@@ -88,20 +88,49 @@ class KeystoneTokenTest(LandscapeTest):
         self.reactor.advance(flush_interval)
         self.assertTrue(os.path.exists(persist_filename))
 
-    def test_resynchronize_message_calls_resynchronize_method(self):
+    def test_resynchronize_message_calls_reset_method(self):
         """
-        If the reactor fires a "resynchronize" even the C{_resynchronize}
-        method on the keystone plugin object is called.
+        If the reactor fires a "resynchronize", with 'openstack' scope, the
+        C{_reset} method on the keystone plugin object is called.
         """
-        self.called = False
-
-        def stub_resynchronize():
-            self.called = True
-        self.plugin._resynchronize = stub_resynchronize
-
         self.manager.add(self.plugin)
+        self.plugin._persist = FakePersist()
+        openstack_scope = ["openstack"]
+        self.reactor.fire("resynchronize", openstack_scope)
+        self.assertTrue(self.plugin._persist.called)
+
+    def test_resynchronize_gets_new_session_id(self):
+        """
+        If L{KeystoneToken} reacts to a "resynchronize" event it should get a
+        new session id as part of the process.
+        """
+        self.manager.add(self.plugin)
+        session_id = self.plugin._session_id
+        self.plugin._persist = FakePersist()
+        self.plugin.client.broker.message_store.drop_session_ids()
         self.reactor.fire("resynchronize")
-        self.assertTrue(self.called)
+        self.assertNotEqual(session_id, self.plugin._session_id)
+
+    def test_resynchronize_with_global_scope(self):
+        """
+        If the reactor fires a "resynchronize", with global scope, we act as if
+        it had 'openstack' scope.
+        """
+        self.manager.add(self.plugin)
+        self.plugin._persist = FakePersist()
+        self.reactor.fire("resynchronize")
+        self.assertTrue(self.plugin._persist.called)
+
+    def test_do_not_resynchronize_with_other_scope(self):
+        """
+        If the reactor fires a "resynchronize", with an irrelevant scope, we do
+        nothing.
+        """
+        self.manager.add(self.plugin)
+        self.plugin._persist = FakePersist()
+        disk_scope = ["disk"]
+        self.reactor.fire("resynchronize", disk_scope)
+        self.assertFalse(self.plugin._persist.called)
 
     def test_send_message_with_no_data(self):
         """
