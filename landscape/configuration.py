@@ -14,11 +14,11 @@ import pwd
 from ConfigParser import ConfigParser, Error as ConfigParserError
 from StringIO import StringIO
 
-from twisted.internet.defer import gatherResults
-
 from landscape.lib.tag import is_valid_tag
+
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
+from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError, HTTPCodeError
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.reactor import LandscapeReactor
@@ -684,7 +684,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
             remote.register().addErrback(handle_registration_errors)]
         # We consume errors here to ignore errors after the first one.
         # catch_all will be called for the very first deferred that fails.
-        results = gatherResults(deferreds, consumeErrors=True)
+        results = gather_results(deferreds, consume_errors=True)
         results.addErrback(catch_all)
         results.addCallback(stop)
 
