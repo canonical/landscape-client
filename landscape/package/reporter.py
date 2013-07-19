@@ -6,10 +6,10 @@ import os
 import glob
 import apt_pkg
 
-from twisted.internet.defer import Deferred, succeed, gatherResults
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
-from landscape.lib.twisted_util import spawn_process
+from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
 from landscape.lib import bpickle
@@ -373,7 +373,7 @@ class PackageReporter(PackageTaskHandler):
                 result.addCallback(update_or_remove, request)
                 results.append(result)
 
-        return gatherResults(results)
+        return gather_results(results)
 
     def request_unknown_hashes(self):
         """Detect available packages for which we have no hash=>id mappings.

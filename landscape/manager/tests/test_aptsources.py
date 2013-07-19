@@ -1,10 +1,11 @@
 import os
 
-from twisted.internet.defer import Deferred, succeed, gatherResults
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
 
+from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.package.reporter import find_reporter_command
 
@@ -348,7 +349,7 @@ class AptSourcesTests(LandscapeTest):
         self.assertMessages(service.message_store.get_pending_messages(),
                             [{"type": "operation-result",
                               "status": SUCCEEDED, "operation-id": 1}])
-        return gatherResults(deferreds)
+        return gather_results(deferreds)
 
     def test_multiple_import_failure(self):
         """
@@ -377,7 +378,7 @@ class AptSourcesTests(LandscapeTest):
                             [{"type": "operation-result",
                               "result-text": msg, "status": FAILED,
                               "operation-id": 1}])
-        return gatherResults(deferreds)
+        return gather_results(deferreds)
 
     def test_run_reporter(self):
         """
