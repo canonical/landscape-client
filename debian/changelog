@@ -1,4 +1,4 @@
-landscape-client (13.07-0ubuntu1) precise; urgency=low
+landscape-client (13.07.1-0ubuntu1) precise; urgency=low
 
   * Fake changelog entry to bump version.
   * This changelog is used only for locally built pacakges (development).
