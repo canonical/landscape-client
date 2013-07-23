@@ -18,10 +18,10 @@ class HAServiceTests(LandscapeTest):
         self.ha_service.JUJU_UNITS_BASE = self.makeDir()
         self.unit_name = "my-service/9"
 
-        self.unit_path = self.unit_name.replace("/", "-")
+        self.unit_path = "unit-" + self.unit_name.replace("/", "-")
         self.health_check_d = os.path.join(
             self.ha_service.JUJU_UNITS_BASE, self.unit_path, "charm/scripts",
-             self.ha_service.HEALTH_SCRIPTS_DIR)
+            self.ha_service.HEALTH_SCRIPTS_DIR)
         # create entire dir path
         os.makedirs(self.health_check_d)
 
