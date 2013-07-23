@@ -16,32 +16,27 @@ class HAServiceTests(LandscapeTest):
         super(HAServiceTests, self).setUp()
         self.ha_service = HAService()
         self.ha_service.JUJU_UNITS_BASE = self.makeDir()
-        self.unit_name = "my-service/9"
 
+        self.unit_name = "my-service/9"
         self.unit_path = "unit-" + self.unit_name.replace("/", "-")
+
+        self.scripts_dir = os.path.join(
+            self.ha_service.JUJU_UNITS_BASE, self.unit_path, "charm/scripts")
         self.health_check_d = os.path.join(
-            self.ha_service.JUJU_UNITS_BASE, self.unit_path, "charm/scripts",
-            self.ha_service.HEALTH_SCRIPTS_DIR)
+            self.scripts_dir, self.ha_service.HEALTH_SCRIPTS_DIR)
         # create entire dir path
         os.makedirs(self.health_check_d)
 
         self.manager.add(self.ha_service)
 
-        self.scripts_dir = "%s/%s/charm/scripts" % (
-            self.ha_service.JUJU_UNITS_BASE, self.unit_path)
-        cluster_online = file(
-            "%s/add_to_cluster" % self.scripts_dir, "w")
-        cluster_online.write("#!/bin/bash\nexit 0")
-        cluster_online.close()
-        cluster_standby = file(
-            "%s/remove_from_cluster" % self.scripts_dir, "w")
-        cluster_standby.write("#!/bin/bash\nexit 0")
-        cluster_standby.close()
-
-        os.chmod(
-            "%s/add_to_cluster" % self.scripts_dir, 0755)
-        os.chmod(
-            "%s/remove_from_cluster" % self.scripts_dir, 0755)
+        cluster_online = self.makeFile(
+            content="#!/bin/bash\nexit 0",
+            basename="add_to_cluster", dirname=self.scripts_dir)
+        os.chmod(cluster_online, 0755)
+        cluster_standby = self.makeFile(
+            content="#!/bin/bash\nexit 0",
+            basename="remove_from_cluster", dirname=self.scripts_dir)
+        os.chmod(cluster_standby, 0755)
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])

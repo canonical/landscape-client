@@ -67,12 +67,7 @@ class HAService(ManagerPlugin):
                    "status": status,
                    "operation-id": operation_id}
         if data:
-            if not isinstance(data, unicode):
-            # Let's decode result-text, replacing non-printable
-            # characters
-                message["result-text"] = data.decode("utf-8", "replace")
-            else:
-                message["result-text"] = data.decode("utf-8", "replace")
+            message["result-text"] = data.decode("utf-8", "replace")
         return self.registry.broker.send_message(
             message, self._session_id, True)
 
@@ -96,7 +91,7 @@ class HAService(ManagerPlugin):
         success or fail.
         """
         health_dir = os.path.join(scripts_path, self.HEALTH_SCRIPTS_DIR)
-        if not os.path.exists(health_dir) or len(os.listdir(health_dir)) == 0:
+        if not os.path.exists(health_dir) or not os.listdir(health_dir):
             # No scripts, no problem
             message = (
                 "Skipping juju charm health checks. No scripts at %s." %
