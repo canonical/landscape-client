@@ -158,7 +158,6 @@ class HAService(ManagerPlugin):
         if service_state == self.STATE_ONLINE:
             # Validate health of local service before we bring it online
             # in the HAcluster
-            print "HERE"
             d = self._run_health_checks(scripts_path)
         d.addCallback(
             self._change_cluster_participation, scripts_path, service_state)
