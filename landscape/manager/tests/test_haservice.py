@@ -16,32 +16,27 @@ class HAServiceTests(LandscapeTest):
         super(HAServiceTests, self).setUp()
         self.ha_service = HAService()
         self.ha_service.JUJU_UNITS_BASE = self.makeDir()
-        self.unit_name = "my-service/9"
 
-        self.unit_path = self.unit_name.replace("/", "-")
+        self.unit_name = "my-service/9"
+        self.unit_path = "unit-" + self.unit_name.replace("/", "-")
+
+        self.scripts_dir = os.path.join(
+            self.ha_service.JUJU_UNITS_BASE, self.unit_path, "charm/scripts")
         self.health_check_d = os.path.join(
-            self.ha_service.JUJU_UNITS_BASE, self.unit_path, "charm/scripts",
-             self.ha_service.HEALTH_SCRIPTS_DIR)
+            self.scripts_dir, self.ha_service.HEALTH_SCRIPTS_DIR)
         # create entire dir path
         os.makedirs(self.health_check_d)
 
         self.manager.add(self.ha_service)
 
-        self.scripts_dir = "%s/%s/charm/scripts" % (
-            self.ha_service.JUJU_UNITS_BASE, self.unit_path)
-        cluster_online = file(
-            "%s/add_to_cluster" % self.scripts_dir, "w")
-        cluster_online.write("#!/bin/bash\nexit 0")
-        cluster_online.close()
-        cluster_standby = file(
-            "%s/remove_from_cluster" % self.scripts_dir, "w")
-        cluster_standby.write("#!/bin/bash\nexit 0")
-        cluster_standby.close()
-
-        os.chmod(
-            "%s/add_to_cluster" % self.scripts_dir, 0755)
-        os.chmod(
-            "%s/remove_from_cluster" % self.scripts_dir, 0755)
+        cluster_online = self.makeFile(
+            content="#!/bin/bash\nexit 0",
+            basename="add_to_cluster", dirname=self.scripts_dir)
+        os.chmod(cluster_online, 0755)
+        cluster_standby = self.makeFile(
+            content="#!/bin/bash\nexit 0",
+            basename="remove_from_cluster", dirname=self.scripts_dir)
+        os.chmod(cluster_standby, 0755)
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
@@ -133,7 +128,7 @@ class HAServiceTests(LandscapeTest):
                 "Skipping juju charm health checks. No scripts at "
                 "%s/I/don't/exist." % self.scripts_dir)
 
-        result = self.ha_service._run_health_checks(self.unit_path)
+        result = self.ha_service._run_health_checks(self.scripts_dir)
         result.addCallbacks(check_success_result, should_not_be_called)
 
     def test_wb_no_health_check_scripts(self):
@@ -154,7 +149,7 @@ class HAServiceTests(LandscapeTest):
                 "%s/%s." %
                 (self.scripts_dir, self.ha_service.HEALTH_SCRIPTS_DIR))
 
-        result = self.ha_service._run_health_checks(self.unit_path)
+        result = self.ha_service._run_health_checks(self.scripts_dir)
         result.addCallbacks(check_success_result, should_not_be_called)
 
     def test_wb_failed_health_script(self):
@@ -186,7 +181,7 @@ class HAServiceTests(LandscapeTest):
             health_script.close()
             os.chmod(script_path, 0755)
 
-        result = self.ha_service._run_health_checks(self.unit_path)
+        result = self.ha_service._run_health_checks(self.scripts_dir)
         result.addCallbacks(check_success_result, expected_failure)
         return result
 
@@ -212,12 +207,12 @@ class HAServiceTests(LandscapeTest):
         self.ha_service.CLUSTER_STANDBY = "I/don't/exist"
 
         result = self.ha_service._change_cluster_participation(
-            None, self.unit_path, self.ha_service.STATE_ONLINE)
+            None, self.scripts_dir, self.ha_service.STATE_ONLINE)
         result.addCallbacks(check_success_result, should_not_be_called)
 
         # Now test the cluster standby script
         result = self.ha_service._change_cluster_participation(
-            None, self.unit_path, self.ha_service.STATE_STANDBY)
+            None, self.scripts_dir, self.ha_service.STATE_STANDBY)
         result.addCallbacks(check_success_result, should_not_be_called)
         return result
 
@@ -242,7 +237,7 @@ class HAServiceTests(LandscapeTest):
             cluster_online.close()
 
         result = self.ha_service._change_cluster_participation(
-            None, self.unit_path, self.ha_service.STATE_ONLINE)
+            None, self.scripts_dir, self.ha_service.STATE_ONLINE)
         result.addCallback(check_success_result)
         script_path = (
             "%s/%s" % (self.scripts_dir, self.ha_service.CLUSTER_ONLINE))
@@ -250,7 +245,7 @@ class HAServiceTests(LandscapeTest):
 
         # Now test the cluster standby script
         result = self.ha_service._change_cluster_participation(
-            None, self.unit_path, self.ha_service.STATE_STANDBY)
+            None, self.scripts_dir, self.ha_service.STATE_STANDBY)
         result.addCallback(check_success_result)
         script_path = (
             "%s/%s" % (self.scripts_dir, self.ha_service.CLUSTER_STANDBY))
