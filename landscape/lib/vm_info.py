@@ -40,8 +40,8 @@ def get_vm_info(root_path="/"):
                 has_hypervisor_flag = True
                 break
 
-    if not has_hypervisor_flag:
-        return ""
+    # if not has_hypervisor_flag:
+    #     return ""
 
     sys_vendor_path = join_root_path("sys/class/dmi/id/sys_vendor")
     if not os.path.exists(sys_vendor_path):
@@ -54,5 +54,7 @@ def get_vm_info(root_path="/"):
         return "hyperv"
     elif "Bochs" in content or "OpenStack" in content:
         return "kvm"
+    elif "innotek gmbH" in content:
+        return "virtualbox"
 
     return ""
