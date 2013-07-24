@@ -54,7 +54,7 @@ def get_vm_info(root_path="/"):
         return "hyperv"
     elif "Bochs" in content or "OpenStack" in content:
         return "kvm"
-    elif "innotek gmbH" in content:
+    elif "innotek" in content:
         return "virtualbox"
 
     return ""
