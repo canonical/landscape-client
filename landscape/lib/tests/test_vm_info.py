@@ -16,6 +16,12 @@ class VMInfoTest(LandscapeTest):
         self.proc_sys_path = self.makeDir(
             path=os.path.join(self.proc_path, "sys"))
 
+    def makeSysVendor(self, content):
+        """Create /sys/class/dmi/id/sys_vendor with the specified content."""
+        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
+        self.makeDir(path=dmi_path)
+        self.makeFile(dirname=dmi_path, basename="sys_vendor", content=content)
+
     def test_get_vm_info_empty_when_no_virtualization_is_found(self):
         """
         L{get_vm_info} should be empty when there's no virtualisation.
@@ -61,55 +67,6 @@ class VMInfoTest(LandscapeTest):
 
         self.assertEqual("xen", get_vm_info(root_path=self.root_path))
 
-    def test_get_vm_info_with_bochs_sys_vendor(self):
-        """
-        L{get_vm_info} should return "kvm" when we detect the sys_vendor is
-        Bochs.
-        """
-        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
-        self.makeDir(path=dmi_path)
-        self.makeFile(
-            path=os.path.join(dmi_path, "sys_vendor"), content="Bochs")
-
-        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
-
-    def test_get_vm_info_with_openstack_sys_vendor(self):
-        """
-        L{get_vm_info} should return "kvm" when we detect the sys_vendor is
-        Openstack.
-        """
-        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
-        self.makeDir(path=dmi_path)
-        self.makeFile(
-            path=os.path.join(dmi_path, "sys_vendor"),
-            content="OpenStack Foundation")
-
-        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
-
-    def test_get_vm_info_with_vmware_sys_vendor(self):
-        """
-        L{get_vm_info} should return "vmware" when we detect the sys_vendor is
-        VMware Inc.
-        """
-        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
-        self.makeDir(path=dmi_path)
-        self.makeFile(
-            path=os.path.join(dmi_path, "sys_vendor"), content="VMware, Inc.")
-
-        self.assertEqual("vmware", get_vm_info(root_path=self.root_path))
-
-    def test_get_vm_info_with_virtualbox_sys_vendor(self):
-        """
-        L{get_vm_info} should return "virtualbox" when we detect the sys_vendor
-        is innotek GmbH.
-        """
-        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
-        self.makeDir(path=dmi_path)
-        self.makeFile(
-            path=os.path.join(dmi_path, "sys_vendor"), content="innotek GmbH")
-
-        self.assertEqual("virtualbox", get_vm_info(root_path=self.root_path))
-
     def test_get_vm_info_is_empty_without_xen_devices(self):
         """
         L{get_vm_info} returns an empty string if the /sys/bus/xen/devices
@@ -120,15 +77,48 @@ class VMInfoTest(LandscapeTest):
 
         self.assertEqual("", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_bochs_sys_vendor(self):
+        """
+        L{get_vm_info} should return "kvm" when we detect the sys_vendor is
+        Bochs.
+        """
+        self.makeSysVendor("Bochs")
+
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_with_openstack_sys_vendor(self):
+        """
+        L{get_vm_info} should return "kvm" when we detect the sys_vendor is
+        Openstack.
+        """
+        self.makeSysVendor("OpenStack Foundation")
+
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_with_vmware_sys_vendor(self):
+        """
+        L{get_vm_info} should return "vmware" when we detect the sys_vendor is
+        VMware Inc.
+        """
+        self.makeSysVendor("VMware, Inc.")
+
+        self.assertEqual("vmware", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_with_virtualbox_sys_vendor(self):
+        """
+        L{get_vm_info} should return "virtualbox" when we detect the sys_vendor
+        is innotek GmbH.
+        """
+        self.makeSysVendor("innotek GmbH")
+
+        self.assertEqual("virtualbox", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_microsoft_sys_vendor(self):
         """
         L{get_vm_info} returns "hyperv" if the sys_vendor is Microsoft.
         """
-        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
-        self.makeDir(path=dmi_path)
-        self.makeFile(
-            path=os.path.join(dmi_path, "sys_vendor"),
-            content="Microsoft Corporation")
+        self.makeSysVendor("Microsoft Corporation")
+
         self.assertEqual("hyperv", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_other_vendor(self):
@@ -136,10 +126,6 @@ class VMInfoTest(LandscapeTest):
         L{get_vm_info} should return an empty string when the sys_vendor is
         unknown.
         """
-        dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
-        self.makeDir(path=dmi_path)
-        self.makeFile(
-            path=os.path.join(dmi_path, "sys_vendor"),
-            content="Some other vendor")
+        self.makeSysVendor("Some other vendor")
 
         self.assertEqual("", get_vm_info(root_path=self.root_path))
