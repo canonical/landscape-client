@@ -70,7 +70,7 @@ class VMInfoTest(LandscapeTest):
     def test_get_vm_info_is_empty_without_xen_devices(self):
         """
         L{get_vm_info} returns an empty string if the /sys/bus/xen/devices
-        directory exists and but doesn't contain any file.
+        directory exists but doesn't contain any file.
         """
         devices_xen_path = os.path.join(self.sys_path, "bus/xen/devices")
         self.makeDir(path=devices_xen_path)
