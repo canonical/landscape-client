@@ -28,7 +28,7 @@ class PackageMonitorTest(LandscapeTest):
         Put a task for the package reported into the package store.
         """
         message = {"type": "package-ids", "ids": [None], "request-id": 1}
-        self.package_store.add_task("reporter", message)
+        return self.package_store.add_task("reporter", message)
 
     def assertSingleReporterTask(self, data, task_id):
         """
@@ -274,14 +274,14 @@ class PackageMonitorTest(LandscapeTest):
         the package monitor should not respond to this.
         """
         self.monitor.add(self.package_monitor)
-        self.createReporterTask()
+        task = self.createReporterTask()
 
         disk_scope = ["disk"]
         self.monitor.reactor.fire("resynchronize", disk_scope)
 
-        # The next task should *not* be the resynchronize message.
-        self.assertSingleReporterTask(
-            {'ids': [None], 'request-id': 1, 'type': 'package-ids'}, 1)
+        # The next task should *not* be the resynchronize message, but instead
+        # the original task we created.
+        self.assertSingleReporterTask(task.data, task.id)
 
     def test_spawn_reporter_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
