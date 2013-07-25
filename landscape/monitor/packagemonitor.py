@@ -11,6 +11,7 @@ from landscape.monitor.plugin import MonitorPlugin
 class PackageMonitor(MonitorPlugin):
 
     run_interval = 1800
+    scope = "package"
 
     def __init__(self, package_store_filename=None):
         super(PackageMonitor, self).__init__()
