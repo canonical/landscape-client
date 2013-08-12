@@ -1,6 +1,5 @@
 import sys
 import os
-import unittest
 import time
 import apt_pkg
 
@@ -28,7 +27,7 @@ from landscape.tests.mocker import ANY
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 
-class PackageReporterConfigurationTest(unittest.TestCase):
+class PackageReporterConfigurationTest(LandscapeTest):
 
     def test_force_apt_update_option(self):
         """
@@ -36,6 +35,7 @@ class PackageReporterConfigurationTest(unittest.TestCase):
         command line option.
         """
         config = PackageReporterConfiguration()
+        config.default_config_filenames = (self.makeFile(""), )
         self.assertFalse(config.force_apt_update)
         config.load(["--force-apt-update"])
         self.assertTrue(config.force_apt_update)

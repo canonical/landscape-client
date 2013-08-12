@@ -22,13 +22,13 @@ class DeploymentTest(LandscapeTest):
         super(DeploymentTest, self).setUp()
 
         class TestConfiguration(SysInfoConfiguration):
-            default_config_filenames = ()
+            default_config_filenames = (self.makeFile(""),)
 
         self.configuration = TestConfiguration()
 
     def test_get_plugins(self):
         self.configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
-                                 "-d", self.makeFile()])
+                                 "-d", self.makeDir()])
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 2)
         self.assertTrue(isinstance(plugins[0], Load))
@@ -42,7 +42,7 @@ class DeploymentTest(LandscapeTest):
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
         self.configuration.load(["--exclude-sysinfo-plugins", exclude,
-                                 "-d", self.makeFile()])
+                                 "-d", self.makeDir()])
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], Load))
@@ -52,7 +52,7 @@ class DeploymentTest(LandscapeTest):
         f = open(filename, "w")
         f.write("[sysinfo]\nsysinfo_plugins = TestPlugin\n")
         f.close()
-        self.configuration.load(["--config", filename, "-d", self.makeFile()])
+        self.configuration.load(["--config", filename, "-d", self.makeDir()])
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], TestPlugin))
@@ -88,7 +88,7 @@ class RunTest(LandscapeTest):
     def setUp(self):
         super(RunTest, self).setUp()
         self._old_filenames = SysInfoConfiguration.default_config_filenames
-        SysInfoConfiguration.default_config_filenames = ()
+        SysInfoConfiguration.default_config_filenames = (self.makeFile(""),)
 
     def tearDown(self):
         super(RunTest, self).tearDown()
