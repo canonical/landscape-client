@@ -99,7 +99,7 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
 
     def setUp(self):
         self._old_config_filenames = BaseConfiguration.default_config_filenames
-        BaseConfiguration.default_config_filenames = []
+        BaseConfiguration.default_config_filenames = [self.makeFile("")]
         MockerTestCase.setUp(self)
         TestCase.setUp(self)
         return HelperTestCase.setUp(self)

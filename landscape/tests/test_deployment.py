@@ -204,8 +204,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -214,8 +213,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_manually_set_precedence(self):
         """Manually set options take precedence over command line when writing.
@@ -225,18 +223,17 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = error\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
-        self.config.load(["--log-level", "warning", "--config", filename],
-                         accept_nonexistent_config=True)
+        self.config.load(
+            ["--log-level", "warning", "--config", filename],
+            accept_nonexistent_config=True)
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = error\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_config_option(self):
         options = self.parser.parse_args(["--config", "hello.cfg"])[0]
@@ -282,6 +279,7 @@ class ConfigurationTest(LandscapeTest):
                 parser.add_option("--year", default=1, type="int")
                 return parser
 
+        self.write_config_file()
         config = MyConfiguration()
         config.load(["--year", "2008"])
         self.assertEqual(config.year, 2008)
@@ -432,6 +430,7 @@ class ConfigurationTest(LandscapeTest):
 
     def test_clones_default(self):
         """By default, no clones are started."""
+        self.write_config_file()
         options = self.parser.parse_args([])[0]
         self.assertEqual(0, options.clones)
 
@@ -511,6 +510,7 @@ class ConfigurationTest(LandscapeTest):
 
     def test_clone(self):
         """The L{Configuration.clone} method clones a configuration."""
+        self.write_config_file()
         self.config.load(["--data-path", "/some/path"])
         self.config.foo = "bar"
         config2 = self.config.clone()
