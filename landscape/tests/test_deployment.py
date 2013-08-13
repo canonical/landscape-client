@@ -304,8 +304,55 @@ class ConfigurationTest(LandscapeTest):
         os.chmod(filename, 0)
         error = self.assertRaises(
             SystemExit, self.config.load, ["--config", filename])
-        self.assertEqual("error: config file %s can't be read" % filename,
-                         str(error))
+        self.assertEqual(
+            "error: config file %s can't be read" % filename, str(error))
+
+    def test_load_not_found(self):
+        """
+        C{config.load} exits the process if the specified config file is not
+        found.
+        """
+        filename = "/not/here"
+        error = self.assertRaises(
+            SystemExit, self.config.load, ["--config", filename])
+        self.assertEqual(
+            "error: config file %s can't be read" % filename, str(error))
+
+    def test_load_cant_read_default(self):
+        """
+        C{config.load} exits the process if the default config file can't be
+        read because of permission reasons.
+        """
+        self.write_config_file()
+        [default] = self.config.default_config_filenames
+        os.chmod(default, 0)
+        error = self.assertRaises(SystemExit, self.config.load, [])
+        self.assertEqual(
+            "error: config file %s can't be read" % default, str(error))
+
+    def test_load_not_found_default(self):
+        """
+        C{config.load} exits the process if the default config file is not
+        found.
+        """
+        [default] = self.config.default_config_filenames[:] = ["/not/here"]
+        error = self.assertRaises(SystemExit, self.config.load, [])
+        self.assertEqual(
+            "error: config file %s can't be read" % default, str(error))
+
+    def test_load_cant_read_many_defaults(self):
+        """
+        C{config.load} exits the process if none of the default config files
+        exists and can be read.
+        """
+        default1 = self.makeFile("")
+        default2 = self.makeFile("")
+        os.chmod(default1, 0)
+        os.unlink(default2)
+        self.config.default_config_filenames[:] = [default1, default2]
+
+        error = self.assertRaises(SystemExit, self.config.load, [])
+        self.assertEqual("error: no config file could be read", str(error))
 
     def test_data_directory_option(self):
         """Ensure options.data_path option can be read by parse_args."""
