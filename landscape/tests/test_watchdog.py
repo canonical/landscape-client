@@ -1477,14 +1477,8 @@ class FakeReactor(Clock):
 
 
 class WatchDogRunTests(LandscapeTest):
-    helpers = [EnvironSaverHelper]
 
-    def setUp(self):
-        super(WatchDogRunTests, self).setUp()
-        self.addCleanup(setattr, WatchDogConfiguration,
-                        "default_config_filenames",
-                        WatchDogConfiguration.default_config_filenames)
-        WatchDogConfiguration.default_config_filenames = []
+    helpers = [EnvironSaverHelper]
 
     def test_non_root(self):
         """

@@ -141,20 +141,26 @@ class BaseConfiguration(object):
         """
         self.load_command_line(args)
 
-        # Parse configuration file, if found.
         if self.config:
-            if os.path.isfile(self.config):
-                if not os.access(self.config, os.R_OK):
-                    sys.exit(
-                        "error: config file %s can't be read" % self.config)
-                self.load_configuration_file(self.config)
-            elif not accept_nonexistent_config:
-                sys.exit("error: file not found: %s" % self.config)
+            config_filenames = [self.config]
         else:
-            for potential_config_file in self.default_config_filenames:
-                if os.access(potential_config_file, os.R_OK):
-                    self.load_configuration_file(potential_config_file)
-                    break
+            config_filenames = self.default_config_filenames
+        # Parse configuration file, if found.
+        for config_filename in config_filenames:
+            if (os.path.isfile(config_filename)
+                and os.access(config_filename, os.R_OK)):
+
+                self.load_configuration_file(config_filename)
+                break
+        else:
+            if not accept_nonexistent_config:
+                if len(config_filenames) == 1:
+                    message = (
+                        "error: config file %s can't be read" %
+                        config_filenames[0])
+                else:
+                    message = "error: no config file could be read"
+                sys.exit(message)
 
         self._load_external_options()
 

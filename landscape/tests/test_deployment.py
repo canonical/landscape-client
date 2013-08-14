@@ -204,8 +204,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -214,8 +213,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_manually_set_precedence(self):
         """Manually set options take precedence over command line when writing.
@@ -225,18 +223,17 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = error\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
-        self.config.load(["--log-level", "warning", "--config", filename],
-                         accept_nonexistent_config=True)
+        self.config.load(
+            ["--log-level", "warning", "--config", filename],
+            accept_nonexistent_config=True)
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = error\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_config_option(self):
         options = self.parser.parse_args(["--config", "hello.cfg"])[0]
@@ -282,6 +279,7 @@ class ConfigurationTest(LandscapeTest):
                 parser.add_option("--year", default=1, type="int")
                 return parser
 
+        self.write_config_file()
         config = MyConfiguration()
         config.load(["--year", "2008"])
         self.assertEqual(config.year, 2008)
@@ -297,7 +295,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.reload()
         self.assertEqual(self.config.hello, "world2")
 
-    def test_load_cant_read(self):
+    def test_load_cannot_read(self):
         """
         C{config.load} exits the process if the specific config file can't be
         read because of permission reasons.
@@ -306,8 +304,55 @@ class ConfigurationTest(LandscapeTest):
         os.chmod(filename, 0)
         error = self.assertRaises(
             SystemExit, self.config.load, ["--config", filename])
-        self.assertEqual("error: config file %s can't be read" % filename,
-                         str(error))
+        self.assertEqual(
+            "error: config file %s can't be read" % filename, str(error))
+
+    def test_load_not_found(self):
+        """
+        C{config.load} exits the process if the specified config file is not
+        found.
+        """
+        filename = "/not/here"
+        error = self.assertRaises(
+            SystemExit, self.config.load, ["--config", filename])
+        self.assertEqual(
+            "error: config file %s can't be read" % filename, str(error))
+
+    def test_load_cannot_read_default(self):
+        """
+        C{config.load} exits the process if the default config file can't be
+        read because of permission reasons.
+        """
+        self.write_config_file()
+        [default] = self.config.default_config_filenames
+        os.chmod(default, 0)
+        error = self.assertRaises(SystemExit, self.config.load, [])
+        self.assertEqual(
+            "error: config file %s can't be read" % default, str(error))
+
+    def test_load_not_found_default(self):
+        """
+        C{config.load} exits the process if the default config file is not
+        found.
+        """
+        [default] = self.config.default_config_filenames[:] = ["/not/here"]
+        error = self.assertRaises(SystemExit, self.config.load, [])
+        self.assertEqual(
+            "error: config file %s can't be read" % default, str(error))
+
+    def test_load_cannot_read_many_defaults(self):
+        """
+        C{config.load} exits the process if none of the default config files
+        exists and can be read.
+        """
+        default1 = self.makeFile("")
+        default2 = self.makeFile("")
+        os.chmod(default1, 0)
+        os.unlink(default2)
+        self.config.default_config_filenames[:] = [default1, default2]
+
+        error = self.assertRaises(SystemExit, self.config.load, [])
+        self.assertEqual("error: no config file could be read", str(error))
 
     def test_data_directory_option(self):
         """Ensure options.data_path option can be read by parse_args."""
@@ -432,6 +477,7 @@ class ConfigurationTest(LandscapeTest):
 
     def test_clones_default(self):
         """By default, no clones are started."""
+        self.write_config_file()
         options = self.parser.parse_args([])[0]
         self.assertEqual(0, options.clones)
 
@@ -511,6 +557,7 @@ class ConfigurationTest(LandscapeTest):
 
     def test_clone(self):
         """The L{Configuration.clone} method clones a configuration."""
+        self.write_config_file()
         self.config.load(["--data-path", "/some/path"])
         self.config.foo = "bar"
         config2 = self.config.clone()
