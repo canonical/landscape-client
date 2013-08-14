@@ -147,10 +147,11 @@ class BaseConfiguration(object):
             config_filenames = self.default_config_filenames
         # Parse configuration file, if found.
         for config_filename in config_filenames:
-            if os.path.isfile(config_filename):
-                if os.access(config_filename, os.R_OK):
-                    self.load_configuration_file(config_filename)
-                    break
+            if (os.path.isfile(config_filename)
+                and os.access(config_filename, os.R_OK)):
+
+                self.load_configuration_file(config_filename)
+                break
         else:
             if not accept_nonexistent_config:
                 if len(config_filenames) == 1:

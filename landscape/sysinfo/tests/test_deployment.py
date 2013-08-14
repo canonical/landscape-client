@@ -22,7 +22,7 @@ class DeploymentTest(LandscapeTest):
         super(DeploymentTest, self).setUp()
 
         class TestConfiguration(SysInfoConfiguration):
-            default_config_filenames = (self.makeFile(""),)
+            default_config_filenames = [self.makeFile("")]
 
         self.configuration = TestConfiguration()
 
@@ -88,7 +88,7 @@ class RunTest(LandscapeTest):
     def setUp(self):
         super(RunTest, self).setUp()
         self._old_filenames = SysInfoConfiguration.default_config_filenames
-        SysInfoConfiguration.default_config_filenames = (self.makeFile(""),)
+        SysInfoConfiguration.default_config_filenames = [self.makeFile("")]
 
     def tearDown(self):
         super(RunTest, self).tearDown()

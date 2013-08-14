@@ -295,7 +295,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.reload()
         self.assertEqual(self.config.hello, "world2")
 
-    def test_load_cant_read(self):
+    def test_load_cannot_read(self):
         """
         C{config.load} exits the process if the specific config file can't be
         read because of permission reasons.
@@ -318,7 +318,7 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(
             "error: config file %s can't be read" % filename, str(error))
 
-    def test_load_cant_read_default(self):
+    def test_load_cannot_read_default(self):
         """
         C{config.load} exits the process if the default config file can't be
         read because of permission reasons.
@@ -340,7 +340,7 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(
             "error: config file %s can't be read" % default, str(error))
 
-    def test_load_cant_read_many_defaults(self):
+    def test_load_cannot_read_many_defaults(self):
         """
         C{config.load} exits the process if none of the default config files
         exists and can be read.
