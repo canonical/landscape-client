@@ -1,6 +1,9 @@
 import os
 import re
 
+from twisted.internet.defer import succeed, fail
+
+from landscape.lib.fetch import HTTPCodeError, FetchError
 from landscape.lib.fs import create_file
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
@@ -49,6 +52,23 @@ VmallocChunk:   107432 kB
     def setUp(self):
         LandscapeTest.setUp(self)
         self.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.query_results = {}
+
+        def fetch_stub(url):
+            value = self.query_results[url]
+            if isinstance(value, Exception):
+                return fail(value)
+            else:
+                return succeed(value)
+
+        self.fetch_func = fetch_stub
+
+    def mock_config_cloud(self, plugin, result):
+        """Fake out plugin.monitor.config.get("cloud")."""
+        plugin.client = self.mocker.mock()
+        plugin.client.config.get("cloud", None)
+        self.mocker.result(result)
+        self.mocker.replay()
 
     def test_get_fqdn(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -328,13 +348,13 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
-    def test_extra_meta_data(self):
+    def test_meta_data(self):
         """
         L{ComputerInfo} sends extra meta data the meta-data.d directory
         if it's present.
 
-        Each file name is used as a key in the extra-meta-data dict and
-        the file's contents are used as values.
+        Each file name is used as a key in the meta-data dict and the file's
+        contents are used as values.
 
         This allows, for example, the landscape-client charm to send
         information about the juju environment to the landscape server.
@@ -350,15 +370,15 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        meta_data = messages[0]["extra-meta-data"]
+        meta_data = messages[0]["meta-data"]
         self.assertEqual(2, len(meta_data))
         self.assertEqual("uuid1", meta_data["juju-env-uuid"])
         self.assertEqual("unit/0", meta_data["juju-unit-name"])
 
-    def test_extra_meta_data_no_directory(self):
+    def test_meta_data_no_directory(self):
         """
-        L{ComputerInfo} doesn't include the extra-meta-data key if there
-        is no meta-data.d directory.
+        L{ComputerInfo} doesn't include the meta-data key if there is no
+        meta-data.d directory.
         """
         meta_data_dir = self.monitor.config.meta_data_path
         self.assertFalse(os.path.exists(meta_data_dir))
@@ -369,11 +389,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertNotIn("extra-meta-data", messages[0])
+        self.assertNotIn("meta-data", messages[0])
 
-    def test_extra_meta_data_empty_directory(self):
+    def test_meta_data_empty_directory(self):
         """
-        L{ComputerInfo} doesn't include the extra-meta-data key if the
+        L{ComputerInfo} doesn't include the meta-data key if the
         meta-data.d directory doesn't contain any files.
         """
         meta_data_dir = self.monitor.config.meta_data_path
@@ -385,4 +405,103 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertNotIn("extra-meta-data", messages[0])
+        self.assertNotIn("meta-data", messages[0])
+
+    def test_cloud_meta_data(self):
+        """
+        L{ComputerInfo} includes the cloud-meta-data key when the cloud
+        information is available.
+        """
+        self.mstore.set_accepted_types(["computer-info"])
+        
+	plugin = ComputerInfo()
+        plugin._cloud_meta_data = {"instance_key": "i00001"}
+ 	self.monitor.add(plugin)
+	plugin.exchange()
+	messages = self.mstore.get_pending_messages()
+	self.assertEqual(1, len(messages))
+        self.assertIn("meta-data", messages[0])
+        self.assertEqual("i00001", messages[0]["meta-data"]["instance_key"])
+
+    def add_query_result(self, name, value):
+        """
+        Add a url to self.query_results that is then available through
+        self.fetch_func.
+        """
+        url = "http://169.254.169.254/latest/meta-data/" + name
+        self.query_results[url] = value
+        print "query results", self.query_results
+
+    def test_fetch_cloud_meta_data(self):
+        """
+        L{_fetch_cloud_meta_data} retrieves instance information from the
+        EC2 api and temporarily stores it.
+        """
+        self.add_query_result("instance-id", "i00001")
+        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("instance-type", "hs1.8xlarge")
+
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.mock_config_cloud(plugin, True)
+
+        plugin._fetch_cloud_meta_data()
+        self.assertEqual({"instance_key": u"i00001", "image_key": u"ami-00002",
+                          "instance_type": u"hs1.8xlarge"},
+                         plugin._cloud_meta_data)
+
+    def test_fetch_cloud_meta_data_cloud_false(self):
+        """
+        L{_fetch_cloud_meta_data} does not fetch cloud meta data when the
+        cloud config setting is false.
+        """
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.mock_config_cloud(plugin, False)
+
+        plugin._fetch_cloud_meta_data()
+        self.assertEqual({}, plugin._cloud_meta_data)
+
+    def test_fetch_cloud_meta_data_cloud_not_set(self):
+        """
+        L{_fetch_cloud_meta_data} does not fetch cloud meta data when the
+        cloud config setting is unset.
+        """
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.mock_config_cloud(plugin, None)
+
+        plugin._fetch_cloud_meta_data()
+
+        self.assertEqual({}, plugin._cloud_meta_data)
+
+    def test_fetch_cloud_meta_data_bad_result(self):
+        """
+        L{_fetch_cloud_meta_data} leaves _cloud_meta_data unmodified when
+        faced with errors from the EC2 api.
+        """
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.add_query_result("instance-id", "i7337")
+        self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
+        self.add_query_result("instance-type", "hs1.8xlarge")
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.mock_config_cloud(plugin, True)
+
+        plugin._fetch_cloud_meta_data()
+
+        self.assertEqual({}, plugin._cloud_meta_data)
+
+    def test_fetch_cloud_meta_data_utf8(self):
+        """
+        L{_fetch_cloud_meta_data} decodes utf-8 strings returned from the
+        external service.
+        """
+        self.add_query_result("instance-id", "i00001")
+        self.add_query_result("ami-id", "asdf\xe1\x88\xb4")
+        self.add_query_result("instance-type", "m1.large")
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.mock_config_cloud(plugin, True)
+
+        plugin._fetch_cloud_meta_data()
+
+        self.assertEqual({"instance_key": u"i00001", "image_key": u"asdf\u1234",
+                          "instance_type": u"m1.large"},
+                         plugin._cloud_meta_data)
+
