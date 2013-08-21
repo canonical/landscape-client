@@ -30,7 +30,6 @@ class ComputerInfo(MonitorPlugin):
         self._meminfo_file = meminfo_file
         self._lsb_release_filename = lsb_release_filename
         self._root_path = root_path
-        self._config = None
         self._cloud_meta_data = {}
         self._fetch_async = fetch_async
 
@@ -82,7 +81,7 @@ class ComputerInfo(MonitorPlugin):
 
         self._fetch_cloud_meta_data()
         meta_data = dict(
-            meta_data.items() + self._get_cloud_meta_data().items())
+            meta_data.items() + self._cloud_meta_data.items())
         if meta_data:
             self._add_if_new(message, "meta-data", meta_data)
         return message
@@ -119,46 +118,49 @@ class ComputerInfo(MonitorPlugin):
         message.update(parse_lsb_release(self._lsb_release_filename))
         return message
 
-    def _get_cloud_meta_data(self):
-        return self._cloud_meta_data
-
     def _fetch_data(self, path, accumulate):
         """
         Get data at C{path} on the EC2 API endpoint, and add the result to the
         C{accumulate} list.
         """
-        logging.info("Queueing url fetch %s." % (EC2_API + path))
-        return self._fetch_async(EC2_API + path).addCallback(accumulate.append)
+        url = EC2_API + "/meta-data/" + path
+        logging.info("Queueing url fetch %s." % url)
+        return self._fetch_async(url).addCallback(accumulate.append)
 
     def _fetch_cloud_meta_data(self):
         """Fetch information about the cloud instance."""
-        if self.monitor.config.get("cloud", None):
-            cloud_data = []
-            # We're not using a DeferredList here because we want to keep the
-            # number of connections to the backend minimal. See lp:567515.
-            deferred = self._fetch_data("/meta-data/instance-id", cloud_data)
-            deferred.addCallback(
-                    lambda ignore, path="/meta-data/instance-type":
-                        self._fetch_data(path, cloud_data))
-            deferred.addCallback(
-                    lambda ignore, path="/meta-data/ami-id":
-                        self._fetch_data(path, cloud_data))
 
-            def store_data(ignore):
-                """Record the instance data returned by the EC2 API."""
-                (instance_key, instance_type, ami_key) = cloud_data
-                self._cloud_meta_data = {
-                    "instance_key": instance_key,
-                    "image_key": ami_key,
-                    "instance_type": instance_type}
-                for k, v in self._cloud_meta_data.items():
-                    if v is None:
-                        continue
-                    self._cloud_meta_data[k] = v.decode("utf-8")
+        if not self.monitor.config.get("cloud", None):
+            return
+        cloud_data = []
+        # We're not using a DeferredList here because we want to keep the
+        # number of connections to the backend minimal. See lp:567515.
+        deferred = self._fetch_data("instance-id", cloud_data)
+        deferred.addCallback(
+            lambda ignore:
+                self._fetch_data("instance-type", cloud_data))
+        deferred.addCallback(
+            lambda ignore:
+                self._fetch_data("ami-id", cloud_data))
 
-            def log_error(error):
-                log_failure(error, msg="Got error while fetching meta-data: %r"
-                            % (error.value,))
+        def store_data(ignore):
+            """Record the instance data returned by the EC2 API."""
 
-            deferred.addCallback(store_data)
-            deferred.addErrback(log_error)
+            def _unicode_none(value):
+                if value is None:
+                    return None
+                else:
+                   return value.decode("utf-8")
+
+            (instance_key, instance_type, ami_key) = cloud_data
+            self._cloud_meta_data = {
+                "instance_key": _unicode_none(instance_key),
+                "image_key": _unicode_none(ami_key),
+                "instance_type": _unicode_none(instance_type)}
+
+        def log_error(error):
+            log_failure(error, msg="Got error while fetching meta-data: %r"
+                        % (error.value,))
+
+        deferred.addCallback(store_data)
+        deferred.addErrback(log_error)

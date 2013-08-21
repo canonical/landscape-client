@@ -407,10 +407,10 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual(1, len(messages))
         self.assertNotIn("meta-data", messages[0])
 
-    def test_cloud_meta_data(self):
+    def test_meta_data(self):
         """
-        L{ComputerInfo} includes the cloud-meta-data key when the cloud
-        information is available.
+        L{ComputerInfo} includes the meta-data key when cloud information
+        is available.
         """
         self.mstore.set_accepted_types(["computer-info"])
 
@@ -430,7 +430,6 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         """
         url = "http://169.254.169.254/latest/meta-data/" + name
         self.query_results[url] = value
-        print "query results", self.query_results
 
     def test_fetch_cloud_meta_data(self):
         """
