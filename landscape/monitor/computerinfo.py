@@ -81,7 +81,8 @@ class ComputerInfo(MonitorPlugin):
                     os.path.join(self._meta_data_path, key))
 
         self._fetch_cloud_meta_data()
-        meta_data = dict(meta_data.items() + self._get_cloud_meta_data().items())
+        meta_data = dict(
+            meta_data.items() + self._get_cloud_meta_data().items())
         if meta_data:
             self._add_if_new(message, "meta-data", meta_data)
         return message

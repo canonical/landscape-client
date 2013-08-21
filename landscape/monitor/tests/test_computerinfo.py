@@ -3,7 +3,7 @@ import re
 
 from twisted.internet.defer import succeed, fail
 
-from landscape.lib.fetch import HTTPCodeError, FetchError
+from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fs import create_file
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
@@ -413,13 +413,13 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         information is available.
         """
         self.mstore.set_accepted_types(["computer-info"])
-        
-	plugin = ComputerInfo()
+
+        plugin = ComputerInfo()
         plugin._cloud_meta_data = {"instance_key": "i00001"}
- 	self.monitor.add(plugin)
-	plugin.exchange()
-	messages = self.mstore.get_pending_messages()
-	self.assertEqual(1, len(messages))
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
         self.assertIn("meta-data", messages[0])
         self.assertEqual("i00001", messages[0]["meta-data"]["instance_key"])
 
@@ -501,7 +501,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         plugin._fetch_cloud_meta_data()
 
-        self.assertEqual({"instance_key": u"i00001", "image_key": u"asdf\u1234",
+        self.assertEqual({"instance_key": u"i00001",
+                          "image_key": u"asdf\u1234",
                           "instance_type": u"m1.large"},
                          plugin._cloud_meta_data)
-
