@@ -6,7 +6,6 @@ from twisted.internet.defer import succeed, fail, inlineCallbacks
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fs import create_file
 from landscape.monitor.computerinfo import ComputerInfo
-from landscape.monitor.monitor import Monitor
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
@@ -63,6 +62,9 @@ VmallocChunk:   107432 kB
                 return succeed(value)
 
         self.fetch_func = fetch_stub
+        self.add_query_result("instance-id", "i00001")
+        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("instance-type", "hs1.8xlarge")
 
     def add_query_result(self, name, value):
         """
@@ -74,7 +76,7 @@ VmallocChunk:   107432 kB
 
     def test_get_fqdn(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_fqdn=get_fqdn)
+        plugin = ComputerInfo(get_fqdn=get_fqdn, fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -84,7 +86,7 @@ VmallocChunk:   107432 kB
 
     def test_get_real_hostname(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo()
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -95,7 +97,7 @@ VmallocChunk:   107432 kB
 
     def test_only_report_changed_hostnames(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_fqdn=get_fqdn)
+        plugin = ComputerInfo(get_fqdn=get_fqdn, fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -113,7 +115,8 @@ VmallocChunk:   107432 kB
                 i = i + 1
 
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_fqdn=hostname_factory().next)
+        plugin = ComputerInfo(get_fqdn=hostname_factory().next,
+                              fetch_async=self.fetch_func)
         self.monitor.add(plugin)
 
         plugin.exchange()
@@ -129,7 +132,8 @@ VmallocChunk:   107432 kB
     def test_get_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
         meminfo_filename = self.makeFile(self.sample_memory_info)
-        plugin = ComputerInfo(meminfo_file=meminfo_filename)
+        plugin = ComputerInfo(meminfo_file=meminfo_filename,
+                              fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -141,7 +145,7 @@ VmallocChunk:   107432 kB
     def test_get_real_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
         self.makeFile(self.sample_memory_info)
-        plugin = ComputerInfo()
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -151,7 +155,7 @@ VmallocChunk:   107432 kB
 
     def test_wb_report_changed_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo()
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
         self.monitor.add(plugin)
 
         plugin._get_memory_info = lambda: (1510, 1584)
@@ -168,7 +172,7 @@ VmallocChunk:   107432 kB
 
     def test_wb_report_changed_total_swap(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo()
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
         self.monitor.add(plugin)
 
         plugin._get_memory_info = lambda: (1510, 1584)
@@ -297,14 +301,18 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin = ComputerInfo(get_fqdn=get_fqdn,
                               meminfo_file=meminfo_filename,
                               lsb_release_filename=self.lsb_release_filename,
-                              root_path=self.makeDir())
+                              root_path=self.makeDir(),
+                              fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
         self.reactor.fire("resynchronize", scopes=["computer"])
         plugin.exchange()
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
-                         "total-swap": 1584}
+                         "total-swap": 1584,
+                         "meta-data": {u"image_key": u"ami-00002",
+                                       u"instance_key": u"i00001",
+                                       u"instance_type": u"hs1.8xlarge"}}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
@@ -313,7 +321,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                              computer_info, dist_info])
 
     def test_computer_info_call_on_accepted(self):
-        plugin = ComputerInfo()
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
         self.monitor.add(plugin)
 
         remote_broker_mock = self.mocker.replace(self.remote)
@@ -352,7 +360,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
     def test_meta_data(self):
         """
-        L{ComputerInfo} sends extra meta data the meta-data.d directory
+        L{ComputerInfo} sends extra meta data from the meta-data.d directory
         if it's present.
 
         Each file name is used as a key in the meta-data dict and the file's
@@ -368,6 +376,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
+        plugin._cloud_meta_data = {}
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -377,39 +386,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual("uuid1", meta_data["juju-env-uuid"])
         self.assertEqual("unit/0", meta_data["juju-unit-name"])
 
-    def test_meta_data_no_directory(self):
-        """
-        L{ComputerInfo} doesn't include the meta-data key if there is no
-        meta-data.d directory.
-        """
-        meta_data_dir = self.monitor.config.meta_data_path
-        self.assertFalse(os.path.exists(meta_data_dir))
-        self.mstore.set_accepted_types(["computer-info"])
-
-        plugin = ComputerInfo()
-        self.monitor.add(plugin)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(1, len(messages))
-        self.assertNotIn("meta-data", messages[0])
-
-    def test_meta_data_empty_directory(self):
-        """
-        L{ComputerInfo} doesn't include the meta-data key if the
-        meta-data.d directory doesn't contain any files.
-        """
-        meta_data_dir = self.monitor.config.meta_data_path
-        os.mkdir(meta_data_dir)
-        self.mstore.set_accepted_types(["computer-info"])
-
-        plugin = ComputerInfo()
-        self.monitor.add(plugin)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(1, len(messages))
-        self.assertNotIn("meta-data", messages[0])
-
-    def test_meta_data(self):
+    def test_meta_data_cloud(self):
         """
         L{ComputerInfo} includes the meta-data key when cloud information
         is available.
@@ -426,7 +403,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual("i00001", messages[0]["meta-data"]["instance_key"])
 
     def test_with_cloud_info(self):
-        """Fetch cloud information when C{cloud = True}."""
+        """Fetch cloud information"""
         self.config.cloud = True
         self.add_query_result("instance-id", "i00001")
         self.add_query_result("ami-id", "ami-00002")
@@ -443,35 +420,6 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual({"instance_key": u"i00001", "image_key": u"ami-00002",
                           "instance_type": u"hs1.8xlarge"},
                          messages[0]["meta-data"])
-
-    def test_with_cloud_info_cloud_false(self):
-        """Do not fetch cloud information when C{cloud = False}."""
-        self.config.cloud = False
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
-        self.mstore.set_accepted_types(["computer-info"])
-
-        plugin = ComputerInfo(fetch_async=self.fetch_func)
-        self.monitor.add(plugin)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(1, len(messages))
-        self.assertNotIn("meta-data", messages[0])
-
-    def test_with_cloud_info_cloud_unset(self):
-        """Do not fetch cloud information when C{cloud} is not set."""
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
-        self.mstore.set_accepted_types(["computer-info"])
-
-        plugin = ComputerInfo(fetch_async=self.fetch_func)
-        self.monitor.add(plugin)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(1, len(messages))
-        self.assertNotIn("meta-data", messages[0])
 
     @inlineCallbacks
     def test_fetch_cloud_meta_data(self):

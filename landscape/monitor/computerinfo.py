@@ -44,8 +44,7 @@ class ComputerInfo(MonitorPlugin):
 
     @inlineCallbacks
     def send_computer_message(self, urgent=False):
-        if (self._cloud_meta_data is None and
-                self.monitor.config.get("cloud", None)):
+        if self._cloud_meta_data is None:
             self._cloud_meta_data = yield self._fetch_cloud_meta_data()
 
         message = self._create_computer_info_message()
@@ -152,7 +151,7 @@ class ComputerInfo(MonitorPlugin):
                 if value is None:
                     return None
                 else:
-                   return value.decode("utf-8")
+                    return value.decode("utf-8")
 
             (instance_key, instance_type, ami_key) = cloud_data
             return {
