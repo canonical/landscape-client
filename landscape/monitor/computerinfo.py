@@ -1,5 +1,6 @@
 import os
 import logging
+from twisted.internet.defer import inlineCallbacks
 
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_file
@@ -30,7 +31,7 @@ class ComputerInfo(MonitorPlugin):
         self._meminfo_file = meminfo_file
         self._lsb_release_filename = lsb_release_filename
         self._root_path = root_path
-        self._cloud_meta_data = {}
+        self._cloud_meta_data = None
         self._fetch_async = fetch_async
 
     def register(self, registry):
@@ -40,9 +41,13 @@ class ComputerInfo(MonitorPlugin):
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",
                               self.send_distribution_message, True)
-        self.client.reactor.call_on("run", self._fetch_cloud_meta_data)
 
+    @inlineCallbacks
     def send_computer_message(self, urgent=False):
+        if (self._cloud_meta_data is None and
+                self.monitor.config.get("cloud", None)):
+            self._cloud_meta_data = yield self._fetch_cloud_meta_data()
+
         message = self._create_computer_info_message()
         if message:
             message["type"] = "computer-info"
@@ -79,9 +84,9 @@ class ComputerInfo(MonitorPlugin):
                 meta_data[key] = read_file(
                     os.path.join(self._meta_data_path, key))
 
-        self._fetch_cloud_meta_data()
-        meta_data = dict(
-            meta_data.items() + self._cloud_meta_data.items())
+        if self._cloud_meta_data:
+            meta_data = dict(
+                meta_data.items() + self._cloud_meta_data.items())
         if meta_data:
             self._add_if_new(message, "meta-data", meta_data)
         return message
@@ -129,9 +134,6 @@ class ComputerInfo(MonitorPlugin):
 
     def _fetch_cloud_meta_data(self):
         """Fetch information about the cloud instance."""
-
-        if not self.monitor.config.get("cloud", None):
-            return
         cloud_data = []
         # We're not using a DeferredList here because we want to keep the
         # number of connections to the backend minimal. See lp:567515.
@@ -153,7 +155,7 @@ class ComputerInfo(MonitorPlugin):
                    return value.decode("utf-8")
 
             (instance_key, instance_type, ami_key) = cloud_data
-            self._cloud_meta_data = {
+            return {
                 "instance_key": _unicode_none(instance_key),
                 "image_key": _unicode_none(ami_key),
                 "instance_type": _unicode_none(instance_type)}
@@ -164,3 +166,4 @@ class ComputerInfo(MonitorPlugin):
 
         deferred.addCallback(store_data)
         deferred.addErrback(log_error)
+        return deferred

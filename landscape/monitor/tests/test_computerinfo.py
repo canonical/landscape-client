@@ -1,7 +1,7 @@
 import os
 import re
 
-from twisted.internet.defer import succeed, fail
+from twisted.internet.defer import succeed, fail, inlineCallbacks
 
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fs import create_file
@@ -53,6 +53,24 @@ VmallocChunk:   107432 kB
     def setUp(self):
         LandscapeTest.setUp(self)
         self.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.query_results = {}
+
+        def fetch_stub(url):
+            value = self.query_results[url]
+            if isinstance(value, Exception):
+                return fail(value)
+            else:
+                return succeed(value)
+
+        self.fetch_func = fetch_stub
+
+    def add_query_result(self, name, value):
+        """
+        Add a url to self.query_results that is then available through
+        self.fetch_func.
+        """
+        url = "http://169.254.169.254/latest/meta-data/" + name
+        self.query_results[url] = value
 
     def test_get_fqdn(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -407,81 +425,84 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertIn("meta-data", messages[0])
         self.assertEqual("i00001", messages[0]["meta-data"]["instance_key"])
 
-
-class ComputerInfoCloudTest(LandscapeTest):
-
-    helpers = [MonitorHelper]
-
-    def setUp(self):
-        LandscapeTest.setUp(self)
-        self.query_results = {}
-
-        def fetch_stub(url):
-            value = self.query_results[url]
-            if isinstance(value, Exception):
-                return fail(value)
-            else:
-                return succeed(value)
-
-        self.fetch_func = fetch_stub
-        self._config = self.config.clone()
+    def test_with_cloud_info(self):
+        """Fetch cloud information when C{cloud = True}."""
         self.config.cloud = True
-        self.monitor = Monitor(self.reactor, self.config, None)
-        self.plugin = ComputerInfo(fetch_async=self.fetch_func)
-        self.plugin.client = self.monitor
+        self.add_query_result("instance-id", "i00001")
+        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("instance-type", "hs1.8xlarge")
+        self.mstore.set_accepted_types(["computer-info"])
 
-    def add_query_result(self, name, value):
-        """
-        Add a url to self.query_results that is then available through
-        self.fetch_func.
-        """
-        url = "http://169.254.169.254/latest/meta-data/" + name
-        self.query_results[url] = value
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertIn("meta-data", messages[0])
 
+        self.assertEqual({"instance_key": u"i00001", "image_key": u"ami-00002",
+                          "instance_type": u"hs1.8xlarge"},
+                         messages[0]["meta-data"])
+
+    def test_with_cloud_info_cloud_false(self):
+        """Do not fetch cloud information when C{cloud = False}."""
+        self.config.cloud = False
+        self.add_query_result("instance-id", "i00001")
+        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("instance-type", "hs1.8xlarge")
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertNotIn("meta-data", messages[0])
+
+    def test_with_cloud_info_cloud_unset(self):
+        """Do not fetch cloud information when C{cloud} is not set."""
+        self.add_query_result("instance-id", "i00001")
+        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("instance-type", "hs1.8xlarge")
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertNotIn("meta-data", messages[0])
+
+    @inlineCallbacks
     def test_fetch_cloud_meta_data(self):
         """
         L{_fetch_cloud_meta_data} retrieves instance information from the
-        EC2 api and temporarily stores it.
+        EC2 api.
         """
         self.add_query_result("instance-id", "i00001")
         self.add_query_result("ami-id", "ami-00002")
         self.add_query_result("instance-type", "hs1.8xlarge")
 
-        self.plugin._fetch_cloud_meta_data()
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        result = yield plugin._fetch_cloud_meta_data()
         self.assertEqual({"instance_key": u"i00001", "image_key": u"ami-00002",
-                          "instance_type": u"hs1.8xlarge"},
-                         self.plugin._cloud_meta_data)
+                          "instance_type": u"hs1.8xlarge"}, result)
 
-    def test_fetch_cloud_meta_data_cloud_false(self):
-        """
-        L{_fetch_cloud_meta_data} does not fetch cloud meta data when the
-        cloud config setting is false.
-        """
-        self.config.cloud = False
-        self.plugin._fetch_cloud_meta_data()
-        self.assertEqual({}, self.plugin._cloud_meta_data)
-
-    def test_fetch_cloud_meta_data_cloud_not_set(self):
-        """
-        L{_fetch_cloud_meta_data} does not fetch cloud meta data when the
-        cloud config setting is unset.
-        """
-        self.monitor.config = self._config
-        self.plugin._fetch_cloud_meta_data()
-        self.assertEqual({}, self.plugin._cloud_meta_data)
-
+    @inlineCallbacks
     def test_fetch_cloud_meta_data_bad_result(self):
         """
-        L{_fetch_cloud_meta_data} leaves _cloud_meta_data unmodified when
-        faced with errors from the EC2 api.
+        L{_fetch_cloud_meta_data} returns C{None} when faced with errors from
+        the EC2 api.
         """
         self.log_helper.ignore_errors(HTTPCodeError)
         self.add_query_result("instance-id", "i7337")
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
         self.add_query_result("instance-type", "hs1.8xlarge")
-        self.plugin._fetch_cloud_meta_data()
-        self.assertEqual({}, self.plugin._cloud_meta_data)
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        result = yield plugin._fetch_cloud_meta_data()
+        self.assertEqual(None, result)
 
+    @inlineCallbacks
     def test_fetch_cloud_meta_data_utf8(self):
         """
         L{_fetch_cloud_meta_data} decodes utf-8 strings returned from the
@@ -490,9 +511,9 @@ class ComputerInfoCloudTest(LandscapeTest):
         self.add_query_result("instance-id", "i00001")
         self.add_query_result("ami-id", "asdf\xe1\x88\xb4")
         self.add_query_result("instance-type", "m1.large")
-        self.plugin._fetch_cloud_meta_data()
-
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        result = yield plugin._fetch_cloud_meta_data()
         self.assertEqual({"instance_key": u"i00001",
                           "image_key": u"asdf\u1234",
                           "instance_type": u"m1.large"},
-                         self.plugin._cloud_meta_data)
+                         result)
