@@ -1494,7 +1494,7 @@ class AptPackageChangerTest(LandscapeTest):
         Invoking L{PackageChanger.run} results in the session ID being fetched.
         """
         def assert_session_id(ignored):
-            self.assertIsNotNone(self.changer._session_id)
+            self.assertTrue(self.changer._session_id is not None)
 
         self.changer._session_id = None
         result = self.changer.run()
