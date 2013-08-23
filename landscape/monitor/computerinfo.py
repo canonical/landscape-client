@@ -153,11 +153,11 @@ class ComputerInfo(MonitorPlugin):
                 else:
                     return value.decode("utf-8")
 
-            (instance_key, instance_type, ami_key) = cloud_data
+            (instance_id, instance_type, ami_id) = cloud_data
             return {
-                "instance_key": _unicode_none(instance_key),
-                "image_key": _unicode_none(ami_key),
-                "instance_type": _unicode_none(instance_type)}
+                "instance-id": _unicode_none(instance_id),
+                "instance-type": _unicode_none(instance_type),
+                "ami-id": _unicode_none(ami_id)}
 
         def log_error(error):
             log_failure(error, msg="Got error while fetching meta-data: %r"

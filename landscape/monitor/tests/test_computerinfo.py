@@ -310,9 +310,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
                          "total-swap": 1584,
-                         "meta-data": {u"image_key": u"ami-00002",
-                                       u"instance_key": u"i00001",
-                                       u"instance_type": u"hs1.8xlarge"}}
+                         "meta-data": {u"ami-id": u"ami-00002",
+                                       u"instance-id": u"i00001",
+                                       u"instance-type": u"hs1.8xlarge"}}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
@@ -394,13 +394,13 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
-        plugin._cloud_meta_data = {"instance_key": "i00001"}
+        plugin._cloud_meta_data = {"instance-id": "i00001"}
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
         self.assertIn("meta-data", messages[0])
-        self.assertEqual("i00001", messages[0]["meta-data"]["instance_key"])
+        self.assertEqual("i00001", messages[0]["meta-data"]["instance-id"])
 
     def test_with_cloud_info(self):
         """Fetch cloud information"""
@@ -417,8 +417,8 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual(1, len(messages))
         self.assertIn("meta-data", messages[0])
 
-        self.assertEqual({"instance_key": u"i00001", "image_key": u"ami-00002",
-                          "instance_type": u"hs1.8xlarge"},
+        self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
+                          "instance-type": u"hs1.8xlarge"},
                          messages[0]["meta-data"])
 
     @inlineCallbacks
@@ -433,8 +433,8 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         result = yield plugin._fetch_cloud_meta_data()
-        self.assertEqual({"instance_key": u"i00001", "image_key": u"ami-00002",
-                          "instance_type": u"hs1.8xlarge"}, result)
+        self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
+                          "instance-type": u"hs1.8xlarge"}, result)
 
     @inlineCallbacks
     def test_fetch_cloud_meta_data_bad_result(self):
@@ -461,7 +461,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.add_query_result("instance-type", "m1.large")
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         result = yield plugin._fetch_cloud_meta_data()
-        self.assertEqual({"instance_key": u"i00001",
-                          "image_key": u"asdf\u1234",
-                          "instance_type": u"m1.large"},
+        self.assertEqual({"instance-id": u"i00001",
+                          "ami-id": u"asdf\u1234",
+                          "instance-type": u"m1.large"},
                          result)
