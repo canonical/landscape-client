@@ -575,7 +575,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        public_ipv4=u"10.0.0.2",
                        tags=None)
 
-        # The get_vm_info() needs to be deffered to the else.  If vm-info is
+        # The get_vm_info() needs to be deferred to the else.  If vm-info is
         # specified in kwargs, get_vm_info() will typically be mocked.
         if "vm_info" in kwargs:
             message["vm-info"] = kwargs.pop("vm_info")
