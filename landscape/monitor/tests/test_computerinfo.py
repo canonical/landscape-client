@@ -3,9 +3,10 @@ import re
 
 from twisted.internet.defer import succeed, fail, inlineCallbacks
 
-from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import create_file
-from landscape.monitor.computerinfo import ComputerInfo
+from landscape.monitor.computerinfo import (
+    ComputerInfo, EC2_API, METADATA_RETRY_MAX)
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
@@ -437,17 +438,68 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                           "instance-type": u"hs1.8xlarge"}, result)
 
     @inlineCallbacks
-    def test_fetch_cloud_meta_data_bad_result(self):
+    def test_fetch_cloud_meta_data_no_cloud_api(self):
         """
-        L{_fetch_cloud_meta_data} returns C{None} when faced with errors from
-        the EC2 api.
+        L{_fetch_cloud_meta_data} returns C{None} when faced with no EC2 cloud
+        API service and sets L{_check_cloud} to C{False} to prevent further
+        attempts next message exchange.
+        """
+        self.log_helper.ignore_errors(PyCurlError)
+        self.add_query_result("instance-id", PyCurlError(60, "pycurl error"))
+        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("instance-type", "hs1.8xlarge")
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        result = yield plugin._fetch_cloud_meta_data()
+        self.assertIn(
+            "INFO: Not a cloud instance. Meta-data API not present at "
+            "%s" % EC2_API,
+            self.logfile.getvalue())
+        self.assertFalse(plugin._check_cloud)
+        self.assertEqual(None, result)
+
+    @inlineCallbacks
+    def test_fetch_cloud_meta_data_bad_result_max_retry(self):
+        """
+        L{_fetch_cloud_meta_data} returns C{None} and logs an error when
+        crossing the retry threshold C{METADATA_RETRY_MAX}. It also sets
+        L{_check_cloud} to C{False} to prevent future metadata attempts on
+        next message exchange.
         """
         self.log_helper.ignore_errors(HTTPCodeError)
         self.add_query_result("instance-id", "i7337")
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
         self.add_query_result("instance-type", "hs1.8xlarge")
         plugin = ComputerInfo(fetch_async=self.fetch_func)
+        plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_cloud_meta_data()
+        self.assertIn(
+            "ERROR: Max retries reached querying meta-data. Server returned "
+            "HTTP code 404",
+            self.logfile.getvalue())
+        self.assertFalse(plugin._check_cloud)
+        self.assertEqual(None, result)
+
+    @inlineCallbacks
+    def test_fetch_cloud_meta_data_bad_result_retry(self):
+        """
+        L{_fetch_cloud_meta_data} returns C{None} when faced with spurious
+        errors from the EC2 api. The method increments L{_cloud_retries}
+        counter and leaves L{_check_cloud} flag will still be set C{True} to
+        ensure L{_fetch_cloud_meta_data} runs again next message exchange.
+        """
+        #self.log_helper.ignore_errors(PyCurlError)
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.add_query_result("instance-id", "i7337")
+        self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
+        #self.add_query_result("ami-id", PyCurlError(60, "pycurl error"))
+        self.add_query_result("instance-type", "hs1.8xlarge")
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        result = yield plugin._fetch_cloud_meta_data()
+        self.assertIn(
+            "WARNING: Temporary failure accessing cloud meta-data, retrying.",
+            self.logfile.getvalue())
+        self.assertEqual(1, plugin._cloud_retries)
+        self.assertTrue(plugin._check_cloud)
         self.assertEqual(None, result)
 
     @inlineCallbacks
