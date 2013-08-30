@@ -422,6 +422,22 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                           "instance-type": u"hs1.8xlarge"},
                          messages[0]["meta-data"])
 
+    def test_no_fetch_cloud_meta_data_when_check_cloud_is_false(self):
+        """Do not Fetch cloud information when C{_check_cloud} is C{False}"""
+        self.config.cloud = True
+        self.add_query_result("instance-id", "i00001")
+        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("instance-type", "hs1.8xlarge")
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        plugin._check_cloud = False
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertNotIn("meta-data", messages[0])
+
     @inlineCallbacks
     def test_fetch_cloud_meta_data(self):
         """
@@ -487,11 +503,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         counter and leaves L{_check_cloud} flag will still be set C{True} to
         ensure L{_fetch_cloud_meta_data} runs again next message exchange.
         """
-        #self.log_helper.ignore_errors(PyCurlError)
         self.log_helper.ignore_errors(HTTPCodeError)
         self.add_query_result("instance-id", "i7337")
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
-        #self.add_query_result("ami-id", PyCurlError(60, "pycurl error"))
         self.add_query_result("instance-type", "hs1.8xlarge")
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         result = yield plugin._fetch_cloud_meta_data()
