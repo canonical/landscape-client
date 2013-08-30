@@ -2,7 +2,7 @@ import os
 import logging
 from twisted.internet.defer import inlineCallbacks
 
-from landscape.lib.fetch import fetch_async, PyCurlError, FetchError
+from landscape.lib.fetch import fetch_async, PyCurlError
 from landscape.lib.fs import read_file
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
@@ -150,13 +150,13 @@ class ComputerInfo(MonitorPlugin):
         def store_data(ignore):
             """Record the instance data returned by the EC2 API."""
 
-            logging.info("Updated cloud meta-data.")
             def _unicode_none(value):
                 if value is None:
                     return None
                 else:
                     return value.decode("utf-8")
 
+            logging.info("Updated cloud meta-data.")
             (instance_id, instance_type, ami_id) = cloud_data
             return {
                 "instance-id": _unicode_none(instance_id),
@@ -181,7 +181,6 @@ class ComputerInfo(MonitorPlugin):
                     logging.warning(
                         "Temporary failure accessing cloud meta-data, "
                         "retrying.")
-
 
         deferred.addCallback(store_data)
         deferred.addErrback(log_error)
