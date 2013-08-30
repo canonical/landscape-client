@@ -157,6 +157,7 @@ class ComputerInfo(MonitorPlugin):
                     return value.decode("utf-8")
 
             logging.info("Updated cloud meta-data.")
+            self._check_cloud = False
             (instance_id, instance_type, ami_id) = cloud_data
             return {
                 "instance-id": _unicode_none(instance_id),
