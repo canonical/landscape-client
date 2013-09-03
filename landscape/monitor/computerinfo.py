@@ -2,7 +2,7 @@ import os
 import logging
 from twisted.internet.defer import inlineCallbacks
 
-from landscape.lib.fetch import fetch_async, PyCurlError
+from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_file
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
@@ -33,7 +33,6 @@ class ComputerInfo(MonitorPlugin):
         self._lsb_release_filename = lsb_release_filename
         self._root_path = root_path
         self._cloud_meta_data = None
-        self._check_cloud = True
         self._cloud_retries = 0
         self._fetch_async = fetch_async
 
@@ -47,7 +46,8 @@ class ComputerInfo(MonitorPlugin):
 
     @inlineCallbacks
     def send_computer_message(self, urgent=False):
-        if self._cloud_meta_data is None and self._check_cloud:
+        if (self._cloud_meta_data is None and
+            self._cloud_retries < METADATA_RETRY_MAX):
             self._cloud_meta_data = yield self._fetch_cloud_meta_data()
 
         message = self._create_computer_info_message()
@@ -141,11 +141,9 @@ class ComputerInfo(MonitorPlugin):
         logging.info("Updating cloud meta-data.")
         deferred = self._fetch_data("instance-id", cloud_data)
         deferred.addCallback(
-            lambda ignore:
-                self._fetch_data("instance-type", cloud_data))
+            lambda ignore: self._fetch_data("instance-type", cloud_data))
         deferred.addCallback(
-            lambda ignore:
-                self._fetch_data("ami-id", cloud_data))
+            lambda ignore: self._fetch_data("ami-id", cloud_data))
 
         def store_data(ignore):
             """Record the instance data returned by the EC2 API."""
@@ -165,23 +163,15 @@ class ComputerInfo(MonitorPlugin):
                 "instance-type": _unicode_none(instance_type)}
 
         def log_error(error):
-            if error.check(PyCurlError):
-                logging.info(
-                    "Not a cloud instance. Meta-data API not present at %s" %
-                    EC2_API)
-                self._check_cloud = False
+            self._cloud_retries += 1
+            if self._cloud_retries >= METADATA_RETRY_MAX:
+                log_failure(
+                    error, msg=(
+                        "Max retries reached querying meta-data. %s" %
+                        error.getErrorMessage()))
             else:
-                if self._cloud_retries >= METADATA_RETRY_MAX:
-                    self._check_cloud = False
-                    log_failure(
-                        error, msg=(
-                            "Max retries reached querying meta-data. %s" %
-                            error.value))
-                else:
-                    self._cloud_retries += 1
-                    logging.warning(
-                        "Temporary failure accessing cloud meta-data, "
-                        "retrying.")
+                logging.warning(
+                    "Temporary failure accessing cloud meta-data, retrying.")
 
         deferred.addCallback(store_data)
         deferred.addErrback(log_error)
