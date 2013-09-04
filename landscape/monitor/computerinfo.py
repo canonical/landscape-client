@@ -6,12 +6,10 @@ from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_file
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
+from landscape.lib.cloud import (
+    METADATA_RETRY_MAX, fetch_ec2_meta_data)
 from landscape.lib.network import get_fqdn
 from landscape.monitor.plugin import MonitorPlugin
-
-EC2_HOST = "169.254.169.254"
-EC2_API = "http://%s/latest" % (EC2_HOST,)
-METADATA_RETRY_MAX = 3  # Number of retries to get EC2 meta-data
 
 
 class DistributionInfoError(Exception):
@@ -125,42 +123,9 @@ class ComputerInfo(MonitorPlugin):
         message.update(parse_lsb_release(self._lsb_release_filename))
         return message
 
-    def _fetch_data(self, path, accumulate):
-        """
-        Get data at C{path} on the EC2 API endpoint, and add the result to the
-        C{accumulate} list.
-        """
-        url = EC2_API + "/meta-data/" + path
-        return self._fetch_async(url).addCallback(accumulate.append)
-
     def _fetch_cloud_meta_data(self):
         """Fetch information about the cloud instance."""
-        cloud_data = []
-        # We're not using a DeferredList here because we want to keep the
-        # number of connections to the backend minimal. See lp:567515.
-        logging.info("Updating cloud meta-data.")
-        deferred = self._fetch_data("instance-id", cloud_data)
-        deferred.addCallback(
-            lambda ignore: self._fetch_data("instance-type", cloud_data))
-        deferred.addCallback(
-            lambda ignore: self._fetch_data("ami-id", cloud_data))
-
-        def store_data(ignore):
-            """Record the instance data returned by the EC2 API."""
-
-            def _unicode_none(value):
-                if value is None:
-                    return None
-                else:
-                    return value.decode("utf-8")
-
-            logging.info("Updated cloud meta-data.")
-            self._check_cloud = False
-            (instance_id, instance_type, ami_id) = cloud_data
-            return {
-                "instance-id": _unicode_none(instance_id),
-                "ami-id": _unicode_none(ami_id),
-                "instance-type": _unicode_none(instance_type)}
+        deferred = fetch_ec2_meta_data(self._fetch_async)
 
         def log_error(error):
             self._cloud_retries += 1
@@ -173,6 +138,5 @@ class ComputerInfo(MonitorPlugin):
                 logging.warning(
                     "Temporary failure accessing cloud meta-data, retrying.")
 
-        deferred.addCallback(store_data)
         deferred.addErrback(log_error)
         return deferred

@@ -5,8 +5,8 @@ from twisted.internet.defer import succeed, fail, inlineCallbacks
 
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import create_file
-from landscape.monitor.computerinfo import (
-    ComputerInfo, METADATA_RETRY_MAX)
+from landscape.monitor.computerinfo import ComputerInfo
+from landscape.lib.cloud import METADATA_RETRY_MAX
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
@@ -406,9 +406,6 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
     def test_with_cloud_info(self):
         """Fetch cloud information"""
         self.config.cloud = True
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo(fetch_async=self.fetch_func)
@@ -427,9 +424,6 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         Do not fetch cloud info when C{_cloud_retries} is C{METADATA_RETRY_MAX}
         """
         self.config.cloud = True
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo(fetch_async=self.fetch_func)
@@ -446,10 +440,6 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         L{_fetch_cloud_meta_data} retrieves instance information from the
         EC2 api.
         """
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
-
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         result = yield plugin._fetch_cloud_meta_data()
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
@@ -464,8 +454,6 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         """
         self.log_helper.ignore_errors(PyCurlError)
         self.add_query_result("instance-id", PyCurlError(60, "pycurl error"))
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_cloud_meta_data()
@@ -481,9 +469,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         crossing the retry threshold C{METADATA_RETRY_MAX}.
         """
         self.log_helper.ignore_errors(HTTPCodeError)
-        self.add_query_result("instance-id", "i7337")
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
-        self.add_query_result("instance-type", "hs1.8xlarge")
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_cloud_meta_data()
@@ -502,9 +488,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         message exchange.
         """
         self.log_helper.ignore_errors(HTTPCodeError)
-        self.add_query_result("instance-id", "i7337")
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
-        self.add_query_result("instance-type", "hs1.8xlarge")
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         result = yield plugin._fetch_cloud_meta_data()
         self.assertIn(
@@ -512,19 +496,3 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
             self.logfile.getvalue())
         self.assertEqual(1, plugin._cloud_retries)
         self.assertEqual(None, result)
-
-    @inlineCallbacks
-    def test_fetch_cloud_meta_data_utf8(self):
-        """
-        L{_fetch_cloud_meta_data} decodes utf-8 strings returned from the
-        external service.
-        """
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "asdf\xe1\x88\xb4")
-        self.add_query_result("instance-type", "m1.large")
-        plugin = ComputerInfo(fetch_async=self.fetch_func)
-        result = yield plugin._fetch_cloud_meta_data()
-        self.assertEqual({"instance-id": u"i00001",
-                          "ami-id": u"asdf\u1234",
-                          "instance-type": u"m1.large"},
-                         result)
