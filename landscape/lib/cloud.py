@@ -44,6 +44,5 @@ def fetch_ec2_meta_data(fetch=None):
             "instance-id": _unicode_none(instance_id),
             "ami-id": _unicode_none(ami_id),
             "instance-type": _unicode_none(instance_type)}
-    
     deferred.addCallback(return_result)
     return deferred

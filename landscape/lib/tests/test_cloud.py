@@ -1,8 +1,7 @@
 from landscape.lib.cloud import (EC2_API, fetch_ec2_item, fetch_ec2_meta_data)
-from landscape.lib.fetch import (
-    url_to_filename, HTTPCodeError, PyCurlError)
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.tests.helpers import LandscapeTest
-from twisted.internet.defer import succeed, fail, inlineCallbacks
+from twisted.internet.defer import succeed, fail
 
 
 class CloudTest(LandscapeTest):
