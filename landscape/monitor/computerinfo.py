@@ -4,12 +4,12 @@ from twisted.internet.defer import inlineCallbacks
 
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_file
-from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
-from landscape.lib.cloud import (
-    METADATA_RETRY_MAX, fetch_ec2_meta_data)
+from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.network import get_fqdn
 from landscape.monitor.plugin import MonitorPlugin
+
+METADATA_RETRY_MAX = 3  # Number of retries to get EC2 meta-data
 
 
 class DistributionInfoError(Exception):
@@ -125,18 +125,20 @@ class ComputerInfo(MonitorPlugin):
 
     def _fetch_cloud_meta_data(self):
         """Fetch information about the cloud instance."""
+        if self._cloud_retries == 0:
+            logging.info("Querying cloud meta-data.")
         deferred = fetch_ec2_meta_data(self._fetch_async)
 
-        def log_error(error):
+        def log_no_meta_data_found(error):
             self._cloud_retries += 1
             if self._cloud_retries >= METADATA_RETRY_MAX:
-                log_failure(
-                    error, msg=(
-                        "Max retries reached querying meta-data. %s" %
-                        error.getErrorMessage()))
-            else:
-                logging.warning(
-                    "Temporary failure accessing cloud meta-data, retrying.")
+                logging.info("No cloud meta-data available. %s" %
+                        error.getErrorMessage())
 
-        deferred.addErrback(log_error)
+        def log_success(result):
+            logging.info("Acquired cloud meta-data.")
+            return result
+
+        deferred.addCallback(log_success)
+        deferred.addErrback(log_no_meta_data_found)
         return deferred

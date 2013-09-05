@@ -1,4 +1,4 @@
-from landscape.lib.cloud import (EC2_API, fetch_ec2_item, fetch_ec2_meta_data)
+from landscape.lib.cloud import (EC2_API, _fetch_ec2_item, fetch_ec2_meta_data)
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.tests.helpers import LandscapeTest
 from twisted.internet.defer import succeed, fail
@@ -30,32 +30,6 @@ class CloudTest(LandscapeTest):
         url = "%s/meta-data/%s" % (EC2_API, name)
         self.query_results[url] = value
 
-    def test_fetch_ec2_item_multiple_items_appends_accumulate_list(self):
-        """
-        L{fetch_ec2_item} retrieves individual meta-data items from the
-        EC2 api and appends them to the C{list} provided by the C{accumulate}
-        parameter.
-        """
-        accumulate = []
-        self.successResultOf(
-            fetch_ec2_item("instance-id", accumulate, fetch=self.fetch_func))
-        self.successResultOf(
-            fetch_ec2_item("instance-type", accumulate, fetch=self.fetch_func))
-        self.assertEqual(["i00001", "hs1.8xlarge"], accumulate)
-
-    def test_fetch_ec2_item_error_returns_failure(self):
-        """
-        L{_fetch_ec2_item} returns a deferred C{Failure} containing the error
-        message when faced with no EC2 cloud API service.
-        """
-        self.log_helper.ignore_errors(PyCurlError)
-        self.add_query_result("other-id", PyCurlError(60, "pycurl error"))
-        accumulate = []
-        deferred = fetch_ec2_item(
-            "other-id", accumulate, fetch=self.fetch_func)
-        failure = self.failureResultOf(deferred)
-        self.assertEqual("Error 60: pycurl error", failure.getErrorMessage())
-
     def test_fetch_ec2_meta_data_error_on_any_item_error(self):
         """
         L{_fetch_ec2_meta_data} returns a deferred C{Failure} containing the
@@ -82,8 +56,7 @@ class CloudTest(LandscapeTest):
     def test_fetch_ec2_meta_data(self):
         """
         L{_fetch_ec2_meta_data} returns a C{dict} containing meta-data for
-        C{instance-id}, C{ami-id} and C{instance-type} and logs the progress
-        of acquiring cloud meta-data.
+        C{instance-id}, C{ami-id} and C{instance-type}.
         """
         deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
         result = self.successResultOf(deferred)
@@ -92,10 +65,6 @@ class CloudTest(LandscapeTest):
              "instance-id": u"i00001",
              "instance-type": u"hs1.8xlarge"},
             result)
-        self.assertEqual(
-            "    INFO: Querying cloud meta-data.\n"
-            "    INFO: Acquired cloud meta-data.\n",
-            self.logfile.getvalue())
 
     def test_fetch_ec2_meta_data_utf8(self):
         """
@@ -109,3 +78,30 @@ class CloudTest(LandscapeTest):
                           "ami-id": u"asdf\u1234",
                           "instance-type": u"hs1.8xlarge"},
                          result)
+
+    def test_wb_fetch_ec2_item_multiple_items_appends_accumulate_list(self):
+        """
+        L{_fetch_ec2_item} retrieves individual meta-data items from the
+        EC2 api and appends them to the C{list} provided by the C{accumulate}
+        parameter.
+        """
+        accumulate = []
+        self.successResultOf(
+            _fetch_ec2_item("instance-id", accumulate, fetch=self.fetch_func))
+        self.successResultOf(
+            _fetch_ec2_item(
+                "instance-type", accumulate, fetch=self.fetch_func))
+        self.assertEqual(["i00001", "hs1.8xlarge"], accumulate)
+
+    def test_wb_fetch_ec2_item_error_returns_failure(self):
+        """
+        L{_fetch_ec2_item} returns a deferred C{Failure} containing the error
+        message when faced with no EC2 cloud API service.
+        """
+        self.log_helper.ignore_errors(PyCurlError)
+        self.add_query_result("other-id", PyCurlError(60, "pycurl error"))
+        accumulate = []
+        deferred = _fetch_ec2_item(
+            "other-id", accumulate, fetch=self.fetch_func)
+        failure = self.failureResultOf(deferred)
+        self.assertEqual("Error 60: pycurl error", failure.getErrorMessage())

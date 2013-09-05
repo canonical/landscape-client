@@ -5,8 +5,7 @@ from twisted.internet.defer import succeed, fail, inlineCallbacks
 
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import create_file
-from landscape.monitor.computerinfo import ComputerInfo
-from landscape.lib.cloud import METADATA_RETRY_MAX
+from landscape.monitor.computerinfo import ComputerInfo, METADATA_RETRY_MAX
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
@@ -444,6 +443,10 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         result = yield plugin._fetch_cloud_meta_data()
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
                           "instance-type": u"hs1.8xlarge"}, result)
+        self.assertEqual(
+            "    INFO: Querying cloud meta-data.\n"
+            "    INFO: Acquired cloud meta-data.\n",
+            self.logfile.getvalue())
 
     @inlineCallbacks
     def test_fetch_cloud_meta_data_no_cloud_api_max_retry(self):
@@ -458,7 +461,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_cloud_meta_data()
         self.assertIn(
-            "ERROR: Max retries reached querying meta-data. "
+            "INFO: No cloud meta-data available. "
             "Error 60: pycurl error\n", self.logfile.getvalue())
         self.assertEqual(None, result)
 
@@ -474,7 +477,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_cloud_meta_data()
         self.assertIn(
-            "ERROR: Max retries reached querying meta-data. Server returned "
+            "INFO: No cloud meta-data available. Server returned "
             "HTTP code 404",
             self.logfile.getvalue())
         self.assertEqual(None, result)
@@ -491,8 +494,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         result = yield plugin._fetch_cloud_meta_data()
-        self.assertIn(
-            "WARNING: Temporary failure accessing cloud meta-data, retrying.",
-            self.logfile.getvalue())
         self.assertEqual(1, plugin._cloud_retries)
         self.assertEqual(None, result)
+        # Fix the error condition for the retry.
+        self.add_query_result("ami-id", "ami-00002")
+        result = yield plugin._fetch_cloud_meta_data()
+        self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
+                          "instance-type": u"hs1.8xlarge"},
+                         result)
