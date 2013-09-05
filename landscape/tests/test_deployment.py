@@ -175,11 +175,26 @@ class ConfigurationTest(LandscapeTest):
             "[client]\nlog_level = warning\n")
 
     def test_dont_write_default_options(self):
+        """
+        Don't write options to the file if they exactly match the default and
+        didn't already exist in the file.
+        """
         self.write_config_file(log_level="debug")
         self.config.log_level = "info"
         self.config.write()
         data = open(self.config_filename).read()
         self.assertConfigEqual(data, "[client]")
+
+    def test_do_write_preexisting_default_options(self):
+        """
+        If the value of an option matches the default, but the option was
+        already written in the file, then write it back to the file.
+        """
+        self.write_config_file(log_level="info")
+        self.config.log_level = "info"
+        self.config.write()
+        data = open(self.config_filename).read()
+        self.assertConfigEqual(data, "[client]\nlog_level = info\n")
 
     def test_dont_delete_explicitly_set_default_options(self):
         """
