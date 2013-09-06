@@ -418,9 +418,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                           "instance-type": u"hs1.8xlarge"},
                          messages[0]["meta-data"])
 
-    def test_no_fetch_cloud_meta_data_when_cloud_retries_is_max(self):
+    def test_no_fetch_ec2_meta_data_when_cloud_retries_is_max(self):
         """
-        Do not fetch cloud info when C{_cloud_retries} is C{METADATA_RETRY_MAX}
+        Do not fetch EC2 info when C{_cloud_retries} is C{METADATA_RETRY_MAX}
         """
         self.config.cloud = True
         self.mstore.set_accepted_types(["computer-info"])
@@ -434,13 +434,13 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertNotIn("meta-data", messages[0])
 
     @inlineCallbacks
-    def test_fetch_cloud_meta_data(self):
+    def test_fetch_ec2_meta_data(self):
         """
-        L{_fetch_cloud_meta_data} retrieves instance information from the
+        L{_fetch_ec2_meta_data} retrieves instance information from the
         EC2 api.
         """
         plugin = ComputerInfo(fetch_async=self.fetch_func)
-        result = yield plugin._fetch_cloud_meta_data()
+        result = yield plugin._fetch_ec2_meta_data()
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
                           "instance-type": u"hs1.8xlarge"}, result)
         self.assertEqual(
@@ -449,9 +449,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
             self.logfile.getvalue())
 
     @inlineCallbacks
-    def test_fetch_cloud_meta_data_no_cloud_api_max_retry(self):
+    def test_fetch_ec2_meta_data_no_cloud_api_max_retry(self):
         """
-        L{_fetch_cloud_meta_data} returns C{None} when faced with no EC2 cloud
+        L{_fetch_ec2_meta_data} returns C{None} when faced with no EC2 cloud
         API service and reports the specific C{PyCurlError} upon message
         exchange when L{_cloud_retries} equals C{METADATA_RETRY_MAX}.
         """
@@ -459,23 +459,23 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.add_query_result("instance-id", PyCurlError(60, "pycurl error"))
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         plugin._cloud_retries = METADATA_RETRY_MAX
-        result = yield plugin._fetch_cloud_meta_data()
+        result = yield plugin._fetch_ec2_meta_data()
         self.assertIn(
             "INFO: No cloud meta-data available. "
             "Error 60: pycurl error\n", self.logfile.getvalue())
         self.assertEqual(None, result)
 
     @inlineCallbacks
-    def test_fetch_cloud_meta_data_bad_result_max_retry(self):
+    def test_fetch_ec2_meta_data_bad_result_max_retry(self):
         """
-        L{_fetch_cloud_meta_data} returns C{None} and logs an error when
+        L{_fetch_ec2_meta_data} returns C{None} and logs an error when
         crossing the retry threshold C{METADATA_RETRY_MAX}.
         """
         self.log_helper.ignore_errors(HTTPCodeError)
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         plugin._cloud_retries = METADATA_RETRY_MAX
-        result = yield plugin._fetch_cloud_meta_data()
+        result = yield plugin._fetch_ec2_meta_data()
         self.assertIn(
             "INFO: No cloud meta-data available. Server returned "
             "HTTP code 404",
@@ -483,22 +483,22 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual(None, result)
 
     @inlineCallbacks
-    def test_fetch_cloud_meta_data_bad_result_retry(self):
+    def test_fetch_ec2_meta_data_bad_result_retry(self):
         """
-        L{_fetch_cloud_meta_data} returns C{None} when faced with spurious
+        L{_fetch_ec2_meta_data} returns C{None} when faced with spurious
         errors from the EC2 api. The method increments L{_cloud_retries}
-        counter which allows L{_fetch_cloud_meta_data} to run again next
+        counter which allows L{_fetch_ec2_meta_data} to run again next
         message exchange.
         """
         self.log_helper.ignore_errors(HTTPCodeError)
         self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
         plugin = ComputerInfo(fetch_async=self.fetch_func)
-        result = yield plugin._fetch_cloud_meta_data()
+        result = yield plugin._fetch_ec2_meta_data()
         self.assertEqual(1, plugin._cloud_retries)
         self.assertEqual(None, result)
         # Fix the error condition for the retry.
         self.add_query_result("ami-id", "ami-00002")
-        result = yield plugin._fetch_cloud_meta_data()
+        result = yield plugin._fetch_ec2_meta_data()
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
                           "instance-type": u"hs1.8xlarge"},
                          result)

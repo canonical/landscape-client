@@ -46,7 +46,7 @@ class ComputerInfo(MonitorPlugin):
     def send_computer_message(self, urgent=False):
         if (self._cloud_meta_data is None and
             self._cloud_retries < METADATA_RETRY_MAX):
-            self._cloud_meta_data = yield self._fetch_cloud_meta_data()
+            self._cloud_meta_data = yield self._fetch_ec2_meta_data()
 
         message = self._create_computer_info_message()
         if message:
@@ -123,7 +123,7 @@ class ComputerInfo(MonitorPlugin):
         message.update(parse_lsb_release(self._lsb_release_filename))
         return message
 
-    def _fetch_cloud_meta_data(self):
+    def _fetch_ec2_meta_data(self):
         """Fetch information about the cloud instance."""
         if self._cloud_retries == 0:
             logging.info("Querying cloud meta-data.")
