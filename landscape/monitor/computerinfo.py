@@ -1,6 +1,6 @@
 import os
 import logging
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_file
@@ -44,11 +44,7 @@ class ComputerInfo(MonitorPlugin):
 
     @inlineCallbacks
     def send_computer_message(self, urgent=False):
-        if (self._cloud_meta_data is None and
-            self._cloud_retries < METADATA_RETRY_MAX):
-            self._cloud_meta_data = yield self._fetch_ec2_meta_data()
-
-        message = self._create_computer_info_message()
+        message = yield self._create_computer_info_message()
         if message:
             message["type"] = "computer-info"
             logging.info("Queueing message with updated computer info.")
@@ -70,6 +66,7 @@ class ComputerInfo(MonitorPlugin):
         broker.call_if_accepted("distribution-info",
                                 self.send_distribution_message, urgent)
 
+    @inlineCallbacks
     def _create_computer_info_message(self):
         message = {}
         self._add_if_new(message, "hostname",
@@ -84,12 +81,16 @@ class ComputerInfo(MonitorPlugin):
                 meta_data[key] = read_file(
                     os.path.join(self._meta_data_path, key))
 
+        if (self._cloud_meta_data is None and
+            self._cloud_retries < METADATA_RETRY_MAX):
+            self._cloud_meta_data = yield self._fetch_ec2_meta_data()
+
         if self._cloud_meta_data:
             meta_data = dict(
                 meta_data.items() + self._cloud_meta_data.items())
         if meta_data:
             self._add_if_new(message, "meta-data", meta_data)
-        return message
+        returnValue(message)
 
     def _add_if_new(self, message, key, value):
         if value != self._persist.get(key):
