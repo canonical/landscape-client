@@ -3,9 +3,9 @@ import re
 
 from twisted.internet.defer import succeed, fail, inlineCallbacks
 
-from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import create_file
-from landscape.monitor.computerinfo import ComputerInfo
+from landscape.monitor.computerinfo import ComputerInfo, METADATA_RETRY_MAX
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
@@ -405,9 +405,6 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
     def test_with_cloud_info(self):
         """Fetch cloud information"""
         self.config.cloud = True
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo(fetch_async=self.fetch_func)
@@ -421,47 +418,87 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                           "instance-type": u"hs1.8xlarge"},
                          messages[0]["meta-data"])
 
-    @inlineCallbacks
-    def test_fetch_cloud_meta_data(self):
+    def test_no_fetch_ec2_meta_data_when_cloud_retries_is_max(self):
         """
-        L{_fetch_cloud_meta_data} retrieves instance information from the
+        Do not fetch EC2 info when C{_cloud_retries} is C{METADATA_RETRY_MAX}
+        """
+        self.config.cloud = True
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        plugin._cloud_retries = METADATA_RETRY_MAX
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertNotIn("meta-data", messages[0])
+
+    @inlineCallbacks
+    def test_fetch_ec2_meta_data(self):
+        """
+        L{_fetch_ec2_meta_data} retrieves instance information from the
         EC2 api.
         """
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
-
         plugin = ComputerInfo(fetch_async=self.fetch_func)
-        result = yield plugin._fetch_cloud_meta_data()
+        result = yield plugin._fetch_ec2_meta_data()
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
                           "instance-type": u"hs1.8xlarge"}, result)
+        self.assertEqual(
+            "    INFO: Querying cloud meta-data.\n"
+            "    INFO: Acquired cloud meta-data.\n",
+            self.logfile.getvalue())
 
     @inlineCallbacks
-    def test_fetch_cloud_meta_data_bad_result(self):
+    def test_fetch_ec2_meta_data_no_cloud_api_max_retry(self):
         """
-        L{_fetch_cloud_meta_data} returns C{None} when faced with errors from
-        the EC2 api.
+        L{_fetch_ec2_meta_data} returns C{None} when faced with no EC2 cloud
+        API service and reports the specific C{PyCurlError} upon message
+        exchange when L{_cloud_retries} equals C{METADATA_RETRY_MAX}.
         """
-        self.log_helper.ignore_errors(HTTPCodeError)
-        self.add_query_result("instance-id", "i7337")
-        self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
-        self.add_query_result("instance-type", "hs1.8xlarge")
+        self.log_helper.ignore_errors(PyCurlError)
+        self.add_query_result("instance-id", PyCurlError(60, "pycurl error"))
         plugin = ComputerInfo(fetch_async=self.fetch_func)
-        result = yield plugin._fetch_cloud_meta_data()
+        plugin._cloud_retries = METADATA_RETRY_MAX
+        result = yield plugin._fetch_ec2_meta_data()
+        self.assertIn(
+            "INFO: No cloud meta-data available. "
+            "Error 60: pycurl error\n", self.logfile.getvalue())
         self.assertEqual(None, result)
 
     @inlineCallbacks
-    def test_fetch_cloud_meta_data_utf8(self):
+    def test_fetch_ec2_meta_data_bad_result_max_retry(self):
         """
-        L{_fetch_cloud_meta_data} decodes utf-8 strings returned from the
-        external service.
+        L{_fetch_ec2_meta_data} returns C{None} and logs an error when
+        crossing the retry threshold C{METADATA_RETRY_MAX}.
         """
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "asdf\xe1\x88\xb4")
-        self.add_query_result("instance-type", "m1.large")
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
         plugin = ComputerInfo(fetch_async=self.fetch_func)
-        result = yield plugin._fetch_cloud_meta_data()
-        self.assertEqual({"instance-id": u"i00001",
-                          "ami-id": u"asdf\u1234",
-                          "instance-type": u"m1.large"},
+        plugin._cloud_retries = METADATA_RETRY_MAX
+        result = yield plugin._fetch_ec2_meta_data()
+        self.assertIn(
+            "INFO: No cloud meta-data available. Server returned "
+            "HTTP code 404",
+            self.logfile.getvalue())
+        self.assertEqual(None, result)
+
+    @inlineCallbacks
+    def test_fetch_ec2_meta_data_bad_result_retry(self):
+        """
+        L{_fetch_ec2_meta_data} returns C{None} when faced with spurious
+        errors from the EC2 api. The method increments L{_cloud_retries}
+        counter which allows L{_fetch_ec2_meta_data} to run again next
+        message exchange.
+        """
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.add_query_result("ami-id", HTTPCodeError(404, "notfound"))
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        result = yield plugin._fetch_ec2_meta_data()
+        self.assertEqual(1, plugin._cloud_retries)
+        self.assertEqual(None, result)
+        # Fix the error condition for the retry.
+        self.add_query_result("ami-id", "ami-00002")
+        result = yield plugin._fetch_ec2_meta_data()
+        self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
+                          "instance-type": u"hs1.8xlarge"},
                          result)
