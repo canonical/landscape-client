@@ -11,8 +11,10 @@ import sys
 import os
 import getpass
 import pwd
-from ConfigParser import ConfigParser, Error as ConfigParserError
+
 from StringIO import StringIO
+
+from configobj import ConfigObj
 
 from landscape.lib.tag import is_valid_tag
 
@@ -78,7 +80,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         line options.
         """
         if self.import_from:
-            parser = ConfigParser()
+            parser = None
 
             try:
                 if "://" in self.import_from:
@@ -88,23 +90,25 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                     if self.https_proxy:
                         os.environ["https_proxy"] = self.https_proxy
                     content = self.fetch_import_url(self.import_from)
-                    parser.readfp(StringIO(content))
+                    parser = ConfigObj(StringIO(content))
                 elif not os.path.isfile(self.import_from):
                     raise ImportOptionError("File %s doesn't exist." %
                                             self.import_from)
                 else:
-                    succesfully_read_files = parser.read(self.import_from)
-                    if self.import_from not in succesfully_read_files:
+                    try:
+                        parser = ConfigObj(self.import_from)
+                    except:
                         raise ImportOptionError(
                             "Couldn't read configuration from %s." %
                             self.import_from)
-            except ConfigParserError, error:
+            except Exception, error:
                 raise ImportOptionError(str(error))
 
             # But real command line options have precedence.
             options = None
-            if parser.has_section(self.config_section):
-                options = dict(parser.items(self.config_section))
+            parser.list_values = False
+            if parser and self.config_section in parser:
+                options = parser[self.config_section]
             if not options:
                 raise ImportOptionError("Nothing to import at %s." %
                                         self.import_from)

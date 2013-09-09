@@ -1,11 +1,13 @@
 import os
 import sys
 
+from configobj import ConfigObj
+
 from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter)
 
 from optparse import OptionParser, SUPPRESS_HELP
-from ConfigParser import ConfigParser, NoSectionError
+# from ConfigParser import ConfigParser, NoSectionError
 
 from landscape import VERSION
 from landscape.lib.persist import Persist
@@ -59,6 +61,7 @@ class BaseConfiguration(object):
         self._command_line_options = {}
         self._config_filename = None
         self._config_file_options = {}
+        self._config_obj = None
         self._parser = self.make_parser()
         self._command_line_defaults = self._parser.defaults.copy()
         # We don't want them mixed with explicitly given options,
@@ -152,6 +155,7 @@ class BaseConfiguration(object):
 
                 self.load_configuration_file(config_filename)
                 break
+
         else:
             if not accept_nonexistent_config:
                 if len(config_filenames) == 1:
@@ -187,12 +191,11 @@ class BaseConfiguration(object):
         then the old data will take precedence.
         """
         self._config_filename = filename
-        config_parser = ConfigParser()
-        config_parser.read(filename)
+        config_obj = ConfigObj(filename)
+        config_obj.list_values = False
         try:
-            self._config_file_options = dict(
-                config_parser.items(self.config_section))
-        except NoSectionError:
+            self._config_file_options = config_obj[self.config_section]
+        except KeyError:
             pass
 
     def write(self):
@@ -213,24 +216,29 @@ class BaseConfiguration(object):
         # The filename we'll write to
         filename = self.get_config_filename()
 
-        config_parser = ConfigParser()
         # Make sure we read the old values from the config file so that we
         # don't remove *unrelated* values.
-        config_parser.read(filename)
-        if not config_parser.has_section(self.config_section):
-            config_parser.add_section(self.config_section)
+        #        config_obj.reload()
+        config_obj = ConfigObj(filename)
+        config_obj.list_values = False
+        if not self.config_section in config_obj:
+            config_obj[self.config_section] = {}
         all_options = self._config_file_options.copy()
         all_options.update(self._command_line_options)
         all_options.update(self._set_options)
+        section = config_obj[self.config_section]
         for name, value in all_options.items():
             if name != "config" and name not in self.unsaved_options:
                 if value == self._command_line_defaults.get(name):
-                    config_parser.remove_option(self.config_section, name)
+                    if name in section:
+                        del section[name]
                 else:
-                    config_parser.set(self.config_section, name, value)
-        config_file = open(filename, "w")
-        config_parser.write(config_file)
-        config_file.close()
+                    section[name] = value
+        config_obj[self.config_section] = section
+        config_obj.filename = filename
+        # config_file = open(filename, "w")
+        config_obj.write()
+        # config_file.close()
 
     def make_parser(self):
         """Parser factory for supported options

@@ -1,5 +1,7 @@
 from twisted.internet.defer import succeed, fail
 
+from configobj import ConfigObj
+
 from landscape.manager.manager import FAILED
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
@@ -176,7 +178,9 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.reload_configuration} method forces the config
         file associated with the broker server to be reloaded.
         """
-        open(self.config_filename, "a").write("computer_title = New Title")
+        config_obj = ConfigObj(self.config_filename)
+        config_obj["client"]["computer_title"] = "New Title"
+        config_obj.write()
         result = self.broker.reload_configuration()
         result.addCallback(lambda x: self.assertEqual(
             self.config.computer_title, "New Title"))
