@@ -224,7 +224,8 @@ class BaseConfiguration(object):
         all_options.update(self._set_options)
         for name, value in all_options.items():
             if name != "config" and name not in self.unsaved_options:
-                if value == self._command_line_defaults.get(name):
+                if (value == self._command_line_defaults.get(name) and
+                    name not in self._config_file_options):
                     config_parser.remove_option(self.config_section, name)
                 else:
                     config_parser.set(self.config_section, name, value)

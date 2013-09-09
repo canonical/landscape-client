@@ -749,6 +749,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 computer_title = rex
 data_path = %s
 account_name = account
+url = https://landscape.canonical.com/message-system
 """ % config.data_path)
 
     def test_silent_setup_no_register(self):
@@ -765,6 +766,7 @@ account_name = account
         self.assertConfigEqual(self.get_content(config), """\
 [client]
 data_path = %s
+url = https://landscape.canonical.com/message-system
 """ % config.data_path)
 
     def test_silent_setup_no_register_with_default_preseed_params(self):
@@ -801,6 +803,7 @@ data_path = %s
             "account_name = \n"
             "computer_title = \n"
             "https_proxy = \n"
+            "url = https://landscape.canonical.com/message-system\n"
              % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
