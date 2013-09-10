@@ -232,9 +232,9 @@ class BaseConfiguration(object):
         section = config_obj[self.config_section]
         for name, value in all_options.items():
             if name != "config" and name not in self.unsaved_options:
-                if value == self._command_line_defaults.get(name):
-                    if name in section:
-                        del section[name]
+                if (value == self._command_line_defaults.get(name) and
+                    name not in self._config_file_options):
+                    config_parser.remove_option(self.config_section, name)
                 else:
                     section[name] = value
         config_obj[self.config_section] = section
