@@ -90,13 +90,15 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                     if self.https_proxy:
                         os.environ["https_proxy"] = self.https_proxy
                     content = self.fetch_import_url(self.import_from)
-                    parser = ConfigObj(StringIO(content))
+                    parser = self.get_config_object(
+                        config_source=StringIO(content))
                 elif not os.path.isfile(self.import_from):
                     raise ImportOptionError("File %s doesn't exist." %
                                             self.import_from)
                 else:
                     try:
-                        parser = ConfigObj(self.import_from)
+                        parser = self.get_config_object(
+                            config_source=self.import_from)
                     except:
                         raise ImportOptionError(
                             "Couldn't read configuration from %s." %
@@ -106,7 +108,6 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
 
             # But real command line options have precedence.
             options = None
-            parser.list_values = False
             if parser and self.config_section in parser:
                 options = parser[self.config_section]
             if not options:

@@ -719,18 +719,18 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.mocker.replay()
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
-        # self.assertEqual(type(config), LandscapeSetupConfiguration)
+        self.assertEqual(type(config), LandscapeSetupConfiguration)
 
-        # # Reload it to ensure it was written down.
-        # config.reload()
+        # Reload it to ensure it was written down.
+        config.reload()
 
-        # self.assertEqual(config.computer_title, "New Title")
-        # self.assertEqual(config.account_name, "New Name")
-        # self.assertEqual(config.registration_key, "New Password")
-        # self.assertEqual(config.http_proxy, "http://new.proxy")
-        # self.assertEqual(config.https_proxy, "https://new.proxy")
-        # self.assertEqual(config.include_manager_plugins, "")
-        # self.assertEqual(config.tags, u"glasgow, laptop")
+        self.assertEqual(config.computer_title, "New Title")
+        self.assertEqual(config.account_name, "New Name")
+        self.assertEqual(config.registration_key, "New Password")
+        self.assertEqual(config.http_proxy, "http://new.proxy")
+        self.assertEqual(config.https_proxy, "https://new.proxy")
+        self.assertEqual(config.include_manager_plugins, "")
+        self.assertEqual(config.tags, u"glasgow, laptop")
 
     def test_silent_setup(self):
         """

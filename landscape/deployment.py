@@ -7,7 +7,6 @@ from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter)
 
 from optparse import OptionParser, SUPPRESS_HELP
-# from ConfigParser import ConfigParser, NoSectionError
 
 from landscape import VERSION
 from landscape.lib.persist import Persist
@@ -61,7 +60,6 @@ class BaseConfiguration(object):
         self._command_line_options = {}
         self._config_filename = None
         self._config_file_options = {}
-        self._config_obj = None
         self._parser = self.make_parser()
         self._command_line_defaults = self._parser.defaults.copy()
         # We don't want them mixed with explicitly given options,
@@ -191,12 +189,19 @@ class BaseConfiguration(object):
         then the old data will take precedence.
         """
         self._config_filename = filename
-        config_obj = ConfigObj(filename)
-        config_obj.list_values = False
+        config_obj = self.get_config_object()
         try:
             self._config_file_options = config_obj[self.config_section]
         except KeyError:
             pass
+
+    def get_config_object(self, config_source=None):
+        if config_source:
+            config_obj = ConfigObj(config_source)
+        else:
+            config_obj = ConfigObj(self.get_config_filename())
+        config_obj.list_values = False
+        return config_obj
 
     def write(self):
         """Write back configuration to the configuration file.
@@ -218,9 +223,7 @@ class BaseConfiguration(object):
 
         # Make sure we read the old values from the config file so that we
         # don't remove *unrelated* values.
-        #        config_obj.reload()
-        config_obj = ConfigObj(filename)
-        config_obj.list_values = False
+        config_obj = self.get_config_object()
         if not self.config_section in config_obj:
             config_obj[self.config_section] = {}
         all_options = self._config_file_options.copy()
@@ -236,9 +239,7 @@ class BaseConfiguration(object):
                     section[name] = value
         config_obj[self.config_section] = section
         config_obj.filename = filename
-        # config_file = open(filename, "w")
         config_obj.write()
-        # config_file.close()
 
     def make_parser(self):
         """Parser factory for supported options
