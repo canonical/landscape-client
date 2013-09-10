@@ -235,6 +235,21 @@ class ConfigurationTest(LandscapeTest):
         data = open(filename).read()
         self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
+    def test_comments_are_maintained(self):
+        """
+        When we write an updated config file, comments that existed previously
+        are maintained.
+        """
+        config = "[client]\n# Comment 1\nlog_level = file\n#Comment 2\n"
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.config.log_level = "error"
+        self.config.write()
+        new_config = open(filename).read()
+        self.assertConfigEqual(
+            new_config,
+            "[client]\n# Comment 1\nlog_level = error\n#Comment 2\n")
+
     def test_config_option(self):
         options = self.parser.parse_args(["--config", "hello.cfg"])[0]
         self.assertEqual(options.config, "hello.cfg")
