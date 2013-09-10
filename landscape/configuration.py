@@ -14,8 +14,6 @@ import pwd
 
 from StringIO import StringIO
 
-from configobj import ConfigObj
-
 from landscape.lib.tag import is_valid_tag
 
 from landscape.sysvconfig import SysVConfig, ProcessError
