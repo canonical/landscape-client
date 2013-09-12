@@ -126,6 +126,13 @@ class RangesToSequenceTest(unittest.TestCase):
         self.assertEqual(list(ranges_to_sequence(ranges)),
                          [1, 2, 15, 16, 17, 19, 21, 22, 23, 24, 26, 27])
 
+    def test_invalid_range(self):
+        """
+        If range start value is greater than the end one, an error is raised.
+        """
+        ranges = [1, 2, (5, 3), 10]
+        self.assertRaises(ValueError, list, ranges_to_sequence(ranges))
+
 
 class FindRangesIndexTest(unittest.TestCase):
 

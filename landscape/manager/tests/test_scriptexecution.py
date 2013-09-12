@@ -27,8 +27,7 @@ def get_default_environment():
     return  {
         "PATH": UBUNTU_PATH,
         "USER": username,
-        "HOME": home,
-        }
+        "HOME": home}
 
 
 class RunScriptTests(LandscapeTest):
