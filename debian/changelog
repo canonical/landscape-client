@@ -1,11 +1,11 @@
-landscape-client (13.07.1-0ubuntu1) precise; urgency=low
+landscape-client (13.09-0ubuntu1) precise; urgency=low
 
   * Fake changelog entry to bump version.
   * This changelog is used only for locally built pacakges (development).
     If you need to change the debian version please do so without adding a new
     entry.
 
- -- Chris Glass <christopher.glass@canonical.com>  Mon, 17 Jun 2013 12:40:31 +0000
+ -- Chris Glass <christopher.glass@canonical.com>  Fri, 13 Sep 2013 10:52:40 +0100
 
 landscape-client (13.02-0ubuntu0) quantal; urgency=low
 
