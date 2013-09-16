@@ -209,16 +209,14 @@ class BaseConfiguration(object):
         except KeyError:
             pass
 
-    def _get_config_object(self, config_source=None):
+    def _get_config_object(self, alternative_config=None):
         """Create a L{ConfigObj} consistent with our preferences.
 
         @param config_source: Optional readable source to read from instead of
             the default configuration file.
         """
-        if config_source:
-            config_obj = ConfigObj(config_source)
-        else:
-            config_obj = ConfigObj(self.get_config_filename())
+        config_source = alternative_config or self.get_config_filename()
+        config_obj = ConfigObj(config_source)
         config_obj.list_values = False
         return config_obj
 
@@ -407,9 +405,6 @@ class Configuration(BaseConfiguration):
         be stored.
         """
         return os.path.join(self.data_path, "meta-data.d")
-
-    def _get_config_object(self, config_source=None):
-        return super(Configuration, self)._get_config_object(config_source=config_source)
 
 
 def get_versioned_persist(service):

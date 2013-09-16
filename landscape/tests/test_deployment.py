@@ -54,14 +54,14 @@ class ConfigurationTest(LandscapeTest):
                          config_obj.filename)
         self.assertFalse(config_obj.list_values)
 
-    def test_get_config_object_with_config_source(self):
+    def test_get_config_object_with_alternative_config(self):
         """
-        Calling L{get_config_object} with a the L{config_source} parameter set,
-        this source is used instead of calling through to
+        Calling L{get_config_object} with a the L{alternative_config} parameter
+        set, this source is used instead of calling through to
         L{get_config_filename}.
         """
-        config_obj = self.config._get_config_object(config_source=StringIO(
-            "[client]\nlog_level = error\n"))
+        config_obj = self.config._get_config_object(
+            alternative_config=StringIO("[client]\nlog_level = error\n"))
         self.assertIsNone(config_obj.filename)
 
     def write_config_file(self, **kwargs):
