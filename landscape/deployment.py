@@ -31,6 +31,20 @@ def init_logging(configuration, program_name):
         handler.setFormatter(Formatter(format))
 
 
+class ConfigSpecOptionParser(OptionParser):
+
+    _config_spec_definitions = {}
+
+    def __init__(self, unsaved_options=None):
+        OptionParser.__init__(self, unsaved_options)
+
+    def add_option(self, *args, **kwargs):
+        option = OptionParser.add_option(self, *args, **kwargs)
+        print dir(option)
+        print option.get_opt_string()
+        return option
+
+
 class BaseConfiguration(object):
     """Base class for configuration implementations.
 
@@ -189,13 +203,18 @@ class BaseConfiguration(object):
         then the old data will take precedence.
         """
         self._config_filename = filename
-        config_obj = self.get_config_object()
+        config_obj = self._get_config_object()
         try:
             self._config_file_options = config_obj[self.config_section]
         except KeyError:
             pass
 
-    def get_config_object(self, config_source=None):
+    def _get_config_object(self, config_source=None):
+        """Create a L{ConfigObj} consistent with our preferences.
+
+        @param config_source: Optional readable source to read from instead of
+            the default configuration file.
+        """
         if config_source:
             config_obj = ConfigObj(config_source)
         else:
@@ -223,7 +242,7 @@ class BaseConfiguration(object):
 
         # Make sure we read the old values from the config file so that we
         # don't remove *unrelated* values.
-        config_obj = self.get_config_object()
+        config_obj = self._get_config_object()
         if not self.config_section in config_obj:
             config_obj[self.config_section] = {}
         all_options = self._config_file_options.copy()
@@ -233,8 +252,9 @@ class BaseConfiguration(object):
         for name, value in all_options.items():
             if name != "config" and name not in self.unsaved_options:
                 if (value == self._command_line_defaults.get(name) and
-                    name not in self._config_file_options):
-                    config_parser.remove_option(self.config_section, name)
+                    name not in self._config_file_options and
+                    name in config_obj[self.config_section]):
+                        del config_obj[self.config_section][name]
                 else:
                     section[name] = value
         config_obj[self.config_section] = section
@@ -387,6 +407,9 @@ class Configuration(BaseConfiguration):
         be stored.
         """
         return os.path.join(self.data_path, "meta-data.d")
+
+    def _get_config_object(self, config_source=None):
+        return super(Configuration, self)._get_config_object(config_source=config_source)
 
 
 def get_versioned_persist(service):

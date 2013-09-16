@@ -794,7 +794,8 @@ url = https://landscape.canonical.com/message-system
                 "--provisioning-otp", ""]
         config = self.get_config(args)
         setup(config)
-        self.assertConfigEqual(self.get_content(config),
+        self.assertConfigEqual(
+            self.get_content(config),
             "[client]\n"
             "http_proxy = \n"
             "tags = \n"
@@ -804,6 +805,12 @@ url = https://landscape.canonical.com/message-system
             "computer_title = \n"
             "https_proxy = \n"
             "url = https://landscape.canonical.com/message-system\n"
+            "exchange_interval = 900\n"
+            "otp = \n"
+            "ping_interval = 30\n"
+            "ping_url = http://landscape.canonical.com/ping\n"
+            "provisioning_otp = \n"
+            "urgent_exchange_interval = 60\n"
              % config.data_path)
 
     def test_silent_setup_without_computer_title(self):

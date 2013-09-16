@@ -4,7 +4,8 @@ from optparse import OptionParser
 
 from StringIO import StringIO
 
-from landscape.deployment import Configuration, get_versioned_persist
+from landscape.deployment import (
+    Configuration, get_versioned_persist, ConfigSpecOptionParser)
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
@@ -48,7 +49,7 @@ class ConfigurationTest(LandscapeTest):
         Calling L{get_config_object} returns a L{ConfigObj} bound to the
         correct file and with its options set in the manor we expect.
         """
-        config_obj = self.config.get_config_object()
+        config_obj = self.config._get_config_object()
         self.assertEqual(self.config.get_config_filename(),
                          config_obj.filename)
         self.assertFalse(config_obj.list_values)
@@ -59,7 +60,7 @@ class ConfigurationTest(LandscapeTest):
         this source is used instead of calling through to
         L{get_config_filename}.
         """
-        config_obj = self.config.get_config_object(config_source=StringIO(
+        config_obj = self.config._get_config_object(config_source=StringIO(
             "[client]\nlog_level = error\n"))
         self.assertIsNone(config_obj.filename)
 
