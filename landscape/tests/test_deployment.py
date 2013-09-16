@@ -4,8 +4,7 @@ from optparse import OptionParser
 
 from StringIO import StringIO
 
-from landscape.deployment import (
-    Configuration, get_versioned_persist, ConfigSpecOptionParser)
+from landscape.deployment import Configuration, get_versioned_persist
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
