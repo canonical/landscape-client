@@ -73,7 +73,7 @@ def sequence_to_ranges(sequence):
             item = iterator.next()
         except StopIteration:
             item = None
-        if item == range_stop+1:
+        if item == range_stop + 1:
             range_stop += 1
         else:
             if item is not None and item <= range_stop:
@@ -84,7 +84,7 @@ def sequence_to_ranges(sequence):
                     raise SequenceError("Found duplicated item (%r)" % (item,))
             if range_stop == range_start:
                 yield range_start
-            elif range_stop == range_start+1:
+            elif range_stop == range_start + 1:
                 yield range_start
                 yield range_stop
             else:
@@ -94,10 +94,12 @@ def sequence_to_ranges(sequence):
 
 def ranges_to_sequence(ranges):
     """Iterate over individual items represented in a ranges list."""
-
     for item in ranges:
         if isinstance(item, tuple):
-            for item in xrange(item[0], item[1]+1):
+            start, end = item
+            if start > end:
+                raise ValueError("Range error %d > %d", start, end)
+            for item in xrange(start, end + 1):
                 yield item
         else:
             yield item
@@ -108,14 +110,14 @@ def find_ranges_index(ranges, item):
     lo = 0
     hi = len(ranges)
     while lo < hi:
-        mid = (lo+hi)//2
+        mid = (lo + hi) // 2
         test = ranges[mid]
         try:
             test = test[1]
         except TypeError:
             pass
         if item > test:
-            lo = mid+1
+            lo = mid + 1
         else:
             hi = mid
     return lo
@@ -140,13 +142,13 @@ def add_to_ranges(ranges, item):
 
     # Merge to the left side.
     while index_start > 0:
-        test = ranges[index_start-1]
+        test = ranges[index_start - 1]
         if isinstance(test, tuple):
-            if test[1] != range_start-1:
+            if test[1] != range_start - 1:
                 break
             range_start = test[0]
         else:
-            if test != range_start-1:
+            if test != range_start - 1:
                 break
             range_start -= 1
         index_start -= 1
@@ -155,16 +157,16 @@ def add_to_ranges(ranges, item):
     while index_stop < ranges_len:
         test = ranges[index_stop]
         if isinstance(test, tuple):
-            if test[0] != range_stop+1:
+            if test[0] != range_stop + 1:
                 break
             range_stop = test[1]
         else:
-            if test != range_stop+1:
+            if test != range_stop + 1:
                 break
             range_stop += 1
         index_stop += 1
 
-    if range_stop-range_start < 2:
+    if range_stop - range_start < 2:
         ranges.insert(index, item)
     else:
         ranges[index_start:index_stop] = ((range_start, range_stop),)
@@ -181,16 +183,16 @@ def remove_from_ranges(ranges, item):
             range_start, range_stop = test
             if item >= range_start:
                 # Handle right side of the range (and replace original item).
-                if range_stop < item+3:
-                    ranges[index:index+1] = range(item+1, range_stop+1)
+                if range_stop < item + 3:
+                    ranges[index:index + 1] = range(item + 1, range_stop + 1)
                 else:
-                    ranges[index:index+1] = ((item+1, range_stop),)
+                    ranges[index:index + 1] = ((item + 1, range_stop),)
 
                 # Handle left side of the range.
-                if range_start > item-3:
+                if range_start > item - 3:
                     if range_start != item:
                         ranges[index:index] = range(range_start, item)
                 else:
-                    ranges[index:index] = ((range_start, item-1),)
+                    ranges[index:index] = ((range_start, item - 1),)
         elif item == test:
             del ranges[index]
