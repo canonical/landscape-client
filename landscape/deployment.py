@@ -1,11 +1,12 @@
 import os
 import sys
 
+from configobj import ConfigObj
+
 from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter)
 
 from optparse import OptionParser, SUPPRESS_HELP
-from ConfigParser import ConfigParser, NoSectionError
 
 from landscape import VERSION
 from landscape.lib.persist import Persist
@@ -28,6 +29,20 @@ def init_logging(configuration, program_name):
         format = ("%(asctime)s %(levelname)-8s [%(threadName)-10s] "
                   "%(message)s")
         handler.setFormatter(Formatter(format))
+
+
+class ConfigSpecOptionParser(OptionParser):
+
+    _config_spec_definitions = {}
+
+    def __init__(self, unsaved_options=None):
+        OptionParser.__init__(self, unsaved_options)
+
+    def add_option(self, *args, **kwargs):
+        option = OptionParser.add_option(self, *args, **kwargs)
+        print dir(option)
+        print option.get_opt_string()
+        return option
 
 
 class BaseConfiguration(object):
@@ -152,6 +167,7 @@ class BaseConfiguration(object):
 
                 self.load_configuration_file(config_filename)
                 break
+
         else:
             if not accept_nonexistent_config:
                 if len(config_filenames) == 1:
@@ -187,13 +203,22 @@ class BaseConfiguration(object):
         then the old data will take precedence.
         """
         self._config_filename = filename
-        config_parser = ConfigParser()
-        config_parser.read(filename)
+        config_obj = self._get_config_object()
         try:
-            self._config_file_options = dict(
-                config_parser.items(self.config_section))
-        except NoSectionError:
+            self._config_file_options = config_obj[self.config_section]
+        except KeyError:
             pass
+
+    def _get_config_object(self, alternative_config=None):
+        """Create a L{ConfigObj} consistent with our preferences.
+
+        @param config_source: Optional readable source to read from instead of
+            the default configuration file.
+        """
+        config_source = alternative_config or self.get_config_filename()
+        config_obj = ConfigObj(config_source)
+        config_obj.list_values = False
+        return config_obj
 
     def write(self):
         """Write back configuration to the configuration file.
@@ -213,25 +238,26 @@ class BaseConfiguration(object):
         # The filename we'll write to
         filename = self.get_config_filename()
 
-        config_parser = ConfigParser()
         # Make sure we read the old values from the config file so that we
         # don't remove *unrelated* values.
-        config_parser.read(filename)
-        if not config_parser.has_section(self.config_section):
-            config_parser.add_section(self.config_section)
+        config_obj = self._get_config_object()
+        if not self.config_section in config_obj:
+            config_obj[self.config_section] = {}
         all_options = self._config_file_options.copy()
         all_options.update(self._command_line_options)
         all_options.update(self._set_options)
+        section = config_obj[self.config_section]
         for name, value in all_options.items():
             if name != "config" and name not in self.unsaved_options:
                 if (value == self._command_line_defaults.get(name) and
-                    name not in self._config_file_options):
-                    config_parser.remove_option(self.config_section, name)
+                    name not in self._config_file_options and
+                    name in config_obj[self.config_section]):
+                        del config_obj[self.config_section][name]
                 else:
-                    config_parser.set(self.config_section, name, value)
-        config_file = open(filename, "w")
-        config_parser.write(config_file)
-        config_file.close()
+                    section[name] = value
+        config_obj[self.config_section] = section
+        config_obj.filename = filename
+        config_obj.write()
 
     def make_parser(self):
         """Parser factory for supported options

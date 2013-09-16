@@ -706,7 +706,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         expect(raw_input(C("[http://old.proxy]"))).result("http://new.proxy")
         expect(raw_input(C("[https://old.proxy]"))).result("https://new.proxy")
         expect(raw_input(C("Enable script execution? [Y/n]"))).result("n")
-        expect(raw_input(C("Tags [london, server]: "))).result(
+        expect(raw_input(C("Tags [['london', 'server']]: "))).result(
             u"glasgow, laptop")
 
         # Negative assertion.  We don't want it called in any other way.
@@ -794,7 +794,8 @@ url = https://landscape.canonical.com/message-system
                 "--provisioning-otp", ""]
         config = self.get_config(args)
         setup(config)
-        self.assertConfigEqual(self.get_content(config),
+        self.assertConfigEqual(
+            self.get_content(config),
             "[client]\n"
             "http_proxy = \n"
             "tags = \n"
@@ -804,6 +805,12 @@ url = https://landscape.canonical.com/message-system
             "computer_title = \n"
             "https_proxy = \n"
             "url = https://landscape.canonical.com/message-system\n"
+            "exchange_interval = 900\n"
+            "otp = \n"
+            "ping_interval = 30\n"
+            "ping_url = http://landscape.canonical.com/ping\n"
+            "provisioning_otp = \n"
+            "urgent_exchange_interval = 60\n"
              % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
@@ -1334,7 +1341,7 @@ registration_key = shared-secret
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertIn("File contains no section headers.", str(error))
+            self.assertIn("Couldn't read configuration from", str(error))
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1558,7 +1565,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertIn("File contains no section headers.", str(error))
+            self.assertEqual("Invalid line at line \"1\".", str(error))
         else:
             self.fail("ImportOptionError not raised")
 

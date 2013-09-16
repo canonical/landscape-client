@@ -1,4 +1,3 @@
-
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import (
@@ -17,8 +16,8 @@ class MechanismTest(LandscapeTest):
 
     def setUp(self):
         super(MechanismTest, self).setUp()
-        config = "[client]"
-        config += "data_path = /var/lib/landscape/client\n"
+        config = "[client]\n"
+        config += "data_path = /var/lib/landscape/client/\n"
         config += "http_proxy = http://proxy.localdomain:3192\n"
         config += "tags = a_tag\n"
         config += "url = https://landscape.canonical.com/message-system\n"
@@ -28,11 +27,7 @@ class MechanismTest(LandscapeTest):
         config += "https_proxy = https://proxy.localdomain:6192\n"
         config += "ping_url = http://landscape.canonical.com/ping\n"
         self.config_filename = self.makeFile(config)
-
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
-            default_config_filenames = [self.config_filename]
-
-        self.config = MyLandscapeSetupConfiguration()
+        self.config = LandscapeSetupConfiguration()
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus = dbus.SessionBus(private=True)
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)

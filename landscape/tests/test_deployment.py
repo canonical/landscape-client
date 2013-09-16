@@ -2,6 +2,8 @@ import sys
 import os
 from optparse import OptionParser
 
+from StringIO import StringIO
+
 from landscape.deployment import Configuration, get_versioned_persist
 
 from landscape.tests.helpers import LandscapeTest
@@ -40,6 +42,26 @@ class ConfigurationTest(LandscapeTest):
         self.config.load([])
         self.assertEqual(self.config.get("log_level"), "file")
         self.assertEqual(self.config.get("random_key"), None)
+
+    def test_get_config_object(self):
+        """
+        Calling L{get_config_object} returns a L{ConfigObj} bound to the
+        correct file and with its options set in the manor we expect.
+        """
+        config_obj = self.config._get_config_object()
+        self.assertEqual(self.config.get_config_filename(),
+                         config_obj.filename)
+        self.assertFalse(config_obj.list_values)
+
+    def test_get_config_object_with_alternative_config(self):
+        """
+        Calling L{get_config_object} with a the L{alternative_config} parameter
+        set, this source is used instead of calling through to
+        L{get_config_filename}.
+        """
+        config_obj = self.config._get_config_object(
+            alternative_config=StringIO("[client]\nlog_level = error\n"))
+        self.assertIsNone(config_obj.filename)
 
     def write_config_file(self, **kwargs):
         section_name = kwargs.pop("section_name", "client")
@@ -251,6 +273,21 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(filename).read()
         self.assertConfigEqual(data, "[client]\nlog_level = error\n")
+
+    def test_comments_are_maintained(self):
+        """
+        When we write an updated config file, comments that existed previously
+        are maintained.
+        """
+        config = "[client]\n# Comment 1\nlog_level = file\n#Comment 2\n"
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.config.log_level = "error"
+        self.config.write()
+        new_config = open(filename).read()
+        self.assertConfigEqual(
+            new_config,
+            "[client]\n# Comment 1\nlog_level = error\n#Comment 2\n")
 
     def test_config_option(self):
         options = self.parser.parse_args(["--config", "hello.cfg"])[0]
