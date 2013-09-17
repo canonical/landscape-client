@@ -401,7 +401,7 @@ class Configuration(BaseConfiguration):
     @property
     def annotations_path(self):
         """
-        Return the path to the directory where additional  nnotationsfiles can
+        Return the path to the directory where additional annotation files can
         be stored.
         """
         return os.path.join(self.data_path, "annotations.d")
