@@ -75,7 +75,7 @@ class UserManagement(object):
                          primary_group_name=None):
         """Update details for the account matching C{uid}."""
         uid = self._provider.get_uid(username)
-        logging.info("Updating metadata for user %s (UID %d).", username, uid)
+        logging.info("Updating data for user %s (UID %d).", username, uid)
         if password:
             self._set_password(username, password)
 
