@@ -36,7 +36,7 @@ class ComputerInfo(MonitorPlugin):
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
-        self._meta_data_path = registry.config.meta_data_path
+        self._annotations_path = registry.config.annotations_path
         self.call_on_accepted("computer-info",
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",
@@ -76,10 +76,10 @@ class ComputerInfo(MonitorPlugin):
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
         meta_data = {}
-        if os.path.exists(self._meta_data_path):
-            for key in os.listdir(self._meta_data_path):
+        if os.path.exists(self._annotations_path):
+            for key in os.listdir(self._annotations_path):
                 meta_data[key] = read_file(
-                    os.path.join(self._meta_data_path, key))
+                    os.path.join(self._annotations_path, key))
 
         if (self._cloud_meta_data is None and
             self._cloud_retries < METADATA_RETRY_MAX):

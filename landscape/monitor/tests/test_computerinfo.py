@@ -360,7 +360,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
     def test_meta_data(self):
         """
-        L{ComputerInfo} sends extra meta data from the meta-data.d directory
+        L{ComputerInfo} sends extra meta data from the annotations.d directory
         if it's present.
 
         Each file name is used as a key in the meta-data dict and the file's
@@ -369,7 +369,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         This allows, for example, the landscape-client charm to send
         information about the juju environment to the landscape server.
         """
-        meta_data_dir = self.monitor.config.meta_data_path
+        meta_data_dir = self.monitor.config.annotations_path
         os.mkdir(meta_data_dir)
         create_file(os.path.join(meta_data_dir, "juju-env-uuid"), "uuid1")
         create_file(os.path.join(meta_data_dir, "juju-unit-name"), "unit/0")
