@@ -639,21 +639,21 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
 
     def test_bootstrap_tree(self):
         """
-        The L{bootstrap_tree} function creates the client dir and /meta-data.d
-        under it with the correct permissions.
+        The L{bootstrap_tree} function creates the client dir and
+        /annotations.d under it with the correct permissions.
         """
         client_path = self.makeDir()
-        meta_data_path = os.path.join(client_path, "meta-data.d")
+        annotations_path = os.path.join(client_path, "annotations.d")
 
         mock_chmod = self.mocker.replace("os.chmod")
         mock_chmod(client_path, 0755)
-        mock_chmod(meta_data_path, 0755)
+        mock_chmod(annotations_path, 0755)
         self.mocker.replay()
 
         config = self.get_config([], data_path=client_path)
         bootstrap_tree(config)
         self.assertTrue(os.path.isdir(client_path))
-        self.assertTrue(os.path.isdir(meta_data_path))
+        self.assertTrue(os.path.isdir(annotations_path))
 
 
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):

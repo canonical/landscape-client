@@ -600,14 +600,14 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(self.config.sockets_path,
                          "/var/lib/landscape/client/sockets")
 
-    def test_meta_data_path(self):
+    def test_annotations_path(self):
         """
-        The L{Configuration.meta_data_path} property returns the path to the
-        socket directory.
+        The L{Configuration.annotations_path} property returns the path to the
+        annotations directory.
         """
         self.assertEqual(
-            "/var/lib/landscape/client/meta-data.d",
-            self.config.meta_data_path)
+            "/var/lib/landscape/client/annotations.d",
+            self.config.annotations_path)
 
     def test_clone(self):
         """The L{Configuration.clone} method clones a configuration."""

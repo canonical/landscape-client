@@ -310,9 +310,15 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
                          "total-swap": 1584,
-                         "meta-data": {u"ami-id": u"ami-00002",
-                                       u"instance-id": u"i00001",
-                                       u"instance-type": u"hs1.8xlarge"}}
+                         "annotations": {u"ami-id": u"ami-00002",
+                                         u"instance-id": u"i00001",
+                                         u"instance-type": u"hs1.8xlarge"}}
+        # XXX: The tested code is deactivated, so this will not produce
+        #      annotations for the time being. It should be plugged in again
+        #      once #1226605 is implemented.
+        computer_info = {"type": "computer-info", "hostname": "ooga.local",
+                         "timestamp": 0, "total-memory": 1510,
+                         "total-swap": 1584}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
@@ -358,9 +364,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
-    def test_meta_data(self):
+    def test_annotations(self):
         """
-        L{ComputerInfo} sends extra meta data from the meta-data.d directory
+        L{ComputerInfo} sends extra meta data from the annotations.d directory
         if it's present.
 
         Each file name is used as a key in the meta-data dict and the file's
@@ -369,10 +375,10 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         This allows, for example, the landscape-client charm to send
         information about the juju environment to the landscape server.
         """
-        meta_data_dir = self.monitor.config.meta_data_path
-        os.mkdir(meta_data_dir)
-        create_file(os.path.join(meta_data_dir, "juju-env-uuid"), "uuid1")
-        create_file(os.path.join(meta_data_dir, "juju-unit-name"), "unit/0")
+        annotations_dir = self.monitor.config.annotations_path
+        os.mkdir(annotations_dir)
+        create_file(os.path.join(annotations_dir, "annotation1"), "value1")
+        create_file(os.path.join(annotations_dir, "annotation2"), "value2")
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
@@ -381,16 +387,17 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        meta_data = messages[0]["meta-data"]
+        meta_data = messages[0]["annotations"]
         self.assertEqual(2, len(meta_data))
-        self.assertEqual("uuid1", meta_data["juju-env-uuid"])
-        self.assertEqual("unit/0", meta_data["juju-unit-name"])
+        self.assertEqual("value1", meta_data["annotation1"])
+        self.assertEqual("value2", meta_data["annotation2"])
 
-    def test_meta_data_cloud(self):
+    def deactivated_test_annotations_cloud(self):
         """
         L{ComputerInfo} includes the meta-data key when cloud information
         is available.
         """
+        # XXX The tested code is deactivated until #1226605 is implemented.
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
@@ -399,11 +406,12 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertIn("meta-data", messages[0])
-        self.assertEqual("i00001", messages[0]["meta-data"]["instance-id"])
+        self.assertIn("annotations", messages[0])
+        self.assertEqual("i00001", messages[0]["annotations"]["instance-id"])
 
-    def test_with_cloud_info(self):
+    def deactivated_test_with_cloud_info(self):
         """Fetch cloud information"""
+        # XXX: The tested code is deactivated until #1226605 is implemented.
         self.config.cloud = True
         self.mstore.set_accepted_types(["computer-info"])
 
@@ -412,11 +420,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertIn("meta-data", messages[0])
+        self.assertIn("annotations", messages[0])
 
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
                           "instance-type": u"hs1.8xlarge"},
-                         messages[0]["meta-data"])
+                         messages[0]["annotations"])
 
     def test_no_fetch_ec2_meta_data_when_cloud_retries_is_max(self):
         """
@@ -431,7 +439,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertNotIn("meta-data", messages[0])
+        self.assertNotIn("annotations", messages[0])
 
     @inlineCallbacks
     def test_fetch_ec2_meta_data(self):

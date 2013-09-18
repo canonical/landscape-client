@@ -399,12 +399,12 @@ class Configuration(BaseConfiguration):
         return os.path.join(self.data_path, "sockets")
 
     @property
-    def meta_data_path(self):
+    def annotations_path(self):
         """
-        Return the path to the directory where additional meta-data files can
+        Return the path to the directory where additional annotation files can
         be stored.
         """
-        return os.path.join(self.data_path, "meta-data.d")
+        return os.path.join(self.data_path, "annotations.d")
 
 
 def get_versioned_persist(service):

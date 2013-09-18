@@ -41,7 +41,7 @@ class UserManagement(object):
         self._set_password(username, password)
         if require_password_reset:
             result, new_output = self.call_popen(["passwd", username, "-e"])
-            if result !=0:
+            if result != 0:
                 raise UserManagementError("Error resetting password for user "
                                           "%s.\n%s" % (username, new_output))
             else:
@@ -75,7 +75,7 @@ class UserManagement(object):
                          primary_group_name=None):
         """Update details for the account matching C{uid}."""
         uid = self._provider.get_uid(username)
-        logging.info("Updating metadata for user %s (UID %d).", username, uid)
+        logging.info("Updating data for user %s (UID %d).", username, uid)
         if password:
             self._set_password(username, password)
 
@@ -166,7 +166,8 @@ class UserManagement(object):
         gid = self._provider.get_gid(groupname)
         logging.info("Adding user %s (UID %d) to group %s (GID %d).",
                      username, uid, groupname, gid)
-        result, output = self.call_popen(["gpasswd", "-a", username, groupname])
+        result, output = self.call_popen(["gpasswd", "-a", username,
+                                          groupname])
         if result != 0:
             raise UserManagementError("Error adding user %s (UID %d) to "
                                       "group %s (GID %d).\n%s" %
@@ -182,7 +183,8 @@ class UserManagement(object):
         gid = self._provider.get_gid(groupname)
         logging.info("Removing user %s (UID %d) from group %s (GID %d).",
                      username, uid, groupname, gid)
-        result, output = self.call_popen(["gpasswd", "-d", username, groupname])
+        result, output = self.call_popen(["gpasswd", "-d", username,
+                                          groupname])
         if result != 0:
             raise UserManagementError("Error removing user %s (UID %d) "
                                       "from group %s (GID (%d).\n%s"

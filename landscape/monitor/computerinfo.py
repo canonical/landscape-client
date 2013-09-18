@@ -36,7 +36,7 @@ class ComputerInfo(MonitorPlugin):
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
-        self._meta_data_path = registry.config.meta_data_path
+        self._annotations_path = registry.config.annotations_path
         self.call_on_accepted("computer-info",
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",
@@ -75,21 +75,23 @@ class ComputerInfo(MonitorPlugin):
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
-        meta_data = {}
-        if os.path.exists(self._meta_data_path):
-            for key in os.listdir(self._meta_data_path):
-                meta_data[key] = read_file(
-                    os.path.join(self._meta_data_path, key))
+        annotations = {}
+        if os.path.exists(self._annotations_path):
+            for key in os.listdir(self._annotations_path):
+                annotations[key] = read_file(
+                    os.path.join(self._annotations_path, key))
 
         if (self._cloud_meta_data is None and
             self._cloud_retries < METADATA_RETRY_MAX):
             self._cloud_meta_data = yield self._fetch_ec2_meta_data()
 
-        if self._cloud_meta_data:
-            meta_data = dict(
-                meta_data.items() + self._cloud_meta_data.items())
-        if meta_data:
-            self._add_if_new(message, "meta-data", meta_data)
+        # XXX: Deactivated EC2 reporting for the time being, until #1226605 is
+        #      implemented.
+        if False:  # if self._cloud_meta_data:
+            annotations = dict(
+                annotations.items() + self._cloud_meta_data.items())
+        if annotations:
+            self._add_if_new(message, "annotations", annotations)
         returnValue(message)
 
     def _add_if_new(self, message, key, value):

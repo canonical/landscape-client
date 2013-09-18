@@ -588,9 +588,10 @@ def bootstrap_tree(config):
     """Create the client directories tree."""
     bootstrap_list = [
         BootstrapDirectory("$data_path", "landscape", "root", 0755),
-        BootstrapDirectory("$meta_data_path", "landscape", "landscape", 0755)]
+        BootstrapDirectory("$annotations_path", "landscape", "landscape",
+                           0755)]
     BootstrapList(bootstrap_list).bootstrap(
-        data_path=config.data_path, meta_data_path=config.meta_data_path)
+        data_path=config.data_path, annotations_path=config.annotations_path)
 
 
 def store_public_key_data(config, certificate_data):
