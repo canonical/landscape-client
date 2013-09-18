@@ -75,10 +75,10 @@ class ComputerInfo(MonitorPlugin):
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
-        meta_data = {}
+        annotations = {}
         if os.path.exists(self._annotations_path):
             for key in os.listdir(self._annotations_path):
-                meta_data[key] = read_file(
+                annotations[key] = read_file(
                     os.path.join(self._annotations_path, key))
 
         if (self._cloud_meta_data is None and
@@ -86,10 +86,10 @@ class ComputerInfo(MonitorPlugin):
             self._cloud_meta_data = yield self._fetch_ec2_meta_data()
 
         if self._cloud_meta_data:
-            meta_data = dict(
-                meta_data.items() + self._cloud_meta_data.items())
-        if meta_data:
-            self._add_if_new(message, "annotations", meta_data)
+            annotations = dict(
+                annotations.items() + self._cloud_meta_data.items())
+        if annotations:
+            self._add_if_new(message, "annotations", annotations)
         returnValue(message)
 
     def _add_if_new(self, message, key, value):
