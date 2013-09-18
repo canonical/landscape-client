@@ -588,7 +588,8 @@ def bootstrap_tree(config):
     """Create the client directories tree."""
     bootstrap_list = [
         BootstrapDirectory("$data_path", "landscape", "root", 0755),
-        BootstrapDirectory("$annotations_path", "landscape", "landscape", 0755)]
+        BootstrapDirectory("$annotations_path", "landscape", "landscape",
+                           0755)]
     BootstrapList(bootstrap_list).bootstrap(
         data_path=config.data_path, annotations_path=config.annotations_path)
 
