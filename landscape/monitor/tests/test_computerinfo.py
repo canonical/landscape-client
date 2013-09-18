@@ -313,6 +313,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                          "annotations": {u"ami-id": u"ami-00002",
                                          u"instance-id": u"i00001",
                                          u"instance-type": u"hs1.8xlarge"}}
+        # XXX: The tested code is deactivated, so this will not produce
+        #      annotations for the time being.
+        computer_info = {"type": "computer-info", "hostname": "ooga.local",
+                         "timestamp": 0, "total-memory": 1510,
+                         "total-swap": 1584}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
@@ -386,11 +391,12 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual("value1", meta_data["annotation1"])
         self.assertEqual("value2", meta_data["annotation2"])
 
-    def test_annotations_cloud(self):
+    def deactivated_test_annotations_cloud(self):
         """
         L{ComputerInfo} includes the meta-data key when cloud information
         is available.
         """
+        # XXX The tested code is deactivated.
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
@@ -402,8 +408,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertIn("annotations", messages[0])
         self.assertEqual("i00001", messages[0]["annotations"]["instance-id"])
 
-    def test_with_cloud_info(self):
+    def deactivated_test_with_cloud_info(self):
         """Fetch cloud information"""
+        # XXX: The tested code is deactivated
         self.config.cloud = True
         self.mstore.set_accepted_types(["computer-info"])
 
