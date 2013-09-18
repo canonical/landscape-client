@@ -61,7 +61,7 @@ class ConfigurationTest(LandscapeTest):
         """
         config_obj = self.config._get_config_object(
             alternative_config=StringIO("[client]\nlog_level = error\n"))
-        self.assertIsNone(config_obj.filename)
+        self.assertEqual(None, config_obj.filename)
 
     def write_config_file(self, **kwargs):
         section_name = kwargs.pop("section_name", "client")
