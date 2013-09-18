@@ -310,9 +310,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
                          "total-swap": 1584,
-                         "meta-data": {u"ami-id": u"ami-00002",
-                                       u"instance-id": u"i00001",
-                                       u"instance-type": u"hs1.8xlarge"}}
+                         "annotations": {u"ami-id": u"ami-00002",
+                                         u"instance-id": u"i00001",
+                                         u"instance-type": u"hs1.8xlarge"}}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
@@ -381,7 +381,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        meta_data = messages[0]["meta-data"]
+        meta_data = messages[0]["annotations"]
         self.assertEqual(2, len(meta_data))
         self.assertEqual("value1", meta_data["annotation1"])
         self.assertEqual("value2", meta_data["annotation2"])
@@ -399,8 +399,8 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertIn("meta-data", messages[0])
-        self.assertEqual("i00001", messages[0]["meta-data"]["instance-id"])
+        self.assertIn("annotations", messages[0])
+        self.assertEqual("i00001", messages[0]["annotations"]["instance-id"])
 
     def test_with_cloud_info(self):
         """Fetch cloud information"""
@@ -412,11 +412,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertIn("meta-data", messages[0])
+        self.assertIn("annotations", messages[0])
 
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
                           "instance-type": u"hs1.8xlarge"},
-                         messages[0]["meta-data"])
+                         messages[0]["annotations"])
 
     def test_no_fetch_ec2_meta_data_when_cloud_retries_is_max(self):
         """
@@ -431,7 +431,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertNotIn("meta-data", messages[0])
+        self.assertNotIn("annotations", messages[0])
 
     @inlineCallbacks
     def test_fetch_ec2_meta_data(self):

@@ -89,7 +89,7 @@ class ComputerInfo(MonitorPlugin):
             meta_data = dict(
                 meta_data.items() + self._cloud_meta_data.items())
         if meta_data:
-            self._add_if_new(message, "meta-data", meta_data)
+            self._add_if_new(message, "annotations", meta_data)
         returnValue(message)
 
     def _add_if_new(self, message, key, value):
