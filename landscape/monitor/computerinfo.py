@@ -85,7 +85,8 @@ class ComputerInfo(MonitorPlugin):
             self._cloud_retries < METADATA_RETRY_MAX):
             self._cloud_meta_data = yield self._fetch_ec2_meta_data()
 
-        # XXX Deactivated EC2 reporting for the time being
+        # XXX: Deactivated EC2 reporting for the time being, until #1226605 is
+        #      implemented.
         if False:  # if self._cloud_meta_data:
             annotations = dict(
                 annotations.items() + self._cloud_meta_data.items())

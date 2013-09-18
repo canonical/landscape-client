@@ -314,7 +314,8 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
                                          u"instance-id": u"i00001",
                                          u"instance-type": u"hs1.8xlarge"}}
         # XXX: The tested code is deactivated, so this will not produce
-        #      annotations for the time being.
+        #      annotations for the time being. It should be plugged in again
+        #      once #1226605 is implemented.
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
                          "total-swap": 1584}
@@ -396,7 +397,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         L{ComputerInfo} includes the meta-data key when cloud information
         is available.
         """
-        # XXX The tested code is deactivated.
+        # XXX The tested code is deactivated until #1226605 is implemented.
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
@@ -410,7 +411,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
     def deactivated_test_with_cloud_info(self):
         """Fetch cloud information"""
-        # XXX: The tested code is deactivated
+        # XXX: The tested code is deactivated until #1226605 is implemented.
         self.config.cloud = True
         self.mstore.set_accepted_types(["computer-info"])
 
