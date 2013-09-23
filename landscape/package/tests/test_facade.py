@@ -1589,7 +1589,6 @@ class AptFacadeTest(LandscapeTest):
         we don't know why it's broken.
         """
         self._add_system_package("foo")
-        self._add_system_package("bar")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade._get_broken_packages = lambda: set([foo.package])
