@@ -1,8 +1,8 @@
 import sys
 import os
 from optparse import OptionParser
-
 from StringIO import StringIO
+from textwrap import dedent
 
 from landscape.deployment import Configuration, get_versioned_persist
 
@@ -617,6 +617,19 @@ class ConfigurationTest(LandscapeTest):
         config2 = self.config.clone()
         self.assertEqual(self.config.data_path, config2.data_path)
         self.assertEqual("bar", config2.foo)
+
+    def test_duplicate_key(self):
+        """
+        Duplicate keys in the config file shouldn't result in a fatal error, but the
+        latest defined value should be used.
+        """
+        config = dedent("""[client]
+        computer_title = frog
+        computer_title = flag
+        """)
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.assertEqual("error", self.config.computer_title)
 
 
 class GetVersionedPersistTest(LandscapeTest):
