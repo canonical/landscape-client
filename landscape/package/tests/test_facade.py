@@ -731,7 +731,7 @@ class AptFacadeTest(LandscapeTest):
                     for version in self.facade.get_packages()]),
             ["name2", "name3"])
         self.assertNotEquals(
-            set(version.package for version in self.facade.get_packages()),
+            set([version.package for version in self.facade.get_packages()]),
             set([pkg2.package, pkg3.package]))
 
         # The hash cache shouldn't include either of the old packages.
