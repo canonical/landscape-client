@@ -706,7 +706,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         expect(raw_input(C("[http://old.proxy]"))).result("http://new.proxy")
         expect(raw_input(C("[https://old.proxy]"))).result("https://new.proxy")
         expect(raw_input(C("Enable script execution? [Y/n]"))).result("n")
-        expect(raw_input(C("Tags [['london', 'server']]: "))).result(
+        expect(raw_input(C("Tags [london, server]: "))).result(
             u"glasgow, laptop")
 
         # Negative assertion.  We don't want it called in any other way.

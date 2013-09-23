@@ -216,8 +216,10 @@ class BaseConfiguration(object):
             the default configuration file.
         """
         config_source = alternative_config or self.get_config_filename()
-        config_obj = ConfigObj(config_source)
-        config_obj.list_values = False
+        # Setting list_values to False prevents ConfigObj from being "smart"
+        # about lists (it now treats them as strings). See bug #1228301 for
+        # more context.
+        config_obj = ConfigObj(config_source, list_values=False)
         return config_obj
 
     def write(self):

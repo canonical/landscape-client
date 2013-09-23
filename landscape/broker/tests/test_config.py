@@ -85,6 +85,19 @@ class ConfigurationTests(LandscapeTest):
         self.assertEqual(configuration.exchange_interval, 34)
         self.assertEqual(configuration.ping_interval, 6)
 
+    def test_tag_handling(self):
+        """
+        The 'tags' value specified in the configuration file is not converted
+        to a list (it must be a string). See bug #1228301.
+        """
+        filename = self.makeFile("[client]\n"
+                                 "tags = check,linode,profile-test")
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertEqual(configuration.tags, "check,linode,profile-test")
+
     def test_missing_url_is_defaulted(self):
         """
         Test that if we don't explicitly pass a URL, then this value is
