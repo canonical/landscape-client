@@ -216,8 +216,7 @@ class BaseConfiguration(object):
             the default configuration file.
         """
         config_source = alternative_config or self.get_config_filename()
-        config_obj = ConfigObj(config_source)
-        config_obj.list_values = False
+        config_obj = ConfigObj(config_source, list_values=False)
         return config_obj
 
     def write(self):
