@@ -83,6 +83,12 @@ DISTRIBUTION_INFO = Message(
     # all optional because the lsb-release file may not have all data.
     optional=["distributor-id", "description", "release", "code-name"])
 
+CLOUD_METADATA = Message(
+    "cloud-instance-metadata",
+    {"instance-id": utf8,
+     "ami-id": utf8,
+     "instance-type": utf8})
+
 
 hal_data = Dict(Unicode(),
                 Any(Unicode(), List(Unicode()), Bool(), Int(), Float()))
@@ -452,5 +458,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-               CHANGE_HA_SERVICE]:
+               CHANGE_HA_SERVICE, CLOUD_METADATA]:
     message_schemas[schema.type] = schema

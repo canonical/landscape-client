@@ -392,39 +392,19 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual("value1", meta_data["annotation1"])
         self.assertEqual("value2", meta_data["annotation2"])
 
-    def deactivated_test_annotations_cloud(self):
-        """
-        L{ComputerInfo} includes the meta-data key when cloud information
-        is available.
-        """
-        # XXX The tested code is deactivated until #1226605 is implemented.
-        self.mstore.set_accepted_types(["computer-info"])
-
-        plugin = ComputerInfo()
-        plugin._cloud_meta_data = {"instance-id": "i00001"}
-        self.monitor.add(plugin)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(1, len(messages))
-        self.assertIn("annotations", messages[0])
-        self.assertEqual("i00001", messages[0]["annotations"]["instance-id"])
-
-    def deactivated_test_with_cloud_info(self):
+    def test_with_cloud_metadata(self):
         """Fetch cloud information"""
-        # XXX: The tested code is deactivated until #1226605 is implemented.
         self.config.cloud = True
-        self.mstore.set_accepted_types(["computer-info"])
+        self.mstore.set_accepted_types(["cloud-instance-metadata"])
 
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertIn("annotations", messages[0])
-
-        self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
-                          "instance-type": u"hs1.8xlarge"},
-                         messages[0]["annotations"])
+        self.assertEqual(u"i00001", messages[0]["instance-id"])
+        self.assertEqual(u"ami-00002", messages[0]["ami-id"])
+        self.assertEqual(u"hs1.8xlarge", messages[0]["instance-type"])
 
     def test_no_fetch_ec2_meta_data_when_cloud_retries_is_max(self):
         """
