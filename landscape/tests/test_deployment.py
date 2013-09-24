@@ -625,14 +625,15 @@ class ConfigurationTest(LandscapeTest):
         Duplicate keys in the config file shouldn't result in a fatal error,
         but the latest defined value should be used.
         """
-        config = dedent("""[client]
+        config = dedent("""
+        [client]
         computer_title = frog
         computer_title = flag
         """)
         filename = self.makeFile(config)
         self.config.load_configuration_file(filename)
         self.assertEqual("frog", self.config.computer_title)
-        self.assertIn("WARNING: Duplicate keyword name at line 3.",
+        self.assertIn("WARNING: Duplicate keyword name at line 4.",
                       self.logfile.getvalue())
 
 
