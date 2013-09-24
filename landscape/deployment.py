@@ -1,7 +1,7 @@
 import os
 import sys
 
-from configobj import ConfigObj
+from configobj import ConfigObj, ConfigObjError
 
 from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter)
@@ -219,7 +219,13 @@ class BaseConfiguration(object):
         # Setting list_values to False prevents ConfigObj from being "smart"
         # about lists (it now treats them as strings). See bug #1228301 for
         # more context.
-        config_obj = ConfigObj(config_source, list_values=False)
+        try:
+            config_obj = ConfigObj(config_source, list_values=False,
+                                   raise_errors=False)
+        except ConfigObjError, e:
+            logger = getLogger()
+            logger.warn(str(e))
+            config_obj = e.config
         return config_obj
 
     def write(self):

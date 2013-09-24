@@ -6,7 +6,7 @@ from textwrap import dedent
 
 from landscape.deployment import Configuration, get_versioned_persist
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
 from landscape.tests.mocker import ANY
 
 
@@ -21,6 +21,8 @@ class BabbleConfiguration(Configuration):
 
 
 class ConfigurationTest(LandscapeTest):
+
+    helpers = [LogKeeperHelper]
 
     def setUp(self):
         super(ConfigurationTest, self).setUp()
@@ -620,8 +622,8 @@ class ConfigurationTest(LandscapeTest):
 
     def test_duplicate_key(self):
         """
-        Duplicate keys in the config file shouldn't result in a fatal error, but the
-        latest defined value should be used.
+        Duplicate keys in the config file shouldn't result in a fatal error,
+        but the latest defined value should be used.
         """
         config = dedent("""[client]
         computer_title = frog
@@ -629,7 +631,9 @@ class ConfigurationTest(LandscapeTest):
         """)
         filename = self.makeFile(config)
         self.config.load_configuration_file(filename)
-        self.assertEqual("error", self.config.computer_title)
+        self.assertEqual("frog", self.config.computer_title)
+        self.assertIn("WARNING: Duplicate keyword name at line 3.",
+                      self.logfile.getvalue())
 
 
 class GetVersionedPersistTest(LandscapeTest):
