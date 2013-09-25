@@ -103,6 +103,8 @@ HARDWARE_INVENTORY = Message("hardware-inventory", {
 HARDWARE_INFO = Message("hardware-info", {
     "data": utf8})
 
+JUJU_INFO = Message("juju-info", {
+    "data": Dict(utf8, utf8)})
 
 LOAD_AVERAGE = Message("load-average", {
     "load-averages": List(Tuple(Int(), Float())),
@@ -452,5 +454,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-               CHANGE_HA_SERVICE]:
+               CHANGE_HA_SERVICE, JUJU_INFO]:
     message_schemas[schema.type] = schema

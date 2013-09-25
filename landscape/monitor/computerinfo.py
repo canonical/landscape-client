@@ -23,11 +23,11 @@ class ComputerInfo(MonitorPlugin):
     scope = "computer"
 
     def __init__(self, get_fqdn=get_fqdn,
-                 meminfo_file="/proc/meminfo",
+                 meminfo_filename="/proc/meminfo",
                  lsb_release_filename=LSB_RELEASE_FILENAME,
                  root_path="/", fetch_async=fetch_async):
         self._get_fqdn = get_fqdn
-        self._meminfo_file = meminfo_file
+        self._meminfo_filename = meminfo_filename
         self._lsb_release_filename = lsb_release_filename
         self._root_path = root_path
         self._cloud_meta_data = None
@@ -69,11 +69,9 @@ class ComputerInfo(MonitorPlugin):
     @inlineCallbacks
     def _create_computer_info_message(self):
         message = {}
-        self._add_if_new(message, "hostname",
-                         self._get_fqdn())
+        self._add_if_new(message, "hostname", self._get_fqdn())
         total_memory, total_swap = self._get_memory_info()
-        self._add_if_new(message, "total-memory",
-                         total_memory)
+        self._add_if_new(message, "total-memory", total_memory)
         self._add_if_new(message, "total-swap", total_swap)
         annotations = {}
         if os.path.exists(self._annotations_path):
@@ -109,7 +107,7 @@ class ComputerInfo(MonitorPlugin):
     def _get_memory_info(self):
         """Get details in megabytes and return a C{(memory, swap)} tuple."""
         message = {}
-        file = open(self._meminfo_file)
+        file = open(self._meminfo_filename)
         for line in file:
             if line != '\n':
                 parts = line.split(":")
