@@ -623,7 +623,7 @@ class ConfigurationTest(LandscapeTest):
     def test_duplicate_key(self):
         """
         Duplicate keys in the config file shouldn't result in a fatal error,
-        but the latest defined value should be used.
+        but the first defined value should be used.
         """
         config = dedent("""
         [client]
@@ -634,6 +634,23 @@ class ConfigurationTest(LandscapeTest):
         self.config.load_configuration_file(filename)
         self.assertEqual("frog", self.config.computer_title)
         self.assertIn("WARNING: Duplicate keyword name at line 4.",
+                      self.logfile.getvalue())
+
+    def test_triplicate_key(self):
+        """
+        Triplicate keys in the config file shouldn't result in a fatal error,
+        but the first defined value should be used.
+        """
+        config = dedent("""
+        [client]
+        computer_title = frog
+        computer_title = flag
+        computer_title = flop
+        """)
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.assertEqual("frog", self.config.computer_title)
+        self.assertIn("WARNING: Parsing failed with several errors.\nFirst error at line 4.\n",
                       self.logfile.getvalue())
 
     def test_config_values_after_fault_are_still_read(self):
