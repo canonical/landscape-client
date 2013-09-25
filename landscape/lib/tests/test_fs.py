@@ -48,8 +48,8 @@ class TouchFileTest(LandscapeTest):
         modification time.
         """
         path = self.makeFile()
-        uname_mock = self.mocker.replace("os.utime")
-        self.expect(uname_mock(path, None))
+        utime_mock = self.mocker.replace("os.utime")
+        self.expect(utime_mock(path, None))
         self.mocker.replay()
         touch_file(path)
         self.assertFileContent(path, "")
@@ -69,8 +69,12 @@ class TouchFileTest(LandscapeTest):
         will be reflected in the access and modification times of the file.
         """
         path = self.makeFile()
+        current_time = long(time.time())
+        expected_time = current_time - 1
+        time_mock = self.mocker.replace("time.time")
+        self.expect(time_mock())
+        self.mocker.result(current_time)
         utime_mock = self.mocker.replace("os.utime")
-        expected_time = long(time.time() - 1)
         self.expect(utime_mock(path, (expected_time, expected_time)))
         self.mocker.replay()
         touch_file(path, offset_seconds=-1)
