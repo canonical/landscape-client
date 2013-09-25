@@ -395,7 +395,6 @@ class MonitorHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-
         super(MonitorHelper, self).set_up(test_case)
         persist = Persist()
         persist_filename = test_case.makePersistFile()
