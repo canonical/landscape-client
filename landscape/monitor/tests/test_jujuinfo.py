@@ -84,7 +84,6 @@ class JujuInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(messages, [])
 
-
     def test_no_message_with_missing_file(self):
         """No Juju message is sent if the JSON file is missing."""
         os.remove(self.juju_info_filename)
@@ -92,4 +91,3 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(messages, [])
-

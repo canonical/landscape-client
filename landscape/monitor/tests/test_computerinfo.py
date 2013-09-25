@@ -14,6 +14,7 @@ SAMPLE_LSB_RELEASE = "DISTRIB_ID=Ubuntu\n"                         \
                      "DISTRIB_CODENAME=dapper\n"                   \
                      "DISTRIB_DESCRIPTION=\"Ubuntu 6.06.1 LTS\"\n"
 
+
 def get_fqdn():
     return "ooga.local"
 

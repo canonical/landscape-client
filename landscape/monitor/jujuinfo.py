@@ -4,6 +4,7 @@ import os.path
 
 from landscape.monitor.plugin import MonitorPlugin
 
+
 class JujuInfo(MonitorPlugin):
     """Plugin for reporting Juju information."""
 
@@ -51,4 +52,3 @@ class JujuInfo(MonitorPlugin):
                 return None
             else:
                 return juju_info
-
