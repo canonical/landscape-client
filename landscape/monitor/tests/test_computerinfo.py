@@ -14,7 +14,6 @@ SAMPLE_LSB_RELEASE = "DISTRIB_ID=Ubuntu\n"                         \
                      "DISTRIB_CODENAME=dapper\n"                   \
                      "DISTRIB_DESCRIPTION=\"Ubuntu 6.06.1 LTS\"\n"
 
-
 def get_fqdn():
     return "ooga.local"
 
@@ -132,7 +131,7 @@ VmallocChunk:   107432 kB
     def test_get_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
         meminfo_filename = self.makeFile(self.sample_memory_info)
-        plugin = ComputerInfo(meminfo_file=meminfo_filename,
+        plugin = ComputerInfo(meminfo_filename=meminfo_filename,
                               fetch_async=self.fetch_func)
         self.monitor.add(plugin)
         plugin.exchange()
@@ -222,7 +221,7 @@ VmallocChunk:   107432 kB
         self.assertEqual(message["release"], "6.06")
         self.assertEqual(message["code-name"], "dapper")
 
-    def test_report_once(self):
+    def test_distribution_reported_only_once(self):
         """
         Distribution data shouldn't be reported unless it's changed
         since the last time it was reported.
@@ -234,7 +233,7 @@ VmallocChunk:   107432 kB
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 1)
-        self.assertTrue(messages[0]["type"], "distribution-info")
+        self.assertEqual(messages[0]["type"], "distribution-info")
 
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -299,7 +298,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo(get_fqdn=get_fqdn,
-                              meminfo_file=meminfo_filename,
+                              meminfo_filename=meminfo_filename,
                               lsb_release_filename=self.lsb_release_filename,
                               root_path=self.makeDir(),
                               fetch_async=self.fetch_func)
@@ -316,9 +315,8 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         # XXX: The tested code is deactivated, so this will not produce
         #      annotations for the time being. It should be plugged in again
         #      once #1226605 is implemented.
-        computer_info = {"type": "computer-info", "hostname": "ooga.local",
-                         "timestamp": 0, "total-memory": 1510,
-                         "total-swap": 1584}
+        del computer_info["annotations"]
+
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
@@ -372,8 +370,8 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         Each file name is used as a key in the meta-data dict and the file's
         contents are used as values.
 
-        This allows, for example, the landscape-client charm to send
-        information about the juju environment to the landscape server.
+        This allows system administrators to add extra per-computer information
+        into Landscape which makes sense to them.
         """
         annotations_dir = self.monitor.config.annotations_path
         os.mkdir(annotations_dir)
