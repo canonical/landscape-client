@@ -636,6 +636,23 @@ class ConfigurationTest(LandscapeTest):
         self.assertIn("WARNING: Duplicate keyword name at line 4.",
                       self.logfile.getvalue())
 
+    def test_config_values_after_fault_are_still_read(self):
+        """
+        Values that appear after the point in a configuration file where a
+        parsing error occurs are correctly parsed.
+        """
+        config = dedent("""
+        [client]
+        computer_title = frog
+        computer_title = flag
+        log_level = debug
+        """)
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.assertEqual("debug", self.config.log_level)
+        self.assertIn("WARNING: Duplicate keyword name at line 4.",
+                      self.logfile.getvalue())
+
 
 class GetVersionedPersistTest(LandscapeTest):
 
