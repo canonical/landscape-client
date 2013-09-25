@@ -650,8 +650,11 @@ class ConfigurationTest(LandscapeTest):
         filename = self.makeFile(config)
         self.config.load_configuration_file(filename)
         self.assertEqual("frog", self.config.computer_title)
-        self.assertIn("WARNING: Parsing failed with several errors.\nFirst error at line 4.\n",
-                      self.logfile.getvalue())
+        logged = self.logfile.getvalue()
+        self.assertIn("WARNING: Parsing failed with several errors.",
+                      logged)
+        self.assertIn("First error at line 4.", logged)
+
 
     def test_config_values_after_fault_are_still_read(self):
         """
