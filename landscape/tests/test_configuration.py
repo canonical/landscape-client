@@ -1566,7 +1566,8 @@ registration_key = shared-secret
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEqual("Nothing to import at https://config.url.", str(error))
+            self.assertEqual("Nothing to import at https://config.url.",
+                             str(error))
         else:
             self.fail("ImportOptionError not raised")
 

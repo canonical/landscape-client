@@ -655,7 +655,6 @@ class ConfigurationTest(LandscapeTest):
                       logged)
         self.assertIn("First error at line 4.", logged)
 
-
     def test_config_values_after_fault_are_still_read(self):
         """
         Values that appear after the point in a configuration file where a
