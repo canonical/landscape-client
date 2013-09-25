@@ -17,10 +17,10 @@ class JujuInfoTest(LandscapeTest):
 
     def setUp(self):
         super(JujuInfoTest, self).setUp()
-        self.juju_info_filename = self.makeFile(SAMPLE_JUJU_INFO)
         self.mstore.set_accepted_types(["juju-info"])
-        self.plugin = JujuInfo(self.juju_info_filename)
+        self.plugin = JujuInfo()
         self.monitor.add(self.plugin)
+        self.makeFile(SAMPLE_JUJU_INFO, path=self.config.juju_filename)
 
     def test_get_sample_juju_info(self):
         """
@@ -62,11 +62,12 @@ class JujuInfoTest(LandscapeTest):
         self.assertEqual(message["data"]["api-addresses"], "10.0.3.1:17070")
         self.assertEqual(message["data"]["private-address"], "127.0.0.1")
 
-        with open(self.juju_info_filename, "w") as juju_file:
-            juju_file.write(json.dumps({"environment-uuid": "FEED-BEEF",
-                                        "unit-name": "changed-unit-name",
-                                        "api-addresses": "10.0.3.2:17070",
-                                        "private-address": "127.0.1.1"}))
+        self.makeFile(
+            json.dumps({"environment-uuid": "FEED-BEEF",
+                        "unit-name": "changed-unit-name",
+                        "api-addresses": "10.0.3.2:17070",
+                        "private-address": "127.0.1.1"}),
+            path=self.config.juju_filename)
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
         self.assertEqual(message["type"], "juju-info")
@@ -77,16 +78,18 @@ class JujuInfoTest(LandscapeTest):
 
     def test_no_message_with_invalid_json(self):
         """No Juju message is sent if the JSON file is invalid."""
-        with open(self.juju_info_filename, "w") as juju_file:
-            juju_file.write("barf")
+        self.makeFile("barf", path=self.config.juju_filename)
 
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(messages, [])
+        self.log_helper.ignore_errors(ValueError)
+        self.assertTrue(
+            "Error attempting to read JSON from" in self.logfile.getvalue())
 
     def test_no_message_with_missing_file(self):
         """No Juju message is sent if the JSON file is missing."""
-        os.remove(self.juju_info_filename)
+        os.remove(self.config.juju_filename)
 
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()

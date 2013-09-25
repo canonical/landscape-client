@@ -1,3 +1,5 @@
+import os.path
+
 from landscape.deployment import Configuration
 
 
@@ -6,7 +8,7 @@ ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo",
                "Temperature", "PackageMonitor", "UserMonitor",
                "RebootRequired", "AptPreferences", "NetworkActivity",
                "NetworkDevice", "UpdateManager", "CPUUsage", "SwiftDeviceInfo",
-               "CephUsage"]
+               "CephUsage", "JujuInfo"]
 
 
 class MonitorConfiguration(Configuration):
@@ -30,3 +32,8 @@ class MonitorConfiguration(Configuration):
         if self.monitor_plugins == "ALL":
             return ALL_PLUGINS
         return [x.strip() for x in self.monitor_plugins.split(",")]
+
+    @property
+    def juju_filename(self):
+        """Get the path to the Juju JSON file."""
+        return os.path.join(self.data_path, "juju-info.json")

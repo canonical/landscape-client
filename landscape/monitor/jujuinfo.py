@@ -2,6 +2,7 @@ import json
 import logging
 import os.path
 
+from landscape.lib.fs import read_file
 from landscape.monitor.plugin import MonitorPlugin
 
 
@@ -9,16 +10,10 @@ class JujuInfo(MonitorPlugin):
     """Plugin for reporting Juju information."""
 
     persist_name = "juju-info"
-    scope = "computer"
-
-    def __init__(self, juju_info_filename=None):
-        self._juju_info_filename = juju_info_filename
+    scope = "juju"
 
     def register(self, registry):
         super(JujuInfo, self).register(registry)
-        if self._juju_info_filename is None:
-            self._juju_info_filename = os.path.join(
-                registry.config.data_path, "juju-info.json")
         self.call_on_accepted("juju-info", self.send_juju_message, True)
 
     def exchange(self, urgent=False):
@@ -43,12 +38,15 @@ class JujuInfo(MonitorPlugin):
         return None
 
     def _get_juju_info(self):
-        if not os.path.isfile(self._juju_info_filename):
+        juju_filename = self.registry.config.juju_filename
+        if not os.path.isfile(juju_filename):
             return None
-        with open(self._juju_info_filename, "r") as json_file:
-            try:
-                juju_info = json.load(json_file)
-            except Exception:
-                return None
-            else:
-                return juju_info
+        json_contents = read_file(juju_filename)
+        try:
+            juju_info = json.loads(json_contents)
+        except Exception:
+            logging.exception(
+                "Error attempting to read JSON from %s" % juju_filename)
+            return None
+        else:
+            return juju_info
