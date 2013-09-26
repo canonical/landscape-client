@@ -30,10 +30,9 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "juju-info")
-        self.assertEqual(message["data"]["environment-uuid"], "DEAD-BEEF")
-        self.assertEqual(message["data"]["unit-name"], "juju-unit-name")
-        self.assertEqual(message["data"]["api-addresses"], "10.0.3.1:17070")
-        self.assertEqual(message["data"]["private-address"], "127.0.0.1")
+        self.assertEqual(message["environment-uuid"], "DEAD-BEEF")
+        self.assertEqual(message["unit-name"], "juju-unit-name")
+        self.assertEqual(message["api-addresses"], ["10.0.3.1:17070"])
 
     def test_juju_info_reported_only_once(self):
         """
@@ -57,10 +56,9 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "juju-info")
-        self.assertEqual(message["data"]["environment-uuid"], "DEAD-BEEF")
-        self.assertEqual(message["data"]["unit-name"], "juju-unit-name")
-        self.assertEqual(message["data"]["api-addresses"], "10.0.3.1:17070")
-        self.assertEqual(message["data"]["private-address"], "127.0.0.1")
+        self.assertEqual(message["environment-uuid"], "DEAD-BEEF")
+        self.assertEqual(message["unit-name"], "juju-unit-name")
+        self.assertEqual(message["api-addresses"], ["10.0.3.1:17070"])
 
         self.makeFile(
             json.dumps({"environment-uuid": "FEED-BEEF",
@@ -71,10 +69,9 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
         self.assertEqual(message["type"], "juju-info")
-        self.assertEqual(message["data"]["environment-uuid"], "FEED-BEEF")
-        self.assertEqual(message["data"]["unit-name"], "changed-unit-name")
-        self.assertEqual(message["data"]["api-addresses"], "10.0.3.2:17070")
-        self.assertEqual(message["data"]["private-address"], "127.0.1.1")
+        self.assertEqual(message["environment-uuid"], "FEED-BEEF")
+        self.assertEqual(message["unit-name"], "changed-unit-name")
+        self.assertEqual(message["api-addresses"], ["10.0.3.2:17070"])
 
     def test_no_message_with_invalid_json(self):
         """No Juju message is sent if the JSON file is invalid."""

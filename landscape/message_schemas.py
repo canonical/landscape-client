@@ -103,8 +103,12 @@ HARDWARE_INVENTORY = Message("hardware-inventory", {
 HARDWARE_INFO = Message("hardware-info", {
     "data": utf8})
 
-JUJU_INFO = Message("juju-info", {
-    "data": Dict(utf8, utf8)})
+juju_data = {"environment-uuid": utf8,
+             "api-addresses": List(utf8),
+             "unit-name": utf8}
+
+# The copy is needed because Message mutates the dictionary
+JUJU_INFO = Message("juju-info", juju_data.copy())
 
 LOAD_AVERAGE = Message("load-average", {
     "load-averages": List(Tuple(Int(), Float())),
@@ -171,9 +175,11 @@ REGISTER = Message(
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String()},
+     "vm-info": String(),
+     "juju-info": KeyDict(juju_data)},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname", "tags", "vm-info"])
+    optional=["registration_password", "hostname", "tags", "vm-info",
+              "juju-info"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(
@@ -198,8 +204,10 @@ REGISTER_CLOUD_VM = Message(
      "tags": Any(utf8, Constant(None)),
      "vm-info": String(),
      "public_ipv4": Unicode(),
-     "local_ipv4": Unicode()},
-     optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
+     "local_ipv4": Unicode(),
+     "juju-info": KeyDict(juju_data)},
+     optional=["tags", "vm-info", "public_ipv4", "local_ipv4",
+               "juju-info"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,

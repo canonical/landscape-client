@@ -4,7 +4,7 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.lib.encoding import encode_if_needed, encode_dict_if_needed
 
 
-class EncodingTestTest(LandscapeTest):
+class EncodingTest(LandscapeTest):
 
     def test_encode_if_needed_utf_string(self):
         """

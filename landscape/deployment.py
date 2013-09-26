@@ -408,6 +408,11 @@ class Configuration(BaseConfiguration):
         """
         return os.path.join(self.data_path, "annotations.d")
 
+    @property
+    def juju_filename(self):
+        """Get the path to the Juju JSON file."""
+        return os.path.join(self.data_path, "juju-info.json")
+
 
 def get_versioned_persist(service):
     """Get a L{Persist} database with upgrade rules applied.

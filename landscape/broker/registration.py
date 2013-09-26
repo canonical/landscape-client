@@ -5,7 +5,7 @@ When the service is started for the first time it connects to the server
 as a new client without providing any identification credentials, and the
 server replies with the available registration mechanisms. At this point
 the machinery in this module will notice that we have no identification
-credentials yet and that the server accepts regiration messages, so it
+credentials yet and that the server accepts registration messages, so it
 will craft an appropriate one and send it out.
 """
 import time
@@ -16,6 +16,7 @@ from twisted.internet.defer import Deferred
 
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
+from landscape.lib.juju import get_juju_info
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
@@ -107,6 +108,7 @@ class RegistrationHandler(object):
         self._fetch_async = fetch_async
         self._otp = None
         self._ec2_data = None
+        self._juju_data = self._get_juju_data()
 
     def should_register(self):
         id = self._identity
@@ -133,6 +135,19 @@ class RegistrationHandler(object):
         result = RegistrationResponse(self._reactor).deferred
         self._exchange.exchange()
         return result
+
+    def _get_juju_data(self):
+        """Load Juju information."""
+        juju_info = get_juju_info(self._config)
+        if juju_info is None:
+            return None
+        juju_registration_info = {}
+        juju_registration_info["environment-uuid"] = juju_info[
+            "environment-uuid"]
+        juju_registration_info["api-addresses"] = juju_info[
+            "api-addresses"].split()
+        juju_registration_info["unit-name"] = juju_info["unit-name"]
+        return juju_registration_info
 
     def _get_data(self, path, accumulate):
         """
@@ -254,65 +269,70 @@ class RegistrationHandler(object):
         # registration.
         self._should_register = self.should_register()
 
-        if self._should_register:
-            id = self._identity
-            self._message_store.delete_all_messages()
-            tags = id.tags
-            if not is_valid_tag_list(tags):
-                tags = None
-                logging.error("Invalid tags provided for cloud "
-                              "registration.")
-            if self._config.cloud and self._ec2_data is not None:
-                if self._otp:
-                    logging.info("Queueing message to register with OTP")
-                    message = {"type": "register-cloud-vm",
-                               "otp": self._otp,
-                               "hostname": get_fqdn(),
-                               "account_name": None,
-                               "registration_password": None,
-                               "tags": tags,
-                               "vm-info": get_vm_info()}
-                    message.update(self._ec2_data)
-                    self._exchange.send(message)
-                elif id.account_name:
-                    with_tags = ["", u"and tags %s " % tags][bool(tags)]
-                    logging.info(
-                        u"Queueing message to register with account %r %s"
-                        u"as an EC2 instance." % (id.account_name, with_tags))
-                    message = {"type": "register-cloud-vm",
-                               "otp": None,
-                               "hostname": get_fqdn(),
-                               "account_name": id.account_name,
-                               "registration_password": \
-                                   id.registration_key,
-                               "tags": tags,
-                               "vm-info": get_vm_info()}
-                    message.update(self._ec2_data)
-                    self._exchange.send(message)
-                else:
-                    self._reactor.fire("registration-failed")
-            elif id.account_name:
-                with_word = ["without", "with"][bool(id.registration_key)]
-                with_tags = ["", u"and tags %s " % tags][bool(tags)]
-                logging.info(u"Queueing message to register with account %r %s"
-                             "%s a password." % (id.account_name, with_tags,
-                                                 with_word))
-                message = {"type": "register",
-                           "computer_title": id.computer_title,
-                           "account_name": id.account_name,
-                           "registration_password": id.registration_key,
+        if not self._should_register:
+            return
+        id = self._identity
+        self._message_store.delete_all_messages()
+        tags = id.tags
+        if not is_valid_tag_list(tags):
+            tags = None
+            logging.error("Invalid tags provided for cloud registration.")
+        if self._config.cloud and self._ec2_data is not None:
+            if self._otp:
+                logging.info("Queueing message to register with OTP")
+                message = {"type": "register-cloud-vm",
+                           "otp": self._otp,
                            "hostname": get_fqdn(),
+                           "account_name": None,
+                           "registration_password": None,
                            "tags": tags,
                            "vm-info": get_vm_info()}
+                message.update(self._ec2_data)
+                if self._juju_data is not None:
+                    message["juju-info"] = self._juju_data
                 self._exchange.send(message)
-            elif self._config.provisioning_otp:
-                logging.info(u"Queueing message to register with OTP as a"
-                             u" newly provisioned machine.")
-                message = {"type": "register-provisioned-machine",
-                           "otp": self._config.provisioning_otp}
+            elif id.account_name:
+                with_tags = ["", u"and tags %s " % tags][bool(tags)]
+                logging.info(
+                    u"Queueing message to register with account %r %s"
+                    u"as an EC2 instance." % (id.account_name, with_tags))
+                message = {"type": "register-cloud-vm",
+                           "otp": None,
+                           "hostname": get_fqdn(),
+                           "account_name": id.account_name,
+                           "registration_password": id.registration_key,
+                           "tags": tags,
+                           "vm-info": get_vm_info()}
+                message.update(self._ec2_data)
+                if self._juju_data is not None:
+                    message["juju-info"] = self._juju_data
                 self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")
+        elif id.account_name:
+            with_word = ["without", "with"][bool(id.registration_key)]
+            with_tags = ["", u"and tags %s " % tags][bool(tags)]
+            logging.info(u"Queueing message to register with account %r %s"
+                         "%s a password." % (id.account_name, with_tags,
+                                             with_word))
+            message = {"type": "register",
+                       "computer_title": id.computer_title,
+                       "account_name": id.account_name,
+                       "registration_password": id.registration_key,
+                       "hostname": get_fqdn(),
+                       "tags": tags,
+                       "vm-info": get_vm_info()}
+            if self._juju_data is not None:
+                message["juju-info"] = self._juju_data
+            self._exchange.send(message)
+        elif self._config.provisioning_otp:
+            logging.info(u"Queueing message to register with OTP as a"
+                         u" newly provisioned machine.")
+            message = {"type": "register-provisioned-machine",
+                       "otp": self._config.provisioning_otp}
+            self._exchange.send(message)
+        else:
+            self._reactor.fire("registration-failed")
 
     def _handle_set_id(self, message):
         """Registered handler for the C{"set-id"} event.
