@@ -16,7 +16,7 @@ class JujuTest(LandscapeTest):
     Config = namedtuple("Config", "juju_filename")
 
     def test_get_juju_info_sample_data(self):
-        """L{get_juju_info} parses realistic data properly."""
+        """L{get_juju_info} parses JSON data from the juju_filename file."""
         stub_config = self.Config(self.makeFile(SAMPLE_JUJU_INFO))
         juju_info = get_juju_info(stub_config)
         self.assertEqual(
