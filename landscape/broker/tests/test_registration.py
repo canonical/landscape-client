@@ -488,7 +488,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     juju_contents = json.dumps({"environment-uuid": "DEAD-BEEF",
-                                "unit-name": "juju-unit-name",
+                                "unit-name": "service/0",
                                 "api-addresses": "10.0.3.1:17070",
                                 "private-address": "127.0.0.1"})
 
@@ -502,19 +502,19 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
 
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": self.config.computer_title,
-                              "account_name": "account_name",
-                              "registration_password": None,
-                              "hostname": socket.getfqdn(),
-                              "vm-info": get_vm_info(),
-                              "tags": None,
-                              "juju-info": {
-                        "environment-uuid": "DEAD-BEEF",
-                        "api-addresses": ["10.0.3.1:17070"],
-                        "unit-name": "juju-unit-name"}
-                              }])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "register",
+              "computer_title": self.config.computer_title,
+              "account_name": "account_name",
+              "registration_password": None,
+              "hostname": socket.getfqdn(),
+              "vm-info": get_vm_info(),
+              "tags": None,
+              "juju-info": {"environment-uuid": "DEAD-BEEF",
+                            "api-addresses": ["10.0.3.1:17070"],
+                            "unit-name": "service/0"}
+              }])
 
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
