@@ -1593,8 +1593,6 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade._get_broken_packages = lambda: set([foo.package])
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages())
-        self.assertEqual(
             ["The following packages have unmet dependencies:",
              "  foo: Unknown dependency error"],
             self.facade._get_unmet_dependency_info().splitlines())
