@@ -100,6 +100,7 @@ class RegistrationHandler(object):
         self._pinger = pinger
         self._message_store = message_store
         self._reactor.call_on("run", self._fetch_ec2_data)
+        self._reactor.call_on("run", self._get_juju_data)
         self._reactor.call_on("pre-exchange", self._handle_pre_exchange)
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
         self._exchange.register_message("set-id", self._handle_set_id)
@@ -110,7 +111,7 @@ class RegistrationHandler(object):
         self._fetch_async = fetch_async
         self._otp = None
         self._ec2_data = None
-        self._juju_data = self._get_juju_data()
+        self._juju_data = None
 
     def should_register(self):
         id = self._identity
@@ -143,9 +144,8 @@ class RegistrationHandler(object):
         juju_info = get_juju_info(self._config)
         if juju_info is None:
             return None
-        juju_registration_info = dict(
+        self._juju_data = dict(
             (key, juju_info[key]) for key in juju_data)
-        return juju_registration_info
 
     def _get_data(self, path, accumulate):
         """

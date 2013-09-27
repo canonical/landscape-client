@@ -499,6 +499,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         self.mstore.set_accepted_types(["register"])
         self.config.account_name = "account_name"
+        self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
 
         self.assertMessages(self.mstore.get_pending_messages(),
