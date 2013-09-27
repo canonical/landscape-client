@@ -34,8 +34,7 @@ class JujuTest(LandscapeTest):
         juju_info = get_juju_info(stub_config)
         self.log_helper.ignore_errors(ValueError)
         self.assertEqual(juju_info, None)
-        self.assertTrue(
-            "Error attempting to read JSON" in self.logfile.getvalue())
+        self.assertIn("Error attempting to read JSON", self.logfile.getvalue())
 
     def test_get_juju_info_not_a_file(self):
         """
@@ -44,4 +43,4 @@ class JujuTest(LandscapeTest):
         """
         stub_config = self.Config("/")
         juju_info = get_juju_info(stub_config)
-        self.assertEqual(juju_info, None)
+        self.assertIs(juju_info, None)
