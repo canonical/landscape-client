@@ -6,7 +6,7 @@ from landscape.lib.juju import get_juju_info
 
 
 SAMPLE_JUJU_INFO = json.dumps({"environment-uuid": "DEAD-BEEF",
-                               "unit-name": "juju-unit-name",
+                               "unit-name": "service/0",
                                "api-addresses": "10.0.3.1:17070",
                                "private-address": "127.0.0.1"})
 
@@ -16,12 +16,12 @@ class JujuTest(LandscapeTest):
     Config = namedtuple("Config", "juju_filename")
 
     def test_get_juju_info_sample_data(self):
-        """L{get_juju_info} works with sample data."""
+        """L{get_juju_info} parses realistic data properly."""
         stub_config = self.Config(self.makeFile(SAMPLE_JUJU_INFO))
         juju_info = get_juju_info(stub_config)
         self.assertEqual(
             {u"environment-uuid": "DEAD-BEEF",
-             u"unit-name": "juju-unit-name",
+             u"unit-name": "service/0",
              u"api-addresses": ["10.0.3.1:17070"],
              u"private-address": "127.0.0.1"}, juju_info)
 
