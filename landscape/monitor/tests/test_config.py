@@ -1,5 +1,3 @@
-import os.path
-
 from landscape.tests.helpers import LandscapeTest
 from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
 
@@ -32,12 +30,3 @@ class MonitorConfigurationTest(LandscapeTest):
         """
         self.config.load(["--flush-interval", "123"])
         self.assertEqual(self.config.flush_interval, 123)
-
-    def test_juju_filename(self):
-        """
-        Can get path to juju JSON file from config.
-        """
-        self.config.data_path = self.makeDir()
-        self.assertEqual(self.config.juju_filename, os.path.join(
-                self.config.data_path, "juju-info.json"))
-
