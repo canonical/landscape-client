@@ -541,6 +541,7 @@ class AptFacade(object):
             return ""
         all_info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
+            found_dependency_error = False
             for dep_type in ["PreDepends", "Depends", "Conflicts", "Breaks"]:
                 dependencies = package.candidate._cand.depends_list.get(
                     dep_type, [])
@@ -554,6 +555,10 @@ class AptFacade(object):
                     info = "  %s: %s: " % (package.name, dep_type)
                     or_divider = " or\n" + " " * len(info)
                     all_info.append(info + or_divider.join(relation_infos))
+                    found_dependency_error = True
+            if not found_dependency_error:
+                all_info.append(
+                    "  %s: %s" % (package.name, "Unknown dependency error"))
         return "\n".join(all_info)
 
     def _set_frontend_noninteractive(self):

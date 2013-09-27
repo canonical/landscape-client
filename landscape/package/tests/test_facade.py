@@ -731,7 +731,7 @@ class AptFacadeTest(LandscapeTest):
                     for version in self.facade.get_packages()]),
             ["name2", "name3"])
         self.assertNotEquals(
-            set(version.package for version in self.facade.get_packages()),
+            set([version.package for version in self.facade.get_packages()]),
             set([pkg2.package, pkg3.package]))
 
         # The hash cache shouldn't include either of the old packages.
@@ -1579,6 +1579,22 @@ class AptFacadeTest(LandscapeTest):
             ["The following packages have unmet dependencies:",
              "  another-foo: Depends: another-bar but is not installable",
              "  foo: Depends: bar but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_unknown(self):
+        """
+        If a package is broken but fulfills all PreDepends, Depends,
+        Conflicts and Breaks dependencies, C{_get_unmet_dependency_info}
+        reports that that package has an unknown dependency error, since
+        we don't know why it's broken.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade._get_broken_packages = lambda: set([foo.package])
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Unknown dependency error"],
             self.facade._get_unmet_dependency_info().splitlines())
 
     def _mock_output_restore(self):
