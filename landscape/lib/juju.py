@@ -21,4 +21,6 @@ def get_juju_info(config):
             "Error attempting to read JSON from %s" % juju_filename)
         return None
     else:
+        if "api-addresses" in juju_info:
+            juju_info["api-addresses"] = juju_info["api-addresses"].split()
         return juju_info

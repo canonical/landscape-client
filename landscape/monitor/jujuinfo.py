@@ -28,8 +28,6 @@ class JujuInfo(MonitorPlugin):
 
     def _create_juju_info_message(self):
         message = get_juju_info(self.registry.config)
-        if message is not None:
-            message["api-addresses"] = message["api-addresses"].split()
         if message != self._persist.get("juju-info"):
             self._persist.set("juju-info", message)
             return message
