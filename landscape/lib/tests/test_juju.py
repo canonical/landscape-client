@@ -44,3 +44,19 @@ class JujuTest(LandscapeTest):
         stub_config = self.Config("/")
         juju_info = get_juju_info(stub_config)
         self.assertIs(juju_info, None)
+
+    def test_get_juju_info_multiple_endpoints(self):
+        """L{get_juju_info} turns space separated API addresses into a list."""
+        juju_multiple_endpoints = json.dumps({
+                "environment-uuid": "DEAD-BEEF",
+                "unit-name": "service/0",
+                "api-addresses": "10.0.3.1:17070 10.0.3.2:18080",
+                "private-address": "127.0.0.1"})
+
+        stub_config = self.Config(self.makeFile(juju_multiple_endpoints))
+        juju_info = get_juju_info(stub_config)
+        self.assertEqual(
+            {u"environment-uuid": "DEAD-BEEF",
+             u"unit-name": "service/0",
+             u"api-addresses": ["10.0.3.1:17070", "10.0.3.2:18080"],
+             u"private-address": "127.0.0.1"}, juju_info)
