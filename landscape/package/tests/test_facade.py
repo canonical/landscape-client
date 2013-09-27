@@ -1583,7 +1583,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_unknown(self):
         """
-        If a package is broken but fulfill all PreDepends, Depens,
+        If a package is broken but fulfills all PreDepends, Depends,
         Conflicts and Breaks dependencies, C{_get_unmet_dependency_info}
         reports that that package has an unknown dependency error, since
         we don't know why it's broken.
