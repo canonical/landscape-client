@@ -204,10 +204,8 @@ REGISTER_CLOUD_VM = Message(
      "tags": Any(utf8, Constant(None)),
      "vm-info": String(),
      "public_ipv4": Unicode(),
-     "local_ipv4": Unicode(),
-     "juju-info": KeyDict(juju_data)},
-     optional=["tags", "vm-info", "public_ipv4", "local_ipv4",
-               "juju-info"])
+     "local_ipv4": Unicode()},
+     optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,

@@ -520,11 +520,6 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     cloud = True
 
-    juju_contents = json.dumps({"environment-uuid": "DEAD-BEEF",
-                                "unit-name": "juju-unit-name",
-                                "api-addresses": "10.0.3.1:17070",
-                                "private-address": "127.0.0.1"})
-
     def setUp(self):
         super(CloudRegistrationHandlerTest, self).setUp()
         self.query_results = {}
@@ -611,11 +606,6 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        local_ipv4=u"10.0.0.1",
                        public_ipv4=u"10.0.0.2",
                        tags=None)
-        # Separate because keys use - not _
-        message["juju-info"] = {"environment-uuid": "DEAD-BEEF",
-                                "api-addresses": ["10.0.3.1:17070"],
-                                "unit-name": "juju-unit-name"}
-
         # The get_vm_info() needs to be deferred to the else.  If vm-info is
         # specified in kwargs, get_vm_info() will typically be mocked.
         if "vm_info" in kwargs:
@@ -954,10 +944,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
                               "tags": None,
-                              "juju-info": {
-                              "environment-uuid": "DEAD-BEEF",
-                              "api-addresses": ["10.0.3.1:17070"],
-                              "unit-name": "juju-unit-name"}}])
+                              }])
 
     def test_should_register_in_cloud(self):
         """
