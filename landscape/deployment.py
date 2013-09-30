@@ -1,7 +1,7 @@
 import os
 import sys
 
-from configobj import ConfigObj
+from configobj import ConfigObj, ConfigObjError
 
 from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter)
@@ -219,7 +219,18 @@ class BaseConfiguration(object):
         # Setting list_values to False prevents ConfigObj from being "smart"
         # about lists (it now treats them as strings). See bug #1228301 for
         # more context.
-        config_obj = ConfigObj(config_source, list_values=False)
+        # Setting raise_errors to False causes ConfigObj to batch all parsing
+        # errors into one ConfigObjError raised at the end of the parse instead
+        # of raising the first one and then exiting.  This also allows us to
+        # recover the good config values in the error handler below.
+        try:
+            config_obj = ConfigObj(config_source, list_values=False,
+                                   raise_errors=False)
+        except ConfigObjError, e:
+            logger = getLogger()
+            logger.warn(str(e))
+            # Good configuration values are recovered here
+            config_obj = e.config
         return config_obj
 
     def write(self):
@@ -407,6 +418,11 @@ class Configuration(BaseConfiguration):
         be stored.
         """
         return os.path.join(self.data_path, "annotations.d")
+
+    @property
+    def juju_filename(self):
+        """Get the path to the Juju JSON file."""
+        return os.path.join(self.data_path, "juju-info.json")
 
 
 def get_versioned_persist(service):

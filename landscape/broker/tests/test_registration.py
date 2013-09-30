@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 import pycurl
@@ -177,7 +178,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         When a computer_title and account_name are available, no
         secure_id is set, and an exchange is about to happen,
-        queue a registration message.
+        queue a registration message with VM information.
         """
         get_vm_info_mock = self.mocker.replace(get_vm_info)
         get_vm_info_mock()
@@ -484,6 +485,38 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "tags": None}])
 
 
+class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
+
+    juju_contents = json.dumps({"environment-uuid": "DEAD-BEEF",
+                                "unit-name": "service/0",
+                                "api-addresses": "10.0.3.1:17070",
+                                "private-address": "127.0.0.1"})
+
+    def test_juju_information_added_when_present(self):
+        """
+        When Juju information is found in $data_dir/juju-info.json,
+        key parts of it are sent in the registration message.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.config.account_name = "account_name"
+        self.reactor.fire("run")
+        self.reactor.fire("pre-exchange")
+
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "register",
+              "computer_title": self.config.computer_title,
+              "account_name": "account_name",
+              "registration_password": None,
+              "hostname": socket.getfqdn(),
+              "vm-info": get_vm_info(),
+              "tags": None,
+              "juju-info": {"environment-uuid": "DEAD-BEEF",
+                            "api-addresses": ["10.0.3.1:17070"],
+                            "unit-name": "service/0"}
+              }])
+
+
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     cloud = True
@@ -574,7 +607,6 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        local_ipv4=u"10.0.0.1",
                        public_ipv4=u"10.0.0.2",
                        tags=None)
-
         # The get_vm_info() needs to be deferred to the else.  If vm-info is
         # specified in kwargs, get_vm_info() will typically be mocked.
         if "vm_info" in kwargs:
@@ -912,7 +944,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
-                              "tags": None}])
+                              "tags": None,
+                              }])
 
     def test_should_register_in_cloud(self):
         """
@@ -1157,7 +1190,5 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
         self.config.provisioning_otp = ""
         self.reactor.fire("pre-exchange")
 
-        self.assertMessages([],
-                            self.mstore.get_pending_messages())
-        self.assertEqual(u"",
-                         self.logfile.getvalue().strip())
+        self.assertMessages([], self.mstore.get_pending_messages())
+        self.assertEqual(u"", self.logfile.getvalue().strip())

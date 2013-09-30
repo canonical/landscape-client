@@ -109,6 +109,12 @@ HARDWARE_INVENTORY = Message("hardware-inventory", {
 HARDWARE_INFO = Message("hardware-info", {
     "data": utf8})
 
+juju_data = {"environment-uuid": utf8,
+             "api-addresses": List(utf8),
+             "unit-name": utf8}
+
+# The copy is needed because Message mutates the dictionary
+JUJU_INFO = Message("juju-info", juju_data.copy())
 
 LOAD_AVERAGE = Message("load-average", {
     "load-averages": List(Tuple(Int(), Float())),
@@ -175,9 +181,11 @@ REGISTER = Message(
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String()},
+     "vm-info": String(),
+     "juju-info": KeyDict(juju_data)},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname", "tags", "vm-info"])
+    optional=["registration_password", "hostname", "tags", "vm-info",
+              "juju-info"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(
@@ -458,5 +466,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-               CHANGE_HA_SERVICE, CLOUD_METADATA]:
+               CHANGE_HA_SERVICE, JUJU_INFO, CLOUD_METADATA]:
     message_schemas[schema.type] = schema

@@ -20,8 +20,8 @@ class MonitorConfigurationTest(LandscapeTest):
         which plugins should be active.
         """
         self.config.load(["--monitor-plugins", "  ComputerInfo, LoadAverage "])
-        self.assertEqual(self.config.plugin_factories, ["ComputerInfo",
-                                                        "LoadAverage"])
+        self.assertEqual(
+            self.config.plugin_factories, ["ComputerInfo", "LoadAverage"])
 
     def test_flush_interval(self):
         """

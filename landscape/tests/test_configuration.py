@@ -1341,7 +1341,8 @@ registration_key = shared-secret
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertIn("Couldn't read configuration from", str(error))
+            self.assertIn("Nothing to import at %s" % import_filename,
+                          str(error))
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1565,7 +1566,8 @@ registration_key = shared-secret
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEqual("Invalid line at line \"1\".", str(error))
+            self.assertEqual("Nothing to import at https://config.url.",
+                             str(error))
         else:
             self.fail("ImportOptionError not raised")
 

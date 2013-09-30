@@ -1,12 +1,12 @@
 import sys
 import os
 from optparse import OptionParser
-
 from StringIO import StringIO
+from textwrap import dedent
 
 from landscape.deployment import Configuration, get_versioned_persist
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
 from landscape.tests.mocker import ANY
 
 
@@ -21,6 +21,8 @@ class BabbleConfiguration(Configuration):
 
 
 class ConfigurationTest(LandscapeTest):
+
+    helpers = [LogKeeperHelper]
 
     def setUp(self):
         super(ConfigurationTest, self).setUp()
@@ -558,7 +560,7 @@ class ConfigurationTest(LandscapeTest):
 
         If a specific config file is requested, use this instead of defaults.
 
-        If a cmdilne --config option is specified this should take precedence
+        If a cmdline --config option is specified this should take precedence
         over either of the former options.
         """
         default_filename1 = self.makeFile("")
@@ -597,8 +599,9 @@ class ConfigurationTest(LandscapeTest):
         The L{Configuration.socket_path} property returns the path to the
         socket directory.
         """
-        self.assertEqual(self.config.sockets_path,
-                         "/var/lib/landscape/client/sockets")
+        self.assertEqual(
+            "/var/lib/landscape/client/sockets",
+            self.config.sockets_path)
 
     def test_annotations_path(self):
         """
@@ -609,6 +612,15 @@ class ConfigurationTest(LandscapeTest):
             "/var/lib/landscape/client/annotations.d",
             self.config.annotations_path)
 
+    def test_juju_filename(self):
+        """
+        The L{Configuration.juju_filename} property returns the path to the
+        juju info file.
+        """
+        self.assertEqual(
+            "/var/lib/landscape/client/juju-info.json",
+            self.config.juju_filename)
+
     def test_clone(self):
         """The L{Configuration.clone} method clones a configuration."""
         self.write_config_file()
@@ -617,6 +629,58 @@ class ConfigurationTest(LandscapeTest):
         config2 = self.config.clone()
         self.assertEqual(self.config.data_path, config2.data_path)
         self.assertEqual("bar", config2.foo)
+
+    def test_duplicate_key(self):
+        """
+        Duplicate keys in the config file shouldn't result in a fatal error,
+        but the first defined value should be used.
+        """
+        config = dedent("""
+        [client]
+        computer_title = frog
+        computer_title = flag
+        """)
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.assertEqual("frog", self.config.computer_title)
+        self.assertIn("WARNING: Duplicate keyword name at line 4.",
+                      self.logfile.getvalue())
+
+    def test_triplicate_key(self):
+        """
+        Triplicate keys in the config file shouldn't result in a fatal error,
+        but the first defined value should be used.
+        """
+        config = dedent("""
+        [client]
+        computer_title = frog
+        computer_title = flag
+        computer_title = flop
+        """)
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.assertEqual("frog", self.config.computer_title)
+        logged = self.logfile.getvalue()
+        self.assertIn("WARNING: Parsing failed with several errors.",
+                      logged)
+        self.assertIn("First error at line 4.", logged)
+
+    def test_config_values_after_fault_are_still_read(self):
+        """
+        Values that appear after the point in a configuration file where a
+        parsing error occurs are correctly parsed.
+        """
+        config = dedent("""
+        [client]
+        computer_title = frog
+        computer_title = flag
+        log_level = debug
+        """)
+        filename = self.makeFile(config)
+        self.config.load_configuration_file(filename)
+        self.assertEqual("debug", self.config.log_level)
+        self.assertIn("WARNING: Duplicate keyword name at line 4.",
+                      self.logfile.getvalue())
 
 
 class GetVersionedPersistTest(LandscapeTest):
