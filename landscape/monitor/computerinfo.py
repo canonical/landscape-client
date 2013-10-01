@@ -131,13 +131,11 @@ class ComputerInfo(MonitorPlugin):
     @inlineCallbacks
     def _create_cloud_instance_metadata_message(self):
         '''Fetch cloud metadata and insert it in a message.'''
+        message = None
         if (self._cloud_instance_metadata is None and
             self._cloud_retries < METADATA_RETRY_MAX):
             self._cloud_instance_metadata = yield self._fetch_ec2_meta_data()
-
-        message = {}
-        if self._cloud_instance_metadata:
-            message.update(self._cloud_instance_metadata)
+            message = self._cloud_instance_metadata
         returnValue(message)
 
     def _fetch_ec2_meta_data(self):

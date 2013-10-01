@@ -309,14 +309,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
-                         "total-swap": 1584,
-                         "annotations": {u"ami-id": u"ami-00002",
-                                         u"instance-id": u"i00001",
-                                         u"instance-type": u"hs1.8xlarge"}}
-        # XXX: The tested code is deactivated, so this will not produce
-        #      annotations for the time being. It should be plugged in again
-        #      once #1226605 is implemented.
-        del computer_info["annotations"]
+                         "total-swap": 1584}
 
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
@@ -391,7 +384,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual("value1", meta_data["annotation1"])
         self.assertEqual("value2", meta_data["annotation2"])
 
-    def test_with_cloud_metadata(self):
+    def test_fetch_cloud_metadata(self):
         """Fetch cloud information"""
         self.config.cloud = True
         self.mstore.set_accepted_types(["cloud-instance-metadata"])
@@ -405,20 +398,33 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual(u"ami-00002", messages[0]["ami-id"])
         self.assertEqual(u"hs1.8xlarge", messages[0]["instance-type"])
 
+    def test_send_cloud_instance_metadata_only_once(self):
+        """Only send the cloud information once per client restart."""
+        self.config.cloud = True
+        self.mstore.set_accepted_types(["cloud-instance-metadata"])
+
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+
     def test_no_fetch_ec2_meta_data_when_cloud_retries_is_max(self):
         """
         Do not fetch EC2 info when C{_cloud_retries} is C{METADATA_RETRY_MAX}
         """
         self.config.cloud = True
-        self.mstore.set_accepted_types(["computer-info"])
+        self.mstore.set_accepted_types(["cloud-instance-metadata"])
 
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         plugin._cloud_retries = METADATA_RETRY_MAX
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEqual(1, len(messages))
-        self.assertNotIn("annotations", messages[0])
+        self.assertEqual(0, len(messages))
 
     @inlineCallbacks
     def test_fetch_ec2_meta_data(self):
