@@ -385,7 +385,10 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual("value2", meta_data["annotation2"])
 
     def test_fetch_cloud_metadata(self):
-        """Fetch cloud information"""
+        """
+        Fetch cloud information and insert it in a cloud-instance-metadata
+        message.
+        """
         self.config.cloud = True
         self.mstore.set_accepted_types(["cloud-instance-metadata"])
 
