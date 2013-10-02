@@ -30,7 +30,7 @@ class ComputerInfo(MonitorPlugin):
         self._meminfo_filename = meminfo_filename
         self._lsb_release_filename = lsb_release_filename
         self._root_path = root_path
-        self._cloud_meta_data = None
+        self._cloud_instance_metadata = None
         self._cloud_retries = 0
         self._fetch_async = fetch_async
 
@@ -41,10 +41,11 @@ class ComputerInfo(MonitorPlugin):
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",
                               self.send_distribution_message, True)
+        self.call_on_accepted("cloud-instance-metadata",
+                              self.send_cloud_instance_metadata_message, True)
 
-    @inlineCallbacks
     def send_computer_message(self, urgent=False):
-        message = yield self._create_computer_info_message()
+        message = self._create_computer_info_message()
         if message:
             message["type"] = "computer-info"
             logging.info("Queueing message with updated computer info.")
@@ -59,14 +60,26 @@ class ComputerInfo(MonitorPlugin):
             self.registry.broker.send_message(message, self._session_id,
                                               urgent=urgent)
 
+    @inlineCallbacks
+    def send_cloud_instance_metadata_message(self, urgent=False):
+        message = yield self._create_cloud_instance_metadata_message()
+        if message:
+            message["type"] = "cloud-instance-metadata"
+            logging.info("Queueing message with updated cloud instance "
+                         "metadata.")
+            self.registry.broker.send_message(message, self._session_id,
+                                              urgent=urgent)
+
     def exchange(self, urgent=False):
         broker = self.registry.broker
         broker.call_if_accepted("computer-info",
                                 self.send_computer_message, urgent)
         broker.call_if_accepted("distribution-info",
                                 self.send_distribution_message, urgent)
+        broker.call_if_accepted("cloud-instance-metadata",
+                                self.send_cloud_instance_metadata_message,
+                                urgent)
 
-    @inlineCallbacks
     def _create_computer_info_message(self):
         message = {}
         self._add_if_new(message, "hostname", self._get_fqdn())
@@ -79,18 +92,9 @@ class ComputerInfo(MonitorPlugin):
                 annotations[key] = read_file(
                     os.path.join(self._annotations_path, key))
 
-        if (self._cloud_meta_data is None and
-            self._cloud_retries < METADATA_RETRY_MAX):
-            self._cloud_meta_data = yield self._fetch_ec2_meta_data()
-
-        # XXX: Deactivated EC2 reporting for the time being, until #1226605 is
-        #      implemented.
-        if False:  # if self._cloud_meta_data:
-            annotations = dict(
-                annotations.items() + self._cloud_meta_data.items())
         if annotations:
             self._add_if_new(message, "annotations", annotations)
-        returnValue(message)
+        return message
 
     def _add_if_new(self, message, key, value):
         if value != self._persist.get(key):
@@ -123,6 +127,16 @@ class ComputerInfo(MonitorPlugin):
         message = {}
         message.update(parse_lsb_release(self._lsb_release_filename))
         return message
+
+    @inlineCallbacks
+    def _create_cloud_instance_metadata_message(self):
+        """Fetch cloud metadata and insert it in a message."""
+        message = None
+        if (self._cloud_instance_metadata is None and
+            self._cloud_retries < METADATA_RETRY_MAX):
+            self._cloud_instance_metadata = yield self._fetch_ec2_meta_data()
+            message = self._cloud_instance_metadata
+        returnValue(message)
 
     def _fetch_ec2_meta_data(self):
         """Fetch information about the cloud instance."""
