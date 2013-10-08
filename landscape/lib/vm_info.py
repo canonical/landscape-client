@@ -8,7 +8,8 @@ from landscape.lib.fs import read_file
 
 def get_vm_info(root_path="/"):
     """
-    This is a utility that returns the virtualization type
+    Return a string with the virtualization type if it's known, an empty string
+    otherwise.
 
     It loops through some possible configurations and return a string with
     the name of the technology being used or None if there's no match
@@ -50,7 +51,7 @@ def get_vm_info(root_path="/"):
 
 
 def running_in_lxc(cgroup_file="/proc/1/cgroup"):
-    """Returns whether the client is running in an LXC container."""
+    """Return whether the client is running in an LXC container."""
     try:
         content = read_file(cgroup_file)
     except IOError:
@@ -59,6 +60,6 @@ def running_in_lxc(cgroup_file="/proc/1/cgroup"):
     if content:
         for line in content.splitlines():
             tokens = line.split(":")
-            if tokens and tokens[-1].startswith("/lxc/"):
+            if tokens[-1].startswith("/lxc/"):
                 return True
     return False

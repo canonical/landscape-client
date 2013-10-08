@@ -182,10 +182,10 @@ REGISTER = Message(
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
      "vm-info": String(),
-     "juju-info": KeyDict(juju_data)},
-    # hostname wasn't around in old versions
+     "juju-info": KeyDict(juju_data),
+     "in-container": Bool()},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "juju-info"])
+              "juju-info", "in-container"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(

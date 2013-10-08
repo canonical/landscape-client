@@ -169,7 +169,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": None,
                               "hostname": "ooga.local",
                               "tags": None,
-                              "vm-info": get_vm_info()}])
+                              "vm-info": get_vm_info(),
+                              "in-container": False}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
@@ -195,10 +196,36 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": None,
                               "hostname": "ooga.local",
                               "tags": None,
-                              "vm-info": u"vmware"}])
+                              "vm-info": u"vmware",
+                              "in-container": False}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
+
+    def test_queue_message_on_exchange_with_in_container(self):
+        """
+        If the client is running in an LXC container, the C{in-container] flag
+        is set to C{True} when the registration message is sent.
+        """
+        running_in_lxc_mock = self.mocker.replace(
+            "landscape.lib.vm_info.running_in_lxc")
+        running_in_lxc_mock()
+        self.mocker.result(True)
+        self.mocker.replay()
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.reactor.fire("pre-exchange")
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "register",
+              "computer_title": "Computer Title",
+              "account_name": "account_name",
+              "registration_password": None,
+              "hostname": "ooga.local",
+              "tags": None,
+              "vm-info": "",
+              "in-container": True}])
 
     def test_queue_message_on_exchange_with_password(self):
         """If a registration password is available, we pass it on!"""
@@ -214,7 +241,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None,
-                              "vm-info": get_vm_info()}])
+                              "vm-info": get_vm_info(),
+                              "in-container": False}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' with a password.")
@@ -237,7 +265,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": u"computer,tag",
-                              "vm-info": get_vm_info()}])
+                              "vm-info": get_vm_info(),
+                              "in-container": False}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags computer,tag "
@@ -263,7 +292,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None,
-                              "vm-info": get_vm_info()}])
+                              "vm-info": get_vm_info(),
+                              "in-container": False}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "ERROR: Invalid tags provided for cloud "
                          "registration.\n    "
@@ -289,7 +319,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
               "registration_password": "SEKRET",
               "hostname": "ooga.local",
               "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o",
-              "vm-info": get_vm_info()}])
+              "vm-info": get_vm_info(),
+              "in-container": False}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags prova\xc4\xb5o "
@@ -482,6 +513,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": "SEKRET",
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
+                              "in-container": False,
                               "tags": None}])
 
 
@@ -510,6 +542,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
               "registration_password": None,
               "hostname": socket.getfqdn(),
               "vm-info": get_vm_info(),
+              "in-container": False,
               "tags": None,
               "juju-info": {"environment-uuid": "DEAD-BEEF",
                             "api-addresses": ["10.0.3.1:17070"],
@@ -608,12 +641,11 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        public_ipv4=u"10.0.0.2",
                        tags=None)
         # The get_vm_info() needs to be deferred to the else.  If vm-info is
-        # specified in kwargs, get_vm_info() will typically be mocked.
+        # not specified in kwargs, get_vm_info() will typically be mocked.
         if "vm_info" in kwargs:
             message["vm-info"] = kwargs.pop("vm_info")
         else:
             message["vm-info"] = get_vm_info()
-
         message.update(kwargs)
         return message
 
@@ -944,6 +976,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
+                              "in-container": False,
                               "tags": None,
                               }])
 
