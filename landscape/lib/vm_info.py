@@ -50,16 +50,15 @@ def get_vm_info(root_path="/"):
     return ""
 
 
-def running_in_lxc(cgroup_file="/proc/1/cgroup"):
-    """Return whether the client is running in an LXC container."""
-    try:
-        content = read_file(cgroup_file)
-    except IOError:
-        return False
-
-    if content:
-        for line in content.splitlines():
+def get_container_info(root_path="/"):
+    """
+    Return a string with the type of the client is running in if it's known, an
+    empty string otherwise.
+    """
+    cgroup_file = os.path.join(root_path, "proc/1/cgroup")
+    if os.path.exists(cgroup_file):
+        for line in read_file(cgroup_file).splitlines():
             tokens = line.split(":")
             if tokens[-1].startswith("/lxc/"):
-                return True
-    return False
+                return "lxc"
+    return ""

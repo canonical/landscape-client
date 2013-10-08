@@ -2,7 +2,7 @@ import os
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.lib.vm_info import get_vm_info, running_in_lxc
+from landscape.lib.vm_info import get_vm_info, get_container_info
 
 
 class GetVMInfoTest(LandscapeTest):
@@ -125,23 +125,36 @@ class GetVMInfoTest(LandscapeTest):
         self.assertEqual("", get_vm_info(root_path=self.root_path))
 
 
-class RunningInLXCTest(LandscapeTest):
+class GetContainerInfoTest(LandscapeTest):
+
+    def setUp(self):
+        super(GetContainerInfoTest, self).setUp()
+        self.root_path = self.makeDir()
+        self.proc_path = self.makeDir(
+            path=os.path.join(self.root_path, "proc"))
+
+    def make_cgroup(self, content):
+        """Create /sys/class/dmi/id/sys_vendor with the specified content."""
+        init_proc_path = os.path.join(self.proc_path, "1")
+        self.makeDir(path=init_proc_path)
+        self.makeFile(
+            dirname=init_proc_path, basename="cgroup", content=content)
 
     def test_no_cgroup_file(self):
         """If the cgroup file doesn't exist, it's not an LXC."""
-        self.assertFalse(running_in_lxc(cgroup_file="/not/here"))
+        self.assertFalse(get_container_info(root_path=self.root_path))
 
-    def test_not_in_lxc(self):
+    def test_cgroup_not_in_lxc(self):
         """
         If the cgroup file exists, but there is no mention of LXC, it's not an
         LXC.
         """
-        cgroup_file = self.makeFile(content="2:cpu:/")
-        self.assertFalse(running_in_lxc(cgroup_file))
+        self.make_cgroup("2:cpu:/")
+        self.assertEqual("", get_container_info(root_path=self.root_path))
 
     def test_in_lxc(self):
         """
         If the cgroup file exists, and the group name is LXC, it's not an LXC.
         """
-        cgroup_file = self.makeFile(content="2:cpu:/lxc/test")
-        self.assertTrue(running_in_lxc(cgroup_file))
+        self.make_cgroup("2:cpu:/lxc/test")
+        self.assertEqual("lxc", get_container_info(root_path=self.root_path))

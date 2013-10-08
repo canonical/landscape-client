@@ -22,7 +22,7 @@ from landscape.lib.juju import get_juju_info
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
-from landscape.lib.vm_info import get_vm_info, running_in_lxc
+from landscape.lib.vm_info import get_vm_info, get_container_info
 
 
 EC2_HOST = "169.254.169.254"
@@ -316,7 +316,7 @@ class RegistrationHandler(object):
                        "hostname": get_fqdn(),
                        "tags": tags,
                        "vm-info": get_vm_info(),
-                       "in-container": running_in_lxc()}
+                       "container-info": get_container_info()}
             if self._juju_data is not None:
                 message["juju-info"] = self._juju_data
             self._exchange.send(message)
