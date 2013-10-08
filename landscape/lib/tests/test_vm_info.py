@@ -2,13 +2,13 @@ import os
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.lib.vm_info import get_vm_info
+from landscape.lib.vm_info import get_vm_info, running_in_lxc
 
 
-class VMInfoTest(LandscapeTest):
+class GetVMInfoTest(LandscapeTest):
 
     def setUp(self):
-        super(VMInfoTest, self).setUp()
+        super(GetVMInfoTest, self).setUp()
         self.root_path = self.makeDir()
         self.proc_path = self.makeDir(
             path=os.path.join(self.root_path, "proc"))
@@ -16,7 +16,7 @@ class VMInfoTest(LandscapeTest):
         self.proc_sys_path = self.makeDir(
             path=os.path.join(self.proc_path, "sys"))
 
-    def makeSysVendor(self, content):
+    def make_sys_vendor(self, content):
         """Create /sys/class/dmi/id/sys_vendor with the specified content."""
         dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
         self.makeDir(path=dmi_path)
@@ -82,8 +82,7 @@ class VMInfoTest(LandscapeTest):
         L{get_vm_info} should return "kvm" when we detect the sys_vendor is
         Bochs.
         """
-        self.makeSysVendor("Bochs")
-
+        self.make_sys_vendor("Bochs")
         self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_openstack_sys_vendor(self):
@@ -91,8 +90,7 @@ class VMInfoTest(LandscapeTest):
         L{get_vm_info} should return "kvm" when we detect the sys_vendor is
         Openstack.
         """
-        self.makeSysVendor("OpenStack Foundation")
-
+        self.make_sys_vendor("OpenStack Foundation")
         self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_vmware_sys_vendor(self):
@@ -100,8 +98,7 @@ class VMInfoTest(LandscapeTest):
         L{get_vm_info} should return "vmware" when we detect the sys_vendor is
         VMware Inc.
         """
-        self.makeSysVendor("VMware, Inc.")
-
+        self.make_sys_vendor("VMware, Inc.")
         self.assertEqual("vmware", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_virtualbox_sys_vendor(self):
@@ -109,16 +106,14 @@ class VMInfoTest(LandscapeTest):
         L{get_vm_info} should return "virtualbox" when we detect the sys_vendor
         is innotek GmbH.
         """
-        self.makeSysVendor("innotek GmbH")
-
+        self.make_sys_vendor("innotek GmbH")
         self.assertEqual("virtualbox", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_microsoft_sys_vendor(self):
         """
         L{get_vm_info} returns "hyperv" if the sys_vendor is Microsoft.
         """
-        self.makeSysVendor("Microsoft Corporation")
-
+        self.make_sys_vendor("Microsoft Corporation")
         self.assertEqual("hyperv", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_other_vendor(self):
@@ -126,6 +121,27 @@ class VMInfoTest(LandscapeTest):
         L{get_vm_info} should return an empty string when the sys_vendor is
         unknown.
         """
-        self.makeSysVendor("Some other vendor")
-
+        self.make_sys_vendor("Some other vendor")
         self.assertEqual("", get_vm_info(root_path=self.root_path))
+
+
+class RunningInLXCTest(LandscapeTest):
+
+    def test_no_cgroup_file(self):
+        """If the cgroup file doesn't exist, it's not an LXC."""
+        self.assertFalse(running_in_lxc(cgroup_file="/not/here"))
+
+    def test_not_in_lxc(self):
+        """
+        If the cgroup file exists, but there is no mention of LXC, it's not an
+        LXC.
+        """
+        cgroup_file = self.makeFile(content="2:cpu:/")
+        self.assertFalse(running_in_lxc(cgroup_file))
+
+    def test_in_lxc(self):
+        """
+        If the cgroup file exists, and the group name is LXC, it's not an LXC.
+        """
+        cgroup_file = self.makeFile(content="2:cpu:/lxc/test")
+        self.assertTrue(running_in_lxc(cgroup_file))
