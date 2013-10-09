@@ -224,7 +224,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
               "registration_password": None,
               "hostname": "ooga.local",
               "tags": None,
-              "vm-info": "",
+              "vm-info": get_vm_info(),
               "container-info": "lxc"}])
 
     def test_queue_message_on_exchange_with_password(self):
