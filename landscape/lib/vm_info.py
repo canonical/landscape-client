@@ -52,8 +52,8 @@ def get_vm_info(root_path="/"):
 
 def get_container_info(root_path="/"):
     """
-    Return a string with the type of the client is running in if it's known, an
-    empty string otherwise.
+    Return a string with the type of container the client is running in if it's
+    known, an empty string otherwise.
     """
     cgroup_file = os.path.join(root_path, "proc/1/cgroup")
     if os.path.exists(cgroup_file):

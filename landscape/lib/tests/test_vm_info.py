@@ -142,7 +142,7 @@ class GetContainerInfoTest(LandscapeTest):
 
     def test_no_cgroup_file(self):
         """If the cgroup file doesn't exist, it's not an LXC."""
-        self.assertFalse(get_container_info(root_path=self.root_path))
+        self.assertEqual("", get_container_info(root_path=self.root_path))
 
     def test_cgroup_not_in_lxc(self):
         """

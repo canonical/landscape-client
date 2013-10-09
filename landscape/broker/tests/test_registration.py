@@ -204,7 +204,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
     def test_queue_message_on_exchange_with_lxc_container(self):
         """
-        If the client is running in an LXC container, the informatio is
+        If the client is running in an LXC container, the information is
         included in the registration message.
         """
         get_container_info_mock = self.mocker.replace(
