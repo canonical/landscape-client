@@ -8,7 +8,8 @@ from landscape.lib.fs import read_file
 
 def get_vm_info(root_path="/"):
     """
-    This is a utility that returns the virtualization type
+    Return a string with the virtualization type if it's known, an empty string
+    otherwise.
 
     It loops through some possible configurations and return a string with
     the name of the technology being used or None if there's no match
@@ -46,4 +47,18 @@ def get_vm_info(root_path="/"):
         if name in vendor:
             return vm_type
 
+    return ""
+
+
+def get_container_info(root_path="/"):
+    """
+    Return a string with the type of container the client is running in if it's
+    known, an empty string otherwise.
+    """
+    cgroup_file = os.path.join(root_path, "proc/1/cgroup")
+    if os.path.exists(cgroup_file):
+        for line in read_file(cgroup_file).splitlines():
+            tokens = line.split(":")
+            if tokens[-1].startswith("/lxc/"):
+                return "lxc"
     return ""

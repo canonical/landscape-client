@@ -22,7 +22,7 @@ from landscape.lib.juju import get_juju_info
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
-from landscape.lib.vm_info import get_vm_info
+from landscape.lib.vm_info import get_vm_info, get_container_info
 
 
 EC2_HOST = "169.254.169.254"
@@ -286,8 +286,6 @@ class RegistrationHandler(object):
                            "tags": tags,
                            "vm-info": get_vm_info()}
                 message.update(self._ec2_data)
-                if self._juju_data is not None:
-                    message["juju-info"] = self._juju_data
                 self._exchange.send(message)
             elif id.account_name:
                 with_tags = ["", u"and tags %s " % tags][bool(tags)]
@@ -302,8 +300,6 @@ class RegistrationHandler(object):
                            "tags": tags,
                            "vm-info": get_vm_info()}
                 message.update(self._ec2_data)
-                if self._juju_data is not None:
-                    message["juju-info"] = self._juju_data
                 self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")
@@ -319,7 +315,8 @@ class RegistrationHandler(object):
                        "registration_password": id.registration_key,
                        "hostname": get_fqdn(),
                        "tags": tags,
-                       "vm-info": get_vm_info()}
+                       "vm-info": get_vm_info(),
+                       "container-info": get_container_info()}
             if self._juju_data is not None:
                 message["juju-info"] = self._juju_data
             self._exchange.send(message)
