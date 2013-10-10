@@ -181,8 +181,8 @@ REGISTER = Message(
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String(),
-     "container-info": String(),
+     "vm-info": utf8,
+     "container-info": utf8,
      "juju-info": KeyDict(juju_data)},
     optional=["registration_password", "hostname", "tags", "vm-info",
               "container-info", "juju-info"])
