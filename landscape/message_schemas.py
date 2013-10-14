@@ -181,7 +181,7 @@ REGISTER = Message(
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
-     "vm-info": utf8,
+     "vm-info": String(),
      "container-info": utf8,
      "juju-info": KeyDict(juju_data)},
     optional=["registration_password", "hostname", "tags", "vm-info",
@@ -208,7 +208,7 @@ REGISTER_CLOUD_VM = Message(
      "launch_index": Int(),
      "image_key": Unicode(),
      "tags": Any(utf8, Constant(None)),
-     "vm-info": utf8,
+     "vm-info": String(),
      "public_ipv4": Unicode(),
      "local_ipv4": Unicode()},
      optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
