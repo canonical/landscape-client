@@ -50,15 +50,9 @@ def get_vm_info(root_path="/"):
     return ""
 
 
-def get_container_info(root_path="/"):
+def get_container_info(path="/run/container_type"):
     """
-    Return a string with the type of container the client is running in if it's
-    known, an empty string otherwise.
+    Return a string with the type of container the client is running in, if
+    any, an empty string otherwise.
     """
-    cgroup_file = os.path.join(root_path, "proc/1/cgroup")
-    if os.path.exists(cgroup_file):
-        for line in read_file(cgroup_file).splitlines():
-            tokens = line.split(":")
-            if tokens[-1].startswith("/lxc/"):
-                return "lxc"
-    return ""
+    return read_file(path).strip() if os.path.exists(path) else ""
