@@ -38,7 +38,15 @@ class ManagerConfiguration(Configuration):
         if self.manager_plugins == "ALL":
             plugin_names = ALL_PLUGINS[:]
         elif self.manager_plugins:
-            plugin_names = self.manager_plugins.split(",")
+            # Handle case where client.conf contains
+            # manager_plugins = ""
+            plugins = self.manager_plugins.split(",")
+            plugin_names = [plugin for plugin in plugins if plugin != '""']
+        if self.include_manager_plugins:
+            # Handle case where client.conf contains
+            # include_manager_plugins = ""
+            plugins = self.include_manager_plugins.split(",")
+            plugin_names += [plugin for plugin in plugins if plugin != '""']
         if self.include_manager_plugins:
             plugin_names += self.include_manager_plugins.split(",")
         return [x.strip() for x in plugin_names]
