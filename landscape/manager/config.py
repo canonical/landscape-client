@@ -47,8 +47,6 @@ class ManagerConfiguration(Configuration):
             # include_manager_plugins = ""
             plugins = self.include_manager_plugins.split(",")
             plugin_names += [plugin for plugin in plugins if plugin != '""']
-        if self.include_manager_plugins:
-            plugin_names += self.include_manager_plugins.split(",")
         return [x.strip() for x in plugin_names]
 
     def get_allowed_script_users(self):
