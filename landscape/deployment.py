@@ -223,9 +223,12 @@ class BaseConfiguration(object):
         # errors into one ConfigObjError raised at the end of the parse instead
         # of raising the first one and then exiting.  This also allows us to
         # recover the good config values in the error handler below.
+        # Setting write_empty_values to True prevents configObj writes
+        # from writing "" as an empty value, which get_plugins interprets as
+        # '""' which search for a plugin named "".  See bug #1241821.
         try:
             config_obj = ConfigObj(config_source, list_values=False,
-                                   raise_errors=False)
+                                   raise_errors=False, write_empty_values=True)
         except ConfigObjError, e:
             logger = getLogger()
             logger.warn(str(e))
