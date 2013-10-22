@@ -5,6 +5,7 @@ from StringIO import StringIO
 from textwrap import dedent
 
 from landscape.deployment import Configuration, get_versioned_persist
+from landscape.manager.config import ManagerConfiguration
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
 from landscape.tests.mocker import ANY
@@ -31,7 +32,7 @@ class ConfigurationTest(LandscapeTest):
     def reset_config(self, configuration_class=None):
         if not configuration_class:
 
-            class MyConfiguration(Configuration):
+            class MyConfiguration(ManagerConfiguration):
                 default_config_filenames = []
             configuration_class = MyConfiguration
 
@@ -197,6 +198,19 @@ class ConfigurationTest(LandscapeTest):
         data = open(self.config_filename).read()
         self.assertConfigEqual(data,
             "[client]\nlog_level = warning\n")
+
+    def test_write_empty_list_values_instead_of_double_quotes(self):
+        """
+        Since list values are strings, an empty string such as C{""} will be
+        written to the config file as an option with a empty rvalue instead of
+        C{""}.
+        """
+        self.write_config_file(include_manager_plugins="ScriptExecution")
+        self.config.load([])
+        self.config.include_manager_plugins = ""
+        self.config.write()
+        data = open(self.config_filename).read()
+        self.assertConfigEqual(data, "[client]\ninclude_manager_plugins = \n")
 
     def test_dont_write_config_specified_default_options(self):
         """
