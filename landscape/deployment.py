@@ -266,7 +266,8 @@ class BaseConfiguration(object):
         for name, value in all_options.items():
             if name != "config" and name not in self.unsaved_options:
                 if (value == self._command_line_defaults.get(name) and
-                    name not in self._config_file_options):
+                    name not in self._config_file_options and
+                    name not in self._command_line_options):
                     # We don't want to write this value to the config file
                     # as it is default value and as not present in the
                     # config file
