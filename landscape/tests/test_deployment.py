@@ -202,7 +202,7 @@ class ConfigurationTest(LandscapeTest):
     def test_write_empty_list_values_instead_of_double_quotes(self):
         """
         Since list values are strings, an empty string such as C{""} will be
-        written to the config file as an option with a empty rvalue instead of
+        written to the config file as an option with a empty value instead of
         C{""}.
         """
         self.write_config_file(include_manager_plugins="ScriptExecution")
