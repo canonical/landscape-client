@@ -162,7 +162,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
-        self.assertEqual(1, len(self.mstore.get_pending_messages()))
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertEqual("register", messages[0]["type"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
@@ -483,7 +485,6 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
                     "api-addresses": ["10.0.3.1:17070"],
                     "unit-name": "service/0"}
         self.assertEqual(expected, messages[0]["juju-info"])
-
 
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
