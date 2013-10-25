@@ -1,6 +1,6 @@
 from landscape.schema import (
     Message, KeyDict, Dict, List, Tuple,
-    Bool, Int, Float, String, Unicode, UnicodeOrString, Constant,
+    Bool, Int, Float, Bytes, Unicode, UnicodeOrString, Constant,
     Any)
 
 # When adding a new schema, which deprecates an older schema, the recommended
@@ -14,7 +14,7 @@ utf8 = UnicodeOrString("utf-8")
 
 process_info = KeyDict({"pid": Int(),
                         "name": utf8,
-                        "state": String(),
+                        "state": Bytes(),
                         "sleep-average": Int(),
                         "uid": Int(),
                         "gid": Int(),
@@ -61,8 +61,8 @@ ACTION_INFO = Message(
     "action-info",
     {"response-id": Int(),
      "success": Bool(),
-     "kind": String(),
-     "parameters": String()})
+     "kind": Bytes(),
+     "parameters": Bytes()})
 
 COMPUTER_INFO = Message(
     "computer-info",
@@ -134,14 +134,14 @@ SWIFT_DEVICE_INFO = Message("swift-device-info", {
     })
 
 KEYSTONE_TOKEN = Message("keystone-token", {
-    "data": Any(String(), Constant(None))
+    "data": Any(Bytes(), Constant(None))
 })
 
 CHANGE_HA_SERVICE = Message(
     "change-ha-service",
-    {"service-name": String(),  # keystone
-     "unit-name": String(),     # keystone-9
-     "state": String()})        # online or standby
+    {"service-name": Bytes(),  # keystone
+     "unit-name": Bytes(),     # keystone-9
+     "state": Bytes()})        # online or standby
 
 MEMORY_INFO = Message("memory-info", {
     "memory-info": List(Tuple(Float(), Int(), Int())),
@@ -181,7 +181,7 @@ REGISTER = Message(
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String(),
+     "vm-info": Bytes(),
      "container-info": utf8,
      "juju-info": KeyDict(juju_data)},
     optional=["registration_password", "hostname", "tags", "vm-info",
@@ -190,13 +190,13 @@ REGISTER = Message(
 
 REGISTER_PROVISIONED_MACHINE = Message(
     "register-provisioned-machine",
-    {"otp": String()})
+    {"otp": Bytes()})
 
 
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
     {"hostname": utf8,
-     "otp": Any(String(), Constant(None)),
+     "otp": Any(Bytes(), Constant(None)),
      "instance_key": Unicode(),
      "account_name": Any(utf8, Constant(None)),
      "registration_password": Any(utf8, Constant(None)),
@@ -208,7 +208,7 @@ REGISTER_CLOUD_VM = Message(
      "launch_index": Int(),
      "image_key": Unicode(),
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String(),
+     "vm-info": Bytes(),
      "public_ipv4": Unicode(),
      "local_ipv4": Unicode()},
      optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
@@ -352,7 +352,7 @@ CHANGE_PACKAGES_RESULT = Message(
     optional=["result-text", "must-install", "must-remove"])
 
 UNKNOWN_PACKAGE_HASHES = Message("unknown-package-hashes", {
-    "hashes": List(String()),
+    "hashes": List(Bytes()),
     "request-id": Int(),
     })
 
@@ -379,16 +379,16 @@ TEXT_MESSAGE = Message("text-message", {
 
 TEST = Message(
     "test",
-    {"greeting": String(),
+    {"greeting": Bytes(),
      "consistency-error": Bool(),
-     "echo": String(),
+     "echo": Bytes(),
      "sequence": Int()},
     optional=["greeting", "consistency-error", "echo", "sequence"])
 
 # The tuples are timestamp, value
 GRAPH_DATA = KeyDict({"values": List(Tuple(Float(), Float())),
                       "error": Unicode(),
-                      "script-hash": String()})
+                      "script-hash": Bytes()})
 
 CUSTOM_GRAPH = Message("custom-graph", {
     "data": Dict(Int(), GRAPH_DATA)})
@@ -411,17 +411,17 @@ APT_PREFERENCES = Message(
 
 EUCALYPTUS_INFO = Message(
     "eucalyptus-info",
-    {"basic_info": Dict(String(), Any(String(), Constant(None))),
-     "walrus_info": String(),
-     "cluster_controller_info": String(),
-     "storage_controller_info": String(),
-     "node_controller_info": String(),
-     "capacity_info": String()},
+    {"basic_info": Dict(Bytes(), Any(Bytes(), Constant(None))),
+     "walrus_info": Bytes(),
+     "cluster_controller_info": Bytes(),
+     "storage_controller_info": Bytes(),
+     "node_controller_info": Bytes(),
+     "capacity_info": Bytes()},
     optional=["capacity_info"])
 
 EUCALYPTUS_INFO_ERROR = Message(
     "eucalyptus-info-error",
-    {"error": String()})
+    {"error": Bytes()})
 
 # The network-device message is split in two top level keys because we don't
 # support adding sub-keys in a backwards-compatible way (only top-level keys).
@@ -429,14 +429,14 @@ EUCALYPTUS_INFO_ERROR = Message(
 # simply ignore the extra info..
 NETWORK_DEVICE = Message(
     "network-device",
-    {"devices": List(KeyDict({"interface": String(),
-                              "ip_address": String(),
-                              "mac_address": String(),
-                              "broadcast_address": String(),
-                              "netmask": String(),
+    {"devices": List(KeyDict({"interface": Bytes(),
+                              "ip_address": Bytes(),
+                              "mac_address": Bytes(),
+                              "broadcast_address": Bytes(),
+                              "netmask": Bytes(),
                               "flags": Int()})),
 
-     "device-speeds": List(KeyDict({"interface": String(),
+     "device-speeds": List(KeyDict({"interface": Bytes(),
                                     "speed": Int(),
                                     "duplex": Bool()}))},
     optional=["device-speeds"])
@@ -448,7 +448,7 @@ NETWORK_ACTIVITY = Message(
     # an interface a is a list of 3-tuples (step, in, out), where 'step' is the
     # time interval and 'in'/'out' are number of bytes received/sent over the
     # interval.
-    {"activities": Dict(String(), List(Tuple(Int(), Int(), Int())))})
+    {"activities": Dict(Bytes(), List(Tuple(Int(), Int(), Int())))})
 
 UPDATE_MANAGER_INFO = Message("update-manager-info", {"prompt": utf8})
 

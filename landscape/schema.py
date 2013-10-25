@@ -63,12 +63,16 @@ class Float(object):
         return value
 
 
-class String(object):
-    """Something that must be a C{str}."""
+class Bytes(object):
+    """A binary string."""
     def coerce(self, value):
         if not isinstance(value, str):
             raise InvalidError("%r isn't a str" % (value,))
         return value
+
+
+# XXX to avoid breaking the server until we change the name there too.
+String = Bytes
 
 
 class Unicode(object):
@@ -217,7 +221,7 @@ class Message(KeyDict):
     def __init__(self, type, schema, optional=None):
         self.type = type
         schema["timestamp"] = Float()
-        schema["api"] = Any(String(), Constant(None))
+        schema["api"] = Any(Bytes(), Constant(None))
         schema["type"] = Constant(type)
         if optional is not None:
             optional.extend(["timestamp", "api"])
