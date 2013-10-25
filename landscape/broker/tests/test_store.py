@@ -4,8 +4,7 @@ import os
 
 from landscape.lib.persist import Persist
 from landscape.broker.store import MessageStore
-from landscape.schema import (
-    InvalidError, Message, Int, Bytes, UnicodeOrString)
+from landscape.schema import InvalidError, Message, Int, Bytes, Unicode
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
@@ -355,8 +354,7 @@ class MessageStoreTest(LandscapeTest):
         The message that eventually gets sent should be the result of
         the coercion.
         """
-        self.store.add_schema(
-            Message("data", {"data": UnicodeOrString("utf-8")}))
+        self.store.add_schema(Message("data", {"data": Unicode()}))
         self.store.add({"type": "data",
                         "data": u"\N{HIRAGANA LETTER A}".encode("utf-8"),
                         "api": "whatever"})
