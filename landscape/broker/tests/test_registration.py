@@ -162,15 +162,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": None,
-                              "hostname": "ooga.local",
-                              "tags": None,
-                              "vm-info": get_vm_info(),
-                              "container-info": ""}])
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertEqual("register", messages[0]["type"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
@@ -189,15 +183,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": None,
-                              "hostname": "ooga.local",
-                              "tags": None,
-                              "vm-info": u"vmware",
-                              "container-info": ""}])
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual("vmware", messages[0]["vm-info"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
@@ -216,16 +203,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(
-            self.mstore.get_pending_messages(),
-            [{"type": "register",
-              "computer_title": "Computer Title",
-              "account_name": "account_name",
-              "registration_password": None,
-              "hostname": "ooga.local",
-              "tags": None,
-              "vm-info": get_vm_info(),
-              "container-info": "lxc"}])
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual("lxc", messages[0]["container-info"])
 
     def test_queue_message_on_exchange_with_password(self):
         """If a registration password is available, we pass it on!"""
@@ -234,15 +213,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.account_name = "account_name"
         self.config.registration_key = "SEKRET"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": "SEKRET",
-                              "hostname": "ooga.local",
-                              "tags": None,
-                              "vm-info": get_vm_info(),
-                              "container-info": ""}])
+        messages = self.mstore.get_pending_messages()
+        password = messages[0]["registration_password"]
+        self.assertEqual("SEKRET", password)
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' with a password.")
@@ -258,15 +231,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.registration_key = "SEKRET"
         self.config.tags = u"computer,tag"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": "SEKRET",
-                              "hostname": "ooga.local",
-                              "tags": u"computer,tag",
-                              "vm-info": get_vm_info(),
-                              "container-info": ""}])
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual("computer,tag", messages[0]["tags"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags computer,tag "
@@ -285,15 +251,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.registration_key = "SEKRET"
         self.config.tags = u"<script>alert()</script>"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": "SEKRET",
-                              "hostname": "ooga.local",
-                              "tags": None,
-                              "vm-info": get_vm_info(),
-                              "container-info": ""}])
+        messages = self.mstore.get_pending_messages()
+        self.assertIs(None, messages[0]["tags"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "ERROR: Invalid tags provided for cloud "
                          "registration.\n    "
@@ -311,16 +270,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.registration_key = "SEKRET"
         self.config.tags = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(
-            self.mstore.get_pending_messages(),
-            [{"type": "register",
-              "computer_title": "Computer Title",
-              "account_name": "account_name",
-              "registration_password": "SEKRET",
-              "hostname": "ooga.local",
-              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o",
-              "vm-info": get_vm_info(),
-              "container-info": ""}])
+        messages = self.mstore.get_pending_messages()
+        expected = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
+        self.assertEqual(expected, messages[0]["tags"])
+
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags prova\xc4\xb5o "
@@ -506,15 +459,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.account_name = "account_name"
         self.config.registration_key = "SEKRET"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": "SEKRET",
-                              "hostname": socket.getfqdn(),
-                              "vm-info": get_vm_info(),
-                              "container-info": "",
-                              "tags": None}])
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(socket.getfqdn(), messages[0]["hostname"])
 
 
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
@@ -534,20 +480,11 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
 
-        self.assertMessages(
-            self.mstore.get_pending_messages(),
-            [{"type": "register",
-              "computer_title": self.config.computer_title,
-              "account_name": "account_name",
-              "registration_password": None,
-              "hostname": socket.getfqdn(),
-              "vm-info": get_vm_info(),
-              "container-info": "",
-              "tags": None,
-              "juju-info": {"environment-uuid": "DEAD-BEEF",
-                            "api-addresses": ["10.0.3.1:17070"],
-                            "unit-name": "service/0"}
-              }])
+        messages = self.mstore.get_pending_messages()
+        expected = {"environment-uuid": "DEAD-BEEF",
+                    "api-addresses": ["10.0.3.1:17070"],
+                    "unit-name": "service/0"}
+        self.assertEqual(expected, messages[0]["juju-info"])
 
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
@@ -969,16 +906,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertIn("HTTPCodeError: Server returned HTTP code 404",
                       self.logfile.getvalue())
         self.assertEqual(len(self.transport.payloads), 1)
-        self.assertMessages(self.transport.payloads[0]["messages"],
-                            [{"type": "register",
-                              "computer_title": u"whatever",
-                              "account_name": u"onward",
-                              "registration_password": u"password",
-                              "hostname": socket.getfqdn(),
-                              "vm-info": get_vm_info(),
-                              "container-info": "",
-                              "tags": None,
-                              }])
+        messages = self.transport.payloads[0]["messages"]
+        self.assertEqual("register", messages[0]["type"])
 
     def test_should_register_in_cloud(self):
         """
