@@ -252,7 +252,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.tags = u"<script>alert()</script>"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
-        self.assertIsNone(messages[0]["tags"])
+        self.assertIs(None, messages[0]["tags"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "ERROR: Invalid tags provided for cloud "
                          "registration.\n    "
