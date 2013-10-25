@@ -71,10 +71,6 @@ class Bytes(object):
         return value
 
 
-# XXX to avoid breaking the server until we change the name there too.
-String = Bytes
-
-
 class Unicode(object):
     """Something that must be a C{unicode}."""
     def coerce(self, value):
