@@ -1,7 +1,7 @@
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.schema import (
-    InvalidError, Constant, Bool, Int, Float, String, Unicode, UnicodeOrString,
+    InvalidError, Constant, Bool, Int, Float, Bytes, Unicode, UnicodeOrString,
     List, KeyDict, Dict, Tuple,
     Any, Message)
 
@@ -64,13 +64,13 @@ class BasicTypesTest(LandscapeTest):
         self.assertRaises(InvalidError, Float().coerce, "3.0")
 
     def test_string(self):
-        self.assertEqual(String().coerce("foo"), "foo")
+        self.assertEqual(Bytes().coerce("foo"), "foo")
 
     def test_string_bad_unicode(self):
-        self.assertRaises(InvalidError, String().coerce, u"foo")
+        self.assertRaises(InvalidError, Bytes().coerce, u"foo")
 
     def test_string_bad_anything(self):
-        self.assertRaises(InvalidError, String().coerce, object())
+        self.assertRaises(InvalidError, Bytes().coerce, object())
 
     def test_unicode(self):
         self.assertEqual(Unicode().coerce(u"foo"), u"foo")
@@ -192,7 +192,7 @@ class BasicTypesTest(LandscapeTest):
         self.assertEqual(schema.coerce({"foo": 32}), {"foo": 32})
 
     def test_dict(self):
-        self.assertEqual(Dict(Int(), String()).coerce({32: "hello."}),
+        self.assertEqual(Dict(Int(), Bytes()).coerce({32: "hello."}),
                          {32: "hello."})
 
     def test_dict_coerces(self):

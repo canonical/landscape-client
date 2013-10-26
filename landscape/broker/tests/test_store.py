@@ -5,7 +5,7 @@ import os
 from landscape.lib.persist import Persist
 from landscape.broker.store import MessageStore
 from landscape.schema import (
-    InvalidError, Message, Int, String, UnicodeOrString)
+    InvalidError, Message, Int, Bytes, UnicodeOrString)
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
@@ -28,8 +28,8 @@ class MessageStoreTest(LandscapeTest):
         store.set_accepted_types(["empty", "data"])
         store.add_schema(Message("empty", {}))
         store.add_schema(Message("empty2", {}))
-        store.add_schema(Message("data", {"data": String()}))
-        store.add_schema(Message("unaccepted", {"data": String()}))
+        store.add_schema(Message("data", {"data": Bytes()}))
+        store.add_schema(Message("unaccepted", {"data": Bytes()}))
         return store
 
     def tearDown(self):
