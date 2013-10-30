@@ -223,9 +223,12 @@ class BaseConfiguration(object):
         # errors into one ConfigObjError raised at the end of the parse instead
         # of raising the first one and then exiting.  This also allows us to
         # recover the good config values in the error handler below.
+        # Setting write_empty_values to True prevents configObj writes
+        # from writing "" as an empty value, which get_plugins interprets as
+        # '""' which search for a plugin named "".  See bug #1241821.
         try:
             config_obj = ConfigObj(config_source, list_values=False,
-                                   raise_errors=False)
+                                   raise_errors=False, write_empty_values=True)
         except ConfigObjError, e:
             logger = getLogger()
             logger.warn(str(e))
@@ -264,7 +267,11 @@ class BaseConfiguration(object):
             if name != "config" and name not in self.unsaved_options:
                 if (value == self._command_line_defaults.get(name) and
                     name not in self._config_file_options and
-                    name in config_obj[self.config_section]):
+                    name not in self._command_line_options):
+                    # We don't want to write this value to the config file
+                    # as it is default value and as not present in the
+                    # config file
+                    if name in config_obj[self.config_section]:
                         del config_obj[self.config_section][name]
                 else:
                     section[name] = value
