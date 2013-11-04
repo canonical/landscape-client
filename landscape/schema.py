@@ -72,22 +72,14 @@ class Bytes(object):
 
 
 class Unicode(object):
-    """Something that must be a C{unicode}."""
-    def coerce(self, value):
-        if not isinstance(value, unicode):
-            raise InvalidError("%r isn't a unicode" % (value,))
-        return value
-
-
-class UnicodeOrString(object):
-    """Something that must be a C{unicode} or {str}.
+    """Something that must be a C{unicode}.
 
     If the value is a C{str}, it will automatically be decoded.
 
     @param encoding: The encoding to automatically decode C{str}s with.
     """
 
-    def __init__(self, encoding):
+    def __init__(self, encoding="utf-8"):
         self.encoding = encoding
 
     def coerce(self, value):

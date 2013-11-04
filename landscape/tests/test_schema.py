@@ -1,9 +1,8 @@
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.schema import (
-    InvalidError, Constant, Bool, Int, Float, Bytes, Unicode, UnicodeOrString,
-    List, KeyDict, Dict, Tuple,
-    Any, Message)
+    InvalidError, Constant, Bool, Int, Float, Bytes, Unicode, List, KeyDict,
+    Dict, Tuple, Any, Message)
 
 
 class DummySchema(object):
@@ -75,33 +74,26 @@ class BasicTypesTest(LandscapeTest):
     def test_unicode(self):
         self.assertEqual(Unicode().coerce(u"foo"), u"foo")
 
-    def test_unicode_bad_str(self):
-        self.assertRaises(InvalidError, Unicode().coerce, "foo")
+    def test_unicode_bad_value(self):
+        """Invalid values raise an errors."""
+        self.assertRaises(InvalidError, Unicode().coerce, 32)
 
-    def test_unicode_or_str(self):
-        self.assertEqual(UnicodeOrString("utf-8").coerce(u"foo"), u"foo")
+    def test_unicode_with_str(self):
+        """Unicode accept plain strings and return a unicode."""
+        self.assertEqual(Unicode().coerce("foo"), u"foo")
 
-    def test_unicode_or_str_bad(self):
-        self.assertRaises(InvalidError, UnicodeOrString("utf-8").coerce, 32)
-
-    def test_unicode_or_str_accepts_str(self):
-        self.assertEqual(UnicodeOrString("utf-8").coerce("foo"), u"foo")
-
-    def test_unicode_or_str_decodes(self):
-        """UnicodeOrString should decode plain strings."""
+    def test_unicode_decodes(self):
+        """Unicode should decode plain strings."""
         a = u"\N{HIRAGANA LETTER A}"
-        self.assertEqual(
-            UnicodeOrString("utf-8").coerce(a.encode("utf-8")),
-            a)
+        self.assertEqual(Unicode().coerce(a.encode("utf-8")), a)
         letter = u"\N{LATIN SMALL LETTER A WITH GRAVE}"
         self.assertEqual(
-            UnicodeOrString("latin-1").coerce(letter.encode("latin-1")),
+            Unicode(encoding="latin-1").coerce(letter.encode("latin-1")),
             letter)
 
     def test_unicode_or_str_bad_encoding(self):
         """Decoding errors should be converted to InvalidErrors."""
-        schema = UnicodeOrString("utf-8")
-        self.assertRaises(InvalidError, schema.coerce, "\xff")
+        self.assertRaises(InvalidError, Unicode().coerce, "\xff")
 
     def test_list(self):
         self.assertEqual(List(Int()).coerce([1]), [1])
@@ -117,7 +109,7 @@ class BasicTypesTest(LandscapeTest):
 
     def test_list_multiple_items(self):
         a = u"\N{HIRAGANA LETTER A}"
-        schema = List(UnicodeOrString("utf-8"))
+        schema = List(Unicode())
         self.assertEqual(schema.coerce([a, a.encode("utf-8")]), [a, a])
 
     def test_tuple(self):

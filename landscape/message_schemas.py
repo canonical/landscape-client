@@ -1,7 +1,6 @@
 from landscape.schema import (
     Message, KeyDict, Dict, List, Tuple,
-    Bool, Int, Float, Bytes, Unicode, UnicodeOrString, Constant,
-    Any)
+    Bool, Int, Float, Bytes, Unicode, Constant, Any)
 
 # When adding a new schema, which deprecates an older schema, the recommended
 # naming convention, is to name it SCHEMA_NAME_ and the last API version that
@@ -10,10 +9,9 @@ from landscape.schema import (
 # i.e. if I have USERS and I'm deprecating it, in API 2.2, then USERS becomes
 # USERS_2_1
 
-utf8 = UnicodeOrString("utf-8")
 
 process_info = KeyDict({"pid": Int(),
-                        "name": utf8,
+                        "name": Unicode(),
                         "state": Bytes(),
                         "sleep-average": Int(),
                         "uid": Int(),
@@ -53,7 +51,7 @@ OPERATION_RESULT = Message(
     {"operation-id": Int(),
      "status": Int(),
      "result-code": Int(),
-     "result-text": utf8},
+     "result-text": Unicode()},
     optional=["result-code", "result-text"])
 
 #ACTION_INFO is obsolete.
@@ -66,28 +64,28 @@ ACTION_INFO = Message(
 
 COMPUTER_INFO = Message(
     "computer-info",
-    {"hostname": utf8,
+    {"hostname": Unicode(),
      "total-memory": Int(),
      "total-swap": Int(),
-     "annotations": Dict(utf8, utf8)},
+     "annotations": Dict(Unicode(), Unicode())},
     # Not sure why these are all optional, but it's explicitly tested
     # in the server
     optional=["hostname", "total-memory", "total-swap", "annotations"])
 
 DISTRIBUTION_INFO = Message(
     "distribution-info",
-    {"distributor-id": utf8,
-     "description": utf8,
-     "release": utf8,
-     "code-name": utf8},
+    {"distributor-id": Unicode(),
+     "description": Unicode(),
+     "release": Unicode(),
+     "code-name": Unicode()},
     # all optional because the lsb-release file may not have all data.
     optional=["distributor-id", "description", "release", "code-name"])
 
 CLOUD_METADATA = Message(
     "cloud-instance-metadata",
-    {"instance-id": utf8,
-     "ami-id": utf8,
-     "instance-type": utf8})
+    {"instance-id": Unicode(),
+     "ami-id": Unicode(),
+     "instance-type": Unicode()})
 
 
 hal_data = Dict(Unicode(),
@@ -107,11 +105,11 @@ HARDWARE_INVENTORY = Message("hardware-inventory", {
 
 
 HARDWARE_INFO = Message("hardware-info", {
-    "data": utf8})
+    "data": Unicode()})
 
-juju_data = {"environment-uuid": utf8,
-             "api-addresses": List(utf8),
-             "unit-name": utf8}
+juju_data = {"environment-uuid": Unicode(),
+             "api-addresses": List(Unicode()),
+             "unit-name": Unicode()}
 
 # The copy is needed because Message mutates the dictionary
 JUJU_INFO = Message("juju-info", juju_data.copy())
@@ -126,11 +124,12 @@ CPU_USAGE = Message("cpu-usage", {
 
 CEPH_USAGE = Message("ceph-usage", {
     "ceph-usages": List(Tuple(Int(), Float())),
-    "ring-id": utf8,
+    "ring-id": Unicode(),
     })
 
 SWIFT_DEVICE_INFO = Message("swift-device-info", {
-    "swift-device-info": List(KeyDict({"device": utf8, "mounted": Bool()}))
+    "swift-device-info": List(
+        KeyDict({"device": Unicode(), "mounted": Bool()}))
     })
 
 KEYSTONE_TOKEN = Message("keystone-token", {
@@ -155,20 +154,20 @@ RESYNCHRONIZE = Message(
     optional=["operation-id"])
 
 MOUNT_ACTIVITY = Message("mount-activity", {
-    "activities": List(Tuple(Float(), utf8, Bool()))})
+    "activities": List(Tuple(Float(), Unicode(), Bool()))})
 
 
 MOUNT_INFO = Message("mount-info", {
     "mount-info": List(Tuple(Float(),
-                             KeyDict({"mount-point": utf8,
-                                      "device": utf8,
-                                      "filesystem": utf8,
+                             KeyDict({"mount-point": Unicode(),
+                                      "device": Unicode(),
+                                      "filesystem": Unicode(),
                                       "total-space": Int()})
                              )),
     })
 
 FREE_SPACE = Message("free-space", {
-    "free-space": List(Tuple(Float(), utf8, Int()))})
+    "free-space": List(Tuple(Float(), Unicode(), Int()))})
 
 
 REGISTER = Message(
@@ -176,13 +175,13 @@ REGISTER = Message(
     # The term used in the UI is actually 'registration_key', but we keep
     # the message schema field as 'registration_password' in case a new
     # client contacts an older server.
-    {"registration_password": Any(utf8, Constant(None)),
-     "computer_title": utf8,
-     "hostname": utf8,
-     "account_name": utf8,
-     "tags": Any(utf8, Constant(None)),
+    {"registration_password": Any(Unicode(), Constant(None)),
+     "computer_title": Unicode(),
+     "hostname": Unicode(),
+     "account_name": Unicode(),
+     "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
-     "container-info": utf8,
+     "container-info": Unicode(),
      "juju-info": KeyDict(juju_data)},
     optional=["registration_password", "hostname", "tags", "vm-info",
               "container-info", "juju-info"])
@@ -195,11 +194,11 @@ REGISTER_PROVISIONED_MACHINE = Message(
 
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
-    {"hostname": utf8,
+    {"hostname": Unicode(),
      "otp": Any(Bytes(), Constant(None)),
      "instance_key": Unicode(),
-     "account_name": Any(utf8, Constant(None)),
-     "registration_password": Any(utf8, Constant(None)),
+     "account_name": Any(Unicode(), Constant(None)),
+     "registration_password": Any(Unicode(), Constant(None)),
      "reservation_key": Unicode(),
      "public_hostname": Unicode(),
      "local_hostname": Unicode(),
@@ -207,54 +206,53 @@ REGISTER_CLOUD_VM = Message(
      "ramdisk_key": Any(Unicode(), Constant(None)),
      "launch_index": Int(),
      "image_key": Unicode(),
-     "tags": Any(utf8, Constant(None)),
+     "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
      "public_ipv4": Unicode(),
      "local_ipv4": Unicode()},
-     optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
+    optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
 
 TEMPERATURE = Message("temperature", {
-    "thermal-zone": utf8,
+    "thermal-zone": Unicode(),
     "temperatures": List(Tuple(Int(), Float())),
     })
 
 PROCESSOR_INFO = Message(
     "processor-info",
     {"processors": List(KeyDict({"processor-id": Int(),
-                                 "vendor": utf8,
-                                 "model": utf8,
+                                 "vendor": Unicode(),
+                                 "model": Unicode(),
                                  "cache-size": Int(),
                                  },
-                                optional=["vendor", "cache-size"])),
-    })
+                                optional=["vendor", "cache-size"]))})
 
 user_data = KeyDict({
     "uid": Int(),
-    "username": utf8,
-    "name": Any(utf8, Constant(None)),
+    "username": Unicode(),
+    "name": Any(Unicode(), Constant(None)),
     "enabled": Bool(),
-    "location": Any(utf8, Constant(None)),
-    "home-phone": Any(utf8, Constant(None)),
-    "work-phone": Any(utf8, Constant(None)),
+    "location": Any(Unicode(), Constant(None)),
+    "home-phone": Any(Unicode(), Constant(None)),
+    "work-phone": Any(Unicode(), Constant(None)),
     "primary-gid": Any(Int(), Constant(None)),
-    "primary-groupname": utf8},
+    "primary-groupname": Unicode()},
     optional=["primary-groupname", "primary-gid"])
 
 group_data = KeyDict({
     "gid": Int(),
-    "name": utf8})
+    "name": Unicode()})
 
 USERS = Message(
     "users",
     {"operation-id": Int(),
      "create-users": List(user_data),
      "update-users": List(user_data),
-     "delete-users": List(utf8),
+     "delete-users": List(Unicode()),
      "create-groups": List(group_data),
      "update-groups": List(group_data),
-     "delete-groups": List(utf8),
-     "create-group-members": Dict(utf8, List(utf8)),
-     "delete-group-members": Dict(utf8, List(utf8)),
+     "delete-groups": List(Unicode()),
+     "create-group-members": Dict(Unicode(), List(Unicode())),
+     "delete-group-members": Dict(Unicode(), List(Unicode())),
      },
     # operation-id is only there for responses, and all other are
     # optional as long as one of them is there (no way to say that yet)
@@ -298,10 +296,10 @@ USERS_2_0 = Message(
               "create-groups", "update-groups", "delete-groups",
               "create-group-members", "delete-group-members"])
 
-opt_str = Any(utf8, Constant(None))
+opt_str = Any(Unicode(), Constant(None))
 OLD_USERS = Message(
     "users",
-    {"users": List(KeyDict({"username": utf8,
+    {"users": List(KeyDict({"username": Unicode(),
                             "uid": Int(),
                             "realname": opt_str,
                             "location": opt_str,
@@ -310,8 +308,8 @@ OLD_USERS = Message(
                             "enabled": Bool()},
                            optional=["location", "home-phone", "work-phone"])),
      "groups": List(KeyDict({"gid": Int(),
-                             "name": utf8,
-                             "members": List(utf8)}))},
+                             "name": Unicode(),
+                             "members": List(Unicode())}))},
     optional=["groups"])
 
 package_ids_or_ranges = List(Any(Tuple(Int(), Int()), Int()))
@@ -329,7 +327,7 @@ PACKAGES = Message(
               "not-available", "not-installed", "not-available-upgrades",
               "not-locked"])
 
-package_locks = List(Tuple(utf8, utf8, utf8))
+package_locks = List(Tuple(Unicode(), Unicode(), Unicode()))
 PACKAGE_LOCKS = Message(
     "package-locks",
     {"created": package_locks,
@@ -338,8 +336,8 @@ PACKAGE_LOCKS = Message(
 
 CHANGE_PACKAGE_HOLDS = Message(
     "change-package-holds",
-    {"created": List(utf8),
-     "deleted": List(utf8)},
+    {"created": List(Unicode()),
+     "deleted": List(Unicode())},
     optional=["created", "deleted"])
 
 CHANGE_PACKAGES_RESULT = Message(
@@ -348,7 +346,7 @@ CHANGE_PACKAGES_RESULT = Message(
      "must-install": List(Any(Int(), Constant(None))),
      "must-remove": List(Any(Int(), Constant(None))),
      "result-code": Int(),
-     "result-text": utf8},
+     "result-text": Unicode()},
     optional=["result-text", "must-install", "must-remove"])
 
 UNKNOWN_PACKAGE_HASHES = Message("unknown-package-hashes", {
@@ -358,17 +356,17 @@ UNKNOWN_PACKAGE_HASHES = Message("unknown-package-hashes", {
 
 PACKAGE_REPORTER_RESULT = Message("package-reporter-result", {
     "code": Int(),
-    "err": utf8})
+    "err": Unicode()})
 
 ADD_PACKAGES = Message("add-packages", {
-    "packages": List(KeyDict({"name": utf8,
+    "packages": List(KeyDict({"name": Unicode(),
                               "description": Unicode(),
                               "section": Unicode(),
-                              "relations": List(Tuple(Int(), utf8)),
+                              "relations": List(Tuple(Int(), Unicode())),
                               "summary": Unicode(),
                               "installed-size": Any(Int(), Constant(None)),
                               "size": Any(Int(), Constant(None)),
-                              "version": utf8,
+                              "version": Unicode(),
                               "type": Int(),
                               })),
     "request-id": Int(),
@@ -450,7 +448,7 @@ NETWORK_ACTIVITY = Message(
     # interval.
     {"activities": Dict(Bytes(), List(Tuple(Int(), Int(), Int())))})
 
-UPDATE_MANAGER_INFO = Message("update-manager-info", {"prompt": utf8})
+UPDATE_MANAGER_INFO = Message("update-manager-info", {"prompt": Unicode()})
 
 
 message_schemas = {}
