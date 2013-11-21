@@ -246,8 +246,7 @@ class MessageStoreTest(LandscapeTest):
         # store call an event handler when it encounters a broken
         # message and hooking on that for this assertion instead of
         # relying on this fragile check.
-        self.assertTrue("invalid literal for int()" in self.logfile.getvalue(),
-                        self.logfile.getvalue())
+        self.assertIn("invalid literal for int()", self.logfile.getvalue())
 
         self.logfile.seek(0)
         self.logfile.truncate()
@@ -256,8 +255,7 @@ class MessageStoreTest(LandscapeTest):
         self.store.set_accepted_types([])
         self.store.set_accepted_types(["empty", "empty2"])
 
-        self.assertTrue("invalid literal for int()" in self.logfile.getvalue(),
-                        self.logfile.getvalue())
+        self.assertIn("invalid literal for int()", self.logfile.getvalue())
 
     def test_wb_delete_messages_with_broken(self):
         self.log_helper.ignore_errors(ValueError)
@@ -280,7 +278,7 @@ class MessageStoreTest(LandscapeTest):
         messages = self.store.get_pending_messages()
         self.store.delete_old_messages()
         self.assertEqual(messages, [])
-        self.assertTrue("ValueError" in self.logfile.getvalue())
+        self.assertIn("ValueError", self.logfile.getvalue())
 
     def test_atomic_message_writing(self):
         """
@@ -417,7 +415,6 @@ class MessageStoreTest(LandscapeTest):
         self.assertFalse(self.store.is_pending(id))
 
     def test_is_pending_with_held_message(self):
-
         self.store.set_accepted_types(["empty"])
         id = self.store.add({"type": "data", "data": "A thing"})
 
