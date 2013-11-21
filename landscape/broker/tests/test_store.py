@@ -18,11 +18,15 @@ class MessageStoreTest(LandscapeTest):
         self.temp_dir = tempfile.mkdtemp()
         self.persist_filename = tempfile.mktemp()
         self.store = self.create_store()
+        self._time = 0
+
+    def get_time(self):
+        return self._time
 
     def create_store(self):
         persist = Persist(filename=self.persist_filename)
         store = MessageStore(persist, self.temp_dir, 20,
-                             get_time=lambda: 0)
+                             get_time=self.get_time)
         store.set_accepted_types(["empty", "data"])
         store.add_schema(Message("empty", {}))
         store.add_schema(Message("empty2", {}))
@@ -532,3 +536,11 @@ class MessageStoreTest(LandscapeTest):
         self.assertFalse(self.store.is_valid_session_id(disk_session_id))
         self.assertFalse(self.store.is_valid_session_id(hwinfo_session_id))
         self.assertTrue(self.store.is_valid_session_id(package_session_id))
+
+    def test_oldest_message(self):
+        """Can get the timestamp of oldest pending message."""
+        self._time = 0
+        self.store.add({"type": "empty"})
+        self._time = 10
+        self.store.add({"type": "empty"})
+        self.assertEqual(0, self.store.get_oldest_pending_message_timestamp())

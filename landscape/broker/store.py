@@ -264,6 +264,10 @@ class MessageStore(object):
         for filename in self._walk_messages():
             os.unlink(filename)
 
+    def get_oldest_pending_message_timestamp(self):
+        for filename in self._walk_messages():
+            return os.stat(filename).st_mtime
+
     def add_schema(self, schema):
         """Add a schema to be applied to messages of the given type.
 
@@ -303,11 +307,13 @@ class MessageStore(object):
         message_data = bpickle.dumps(message)
 
         filename = self._get_next_message_filename()
-
-        file = open(filename + ".tmp", "w")
-        file.write(message_data)
-        file.close()
-        os.rename(filename + ".tmp", filename)
+        temp_path = filename + ".tmp"
+        fh = open(temp_path, "w")
+        fh.write(message_data)
+        fh.close()
+        os.rename(temp_path, filename)
+        now = self._get_time()
+        os.utime(filename, (now, now))
 
         if not self.accepts(message["type"]):
             filename = self._set_flags(filename, HELD)
