@@ -3,7 +3,6 @@ from twisted.internet.error import ConnectError, ConnectionDone
 from twisted.internet.task import Clock
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from landscape.lib.amp import (
     MethodCallError, MethodCallServerProtocol, MethodCallClientProtocol,
