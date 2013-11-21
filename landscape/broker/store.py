@@ -35,7 +35,7 @@ would like::
 
     (next-expected-sequence: 4)
 
-meaning that the peer as received all the three messages that we sent, an so
+meaning that the peer has received all the three messages that we sent, and so
 the next message it expects to receive is the one identified by the number 4.
 At this point we update both our pending offset and our sequence values, and
 the store now looks like::
@@ -346,8 +346,8 @@ class MessageStore(object):
     def _walk_pending_messages(self):
         """Walk the files which are definitely pending."""
         pending_offset = self.get_pending_offset()
-        for i, filename in enumerate(self._walk_messages(exclude=HELD +
-                                                                 BROKEN)):
+        for i, filename in enumerate(
+                self._walk_messages(exclude=HELD + BROKEN)):
             if i >= pending_offset:
                 yield filename
 
