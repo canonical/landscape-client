@@ -1,6 +1,7 @@
 import tempfile
 import shutil
 import os
+from datetime import datetime
 
 from landscape.lib.persist import Persist
 from landscape.broker.store import MessageStore
@@ -543,4 +544,23 @@ class MessageStoreTest(LandscapeTest):
         self.store.add({"type": "empty"})
         self._time = 10
         self.store.add({"type": "empty"})
-        self.assertEqual(0, self.store.get_oldest_pending_message_timestamp())
+        self.assertEqual(
+            datetime.utcfromtimestamp(0),
+            self.store.get_oldest_pending_message_timestamp())
+
+    def test_messages_rejected_if_older_than_one_week(self):
+        """Messages stop accumulating after one week of not being sent."""
+        self._time = 0
+        self.store.add({"type": "empty"})
+        self._time = (7 * 24 * 60 * 60)
+        self.assertIsNot(None, self.store.add({"type": "empty"}))
+        self._time += 1
+        self.assertIs(None, self.store.add({"type": "empty"}))
+
+    def test_all_messages_deleted_after_one_week(self):
+        """All pending messages are deleted after a week of not being sent."""
+        self._time = 0
+        self.store.add({"type": "empty"})
+        self._time = (7 * 24 * 60 * 60) + 1
+        self.store.add({"type": "empty"})
+        self.assertEqual(0, self.store.count_pending_messages())

@@ -92,6 +92,7 @@ system and L{landscape.lib.message.got_next_expected} to check how the
 strategy for updating the pending offset and the sequence is implemented.
 """
 
+import datetime
 import time
 import itertools
 import logging
@@ -266,7 +267,8 @@ class MessageStore(object):
 
     def get_oldest_pending_message_timestamp(self):
         for filename in self._walk_messages():
-            return os.stat(filename).st_mtime
+            timestamp = os.stat(filename).st_mtime
+            return datetime.datetime.utcfromtimestamp(timestamp)
 
     def add_schema(self, schema):
         """Add a schema to be applied to messages of the given type.
@@ -296,9 +298,21 @@ class MessageStore(object):
 
         @param message: a C{dict} with a C{type} key and other keys conforming
             to the L{Message} schema for that specific message type.
-        @return: message_id, which is an identifier for the added message.
+
+        @return: message_id, which is an identifier for the added
+                 message or C{None} if the message was rejected.
         """
         assert "type" in message
+        oldest_timestamp = self.get_oldest_pending_message_timestamp()
+        if oldest_timestamp:
+            now = datetime.datetime.utcfromtimestamp(self._get_time())
+            time_since_oldest_message = now - oldest_timestamp
+            if time_since_oldest_message > datetime.timedelta(days=7):
+                # reject all messages after a week of not exchanging
+                # TODO: Should this raise an exception? To signal
+                # clients that the add was not successful
+                self.delete_all_messages()
+                return
         message = self._schemas[message["type"]].coerce(message)
 
         if "api" not in message:
