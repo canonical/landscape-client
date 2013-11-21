@@ -15,7 +15,6 @@ class MessageStoreTest(LandscapeTest):
 
     def setUp(self):
         super(MessageStoreTest, self).setUp()
-        self.time = 0
         self.temp_dir = tempfile.mkdtemp()
         self.persist_filename = tempfile.mktemp()
         self.store = self.create_store()
@@ -23,7 +22,7 @@ class MessageStoreTest(LandscapeTest):
     def create_store(self):
         persist = Persist(filename=self.persist_filename)
         store = MessageStore(persist, self.temp_dir, 20,
-                             get_time=self.get_time)
+                             get_time=lambda: 0)
         store.set_accepted_types(["empty", "data"])
         store.add_schema(Message("empty", {}))
         store.add_schema(Message("empty2", {}))
@@ -36,9 +35,6 @@ class MessageStoreTest(LandscapeTest):
         shutil.rmtree(self.temp_dir)
         if os.path.isfile(self.persist_filename):
             os.unlink(self.persist_filename)
-
-    def get_time(self):
-        return self.time
 
     def test_get_set_sequence(self):
         self.assertEqual(self.store.get_sequence(), 0)
@@ -102,6 +98,7 @@ class MessageStoreTest(LandscapeTest):
 
     def test_delete_no_messages(self):
         self.store.delete_old_messages()
+        self.assertEqual(0, self.store.count_pending_messages())
 
     def test_delete_old_messages_does_not_delete_held(self):
         """
@@ -162,7 +159,7 @@ class MessageStoreTest(LandscapeTest):
             self.store.add(dict(type="data", data=str(i)))
         il = [m["data"] for m in self.store.get_pending_messages(60)]
         self.assertEqual(il, map(str, range(60)))
-        self.assertEqual(set(os.listdir(self.temp_dir)), set(["0", "1", "2"]))
+        self.assertItemsEqual(os.listdir(self.temp_dir), ["0", "1", "2"])
 
         self.store.set_pending_offset(60)
         self.store.delete_old_messages()
@@ -236,9 +233,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         self.assertEqual(self.store.get_pending_messages(), [])
 
@@ -271,9 +267,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         messages = self.store.get_pending_messages()
 
@@ -384,8 +379,7 @@ class MessageStoreTest(LandscapeTest):
         self.assertTrue(os.path.exists(filename))
 
         store = MessageStore(Persist(filename=filename), self.temp_dir)
-        self.assertEqual(set(store.get_accepted_types()),
-                         set(["foo", "bar"]))
+        self.assertItemsEqual(store.get_accepted_types(), ["foo", "bar"])
 
     def test_is_pending_pre_and_post_message_delivery(self):
         self.log_helper.ignore_errors(ValueError)
@@ -401,9 +395,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         # And hold the second one.
         self.store.add({"type": "data", "data": "A thing"})
@@ -445,9 +438,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         self.assertEqual(self.store.get_pending_messages(), [])
 
