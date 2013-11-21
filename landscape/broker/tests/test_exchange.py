@@ -87,10 +87,6 @@ class MessageExchangeTest(LandscapeTest):
         When a resynchronisation event occurs the block on new messages
         being stored is lifted.
         """
-        broker = BrokerServer(self.config, self.reactor,
-                              self.exchanger, None,
-                              self.mstore, None)
-        self.mstore.set_accepted_types(["empty"])
         self.reactor.fire("resynchronize-clients", [])
         persist = Persist(filename=self.persist_filename)
         self.assertFalse(persist.get("blackhole-messages"))
