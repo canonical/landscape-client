@@ -61,7 +61,7 @@ class ExchangeStore(object):
 
     @with_cursor
     def add_message_context(
-        self, cursor, operation_id, secure_id, message_type):
+            self, cursor, operation_id, secure_id, message_type):
         """Add a L{MessageContext} with the given data."""
         params = (operation_id, secure_id, message_type, time.time())
         cursor.execute(

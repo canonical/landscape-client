@@ -82,6 +82,19 @@ class MessageExchangeTest(LandscapeTest):
         messages = self.transport.payloads[0]["messages"]
         self.assertMessages(messages, [{"type": "empty"}])
 
+    def test_that_resynchronize_clears_message_blackhole(self):
+        """
+        When a resynchronisation event occurs the block on new messages
+        being stored is lifted.
+        """
+        broker = BrokerServer(self.config, self.reactor,
+                              self.exchanger, None,
+                              self.mstore, None)
+        self.mstore.set_accepted_types(["empty"])
+        self.reactor.fire("resynchronize-clients", [])
+        persist = Persist(filename=self.persist_filename)
+        self.assertFalse(persist.get("blackhole-messages"))
+
     def test_send(self):
         """
         The send method should cause a message to show up in the next exchange.

@@ -470,6 +470,7 @@ class MessageExchange(object):
         # being sent to the server, dropping the existing session_ids means
         # that messages sent with those IDs will be dropped by the broker.
         self._message_store.drop_session_ids(scopes)
+        self._message_store.clear_blackhole()
         self.schedule_exchange(urgent=True)
 
     def _handle_set_intervals(self, message):

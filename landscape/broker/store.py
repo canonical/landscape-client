@@ -293,6 +293,9 @@ class MessageStore(object):
                 i += 1
         return False
 
+    def clear_blackhole(self):
+        self._persist.remove("blackhole-messages")
+
     def add(self, message):
         """Queue a message for delivery.
 
@@ -303,6 +306,8 @@ class MessageStore(object):
                  message or C{None} if the message was rejected.
         """
         assert "type" in message
+        if self._persist.get("blackhole-messages"):
+            return
         oldest_timestamp = self.get_oldest_pending_message_timestamp()
         if oldest_timestamp:
             now = datetime.datetime.utcfromtimestamp(self._get_time())
@@ -312,6 +317,7 @@ class MessageStore(object):
                 # TODO: Should this raise an exception? To signal
                 # clients that the add was not successful
                 self.delete_all_messages()
+                self._persist.set("blackhole-messages", True)
                 return
         message = self._schemas[message["type"]].coerce(message)
 
