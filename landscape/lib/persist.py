@@ -479,6 +479,7 @@ class Backend(object):
 
     For example:
 
+        >>> backend = Backend()
         >>> root = backend.new()
         >>> backend.set(root, "foo", "bar")
         'bar'
