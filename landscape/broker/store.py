@@ -291,7 +291,7 @@ class MessageStore(object):
         """Queue a message for delivery.
 
         @param message: a C{dict} with a C{type} key and other keys conforming
-            to the L{Message} schema for that specifc message type.
+            to the L{Message} schema for that specific message type.
         @return: message_id, which is an identifier for the added message.
         """
         assert "type" in message
@@ -425,7 +425,7 @@ class MessageStore(object):
     def get_session_id(self, scope=None):
         """Generate a unique session identifier, persist it and return it.
 
-        See also L{landscape.broker.server.Broker Server.get_session_id} for
+        See also L{landscape.broker.server.BrokerServer.get_session_id} for
         more information on what this is used for.
 
         @param scope: A string identifying the scope of interest of requesting
@@ -456,9 +456,7 @@ class MessageStore(object):
         return session_id in self._persist.get("session-ids", {})
 
     def drop_session_ids(self, scopes=None):
-        """
-        Drop all session ids.
-        """
+        """Drop all session ids."""
         new_session_ids = {}
         if scopes:
             session_ids = self._persist.get("session-ids", {})
