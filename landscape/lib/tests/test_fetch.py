@@ -257,6 +257,20 @@ class FetchTest(LandscapeTest):
         self.assertEqual(repr(PyCurlError(60, "pycurl error")),
                          "<PyCurlError args=(60, 'pycurl error')>")
 
+    def test_pycurl_follow_true(self):
+        curl = CurlStub("result")
+        result = fetch("http://example.com", curl=curl,
+                       follow=True)
+        self.assertEqual(result, "result")
+        self.assertEqual(1, curl.options[pycurl.FOLLOWLOCATION])
+
+    def test_pycurl_follow_false(self):
+        curl = CurlStub("result")
+        result = fetch("http://example.com", curl=curl,
+                       follow=False)
+        self.assertEqual(result, "result")
+        self.assertNotIn(pycurl.FOLLOWLOCATION, curl.options.keys())
+
     def test_create_curl(self):
         curls = []
 
