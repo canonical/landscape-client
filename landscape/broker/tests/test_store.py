@@ -554,6 +554,10 @@ class MessageStoreTest(LandscapeTest):
         self.assertIsNot(None, self.store.add({"type": "empty"}))
         self._time += 1
         self.assertIs(None, self.store.add({"type": "empty"}))
+        self.assertIn("WARNING: Unable to succesfully communicate with "
+                      "Landscape server for more than a week, deleting all "
+                      "pending messages and waiting for resync.",
+                      self.logfile.getvalue())
 
     def test_all_messages_deleted_after_one_week(self):
         """All pending messages are deleted after a week of not being sent."""
@@ -571,6 +575,8 @@ class MessageStoreTest(LandscapeTest):
         self._time = (7 * 24 * 60 * 60) + 1
         self.store.add({"type": "empty"})
         self.assertIs(None, self.store.add({"type": "empty"}))
+        self.assertIn("DEBUG: Dropped message, awaiting resync.",
+                      self.logfile.getvalue())
 
     def test_after_clearing_blackhole_messages_are_accepted_again(self):
         self.store.add({"type": "empty"})

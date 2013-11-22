@@ -307,6 +307,7 @@ class MessageStore(object):
         """
         assert "type" in message
         if self._persist.get("blackhole-messages"):
+            logging.debug("Dropped message, awaiting resync.")
             return
         oldest_timestamp = self.get_oldest_pending_message_timestamp()
         if oldest_timestamp:
@@ -314,10 +315,12 @@ class MessageStore(object):
             time_since_oldest_message = now - oldest_timestamp
             if time_since_oldest_message > datetime.timedelta(days=7):
                 # reject all messages after a week of not exchanging
-                # TODO: Should this raise an exception? To signal
-                # clients that the add was not successful
                 self.delete_all_messages()
                 self._persist.set("blackhole-messages", True)
+                logging.warning(
+                    "Unable to succesfully communicate with Landscape server "
+                    "for more than a week, deleting all pending messages and "
+                    "waiting for resync.")
                 return
         message = self._schemas[message["type"]].coerce(message)
 
