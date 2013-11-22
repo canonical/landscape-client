@@ -81,8 +81,6 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     if insecure:
         curl.setopt(pycurl.SSL_VERIFYPEER, False)
 
-
-
     curl.setopt(pycurl.URL, str(url))
     if follow:
         curl.setopt(pycurl.FOLLOWLOCATION, 1)
