@@ -28,6 +28,7 @@ class ValidTagTest(unittest.TestCase):
         self.assertTrue(
             is_valid_tag_list(
                 u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o, server"))
+        self.assertTrue(is_valid_tag_list())
 
     def test_invalid_tag_list(self):
         """Test invalid taglist format strings."""

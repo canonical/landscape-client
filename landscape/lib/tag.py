@@ -13,9 +13,4 @@ def is_valid_tag_list(tag_list):
     @param tag_list: string like london, server which will be split on the
     commas and each tag verified for validity.
     """
-    if tag_list:
-        tags = [tag.strip() for tag in tag_list.split(",")]
-        for tag in tags:
-            if not is_valid_tag(tag):
-                return False
-    return True
+    return all(is_valid_tag(tag.strip()) for tag in tag_list.split(","))
