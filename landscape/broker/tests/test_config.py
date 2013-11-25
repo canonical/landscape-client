@@ -98,6 +98,19 @@ class ConfigurationTests(LandscapeTest):
 
         self.assertEqual(configuration.tags, "check,linode,profile-test")
 
+    def test_access_group_handling(self):
+        """
+        The 'access_group' value specified in the configuration file is
+        passed through.
+        """
+        filename = self.makeFile("[client]\n"
+                                 "access_group = webserver")
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertEqual(configuration.access_group, "webserver")
+
     def test_missing_url_is_defaulted(self):
         """
         Test that if we don't explicitly pass a URL, then this value is

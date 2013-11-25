@@ -562,8 +562,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result(u"root")
         self.mocker.replay()
         self.script.query_script_plugin()
-        self.assertEqual(self.config.script_users,
-                         "root")
+        self.assertEqual(self.config.script_users, "root")
 
     def test_tags_not_defined_on_command_line(self):
         """
@@ -607,11 +606,68 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEqual(self.config.tags, u"server,london")
 
     def test_invalid_tags_defined_on_command_line_raises_error(self):
+        """
+        Invalid tags on the command line raises a ConfigurationError.
+        """
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
         self.expect(raw_input_mock(ANY)).count(0)
         self.mocker.replay()
         self.config.load_command_line(["--tags", u"<script>alert();</script>"])
         self.assertRaises(ConfigurationError, self.script.query_tags)
+
+    def test_access_group_not_defined_on_command_line(self):
+        """
+        If an access group is not provided, the user should be prompted for it.
+        """
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help("You may provide an access group for this "
+                              "computer e.g. webservers.")
+        script_mock.prompt("access_group", "Access group", False)
+        self.mocker.replay()
+        self.script.query_access_group()
+
+    def test_access_group_defined_on_command_line(self):
+        """
+        An access group defined on the command line can be verified by the
+        user.
+        """
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+        self.config.load_command_line(["--access-group", u"webservers"])
+        self.script.query_access_group()
+        self.assertEqual(self.config.access_group, u"webservers")
+
+    def test_invalid_access_group_entered_by_user(self):
+        """
+        If an access group is not provided, the user should be prompted
+        for it, and it should be a valid name for an access group, if
+        not the user should be prompted for it again.
+        """
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help("You may provide an access group for this "
+                              "computer e.g. webservers.")
+        script_mock.prompt_get_input("Access group: ", False)
+        self.mocker.result(u"<script>alert();</script>")
+        script_mock.show_help("Access group names may only contain "
+                              "alphanumeric characters.")
+        script_mock.prompt_get_input("Access group: ", False)
+        self.mocker.result(u"webserver")
+        self.mocker.replay()
+        self.script.query_access_group()
+
+    def test_invalid_access_group_defined_on_command_line_raises_error(self):
+        """
+        An invalid access group on the command line raise a ConfigurationError.
+        """
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+        self.config.load_command_line(
+            ["--access-group", u"<script>alert();</script>"])
+        self.assertRaises(ConfigurationError, self.script.query_access_group)
 
     def test_show_header(self):
         help_snippet = "This script will"
@@ -629,6 +685,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock.query_registration_key()
         script_mock.query_proxies()
         script_mock.query_script_plugin()
+        script_mock.query_access_group()
         script_mock.query_tags()
         self.mocker.replay()
 
@@ -691,6 +748,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                                  "https_proxy = https://old.proxy\n"
                                  "url = http://url\n"
                                  "include_manager_plugins = ScriptExecution\n"
+                                 "access_group = webservers\n"
                                  "tags = london, server")
 
         raw_input = self.mocker.replace("__builtin__.raw_input",
@@ -706,6 +764,8 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         expect(raw_input(C("[http://old.proxy]"))).result("http://new.proxy")
         expect(raw_input(C("[https://old.proxy]"))).result("https://new.proxy")
         expect(raw_input(C("Enable script execution? [Y/n]"))).result("n")
+        expect(raw_input(C("Access group [webservers]: "))).result(
+            u"databases")
         expect(raw_input(C("Tags [london, server]: "))).result(
             u"glasgow, laptop")
 
@@ -730,6 +790,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.assertEqual(config.http_proxy, "http://new.proxy")
         self.assertEqual(config.https_proxy, "https://new.proxy")
         self.assertEqual(config.include_manager_plugins, "")
+        self.assertEqual(config.access_group, u"databases")
         self.assertEqual(config.tags, u"glasgow, laptop")
 
     def test_silent_setup(self):
