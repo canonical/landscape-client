@@ -1058,20 +1058,16 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
 class GetAcceptedTypesDiffTest(LandscapeTest):
 
     def test_diff_empty(self):
-        self.assertEqual(get_accepted_types_diff([], []),
-                         "")
+        self.assertEqual(get_accepted_types_diff([], []), "")
 
     def test_diff_add(self):
-        self.assertEqual(get_accepted_types_diff([], ["wubble"]),
-                         "+wubble")
+        self.assertEqual(get_accepted_types_diff([], ["wubble"]), "+wubble")
 
     def test_diff_remove(self):
-        self.assertEqual(get_accepted_types_diff(["wubble"], []),
-                         "-wubble")
+        self.assertEqual(get_accepted_types_diff(["wubble"], []), "-wubble")
 
     def test_diff_no_change(self):
-        self.assertEqual(get_accepted_types_diff(["ooga"], ["ooga"]),
-                         "ooga")
+        self.assertEqual(get_accepted_types_diff(["ooga"], ["ooga"]), "ooga")
 
     def test_diff_complex(self):
         self.assertEqual(get_accepted_types_diff(["foo", "bar"],
