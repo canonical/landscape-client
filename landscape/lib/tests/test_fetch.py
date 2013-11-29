@@ -87,7 +87,7 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertEqual(curl.options,
                          {pycurl.URL: "http://example.com",
-                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
                           pycurl.LOW_SPEED_LIMIT: 1,
@@ -103,7 +103,7 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertEqual(curl.options,
                          {pycurl.URL: "http://example.com",
-                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
                           pycurl.LOW_SPEED_LIMIT: 1,
@@ -121,7 +121,7 @@ class FetchTest(LandscapeTest):
         self.assertEqual(curl.options[pycurl.READFUNCTION](), "data")
         self.assertEqual(curl.options,
                          {pycurl.URL: "http://example.com",
-                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
                           pycurl.LOW_SPEED_LIMIT: 1,
@@ -140,7 +140,7 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertEqual(curl.options,
                          {pycurl.URL: "https://example.com",
-                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
                           pycurl.LOW_SPEED_LIMIT: 1,
@@ -164,7 +164,7 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertEqual(curl.options,
                          {pycurl.URL: "http://example.com",
-                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
                           pycurl.LOW_SPEED_LIMIT: 1,
@@ -182,7 +182,7 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertEqual(curl.options,
                          {pycurl.URL: "http://example.com",
-                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 5,
                           pycurl.LOW_SPEED_LIMIT: 1,
@@ -238,7 +238,7 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertEqual(curl.options,
                          {pycurl.URL: "http://example.com/get-ca-cert",
-                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
                           pycurl.LOW_SPEED_LIMIT: 1,
@@ -257,6 +257,20 @@ class FetchTest(LandscapeTest):
         self.assertEqual(repr(PyCurlError(60, "pycurl error")),
                          "<PyCurlError args=(60, 'pycurl error')>")
 
+    def test_pycurl_follow_true(self):
+        curl = CurlStub("result")
+        result = fetch("http://example.com", curl=curl,
+                       follow=True)
+        self.assertEqual(result, "result")
+        self.assertEqual(1, curl.options[pycurl.FOLLOWLOCATION])
+
+    def test_pycurl_follow_false(self):
+        curl = CurlStub("result")
+        result = fetch("http://example.com", curl=curl,
+                       follow=False)
+        self.assertEqual(result, "result")
+        self.assertNotIn(pycurl.FOLLOWLOCATION, curl.options.keys())
+
     def test_create_curl(self):
         curls = []
 
@@ -272,7 +286,7 @@ class FetchTest(LandscapeTest):
             self.assertEqual(result, "result")
             self.assertEqual(curl.options,
                              {pycurl.URL: "http://example.com",
-                              pycurl.FOLLOWLOCATION: True,
+                              pycurl.FOLLOWLOCATION: 1,
                               pycurl.MAXREDIRS: 5,
                               pycurl.CONNECTTIMEOUT: 30,
                               pycurl.LOW_SPEED_LIMIT: 1,

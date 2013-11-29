@@ -44,7 +44,7 @@ class PyCurlError(FetchError):
 
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
-          connect_timeout=30, total_timeout=600, insecure=False):
+          connect_timeout=30, total_timeout=600, insecure=False, follow=True):
     """Retrieve a URL and return the content.
 
     @param url: The url to be fetched.
@@ -56,6 +56,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     @param insecure: If true, perform curl using insecure option which will
                      not attempt to verify authenticity of the peer's
                      certificate. (Used during autodiscovery)
+    @param follow: If True, follow HTTP redirects (default True).
     """
     import pycurl
     output = StringIO(data)
@@ -82,7 +83,9 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
         curl.setopt(pycurl.SSL_VERIFYPEER, False)
 
     curl.setopt(pycurl.URL, str(url))
-    curl.setopt(pycurl.FOLLOWLOCATION, True)
+    if follow:
+        curl.setopt(pycurl.FOLLOWLOCATION, 1)
+
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)
     curl.setopt(pycurl.LOW_SPEED_LIMIT, 1)

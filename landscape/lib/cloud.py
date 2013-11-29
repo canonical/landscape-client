@@ -2,6 +2,7 @@ from landscape.lib.fetch import fetch_async
 
 EC2_HOST = "169.254.169.254"
 EC2_API = "http://%s/latest" % (EC2_HOST,)
+MAX_LENGTH = 64
 
 
 def fetch_ec2_meta_data(fetch=None):
@@ -21,15 +22,15 @@ def fetch_ec2_meta_data(fetch=None):
     def return_result(ignore):
         """Record the instance data returned by the EC2 API."""
 
-        def _unicode_or_none(value):
+        def _process_result(value):
             if value is not None:
-                return value.decode("utf-8")
+                return value.decode("utf-8")[:MAX_LENGTH]
 
         (instance_id, instance_type, ami_id) = cloud_data
         return {
-            "instance-id": _unicode_or_none(instance_id),
-            "ami-id": _unicode_or_none(ami_id),
-            "instance-type": _unicode_or_none(instance_type)}
+            "instance-id": _process_result(instance_id),
+            "ami-id": _process_result(ami_id),
+            "instance-type": _process_result(instance_type)}
     deferred.addCallback(return_result)
     return deferred
 
@@ -42,4 +43,4 @@ def _fetch_ec2_item(path, accumulate, fetch=None):
     url = EC2_API + "/meta-data/" + path
     if fetch is None:
         fetch = fetch_async
-    return fetch(url).addCallback(accumulate.append)
+    return fetch(url, follow=False).addCallback(accumulate.append)

@@ -54,7 +54,7 @@ VmallocChunk:   107432 kB
         self.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.query_results = {}
 
-        def fetch_stub(url):
+        def fetch_stub(url, **kwargs):
             value = self.query_results[url]
             if isinstance(value, Exception):
                 return fail(value)

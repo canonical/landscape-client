@@ -1,4 +1,5 @@
-from landscape.lib.cloud import (EC2_API, _fetch_ec2_item, fetch_ec2_meta_data)
+from landscape.lib.cloud import (
+    EC2_API, _fetch_ec2_item, fetch_ec2_meta_data, MAX_LENGTH)
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.tests.helpers import LandscapeTest
 from twisted.internet.defer import succeed, fail
@@ -9,8 +10,10 @@ class CloudTest(LandscapeTest):
     def setUp(self):
         LandscapeTest.setUp(self)
         self.query_results = {}
+        self.kwargs = {}
 
-        def fetch_stub(url):
+        def fetch_stub(url, **kwargs):
+            self.kwargs = kwargs
             value = self.query_results[url]
             if isinstance(value, Exception):
                 return fail(value)
@@ -79,6 +82,19 @@ class CloudTest(LandscapeTest):
                           "instance-type": u"hs1.8xlarge"},
                          result)
 
+    def test_fetch_ec2_meta_data_truncates(self):
+        """L{_fetch_ec2_meta_data} truncates values that are too long."""
+        self.add_query_result("ami-id", "a" * MAX_LENGTH * 5)
+        self.add_query_result("instance-id", "b" * MAX_LENGTH * 5)
+        self.add_query_result("instance-type", "c" * MAX_LENGTH * 5)
+        deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
+        result = self.successResultOf(deferred)
+        self.assertEqual(
+            {"ami-id": "a" * MAX_LENGTH,
+             "instance-id": "b" * MAX_LENGTH,
+             "instance-type": "c" * MAX_LENGTH},
+            result)
+
     def test_wb_fetch_ec2_item_multiple_items_appends_accumulate_list(self):
         """
         L{_fetch_ec2_item} retrieves individual meta-data items from the
@@ -105,3 +121,16 @@ class CloudTest(LandscapeTest):
             "other-id", accumulate, fetch=self.fetch_func)
         failure = self.failureResultOf(deferred)
         self.assertEqual("Error 60: pycurl error", failure.getErrorMessage())
+
+    def test_wb_fetch_ec2_meta_data_nofollow(self):
+        """
+        L{_fetch_ec2_meta_data} sets C{follow} to C{False} to avoid following
+        HTTP redirects.
+        """
+        self.log_helper.ignore_errors(PyCurlError)
+        self.add_query_result("other-id", PyCurlError(60, "pycurl error"))
+        accumulate = []
+        deferred = _fetch_ec2_item(
+            "other-id", accumulate, fetch=self.fetch_func)
+        self.failureResultOf(deferred)
+        self.assertEqual({"follow": False}, self.kwargs)
