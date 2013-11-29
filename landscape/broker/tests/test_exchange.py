@@ -146,7 +146,7 @@ class MessageExchangeTest(LandscapeTest):
         represents the types that we think the server wants.
         """
         payload = self.exchanger._make_payload()
-        self.assertTrue("accepted-types" in payload)
+        self.assertIn("accepted-types", payload)
         self.assertEqual(payload["accepted-types"], md5("").digest())
 
     def test_handle_message_sets_accepted_types(self):
@@ -179,7 +179,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.handle_message(
             {"type": "accepted-types", "types": ["ack", "bar"]})
         payload = self.exchanger._make_payload()
-        self.assertTrue("accepted-types" in payload)
+        self.assertIn("accepted-types", payload)
         self.assertEqual(payload["accepted-types"],
                          md5("ack;bar").digest())
 
@@ -948,12 +948,12 @@ class MessageExchangeTest(LandscapeTest):
         expected_log_entry = (
             "Response message with operation-id 234567 was discarded because "
             "the client's secure ID has changed in the meantime")
-        self.assertTrue(expected_log_entry in self.logfile.getvalue())
+        self.assertIn(expected_log_entry, self.logfile.getvalue())
 
         # The MessageContext was removed after utilisation.
         ids_after = self.exchange_store.all_operation_ids()
-        self.assertTrue(len(ids_after) == len(ids_before) - 1)
-        self.assertFalse('234567' in ids_after)
+        self.assertEqual(len(ids_after), len(ids_before) - 1)
+        self.assertNotIn('234567', ids_after)
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
