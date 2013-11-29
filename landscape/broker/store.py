@@ -92,8 +92,6 @@ system and L{landscape.lib.message.got_next_expected} to check how the
 strategy for updating the pending offset and the sequence is implemented.
 """
 
-import datetime
-import time
 import itertools
 import logging
 import os
@@ -127,9 +125,7 @@ class MessageStore(object):
 
     api = SERVER_API
 
-    def __init__(self, persist, directory, directory_size=1000,
-                 get_time=time.time):
-        self._get_time = get_time
+    def __init__(self, persist, directory, directory_size=1000):
         self._directory = directory
         self._directory_size = directory_size
         self._schemas = {}
@@ -265,11 +261,6 @@ class MessageStore(object):
         for filename in self._walk_messages():
             os.unlink(filename)
 
-    def get_oldest_pending_message_timestamp(self):
-        for filename in self._walk_messages():
-            timestamp = os.stat(filename).st_mtime
-            return datetime.datetime.utcfromtimestamp(timestamp)
-
     def add_schema(self, schema):
         """Add a schema to be applied to messages of the given type.
 
@@ -293,6 +284,31 @@ class MessageStore(object):
                 i += 1
         return False
 
+    def record_success(self, timestamp):
+        """Record a successful exchange."""
+        self._persist.remove("first-failure-time")
+        self.clear_blackhole()
+
+    def record_failure(self, timestamp):
+        """
+        Record a failed exchange, if all exchanges for the past week have
+        failed then clear all pending messages, blackhole any future
+        ones and request a full re-sync.
+        """
+        if not self._persist.has("first-failure-time"):
+            self._persist.set("first-failure-time", timestamp)
+        continued_failure_time = timestamp - self._persist.get(
+            "first-failure-time")
+        if continued_failure_time > (60 * 60 * 24 * 7):
+            # reject all messages after a week of not exchanging
+            self.delete_all_messages()
+            self.add({"type": "resynchronize"})
+            self._persist.set("blackhole-messages", True)
+            logging.warning(
+                "Unable to succesfully communicate with Landscape server "
+                "for more than a week, deleting all pending messages and "
+                "waiting for resync.")
+
     def clear_blackhole(self):
         self._persist.remove("blackhole-messages")
 
@@ -309,19 +325,6 @@ class MessageStore(object):
         if self._persist.get("blackhole-messages"):
             logging.debug("Dropped message, awaiting resync.")
             return
-        oldest_timestamp = self.get_oldest_pending_message_timestamp()
-        if oldest_timestamp:
-            now = datetime.datetime.utcfromtimestamp(self._get_time())
-            time_since_oldest_message = now - oldest_timestamp
-            if time_since_oldest_message > datetime.timedelta(days=7):
-                # reject all messages after a week of not exchanging
-                self.delete_all_messages()
-                self._persist.set("blackhole-messages", True)
-                logging.warning(
-                    "Unable to succesfully communicate with Landscape server "
-                    "for more than a week, deleting all pending messages and "
-                    "waiting for resync.")
-                return
         message = self._schemas[message["type"]].coerce(message)
 
         if "api" not in message:
@@ -335,8 +338,6 @@ class MessageStore(object):
         fh.write(message_data)
         fh.close()
         os.rename(temp_path, filename)
-        now = self._get_time()
-        os.utime(filename, (now, now))
 
         if not self.accepts(message["type"]):
             filename = self._set_flags(filename, HELD)

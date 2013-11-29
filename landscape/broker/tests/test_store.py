@@ -1,7 +1,6 @@
 import tempfile
 import shutil
 import os
-from datetime import datetime
 
 from landscape.lib.persist import Persist
 from landscape.broker.store import MessageStore
@@ -19,20 +18,16 @@ class MessageStoreTest(LandscapeTest):
         self.temp_dir = tempfile.mkdtemp()
         self.persist_filename = tempfile.mktemp()
         self.store = self.create_store()
-        self._time = 0
-
-    def get_time(self):
-        return self._time
 
     def create_store(self):
         persist = Persist(filename=self.persist_filename)
-        store = MessageStore(persist, self.temp_dir, 20,
-                             get_time=self.get_time)
-        store.set_accepted_types(["empty", "data"])
+        store = MessageStore(persist, self.temp_dir, 20)
+        store.set_accepted_types(["empty", "data", "resynchronize"])
         store.add_schema(Message("empty", {}))
         store.add_schema(Message("empty2", {}))
         store.add_schema(Message("data", {"data": Bytes()}))
         store.add_schema(Message("unaccepted", {"data": Bytes()}))
+        store.add_schema(Message("resynchronize", {}))
         return store
 
     def tearDown(self):
@@ -538,49 +533,61 @@ class MessageStoreTest(LandscapeTest):
         self.assertFalse(self.store.is_valid_session_id(hwinfo_session_id))
         self.assertTrue(self.store.is_valid_session_id(package_session_id))
 
-    def test_oldest_message(self):
-        """Can get the timestamp of oldest pending message."""
-        self.store.add({"type": "empty"})
-        self._time = 10
-        self.store.add({"type": "empty"})
+    def test_record_failure_sets_first_failure_time(self):
+        """first-failure-time recorded when calling record_failure()."""
+        self.store.record_failure(123)
         self.assertEqual(
-            datetime.utcfromtimestamp(0),
-            self.store.get_oldest_pending_message_timestamp())
+            123, self.store._persist.get("first-failure-time"))
 
-    def test_messages_rejected_if_older_than_one_week(self):
+    def test_messages_rejected_if_failure_older_than_one_week(self):
         """Messages stop accumulating after one week of not being sent."""
-        self.store.add({"type": "empty"})
-        self._time = (7 * 24 * 60 * 60)
+        self.store.record_failure(0)
+        self.store.record_failure(7 * 24 * 60 * 60)
         self.assertIsNot(None, self.store.add({"type": "empty"}))
-        self._time += 1
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
         self.assertIs(None, self.store.add({"type": "empty"}))
         self.assertIn("WARNING: Unable to succesfully communicate with "
                       "Landscape server for more than a week, deleting all "
                       "pending messages and waiting for resync.",
                       self.logfile.getvalue())
 
-    def test_all_messages_deleted_after_one_week(self):
+    def test_all_pending_messages_deleted_after_one_week(self):
         """All pending messages are deleted after a week of not being sent."""
+        self.store.record_failure(0)
         self.store.add({"type": "empty"})
-        self._time = (7 * 24 * 60 * 60) + 1
-        self.store.add({"type": "empty"})
-        self.assertEqual(0, self.store.count_pending_messages())
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
+        # There's one added for the resynchronize
+        self.assertEqual(1, self.store.count_pending_messages())
+        [message] = self.store.get_pending_messages()
+        self.assertNotEqual(message["type"], "empty")
 
     def test_no_new_messages_after_discarded_following_one_week(self):
         """
         Following the deletion of messages after one week of not being sent,
         no new messages are queued.
         """
+        self.store.record_failure(0)
         self.store.add({"type": "empty"})
-        self._time = (7 * 24 * 60 * 60) + 1
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
         self.store.add({"type": "empty"})
         self.assertIs(None, self.store.add({"type": "empty"}))
         self.assertIn("DEBUG: Dropped message, awaiting resync.",
                       self.logfile.getvalue())
 
     def test_after_clearing_blackhole_messages_are_accepted_again(self):
+        """After a successful exchange, messages are accepted again."""
+        self.store.record_failure(0)
         self.store.add({"type": "empty"})
-        self._time = (7 * 24 * 60 * 60) + 1
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
         self.store.add({"type": "empty"})
-        self.store.clear_blackhole()
+        self.assertIs(None, self.store.add({"type": "empty"}))
+        self.store.record_success((7 * 24 * 60 * 60) + 2)
         self.assertIsNot(None, self.store.add({"type": "empty"}))
+
+    def test_resync_requested_after_one_week_of_failures(self):
+        """After a week of failures, a resync is requested."""
+        self.store.record_failure(0)
+        self.store.add({"type": "empty"})
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
+        [message] = self.store.get_pending_messages()
+        self.assertEqual("resynchronize", message["type"])
