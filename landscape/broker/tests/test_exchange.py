@@ -15,6 +15,15 @@ from landscape.broker.tests.helpers import ExchangeHelper
 from landscape.broker.server import BrokerServer
 
 
+class RaisingTransport(object):
+
+    def get_url(self2):
+        return ""
+
+    def exchange(self2, *args):
+        raise RuntimeError("Failed to communicate.")
+
+
 class MessageExchangeTest(LandscapeTest):
 
     helpers = [ExchangeHelper]
@@ -971,40 +980,19 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(len(ids_after), len(ids_before) - 1)
         self.assertNotIn('234567', ids_after)
 
-
-class FailingExchangeTest(LandscapeTest):
-
-    helpers = [ExchangeHelper]
-
-    def setUp(self):
-        super(FailingExchangeTest, self).setUp()
-
-        class RaisingTransport(object):
-
-            def get_url(self2):
-                return ""
-
-            def exchange(self2, *args):
-                raise RuntimeError("Failed to communicate.")
-
-        self.transport = RaisingTransport()
-
     def test_error_exchanging_causes_failed_exchange(self):
         """
         If a traceback occurs whilst exchanging, the 'exchange-failed'
         event should be fired.
         """
-
         events = []
 
         def failed_exchange():
             events.append(None)
 
         self.reactor.call_on("exchange-failed", failed_exchange)
-        exchanger = MessageExchange(
-            self.reactor, self.mstore, self.transport,
-            self.identity, self.exchange_store, self.config)
-        exchanger.exchange()
+        self.exchanger._transport = RaisingTransport()
+        self.exchanger.exchange()
         self.assertEqual([None], events)
 
     def test_error_exchanging_records_failure_in_message_store(self):
@@ -1018,7 +1006,7 @@ class FailingExchangeTest(LandscapeTest):
         self.mocker.replay()
 
         exchanger = MessageExchange(
-            self.reactor, mock_message_store, self.transport,
+            self.reactor, mock_message_store, RaisingTransport(),
             self.identity, self.exchange_store, self.config)
         exchanger.exchange()
 
@@ -1033,20 +1021,16 @@ class FailingExchangeTest(LandscapeTest):
             events.append(None)
 
         self.reactor.call_on("exchange-done", exchange_done)
-        exchanger = MessageExchange(
-            self.reactor, self.mstore, self.transport,
-            self.identity, self.exchange_store, self.config)
-        exchanger.exchange()
+        self.exchanger._transport = RaisingTransport()
+        self.exchanger.exchange()
         self.assertEqual([None], events)
 
     def test_error_exchanging_logs_failure(self):
         """
         If a traceback occurs whilst exchanging, the failure is logged.
         """
-        exchanger = MessageExchange(
-            self.reactor, self.mstore, self.transport,
-            self.identity, self.exchange_store, self.config)
-        exchanger.exchange()
+        self.exchanger._transport = RaisingTransport()
+        self.exchanger.exchange()
         self.assertIn("Message exchange failed.", self.logfile.getvalue())
 
 

@@ -470,7 +470,6 @@ class MessageExchange(object):
         # being sent to the server, dropping the existing session_ids means
         # that messages sent with those IDs will be dropped by the broker.
         self._message_store.drop_session_ids(scopes)
-        self._message_store.clear_blackhole()
         self.schedule_exchange(urgent=True)
 
     def _handle_set_intervals(self, message):
@@ -514,7 +513,7 @@ class MessageExchange(object):
 
         deferred = Deferred()
 
-        def clean_up():
+        def exchange_completed():
             self.schedule_exchange(force=True)
             self._reactor.fire("exchange-done")
             logging.info("Message exchange completed in %s.",
@@ -532,14 +531,14 @@ class MessageExchange(object):
             else:
                 self._reactor.fire("exchange-failed")
                 logging.info("Message exchange failed.")
-            clean_up()
+            exchange_completed()
 
         def handle_failure(failure_type, failure_value, failure_tb):
             self._exchanging = False
             self._reactor.fire("exchange-failed")
             self._message_store.record_failure(int(self._reactor.time()))
             logging.info("Message exchange failed.")
-            clean_up()
+            exchange_completed()
 
         self._reactor.call_in_thread(handle_result, handle_failure,
                                      self._transport.exchange, payload,
