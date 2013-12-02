@@ -275,34 +275,33 @@ class RegistrationHandler(object):
         if not is_valid_tag_list(tags):
             tags = None
             logging.error("Invalid tags provided for cloud registration.")
+
         if self._config.cloud and self._ec2_data is not None:
+            message = {"type": "register-cloud-vm",
+                        "otp": None,
+                        "hostname": get_fqdn(),
+                        "account_name": id.account_name,
+                        "registration_password": None,
+                        "tags": tags,
+                        "vm-info": get_vm_info()}
+            message.update(self._ec2_data)
+
             if self._otp:
                 logging.info("Queueing message to register with OTP")
-                message = {"type": "register-cloud-vm",
-                           "otp": self._otp,
-                           "hostname": get_fqdn(),
-                           "account_name": None,
-                           "registration_password": None,
-                           "tags": tags,
-                           "vm-info": get_vm_info()}
-                message.update(self._ec2_data)
+                message["otp"] = self._otp
                 self._exchange.send(message)
+
             elif id.account_name:
                 with_tags = ["", u"and tags %s " % tags][bool(tags)]
                 logging.info(
                     u"Queueing message to register with account %r %s"
                     u"as an EC2 instance." % (id.account_name, with_tags))
-                message = {"type": "register-cloud-vm",
-                           "otp": None,
-                           "hostname": get_fqdn(),
-                           "account_name": id.account_name,
-                           "registration_password": id.registration_key,
-                           "tags": tags,
-                           "vm-info": get_vm_info()}
-                message.update(self._ec2_data)
+                message["registration_password"] = id.registration_key
                 self._exchange.send(message)
+
             else:
                 self._reactor.fire("registration-failed")
+
         elif id.account_name:
             with_word = ["without", "with"][bool(id.registration_key)]
             with_tags = ["", u"and tags %s " % tags][bool(tags)]
