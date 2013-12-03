@@ -287,7 +287,7 @@ class MessageStore(object):
     def record_success(self, timestamp):
         """Record a successful exchange."""
         self._persist.remove("first-failure-time")
-        self.clear_blackhole()
+        self._persist.remove("blackhole-messages")
 
     def record_failure(self, timestamp):
         """
@@ -308,9 +308,6 @@ class MessageStore(object):
             logging.warning(
                 "Unable to succesfully communicate with Landscape server "
                 "for more than a week. Waiting for resync.")
-
-    def clear_blackhole(self):
-        self._persist.remove("blackhole-messages")
 
     def add(self, message):
         """Queue a message for delivery.
