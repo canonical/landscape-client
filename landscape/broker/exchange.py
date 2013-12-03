@@ -513,6 +513,13 @@ class MessageExchange(object):
 
         deferred = Deferred()
 
+        def exchange_completed():
+            self.schedule_exchange(force=True)
+            self._reactor.fire("exchange-done")
+            logging.info("Message exchange completed in %s.",
+                         format_delta(time.time() - start_time))
+            deferred.callback(None)
+
         def handle_result(result):
             self._exchanging = False
             if result:
@@ -520,17 +527,20 @@ class MessageExchange(object):
                     logging.info("Switching to normal exchange mode.")
                     self._urgent_exchange = False
                 self._handle_result(payload, result)
+                self._message_store.record_success(int(self._reactor.time()))
             else:
                 self._reactor.fire("exchange-failed")
                 logging.info("Message exchange failed.")
+            exchange_completed()
 
-            self.schedule_exchange(force=True)
-            self._reactor.fire("exchange-done")
-            logging.info("Message exchange completed in %s.",
-                         format_delta(time.time() - start_time))
-            deferred.callback(None)
+        def handle_failure(failure_type, failure_value, failure_tb):
+            self._exchanging = False
+            self._reactor.fire("exchange-failed")
+            self._message_store.record_failure(int(self._reactor.time()))
+            logging.info("Message exchange failed.")
+            exchange_completed()
 
-        self._reactor.call_in_thread(handle_result, None,
+        self._reactor.call_in_thread(handle_result, handle_failure,
                                      self._transport.exchange, payload,
                                      self._registration_info.secure_id,
                                      self._get_exchange_token(),
@@ -579,8 +589,8 @@ class MessageExchange(object):
             self._notification_id = self._reactor.call_later(
                 notification_interval, self._notify_impending_exchange)
 
-            self._exchange_id = self._reactor.call_later(interval,
-                                                         self.exchange)
+            self._exchange_id = self._reactor.call_later(
+                interval, self.exchange)
 
     def _get_exchange_token(self):
         """Get the token given us by the server at the last exchange.

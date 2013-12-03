@@ -63,32 +63,29 @@ class HTTPTransport(object):
 
         """
         spayload = bpickle.dumps(payload)
+        start_time = time.time()
+        if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
+            logging.debug("Sending payload:\n%s", pprint.pformat(payload))
         try:
-            start_time = time.time()
-            if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
-                logging.debug("Sending payload:\n%s", pprint.pformat(payload))
             curly, data = self._curl(spayload, computer_id, exchange_token,
                                      message_api)
+        except:
+            logging.exception("Error contacting the server at %s." % self._url)
+            raise
+        else:
             logging.info("Sent %d bytes and received %d bytes in %s.",
                          len(spayload), len(data),
                          format_delta(time.time() - start_time))
-        except:
-            logging.exception("Error contacting the server at %s." % self._url)
-            return None
-
-        code = curly.getinfo(pycurl.RESPONSE_CODE)
-        if code != 200:
-            logging.error("Server returned non-expected result: %d" % (code,))
-            return None
 
         try:
             response = bpickle.loads(data)
-            if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
-                logging.debug("Received payload:\n%s",
-                              pprint.pformat(response))
         except:
             logging.exception("Server returned invalid data: %r" % data)
             return None
+        else:
+            if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
+                logging.debug(
+                    "Received payload:\n%s", pprint.pformat(response))
 
         return response
 

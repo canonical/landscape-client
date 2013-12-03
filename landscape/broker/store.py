@@ -92,13 +92,13 @@ system and L{landscape.lib.message.got_next_expected} to check how the
 strategy for updating the pending offset and the sequence is implemented.
 """
 
-import time
 import itertools
 import logging
 import os
 import uuid
 
 from landscape.lib import bpickle
+from landscape.lib.fs import create_file
 from landscape import SERVER_API
 
 
@@ -126,9 +126,7 @@ class MessageStore(object):
 
     api = SERVER_API
 
-    def __init__(self, persist, directory, directory_size=1000,
-                 get_time=time.time):
-        self._get_time = get_time
+    def __init__(self, persist, directory, directory_size=1000):
         self._directory = directory
         self._directory_size = directory_size
         self._schemas = {}
@@ -287,14 +285,44 @@ class MessageStore(object):
                 i += 1
         return False
 
+    def record_success(self, timestamp):
+        """Record a successful exchange."""
+        self._persist.remove("first-failure-time")
+        self._persist.remove("blackhole-messages")
+
+    def record_failure(self, timestamp):
+        """
+        Record a failed exchange, if all exchanges for the past week have
+        failed then blackhole any future ones and request a full re-sync.
+        """
+        if not self._persist.has("first-failure-time"):
+            self._persist.set("first-failure-time", timestamp)
+        continued_failure_time = timestamp - self._persist.get(
+            "first-failure-time")
+        if self._persist.get("blackhole-messages"):
+            # Already added the resync message
+            return
+        if continued_failure_time > (60 * 60 * 24 * 7):
+            # reject all messages after a week of not exchanging
+            self.add({"type": "resynchronize"})
+            self._persist.set("blackhole-messages", True)
+            logging.warning(
+                "Unable to succesfully communicate with Landscape server "
+                "for more than a week. Waiting for resync.")
+
     def add(self, message):
         """Queue a message for delivery.
 
         @param message: a C{dict} with a C{type} key and other keys conforming
             to the L{Message} schema for that specific message type.
-        @return: message_id, which is an identifier for the added message.
+
+        @return: message_id, which is an identifier for the added
+                 message or C{None} if the message was rejected.
         """
         assert "type" in message
+        if self._persist.get("blackhole-messages"):
+            logging.debug("Dropped message, awaiting resync.")
+            return
         message = self._schemas[message["type"]].coerce(message)
 
         if "api" not in message:
@@ -303,11 +331,9 @@ class MessageStore(object):
         message_data = bpickle.dumps(message)
 
         filename = self._get_next_message_filename()
-
-        file = open(filename + ".tmp", "w")
-        file.write(message_data)
-        file.close()
-        os.rename(filename + ".tmp", filename)
+        temp_path = filename + ".tmp"
+        create_file(temp_path, message_data)
+        os.rename(temp_path, filename)
 
         if not self.accepts(message["type"]):
             filename = self._set_flags(filename, HELD)

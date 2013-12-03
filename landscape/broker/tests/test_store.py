@@ -15,20 +15,19 @@ class MessageStoreTest(LandscapeTest):
 
     def setUp(self):
         super(MessageStoreTest, self).setUp()
-        self.time = 0
         self.temp_dir = tempfile.mkdtemp()
         self.persist_filename = tempfile.mktemp()
         self.store = self.create_store()
 
     def create_store(self):
         persist = Persist(filename=self.persist_filename)
-        store = MessageStore(persist, self.temp_dir, 20,
-                             get_time=self.get_time)
-        store.set_accepted_types(["empty", "data"])
+        store = MessageStore(persist, self.temp_dir, 20)
+        store.set_accepted_types(["empty", "data", "resynchronize"])
         store.add_schema(Message("empty", {}))
         store.add_schema(Message("empty2", {}))
         store.add_schema(Message("data", {"data": Bytes()}))
         store.add_schema(Message("unaccepted", {"data": Bytes()}))
+        store.add_schema(Message("resynchronize", {}))
         return store
 
     def tearDown(self):
@@ -36,9 +35,6 @@ class MessageStoreTest(LandscapeTest):
         shutil.rmtree(self.temp_dir)
         if os.path.isfile(self.persist_filename):
             os.unlink(self.persist_filename)
-
-    def get_time(self):
-        return self.time
 
     def test_get_set_sequence(self):
         self.assertEqual(self.store.get_sequence(), 0)
@@ -102,6 +98,7 @@ class MessageStoreTest(LandscapeTest):
 
     def test_delete_no_messages(self):
         self.store.delete_old_messages()
+        self.assertEqual(0, self.store.count_pending_messages())
 
     def test_delete_old_messages_does_not_delete_held(self):
         """
@@ -162,7 +159,7 @@ class MessageStoreTest(LandscapeTest):
             self.store.add(dict(type="data", data=str(i)))
         il = [m["data"] for m in self.store.get_pending_messages(60)]
         self.assertEqual(il, map(str, range(60)))
-        self.assertEqual(set(os.listdir(self.temp_dir)), set(["0", "1", "2"]))
+        self.assertItemsEqual(os.listdir(self.temp_dir), ["0", "1", "2"])
 
         self.store.set_pending_offset(60)
         self.store.delete_old_messages()
@@ -236,9 +233,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         self.assertEqual(self.store.get_pending_messages(), [])
 
@@ -250,8 +246,7 @@ class MessageStoreTest(LandscapeTest):
         # store call an event handler when it encounters a broken
         # message and hooking on that for this assertion instead of
         # relying on this fragile check.
-        self.assertTrue("invalid literal for int()" in self.logfile.getvalue(),
-                        self.logfile.getvalue())
+        self.assertIn("invalid literal for int()", self.logfile.getvalue())
 
         self.logfile.seek(0)
         self.logfile.truncate()
@@ -260,8 +255,7 @@ class MessageStoreTest(LandscapeTest):
         self.store.set_accepted_types([])
         self.store.set_accepted_types(["empty", "empty2"])
 
-        self.assertTrue("invalid literal for int()" in self.logfile.getvalue(),
-                        self.logfile.getvalue())
+        self.assertIn("invalid literal for int()", self.logfile.getvalue())
 
     def test_wb_delete_messages_with_broken(self):
         self.log_helper.ignore_errors(ValueError)
@@ -271,9 +265,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         messages = self.store.get_pending_messages()
 
@@ -285,7 +278,7 @@ class MessageStoreTest(LandscapeTest):
         messages = self.store.get_pending_messages()
         self.store.delete_old_messages()
         self.assertEqual(messages, [])
-        self.assertTrue("ValueError" in self.logfile.getvalue())
+        self.assertIn("ValueError", self.logfile.getvalue())
 
     def test_atomic_message_writing(self):
         """
@@ -384,8 +377,7 @@ class MessageStoreTest(LandscapeTest):
         self.assertTrue(os.path.exists(filename))
 
         store = MessageStore(Persist(filename=filename), self.temp_dir)
-        self.assertEqual(set(store.get_accepted_types()),
-                         set(["foo", "bar"]))
+        self.assertItemsEqual(store.get_accepted_types(), ["foo", "bar"])
 
     def test_is_pending_pre_and_post_message_delivery(self):
         self.log_helper.ignore_errors(ValueError)
@@ -401,9 +393,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         # And hold the second one.
         self.store.add({"type": "data", "data": "A thing"})
@@ -424,7 +415,6 @@ class MessageStoreTest(LandscapeTest):
         self.assertFalse(self.store.is_pending(id))
 
     def test_is_pending_with_held_message(self):
-
         self.store.set_accepted_types(["empty"])
         id = self.store.add({"type": "data", "data": "A thing"})
 
@@ -445,9 +435,8 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
 
-        file = open(filename, "w")
-        file.write("bpickle will break reading this")
-        file.close()
+        with open(filename, "w") as fh:
+            fh.write("bpickle will break reading this")
 
         self.assertEqual(self.store.get_pending_messages(), [])
 
@@ -543,3 +532,53 @@ class MessageStoreTest(LandscapeTest):
         self.assertFalse(self.store.is_valid_session_id(disk_session_id))
         self.assertFalse(self.store.is_valid_session_id(hwinfo_session_id))
         self.assertTrue(self.store.is_valid_session_id(package_session_id))
+
+    def test_record_failure_sets_first_failure_time(self):
+        """first-failure-time recorded when calling record_failure()."""
+        self.store.record_failure(123)
+        self.assertEqual(
+            123, self.store._persist.get("first-failure-time"))
+
+    def test_messages_rejected_if_failure_older_than_one_week(self):
+        """Messages stop accumulating after one week of not being sent."""
+        self.store.record_failure(0)
+        self.store.record_failure(7 * 24 * 60 * 60)
+        self.assertIsNot(None, self.store.add({"type": "empty"}))
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
+        self.assertIs(None, self.store.add({"type": "empty"}))
+        self.assertIn("WARNING: Unable to succesfully communicate with "
+                      "Landscape server for more than a week. Waiting for "
+                      "resync.",
+                      self.logfile.getvalue())
+        # Resync message and the first one we added right on the week boundary
+        self.assertEqual(2, len(self.store.get_pending_messages()))
+
+    def test_no_new_messages_after_discarded_following_one_week(self):
+        """
+        After one week of not being sent, no new messages are queued.
+        """
+        self.store.record_failure(0)
+        self.store.add({"type": "empty"})
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
+        self.store.add({"type": "empty"})
+        self.assertIs(None, self.store.add({"type": "empty"}))
+        self.assertIn("DEBUG: Dropped message, awaiting resync.",
+                      self.logfile.getvalue())
+
+    def test_after_clearing_blackhole_messages_are_accepted_again(self):
+        """After a successful exchange, messages are accepted again."""
+        self.store.record_failure(0)
+        self.store.add({"type": "empty"})
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
+        self.store.add({"type": "empty"})
+        self.assertIs(None, self.store.add({"type": "empty"}))
+        self.store.record_success((7 * 24 * 60 * 60) + 2)
+        self.assertIsNot(None, self.store.add({"type": "empty"}))
+
+    def test_resync_requested_after_one_week_of_failures(self):
+        """After a week of failures, a resync is requested."""
+        self.store.record_failure(0)
+        self.store.add({"type": "empty"})
+        self.store.record_failure((7 * 24 * 60 * 60) + 1)
+        [empty, message] = self.store.get_pending_messages()
+        self.assertEqual("resynchronize", message["type"])

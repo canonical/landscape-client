@@ -10,8 +10,18 @@ from landscape.broker.store import MessageStore
 from landscape.broker.ping import Pinger
 from landscape.broker.registration import RegistrationHandler
 from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.tests.mocker import MATCH
 from landscape.broker.tests.helpers import ExchangeHelper
 from landscape.broker.server import BrokerServer
+
+
+class RaisingTransport(object):
+
+    def get_url(self2):
+        return ""
+
+    def exchange(self2, *args):
+        raise RuntimeError("Failed to communicate.")
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -82,6 +92,15 @@ class MessageExchangeTest(LandscapeTest):
         messages = self.transport.payloads[0]["messages"]
         self.assertMessages(messages, [{"type": "empty"}])
 
+    def test_that_resynchronize_clears_message_blackhole(self):
+        """
+        When a resynchronisation event occurs the block on new messages
+        being stored is lifted.
+        """
+        self.reactor.fire("resynchronize-clients", [])
+        persist = Persist(filename=self.persist_filename)
+        self.assertFalse(persist.get("blackhole-messages"))
+
     def test_send(self):
         """
         The send method should cause a message to show up in the next exchange.
@@ -137,7 +156,7 @@ class MessageExchangeTest(LandscapeTest):
         represents the types that we think the server wants.
         """
         payload = self.exchanger._make_payload()
-        self.assertTrue("accepted-types" in payload)
+        self.assertIn("accepted-types", payload)
         self.assertEqual(payload["accepted-types"], md5("").digest())
 
     def test_handle_message_sets_accepted_types(self):
@@ -170,7 +189,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.handle_message(
             {"type": "accepted-types", "types": ["ack", "bar"]})
         payload = self.exchanger._make_payload()
-        self.assertTrue("accepted-types" in payload)
+        self.assertIn("accepted-types", payload)
         self.assertEqual(payload["accepted-types"],
                          md5("ack;bar").digest())
 
@@ -350,6 +369,21 @@ class MessageExchangeTest(LandscapeTest):
         self.wait_for_exchange(urgent=True)
         self.assertEqual(len(self.transport.payloads), 1)  # no change
 
+    def test_successful_exchange_records_success(self):
+        """
+        When a successful exchange occurs, that success is recorded in the
+        message store.
+        """
+        mock_message_store = self.mocker.proxy(self.mstore)
+        mock_message_store.record_success(MATCH(lambda x: type(x) is int))
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        exchanger = MessageExchange(
+            self.reactor, mock_message_store, self.transport,
+            self.identity, self.exchange_store, self.config)
+        exchanger.exchange()
+
     def test_ancient_causes_resynchronize(self):
         """
         If the server asks for messages that we no longer have, the message
@@ -387,8 +421,8 @@ class MessageExchangeTest(LandscapeTest):
         """
         If a message of type 'resynchronize' is received from the
         server, the exchanger should *first* send a 'resynchronize'
-        message back to the server and *then* fire a 'resynchronize-clients'
-        event.
+        message back to the server and *then* fire a
+        'resynchronize-clients' event.
         """
         self.mstore.set_accepted_types(["empty", "resynchronize"])
 
@@ -939,12 +973,65 @@ class MessageExchangeTest(LandscapeTest):
         expected_log_entry = (
             "Response message with operation-id 234567 was discarded because "
             "the client's secure ID has changed in the meantime")
-        self.assertTrue(expected_log_entry in self.logfile.getvalue())
+        self.assertIn(expected_log_entry, self.logfile.getvalue())
 
         # The MessageContext was removed after utilisation.
         ids_after = self.exchange_store.all_operation_ids()
-        self.assertTrue(len(ids_after) == len(ids_before) - 1)
-        self.assertFalse('234567' in ids_after)
+        self.assertEqual(len(ids_after), len(ids_before) - 1)
+        self.assertNotIn('234567', ids_after)
+
+    def test_error_exchanging_causes_failed_exchange(self):
+        """
+        If a traceback occurs whilst exchanging, the 'exchange-failed'
+        event should be fired.
+        """
+        events = []
+
+        def failed_exchange():
+            events.append(None)
+
+        self.reactor.call_on("exchange-failed", failed_exchange)
+        self.exchanger._transport = RaisingTransport()
+        self.exchanger.exchange()
+        self.assertEqual([None], events)
+
+    def test_error_exchanging_records_failure_in_message_store(self):
+        """
+        If a traceback occurs whilst exchanging, the failure is recorded
+        in the message store.
+        """
+        mock_message_store = self.mocker.proxy(self.mstore)
+        mock_message_store.record_failure(MATCH(lambda x: type(x) is int))
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        exchanger = MessageExchange(
+            self.reactor, mock_message_store, RaisingTransport(),
+            self.identity, self.exchange_store, self.config)
+        exchanger.exchange()
+
+    def test_error_exchanging_marks_exchange_complete(self):
+        """
+        If a traceback occurs whilst exchanging, the exchange is still
+        marked as complete.
+        """
+        events = []
+
+        def exchange_done():
+            events.append(None)
+
+        self.reactor.call_on("exchange-done", exchange_done)
+        self.exchanger._transport = RaisingTransport()
+        self.exchanger.exchange()
+        self.assertEqual([None], events)
+
+    def test_error_exchanging_logs_failure(self):
+        """
+        If a traceback occurs whilst exchanging, the failure is logged.
+        """
+        self.exchanger._transport = RaisingTransport()
+        self.exchanger.exchange()
+        self.assertIn("Message exchange failed.", self.logfile.getvalue())
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
@@ -1049,20 +1136,16 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
 class GetAcceptedTypesDiffTest(LandscapeTest):
 
     def test_diff_empty(self):
-        self.assertEqual(get_accepted_types_diff([], []),
-                         "")
+        self.assertEqual(get_accepted_types_diff([], []), "")
 
     def test_diff_add(self):
-        self.assertEqual(get_accepted_types_diff([], ["wubble"]),
-                         "+wubble")
+        self.assertEqual(get_accepted_types_diff([], ["wubble"]), "+wubble")
 
     def test_diff_remove(self):
-        self.assertEqual(get_accepted_types_diff(["wubble"], []),
-                         "-wubble")
+        self.assertEqual(get_accepted_types_diff(["wubble"], []), "-wubble")
 
     def test_diff_no_change(self):
-        self.assertEqual(get_accepted_types_diff(["ooga"], ["ooga"]),
-                         "ooga")
+        self.assertEqual(get_accepted_types_diff(["ooga"], ["ooga"]), "ooga")
 
     def test_diff_complex(self):
         self.assertEqual(get_accepted_types_diff(["foo", "bar"],

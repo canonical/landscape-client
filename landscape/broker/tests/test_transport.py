@@ -23,15 +23,8 @@ BADPRIVKEY = sibpath("badprivate.ssl")
 BADPUBKEY = sibpath("badpublic.ssl")
 
 
-def fake_curl(payload, param2, param3):
-    """Stub out the curl network call."""
-    class Curly(object):
-        def getinfo(self, param1):
-            return 200
-    return (Curly(), bpickle.dumps("%s response" % payload))
-
-
 class DataCollectingResource(resource.Resource):
+
     request = content = None
 
     def getChild(self, request, name):
@@ -129,8 +122,8 @@ class HTTPTransportTest(LandscapeTest):
         """
         self.log_helper.ignore_errors(PyCurlError)
         r = DataCollectingResource()
-        context_factory = DefaultOpenSSLContextFactory(BADPRIVKEY,
-                                                       BADPUBKEY)
+        context_factory = DefaultOpenSSLContextFactory(
+            BADPRIVKEY, BADPUBKEY)
         port = reactor.listenSSL(0, server.Site(r), context_factory,
                                  interface="127.0.0.1")
         self.ports.append(port)
@@ -141,9 +134,9 @@ class HTTPTransportTest(LandscapeTest):
                                message_api="X.Y")
 
         def got_result(ignored):
-            self.assertEqual(r.request, None)
-            self.assertEqual(r.content, None)
+            self.assertIs(r.request, None)
+            self.assertIs(r.content, None)
             self.assertTrue("server certificate verification failed"
                             in self.logfile.getvalue())
-        result.addCallback(got_result)
+        result.addErrback(got_result)
         return result
