@@ -77,6 +77,7 @@ class Identity(object):
     account_name = config_property("account_name")
     registration_key = config_property("registration_key")
     tags = config_property("tags")
+    access_group = config_property("access_group")
 
     def __init__(self, config, persist):
         self._config = config
@@ -283,8 +284,12 @@ class RegistrationHandler(object):
         identity = self._identity
         account_name = identity.account_name
         tags = identity.tags
+        access_group = identity.access_group
 
         self._message_store.delete_all_messages()
+
+        if access_group == "":
+            access_group = None
 
         if not is_valid_tag_list(tags):
             tags = None
@@ -297,6 +302,9 @@ class RegistrationHandler(object):
                    "registration_password": None,
                    "tags": tags,
                    "vm-info": get_vm_info()}
+
+        if access_group is not None:
+            message["access_group"] = access_group
 
         if self._config.cloud and self._ec2_data is not None:
             # This is the "cloud VM" case.

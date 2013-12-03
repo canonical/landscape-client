@@ -70,6 +70,9 @@ class IdentityTest(LandscapeTest):
     def test_client_tags(self):
         self.check_config_property("tags")
 
+    def test_access_group(self):
+        self.check_config_property("access_group")
+
 
 class RegistrationHandlerTestBase(LandscapeTest):
 
@@ -278,6 +281,45 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags prova\xc4\xb5o "
                          "with a password.")
+
+    def test_queue_message_on_exchange_with_access_group(self):
+        """
+        If the admin has defined an access_group for this computer, we send
+        it to the server.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.config.access_group = u"dinosaurs"
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual("dinosaurs", messages[0]["access_group"])
+        #self.assertEqual(self.logfile.getvalue().strip(),
+        #                 "INFO: Queueing message to register with account "
+        #                 "'account_name' and tags computer,tag "
+        #                 "with a password.")
+
+    def test_queue_message_on_exchange_with_empty_access_group(self):
+        """
+        If the access_group is "", then the outgoing message does not define
+        an "access_group" key.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.config.access_group = u""
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        # Make sure the key does not appear in the outgoing message.
+        self.assertNotIn("access_group", messages[0])
+
+    def test_queue_message_on_exchange_with_none_access_group(self):
+        """
+        If the access_group is None, then the outgoing message does not define
+        an "access_group" key.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.config.access_group = None
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        # Make sure the key does not appear in the outgoing message.
+        self.assertNotIn("access_group", messages[0])
 
     def test_queueing_registration_message_resets_message_store(self):
         """

@@ -183,9 +183,9 @@ REGISTER = Message(
      "vm-info": Bytes(),
      "container-info": Unicode(),
      "juju-info": KeyDict(juju_data),
-     "access-group": Unicode()},
+     "access_group": Any(Unicode(), Constant(None))},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "juju-info", "unicode"])
+              "container-info", "juju-info", "unicode", "access_group"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(
@@ -211,8 +211,8 @@ REGISTER_CLOUD_VM = Message(
      "vm-info": Bytes(),
      "public_ipv4": Unicode(),
      "local_ipv4": Unicode(),
-     "access-group": Unicode()},
-    optional=["tags", "vm-info", "public_ipv4", "local_ipv4", "access-group"])
+     "access_group": Any(Unicode(), Constant(None))},
+    optional=["tags", "vm-info", "public_ipv4", "local_ipv4", "access_group"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": Unicode(),
