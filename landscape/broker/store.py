@@ -301,7 +301,6 @@ class MessageStore(object):
             "first-failure-time")
         if continued_failure_time > (60 * 60 * 24 * 7):
             # reject all messages after a week of not exchanging
-            self.delete_all_messages()
             self.add({"type": "resynchronize"})
             self._persist.set("blackhole-messages", True)
             logging.warning(

@@ -550,21 +550,12 @@ class MessageStoreTest(LandscapeTest):
                       "Landscape server for more than a week, deleting all "
                       "pending messages and waiting for resync.",
                       self.logfile.getvalue())
-
-    def test_all_pending_messages_deleted_after_one_week(self):
-        """All pending messages are deleted after a week of not being sent."""
-        self.store.record_failure(0)
-        self.store.add({"type": "empty"})
-        self.store.record_failure((7 * 24 * 60 * 60) + 1)
-        # There's one added for the resynchronize
-        self.assertEqual(1, self.store.count_pending_messages())
-        [message] = self.store.get_pending_messages()
-        self.assertNotEqual(message["type"], "empty")
+        # Resync message and the first one we added right on the week boundary
+        self.assertEqual(2, len(self.store.get_pending_messages()))
 
     def test_no_new_messages_after_discarded_following_one_week(self):
         """
-        Following the deletion of messages after one week of not being sent,
-        no new messages are queued.
+        After one week of not being sent, no new messages are queued.
         """
         self.store.record_failure(0)
         self.store.add({"type": "empty"})
@@ -589,5 +580,5 @@ class MessageStoreTest(LandscapeTest):
         self.store.record_failure(0)
         self.store.add({"type": "empty"})
         self.store.record_failure((7 * 24 * 60 * 60) + 1)
-        [message] = self.store.get_pending_messages()
+        [empty, message] = self.store.get_pending_messages()
         self.assertEqual("resynchronize", message["type"])
