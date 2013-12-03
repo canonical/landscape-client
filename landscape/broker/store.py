@@ -292,21 +292,22 @@ class MessageStore(object):
     def record_failure(self, timestamp):
         """
         Record a failed exchange, if all exchanges for the past week have
-        failed then clear all pending messages, blackhole any future
-        ones and request a full re-sync.
+        failed then blackhole any future ones and request a full re-sync.
         """
         if not self._persist.has("first-failure-time"):
             self._persist.set("first-failure-time", timestamp)
         continued_failure_time = timestamp - self._persist.get(
             "first-failure-time")
+        if self._persist.get("blackhole-messages"):
+            # Already added the resync message
+            return
         if continued_failure_time > (60 * 60 * 24 * 7):
             # reject all messages after a week of not exchanging
             self.add({"type": "resynchronize"})
             self._persist.set("blackhole-messages", True)
             logging.warning(
                 "Unable to succesfully communicate with Landscape server "
-                "for more than a week, deleting all pending messages and "
-                "waiting for resync.")
+                "for more than a week waiting for resync.")
 
     def clear_blackhole(self):
         self._persist.remove("blackhole-messages")
