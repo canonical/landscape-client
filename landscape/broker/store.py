@@ -98,6 +98,7 @@ import os
 import uuid
 
 from landscape.lib import bpickle
+from landscape.lib.fs import create_file
 from landscape import SERVER_API
 
 
@@ -331,9 +332,7 @@ class MessageStore(object):
 
         filename = self._get_next_message_filename()
         temp_path = filename + ".tmp"
-        fh = open(temp_path, "w")
-        fh.write(message_data)
-        fh.close()
+        create_file(temp_path, message_data)
         os.rename(temp_path, filename)
 
         if not self.accepts(message["type"]):
