@@ -307,7 +307,7 @@ class MessageStore(object):
             self._persist.set("blackhole-messages", True)
             logging.warning(
                 "Unable to succesfully communicate with Landscape server "
-                "for more than a week waiting for resync.")
+                "for more than a week. Waiting for resync.")
 
     def clear_blackhole(self):
         self._persist.remove("blackhole-messages")

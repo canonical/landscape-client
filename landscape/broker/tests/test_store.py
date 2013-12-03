@@ -547,8 +547,8 @@ class MessageStoreTest(LandscapeTest):
         self.store.record_failure((7 * 24 * 60 * 60) + 1)
         self.assertIs(None, self.store.add({"type": "empty"}))
         self.assertIn("WARNING: Unable to succesfully communicate with "
-                      "Landscape server for more than a week, deleting all "
-                      "pending messages and waiting for resync.",
+                      "Landscape server for more than a week. Waiting for "
+                      "resync.",
                       self.logfile.getvalue())
         # Resync message and the first one we added right on the week boundary
         self.assertEqual(2, len(self.store.get_pending_messages()))
