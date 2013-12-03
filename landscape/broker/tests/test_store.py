@@ -159,7 +159,7 @@ class MessageStoreTest(LandscapeTest):
             self.store.add(dict(type="data", data=str(i)))
         il = [m["data"] for m in self.store.get_pending_messages(60)]
         self.assertEqual(il, map(str, range(60)))
-        self.assertItemsEqual(os.listdir(self.temp_dir), ["0", "1", "2"])
+        self.assertEqual(set(os.listdir(self.temp_dir)), set(["0", "1", "2"]))
 
         self.store.set_pending_offset(60)
         self.store.delete_old_messages()
@@ -377,7 +377,8 @@ class MessageStoreTest(LandscapeTest):
         self.assertTrue(os.path.exists(filename))
 
         store = MessageStore(Persist(filename=filename), self.temp_dir)
-        self.assertItemsEqual(store.get_accepted_types(), ["foo", "bar"])
+        self.assertEqual(set(store.get_accepted_types()),
+                         set(["foo", "bar"]))
 
     def test_is_pending_pre_and_post_message_delivery(self):
         self.log_helper.ignore_errors(ValueError)
