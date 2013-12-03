@@ -288,9 +288,6 @@ class RegistrationHandler(object):
 
         self._message_store.delete_all_messages()
 
-        if access_group == "":
-            access_group = None
-
         if not is_valid_tag_list(tags):
             tags = None
             logging.error("Invalid tags provided for cloud registration.")
@@ -302,6 +299,9 @@ class RegistrationHandler(object):
                    "registration_password": None,
                    "tags": tags,
                    "vm-info": get_vm_info()}
+
+        if access_group == "":
+            access_group = None
 
         if access_group is not None:
             message["access_group"] = access_group
