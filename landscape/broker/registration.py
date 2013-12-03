@@ -318,9 +318,13 @@ class RegistrationHandler(object):
 
             elif account_name:
                 with_tags = ["", u"and tags %s " % tags][bool(tags)]
+                with_group = [
+                    "", u"in access group '%s' " % access_group][
+                        bool(access_group)]
                 logging.info(
-                    u"Queueing message to register with account %r %s"
-                    u"as an EC2 instance." % (account_name, with_tags))
+                    u"Queueing message to register with account %r %s%s"
+                    u"as an EC2 instance." % (
+                        account_name, with_group, with_tags))
                 message["registration_password"] = identity.registration_key
 
             else:
@@ -330,9 +334,13 @@ class RegistrationHandler(object):
             # The computer is a normal computer, possibly a container.
             with_word = ["without", "with"][bool(identity.registration_key)]
             with_tags = ["", u"and tags %s " % tags][bool(tags)]
-            logging.info(u"Queueing message to register with account %r %s"
-                         "%s a password." % (account_name, with_tags,
-                                             with_word))
+            with_group = [
+                "", u"in access group '%s' " % access_group][
+                    bool(access_group)]
+
+            logging.info(u"Queueing message to register with account %r %s%s"
+                         "%s a password." % (account_name, with_group,
+                                             with_tags, with_word))
             message["type"] = "register"
             message["computer_title"] = identity.computer_title
             message["registration_password"] = identity.registration_key

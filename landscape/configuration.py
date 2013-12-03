@@ -399,7 +399,7 @@ class LandscapeSetupScript(object):
             if not _access_group_is_valid(self.config.access_group):
                 self.show_help("Access group names may only contain "
                                "alphanumeric characters.")
-                self.config.access_group = None # Reset for the next prompt
+                self.config.access_group = None  # Reset for the next prompt
             else:
                 break
 

@@ -1,6 +1,8 @@
 import re
 
+
 _tag_check = re.compile("^\w+[\w-]*$", re.UNICODE)
+
 
 def is_valid_tag(tagname):
     """Return True if the tag meets our tag requirements."""

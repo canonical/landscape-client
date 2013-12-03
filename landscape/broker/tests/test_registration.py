@@ -288,14 +288,16 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         it to the server.
         """
         self.mstore.set_accepted_types(["register"])
+        self.config.account_name = "account_name"
         self.config.access_group = u"dinosaurs"
+        self.config.tags = u"server,london"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         self.assertEqual("dinosaurs", messages[0]["access_group"])
-        #self.assertEqual(self.logfile.getvalue().strip(),
-        #                 "INFO: Queueing message to register with account "
-        #                 "'account_name' and tags computer,tag "
-        #                 "with a password.")
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "INFO: Queueing message to register with account "
+                         "'account_name' in access group 'dinosaurs' and "
+                         "tags server,london without a password.")
 
     def test_queue_message_on_exchange_with_empty_access_group(self):
         """
@@ -587,7 +589,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             self.query_results[api_base + url_suffix] = value
 
     def prepare_cloud_registration(self, account_name=None,
-                                   registration_key=None, tags=None):
+                                   registration_key=None, tags=None,
+                                   access_group=None):
         # Set things up so that the client thinks it should register
         self.mstore.set_accepted_types(list(self.mstore.get_accepted_types())
                                        + ["register-cloud-vm"])
@@ -595,6 +598,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.registration_key = registration_key
         self.config.computer_title = None
         self.config.tags = tags
+        self.config.access_group = access_group
         self.identity.secure_id = None
         self.assertTrue(self.handler.should_register())
 
@@ -670,6 +674,24 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             self.transport.payloads[0]["messages"],
             [self.get_expected_cloud_message(tags=u"server,london",
                                              vm_info="xen")])
+
+    def test_cloud_registration_with_access_group(self):
+        """
+        If the access_group field is presnet in the configuration, the
+        access_group field is present in the outgoing message for a VM
+        registration, and a notice appears in the logs.
+        """
+        self.prepare_query_results()
+        self.prepare_cloud_registration(access_group=u"dinosaurs",
+                                        tags=u"server,london")
+
+        self.reactor.fire("run")
+        self.exchanger.exchange()
+        self.assertEqual(len(self.transport.payloads), 1)
+        self.assertMessages(
+            self.transport.payloads[0]["messages"],
+            [self.get_expected_cloud_message(
+                access_group=u"dinosaurs", tags=u"server,london")])
 
     def test_cloud_registration_with_otp(self):
         """
