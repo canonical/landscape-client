@@ -639,36 +639,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_access_group()
         self.assertEqual(self.config.access_group, u"webservers")
 
-    def test_invalid_access_group_entered_by_user(self):
-        """
-        If an access group is not provided, the user should be prompted
-        for it, and it should be a valid name for an access group, if
-        not the user should be prompted for it again.
-        """
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("You may provide an access group for this "
-                              "computer e.g. webservers.")
-        script_mock.prompt_get_input("Access group: ", False)
-        self.mocker.result(u"<script>alert();</script>")
-        script_mock.show_help("Access group names may only contain "
-                              "alphanumeric characters.")
-        script_mock.prompt_get_input("Access group: ", False)
-        self.mocker.result(u"webserver")
-        self.mocker.replay()
-        self.script.query_access_group()
-
-    def test_invalid_access_group_defined_on_command_line_raises_error(self):
-        """
-        An invalid access group on the command line raise a ConfigurationError.
-        """
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
-        self.config.load_command_line(
-            ["--access-group", u"<script>alert();</script>"])
-        self.assertRaises(ConfigurationError, self.script.query_access_group)
-
     def test_show_header(self):
         help_snippet = "This script will"
         script_mock = self.mocker.patch(self.script)

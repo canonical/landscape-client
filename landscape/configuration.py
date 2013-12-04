@@ -380,28 +380,10 @@ class LandscapeSetupScript(object):
         self.show_help("You may provide an access group for this computer "
                        "e.g. webservers.")
 
-        def _access_group_is_valid(access_group):
-            if access_group == "":
-                return True
-            valid_chars = bool(
-                re.match("^\w+[\w-]*$", access_group, re.UNICODE))
-            short_enough = len(access_group) < 55
-            return valid_chars and short_enough
-
         options = self.config.get_command_line_options()
         if "access_group" in options:
-            if not _access_group_is_valid(options["access_group"]):
-                raise ConfigurationError("Invalid access group: %s" % options[
-                    "access_group"])
-            return
-        while True:
-            self.prompt("access_group", "Access group", False)
-            if not _access_group_is_valid(self.config.access_group):
-                self.show_help("Access group names may only contain "
-                               "alphanumeric characters.")
-                self.config.access_group = None  # Reset for the next prompt
-            else:
-                break
+            return  # an access group is already provided, don't ask for one
+        self.prompt("access_group", "Access group", False)
 
     def _get_invalid_tags(self, tagnames):
         """
