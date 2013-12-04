@@ -11,7 +11,6 @@ import sys
 import os
 import getpass
 import pwd
-import re
 
 from StringIO import StringIO
 
