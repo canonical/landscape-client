@@ -284,7 +284,8 @@ class RegistrationHandler(object):
         identity = self._identity
         account_name = identity.account_name
         tags = identity.tags
-        access_group = identity.access_group
+        group = identity.access_group
+        registration_key = identity.registration_key
 
         self._message_store.delete_all_messages()
 
@@ -300,11 +301,8 @@ class RegistrationHandler(object):
                    "tags": tags,
                    "vm-info": get_vm_info()}
 
-        if access_group == "":
-            access_group = None
-
-        if access_group is not None:
-            message["access_group"] = access_group
+        if group:
+            message["access_group"] = group
 
         if self._config.cloud and self._ec2_data is not None:
             # This is the "cloud VM" case.
@@ -317,26 +315,22 @@ class RegistrationHandler(object):
                 message["otp"] = self._otp
 
             elif account_name:
-                with_tags = ["", u"and tags %s " % tags][bool(tags)]
-                with_group = [
-                    "", u"in access group '%s' " % access_group][
-                        bool(access_group)]
+                with_tags = "and tags %s " % tags if tags else ""
+                with_group = "in access group '%s' " % group if group else ""
                 logging.info(
                     u"Queueing message to register with account %r %s%s"
                     u"as an EC2 instance." % (
                         account_name, with_group, with_tags))
-                message["registration_password"] = identity.registration_key
+                message["registration_password"] = registration_key
 
             else:
                 registration_failed = True
 
         elif account_name:
             # The computer is a normal computer, possibly a container.
-            with_word = ["without", "with"][bool(identity.registration_key)]
-            with_tags = ["", u"and tags %s " % tags][bool(tags)]
-            with_group = [
-                "", u"in access group '%s' " % access_group][
-                    bool(access_group)]
+            with_word = "with" if bool(registration_key) else "without"
+            with_tags = "and tags %s " % tags if tags else ""
+            with_group = "in access group '%s' " % group if group else ""
 
             logging.info(u"Queueing message to register with account %r %s%s"
                          "%s a password." % (account_name, with_group,
