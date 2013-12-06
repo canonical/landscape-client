@@ -64,6 +64,8 @@ class BrokerConfiguration(Configuration):
                           help="Set this if your computer is in an EC2 cloud.")
         parser.add_option("--otp", default="",
                           help="The OTP to use in cloud configuration.")
+        parser.add_option("--access-group", default="",
+                          help="Suggested access group for this computer.")
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")

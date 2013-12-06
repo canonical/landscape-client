@@ -77,6 +77,7 @@ class Identity(object):
     account_name = config_property("account_name")
     registration_key = config_property("registration_key")
     tags = config_property("tags")
+    access_group = config_property("access_group")
 
     def __init__(self, config, persist):
         self._config = config
@@ -259,75 +260,103 @@ class RegistrationHandler(object):
         An exchange is about to happen.  If we don't have a secure id already
         set, and we have the needed information available, queue a registration
         message with the server.
+
+        A computer can fall into several categories:
+            - a "cloud VM"
+            - a "normal" computer
+            - a "provisionned machine".
+
+        Furthermore, Cloud VMs can be registered with either a One Time
+        Password (OTP), or with a normal registration password.
         """
+        registration_failed = False
+
         # The point of storing this flag is that if we should *not* register
         # now, and then after the exchange we *should*, we schedule an urgent
         # exchange again.  Without this flag we would just spin trying to
         # connect to the server when something is clearly preventing the
         # registration.
         self._should_register = self.should_register()
-
         if not self._should_register:
             return
-        id = self._identity
+
+        # These are just to shorten the code.
+        identity = self._identity
+        account_name = identity.account_name
+        tags = identity.tags
+        group = identity.access_group
+        registration_key = identity.registration_key
+
         self._message_store.delete_all_messages()
-        tags = id.tags
+
         if not is_valid_tag_list(tags):
             tags = None
             logging.error("Invalid tags provided for cloud registration.")
+
+        message = {"type": None,  # either "register" or "register-cloud-vm"
+                   "otp": None,
+                   "hostname": get_fqdn(),
+                   "account_name": identity.account_name,
+                   "registration_password": None,
+                   "tags": tags,
+                   "vm-info": get_vm_info()}
+
+        if group:
+            message["access_group"] = group
+
         if self._config.cloud and self._ec2_data is not None:
+            # This is the "cloud VM" case.
+            message["type"] = "register-cloud-vm"
+
+            message.update(self._ec2_data)
+
             if self._otp:
                 logging.info("Queueing message to register with OTP")
-                message = {"type": "register-cloud-vm",
-                           "otp": self._otp,
-                           "hostname": get_fqdn(),
-                           "account_name": None,
-                           "registration_password": None,
-                           "tags": tags,
-                           "vm-info": get_vm_info()}
-                message.update(self._ec2_data)
-                self._exchange.send(message)
-            elif id.account_name:
-                with_tags = ["", u"and tags %s " % tags][bool(tags)]
+                message["otp"] = self._otp
+
+            elif account_name:
+                with_tags = "and tags %s " % tags if tags else ""
+                with_group = "in access group '%s' " % group if group else ""
                 logging.info(
-                    u"Queueing message to register with account %r %s"
-                    u"as an EC2 instance." % (id.account_name, with_tags))
-                message = {"type": "register-cloud-vm",
-                           "otp": None,
-                           "hostname": get_fqdn(),
-                           "account_name": id.account_name,
-                           "registration_password": id.registration_key,
-                           "tags": tags,
-                           "vm-info": get_vm_info()}
-                message.update(self._ec2_data)
-                self._exchange.send(message)
+                    u"Queueing message to register with account %r %s%s"
+                    u"as an EC2 instance." % (
+                        account_name, with_group, with_tags))
+                message["registration_password"] = registration_key
+
             else:
-                self._reactor.fire("registration-failed")
-        elif id.account_name:
-            with_word = ["without", "with"][bool(id.registration_key)]
-            with_tags = ["", u"and tags %s " % tags][bool(tags)]
-            logging.info(u"Queueing message to register with account %r %s"
-                         "%s a password." % (id.account_name, with_tags,
-                                             with_word))
-            message = {"type": "register",
-                       "computer_title": id.computer_title,
-                       "account_name": id.account_name,
-                       "registration_password": id.registration_key,
-                       "hostname": get_fqdn(),
-                       "tags": tags,
-                       "vm-info": get_vm_info(),
-                       "container-info": get_container_info()}
+                registration_failed = True
+
+        elif account_name:
+            # The computer is a normal computer, possibly a container.
+            with_word = "with" if bool(registration_key) else "without"
+            with_tags = "and tags %s " % tags if tags else ""
+            with_group = "in access group '%s' " % group if group else ""
+
+            logging.info(u"Queueing message to register with account %r %s%s"
+                         "%s a password." % (account_name, with_group,
+                                             with_tags, with_word))
+            message["type"] = "register"
+            message["computer_title"] = identity.computer_title
+            message["registration_password"] = identity.registration_key
+            message["container-info"] = get_container_info()
+
             if self._juju_data is not None:
                 message["juju-info"] = self._juju_data
-            self._exchange.send(message)
+
         elif self._config.provisioning_otp:
+            # This is a newly provisionned machine.
+            # In this case message is overwritten because it's much simpler
             logging.info(u"Queueing message to register with OTP as a"
                          u" newly provisioned machine.")
             message = {"type": "register-provisioned-machine",
                        "otp": self._config.provisioning_otp}
-            self._exchange.send(message)
         else:
+            registration_failed = True
+
+        if registration_failed:
             self._reactor.fire("registration-failed")
+        else:
+            self._exchange.send(message)
 
     def _handle_set_id(self, message):
         """Registered handler for the C{"set-id"} event.
