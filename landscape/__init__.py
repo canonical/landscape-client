@@ -14,6 +14,10 @@ VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 #
 SERVER_API = "3.2"
 
+# XXX This is needed for backward compatibility in the server code importing
+# the API variable. We should eventually replace it in the server code.
+API = SERVER_API
+
 # The "client-api" field of outgoing messages will be set to this value, and
 # used by the server to know which schema do the message types accepted by the
 # client support. Bump it when the schema of an accepted message type changes
