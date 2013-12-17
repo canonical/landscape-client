@@ -39,6 +39,8 @@ API = SERVER_API
 #
 # 3.6:
 #  * Handle scopes in resynchronize requests
-
-
-CLIENT_API = "3.6"
+#
+# 3.7:
+#  * Server returns 402 Payment Required if the computer has no valid license.
+#
+CLIENT_API = "3.7"
