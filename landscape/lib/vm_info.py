@@ -34,6 +34,12 @@ def get_vm_info(root_path="/"):
 
     sys_vendor_path = join_root_path("sys/class/dmi/id/sys_vendor")
     if not os.path.exists(sys_vendor_path):
+        # Some virtualised CPU architectures indicate this via cpuinfo
+        cpuinfo_path = join_root_path("proc/cpuinfo")
+        if os.path.exists(cpuinfo_path):
+            cpuinfo = read_file(cpuinfo_path)
+            if "(emulated by qemu)" in cpuinfo:
+                return "kvm"
         return ""
 
     vendor = read_file(sys_vendor_path)
