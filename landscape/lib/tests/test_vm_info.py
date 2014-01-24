@@ -116,6 +116,19 @@ class GetVMInfoTest(LandscapeTest):
         self.make_sys_vendor("Microsoft Corporation")
         self.assertEqual("hyperv", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_kvm_on_other_architecture(self):
+        """
+        L{get_vm_info} returns 'kvm', if no sys_vendor is available but the
+        model in /proc/cpuinfo contains 'emulated by qemu'.
+        """
+        cpuinfo_path = os.path.join(self.proc_path, "cpuinfo")
+        cpuinfo = (
+            "platform	: Some Machine\n"
+            "model	: Some CPU (emulated by qemu)\n"
+            "machine	: Some Machine (emulated by qemu)\n")
+        self.makeFile(path=cpuinfo_path, content=cpuinfo)
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_other_vendor(self):
         """
         L{get_vm_info} should return an empty string when the sys_vendor is
