@@ -38,7 +38,7 @@ def get_vm_info(root_path="/"):
         cpuinfo_path = join_root_path("proc/cpuinfo")
         if os.path.exists(cpuinfo_path):
             cpuinfo = read_file(cpuinfo_path)
-            if "(emulated by qemu)" in cpuinfo:
+            if "qemu" in cpuinfo:
                 return "kvm"
         return ""
 
