@@ -12,6 +12,7 @@ Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
          python-twisted-core,
+         python-configobj,
          python-apt,
          ca-certificates,
          python-gdbm,
@@ -43,7 +44,6 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-twisted-web,
          python-twisted-names,
          python-pycurl,
-         python-configobj,
          landscape-common (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: The Landscape administration system client
