@@ -376,12 +376,12 @@ class LandscapeSetupScript(object):
 
     def query_access_group(self):
         """Query access group from the user."""
-        self.show_help("You may provide an access group for this computer "
-                       "e.g. webservers.")
-
         options = self.config.get_command_line_options()
         if "access_group" in options:
             return  # an access group is already provided, don't ask for one
+
+        self.show_help("You may provide an access group for this computer "
+                       "e.g. webservers.")
         self.prompt("access_group", "Access group", False)
 
     def _get_invalid_tags(self, tagnames):
