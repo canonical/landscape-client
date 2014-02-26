@@ -629,8 +629,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
     def test_access_group_defined_on_command_line(self):
         """
-        An access group defined on the command line can be verified by the
-        user.
+        When an access group is provided on the command line, do not prompt
+        the user for it.
         """
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
         self.expect(raw_input_mock(ANY)).count(0)
