@@ -63,7 +63,7 @@ class BaseConfiguration(object):
     unsaved_options = ()
     default_config_filenames = ["/etc/landscape/client.conf"]
     if (os.path.dirname(os.path.abspath(sys.argv[0]))
-        == os.path.abspath("scripts")):
+          == os.path.abspath("scripts")):
         default_config_filenames.insert(0, "landscape-client.conf")
     default_config_filenames = tuple(default_config_filenames)
     config_section = "client"
@@ -152,32 +152,33 @@ class BaseConfiguration(object):
         """
         Load configuration data from command line arguments and a config file.
 
+
+        @param accept_nonexistent_config: If False (default), specified config
+             files that can't be found will raise a SystemExit
+
         @raise: A SystemExit if the arguments are bad.
         """
         self.load_command_line(args)
 
         if self.config:
-            config_filenames = [self.config]
+            if os.path.isfile(self.config) and os.access(self.config, os.R_OK):
+                self.load_configuration_file(self.config)
+            elif not accept_nonexistent_config:
+                sys.exit("error: config file %s can't be read" % self.config)
         else:
             config_filenames = self.default_config_filenames
-        # Parse configuration file, if found.
-        for config_filename in config_filenames:
-            if (os.path.isfile(config_filename)
-                and os.access(config_filename, os.R_OK)):
-
-                self.load_configuration_file(config_filename)
-                break
-
-        else:
-            if not accept_nonexistent_config:
-                if len(config_filenames) == 1:
-                    message = (
-                        "error: config file %s can't be read" %
-                        config_filenames[0])
-                else:
-                    message = "error: no config file could be read"
-                sys.exit(message)
-
+            errors = []
+            for config_filename in config_filenames:
+                if os.path.isfile(config_filename):
+                    if not os.access(config_filename, os.R_OK):
+                        errors.append("error: config file %s can't be read" %
+                                      config_filename)
+                    else:
+                        self.load_configuration_file(config_filename)
+                        break
+            else:
+                if errors and not accept_nonexistent_config:
+                    sys.exit("\n".join(errors))
         self._load_external_options()
 
         # Check that all needed options were given.

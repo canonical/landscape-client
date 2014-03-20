@@ -424,13 +424,11 @@ class ConfigurationTest(LandscapeTest):
 
     def test_load_not_found_default(self):
         """
-        C{config.load} exits the process if the default config file is not
-        found.
+        C{config.load} doesn't exit the process if the default config file
+        is not found.
         """
         [default] = self.config.default_config_filenames[:] = ["/not/here"]
-        error = self.assertRaises(SystemExit, self.config.load, [])
-        self.assertEqual(
-            "error: config file %s can't be read" % default, str(error))
+        self.config.load([])
 
     def test_load_cannot_read_many_defaults(self):
         """
@@ -444,7 +442,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.default_config_filenames[:] = [default1, default2]
 
         error = self.assertRaises(SystemExit, self.config.load, [])
-        self.assertEqual("error: no config file could be read", str(error))
+        self.assertEqual(
+            "error: config file %s can't be read" % default1, str(error))
 
     def test_data_directory_option(self):
         """Ensure options.data_path option can be read by parse_args."""
