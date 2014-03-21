@@ -169,6 +169,8 @@ class BaseConfiguration(object):
             config_filenames = self.default_config_filenames
             errors = []
             for config_filename in config_filenames:
+                # We only error out if the default configuration files
+                # are there but can't be read.
                 if os.path.isfile(config_filename):
                     if not os.access(config_filename, os.R_OK):
                         errors.append("error: config file %s can't be read" %
