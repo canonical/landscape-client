@@ -303,10 +303,9 @@ class ConfigurationTest(LandscapeTest):
         self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_write_to_given_config_file(self):
-        filename = self.makeFile()
+        filename = self.makeFile(content="")
         self.config.load(
-            ["--log-level", "warning", "--config", filename],
-            accept_nonexistent_config=True)
+            ["--log-level", "warning", "--config", filename])
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()

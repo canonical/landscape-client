@@ -100,7 +100,7 @@ def run(args, reactor=None, sysinfo=None):
     if sysinfo is None:
         sysinfo = SysInfoPluginRegistry()
     config = SysInfoConfiguration()
-    config.load(args, accept_nonexistent_config=True)
+    config.load(args, accept_nonexistent_default_config=True)
     for plugin in config.get_plugins():
         sysinfo.add(plugin)
 

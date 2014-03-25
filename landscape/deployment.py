@@ -148,18 +148,24 @@ class BaseConfiguration(object):
         """
         self.load(self._command_line_args)
 
-    def load(self, args, accept_nonexistent_config=False):
+    def load(self, args, accept_nonexistent_default_config=False):
         """
         Load configuration data from command line arguments and a config file.
 
+        @param accept_nonexistent_default_config: If True, don't complain if
+            default configuration files aren't found
+
         @raise: A SystemExit if the arguments are bad.
+
         """
         self.load_command_line(args)
 
         if self.config:
             config_filenames = [self.config]
+            allow_missing = False
         else:
             config_filenames = self.default_config_filenames
+            allow_missing = accept_nonexistent_default_config
         # Parse configuration file, if found.
         for config_filename in config_filenames:
             if (os.path.isfile(config_filename)
@@ -169,7 +175,7 @@ class BaseConfiguration(object):
                 break
 
         else:
-            if not accept_nonexistent_config:
+            if not allow_missing:
                 if len(config_filenames) == 1:
                     message = (
                         "error: config file %s can't be read" %
@@ -402,12 +408,11 @@ class Configuration(BaseConfiguration):
 
         return parser
 
-    def load(self, args, accept_nonexistent_config=False):
+    def load(self, args):
         """
         Load configuration data from command line arguments and a config file.
         """
-        super(Configuration, self).load(
-            args, accept_nonexistent_config=accept_nonexistent_config)
+        super(Configuration, self).load(args)
 
         if not isinstance(self.server_autodiscover, bool):
             autodiscover = str(self.server_autodiscover).lower()
