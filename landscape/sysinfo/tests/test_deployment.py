@@ -155,6 +155,16 @@ class RunTest(LandscapeTest):
 
         return result.addCallback(check_result)
 
+    def test_missing_config_file(self):
+        # Existing revert in tearDown will handle undoing this
+        SysInfoConfiguration.default_config_filenames = []
+        result = run([])
+
+        def check_result(result):
+            self.assertIn("System load", self.stdout.getvalue())
+
+        return result.addCallback(check_result)
+
     def test_plugins_called_after_reactor_starts(self):
         """
         Plugins are invoked after the reactor has started, so that they can
