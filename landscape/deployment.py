@@ -148,39 +148,34 @@ class BaseConfiguration(object):
         """
         self.load(self._command_line_args)
 
-    def load(self, args, accept_nonexistent_config=False):
+    def load(self, args):
         """
         Load configuration data from command line arguments and a config file.
-
-
-        @param accept_nonexistent_config: If False (default), specified config
-             files that can't be found will raise a SystemExit
 
         @raise: A SystemExit if the arguments are bad.
         """
         self.load_command_line(args)
 
+        if self.config and not os.path.isfile(self.config):
+            sys.exit("error: config file %s doesn't exist" % self.config)
+
         if self.config:
-            if os.path.isfile(self.config) and os.access(self.config, os.R_OK):
-                self.load_configuration_file(self.config)
-            elif not accept_nonexistent_config:
-                sys.exit("error: config file %s can't be read" % self.config)
+            config_filenames = [self.config]
         else:
             config_filenames = self.default_config_filenames
-            errors = []
-            for config_filename in config_filenames:
-                # We only error out if the default configuration files
-                # are there but can't be read.
-                if os.path.isfile(config_filename):
-                    if not os.access(config_filename, os.R_OK):
-                        errors.append("error: config file %s can't be read" %
-                                      config_filename)
-                    else:
-                        self.load_configuration_file(config_filename)
-                        break
-            else:
-                if errors and not accept_nonexistent_config:
-                    sys.exit("\n".join(errors))
+
+        errors = []
+        for config_filename in config_filenames:
+            if os.path.isfile(config_filename):
+                if not os.access(config_filename, os.R_OK):
+                    errors.append("error: config file %s can't be read" %
+                                  config_filename)
+                else:
+                    self.load_configuration_file(config_filename)
+                    break
+        else:
+            if errors:
+                sys.exit("\n".join(errors))
         self._load_external_options()
 
         # Check that all needed options were given.
@@ -405,12 +400,11 @@ class Configuration(BaseConfiguration):
 
         return parser
 
-    def load(self, args, accept_nonexistent_config=False):
+    def load(self, args):
         """
         Load configuration data from command line arguments and a config file.
         """
-        super(Configuration, self).load(
-            args, accept_nonexistent_config=accept_nonexistent_config)
+        super(Configuration, self).load(args)
 
         if not isinstance(self.server_autodiscover, bool):
             autodiscover = str(self.server_autodiscover).lower()
