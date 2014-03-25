@@ -79,7 +79,7 @@ class BrokerConfiguration(Configuration):
         """Get the path to the message store."""
         return os.path.join(self.data_path, "messages")
 
-    def load(self, args, accept_nonexistent_config=False):
+    def load(self, args):
         """
         Load options from command line arguments and a config file.
 
@@ -87,8 +87,7 @@ class BrokerConfiguration(Configuration):
         C{http_proxy} and C{https_proxy} environment variables based on
         that config data.
         """
-        super(BrokerConfiguration, self).load(
-            args, accept_nonexistent_config=accept_nonexistent_config)
+        super(BrokerConfiguration, self).load(args)
         if self.http_proxy:
             os.environ["http_proxy"] = self.http_proxy
         elif self._original_http_proxy:

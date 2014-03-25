@@ -196,8 +196,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_empty_list_values_instead_of_double_quotes(self):
         """
@@ -303,10 +302,8 @@ class ConfigurationTest(LandscapeTest):
         self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_write_to_given_config_file(self):
-        filename = self.makeFile()
-        self.config.load(
-            ["--log-level", "warning", "--config", filename],
-            accept_nonexistent_config=True)
+        filename = self.makeFile(content="")
+        self.config.load(["--log-level", "warning", "--config", filename])
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
@@ -383,7 +380,8 @@ class ConfigurationTest(LandscapeTest):
         """
         filename = self.makeFile("[client]\nhello = world1\n")
         self.config.load(["--config", filename])
-        open(filename, "w").write("[client]\nhello = world2\n")
+        with open(filename, "w") as fh:
+            fh.write("[client]\nhello = world2\n")
         self.config.reload()
         self.assertEqual(self.config.hello, "world2")
 
@@ -408,7 +406,7 @@ class ConfigurationTest(LandscapeTest):
         error = self.assertRaises(
             SystemExit, self.config.load, ["--config", filename])
         self.assertEqual(
-            "error: config file %s can't be read" % filename, str(error))
+            "error: config file %s doesn't exist" % filename, str(error))
 
     def test_load_cannot_read_default(self):
         """
@@ -424,13 +422,11 @@ class ConfigurationTest(LandscapeTest):
 
     def test_load_not_found_default(self):
         """
-        C{config.load} exits the process if the default config file is not
-        found.
+        C{config.load} doesn't exit the process if the default config file
+        is not found.
         """
         [default] = self.config.default_config_filenames[:] = ["/not/here"]
-        error = self.assertRaises(SystemExit, self.config.load, [])
-        self.assertEqual(
-            "error: config file %s can't be read" % default, str(error))
+        self.config.load([])
 
     def test_load_cannot_read_many_defaults(self):
         """
@@ -444,7 +440,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.default_config_filenames[:] = [default1, default2]
 
         error = self.assertRaises(SystemExit, self.config.load, [])
-        self.assertEqual("error: no config file could be read", str(error))
+        self.assertEqual(
+            "error: config file %s can't be read" % default1, str(error))
 
     def test_data_directory_option(self):
         """Ensure options.data_path option can be read by parse_args."""
