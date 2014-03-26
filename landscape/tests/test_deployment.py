@@ -196,8 +196,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\n")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_empty_list_values_instead_of_double_quotes(self):
         """
@@ -458,8 +457,8 @@ class ConfigurationTest(LandscapeTest):
 
     def test_url_option(self):
         """Ensure options.url option can be read by parse_args."""
-        options = self.parser.parse_args(["--url",
-                                       "http://mylandscape/message-system"])[0]
+        options = self.parser.parse_args(
+            ["--url", "http://mylandscape/message-system"])[0]
         self.assertEqual(options.url, "http://mylandscape/message-system")
 
     def test_url_default(self):
@@ -469,8 +468,8 @@ class ConfigurationTest(LandscapeTest):
 
     def test_ping_url_option(self):
         """Ensure options.ping_url option can be read by parse_args."""
-        options = self.parser.parse_args(["--ping-url",
-                                       "http://mylandscape/ping"])[0]
+        options = self.parser.parse_args(
+            ["--ping-url", "http://mylandscape/ping"])[0]
         self.assertEqual(options.ping_url, "http://mylandscape/ping")
 
     def test_ping_url_default(self):
@@ -481,8 +480,8 @@ class ConfigurationTest(LandscapeTest):
 
     def test_ssl_public_key_option(self):
         """Ensure options.ssl_public_key option can be read by parse_args."""
-        options = self.parser.parse_args(["--ssl-public-key",
-                                       "/tmp/somekeyfile.ssl"])[0]
+        options = self.parser.parse_args(
+            ["--ssl-public-key", "/tmp/somekeyfile.ssl"])[0]
         self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
     def test_ssl_public_key_default(self):
@@ -507,8 +506,9 @@ class ConfigurationTest(LandscapeTest):
         Ensure options.autodiscover_srv_query_string option can be read by
         parse_args.
         """
-        options = self.parser.parse_args(["--autodiscover-srv-query-string",
-                                       "_tcp._landscape.someotherdomain"])[0]
+        options = self.parser.parse_args(
+            ["--autodiscover-srv-query-string",
+             "_tcp._landscape.someotherdomain"])[0]
         self.assertEqual(options.autodiscover_srv_query_string,
                          "_tcp._landscape.someotherdomain")
 
@@ -526,8 +526,8 @@ class ConfigurationTest(LandscapeTest):
         Ensure options.autodiscover_a_query_string option can be read by
         parse_args.
         """
-        options = self.parser.parse_args(["--autodiscover-a-query-string",
-                                       "customname.mydomain"])[0]
+        options = self.parser.parse_args(
+            ["--autodiscover-a-query-string", "customname.mydomain"])[0]
         self.assertEqual(options.autodiscover_a_query_string,
                          "customname.mydomain")
 
@@ -542,8 +542,8 @@ class ConfigurationTest(LandscapeTest):
 
     def test_log_file_option(self):
         """Ensure options.log_dir option can be read by parse_args."""
-        options = self.parser.parse_args(["--log-dir",
-                                       "/var/log/my-awesome-log"])[0]
+        options = self.parser.parse_args(
+            ["--log-dir", "/var/log/my-awesome-log"])[0]
         self.assertEqual(options.log_dir, "/var/log/my-awesome-log")
 
     def test_log_level_default(self):
