@@ -4,7 +4,8 @@ from optparse import OptionParser
 from StringIO import StringIO
 from textwrap import dedent
 
-from landscape.deployment import Configuration, get_versioned_persist
+from landscape.deployment import (
+    BaseConfiguration, Configuration, get_versioned_persist)
 from landscape.manager.config import ManagerConfiguration
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
@@ -19,6 +20,37 @@ class BabbleConfiguration(Configuration):
         parser = super(BabbleConfiguration, self).make_parser()
         parser.add_option("--whatever", metavar="STUFF")
         return parser
+
+
+class BaseConfigurationTest(LandscapeTest):
+
+    def test_load_not_found_default_accept_missing(self):
+        """
+        C{config.load} doesn't exit the process if the default config file
+        is not found and C{accept_nonexistent_default_config} is C{True}.
+        """
+        class MyConfiguration(BaseConfiguration):
+            default_config_filenames = ["/not/here"]
+
+        config = MyConfiguration()
+        result = config.load([], accept_nonexistent_default_config=True)
+        self.assertIs(result, None)
+
+    def test_load_not_found_accept_missing(self):
+        """
+        C{config.load} exits the process if the specified config file
+        is not found and C{accept_nonexistent_default_config} is C{True}.
+        """
+        class MyConfiguration(BaseConfiguration):
+            default_config_filenames = []
+
+        config = MyConfiguration()
+        filename = "/not/here"
+        error = self.assertRaises(
+            SystemExit, config.load, ["--config", filename],
+            accept_nonexistent_default_config=True)
+        self.assertEqual(
+            "error: config file %s can't be read" % filename, str(error))
 
 
 class ConfigurationTest(LandscapeTest):
