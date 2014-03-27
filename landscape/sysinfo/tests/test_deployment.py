@@ -5,6 +5,8 @@ from logging import getLogger
 
 from twisted.internet.defer import Deferred
 
+from landscape.lib.fs import create_file
+
 from landscape.sysinfo.deployment import (
     SysInfoConfiguration, ALL_PLUGINS, run, setup_logging,
     get_landscape_log_directory)
@@ -49,9 +51,7 @@ class DeploymentTest(LandscapeTest):
 
     def test_config_file(self):
         filename = self.makeFile()
-        f = open(filename, "w")
-        f.write("[sysinfo]\nsysinfo_plugins = TestPlugin\n")
-        f.close()
+        create_file(filename, "[sysinfo]\nsysinfo_plugins = TestPlugin\n")
         self.configuration.load(["--config", filename, "-d", self.makeDir()])
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 1)
@@ -156,6 +156,7 @@ class RunTest(LandscapeTest):
         return result.addCallback(check_result)
 
     def test_missing_config_file(self):
+        """The process doesn't fail if there is no config file."""
         # Existing revert in tearDown will handle undoing this
         SysInfoConfiguration.default_config_filenames = []
         result = run([])

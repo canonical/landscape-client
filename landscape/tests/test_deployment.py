@@ -4,6 +4,8 @@ from optparse import OptionParser
 from StringIO import StringIO
 from textwrap import dedent
 
+from landscape.lib.fs import read_file, create_file
+
 from landscape.deployment import (
     BaseConfiguration, Configuration, get_versioned_persist)
 from landscape.manager.config import ManagerConfiguration
@@ -192,7 +194,7 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="debug")
         self.config.log_level = "warning"
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]\nlog_level = warning")
 
     def test_write_configuration_with_section(self):
@@ -200,7 +202,7 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(section_name="babble", whatever="yay")
         self.config.whatever = "boo"
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[babble]\nwhatever = boo")
 
     def test_write_unrelated_configuration_back(self):
@@ -215,7 +217,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load_configuration_file(config_filename)
         self.config.whatever = "boo"
         self.config.write()
-        data = open(config_filename).read()
+        data = read_file(config_filename)
         self.assertConfigEqual(
             data,
             "[babble]\nwhatever = boo\n\n[goojy]\nunrelated = yes")
@@ -227,7 +229,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load([])
         self.config.log_level = "warning"
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_empty_list_values_instead_of_double_quotes(self):
@@ -240,7 +242,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load([])
         self.config.include_manager_plugins = ""
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]\ninclude_manager_plugins = \n")
 
     def test_dont_write_config_specified_default_options(self):
@@ -251,7 +253,7 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="debug")
         self.config.log_level = "info"
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]")
 
     def test_dont_write_unspecified_default_options(self):
@@ -262,7 +264,7 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file()
         self.config.log_level = "info"
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]")
 
     def test_dont_write_client_section_default_options(self):
@@ -273,7 +275,7 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="debug")
         self.config.log_level = "info"
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]")
 
     def test_do_write_preexisting_default_options(self):
@@ -286,7 +288,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load_configuration_file(config_filename)
         self.config.log_level = "info"
         self.config.write()
-        data = open(config_filename).read()
+        data = read_file(config_filename)
         self.assertConfigEqual(data, "[client]\nlog_level = info\n")
 
     def test_dont_delete_explicitly_set_default_options(self):
@@ -297,21 +299,21 @@ class ConfigurationTest(LandscapeTest):
         """
         self.write_config_file(log_level="info")
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]\nlog_level = info")
 
     def test_dont_write_config_option(self):
         self.write_config_file()
         self.config.config = self.config_filename
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]")
 
     def test_write_command_line_options(self):
         self.write_config_file()
         self.config.load(["--log-level", "warning"])
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_command_line_precedence(self):
@@ -320,7 +322,7 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="debug")
         self.config.load(["--log-level", "warning"])
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]\nlog_level = warning\n")
 
     def test_write_manually_set_precedence(self):
@@ -330,7 +332,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.log_level = "error"
         self.config.write()
-        data = open(self.config_filename).read()
+        data = read_file(self.config_filename)
         self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_write_to_given_config_file(self):
@@ -339,7 +341,7 @@ class ConfigurationTest(LandscapeTest):
             ["--log-level", "warning", "--config", filename])
         self.config.log_level = "error"
         self.config.write()
-        data = open(filename).read()
+        data = read_file(filename)
         self.assertConfigEqual(data, "[client]\nlog_level = error\n")
 
     def test_comments_are_maintained(self):
@@ -352,7 +354,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load_configuration_file(filename)
         self.config.log_level = "error"
         self.config.write()
-        new_config = open(filename).read()
+        new_config = read_file(filename)
         self.assertConfigEqual(
             new_config,
             "[client]\n# Comment 1\nlog_level = error\n#Comment 2\n")
@@ -413,7 +415,7 @@ class ConfigurationTest(LandscapeTest):
         """
         filename = self.makeFile("[client]\nhello = world1\n")
         self.config.load(["--config", filename])
-        open(filename, "w").write("[client]\nhello = world2\n")
+        create_file(filename, "[client]\nhello = world2\n")
         self.config.reload()
         self.assertEqual(self.config.hello, "world2")
 
