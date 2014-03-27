@@ -100,7 +100,9 @@ def run(args, reactor=None, sysinfo=None):
     if sysinfo is None:
         sysinfo = SysInfoPluginRegistry()
     config = SysInfoConfiguration()
-    config.load(args)
+    # landscape-sysinfo needs to work where there's no
+    # /etc/landscape/client.conf See lp:1293990
+    config.load(args, accept_nonexistent_default_config=True)
     for plugin in config.get_plugins():
         sysinfo.add(plugin)
 

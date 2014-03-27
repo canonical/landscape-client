@@ -63,7 +63,7 @@ class BaseConfiguration(object):
     unsaved_options = ()
     default_config_filenames = ["/etc/landscape/client.conf"]
     if (os.path.dirname(os.path.abspath(sys.argv[0]))
-          == os.path.abspath("scripts")):
+        == os.path.abspath("scripts")):
         default_config_filenames.insert(0, "landscape-client.conf")
     default_config_filenames = tuple(default_config_filenames)
     config_section = "client"
@@ -148,34 +148,42 @@ class BaseConfiguration(object):
         """
         self.load(self._command_line_args)
 
-    def load(self, args):
+    def load(self, args, accept_nonexistent_default_config=False):
         """
         Load configuration data from command line arguments and a config file.
 
+        @param accept_nonexistent_default_config: If True, don't complain if
+            default configuration files aren't found
+
         @raise: A SystemExit if the arguments are bad.
+
         """
         self.load_command_line(args)
 
-        if self.config and not os.path.isfile(self.config):
-            sys.exit("error: config file %s doesn't exist" % self.config)
-
         if self.config:
             config_filenames = [self.config]
+            allow_missing = False
         else:
             config_filenames = self.default_config_filenames
-
-        errors = []
+            allow_missing = accept_nonexistent_default_config
+        # Parse configuration file, if found.
         for config_filename in config_filenames:
-            if os.path.isfile(config_filename):
-                if not os.access(config_filename, os.R_OK):
-                    errors.append("error: config file %s can't be read" %
-                                  config_filename)
-                else:
-                    self.load_configuration_file(config_filename)
-                    break
+            if (os.path.isfile(config_filename)
+                and os.access(config_filename, os.R_OK)):
+
+                self.load_configuration_file(config_filename)
+                break
+
         else:
-            if errors:
-                sys.exit("\n".join(errors))
+            if not allow_missing:
+                if len(config_filenames) == 1:
+                    message = (
+                        "error: config file %s can't be read" %
+                        config_filenames[0])
+                else:
+                    message = "error: no config file could be read"
+                sys.exit(message)
+
         self._load_external_options()
 
         # Check that all needed options were given.

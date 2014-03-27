@@ -411,7 +411,7 @@ class LandscapeSetupScript(object):
             self.prompt("tags", "Tags", False)
             if self._get_invalid_tags(self.config.tags):
                 self.show_help("Tag names may only contain alphanumeric "
-                               "characters.")
+                              "characters.")
                 self.config.tags = None  # Reset for the next prompt
             else:
                 break
