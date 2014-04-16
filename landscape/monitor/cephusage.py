@@ -5,6 +5,7 @@ import logging
 import re
 
 from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet import threads
 
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
@@ -39,10 +40,6 @@ class CephUsage(MonitorPlugin):
     scope = "storage"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
-
-    _usage_regexp = re.compile(
-        ".*pgmap.*data, (\d+) MB used, (\d+) MB / (\d+) MB avail.*",
-        flags=re.S)
 
     def __init__(self, interval=30, monitor_interval=60 * 60,
                  create_time=time.time):
@@ -92,17 +89,14 @@ class CephUsage(MonitorPlugin):
         self._monitor.ping()
 
         # Check if a ceph config file is available. If it's not , it's not a
-        # ceph machine or ceph is set up yet. No need to run anything in this
-        # case.
+        # ceph machine or ceph is not set up yet. No need to run anything in
+        # this case.
         if self._ceph_config is None or not os.path.exists(self._ceph_config):
             returnValue(None)
 
-        # Extract the ceph ring Id and cache it.
-        if self._ceph_ring_id is None:
-            self._ceph_ring_id = yield self._get_ceph_ring_id()
-
+        fsid, new_ceph_usage = yield threads.deferToThread(self._get_ceph_usage)
+        self._ceph_ring_id = fsid
         new_timestamp = int(self._create_time())
-        new_ceph_usage = yield self._get_ceph_usage()
 
         step_data = None
         if new_ceph_usage is not None:
@@ -114,62 +108,28 @@ class CephUsage(MonitorPlugin):
 
     def _get_ceph_usage(self):
         """
-        Grab the ceph usage data by parsing the output of the "ceph status"
-        command output.
+        Grab the ceph usage data by connecting to the ceph cluster using the
+        rados library.
+
+        This method is synchronous, but it's called from deferToThread().
+
+        @return: An (fsid, usage percentage) tuple
         """
+        try:
+            import rados
+        except ImportError:
+            # If we cannot import rados, we can't report ceph usage.
+            return None, None
 
-        def parse(output):
-            if output is None:
-                return None
+        with rados.Rados(conffile=self._ceph_config) as cluster:
+            cluster_stats = cluster.get_cluster_stats()
+            fsid = cluster.get_fsid()
 
-            result = self._usage_regexp.match(output)
-            if not result:
-                logging.error("Could not parse command output: '%s'." % output)
-                return None
+        total = cluster_stats["kb"]
+        available = cluster_stats["kb_avail"]
 
-            (used, available, total) = result.groups()
-            # Note: used + available is NOT equal to total (there is some used
-            # space for duplication and system info etc...)
-            filled = int(total) - int(available)
-            return filled / float(total)
+        # Note: used + available is NOT equal to total (there is some used
+        # space for duplication and system info etc...)
+        used_space = int(total) - int(available)
 
-        return self._get_status_command_output().addCallback(parse)
-
-    def _get_status_command_output(self):
-        return self._run_ceph_command("status")
-
-    def _get_ceph_ring_id(self):
-        """Extract ceph ring id from ceph command output."""
-
-        def parse(output):
-            if output is None:
-                return  None
-
-            try:
-                quorum_status = json.loads(output)
-                ring_id = quorum_status["monmap"]["fsid"]
-            except:
-                logging.error(
-                    "Could not get ring_id from output: '%s'." % output)
-                return None
-            return ring_id
-
-        return self._get_quorum_command_output().addCallback(parse)
-
-    def _get_quorum_command_output(self):
-        return self._run_ceph_command("quorum_status")
-
-    def _run_ceph_command(self, *args):
-        """
-        Run the ceph command with the specified options using landscape ceph
-        key.  The keyring is expected to contain a configuration stanza with a
-        key for the "client.landscape-client" id.
-        """
-        params = ["--conf", self._ceph_config, "--id", "landscape-client"]
-        params.extend(args)
-        deferred = spawn_process("ceph", args=params)
-        # If the command line client isn't available, we assume it's not a ceph
-        # monitor machine.
-        deferred.addCallback(
-            lambda (out, err, code): out if code == 0 else None)
-        return deferred
+        return fsid, used_space / float(total)
