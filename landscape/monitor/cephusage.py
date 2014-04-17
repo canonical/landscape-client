@@ -1,26 +1,32 @@
 import time
 import os
-import json
-import logging
-import re
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import threads
 
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
-from landscape.lib.twisted_util import spawn_process
 from landscape.monitor.plugin import MonitorPlugin
+
+try:
+    from rados import Rados
+except ImportError:
+    has_rados = False
+else:
+    has_rados = True
 
 
 class CephUsage(MonitorPlugin):
     """
     Plugin that captures Ceph usage information. This only works if the client
-    runs on one of the Ceph monitor nodes, and it noops otherwise.
+    runs on one of the Ceph monitor nodes, and noops otherwise.
 
-    The plugin requires the 'ceph' command to be available, which is run with a
-    config file in <data_path>/ceph-client/ceph.landscape-client.conf with the
-    following config:
+    The plugin requires the 'python-ceph' package to be installed, which is the
+    case on a standard "ceph" charm deployment.
+    The landscape-client charm should join a ceph-client relation with the ceph
+    charm, which will crete a keyring and config file for the landscape-client
+    to consume in <data_path>/ceph-client/ceph.landscape-client.conf. It
+    contains the following:
 
     [global]
     auth supported = cephx
@@ -31,9 +37,6 @@ class CephUsage(MonitorPlugin):
 
     ceph-authtool <keyring-file> --create-keyring
         --name=client.landscape-client --add-key=<key>
-
-    The landscape-client charm automatically provides the client configuration
-    and key when deployed as subordinate of a ceph node.
     """
 
     persist_name = "ceph-usage"
@@ -42,13 +45,14 @@ class CephUsage(MonitorPlugin):
     run_interval = None
 
     def __init__(self, interval=30, monitor_interval=60 * 60,
-                 create_time=time.time):
+                 create_time=time.time, perform=None):
         self._interval = interval
         self._monitor_interval = monitor_interval
         self._ceph_usage_points = []
         self._ceph_ring_id = None
         self._create_time = create_time
         self._ceph_config = None
+        self._has_rados = has_rados
 
     def register(self, registry):
         super(CephUsage, self).register(registry)
@@ -84,17 +88,19 @@ class CephUsage(MonitorPlugin):
         self.registry.broker.call_if_accepted(
             "ceph-usage", self.send_message, urgent)
 
-    @inlineCallbacks
     def run(self):
         self._monitor.ping()
 
-        # Check if a ceph config file is available. If it's not , it's not a
-        # ceph machine or ceph is not set up yet. No need to run anything in
-        # this case.
-        if self._ceph_config is None or not os.path.exists(self._ceph_config):
-            returnValue(None)
+        # Check if a ceph config file and the rados library are available.
+        # If they are not, it's not a ceph machine or ceph is not set up yet.
+        # No need to run anything.
+        no_config = (self._ceph_config is None
+                     or not os.path.exists(self._ceph_config))
 
-        fsid, new_ceph_usage = yield threads.deferToThread(self._get_ceph_usage)
+        if no_config or not self._has_rados:
+            return None
+
+        fsid, new_ceph_usage = self._get_ceph_usage()
         self._ceph_ring_id = fsid
         new_timestamp = int(self._create_time())
 
@@ -106,7 +112,22 @@ class CephUsage(MonitorPlugin):
         if step_data is not None:
             self._ceph_usage_points.append(step_data)
 
-    def _get_ceph_usage(self):
+    @inlineCallbacks
+    def _perform_rados_call(self):
+        """
+        The actual Rados interaction. This is encapsulating the calling as well
+        as the Asynchronous isolation for easier testing/mocking.
+        """
+        def work(conf):
+            with Rados(conffile=conf) as cluster:
+                cluster_stats = cluster.get_cluster_stats()
+                fsid = cluster.get_fsid()
+            return fsid, cluster_stats
+
+        result = yield threads.deferToThread(work, self._ceph_config)
+        returnValue(result)
+
+    def _get_ceph_usage(self, perform=None):
         """
         Grab the ceph usage data by connecting to the ceph cluster using the
         rados library.
@@ -115,16 +136,9 @@ class CephUsage(MonitorPlugin):
 
         @return: An (fsid, usage percentage) tuple
         """
-        try:
-            import rados
-        except ImportError:
-            # If we cannot import rados, we can't report ceph usage.
-            return None, None
-
-        with rados.Rados(conffile=self._ceph_config) as cluster:
-            cluster_stats = cluster.get_cluster_stats()
-            fsid = cluster.get_fsid()
-
+        if perform is None:
+            perform = self._perform_rados_call
+        fsid, cluster_stats = perform()
         total = cluster_stats["kb"]
         available = cluster_stats["kb_avail"]
 
