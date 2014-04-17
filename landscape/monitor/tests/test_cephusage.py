@@ -131,8 +131,8 @@ class CephUsagePluginTest(LandscapeTest):
         The get_ceph_usage method returns a properly computed usage percentage
         and fsid.
         """
-        uuid = "unique"
-        stats = {"kb": 100, "kb_avail": 80}
+        uuid = u"unique"
+        stats = {"kb": 100l, "kb_avail": 80l}
 
         plugin = CephUsage()
 

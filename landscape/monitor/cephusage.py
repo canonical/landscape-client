@@ -119,9 +119,9 @@ class CephUsage(MonitorPlugin):
         as the Asynchronous isolation for easier testing/mocking.
         """
         def work(conf):
-            with Rados(conffile=conf) as cluster:
+            with Rados(conffile=conf, rados_id="landscape-client") as cluster:
                 cluster_stats = cluster.get_cluster_stats()
-                fsid = cluster.get_fsid()
+                fsid = unicode(cluster.get_fsid(), "utf-8")
             return fsid, cluster_stats
 
         result = yield threads.deferToThread(work, self._ceph_config)
@@ -144,6 +144,6 @@ class CephUsage(MonitorPlugin):
 
         # Note: used + available is NOT equal to total (there is some used
         # space for duplication and system info etc...)
-        used_space = int(total) - int(available)
+        used_space = total - available
 
         return fsid, used_space / float(total)
