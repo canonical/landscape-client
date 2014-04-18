@@ -1,3 +1,4 @@
+import logging
 import time
 import os
 
@@ -46,6 +47,7 @@ class CephUsage(MonitorPlugin):
 
     def __init__(self, interval=30, monitor_interval=60 * 60,
                  create_time=time.time, perform=None):
+        self.active = True
         self._interval = interval
         self._monitor_interval = monitor_interval
         self._ceph_usage_points = []
@@ -81,6 +83,7 @@ class CephUsage(MonitorPlugin):
     def send_message(self, urgent=False):
         message = self.create_message()
         if message["ceph-usages"] and message["ring-id"] is not None:
+            logging.info("Sending Ceph message for cluster '%s'" % message["ring-id"])
             self.registry.broker.send_message(message, self._session_id,
                                               urgent=urgent)
 
@@ -89,30 +92,26 @@ class CephUsage(MonitorPlugin):
             "ceph-usage", self.send_message, urgent)
 
     def run(self):
+        if not self.active:
+            return
+
+        if not has_rados:
+            logging.info("This machine does not appear to be a Ceph machine. "
+                         "Deactivating plugin.")
+            self.active = False
+
         self._monitor.ping()
 
         # Check if a ceph config file and the rados library are available.
         # If they are not, it's not a ceph machine or ceph is not set up yet.
         # No need to run anything.
-        no_config = (self._ceph_config is None
-                     or not os.path.exists(self._ceph_config))
+        if self._ceph_config is None or not os.path.exists(self._ceph_config):
+            return
 
-        if no_config or not self._has_rados:
-            return None
+        defered = self._perform_rados_call()
+        defered.addCallback(self._handle_usage)
+        return defered
 
-        fsid, new_ceph_usage = self._get_ceph_usage()
-        self._ceph_ring_id = fsid
-        new_timestamp = int(self._create_time())
-
-        step_data = None
-        if new_ceph_usage is not None:
-            step_data = self._accumulate(
-                new_timestamp, new_ceph_usage, "ceph-usage-accumulator")
-
-        if step_data is not None:
-            self._ceph_usage_points.append(step_data)
-
-    @inlineCallbacks
     def _perform_rados_call(self):
         """
         The actual Rados interaction. This is encapsulating the calling as well
@@ -124,21 +123,13 @@ class CephUsage(MonitorPlugin):
                 fsid = unicode(cluster.get_fsid(), "utf-8")
             return fsid, cluster_stats
 
-        result = yield threads.deferToThread(work, self._ceph_config)
-        returnValue(result)
+        return threads.deferToThread(work, self._ceph_config)
 
-    def _get_ceph_usage(self, perform=None):
-        """
-        Grab the ceph usage data by connecting to the ceph cluster using the
-        rados library.
+    def _handle_usage(self, result):
+        logging.info("Handling usage for result: %s", repr(result))
+        fsid, cluster_stats = result
+        self._ceph_ring_id = fsid
 
-        This method is synchronous, but it's called from deferToThread().
-
-        @return: An (fsid, usage percentage) tuple
-        """
-        if perform is None:
-            perform = self._perform_rados_call
-        fsid, cluster_stats = perform()
         total = cluster_stats["kb"]
         available = cluster_stats["kb_avail"]
 
@@ -146,4 +137,13 @@ class CephUsage(MonitorPlugin):
         # space for duplication and system info etc...)
         used_space = total - available
 
-        return fsid, used_space / float(total)
+        new_ceph_usage = used_space / float(total)
+
+        new_timestamp = int(self._create_time())
+
+        step_data = self._accumulate(
+            new_timestamp, new_ceph_usage, "ceph-usage-accumulator")
+
+        if step_data is not None:
+            logging.info("Adding usage point for Ceph: %s", repr(step_data))
+            self._ceph_usage_points.append(step_data)
