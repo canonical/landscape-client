@@ -90,57 +90,55 @@ class CephUsagePluginTest(LandscapeTest):
         self.mstore.set_accepted_types(["ceph-usage"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
-    def test_plugin_run(self):
+    def test_wb_should_run_inactive(self):
         """
-        The plugin's run() method fills the _ceph_usage_points with
-        accumulated samples after each C{interval} period.
-        The _ceph_ring_id member of the plugin is also filled with the output
-        of the _get_ceph_ring_id method.
+        A plugin with self.active set to False should not run.
         """
-        monitor_interval = 300
-        interval = monitor_interval
-        plugin = CephUsage(
-            interval=interval, monitor_interval=monitor_interval,
-            create_time=self.reactor.time)
+        plugin = CephUsage()
+        plugin.active = False
+        self.assertFalse(plugin._should_run())
 
-        uuid = "i-am-a-unique-snowflake"
-        stats = {"kb": 100, "kb_avail": 80}
-
-        # The config file must be present for the plugin to run.
-        ceph_client_dir = os.path.join(self.config.data_path, "ceph-client")
-        ceph_conf = os.path.join(ceph_client_dir, "ceph.landscape-client.conf")
-        os.mkdir(ceph_client_dir)
-        touch_file(ceph_conf)
-
-        plugin._ceph_config = ceph_conf
-
-        # The rados library must be available for the plugin to run.
+    def test_wb_should_run_no_config_file(self):
+        """
+        A plugin without a set _ceph_config attribute should not run.
+        """
+        plugin = CephUsage()
         plugin._has_rados = True
+        plugin._ceph_config = None
+        self.assertFalse(plugin._should_run())
 
-        plugin._perform_rados_call = lambda: (uuid, stats)
+    def test_wb_should_run_no_rados(self):
+        """
+        If the Rados library cannot be imported (CephUsage._has_rados is False)
+        the plugin logs a message then deactivates itself.
+        """
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("This machine does not appear to be a Ceph machine. "
+                     "Deactivating plugin.")
+        self.mocker.replay()
+
+        plugin = CephUsage()
+        plugin._has_rados = False
+        self.assertFalse(plugin._should_run())
+
+    def test_wb_handle_usage(self):
+        """
+        """
+        interval = 300
+        stats = {"kb": 100l, "kb_avail": 80l}
+
+        plugin = CephUsage(
+            create_time=self.reactor.time, interval=interval,
+            monitor_interval=interval)
 
         self.monitor.add(plugin)
 
-        self.reactor.advance(monitor_interval * 2)
+        plugin._handle_usage(stats)  # time is 0
 
-        self.assertEqual([(300, 0.2), (600, 0.2)], plugin._ceph_usage_points)
-        self.assertEqual(uuid, plugin._ceph_ring_id)
+        self.reactor.advance(interval)  # time is 300
+        plugin._handle_usage(stats)
 
-    def test_wb_get_ceph_usage(self):
-        """
-        The get_ceph_usage method returns a properly computed usage percentage
-        and fsid.
-        """
-        uuid = u"unique"
-        stats = {"kb": 100l, "kb_avail": 80l}
-
-        plugin = CephUsage()
-
-        fake_perform = lambda : (uuid, stats)
-
-        result = plugin._get_ceph_usage(perform=fake_perform)
-        expected = (uuid, 0.2)
-        self.assertEqual(expected, result)
+        self.assertEqual([(300, 0.2)], plugin._ceph_usage_points)
 
     def test_resynchronize_message_calls_reset_method(self):
         """

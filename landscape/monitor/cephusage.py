@@ -2,7 +2,6 @@ import logging
 import time
 import os
 
-from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import threads
 
 from landscape.accumulate import Accumulator
@@ -46,8 +45,9 @@ class CephUsage(MonitorPlugin):
     run_interval = None
 
     def __init__(self, interval=30, monitor_interval=60 * 60,
-                 create_time=time.time, perform=None):
+                 create_time=time.time):
         self.active = True
+        self._has_rados = has_rados
         self._interval = interval
         self._monitor_interval = monitor_interval
         self._ceph_usage_points = []
@@ -83,7 +83,6 @@ class CephUsage(MonitorPlugin):
     def send_message(self, urgent=False):
         message = self.create_message()
         if message["ceph-usages"] and message["ring-id"] is not None:
-            logging.info("Sending Ceph message for cluster '%s'" % message["ring-id"])
             self.registry.broker.send_message(message, self._session_id,
                                               urgent=urgent)
 
@@ -92,44 +91,49 @@ class CephUsage(MonitorPlugin):
             "ceph-usage", self.send_message, urgent)
 
     def run(self):
-        if not self.active:
+        if not self._should_run():
             return
-
-        if not has_rados:
-            logging.info("This machine does not appear to be a Ceph machine. "
-                         "Deactivating plugin.")
-            self.active = False
 
         self._monitor.ping()
-
-        # Check if a ceph config file and the rados library are available.
-        # If they are not, it's not a ceph machine or ceph is not set up yet.
-        # No need to run anything.
-        if self._ceph_config is None or not os.path.exists(self._ceph_config):
-            return
-
-        defered = self._perform_rados_call()
+        defered =  threads.deferToThread(self._perform_rados_call)
         defered.addCallback(self._handle_usage)
         return defered
 
+    def _should_run(self):
+        """Returns wheter or not this plugin should run."""
+        if not self.active:
+            return False
+
+        if not self._has_rados:
+            logging.info("This machine does not appear to be a Ceph machine. "
+                         "Deactivating plugin.")
+            self.active = False
+            return False
+
+        # Check if a ceph config file is available.
+        # If it is not, it's not a ceph machine or ceph is not set up yet.
+        if self._ceph_config is None or not os.path.exists(self._ceph_config):
+            return False
+
+        return True
+
     def _perform_rados_call(self):
-        """
-        The actual Rados interaction. This is encapsulating the calling as well
-        as the Asynchronous isolation for easier testing/mocking.
-        """
-        def work(conf):
-            with Rados(conffile=conf, rados_id="landscape-client") as cluster:
-                cluster_stats = cluster.get_cluster_stats()
+        """The actual Rados interaction."""
+        with Rados(conffile=self._ceph_config,
+                   rados_id="landscape-client") as cluster:
+
+            cluster_stats = cluster.get_cluster_stats()
+            if self._ceph_ring_id is None:
                 fsid = unicode(cluster.get_fsid(), "utf-8")
-            return fsid, cluster_stats
+                self._ceph_ring_id = fsid
 
-        return threads.deferToThread(work, self._ceph_config)
+        return cluster_stats
 
-    def _handle_usage(self, result):
-        logging.info("Handling usage for result: %s", repr(result))
-        fsid, cluster_stats = result
-        self._ceph_ring_id = fsid
+    def _handle_usage(self, cluster_stats):
+        """A method to use as callback to the raods interaction.
 
+        Parses the output and stores the useage data in an accumulator.
+        """
         total = cluster_stats["kb"]
         available = cluster_stats["kb_avail"]
 
@@ -137,7 +141,10 @@ class CephUsage(MonitorPlugin):
         # space for duplication and system info etc...)
         used_space = total - available
 
-        new_ceph_usage = used_space / float(total)
+        # Default to "full" in case the cluster reports 0kb total.
+        new_ceph_usage = 1.0
+        if total != 0l:
+            new_ceph_usage = used_space / float(total)
 
         new_timestamp = int(self._create_time())
 
@@ -145,5 +152,4 @@ class CephUsage(MonitorPlugin):
             new_timestamp, new_ceph_usage, "ceph-usage-accumulator")
 
         if step_data is not None:
-            logging.info("Adding usage point for Ceph: %s", repr(step_data))
             self._ceph_usage_points.append(step_data)
