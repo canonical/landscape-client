@@ -133,7 +133,7 @@ class CephUsagePluginTest(LandscapeTest):
 
     def test_wb_handle_usage(self):
         """
-        The C{_handle_usage} method stores the result of th rados call (here,
+        The C{_handle_usage} method stores the result of the rados call (here,
         an example value) in an Accumulator, and appends the step_data
         to the C{_ceph_usage_points} member when an accumulator interval is
         reached.

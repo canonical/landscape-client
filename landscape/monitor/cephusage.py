@@ -9,11 +9,10 @@ from landscape.lib.monitor import CoverageMonitor
 from landscape.monitor.plugin import MonitorPlugin
 
 
-has_rados = False
 try:
     from rados import Rados
     has_rados = hasattr(Rados, "get_cluster_stats")
-except (ImportError):
+except ImportError:
     has_rados = False
 
 
