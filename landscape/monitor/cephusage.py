@@ -10,7 +10,12 @@ from landscape.monitor.plugin import MonitorPlugin
 
 try:
     from rados import Rados
+    # Ensue the API has the right feature (it could be successfully importing
+    # an older Rados version).
+    Rados.rados_cluster_stat_t
 except ImportError:
+    has_rados = False
+except AttributeError:
     has_rados = False
 else:
     has_rados = True
