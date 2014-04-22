@@ -12,10 +12,8 @@ try:
     from rados import Rados
     # Ensue the API has the right feature (it could be successfully importing
     # an older Rados version).
-    Rados.rados_cluster_stat_t
-except ImportError:
-    has_rados = False
-except AttributeError:
+    Rados.get_cluster_stats
+except (ImportError, AttributeError):
     has_rados = False
 else:
     has_rados = True
@@ -59,7 +57,6 @@ class CephUsage(MonitorPlugin):
         self._ceph_ring_id = None
         self._create_time = create_time
         self._ceph_config = None
-        self._has_rados = has_rados
 
     def register(self, registry):
         super(CephUsage, self).register(registry)
@@ -100,7 +97,7 @@ class CephUsage(MonitorPlugin):
             return
 
         self._monitor.ping()
-        defered =  threads.deferToThread(self._perform_rados_call)
+        defered = threads.deferToThread(self._perform_rados_call)
         defered.addCallback(self._handle_usage)
         return defered
 
@@ -148,7 +145,7 @@ class CephUsage(MonitorPlugin):
 
         # Default to "full" in case the cluster reports 0kb total.
         new_ceph_usage = 1.0
-        if total != 0l:
+        if total != 0L:
             new_ceph_usage = used_space / float(total)
 
         new_timestamp = int(self._create_time())

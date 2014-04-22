@@ -1,6 +1,3 @@
-import os
-
-from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.cephusage import CephUsage
 
@@ -125,7 +122,7 @@ class CephUsagePluginTest(LandscapeTest):
         """
         """
         interval = 300
-        stats = {"kb": 100l, "kb_avail": 80l}
+        stats = {"kb": 100L, "kb_avail": 80L}
 
         plugin = CephUsage(
             create_time=self.reactor.time, interval=interval,
