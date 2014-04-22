@@ -132,9 +132,9 @@ class CephUsage(MonitorPlugin):
         return cluster_stats
 
     def _handle_usage(self, cluster_stats):
-        """A method to use as callback to the raods interaction.
+        """A method to use as callback to the rados interaction.
 
-        Parses the output and stores the useage data in an accumulator.
+        Parses the output and stores the usage data in an accumulator.
         """
         total = cluster_stats["kb"]
         available = cluster_stats["kb_avail"]

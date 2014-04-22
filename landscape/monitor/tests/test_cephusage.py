@@ -120,6 +120,10 @@ class CephUsagePluginTest(LandscapeTest):
 
     def test_wb_handle_usage(self):
         """
+        The C{_handle_usage} method stores the result of th rados call (here,
+        an example value) in an Accumulator, and appends the step_data
+        to the C{_ceph_usage_points} member when an accumulator interval is
+        reached.
         """
         interval = 300
         stats = {"kb": 100L, "kb_avail": 80L}
@@ -148,9 +152,6 @@ class CephUsagePluginTest(LandscapeTest):
             self.called = True
 
         self.plugin._reset = stub_reset
-
         self.monitor.add(self.plugin)
-
         self.reactor.fire("resynchronize")
-
         self.assertTrue(self.called)
