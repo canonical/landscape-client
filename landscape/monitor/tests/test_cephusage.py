@@ -1,63 +1,7 @@
-import os
-import json
-
-from twisted.internet.defer import succeed
-
+import tempfile
 from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.cephusage import CephUsage
-
-
-SAMPLE_OLD_TEMPLATE = (
-    "   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
-    "unclean\n"
-    "monmap e2: 3 mons at {server-269703f4-5217-495a-b7f2-b3b3473c1719="
-    "10.55.60.238:6789/0,server-3f370698-f3b0-4cbe-8db9-a18e304c952b="
-    "10.55.60.141:6789/0,server-f635fa07-e36f-453c-b3d5-b4ce86fbc6ff="
-    "10.55.60.241:6789/0}, election epoch 8, quorum 0,1,2 "
-    "server-269703f4-5217-495a-b7f2-b3b3473c1719,"
-    "server-3f370698-f3b0-4cbe-8db9-a18e304c952b,"
-    "server-f635fa07-e36f-453c-b3d5-b4ce86fbc6ff\n   "
-    "osdmap e9: 3 osds: 3 up, 3 in\n    "
-    "pgmap v114: 192 pgs: 186 active+clean, 6 active+degraded; "
-    "0 bytes data, %s MB used, %s MB / %s MB avail\n   "
-    "mdsmap e1: 0/0/1 up\n\n")
-
-SAMPLE_NEW_TEMPLATE = (
-    "health HEALTH_OK\n"
-    "   monmap e2: 3 mons at {inst-007=192.168.64.139:6789/0,"
-    "inst-008=192.168.64.140:6789/0,inst-009=192.168.64.141:6789/0}, "
-    "election epoch 6, quorum 0,1,2 inst-007,inst-008,inst-009\n"
-    "   osdmap e28: 3 osds: 3 up, 3 in\n"
-    "    pgmap v193861: 208 pgs: 208 active+clean; 5514 MB data, %s MB used, "
-    "%s MB / %s MB avail; 1739KB/s wr, 54op/s\n"
-    "   mdsmap e1: 0/0/1 up\n")
-
-SAMPLE_OUTPUT = SAMPLE_NEW_TEMPLATE % (4296, 53880, 61248)
-SAMPLE_OLD_OUTPUT = SAMPLE_OLD_TEMPLATE % (4296, 53880, 61248)
-
-SAMPLE_QUORUM = (
-    '{ "election_epoch": 8,\n'
-    '  "quorum": [\n'
-    '        0,\n'
-    '        1,\n'
-    '        2],\n'
-    '  "monmap": { "epoch": 2,\n'
-    '      "fsid": "%s",\n'
-    '      "modified": "2013-01-13 16:58:00.141737",\n'
-    '      "created": "0.000000",\n'
-    '      "mons": [\n'
-    '            { "rank": 0,\n'
-    '              "name": "server-1be72d64-0ff2-4ac1-ad13-1c06c8201011",\n'
-    '              "addr": "10.55.60.188:6789\/0"},\n'
-    '            { "rank": 1,\n'
-    '              "name": "server-e847f147-ed13-46c2-8e6d-768aa32657ab",\n'
-    '              "addr": "10.55.60.202:6789\/0"},\n'
-    '            { "rank": 2,\n'
-    '              "name": "server-3c831a0b-51d5-43a9-95d5-63644f0965cc",\n'
-    '              "addr": "10.55.60.205:6789\/0"}]}}\n')
-
-SAMPLE_QUORUM_OUTPUT = SAMPLE_QUORUM % "ecbb8960-0e21-11e2-b495-83a88f44db01"
 
 
 class CephUsagePluginTest(LandscapeTest):
@@ -67,81 +11,6 @@ class CephUsagePluginTest(LandscapeTest):
         super(CephUsagePluginTest, self).setUp()
         self.mstore = self.broker_service.message_store
         self.plugin = CephUsage(create_time=self.reactor.time)
-
-    def test_wb_get_ceph_usage_if_command_not_found(self):
-        """
-        When the ceph command cannot be found or accessed, the
-        C{_get_ceph_usage} method returns None.
-        """
-        self.plugin._get_status_command_output = lambda: succeed(None)
-        self.monitor.add(self.plugin)
-
-        self.assertIs(
-            None, self.successResultOf(self.plugin._get_ceph_usage()))
-
-    def test_wb_get_ceph_usage(self):
-        """
-        When the ceph command call returns output, the _get_ceph_usage method
-        returns the percentage of used space.
-        """
-        self.plugin._get_status_command_output = lambda: succeed(SAMPLE_OUTPUT)
-        self.monitor.add(self.plugin)
-
-        self.assertEqual(
-            0.12029780564263323,
-            self.successResultOf(self.plugin._get_ceph_usage()))
-
-    def test_wb_get_ceph_usage_old_format(self):
-        """
-        The _get_ceph_usage method understands command output in the "old"
-        format (the output changed around version 0.56.1)
-        """
-        self.plugin._get_status_command_output = (
-            lambda: succeed(SAMPLE_OLD_OUTPUT))
-        self.monitor.add(self.plugin)
-
-        self.assertEqual(
-            0.12029780564263323,
-            self.successResultOf(self.plugin._get_ceph_usage()))
-
-    def test_wb_get_ceph_usage_empty_disk(self):
-        """
-        When the ceph command call returns output for empty disks, the
-        _get_ceph_usage method returns 0.0 .
-        """
-        self.plugin._get_status_command_output = (
-            lambda: succeed(SAMPLE_NEW_TEMPLATE % (0, 100, 100)))
-        self.monitor.add(self.plugin)
-
-        self.assertEqual(
-            0.0, self.successResultOf(self.plugin._get_ceph_usage()))
-
-    def test_wb_get_ceph_usage_full_disk(self):
-        """
-        When the ceph command call returns output for empty disks, the
-        _get_ceph_usage method returns 1.0 .
-        """
-        self.plugin._get_status_command_output = (
-            lambda: succeed(SAMPLE_NEW_TEMPLATE % (100, 0, 100)))
-
-        self.monitor.add(self.plugin)
-        self.assertEqual(
-            1.0, self.successResultOf(self.plugin._get_ceph_usage()))
-
-    def test_wb_get_ceph_usage_no_information(self):
-        """
-        When the ceph command outputs something that does not contain the
-        disk usage information, the _get_ceph_usage method returns None.
-        """
-        output = "Blah\nblah"
-        error = "Could not parse command output: '%s'" % output
-        self.log_helper.ignore_errors(error)
-
-        self.plugin._get_status_command_output = lambda: succeed(output)
-
-        self.monitor.add(self.plugin)
-        self.assertIs(
-            None, self.successResultOf(self.plugin._get_ceph_usage()))
 
     def test_never_exchange_empty_messages(self):
         """
@@ -220,90 +89,70 @@ class CephUsagePluginTest(LandscapeTest):
         self.mstore.set_accepted_types(["ceph-usage"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
-    def test_wb_get_ceph_ring_id(self):
+    def test_wb_should_run_inactive(self):
         """
-        When given a well formatted command output, the _get_ceph_ring_id()
-        method returns the correct ring_id.
+        A plugin with self.active set to False should not run.
         """
-        uuid = "i-am-a-uuid"
-        self.plugin._get_quorum_command_output = (
-            lambda: succeed(SAMPLE_QUORUM % uuid))
-        self.assertEqual(
-            uuid, self.successResultOf(self.plugin._get_ceph_ring_id()))
+        plugin = CephUsage()
+        plugin.active = False
+        self.assertFalse(plugin._should_run())
 
-    def test_wb_get_ceph_ring_id_valid_json_no_information(self):
+    def test_wb_should_run_no_config_file(self):
         """
-        When the _get_quorum_command_output method returns something without
-        the ring uuid information present but that is valid JSON, the
-        _get_ceph_ring_id method returns None.
+        A plugin without a set _ceph_config attribute should not run.
         """
-        error = "Could not get ring_id from output: '{\"election_epoch\": 8}'."
-        self.log_helper.ignore_errors(error)
+        plugin = CephUsage()
+        plugin._has_rados = True
+        plugin._ceph_config = None
+        self.assertFalse(plugin._should_run())
 
-        def return_output():
-            # Valid JSON - just without the info we're looking for.
-            data = {"election_epoch": 8}
-            return succeed(json.dumps(data))
+    def test_wb_should_run_no_rados(self):
+        """
+        If the Rados library cannot be imported (CephUsage._has_rados is False)
+        the plugin logs a message then deactivates itself.
+        """
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("This machine does not appear to be a Ceph machine. "
+                     "Deactivating plugin.")
+        self.mocker.replay()
 
-        self.plugin._get_quorum_command_output = return_output
-        self.assertIs(
-            None, self.successResultOf(self.plugin._get_ceph_ring_id()))
+        plugin = CephUsage()
+        plugin._has_rados = False
+        self.assertFalse(plugin._should_run())
 
-    def test_wb_get_ceph_ring_id_no_information(self):
+    def test_wb_should_run(self):
         """
-        When the _get_quorum_command_output method returns something without
-        the ring uuid information present, the _get_ceph_ring_id method returns
-        None.
+        If the Rados library is present with the correct version and a ceph
+        config exists, the C{_should_run} method returns True.
         """
-        error = "Could not get ring_id from output: 'Blah\nblah'."
-        self.log_helper.ignore_errors(error)
+        plugin = CephUsage()
+        plugin._has_rados = True
+        plugin._ceph_config = tempfile.mktemp()
+        touch_file(plugin._ceph_config)
+        self.assertTrue(plugin._should_run())
 
-        self.plugin._get_quorum_command_output = lambda: succeed("Blah\nblah")
-        self.assertIs(
-            None, self.successResultOf(self.plugin._get_ceph_ring_id()))
+    def test_wb_handle_usage(self):
+        """
+        The C{_handle_usage} method stores the result of the rados call (here,
+        an example value) in an Accumulator, and appends the step_data
+        to the C{_ceph_usage_points} member when an accumulator interval is
+        reached.
+        """
+        interval = 300
+        stats = {"kb": 100L, "kb_avail": 80L}
 
-    def test_wb_get_ceph_ring_id_command_exception(self):
-        """
-        When the _get_quorum_command_output method returns None (if an
-        exception happened for example), the _get_ceph_ring_id method
-        returns None and logs no error.
-        """
-        self.plugin._get_quorum_command_output = lambda: succeed(None)
-        self.assertIs(
-            None, self.successResultOf(self.plugin._get_ceph_ring_id()))
-
-    def test_plugin_run(self):
-        """
-        The plugin's run() method fills the _ceph_usage_points with
-        accumulated samples after each C{interval} period.
-        The _ceph_ring_id member of the plugin is also filled with the output
-        of the _get_ceph_ring_id method.
-        """
-        monitor_interval = 300
-        interval = monitor_interval
         plugin = CephUsage(
-            interval=interval, monitor_interval=monitor_interval,
-            create_time=self.reactor.time)
+            create_time=self.reactor.time, interval=interval,
+            monitor_interval=interval)
 
-        uuid = "i-am-a-unique-snowflake"
-
-        # The config file must be present for the plugin to run.
-        ceph_client_dir = os.path.join(self.config.data_path, "ceph-client")
-        ceph_conf = os.path.join(ceph_client_dir, "ceph.landscape-client.conf")
-        os.mkdir(ceph_client_dir)
-        touch_file(ceph_conf)
-        plugin._ceph_config = ceph_conf
-
-        plugin._get_quorum_command_output = (
-            lambda: succeed(SAMPLE_QUORUM % uuid))
-        plugin._get_status_command_output = (
-            lambda: succeed(SAMPLE_NEW_TEMPLATE % (100, 0, 100)))
         self.monitor.add(plugin)
 
-        self.reactor.advance(monitor_interval * 2)
+        plugin._handle_usage(stats)  # time is 0
 
-        self.assertEqual([(300, 1.0), (600, 1.0)], plugin._ceph_usage_points)
-        self.assertEqual(uuid, plugin._ceph_ring_id)
+        self.reactor.advance(interval)  # time is 300
+        plugin._handle_usage(stats)
+
+        self.assertEqual([(300, 0.2)], plugin._ceph_usage_points)
 
     def test_resynchronize_message_calls_reset_method(self):
         """
@@ -316,9 +165,6 @@ class CephUsagePluginTest(LandscapeTest):
             self.called = True
 
         self.plugin._reset = stub_reset
-
         self.monitor.add(self.plugin)
-
         self.reactor.fire("resynchronize")
-
         self.assertTrue(self.called)
