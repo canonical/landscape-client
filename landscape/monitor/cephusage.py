@@ -8,15 +8,13 @@ from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
 from landscape.monitor.plugin import MonitorPlugin
 
+
+has_rados = False
 try:
     from rados import Rados
-    # Ensue the API has the right feature (it could be successfully importing
-    # an older Rados version).
-    Rados.get_cluster_stats
-except (ImportError, AttributeError):
+    has_rados = hasattr(Rados, "get_cluster_stats")
+except (ImportError):
     has_rados = False
-else:
-    has_rados = True
 
 
 class CephUsage(MonitorPlugin):

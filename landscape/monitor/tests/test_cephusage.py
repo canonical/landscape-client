@@ -1,3 +1,5 @@
+import tempfile
+from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.cephusage import CephUsage
 
@@ -117,6 +119,17 @@ class CephUsagePluginTest(LandscapeTest):
         plugin = CephUsage()
         plugin._has_rados = False
         self.assertFalse(plugin._should_run())
+
+    def test_wb_should_run(self):
+        """
+        If the Rados library is present with the correct version and a ceph
+        config exists, the C{_should_run} method returns True.
+        """
+        plugin = CephUsage()
+        plugin._has_rados = True
+        plugin._ceph_config = tempfile.mktemp()
+        touch_file(plugin._ceph_config)
+        self.assertTrue(plugin._should_run())
 
     def test_wb_handle_usage(self):
         """
