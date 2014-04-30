@@ -245,6 +245,19 @@ BogoMIPS        : 663.55
 Processor       : ARMv7 Processor rev 1 (v7l)
 """
 
+    ARMv8_64 = """
+Processor       : AArch64 Processor rev 0 (aarch64)
+processor       : 0
+Features        : fp asimd 
+CPU implementer : 0x41
+CPU architecture: AArch64
+CPU variant     : 0x0
+CPU part        : 0xd00
+CPU revision    : 0
+
+Hardware        : Foundation-v8A
+"""
+
     def test_read_sample_nokia_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a Nokia N810."""
         filename = self.makeFile(self.ARM_NOKIA)
@@ -291,6 +304,22 @@ Processor       : ARMv7 Processor rev 1 (v7l)
                          "ARMv7 Processor rev 1 (v7l)")
         self.assertEqual(processor_0["processor-id"], 0)
         self.assertEqual(processor_0["cache-size"], 768)
+
+    def test_read_sample_armv8_data(self):
+        """Ensure the plugin can parse /proc/cpuinfo from a sample ARMv8."""
+        filename = self.makeFile(self.ARMv8_64)
+        plugin = ProcessorInfo(machine_name="aarch64",
+                               source_filename=filename)
+        message = plugin.create_message()
+        self.assertEqual(message["type"], "processor-info")
+        self.assertTrue(len(message["processors"]) == 1)
+
+        processor_0 = message["processors"][0]
+        self.assertEqual(len(processor_0), 2)
+        self.assertEqual(
+            processor_0["model"],
+            "AArch64 Processor rev 0 (aarch64)")
+        self.assertEqual(processor_0["processor-id"], 0)
 
 
 class SparcMessageTest(LandscapeTest):
