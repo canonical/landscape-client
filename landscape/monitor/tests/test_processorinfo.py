@@ -248,7 +248,7 @@ Processor       : ARMv7 Processor rev 1 (v7l)
     ARMv8_64 = """
 Processor       : AArch64 Processor rev 0 (aarch64)
 processor       : 0
-Features        : fp asimd 
+Features        : fp asimd
 CPU implementer : 0x41
 CPU architecture: AArch64
 CPU variant     : 0x0
