@@ -263,7 +263,7 @@ class X86MessageFactory:
         return processors
 
 
-message_factories = [("arm*", ARMMessageFactory),
+message_factories = [("(arm*|aarch64)", ARMMessageFactory),
                      ("ppc(64)?", PowerPCMessageFactory),
                      ("sparc[64]", SparcMessageFactory),
                      ("i[3-7]86|x86_64", X86MessageFactory)]
