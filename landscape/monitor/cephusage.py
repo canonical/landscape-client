@@ -39,7 +39,7 @@ class CephUsage(MonitorPlugin):
         --name=client.landscape-client --add-key=<key>
     """
 
-    persist_name = "ceph"
+    persist_name = "ceph-usage"
     scope = "storage"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
