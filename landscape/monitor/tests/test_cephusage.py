@@ -32,7 +32,7 @@ class CephUsagePluginTest(LandscapeTest):
         ring_id = "whatever"
         self.mstore.set_accepted_types(["ceph"])
 
-        point = (60, 100, 80, 20)
+        point = (60, 100.0, 80.0, 20.0)
         self.plugin._ceph_usage_points = [point]
         self.plugin._ceph_ring_id = ring_id
         self.monitor.add(self.plugin)
@@ -60,7 +60,7 @@ class CephUsagePluginTest(LandscapeTest):
         ceph_usages = message["usages"]
         self.assertEqual(len(ceph_usages), 0)
 
-        point = (60, 100, 80, 20)
+        point = (60, 100.0, 80.0, 20.0)
         self.plugin._ceph_usage_points = [point]
         message = self.plugin.create_message()
         self.assertIn("type", message)
@@ -154,7 +154,8 @@ class CephUsagePluginTest(LandscapeTest):
         self.reactor.advance(interval)  # time is 300
         plugin._handle_usage(stats)
 
-        self.assertEqual([(300, 10, 8, 2)], plugin._ceph_usage_points)
+        self.assertEqual(
+            [(300, 10.0, 8.0, 2.0)], plugin._ceph_usage_points)
 
     def test_resynchronize_message_calls_reset_method(self):
         """

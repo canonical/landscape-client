@@ -134,24 +134,22 @@ class CephUsage(MonitorPlugin):
 
         Parses the output and stores the usage data in an accumulator.
         """
-        # Report usages in MB
-        total = cluster_stats["kb"] / 1024
-        avail = cluster_stats["kb_avail"] / 1024
-        used = cluster_stats["kb_used"] / 1024
-
+        names_map = [
+            ("total", "kb"), ("avail", "kb_avail"), ("used", "kb_used")]
         timestamp = int(self._create_time())
 
-        total_step_data = self._accumulate(
-            timestamp, total, "ceph-total-accumulator")
-        avail_step_data = self._accumulate(
-            timestamp, avail, "ceph-avail-accumulator")
-        used_step_data = self._accumulate(
-            timestamp, used, "ceph-used-accumulator")
+        step_values = []
+        for name, key in names_map:
+            # Report usages in MB
+            value = float(cluster_stats[key]) / 1024
+            step_value = self._accumulate(
+                timestamp, value, "ceph-%s-accumulator" % name)
+            step_values.append(step_value)
 
-        if total_step_data and avail_step_data and used_step_data:
-            step_timestamp = total_step_data[0]
-            step_total = total_step_data[1]
-            step_avail = avail_step_data[1]
-            step_used = used_step_data[1]
-            self._ceph_usage_points.append(
-                (step_timestamp, step_total, step_avail, step_used))
+        if not all(step_values):
+            return
+
+        point = [step_value[0]]  # accumulated timestamp
+        point.extend(
+            step_value[1] for step_value in step_values)
+        self._ceph_usage_points.append(tuple(point))
