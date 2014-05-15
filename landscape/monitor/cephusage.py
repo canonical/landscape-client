@@ -39,7 +39,7 @@ class CephUsage(MonitorPlugin):
         --name=client.landscape-client --add-key=<key>
     """
 
-    persist_name = "ceph-usage"
+    persist_name = "ceph"
     scope = "storage"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
@@ -70,24 +70,25 @@ class CephUsage(MonitorPlugin):
         self.registry.reactor.call_every(
             self._monitor_interval, self._monitor.log)
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.call_on_accepted("ceph-usage", self.send_message, True)
+        self.call_on_accepted("ceph", self.send_message, True)
 
     def create_message(self):
         ceph_points = self._ceph_usage_points
         ring_id = self._ceph_ring_id
         self._ceph_usage_points = []
-        return {"type": "ceph-usage", "ceph-usages": ceph_points,
-                "ring-id": ring_id}
+        return {"type": "ceph",
+                "ring-id": ring_id,
+                "usages": ceph_points}
 
     def send_message(self, urgent=False):
         message = self.create_message()
-        if message["ceph-usages"] and message["ring-id"] is not None:
-            self.registry.broker.send_message(message, self._session_id,
-                                              urgent=urgent)
+        if message["ring-id"] and message["usages"] is not None:
+            self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "ceph-usage", self.send_message, urgent)
+            "ceph", self.send_message, urgent)
 
     def run(self):
         if not self._should_run():
@@ -133,22 +134,24 @@ class CephUsage(MonitorPlugin):
 
         Parses the output and stores the usage data in an accumulator.
         """
-        total = cluster_stats["kb"]
-        available = cluster_stats["kb_avail"]
+        # Report usages in MB
+        total = cluster_stats["kb"] / 1024
+        avail = cluster_stats["kb_avail"] / 1024
+        used = cluster_stats["kb_used"] / 1024
 
-        # Note: used + available is NOT equal to total (there is some used
-        # space for duplication and system info etc...)
-        used_space = total - available
+        timestamp = int(self._create_time())
 
-        # Default to "full" in case the cluster reports 0kb total.
-        new_ceph_usage = 1.0
-        if total != 0L:
-            new_ceph_usage = used_space / float(total)
+        total_step_data = self._accumulate(
+            timestamp, total, "ceph-total-accumulator")
+        avail_step_data = self._accumulate(
+            timestamp, avail, "ceph-avail-accumulator")
+        used_step_data = self._accumulate(
+            timestamp, used, "ceph-used-accumulator")
 
-        new_timestamp = int(self._create_time())
-
-        step_data = self._accumulate(
-            new_timestamp, new_ceph_usage, "ceph-usage-accumulator")
-
-        if step_data is not None:
-            self._ceph_usage_points.append(step_data)
+        if total_step_data and avail_step_data and used_step_data:
+            step_timestamp = total_step_data[0]
+            step_total = total_step_data[1]
+            step_avail = avail_step_data[1]
+            step_used = used_step_data[1]
+            self._ceph_usage_points.append(
+                (step_timestamp, step_total, step_avail, step_used))
