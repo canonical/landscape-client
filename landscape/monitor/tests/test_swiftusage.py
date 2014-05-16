@@ -58,12 +58,11 @@ class SwiftUsageTest(LandscapeTest):
         ring is properly configured.
         """
         plugin = SwiftUsage(
-            create_time=self.reactor.time,
-            swift_ring=self.makeFile("ring info"))
+            create_time=self.reactor.time, swift_ring=self.makeFile("ring"))
         plugin._has_swift = True
         self.assertTrue(plugin._should_run())
 
-    def xxtest_exchange_messages(self):
+    def test_exchange_messages(self):
         """
         The swift_device_info plugin queues message when manager.exchange()
         is called.  Each message should be aligned to a step boundary;
@@ -79,7 +78,7 @@ class SwiftUsageTest(LandscapeTest):
                  "mounted": True}]
 
         plugin = SwiftUsage(
-            create_time=self.reactor.time, swift_ring=self.makeFile())
+            create_time=self.reactor.time, swift_ring=self.makeFile("ring"))
         plugin._get_recon_host = ("192.168.1.10", 6000)
         plugin._has_swift = True
         plugin._perform_recon_call = perform_recon_call
