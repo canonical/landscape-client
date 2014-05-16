@@ -82,7 +82,7 @@ class CephUsage(MonitorPlugin):
 
     def send_message(self, urgent=False):
         message = self.create_message()
-        if message["ring-id"] and message["usages"] is not None:
+        if message["ring-id"] and message["usages"]:
             self.registry.broker.send_message(
                 message, self._session_id, urgent=urgent)
 
@@ -95,12 +95,12 @@ class CephUsage(MonitorPlugin):
             return
 
         self._monitor.ping()
-        defered = threads.deferToThread(self._perform_rados_call)
-        defered.addCallback(self._handle_usage)
-        return defered
+        deferred = threads.deferToThread(self._perform_rados_call)
+        deferred.addCallback(self._handle_usage)
+        return deferred
 
     def _should_run(self):
-        """Returns wheter or not this plugin should run."""
+        """Returns whether or not this plugin should run."""
         if not self.active:
             return False
 
