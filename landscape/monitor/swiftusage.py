@@ -55,11 +55,12 @@ class SwiftUsage(MonitorPlugin):
     def create_message(self):
         usage_points = self._swift_usage_points
         self._swift_usage_points = []
-        return {"type": "swift", "usages": usage_points}
+        if usage_points:
+            return {"type": "swift", "usages": usage_points}
 
     def send_message(self, urgent=False):
         message = self.create_message()
-        if message["usages"]:
+        if message:
             self.registry.broker.send_message(
                 message, self._session_id, urgent=urgent)
 
@@ -107,6 +108,7 @@ class SwiftUsage(MonitorPlugin):
                 return dev["ip"], dev["port"]
 
     def _perform_recon_call(self, host):
+        """Get usage information from Swift Recon service."""
         if not host:
             return
 
@@ -117,5 +119,34 @@ class SwiftUsage(MonitorPlugin):
             return disk_usages
 
     def _handle_usage(self, disk_usages):
-        # timestamp = int(self._create_time())
-        logging.info("SWIFT USAGES", disk_usages)
+        logging.info("SWIFT >>>>", disk_usages)
+
+        timestamp = int(self._create_time())
+
+        devices = set()
+        for usage in disk_usages:
+            if not usage["mounted"]:
+                continue
+            device = usage["device"]
+
+            step_values = []
+            for key in ("size", "avail", "used"):
+                value = float(usage[key]) / 1048576
+                # Store values in tree so it's easy to delete all values for a
+                # device
+                persist_key = "usage.%s.%s" % (device, key)
+                step_value = self._accumulate(timestamp, value, persist_key)
+                step_values.append(step_value)
+
+                if all(step_values):
+                    point = [step_value[0], device]  # accumulated timestamp
+                    point.extend(step_value[1] for step_value in step_values)
+                    self._swift_usage_points.append(tuple(point))
+
+            devices.add(device)
+
+        # Update device list and remove usage for devices that no longer exist.
+        current_devices = self._persist.get("devices", default=set())
+        for device in current_devices - devices:
+            self._persist.remove("usage.%s" % device)
+        self._persist.set("devices", devices)

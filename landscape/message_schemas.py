@@ -137,7 +137,7 @@ SWIFT_DEVICE_INFO = Message("swift-device-info", {
     })
 
 SWIFT = Message("swift", {
-    "usages": List(Tuple(Int(), Float(), Float(), Float()))})
+    "usages": List(Tuple(Int(), Unicode(), Float(), Float(), Float()))})
 
 KEYSTONE_TOKEN = Message("keystone-token", {
     "data": Any(Bytes(), Constant(None))
