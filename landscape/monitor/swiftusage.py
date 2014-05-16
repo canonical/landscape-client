@@ -129,7 +129,9 @@ class SwiftUsage(MonitorPlugin):
         for usage in disk_usages:
             if not usage["mounted"]:
                 continue
+
             device = usage["device"]
+            devices.add(device)
 
             step_values = []
             for key in ("size", "avail", "used"):
@@ -144,8 +146,6 @@ class SwiftUsage(MonitorPlugin):
                 point = [step_value[0], device]  # accumulated timestamp
                 point.extend(step_value[1] for step_value in step_values)
                 self._swift_usage_points.append(tuple(point))
-
-            devices.add(device)
 
         # Update device list and remove usage for devices that no longer exist.
         current_devices = set(self._persist.get("devices", ()))
