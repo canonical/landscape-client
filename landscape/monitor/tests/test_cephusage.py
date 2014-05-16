@@ -88,7 +88,7 @@ class CephUsagePluginTest(LandscapeTest):
         self.reactor.advance(monitor_interval * 2)
         self.monitor.exchange()
 
-        self.mstore.set_accepted_types(["ceph"])
+        # self.mstore.set_accepted_types(["ceph"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
     def test_wb_should_run_inactive(self):
