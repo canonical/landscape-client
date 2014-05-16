@@ -50,7 +50,7 @@ class SwiftUsage(MonitorPlugin):
             self._monitor_interval, self._monitor.log)
 
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.call_on_accepted("swift", self.send_messages, True)
+        self.call_on_accepted("swift", self.send_message, True)
 
     def create_message(self):
         usage_points = self._swift_usage_points
@@ -66,7 +66,7 @@ class SwiftUsage(MonitorPlugin):
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "swift", self.send_messages, urgent)
+            "swift", self.send_message, urgent)
 
     def run(self):
         if not self._should_run():
@@ -93,19 +93,23 @@ class SwiftUsage(MonitorPlugin):
 
         # Check for object ring config file.
         # If it is not present, it's not a Swift machine or it not yet set up.
-        if not os.path.exists(self._swift_config):
+        if not os.path.exists(self._swift_ring):
             return False
 
         return True
 
     def _get_recon_host(self):
         """Return a tuple with Recon (host, port)."""
-        local_ips = [
-            device["ip_address"] for device in get_active_device_info()]
+        local_ips = self._get_local_ips()
         ring = Ring(self._swift_ring)
         for dev in ring.devs:
             if dev and dev["ip"] in local_ips:
                 return dev["ip"], dev["port"]
+
+    def _get_local_ips(self):
+        """Return a list of IP addresses for local devices."""
+        return [
+            device["ip_address"] for device in get_active_device_info()]
 
     def _perform_recon_call(self, host):
         """Get usage information from Swift Recon service."""
@@ -119,8 +123,6 @@ class SwiftUsage(MonitorPlugin):
             return disk_usages
 
     def _handle_usage(self, disk_usages):
-        logging.info("SWIFT >>>>", disk_usages)
-
         timestamp = int(self._create_time())
 
         devices = set()
