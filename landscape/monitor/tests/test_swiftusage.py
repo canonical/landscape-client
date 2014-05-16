@@ -154,3 +154,113 @@ class SwiftUsageTest(LandscapeTest):
 
         self.reactor.fire(
             ("message-type-acceptance-changed", "swift"), True)
+
+    def test_message_only_mounted_devices(self):
+        """
+        The plugin only collects usage for mounted devices.
+        """
+        recon_response = [
+            {"device": "vdb",
+             "mounted": True,
+             "size": 100 * MB,
+             "avail": 80 * MB,
+             "used": 20 * MB},
+            {"device": "vdc",
+             "mounted": False,
+             "size": "",
+             "avail": "",
+             "used": ""},
+            {"device": "vdd",
+             "mounted": True,
+             "size": 200 * MB,
+             "avail": 10 * MB,
+             "used": 190 * MB}]
+        self.plugin._perform_recon_call = lambda host: succeed(recon_response)
+        self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
+
+        self.monitor.add(self.plugin)
+        self.reactor.advance(self.monitor.step_size)
+        self.plugin._handle_usage(recon_response)
+
+        self.assertEqual(
+            [(300, "vdb", 100.0, 80.0, 20.0),
+             (300, "vdd", 200.0, 10.0, 190.0)],
+            self.plugin._swift_usage_points)
+        self.assertEqual(["vdb", "vdd"], self.plugin._persist.get("devices"))
+        self.assertNotIn("vdc", self.plugin._persist.get("usage"))
+
+    def test_message_remove_disappeared_devices(self):
+        """
+        Usages for devices that have disappeared are removed from the persist.
+        """
+        recon_response = [
+            {"device": "vdb",
+             "mounted": True,
+             "size": 100 * MB,
+             "avail": 80 * MB,
+             "used": 20 * MB},
+            {"device": "vdc",
+             "mounted": True,
+             "size": 200 * MB,
+             "avail": 10 * MB,
+             "used": 190 * MB}]
+        self.plugin._perform_recon_call = lambda host: succeed(recon_response)
+        self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
+
+        self.monitor.add(self.plugin)
+        self.reactor.advance(self.monitor.step_size)
+        self.plugin._handle_usage(recon_response)
+        self.assertEqual(
+            ["vdb", "vdc"], sorted(self.plugin._persist.get("devices")))
+
+        recon_response = [
+            {"device": "vdb",
+             "mounted": True,
+             "size": 100 * MB,
+             "avail": 70 * MB,
+             "used": 30 * MB}]
+        self.reactor.advance(self.monitor.step_size)
+        self.plugin._handle_usage(recon_response)
+        self.assertNotIn("vdc", self.plugin._persist.get("usage"))
+        self.assertEqual(["vdb"], self.plugin._persist.get("devices"))
+
+    def test_message_remove_unmounted_devices(self):
+        """
+        Usages for devices that are no longer mounted are removed from the
+        persist.
+        """
+        recon_response = [
+            {"device": "vdb",
+             "mounted": True,
+             "size": 100 * MB,
+             "avail": 80 * MB,
+             "used": 20 * MB},
+            {"device": "vdc",
+             "mounted": True,
+             "size": 200 * MB,
+             "avail": 10 * MB,
+             "used": 190 * MB}]
+        self.plugin._perform_recon_call = lambda host: succeed(recon_response)
+        self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
+
+        self.monitor.add(self.plugin)
+        self.reactor.advance(self.monitor.step_size)
+        self.plugin._handle_usage(recon_response)
+        self.assertEqual(
+            ["vdb", "vdc"], sorted(self.plugin._persist.get("devices")))
+
+        recon_response = [
+            {"device": "vdb",
+             "mounted": True,
+             "size": 100 * MB,
+             "avail": 70 * MB,
+             "used": 30 * MB},
+            {"device": "vdc",
+             "mounted": False,
+             "size": "",
+             "avail": "",
+             "used": ""}]
+        self.reactor.advance(self.monitor.step_size)
+        self.plugin._handle_usage(recon_response)
+        self.assertNotIn("vdc", self.plugin._persist.get("usage"))
+        self.assertEqual(["vdb"], self.plugin._persist.get("devices"))

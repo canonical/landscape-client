@@ -140,15 +140,15 @@ class SwiftUsage(MonitorPlugin):
                 step_value = self._accumulate(timestamp, value, persist_key)
                 step_values.append(step_value)
 
-                if all(step_values):
-                    point = [step_value[0], device]  # accumulated timestamp
-                    point.extend(step_value[1] for step_value in step_values)
-                    self._swift_usage_points.append(tuple(point))
+            if all(step_values):
+                point = [step_value[0], device]  # accumulated timestamp
+                point.extend(step_value[1] for step_value in step_values)
+                self._swift_usage_points.append(tuple(point))
 
             devices.add(device)
 
         # Update device list and remove usage for devices that no longer exist.
-        current_devices = self._persist.get("devices", default=set())
+        current_devices = set(self._persist.get("devices", ()))
         for device in current_devices - devices:
             self._persist.remove("usage.%s" % device)
-        self._persist.set("devices", devices)
+        self._persist.set("devices", list(devices))
