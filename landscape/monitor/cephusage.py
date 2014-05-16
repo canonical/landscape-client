@@ -142,8 +142,7 @@ class CephUsage(MonitorPlugin):
         for name, key in names_map:
             # Report usages in MB
             value = float(cluster_stats[key]) / 1024
-            step_value = self._accumulate(
-                timestamp, value, "ceph-%s-accumulator" % name)
+            step_value = self._accumulate(timestamp, value, "usage-%s" % name)
             step_values.append(step_value)
 
         if not all(step_values):
