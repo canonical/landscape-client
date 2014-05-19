@@ -129,7 +129,7 @@ CEPH_USAGE = Message("ceph-usage", {
 
 CEPH = Message("ceph", {
     "ring-id": Unicode(),
-    "usages": List(Tuple(Int(), Float(), Float(), Float()))})
+    "usages": List(Tuple(Int(), Int(), Int(), Int()))})
 
 SWIFT_DEVICE_INFO = Message("swift-device-info", {
     "swift-device-info": List(
