@@ -14,11 +14,11 @@ class CephUsagePluginTest(LandscapeTest):
 
     def test_never_exchange_empty_messages(self):
         """
-        The plugin will create a message with an empty
-        C{ceph-usages} list when no previous data is available.  If an empty
-        message is created during exchange, it should not be queued.
+        The plugin will create a message with an empty C{usages} list when no
+        previous data is available.  If an empty message is created during
+        exchange, it should not be queued.
         """
-        self.mstore.set_accepted_types(["ceph-usage"])
+        self.mstore.set_accepted_types(["ceph"])
         self.monitor.add(self.plugin)
 
         self.monitor.exchange()
@@ -30,17 +30,19 @@ class CephUsagePluginTest(LandscapeTest):
         is called.
         """
         ring_id = "whatever"
-        self.mstore.set_accepted_types(["ceph-usage"])
+        self.mstore.set_accepted_types(["ceph"])
 
-        self.plugin._ceph_usage_points = [(60, 1.0)]
+        point = (60, 100000, 80000, 20000)
+        self.plugin._ceph_usage_points = [point]
         self.plugin._ceph_ring_id = ring_id
         self.monitor.add(self.plugin)
 
         self.monitor.exchange()
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "ceph-usage",
-                              "ceph-usages": [(60, 1.0)],
-                              "ring-id": ring_id}])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "ceph",
+              "ring-id": ring_id,
+              "usages": [point]}])
 
     def test_create_message(self):
         """
@@ -52,20 +54,20 @@ class CephUsagePluginTest(LandscapeTest):
         message = self.plugin.create_message()
 
         self.assertIn("type", message)
-        self.assertEqual(message["type"], "ceph-usage")
-        self.assertIn("ceph-usages", message)
+        self.assertEqual(message["type"], "ceph")
+        self.assertIn("usages", message)
         self.assertEqual(ring_id, message["ring-id"])
-        ceph_usages = message["ceph-usages"]
+        ceph_usages = message["usages"]
         self.assertEqual(len(ceph_usages), 0)
 
-        point = (60, 1.0)
+        point = (60, 100000, 80000, 20000)
         self.plugin._ceph_usage_points = [point]
         message = self.plugin.create_message()
         self.assertIn("type", message)
-        self.assertEqual(message["type"], "ceph-usage")
-        self.assertIn("ceph-usages", message)
+        self.assertEqual(message["type"], "ceph")
+        self.assertIn("usages", message)
         self.assertEqual(ring_id, message["ring-id"])
-        ceph_usages = message["ceph-usages"]
+        ceph_usages = message["usages"]
         self.assertEqual(len(ceph_usages), 1)
         self.assertEqual([point], ceph_usages)
 
@@ -86,7 +88,7 @@ class CephUsagePluginTest(LandscapeTest):
         self.reactor.advance(monitor_interval * 2)
         self.monitor.exchange()
 
-        self.mstore.set_accepted_types(["ceph-usage"])
+        self.mstore.set_accepted_types(["ceph"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
     def test_wb_should_run_inactive(self):
@@ -139,7 +141,7 @@ class CephUsagePluginTest(LandscapeTest):
         reached.
         """
         interval = 300
-        stats = {"kb": 100L, "kb_avail": 80L}
+        stats = {"kb": 10240L, "kb_avail": 8192L, "kb_used": 2048L}
 
         plugin = CephUsage(
             create_time=self.reactor.time, interval=interval,
@@ -152,7 +154,8 @@ class CephUsagePluginTest(LandscapeTest):
         self.reactor.advance(interval)  # time is 300
         plugin._handle_usage(stats)
 
-        self.assertEqual([(300, 0.2)], plugin._ceph_usage_points)
+        self.assertEqual(
+            [(300, 10485760, 8388608, 2097152)], plugin._ceph_usage_points)
 
     def test_resynchronize_message_calls_reset_method(self):
         """

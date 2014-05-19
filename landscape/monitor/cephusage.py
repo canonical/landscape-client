@@ -70,36 +70,37 @@ class CephUsage(MonitorPlugin):
         self.registry.reactor.call_every(
             self._monitor_interval, self._monitor.log)
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.call_on_accepted("ceph-usage", self.send_message, True)
+        self.call_on_accepted("ceph", self.send_message, True)
 
     def create_message(self):
         ceph_points = self._ceph_usage_points
         ring_id = self._ceph_ring_id
         self._ceph_usage_points = []
-        return {"type": "ceph-usage", "ceph-usages": ceph_points,
-                "ring-id": ring_id}
+        return {"type": "ceph",
+                "ring-id": ring_id,
+                "usages": ceph_points}
 
     def send_message(self, urgent=False):
         message = self.create_message()
-        if message["ceph-usages"] and message["ring-id"] is not None:
-            self.registry.broker.send_message(message, self._session_id,
-                                              urgent=urgent)
+        if message["ring-id"] and message["usages"]:
+            self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "ceph-usage", self.send_message, urgent)
+            "ceph", self.send_message, urgent)
 
     def run(self):
         if not self._should_run():
             return
 
         self._monitor.ping()
-        defered = threads.deferToThread(self._perform_rados_call)
-        defered.addCallback(self._handle_usage)
-        return defered
+        deferred = threads.deferToThread(self._perform_rados_call)
+        deferred.addCallback(self._handle_usage)
+        return deferred
 
     def _should_run(self):
-        """Returns wheter or not this plugin should run."""
+        """Returns whether or not this plugin should run."""
         if not self.active:
             return False
 
@@ -133,22 +134,19 @@ class CephUsage(MonitorPlugin):
 
         Parses the output and stores the usage data in an accumulator.
         """
-        total = cluster_stats["kb"]
-        available = cluster_stats["kb_avail"]
+        names_map = [
+            ("total", "kb"), ("avail", "kb_avail"), ("used", "kb_used")]
+        timestamp = int(self._create_time())
 
-        # Note: used + available is NOT equal to total (there is some used
-        # space for duplication and system info etc...)
-        used_space = total - available
+        step_values = []
+        for name, key in names_map:
+            value = cluster_stats[key] * 1024  # Report usages in bytes
+            step_value = self._accumulate(timestamp, value, "usage.%s" % name)
+            step_values.append(step_value)
 
-        # Default to "full" in case the cluster reports 0kb total.
-        new_ceph_usage = 1.0
-        if total != 0L:
-            new_ceph_usage = used_space / float(total)
+        if not all(step_values):
+            return
 
-        new_timestamp = int(self._create_time())
-
-        step_data = self._accumulate(
-            new_timestamp, new_ceph_usage, "ceph-usage-accumulator")
-
-        if step_data is not None:
-            self._ceph_usage_points.append(step_data)
+        point = [step_value[0]]  # accumulated timestamp
+        point.extend(int(step_value[1]) for step_value in step_values)
+        self._ceph_usage_points.append(tuple(point))

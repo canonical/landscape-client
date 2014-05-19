@@ -127,6 +127,10 @@ CEPH_USAGE = Message("ceph-usage", {
     "ring-id": Unicode(),
     })
 
+CEPH = Message("ceph", {
+    "ring-id": Unicode(),
+    "usages": List(Tuple(Int(), Int(), Int(), Int()))})
+
 SWIFT_DEVICE_INFO = Message("swift-device-info", {
     "swift-device-info": List(
         KeyDict({"device": Unicode(), "mounted": Bool()}))
@@ -465,6 +469,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
-               CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
+               CEPH_USAGE, CEPH, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
                CHANGE_HA_SERVICE, JUJU_INFO, CLOUD_METADATA]:
     message_schemas[schema.type] = schema
