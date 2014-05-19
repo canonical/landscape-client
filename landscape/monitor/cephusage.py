@@ -140,8 +140,7 @@ class CephUsage(MonitorPlugin):
 
         step_values = []
         for name, key in names_map:
-            # Report usages in MB
-            value = float(cluster_stats[key]) / 1024
+            value = cluster_stats[key] * 1024  # Report usages in bytes
             step_value = self._accumulate(timestamp, value, "usage.%s" % name)
             step_values.append(step_value)
 
@@ -149,6 +148,5 @@ class CephUsage(MonitorPlugin):
             return
 
         point = [step_value[0]]  # accumulated timestamp
-        point.extend(
-            step_value[1] for step_value in step_values)
+        point.extend(int(step_value[1]) for step_value in step_values)
         self._ceph_usage_points.append(tuple(point))
