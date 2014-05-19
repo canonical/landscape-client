@@ -12,9 +12,6 @@ class FakeRing(object):
             for ip, port in ip_port_tuples]
 
 
-MB = 1048576
-
-
 class SwiftUsageTest(LandscapeTest):
     """Tests for swift-usage plugin."""
 
@@ -72,8 +69,8 @@ class SwiftUsageTest(LandscapeTest):
         only a sing message with the latest swift device information will
         be delivered in a single message.
         """
-        points = [(1234, "sdb", 100.0, 80.0, 20.0),
-                  (1234, "sdc", 200.0, 120.0, 80.0)]
+        points = [(1234, "sdb", 100000, 80000, 20000),
+                  (1234, "sdc", 200000, 120000, 800000)]
         self.plugin._swift_usage_points = points
 
         self.monitor.add(self.plugin)
@@ -95,8 +92,8 @@ class SwiftUsageTest(LandscapeTest):
 
     def test_create_message(self):
         """L{SwiftUsage.create_message} returns a 'swift' message."""
-        points = [(1234, "sdb", 100.0, 80.0, 20.0),
-                  (1234, "sdc", 200.0, 120.0, 80.0)]
+        points = [(1234, "sdb", 100000, 80000, 20000),
+                  (1234, "sdc", 200000, 120000, 80000)]
         self.plugin._swift_usage_points = points
         message = self.plugin.create_message()
         self.assertEqual(
@@ -111,7 +108,7 @@ class SwiftUsageTest(LandscapeTest):
     def test_crate_message_flushes(self):
         """Duplicate message should never be created."""
         self.monitor.add(self.plugin)
-        self.plugin._swift_usage_points = [(1234, "sdb", 100.0, 80.0, 20.0)]
+        self.plugin._swift_usage_points = [(1234, "sdb", 100000, 80000, 20000)]
         self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
 
         self.reactor.advance(self.monitor.step_size)
@@ -124,7 +121,7 @@ class SwiftUsageTest(LandscapeTest):
         """
         No message is sent if the broker isn't currently accepting their type.
         """
-        self.plugin._swift_usage_points = [(1234, "sdb", 100.0, 80.0, 20.0)]
+        self.plugin._swift_usage_points = [(1234, "sdb", 100000, 80000, 20000)]
         self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
 
         self.mstore.set_accepted_types([])
@@ -140,7 +137,7 @@ class SwiftUsageTest(LandscapeTest):
         When message type acceptance is added for 'swift' message,
         send_message gets called.
         """
-        self.plugin._swift_usage_points = [(1234, "sdb", 100.0, 80.0, 20.0)]
+        self.plugin._swift_usage_points = [(1234, "sdb", 100000, 80000, 20000)]
         self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
 
         self.monitor.add(self.plugin)
@@ -162,9 +159,9 @@ class SwiftUsageTest(LandscapeTest):
         recon_response = [
             {"device": "vdb",
              "mounted": True,
-             "size": 100 * MB,
-             "avail": 80 * MB,
-             "used": 20 * MB},
+             "size": 100000,
+             "avail": 80000,
+             "used": 20000},
             {"device": "vdc",
              "mounted": False,
              "size": "",
@@ -172,9 +169,9 @@ class SwiftUsageTest(LandscapeTest):
              "used": ""},
             {"device": "vdd",
              "mounted": True,
-             "size": 200 * MB,
-             "avail": 10 * MB,
-             "used": 190 * MB}]
+             "size": 200000,
+             "avail": 10000,
+             "used": 190000}]
         self.plugin._perform_recon_call = lambda host: succeed(recon_response)
         self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
 
@@ -183,8 +180,8 @@ class SwiftUsageTest(LandscapeTest):
         self.plugin._handle_usage(recon_response)
 
         self.assertEqual(
-            [(300, "vdb", 100.0, 80.0, 20.0),
-             (300, "vdd", 200.0, 10.0, 190.0)],
+            [(300, "vdb", 100000, 80000, 20000),
+             (300, "vdd", 200000, 10000, 190000)],
             self.plugin._swift_usage_points)
         self.assertEqual(["vdb", "vdd"], self.plugin._persist.get("devices"))
         self.assertNotIn("vdc", self.plugin._persist.get("usage"))
@@ -196,14 +193,14 @@ class SwiftUsageTest(LandscapeTest):
         recon_response = [
             {"device": "vdb",
              "mounted": True,
-             "size": 100 * MB,
-             "avail": 80 * MB,
-             "used": 20 * MB},
+             "size": 100000,
+             "avail": 80000,
+             "used": 20000},
             {"device": "vdc",
              "mounted": True,
-             "size": 200 * MB,
-             "avail": 10 * MB,
-             "used": 190 * MB}]
+             "size": 200000,
+             "avail": 10000,
+             "used": 190000}]
         self.plugin._perform_recon_call = lambda host: succeed(recon_response)
         self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
 
@@ -216,9 +213,9 @@ class SwiftUsageTest(LandscapeTest):
         recon_response = [
             {"device": "vdb",
              "mounted": True,
-             "size": 100 * MB,
-             "avail": 70 * MB,
-             "used": 30 * MB}]
+             "size": 100000,
+             "avail": 70000,
+             "used": 30000}]
         self.reactor.advance(self.monitor.step_size)
         self.plugin._handle_usage(recon_response)
         self.assertNotIn("vdc", self.plugin._persist.get("usage"))
@@ -232,14 +229,14 @@ class SwiftUsageTest(LandscapeTest):
         recon_response = [
             {"device": "vdb",
              "mounted": True,
-             "size": 100 * MB,
-             "avail": 80 * MB,
-             "used": 20 * MB},
+             "size": 100000,
+             "avail": 80000,
+             "used": 20000},
             {"device": "vdc",
              "mounted": True,
-             "size": 200 * MB,
-             "avail": 10 * MB,
-             "used": 190 * MB}]
+             "size": 200000,
+             "avail": 10000,
+             "used": 190000}]
         self.plugin._perform_recon_call = lambda host: succeed(recon_response)
         self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
 
@@ -252,9 +249,9 @@ class SwiftUsageTest(LandscapeTest):
         recon_response = [
             {"device": "vdb",
              "mounted": True,
-             "size": 100 * MB,
-             "avail": 70 * MB,
-             "used": 30 * MB},
+             "size": 100000,
+             "avail": 70000,
+             "used": 30000},
             {"device": "vdc",
              "mounted": False,
              "size": "",

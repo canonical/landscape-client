@@ -135,16 +135,16 @@ class SwiftUsage(MonitorPlugin):
 
             step_values = []
             for key in ("size", "avail", "used"):
-                value = float(usage[key]) / 1048576
                 # Store values in tree so it's easy to delete all values for a
                 # device
                 persist_key = "usage.%s.%s" % (device, key)
-                step_value = self._accumulate(timestamp, value, persist_key)
+                step_value = self._accumulate(
+                    timestamp, usage[key], persist_key)
                 step_values.append(step_value)
 
             if all(step_values):
                 point = [step_value[0], device]  # accumulated timestamp
-                point.extend(step_value[1] for step_value in step_values)
+                point.extend(int(step_value[1]) for step_value in step_values)
                 self._swift_usage_points.append(tuple(point))
 
         # Update device list and remove usage for devices that no longer exist.
