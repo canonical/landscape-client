@@ -176,12 +176,12 @@ class SwiftUsageTest(LandscapeTest):
         self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
 
         self.monitor.add(self.plugin)
-        self.reactor.advance(self.monitor.step_size)
+        self.reactor.advance(self.plugin._interval)
         self.plugin._handle_usage(recon_response)
 
         self.assertEqual(
-            [(300, "vdb", 100000, 80000, 20000),
-             (300, "vdd", 200000, 10000, 190000)],
+            [(30, "vdb", 100000, 80000, 20000),
+             (30, "vdd", 200000, 10000, 190000)],
             self.plugin._swift_usage_points)
         self.assertEqual(["vdb", "vdd"], self.plugin._persist.get("devices"))
         self.assertNotIn("vdc", self.plugin._persist.get("usage"))

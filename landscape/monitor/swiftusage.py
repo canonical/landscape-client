@@ -20,7 +20,7 @@ except ImportError:
 class SwiftUsage(MonitorPlugin):
     """Plugin reporting Swift cluster usage.
 
-    This only works if the client runs on a Swift note.  It requires the
+    This only works if the client runs on a Swift node.  It requires the
     'python-swift' package to be installed (which is installed on swift nodes).
 
     """
@@ -28,7 +28,7 @@ class SwiftUsage(MonitorPlugin):
     persist_name = "swift-usage"
     scope = "storage"
 
-    def __init__(self, interval=300, monitor_interval=60 * 60,
+    def __init__(self, interval=30, monitor_interval=60 * 60,
                  create_time=time.time,
                  swift_ring="/etc/swift/object.ring.gz"):
         self._interval = interval
