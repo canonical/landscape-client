@@ -44,7 +44,7 @@ class SwiftUsage(MonitorPlugin):
         super(SwiftUsage, self).register(registry)
         self._accumulate = Accumulator(self._persist, self._interval)
         self._monitor = CoverageMonitor(
-            self.run_interval, 0.8, "Swift devices usage snapshot",
+            self.run_interval, 0.8, "Swift device usage snapshot",
             create_time=self._create_time)
         self.registry.reactor.call_every(
             self._monitor_interval, self._monitor.log)
