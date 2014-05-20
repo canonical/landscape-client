@@ -50,13 +50,13 @@ class SwiftUsage(MonitorPlugin):
             self._monitor_interval, self._monitor.log)
 
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.call_on_accepted("swift", self.send_message, True)
+        self.call_on_accepted("swift-usage", self.send_message, True)
 
     def create_message(self):
         usage_points = self._swift_usage_points
         self._swift_usage_points = []
         if usage_points:
-            return {"type": "swift", "usages": usage_points}
+            return {"type": "swift-usage", "data-points": usage_points}
 
     def send_message(self, urgent=False):
         message = self.create_message()
@@ -66,7 +66,7 @@ class SwiftUsage(MonitorPlugin):
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "swift", self.send_message, urgent)
+            "swift-usage", self.send_message, urgent)
 
     def run(self):
         if not self._should_run():
@@ -118,15 +118,15 @@ class SwiftUsage(MonitorPlugin):
 
         scout = Scout("diskusage")
         # Perform the actual call
-        _, disk_usages, code = scout.scout(host)
+        _, disk_usage, code = scout.scout(host)
         if code == 200:
-            return disk_usages
+            return disk_usage
 
-    def _handle_usage(self, disk_usages):
+    def _handle_usage(self, disk_usage):
         timestamp = int(self._create_time())
 
         devices = set()
-        for usage in disk_usages:
+        for usage in disk_usage:
             if not usage["mounted"]:
                 continue
 

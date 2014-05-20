@@ -19,7 +19,7 @@ class SwiftUsageTest(LandscapeTest):
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.mstore.set_accepted_types(["swift"])
+        self.mstore.set_accepted_types(["swift-usage"])
         self.plugin = SwiftUsage(
             create_time=self.reactor.time, swift_ring=self.makeFile("ring"))
         self.plugin._has_swift = True
@@ -78,8 +78,8 @@ class SwiftUsageTest(LandscapeTest):
 
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 1)
-        usages = messages[0]["usages"]
-        self.assertEqual(points, usages)
+        data_points = messages[0]["data-points"]
+        self.assertEqual(points, data_points)
 
     def test_no_exchange_empty_messages(self):
         """
@@ -91,13 +91,13 @@ class SwiftUsageTest(LandscapeTest):
         self.assertEqual([], self.mstore.get_pending_messages())
 
     def test_create_message(self):
-        """L{SwiftUsage.create_message} returns a 'swift' message."""
+        """L{SwiftUsage.create_message} returns a 'swift-usage' message."""
         points = [(1234, "sdb", 100000, 80000, 20000),
                   (1234, "sdc", 200000, 120000, 80000)]
         self.plugin._swift_usage_points = points
         message = self.plugin.create_message()
         self.assertEqual(
-            {"type": "swift", "usages": points}, message)
+            {"type": "swift-usage", "data-points": points}, message)
 
     def test_create_message_empty(self):
         """
@@ -150,7 +150,7 @@ class SwiftUsageTest(LandscapeTest):
         self.mocker.replay()
 
         self.reactor.fire(
-            ("message-type-acceptance-changed", "swift"), True)
+            ("message-type-acceptance-changed", "swift-usage"), True)
 
     def test_message_only_mounted_devices(self):
         """
@@ -188,7 +188,7 @@ class SwiftUsageTest(LandscapeTest):
 
     def test_message_remove_disappeared_devices(self):
         """
-        Usages for devices that have disappeared are removed from the persist.
+        Usage for devices that have disappeared are removed from the persist.
         """
         recon_response = [
             {"device": "vdb",
@@ -223,7 +223,7 @@ class SwiftUsageTest(LandscapeTest):
 
     def test_message_remove_unmounted_devices(self):
         """
-        Usages for devices that are no longer mounted are removed from the
+        Usage for devices that are no longer mounted are removed from the
         persist.
         """
         recon_response = [
