@@ -70,25 +70,26 @@ class CephUsage(MonitorPlugin):
         self.registry.reactor.call_every(
             self._monitor_interval, self._monitor.log)
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.call_on_accepted("ceph", self.send_message, True)
+        self.call_on_accepted("ceph-usage", self.send_message, True)
 
     def create_message(self):
         ceph_points = self._ceph_usage_points
         ring_id = self._ceph_ring_id
         self._ceph_usage_points = []
-        return {"type": "ceph",
+        return {"type": "ceph-usage",
                 "ring-id": ring_id,
-                "usages": ceph_points}
+                "ceph-usages": [],  # For backwards-compatibility
+                "data-points": ceph_points}
 
     def send_message(self, urgent=False):
         message = self.create_message()
-        if message["ring-id"] and message["usages"]:
+        if message["ring-id"] and message["data-points"]:
             self.registry.broker.send_message(
                 message, self._session_id, urgent=urgent)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "ceph", self.send_message, urgent)
+            "ceph-usage", self.send_message, urgent)
 
     def run(self):
         if not self._should_run():
@@ -140,7 +141,7 @@ class CephUsage(MonitorPlugin):
 
         step_values = []
         for name, key in names_map:
-            value = cluster_stats[key] * 1024  # Report usages in bytes
+            value = cluster_stats[key] * 1024  # Report usage in bytes
             step_value = self._accumulate(timestamp, value, "usage.%s" % name)
             step_values.append(step_value)
 
