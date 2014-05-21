@@ -64,10 +64,10 @@ class SwiftUsageTest(LandscapeTest):
 
     def test_exchange_messages(self):
         """
-        The swift_device_info plugin queues message when manager.exchange()
-        is called.  Each message should be aligned to a step boundary;
-        only a sing message with the latest swift device information will
-        be delivered in a single message.
+        The plugin queues message when manager.exchange() is called.
+        Each message should be aligned to a step boundary; only a sing message
+        with the latest swift device information will be delivered in a single
+        message.
         """
         points = [(1234, "sdb", 100000, 80000, 20000),
                   (1234, "sdc", 200000, 120000, 800000)]
