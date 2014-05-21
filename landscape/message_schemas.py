@@ -127,7 +127,7 @@ CEPH_USAGE = Message("ceph-usage", {
     # Usage data points in the form (timestamp, size, avail, used)
     "data-points": List(Tuple(Int(), Int(), Int(), Int())),
     # Unused now, for backwards compatibility
-    "ceph-usages": List(Tuple(Int(), Int(), Int(), Int()))})
+    "ceph-usages": List(None)})
 
 SWIFT_DEVICE_INFO = Message("swift-device-info", {
     "swift-device-info": List(
