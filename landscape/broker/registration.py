@@ -145,8 +145,7 @@ class RegistrationHandler(object):
         juju_info = get_juju_info(self._config)
         if juju_info is None:
             return None
-        self._juju_data = dict(
-            (key, juju_info[key]) for key in juju_data)
+        self._juju_data = juju_info  # A list of dicts
 
     def _get_data(self, path, accumulate):
         """

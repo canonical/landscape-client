@@ -109,7 +109,8 @@ HARDWARE_INFO = Message("hardware-info", {
 
 juju_data = {"environment-uuid": Unicode(),
              "api-addresses": List(Unicode()),
-             "unit-name": Unicode()}
+             "unit-name": Unicode(),
+             "private-address": Unicode()}
 
 # The copy is needed because Message mutates the dictionary
 #JUJU_INFO = Message("juju-info", juju_data.copy())
@@ -192,7 +193,7 @@ REGISTER = Message(
      "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
      "container-info": Unicode(),
-     "juju-info": KeyDict(juju_data),
+     "juju-info": List(KeyDict(juju_data)),
      "access_group": Unicode()},
     optional=["registration_password", "hostname", "tags", "vm-info",
               "container-info", "juju-info", "unicode", "access_group"])

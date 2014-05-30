@@ -528,7 +528,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         expected = {"environment-uuid": "DEAD-BEEF",
                     "api-addresses": ["10.0.3.1:17070"],
                     "unit-name": "service/0"}
-        self.assertEqual(expected, messages[0]["juju-info"])
+        self.assertEqual(expected, messages[0])
 
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
