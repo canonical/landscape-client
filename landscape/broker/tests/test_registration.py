@@ -516,7 +516,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     def test_juju_information_added_when_present(self):
         """
-        When Juju information is found in $data_dir/juju-info.json,
+        When Juju information is found in $data_dir/juju-info.d/*.json,
         key parts of it are sent in the registration message.
         """
         self.mstore.set_accepted_types(["register"])
@@ -531,7 +531,40 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
                     "private-address": "127.0.0.1"}
         self.assertEqual(expected, messages[0]["juju-info"][0])
 
-    # TODO:Chris Add test for multiple juju files.
+    def test_multiple_juju_information_added_when_present(self):
+        """
+        When Juju information is found in $data_dir/juju-info.json,
+        key parts of it are sent in the registration message.
+        """
+        # Write a second file in the config directory
+        contents = json.dumps({"environment-uuid": "DEAD-BEEF",
+                               "unit-name": "service-2/0",
+                               "api-addresses": "10.0.3.2:17070",
+                               "private-address": "127.0.0.1"})
+        self.makeFile(
+            contents,
+            dirname=self.config.juju_directory, suffix=".json")
+
+        self.mstore.set_accepted_types(["register"])
+        self.config.account_name = "account_name"
+        self.reactor.fire("run")
+        self.reactor.fire("pre-exchange")
+
+        messages = self.mstore.get_pending_messages()
+        juju_info = messages[0]["juju-info"]
+        self.assertEqual(2, len(juju_info))
+
+        expected1 = {"environment-uuid": "DEAD-BEEF",
+                    "api-addresses": ["10.0.3.1:17070"],
+                    "unit-name": "service/0",
+                    "private-address": "127.0.0.1"}
+        self.assertIn(expected1, juju_info)
+
+        expected2 = {"environment-uuid": "DEAD-BEEF",
+                    "api-addresses": ["10.0.3.2:17070"],
+                    "unit-name": "service-2/0",
+                    "private-address": "127.0.0.1"}
+        self.assertIn(expected2, juju_info)
 
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
