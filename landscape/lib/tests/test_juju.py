@@ -45,7 +45,7 @@ class JujuTest(LandscapeTest):
         self._create_tmp_juju_file(SAMPLE_JUJU_INFO)
         self._create_tmp_juju_file(SAMPLE_JUJU_INFO_2)
         juju_info = get_juju_info(self.stub_config)
-        self.assertEqual([
+        self.assertItemsEqual([
             {u"environment-uuid": "DEAD-BEEF",
              u"unit-name": "service/0",
              u"api-addresses": ["10.0.3.1:17070"],

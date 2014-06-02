@@ -193,10 +193,14 @@ REGISTER = Message(
      "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
      "container-info": Unicode(),
-     "juju-info": List(KeyDict(juju_data)),
+     "juju-info": KeyDict(juju_data),
+     # Because of backwards compatibility we need another member with the list
+     # of juju-info, so it can safely be ignored by old servers.
+     "juju-info-list": List(KeyDict(juju_data)),
      "access_group": Unicode()},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "juju-info", "unicode", "access_group"])
+              "container-info", "juju-info", "juju-info-list", "unicode",
+              "access_group"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(
