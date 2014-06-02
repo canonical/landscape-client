@@ -527,8 +527,11 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         expected = {"environment-uuid": "DEAD-BEEF",
                     "api-addresses": ["10.0.3.1:17070"],
-                    "unit-name": "service/0"}
-        self.assertEqual(expected, messages[0])
+                    "unit-name": "service/0",
+                    "private-address": "127.0.0.1"}
+        self.assertEqual(expected, messages[0]["juju-info"][0])
+
+    # TODO:Chris Add test for multiple juju files.
 
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
