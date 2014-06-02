@@ -27,7 +27,8 @@ def get_juju_info(config):
                 return None
             else:
                 if "api-addresses" in juju_info:
-                    juju_info["api-addresses"] = juju_info["api-addresses"].split()
+                    split = juju_info["api-addresses"].split()
+                    juju_info["api-addresses"] = split
                 juju_info_list.append(juju_info)
 
     return juju_info_list or None

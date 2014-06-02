@@ -14,8 +14,6 @@ import socket
 
 from twisted.internet.defer import Deferred
 
-from landscape.message_schemas import juju_data
-
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
 from landscape.lib.juju import get_juju_info

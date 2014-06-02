@@ -552,7 +552,6 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.reactor.fire("pre-exchange")
 
         messages = self.mstore.get_pending_messages()
-        import ipdb; ipdb.set_trace()
         juju_info = messages[0]["juju-info-list"]
         self.assertEqual(2, len(juju_info))
 

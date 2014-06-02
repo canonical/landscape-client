@@ -16,7 +16,8 @@ class JujuInfo(MonitorPlugin):
 
     def exchange(self, urgent=False):
         broker = self.registry.broker
-        broker.call_if_accepted("juju-units-info", self.send_juju_message, urgent)
+        broker.call_if_accepted(
+            "juju-units-info", self.send_juju_message, urgent)
 
     def send_juju_message(self, urgent=False):
         message = self._create_juju_info_message()
