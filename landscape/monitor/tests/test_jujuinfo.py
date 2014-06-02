@@ -23,7 +23,8 @@ class JujuInfoTest(LandscapeTest):
         self.plugin = JujuInfo()
         self.monitor.add(self.plugin)
 
-        os.mkdir(self.config.juju_directory)
+        if not os.path.exists(self.config.juju_directory):
+            os.mkdir(self.config.juju_directory)
 
         self.filepath = os.path.join(self.config.juju_directory,
                                      SAMPLE_JUJU_FILE)
