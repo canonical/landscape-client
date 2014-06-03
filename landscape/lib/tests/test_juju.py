@@ -55,6 +55,19 @@ class JujuTest(LandscapeTest):
              u"api-addresses": ["10.0.3.2:17070"],
              u"private-address": "127.0.0.1"}], juju_info)
 
+    def test_get_juju_info_ignores_non_json(self):
+        """A file that doesn't end in *.json in the juju_directory is ignored.
+        """
+        self._create_tmp_juju_file(SAMPLE_JUJU_INFO)
+        self.makeFile(SAMPLE_JUJU_INFO_2, suffix=".txt",
+                      dirname=self.stub_config.juju_directory)
+        juju_info = get_juju_info(self.stub_config)
+        self.assertEqual([
+            {u"environment-uuid": "DEAD-BEEF",
+             u"unit-name": "service/0",
+             u"api-addresses": ["10.0.3.1:17070"],
+             u"private-address": "127.0.0.1"}], juju_info)
+
     def test_get_juju_info_empty_file(self):
         """
         If L{get_juju_info} is called with a configuration pointing to

@@ -17,18 +17,17 @@ def get_juju_info(config):
 
     for juju_file in glob("%s/*.json" % juju_directory):
 
-        if juju_file.endswith(".json"):
-            json_contents = read_file(juju_file)
-            try:
-                juju_info = json.loads(json_contents)
-            except Exception:
-                logging.exception(
-                    "Error attempting to read JSON from %s" % juju_file)
-                return None
-            else:
-                if "api-addresses" in juju_info:
-                    split = juju_info["api-addresses"].split()
-                    juju_info["api-addresses"] = split
-                juju_info_list.append(juju_info)
+        json_contents = read_file(juju_file)
+        try:
+            juju_info = json.loads(json_contents)
+        except Exception:
+            logging.exception(
+                "Error attempting to read JSON from %s" % juju_file)
+            return None
+        else:
+            if "api-addresses" in juju_info:
+                split = juju_info["api-addresses"].split()
+                juju_info["api-addresses"] = split
+            juju_info_list.append(juju_info)
 
     return juju_info_list or None
