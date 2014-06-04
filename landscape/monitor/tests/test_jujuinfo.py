@@ -38,7 +38,7 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "juju-units-info")
-        juju_info = message["juju-units-info"][0]
+        juju_info = message["juju-info-list"][0]
         self.assertEqual(juju_info["environment-uuid"], "DEAD-BEEF")
         self.assertEqual(juju_info["unit-name"], "juju-unit-name")
         self.assertEqual(juju_info["api-addresses"], ["10.0.3.1:17070"])
@@ -65,7 +65,7 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "juju-units-info")
-        juju_info = message["juju-units-info"][0]
+        juju_info = message["juju-info-list"][0]
         self.assertEqual(juju_info["environment-uuid"], "DEAD-BEEF")
         self.assertEqual(juju_info["unit-name"], "juju-unit-name")
         self.assertEqual(juju_info["api-addresses"], ["10.0.3.1:17070"])
@@ -79,7 +79,7 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
         self.assertEqual(message["type"], "juju-units-info")
-        juju_info = message["juju-units-info"][0]
+        juju_info = message["juju-info-list"][0]
         self.assertEqual(juju_info["environment-uuid"], "FEED-BEEF")
         self.assertEqual(juju_info["unit-name"], "changed-unit-name")
         self.assertEqual(juju_info["api-addresses"], ["10.0.3.2:17070"])

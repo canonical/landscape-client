@@ -39,7 +39,7 @@ class JujuInfo(MonitorPlugin):
         if juju_info != self._persist.get("juju-info"):
             self._persist.set("juju-info", juju_info)
             message = {"type": "juju-units-info",
-                       "juju-units-info": juju_info}
+                       "juju-info-list": juju_info}
             return message
 
         return None

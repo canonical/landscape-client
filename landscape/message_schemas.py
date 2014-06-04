@@ -116,7 +116,7 @@ juju_data = {"environment-uuid": Unicode(),
 #JUJU_INFO = Message("juju-info", juju_data.copy())
 
 JUJU_UNITS_INFO = Message("juju-units-info", {
-    "juju-units-info": List(KeyDict(juju_data.copy()))
+    "juju-info-list": List(KeyDict(juju_data.copy()))
     })
 
 LOAD_AVERAGE = Message("load-average", {
