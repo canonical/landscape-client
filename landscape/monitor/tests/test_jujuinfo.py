@@ -10,8 +10,6 @@ SAMPLE_JUJU_INFO = json.dumps({"environment-uuid": "DEAD-BEEF",
                                "api-addresses": "10.0.3.1:17070",
                                "private-address": "127.0.0.1"})
 
-SAMPLE_JUJU_FILE = "juju-unit-name.json"
-
 
 class JujuInfoTest(LandscapeTest):
 
@@ -19,16 +17,10 @@ class JujuInfoTest(LandscapeTest):
 
     def setUp(self):
         super(JujuInfoTest, self).setUp()
-        self.mstore.set_accepted_types(["juju-units-info"])
+        self.mstore.set_accepted_types(["juju-info"])
         self.plugin = JujuInfo()
         self.monitor.add(self.plugin)
-
-        if not os.path.exists(self.config.juju_directory):
-            os.mkdir(self.config.juju_directory)
-
-        self.filepath = os.path.join(self.config.juju_directory,
-                                     SAMPLE_JUJU_FILE)
-        self.makeFile(SAMPLE_JUJU_INFO, path=self.filepath)
+        self.makeFile(SAMPLE_JUJU_INFO, path=self.config.juju_filename)
 
     def test_get_sample_juju_info(self):
         """
@@ -37,11 +29,10 @@ class JujuInfoTest(LandscapeTest):
         """
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEqual(message["type"], "juju-units-info")
-        juju_info = message["juju-info-list"][0]
-        self.assertEqual(juju_info["environment-uuid"], "DEAD-BEEF")
-        self.assertEqual(juju_info["unit-name"], "juju-unit-name")
-        self.assertEqual(juju_info["api-addresses"], ["10.0.3.1:17070"])
+        self.assertEqual(message["type"], "juju-info")
+        self.assertEqual(message["environment-uuid"], "DEAD-BEEF")
+        self.assertEqual(message["unit-name"], "juju-unit-name")
+        self.assertEqual(message["api-addresses"], ["10.0.3.1:17070"])
 
     def test_juju_info_reported_only_once(self):
         """
@@ -51,7 +42,7 @@ class JujuInfoTest(LandscapeTest):
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0]["type"], "juju-units-info")
+        self.assertEqual(messages[0]["type"], "juju-info")
 
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -64,29 +55,27 @@ class JujuInfoTest(LandscapeTest):
         """
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEqual(message["type"], "juju-units-info")
-        juju_info = message["juju-info-list"][0]
-        self.assertEqual(juju_info["environment-uuid"], "DEAD-BEEF")
-        self.assertEqual(juju_info["unit-name"], "juju-unit-name")
-        self.assertEqual(juju_info["api-addresses"], ["10.0.3.1:17070"])
+        self.assertEqual(message["type"], "juju-info")
+        self.assertEqual(message["environment-uuid"], "DEAD-BEEF")
+        self.assertEqual(message["unit-name"], "juju-unit-name")
+        self.assertEqual(message["api-addresses"], ["10.0.3.1:17070"])
 
         self.makeFile(
             json.dumps({"environment-uuid": "FEED-BEEF",
                         "unit-name": "changed-unit-name",
                         "api-addresses": "10.0.3.2:17070",
                         "private-address": "127.0.1.1"}),
-            dirname=self.config.juju_directory, suffix=".json")
+            path=self.config.juju_filename)
         self.plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
-        self.assertEqual(message["type"], "juju-units-info")
-        juju_info = message["juju-info-list"][0]
-        self.assertEqual(juju_info["environment-uuid"], "FEED-BEEF")
-        self.assertEqual(juju_info["unit-name"], "changed-unit-name")
-        self.assertEqual(juju_info["api-addresses"], ["10.0.3.2:17070"])
+        self.assertEqual(message["type"], "juju-info")
+        self.assertEqual(message["environment-uuid"], "FEED-BEEF")
+        self.assertEqual(message["unit-name"], "changed-unit-name")
+        self.assertEqual(message["api-addresses"], ["10.0.3.2:17070"])
 
     def test_no_message_with_invalid_json(self):
         """No Juju message is sent if the JSON file is invalid."""
-        self.makeFile("barf", path=self.filepath)
+        self.makeFile("barf", path=self.config.juju_filename)
 
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -97,7 +86,7 @@ class JujuInfoTest(LandscapeTest):
 
     def test_no_message_with_missing_file(self):
         """No Juju message is sent if the JSON file is missing."""
-        os.remove(self.filepath)
+        os.remove(self.config.juju_filename)
 
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()

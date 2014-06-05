@@ -14,6 +14,8 @@ import socket
 
 from twisted.internet.defer import Deferred
 
+from landscape.message_schemas import juju_data
+
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
 from landscape.lib.juju import get_juju_info
@@ -143,7 +145,8 @@ class RegistrationHandler(object):
         juju_info = get_juju_info(self._config)
         if juju_info is None:
             return None
-        self._juju_data = juju_info  # A list of dicts
+        self._juju_data = dict(
+            (key, juju_info[key]) for key in juju_data)
 
     def _get_data(self, path, accumulate):
         """
@@ -338,10 +341,7 @@ class RegistrationHandler(object):
             message["container-info"] = get_container_info()
 
             if self._juju_data is not None:
-                # For backwards compatibility, set the juju-info to be one of
-                # the juju infos (it used not to be a list).
-                message["juju-info"] = self._juju_data[0]
-                message["juju-info-list"] = self._juju_data
+                message["juju-info"] = self._juju_data
 
         elif self._config.provisioning_otp:
             # This is a newly provisionned machine.
