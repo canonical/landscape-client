@@ -511,8 +511,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     juju_contents = json.dumps({"environment-uuid": "DEAD-BEEF",
                                 "unit-name": "service/0",
-                                "api-addresses": "10.0.3.1:17070",
-                                "private-address": "127.0.0.1"})
+                                "api-addresses": "10.0.3.1:17070"})
 
     def test_juju_information_added_when_present(self):
         """
@@ -527,8 +526,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         expected = {"environment-uuid": "DEAD-BEEF",
                     "api-addresses": ["10.0.3.1:17070"],
-                    "unit-name": "service/0",
-                    "private-address": "127.0.0.1"}
+                    "unit-name": "service/0"}
         self.assertEqual(expected, messages[0]["juju-info"])
         self.assertEqual(expected, messages[0]["juju-info-list"][0])
 
@@ -557,8 +555,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
         expected1 = {"environment-uuid": "DEAD-BEEF",
                     "api-addresses": ["10.0.3.1:17070"],
-                    "unit-name": "service/0",
-                    "private-address": "127.0.0.1"}
+                    "unit-name": "service/0"}
         self.assertIn(expected1, juju_info)
 
         expected2 = {"environment-uuid": "DEAD-BEEF",
