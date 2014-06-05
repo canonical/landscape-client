@@ -8,8 +8,11 @@ from landscape.lib.fs import read_file
 
 def get_juju_info(config):
     """
-    Returns the Juju info or C{None} if the path referenced from
-    L{config} is not a file or that file isn't valid JSON.
+    Returns the list of Juju info or C{None} if the path referenced from
+    L{config} is not a valid directory.
+
+    The list of juju info is constructed by appending all the contents of
+    *.json files found in the path referenced from the L{config}.
     """
     juju_directory = config.juju_directory
 

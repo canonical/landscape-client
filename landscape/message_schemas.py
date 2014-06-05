@@ -113,8 +113,6 @@ juju_data = {"environment-uuid": Unicode(),
              "private-address": Unicode()}
 
 # The copy is needed because Message mutates the dictionary
-#JUJU_INFO = Message("juju-info", juju_data.copy())
-
 JUJU_UNITS_INFO = Message("juju-units-info", {
     "juju-info-list": List(KeyDict(juju_data.copy()))
     })

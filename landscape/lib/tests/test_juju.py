@@ -82,7 +82,7 @@ class JujuTest(LandscapeTest):
     def test_get_juju_info_no_json_file(self):
         """
         If L{get_juju_info} is called with a configuration pointing to
-        a directory cntaining no json files, it returns None.
+        a directory containing no json files, it returns None.
         """
         juju_info = get_juju_info(self.stub_config)
         self.assertIs(juju_info, None)

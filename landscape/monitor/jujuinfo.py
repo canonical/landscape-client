@@ -27,12 +27,12 @@ class JujuInfo(MonitorPlugin):
                                               urgent=urgent)
 
     def _create_juju_info_message(self):
-        """Return a "juju-info" message if the juju info gathered from the JSON
-        files living in juju-info.d/ has changed.
+        """Return a "juju-units-info" message if the juju info gathered from
+        the JSON files living in juju-info.d/ has changed.
 
         The message is of the form:
-            {"type": "juju-info",
-             "juju-info": [{<juju-info dict>}, {<juju-info dict>}]}
+            {"type": "juju-units-info",
+             "juju-info-list": [{<juju-info dict>}, {<juju-info dict>}]}
         """
         juju_info = get_juju_info(self.registry.config)
 
