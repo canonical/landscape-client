@@ -128,8 +128,11 @@ class RegistrationHelper(ExchangeHelper):
         test_case.fetch_func = fetch_async
         test_case.config.cloud = getattr(test_case, "cloud", False)
         if hasattr(test_case, "juju_contents"):
+            if not os.path.exists(test_case.config.juju_directory):
+                os.mkdir(test_case.config.juju_directory)
             test_case.makeFile(
-                test_case.juju_contents, path=test_case.config.juju_filename)
+                test_case.juju_contents,
+                dirname=test_case.config.juju_directory, suffix=".json")
         test_case.handler = RegistrationHandler(
             test_case.config, test_case.identity, test_case.reactor,
             test_case.exchanger, test_case.pinger, test_case.mstore,

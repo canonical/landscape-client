@@ -109,10 +109,14 @@ HARDWARE_INFO = Message("hardware-info", {
 
 juju_data = {"environment-uuid": Unicode(),
              "api-addresses": List(Unicode()),
-             "unit-name": Unicode()}
+             "unit-name": Unicode(),
+             "private-address": Unicode()}
 
 # The copy is needed because Message mutates the dictionary
-JUJU_INFO = Message("juju-info", juju_data.copy())
+JUJU_UNITS_INFO = Message("juju-units-info", {
+    "juju-info-list": List(KeyDict(juju_data.copy(),
+                                   optional=["private-address"]))
+    })
 
 LOAD_AVERAGE = Message("load-average", {
     "load-averages": List(Tuple(Int(), Float())),
@@ -188,10 +192,14 @@ REGISTER = Message(
      "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
      "container-info": Unicode(),
-     "juju-info": KeyDict(juju_data),
+     "juju-info": KeyDict(juju_data, optional=["private-address"]),
+     # Because of backwards compatibility we need another member with the list
+     # of juju-info, so it can safely be ignored by old servers.
+     "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
      "access_group": Unicode()},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "juju-info", "unicode", "access_group"])
+              "container-info", "juju-info", "juju-info-list", "unicode",
+              "access_group"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(
@@ -472,5 +480,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-               CHANGE_HA_SERVICE, JUJU_INFO, CLOUD_METADATA]:
+               CHANGE_HA_SERVICE, JUJU_UNITS_INFO, CLOUD_METADATA]:
     message_schemas[schema.type] = schema
