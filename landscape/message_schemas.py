@@ -113,6 +113,10 @@ juju_data = {"environment-uuid": Unicode(),
              "private-address": Unicode()}
 
 # The copy is needed because Message mutates the dictionary
+JUJU_INFO = Message("juju-info",
+                    juju_data.copy(),
+                    optional=["private-address"])
+
 JUJU_UNITS_INFO = Message("juju-units-info", {
     "juju-info-list": List(KeyDict(juju_data.copy(),
                                    optional=["private-address"]))
@@ -480,5 +484,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-               CHANGE_HA_SERVICE, JUJU_UNITS_INFO, CLOUD_METADATA]:
+               CHANGE_HA_SERVICE, JUJU_INFO, JUJU_UNITS_INFO, CLOUD_METADATA]:
     message_schemas[schema.type] = schema
