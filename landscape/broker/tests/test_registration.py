@@ -527,8 +527,24 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         expected = {"environment-uuid": "DEAD-BEEF",
                     "api-addresses": ["10.0.3.1:17070"],
                     "unit-name": "service/0"}
-        self.assertEqual(expected, messages[0]["juju-info"])
         self.assertEqual(expected, messages[0]["juju-info-list"][0])
+
+    def test_juju_info_compatibility_present(self):
+        """
+        When Juju information is found in $data_dir/juju-info.d/*.json,
+        the registration message also contains a "juju-info" key for
+        backwards compatibility with older servers.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.config.account_name = "account_name"
+        self.reactor.fire("run")
+        self.reactor.fire("pre-exchange")
+
+        messages = self.mstore.get_pending_messages()
+        expected = {"environment-uuid": "DEAD-BEEF",
+                    "api-addresses": ["10.0.3.1:17070"],
+                    "unit-name": "service/0"}
+        self.assertEqual(expected, messages[0]["juju-info"])
 
     def test_multiple_juju_information_added_when_present(self):
         """
@@ -554,14 +570,14 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(2, len(juju_info))
 
         expected1 = {"environment-uuid": "DEAD-BEEF",
-                    "api-addresses": ["10.0.3.1:17070"],
-                    "unit-name": "service/0"}
+                     "api-addresses": ["10.0.3.1:17070"],
+                     "unit-name": "service/0"}
         self.assertIn(expected1, juju_info)
 
         expected2 = {"environment-uuid": "DEAD-BEEF",
-                    "api-addresses": ["10.0.3.2:17070"],
-                    "unit-name": "service-2/0",
-                    "private-address": "127.0.0.1"}
+                     "api-addresses": ["10.0.3.2:17070"],
+                     "unit-name": "service-2/0",
+                     "private-address": "127.0.0.1"}
         self.assertIn(expected2, juju_info)
 
 

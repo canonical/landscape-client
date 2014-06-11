@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 
@@ -15,15 +16,20 @@ def get_juju_info(config):
     *.json files found in the path referenced from the L{config}.
     """
     juju_directory = config.juju_directory
+    legacy_juju_file = config.juju_filename
 
     juju_info_list = []
+    juju_file_list = glob("%s/*.json" % juju_directory)
 
-    for juju_file in glob("%s/*.json" % juju_directory):
+    if os.path.exists(legacy_juju_file):
+        juju_file_list.append(legacy_juju_file)
+
+    for juju_file in juju_file_list:
 
         json_contents = read_file(juju_file)
         try:
             juju_info = json.loads(json_contents)
-        except Exception:
+        except Exception:  # Catch *any* error in the decoding and log it.
             logging.exception(
                 "Error attempting to read JSON from %s" % juju_file)
             return None
@@ -33,4 +39,5 @@ def get_juju_info(config):
                 juju_info["api-addresses"] = split
             juju_info_list.append(juju_info)
 
+    juju_info_list.sort()
     return juju_info_list or None

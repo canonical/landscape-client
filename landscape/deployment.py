@@ -432,6 +432,12 @@ class Configuration(BaseConfiguration):
         return os.path.join(self.data_path, "annotations.d")
 
     @property
+    def juju_filename(self):
+        """The path to the previously sinlge juju-info file for
+        backwards-compatibility."""
+        return os.path.join(self.data_path, "juju-info.json")
+
+    @property
     def juju_directory(self):
         return os.path.join(self.data_path, "juju-info.d")
 
