@@ -52,7 +52,6 @@ class JujuTest(LandscapeTest):
              u"api-addresses": ["10.0.3.1:17070"],
              u"private-address": "127.0.0.1"}], juju_info)
 
-
     def test_get_juju_info_two_sample_data(self):
         """
         L{get_juju_info} parses JSON data from the '*.json' files in the
@@ -61,14 +60,14 @@ class JujuTest(LandscapeTest):
         self._create_tmp_juju_file(SAMPLE_JUJU_INFO)
         self._create_tmp_juju_file(SAMPLE_JUJU_INFO_2)
         juju_info = get_juju_info(self.stub_config)
-        self.assertItemsEqual([
-            {u"environment-uuid": "DEAD-BEEF",
-             u"unit-name": "service/0",
-             u"api-addresses": ["10.0.3.1:17070"],
-             u"private-address": "127.0.0.1"},
+        self.assertEqual([
             {u"environment-uuid": "DEAD-BEEF",
              u"unit-name": "service-2/0",
              u"api-addresses": ["10.0.3.2:17070"],
+             u"private-address": "127.0.0.1"},
+            {u"environment-uuid": "DEAD-BEEF",
+             u"unit-name": "service/0",
+             u"api-addresses": ["10.0.3.1:17070"],
              u"private-address": "127.0.0.1"}], juju_info)
 
     def test_get_juju_info_ignores_non_json(self):

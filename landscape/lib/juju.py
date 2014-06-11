@@ -29,7 +29,10 @@ def get_juju_info(config):
         json_contents = read_file(juju_file)
         try:
             juju_info = json.loads(json_contents)
-        except Exception:  # Catch *any* error in the decoding and log it.
+        # Catch any error the json lib could throw, because we don't know or
+        # care what goes wrong - we'll display a generic error message and
+        # return None in any case.
+        except Exception:
             logging.exception(
                 "Error attempting to read JSON from %s" % juju_file)
             return None
@@ -39,5 +42,5 @@ def get_juju_info(config):
                 juju_info["api-addresses"] = split
             juju_info_list.append(juju_info)
 
-    juju_info_list.sort()
+    juju_info_list.sort(key=lambda x: x["unit-name"])
     return juju_info_list or None
