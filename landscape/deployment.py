@@ -433,8 +433,13 @@ class Configuration(BaseConfiguration):
 
     @property
     def juju_filename(self):
-        """Get the path to the Juju JSON file."""
+        """The path to the previously sinlge juju-info file for
+        backwards-compatibility."""
         return os.path.join(self.data_path, "juju-info.json")
+
+    @property
+    def juju_directory(self):
+        return os.path.join(self.data_path, "juju-info.d")
 
 
 def get_versioned_persist(service):
