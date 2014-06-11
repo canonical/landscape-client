@@ -75,8 +75,9 @@ class JujuInfoTest(LandscapeTest):
                         "unit-name": "changed-unit-name",
                         "api-addresses": "10.0.3.2:17070",
                         "private-address": "127.0.1.1"}),
-            dirname=self.config.juju_directory, suffix=".json")
+            path=self.filepath)
         self.plugin.exchange()
+
         message = self.mstore.get_pending_messages()[1]
         self.assertEqual(message["type"], "juju-units-info")
         juju_info = message["juju-info-list"][0]
