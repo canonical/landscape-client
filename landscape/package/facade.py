@@ -22,7 +22,7 @@ from aptsources.sourceslist import SourcesList
 from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
 
-from landscape.lib.fs import append_file, create_file, read_file
+from landscape.lib.fs import append_file, create_file, read_file, touch_file
 from landscape.constants import UBUNTU_PATH
 from landscape.package.skeleton import build_skeleton_apt
 
@@ -157,7 +157,7 @@ class AptFacade(object):
             create_file(self._dpkg_status, "")
         # Apt will fail if it does not have a keyring.  It does not care if
         # the keyring is empty.
-        create_file(os.path.join(apt_dir, "trusted.gpg"), "")
+        touch_file(os.path.join(apt_dir, "trusted.gpg"))
 
     def _ensure_sub_dir(self, sub_dir):
         """Ensure that a dir in the Apt root exists."""
