@@ -2573,6 +2573,14 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             apt_pkg.SELSTATE_DEINSTALL, foo.package._pkg.selected_state)
 
+    def test_creation_of_key_ring(self):
+        """
+        Apt on Trusty requires a keyring exist in its directory structure, so
+        we create an empty file to appease it.
+        """
+        keyring_path = os.path.join(self.facade._root, "etc/apt/trusted.gpg")
+        self.assertTrue(os.path.exists(keyring_path))
+
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support
         # was added to python-apt. So if it's not there, it means that
