@@ -1256,10 +1256,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1280,10 +1278,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1304,10 +1300,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1332,10 +1326,8 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
         self.facade.mark_install(bar)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1361,10 +1353,8 @@ class AptFacadeTest(LandscapeTest):
         [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
         self.assertEqual(bar2, bar1.package.candidate)
         self.facade.mark_install(foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1392,10 +1382,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade.mark_install(bar2)
         self.facade.mark_remove(bar1)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1423,10 +1411,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade.mark_install(bar1)
         self.facade.mark_remove(bar2)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1447,10 +1433,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1501,10 +1485,8 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1560,12 +1542,9 @@ class AptFacadeTest(LandscapeTest):
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
         self.facade.mark_install(bar)
+        self.facade._preprocess_package_changes()
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
         foo.package.mark_keep()
         self.assertEqual(
             set([bar.package]), self.facade._get_broken_packages())
@@ -1591,10 +1570,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1618,10 +1595,8 @@ class AptFacadeTest(LandscapeTest):
         [another_foo] = self.facade.get_packages_by_name("another-foo")
         self.facade.mark_install(foo)
         self.facade.mark_install(another_foo)
-        try:
-            self.facade._preprocess_package_changes()
-        except TransactionError:
-            pass
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package, another_foo.package]),
             self.facade._get_broken_packages())
