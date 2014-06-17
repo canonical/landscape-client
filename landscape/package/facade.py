@@ -136,6 +136,7 @@ class AptFacade(object):
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._version_installs = []
+        self._package_installs = set()
         self._global_upgrade = False
         self._version_removals = []
         self._version_hold_creations = []
@@ -445,11 +446,23 @@ class AptFacade(object):
             version for version in self.get_packages()
             if version.package.name == name]
 
-    def _get_broken_packages(self):
+    def _is_package_broken(self, package, existing_only):
+        if package.is_inst_broken:
+            return True
+        if existing_only:
+            return False
+        if (not package.marked_install
+                and not package.marked_upgrade
+                and not package.marked_downgrade):
+            return package in self._package_installs
+        return False
+
+    def _get_broken_packages(self, existing_only=False):
         """Return the packages that are in a broken state."""
         return set(
             version.package for version in self.get_packages()
-            if version.package.is_inst_broken)
+            if self._is_package_broken(
+                version.package, existing_only=existing_only))
 
     def _get_changed_versions(self, package):
         """Return the versions that will be changed for the package.
@@ -732,13 +745,18 @@ class AptFacade(object):
             except SystemError, error:
                 raise TransactionError(error.args[0] + "\n" +
                                        self._get_unmet_dependency_info())
+            else:
+                now_broken_packages = self._get_broken_packages()
+                if now_broken_packages != already_broken_packages:
+                    raise TransactionError(self._get_unmet_dependency_info())
+
 
     def _preprocess_package_changes(self):
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
         if (not version_changes and not self._global_upgrade):
             return []
-        already_broken_packages = self._get_broken_packages()
+        already_broken_packages = self._get_broken_packages(existing_only=True)
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         self._preprocess_installs(fixer)
         self._preprocess_global_upgrade()
@@ -773,6 +791,7 @@ class AptFacade(object):
     def reset_marks(self):
         """Clear the pending package operations."""
         del self._version_installs[:]
+        self._package_installs.clear()
         del self._version_removals[:]
         del self._version_hold_removals[:]
         del self._version_hold_creations[:]
@@ -782,6 +801,7 @@ class AptFacade(object):
     def mark_install(self, version):
         """Mark the package for installation."""
         self._version_installs.append(version)
+        self._package_installs.add(version.package)
 
     def mark_global_upgrade(self):
         """Upgrade all installed packages."""
