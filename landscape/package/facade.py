@@ -447,23 +447,29 @@ class AptFacade(object):
             if version.package.name == name]
 
     def _is_package_broken(self, package):
+        """Is the package broken?
+
+        It's considered broken if it's one that we marked for install,
+        but it's not marked for install, upgrade or downgrade
+        anymore.
+
+        Before Trusty, checking is_inst_broken was enough, but
+        in Trusty the behavior changed, so the package simply gets
+        unmarked for installation.
+        """
+        if package.is_inst_broken:
+            return True
         if (not package.marked_install
                 and not package.marked_upgrade
                 and not package.marked_downgrade):
             return package in self._package_installs
         return False
 
-    def _get_broken_system_packages(self):
-        return set(
-            version.package for version in self.get_packages()
-            if version.package.is_inst_broken)
-
     def _get_broken_packages(self):
         """Return the packages that are in a broken state."""
-        broken_packages = self._get_broken_system_packages()
-        return broken_packages.union(set(
+        return set(
             version.package for version in self.get_packages()
-            if self._is_package_broken(version.package)))
+            if self._is_package_broken(version.package))
 
     def _get_changed_versions(self, package):
         """Return the versions that will be changed for the package.
@@ -697,6 +703,7 @@ class AptFacade(object):
             # Set auto_fix=False to avoid removing the package we asked to
             # install when we need to resolve dependencies.
             version.package.mark_install(auto_fix=False)
+            self._package_installs.add(version.package)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
 
@@ -757,7 +764,7 @@ class AptFacade(object):
         version_changes.extend(self._version_removals)
         if (not version_changes and not self._global_upgrade):
             return []
-        already_broken_packages = self._get_broken_system_packages()
+        already_broken_packages = self._get_broken_packages()
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         self._preprocess_installs(fixer)
         self._preprocess_global_upgrade()
@@ -802,7 +809,6 @@ class AptFacade(object):
     def mark_install(self, version):
         """Mark the package for installation."""
         self._version_installs.append(version)
-        self._package_installs.add(version.package)
 
     def mark_global_upgrade(self):
         """Upgrade all installed packages."""
