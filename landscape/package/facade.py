@@ -697,6 +697,10 @@ class AptFacade(object):
 
     def _preprocess_installs(self, fixer):
         for version in self._version_installs:
+            if version == version.package.installed:
+                # No point in marking it for installation if the
+                # requested version is already installed.
+                continue
             # Set the candidate version, so that the version we want to
             # install actually is the one getting installed.
             version.package.candidate = version

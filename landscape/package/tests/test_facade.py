@@ -1230,6 +1230,18 @@ class AptFacadeTest(LandscapeTest):
              "                lost (>= 1.0) but is not installable"],
             error.args[0].splitlines()[-9:])
 
+    def test_get_broken_packages_already_installed(self):
+        """
+        Trying to install a package that is already installed is a noop,
+        not causing any packages to be broken.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+        self.facade._preprocess_package_changes()
+        self.assertEqual(set([]), self.facade._get_broken_packages())
+
     def test_get_unmet_dependency_info_no_broken(self):
         """
         If there are no broken packages, C{_get_unmet_dependency_info}

@@ -106,10 +106,6 @@ class AptPackageChangerTest(LandscapeTest):
              if "Package: name2" not in stanza])
         create_file(packages_file, packages_contents)
 
-    def get_transaction_error_message(self):
-        """Return part of the apt transaction error message."""
-        return "Unable to correct problems"
-
     def get_binaries_channels(self, binaries_path):
         """Return the channels that will be used for the binaries."""
         return [{"baseurl": "file://%s" % binaries_path,
@@ -483,13 +479,13 @@ class AptPackageChangerTest(LandscapeTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            result_text = self.get_transaction_error_message()
             messages = self.get_pending_messages()
             self.assertEqual(len(messages), 1)
             message = messages[0]
             self.assertEqual(message["operation-id"], 123)
             self.assertEqual(message["result-code"], 100)
-            self.assertIn(result_text, message["result-text"])
+            self.assertIn(
+                "packages have unmet dependencies", message["result-text"])
             self.assertEqual(message["type"], "change-packages-result")
         return result.addCallback(got_result)
 
