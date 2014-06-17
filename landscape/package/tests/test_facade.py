@@ -2162,7 +2162,7 @@ class AptFacadeTest(LandscapeTest):
                 " but is not installable",
              "  name1: Depends: requirename1 (= requireversion1) but is not" +
                 " installable"],
-            exception.args[0].splitlines())
+            exception.args[0].splitlines()[-3:])
 
     def test_mark_install_dependency_error(self):
         """
