@@ -1459,7 +1459,7 @@ class AptFacadeTest(LandscapeTest):
              "                baz (>= 1.0) but is not installable"],
             self.facade._get_unmet_dependency_info().splitlines())
 
-    def xxx_test_get_unmet_dependency_info_with_conflicts(self):
+    def test_get_unmet_dependency_info_with_conflicts(self):
         """
         If a package is broken because it conflicts with a package to be
         installed, information about the conflict is included in the
@@ -1476,8 +1476,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(bar)
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
-        foo.package.mark_keep()
         self.facade._preprocess_package_changes()
+        foo.package.mark_keep()
         self.assertEqual(
             set([bar.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1512,8 +1512,7 @@ class AptFacadeTest(LandscapeTest):
              "  foo: Depends: bar but is not installable"],
             self.facade._get_unmet_dependency_info().splitlines())
 
-    # mark_keep() doesn't seem to work here.
-    def xxx_test_get_unmet_dependency_info_with_conflicts_not_installed(self):
+    def test_get_unmet_dependency_info_with_conflicts_not_installed(self):
         """
         If a broken package conflicts or breaks a package that isn't
         installed or marked for installation, information about that
@@ -1532,8 +1531,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(bar)
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
-        foo.package.mark_keep()
         self.facade._preprocess_package_changes()
+        foo.package.mark_keep()
         self.assertEqual(
             set([bar.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1542,7 +1541,7 @@ class AptFacadeTest(LandscapeTest):
              "  bar: Breaks: foo but 1.0 is to be installed"],
             self.facade._get_unmet_dependency_info().splitlines())
 
-    def xxx_test_get_unmet_dependency_info_with_conflicts_marked_delete(self):
+    def test_get_unmet_dependency_info_with_conflicts_marked_delete(self):
         """
         If a broken package conflicts or breaks an installed package
         that is marekd for removal, information about that conflict
@@ -1563,11 +1562,11 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(bar)
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
-        foo.package.mark_keep()
         try:
             self.facade._preprocess_package_changes()
         except TransactionError:
             pass
+        foo.package.mark_keep()
         self.assertEqual(
             set([bar.package]), self.facade._get_broken_packages())
         self.assertEqual(
