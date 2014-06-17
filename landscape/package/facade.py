@@ -446,23 +446,24 @@ class AptFacade(object):
             version for version in self.get_packages()
             if version.package.name == name]
 
-    def _is_package_broken(self, package, existing_only):
-        if package.is_inst_broken:
-            return True
-        if existing_only:
-            return False
+    def _is_package_broken(self, package):
         if (not package.marked_install
                 and not package.marked_upgrade
                 and not package.marked_downgrade):
             return package in self._package_installs
         return False
 
-    def _get_broken_packages(self, existing_only=False):
-        """Return the packages that are in a broken state."""
+    def _get_broken_system_packages(self):
         return set(
             version.package for version in self.get_packages()
-            if self._is_package_broken(
-                version.package, existing_only=existing_only))
+            if version.package.is_inst_broken)
+
+    def _get_broken_packages(self):
+        """Return the packages that are in a broken state."""
+        broken_packages = self._get_broken_system_packages()
+        return broken_packages.union(set(
+            version.package for version in self.get_packages()
+            if self._is_package_broken(version.package)))
 
     def _get_changed_versions(self, package):
         """Return the versions that will be changed for the package.
@@ -756,7 +757,7 @@ class AptFacade(object):
         version_changes.extend(self._version_removals)
         if (not version_changes and not self._global_upgrade):
             return []
-        already_broken_packages = self._get_broken_packages(existing_only=True)
+        already_broken_packages = self._get_broken_system_packages()
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         self._preprocess_installs(fixer)
         self._preprocess_global_upgrade()
