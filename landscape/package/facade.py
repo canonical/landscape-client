@@ -758,7 +758,6 @@ class AptFacade(object):
                 if now_broken_packages != already_broken_packages:
                     raise TransactionError(self._get_unmet_dependency_info())
 
-
     def _preprocess_package_changes(self):
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
