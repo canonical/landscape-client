@@ -1523,9 +1523,9 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(bar)
+        self.facade._preprocess_package_changes()
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
-        self.facade._preprocess_package_changes()
         foo.package.mark_keep()
         self.assertEqual(
             set([bar.package]), self.facade._get_broken_packages())
