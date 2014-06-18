@@ -71,6 +71,7 @@ class Identity(object):
 
     secure_id = persist_property("secure-id")
     insecure_id = persist_property("insecure-id")
+
     computer_title = config_property("computer_title")
     account_name = config_property("account_name")
     registration_key = config_property("registration_key")
@@ -116,11 +117,15 @@ class RegistrationHandler(object):
         id = self._identity
         if id.secure_id:
             # We already have a secure ID, no need to register
+            logging.debug("Machine already has a secure-id. Skipping "
+                          "registration")
             return False
+
         if self._config.cloud:
             return self._message_store.accepts("register-cloud-vm")
         elif self._config.provisioning_otp:
             return self._message_store.accepts("register-provisioned-machine")
+
         return bool(id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
@@ -134,7 +139,7 @@ class RegistrationHandler(object):
         """
         self._identity.secure_id = None
         self._identity.insecure_id = None
-        result = RegistrationResponse(self._reactor).deferred
+        result = RegistrationResponse(self._reactor, self).deferred
         self._exchange.exchange()
         return result
 
@@ -306,7 +311,6 @@ class RegistrationHandler(object):
             message["type"] = "register-cloud-vm"
 
             message.update(self._ec2_data)
-
             if self._otp:
                 logging.info("Queueing message to register with OTP")
                 message["otp"] = self._otp
@@ -356,6 +360,7 @@ class RegistrationHandler(object):
         if registration_failed:
             self._reactor.fire("registration-failed")
         else:
+            logging.debug("Sending registration message to exchange")
             self._exchange.send(message)
 
     def _handle_set_id(self, message):
@@ -367,6 +372,9 @@ class RegistrationHandler(object):
         Fire C{"registration-done"} and C{"resynchronize-clients"}.
         """
         id = self._identity
+        if id.secure_id:
+            logging.info("Overwriting secure_id with '%s'" % id.secure_id)
+
         id.secure_id = message.get("id")
         id.insecure_id = message.get("insecure-id")
         logging.info("Using new secure-id ending with %s for account %s.",
@@ -408,7 +416,8 @@ class RegistrationResponse(object):
         L{RegistrationHandler.register}.
     """
 
-    def __init__(self, reactor):
+    def __init__(self, reactor, handler):
+        self._handler = handler
         self._reactor = reactor
         self._done_id = reactor.call_on("registration-done", self._done)
         self._failed_id = reactor.call_on("registration-failed", self._failed)
