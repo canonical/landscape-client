@@ -1240,7 +1240,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
         self.facade._preprocess_package_changes()
-        self.assertEqual(set([]), self.facade._get_broken_packages())
+        self.assertEqual(set(), self.facade._get_broken_packages())
 
     def test_get_unmet_dependency_info_no_broken(self):
         """
