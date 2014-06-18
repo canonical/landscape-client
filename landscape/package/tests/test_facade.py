@@ -1218,7 +1218,6 @@ class AptFacadeTest(LandscapeTest):
         self.patch_cache_commit()
         error = self.assertRaises(
             TransactionError, self.facade.perform_changes)
-        self.assertIn("you have held broken packages", error.args[0])
         self.assertEqual(
             ["The following packages have unmet dependencies:",
              "  bar: PreDepends: also-pre-missing but is not installable or",
@@ -1230,6 +1229,18 @@ class AptFacadeTest(LandscapeTest):
              "  foo: Depends: missing but is not installable or",
              "                lost (>= 1.0) but is not installable"],
             error.args[0].splitlines()[-9:])
+
+    def test_get_broken_packages_already_installed(self):
+        """
+        Trying to install a package that is already installed is a noop,
+        not causing any packages to be broken.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+        self.facade._preprocess_package_changes()
+        self.assertEqual(set(), self.facade._get_broken_packages())
 
     def test_get_unmet_dependency_info_no_broken(self):
         """
@@ -1256,7 +1267,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1276,7 +1289,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1296,7 +1311,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1319,8 +1336,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
-        foo.package.mark_install(auto_fix=False)
-        bar.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.facade.mark_install(bar)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1345,7 +1364,9 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
         self.assertEqual(bar2, bar1.package.candidate)
-        foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1370,8 +1391,11 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
         self.assertEqual(bar2, bar1.package.candidate)
-        foo.package.mark_install(auto_fix=False)
-        bar1.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.facade.mark_install(bar2)
+        self.facade.mark_remove(bar1)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1396,9 +1420,11 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
         self.assertEqual(bar2, bar1.package.candidate)
-        bar1.package.candidate = bar1
-        foo.package.mark_install(auto_fix=False)
-        bar1.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.facade.mark_install(bar1)
+        self.facade.mark_remove(bar2)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1418,7 +1444,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1441,9 +1469,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
-        bar.package.mark_install(auto_fix=False)
+        self.facade.mark_install(bar)
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
+        self.facade._preprocess_package_changes()
         foo.package.mark_keep()
         self.assertEqual(
             set([bar.package]), self.facade._get_broken_packages())
@@ -1467,12 +1496,14 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
-        foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
-            set([bar.package]), self.facade._get_broken_packages())
+            set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
             ["The following packages have unmet dependencies:",
-             "  bar: Breaks: foo but 1.0 is to be installed"],
+             "  foo: Depends: bar but is not installable"],
             self.facade._get_unmet_dependency_info().splitlines())
 
     def test_get_unmet_dependency_info_with_conflicts_not_installed(self):
@@ -1491,7 +1522,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
-        bar.package.mark_install(auto_fix=False)
+        self.facade.mark_install(bar)
+        self.facade._preprocess_package_changes()
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
         foo.package.mark_keep()
@@ -1520,8 +1552,9 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         [baz] = self.facade.get_packages_by_name("baz")
-        baz.package.mark_delete(auto_fix=False)
-        bar.package.mark_install(auto_fix=False)
+        self.facade.mark_remove(baz)
+        self.facade.mark_install(bar)
+        self.facade._preprocess_package_changes()
         # Mark as keep to ensure it stays broken and isn't automatically
         # removed by the resolver.
         foo.package.mark_keep()
@@ -1548,7 +1581,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1570,8 +1605,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         [another_foo] = self.facade.get_packages_by_name("another-foo")
-        foo.package.mark_install(auto_fix=False)
-        another_foo.package.mark_install(auto_fix=False)
+        self.facade.mark_install(foo)
+        self.facade.mark_install(another_foo)
+        self.assertRaises(
+            TransactionError, self.facade._preprocess_package_changes)
         self.assertEqual(
             set([foo.package, another_foo.package]),
             self.facade._get_broken_packages())
@@ -2067,7 +2104,8 @@ class AptFacadeTest(LandscapeTest):
         self.patch_cache_commit()
         error = self.assertRaises(
             TransactionError, self.facade.perform_changes)
-        self.assertIn("you have held broken packages", error.args[0])
+        self.assertIn(
+            "The following packages have unmet dependencies", error.args[0])
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
 
@@ -2104,9 +2142,13 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(pkg)
         exception = self.assertRaises(TransactionError,
                                       self.facade.perform_changes)
-        # XXX: Investigate if we can get a better error message.
-        #self.assertIn("requirename", exception.args[0])
-        self.assertIn("Unable to correct problems", exception.args[0])
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  name1: PreDepends: prerequirename1 (= prerequireversion1)" +
+                " but is not installable",
+             "  name1: Depends: requirename1 (= requireversion1) but is not" +
+                " installable"],
+            exception.args[0].splitlines()[-3:])
 
     def test_mark_install_dependency_error(self):
         """
