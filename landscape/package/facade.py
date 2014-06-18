@@ -454,7 +454,7 @@ class AptFacade(object):
         anymore.
 
         Before Trusty, checking is_inst_broken was enough, but
-        in Trusty the behavior changed, so the package simply gets
+        in Trusty the behaviour changed, so the package simply gets
         unmarked for installation.
         """
         if package.is_inst_broken:
