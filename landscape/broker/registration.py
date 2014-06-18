@@ -139,7 +139,7 @@ class RegistrationHandler(object):
         """
         self._identity.secure_id = None
         self._identity.insecure_id = None
-        result = RegistrationResponse(self._reactor, self).deferred
+        result = RegistrationResponse(self._reactor).deferred
         self._exchange.exchange()
         return result
 
@@ -416,8 +416,7 @@ class RegistrationResponse(object):
         L{RegistrationHandler.register}.
     """
 
-    def __init__(self, reactor, handler):
-        self._handler = handler
+    def __init__(self, reactor):
         self._reactor = reactor
         self._done_id = reactor.call_on("registration-done", self._done)
         self._failed_id = reactor.call_on("registration-failed", self._failed)
