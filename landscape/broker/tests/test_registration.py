@@ -170,7 +170,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("register", messages[0]["type"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
-                         "'account_name' without a password.")
+                         "'account_name' without a password.\n    INFO: "
+                         "Sending registration message to exchange.")
 
     def test_queue_message_on_exchange_with_vm_info(self):
         """
@@ -190,7 +191,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("vmware", messages[0]["vm-info"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
-                         "'account_name' without a password.")
+                         "'account_name' without a password.\n    INFO: "
+                         "Sending registration message to exchange.")
 
     def test_queue_message_on_exchange_with_lxc_container(self):
         """
@@ -221,7 +223,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("SEKRET", password)
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
-                         "'account_name' with a password.")
+                         "'account_name' with a password.\n    INFO: Sending "
+                         "registration message to exchange.")
 
     def test_queue_message_on_exchange_with_tags(self):
         """
@@ -238,8 +241,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("computer,tag", messages[0]["tags"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
-                         "'account_name' and tags computer,tag "
-                         "with a password.")
+                         "'account_name' and tags computer,tag with a "
+                         "password.\n    INFO: Sending registration message "
+                         "to exchange.")
 
     def test_queue_message_on_exchange_with_invalid_tags(self):
         """
@@ -260,7 +264,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                          "ERROR: Invalid tags provided for cloud "
                          "registration.\n    "
                          "INFO: Queueing message to register with account "
-                         "'account_name' with a password.")
+                         "'account_name' with a password.\n    INFO: Sending "
+                         "registration message to exchange.")
 
     def test_queue_message_on_exchange_with_unicode_tags(self):
         """
@@ -280,7 +285,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags prova\xc4\xb5o "
-                         "with a password.")
+                         "with a password.\n    INFO: Sending registration "
+                         "message to exchange.")
 
     def test_queue_message_on_exchange_with_access_group(self):
         """
@@ -297,7 +303,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' in access group 'dinosaurs' and "
-                         "tags server,london without a password.")
+                         "tags server,london without a password.\n    INFO: "
+                         "Sending registration message to exchange.")
 
     def test_queue_message_on_exchange_with_empty_access_group(self):
         """
@@ -783,11 +790,11 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [self.get_expected_cloud_message(tags=None)])
         self.assertEqual(self.logfile.getvalue().strip()[:-7],
                          "ERROR: Invalid tags provided for cloud "
-                         "registration.\n    "
-                         "INFO: Queueing message to register with OTP\n    "
-                         "INFO: Starting message exchange with "
-                         "https://example.com/message-system.\n    "
-                         "INFO: Message exchange completed in")
+                         "registration.\n    INFO: Queueing message to "
+                         "register with OTP\n    INFO: Sending registration "
+                         "message to exchange.\n    INFO: Starting message "
+                         "exchange with https://example.com/message-system.\n"
+                         "    INFO: Message exchange completed in")
 
     def test_cloud_registration_with_ssl_ca_certificate(self):
         """
@@ -889,10 +896,11 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                                 registration_password=u"password",
                                 tags=u"london,server")])
         self.assertEqual(self.logfile.getvalue().strip()[:-7],
-           "INFO: Queueing message to register with account u'onward' and "
-           "tags london,server as an EC2 instance.\n    "
-           "INFO: Starting message exchange with http://localhost:91919.\n    "
-           "INFO: Message exchange completed in")
+            "INFO: Queueing message to register with account u'onward' and "
+            "tags london,server as an EC2 instance.\n    INFO: Sending "
+            "registration message to exchange.\n    INFO: Starting message "
+            "exchange with http://localhost:91919.\n    INFO: Message "
+            "exchange completed in")
 
     def test_queueing_cloud_registration_message_resets_message_store(self):
         """
@@ -1249,7 +1257,8 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
                               "type": "register-provisioned-machine"}],
                             self.mstore.get_pending_messages())
         self.assertEqual(u"INFO: Queueing message to register with OTP as a"
-                         u" newly provisioned machine.",
+                         u" newly provisioned machine.\n    INFO: Sending "
+                         "registration message to exchange.",
                          self.logfile.getvalue().strip())
 
         self.exchanger.exchange()
