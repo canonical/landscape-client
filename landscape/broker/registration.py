@@ -117,8 +117,8 @@ class RegistrationHandler(object):
         id = self._identity
         if id.secure_id:
             # We already have a secure ID, no need to register
-            logging.debug("Machine already has a secure-id. Skipping "
-                          "registration")
+            logging.info("Machine already has a secure-id. Skipping "
+                         "registration.")
             return False
 
         if self._config.cloud:
@@ -360,7 +360,7 @@ class RegistrationHandler(object):
         if registration_failed:
             self._reactor.fire("registration-failed")
         else:
-            logging.debug("Sending registration message to exchange")
+            logging.info("Sending registration message to exchange.")
             self._exchange.send(message)
 
     def _handle_set_id(self, message):
