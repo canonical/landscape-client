@@ -9,17 +9,16 @@ class JujuInfo(MonitorPlugin):
 
     persist_name = "juju-info"
     scope = "juju"
+    run_interval = 30
 
-    def register(self, registry):
-        super(JujuInfo, self).register(registry)
-        self.call_on_accepted("juju-units-info", self.send_juju_message, True)
+    # Need persist to be setup so have to wait C{run_interval} seconds
+    run_immediately = False
 
-    def exchange(self, urgent=False):
+    def run(self):
         broker = self.registry.broker
-        broker.call_if_accepted(
-            "juju-units-info", self.send_juju_message, urgent)
+        broker.call_if_accepted("juju-units-info", self.send_juju_message)
 
-    def send_juju_message(self, urgent=False):
+    def send_juju_message(self, urgent=True):
         message = self._create_juju_info_message()
         if message:
             logging.info("Queuing message with updated juju info.")
