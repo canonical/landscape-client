@@ -18,12 +18,12 @@ class JujuInfo(MonitorPlugin):
         broker = self.registry.broker
         broker.call_if_accepted("juju-units-info", self.send_juju_message)
 
-    def send_juju_message(self, urgent=True):
+    def send_juju_message(self):
         message = self._create_juju_info_message()
         if message:
             logging.info("Queuing message with updated juju info.")
             self.registry.broker.send_message(message, self._session_id,
-                                              urgent=urgent)
+                                              urgent=True)
 
     def _create_juju_info_message(self):
         """Return a "juju-units-info" message if the juju info gathered from
