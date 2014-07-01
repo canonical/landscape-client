@@ -283,9 +283,8 @@ class LandscapeSetupScript(object):
         self.show_help(
             """
             You must now specify the name of the Landscape account you
-            want to register this computer with.  You can verify the
-            names of the accounts you manage on your dashboard at
-            https://landscape.canonical.com/dashboard
+            want to register this computer with. Your account name is shown
+            under 'Account name' at https://landscape.canonical.com .
             """)
 
         self.prompt("account_name", "Account name", True)
