@@ -35,7 +35,7 @@ class JujuInfoTest(LandscapeTest):
         Sample data is used to ensure that expected values end up in
         the Juju data reported by the plugin.
         """
-        self.plugin.exchange()
+        self.plugin.run()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "juju-units-info")
         juju_info = message["juju-info-list"][0]
@@ -48,12 +48,12 @@ class JujuInfoTest(LandscapeTest):
         Juju data shouldn't be reported unless it's changed since the
         last time it was reported.
         """
-        self.plugin.exchange()
+        self.plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 1)
         self.assertEqual(messages[0]["type"], "juju-units-info")
 
-        self.plugin.exchange()
+        self.plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 1)
 
@@ -62,7 +62,7 @@ class JujuInfoTest(LandscapeTest):
         When juju data changes, the new data should be sent to the
         server.
         """
-        self.plugin.exchange()
+        self.plugin.run()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "juju-units-info")
         juju_info = message["juju-info-list"][0]
@@ -76,7 +76,7 @@ class JujuInfoTest(LandscapeTest):
                         "api-addresses": "10.0.3.2:17070",
                         "private-address": "127.0.1.1"}),
             path=self.filepath)
-        self.plugin.exchange()
+        self.plugin.run()
 
         message = self.mstore.get_pending_messages()[1]
         self.assertEqual(message["type"], "juju-units-info")
@@ -89,7 +89,7 @@ class JujuInfoTest(LandscapeTest):
         """No Juju message is sent if the JSON file is invalid."""
         self.makeFile("barf", path=self.filepath)
 
-        self.plugin.exchange()
+        self.plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(messages, [])
         self.log_helper.ignore_errors(ValueError)
@@ -100,6 +100,6 @@ class JujuInfoTest(LandscapeTest):
         """No Juju message is sent if the JSON file is missing."""
         os.remove(self.filepath)
 
-        self.plugin.exchange()
+        self.plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(messages, [])
