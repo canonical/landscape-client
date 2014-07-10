@@ -581,7 +581,7 @@ def setup(config):
     decode_base64_ssl_public_certificate(config)
     config.write()
     # Restart the client to ensure that it's using the new configuration.
-    if not config.no_start and not config.otp:
+    if not config.no_start:
         try:
             sysvconfig.restart_landscape()
         except ProcessError:
