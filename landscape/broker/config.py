@@ -32,7 +32,6 @@ class BrokerConfiguration(Configuration):
               - C{urgent_exchange_interval} (C{1*60})
               - C{http_proxy}
               - C{https_proxy}
-              - C{provisioning_otp}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
@@ -63,8 +62,6 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
-        parser.add_option("--provisioning-otp", default="",
-                          help="The OTP to use for a provisioned machine.")
 
         return parser
 

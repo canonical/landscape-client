@@ -820,8 +820,7 @@ url = https://landscape.canonical.com/message-system
                 "--ping-interval", "30",
                 "--http-proxy", "",
                 "--https-proxy", "",
-                "--tags", "",
-                "--provisioning-otp", ""]
+                "--tags", ""]
         config = self.get_config(args)
         setup(config)
         self.assertConfigEqual(
@@ -838,9 +837,7 @@ url = https://landscape.canonical.com/message-system
             "exchange_interval = 900\n"
             "ping_interval = 30\n"
             "ping_url = http://landscape.canonical.com/ping\n"
-            "provisioning_otp = \n"
-            "urgent_exchange_interval = 60\n"
-             % config.data_path)
+            "urgent_exchange_interval = 60\n" % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
         """A computer title is required."""
@@ -859,21 +856,6 @@ url = https://landscape.canonical.com/message-system
 
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
-
-    def test_silent_setup_with_provisioning_otp(self):
-        """
-        If the provisioning OTP is specified, there is no need to pass the
-        account name and the computer title.
-        """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.replay()
-
-        config = self.get_config(["--silent", "--provisioning-otp", "otp1"])
-        setup(config)
-
-        self.assertEqual("otp1", config.provisioning_otp)
 
     def test_silent_script_users_imply_script_execution_plugin(self):
         """

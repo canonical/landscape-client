@@ -472,11 +472,10 @@ def setup_http_proxy(config):
 def check_account_name_and_password(config):
     """
     Ensure that silent configurations which plan to start landscape-client are
-    either configured for OTP or have both an account_name and computer title.
+    have both an account_name and computer title.
     """
     if config.silent and not config.no_start:
-        if not (config.get("otp") or config.provisioning_otp or
-                (config.get("account_name") and config.get("computer_title"))):
+        if not (config.get("account_name") and config.get("computer_title")):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
 
