@@ -8,5 +8,4 @@ usr/bin/landscape-package-changer
 usr/bin/landscape-package-reporter
 usr/bin/landscape-release-upgrader
 usr/bin/landscape-dbus-proxy
-usr/share/landscape/cloud-default.conf
 usr/lib/landscape
