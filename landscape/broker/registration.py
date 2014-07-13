@@ -83,7 +83,7 @@ class RegistrationHandler(object):
     """
 
     def __init__(self, config, identity, reactor, exchange, pinger,
-                 message_store, fetch_async=None):
+                 message_store):
         self._config = config
         self._identity = identity
         self._reactor = reactor
@@ -98,8 +98,6 @@ class RegistrationHandler(object):
         self._exchange.register_message("registration",
                                         self._handle_registration)
         self._should_register = None
-        self._fetch_async = fetch_async
-        self._ec2_data = None
         self._juju_data = None
 
     def should_register(self):
@@ -189,7 +187,9 @@ class RegistrationHandler(object):
             message["access_group"] = group
 
         if self._juju_data is not None:
-            message["juju-info-list"] = self._juju_data
+            juju_info_list, juju_info = self._juju_data
+            message["juju-info"] = juju_info
+            message["juju-info-list"] = juju_info_list
 
         # The computer is a normal computer, possibly a container.
         with_word = "with" if bool(registration_key) else "without"

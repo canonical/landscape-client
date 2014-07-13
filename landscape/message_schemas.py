@@ -54,13 +54,6 @@ OPERATION_RESULT = Message(
      "result-text": Unicode()},
     optional=["result-code", "result-text"])
 
-#ACTION_INFO is obsolete.
-ACTION_INFO = Message(
-    "action-info",
-    {"response-id": Int(),
-     "success": Bool(),
-     "kind": Bytes(),
-     "parameters": Bytes()})
 
 COMPUTER_INFO = Message(
     "computer-info",
@@ -191,38 +184,17 @@ REGISTER = Message(
      "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
      "container-info": Unicode(),
+     "juju-info": KeyDict({"environment-uuid": Unicode(),
+                           "machine-id": Unicode(),
+                           "api-addresses": List(Unicode())}),
+     # XXX Old Juju registration field, supported in the 14.08 release, could
+     # be dropped if we stop supporting charm version
+     # cs:trusty/landscape-client-4
      "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
      "access_group": Unicode()},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "juju-info", "juju-info-list", "unicode",
-              "access_group"])
-
-
-REGISTER_PROVISIONED_MACHINE = Message(
-    "register-provisioned-machine",
-    {"otp": Bytes()})
-
-
-REGISTER_CLOUD_VM = Message(
-    "register-cloud-vm",
-    {"hostname": Unicode(),
-     "otp": Any(Bytes(), Constant(None)),
-     "instance_key": Unicode(),
-     "account_name": Any(Unicode(), Constant(None)),
-     "registration_password": Any(Unicode(), Constant(None)),
-     "reservation_key": Unicode(),
-     "public_hostname": Unicode(),
-     "local_hostname": Unicode(),
-     "kernel_key": Any(Unicode(), Constant(None)),
-     "ramdisk_key": Any(Unicode(), Constant(None)),
-     "launch_index": Int(),
-     "image_key": Unicode(),
-     "tags": Any(Unicode(), Constant(None)),
-     "vm-info": Bytes(),
-     "public_ipv4": Unicode(),
-     "local_ipv4": Unicode(),
-     "access_group": Unicode()},
-    optional=["tags", "vm-info", "public_ipv4", "local_ipv4", "access_group"])
+              "container-info", "juju-info", "juju-info-list",
+              "juju-environment", "access_group"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": Unicode(),
@@ -467,8 +439,7 @@ message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
                HARDWARE_INVENTORY, HARDWARE_INFO, LOAD_AVERAGE, MEMORY_INFO,
-               RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
-               REGISTER, REGISTER_CLOUD_VM, REGISTER_PROVISIONED_MACHINE,
+               RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE, REGISTER,
                TEMPERATURE, PROCESSOR_INFO, USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST,
