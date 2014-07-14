@@ -66,7 +66,6 @@ install: build
 
 	# Keep in mind that some installed files are defined in setup.py
 	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
-	install -D -o root -g root -m 644 debian/cloud-default.conf $(root_dir)/usr/share/landscape/cloud-default.conf
 	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)/usr/lib/landscape/apt-update
 
 binary-indep:
