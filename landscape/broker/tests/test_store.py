@@ -368,6 +368,20 @@ class MessageStoreTest(LandscapeTest):
                          [{"type": "data", "api": "whatever",
                            "data": u"\N{HIRAGANA LETTER A}"}])
 
+    def test_message_is_coerced_to_its_api_schema(self):
+        """
+        A message gets coerced to the schema of the API its targeted to.
+        """
+        # Add a new schema for the 'data' message type, with a slightly
+        # different definition.
+        self.store.add_schema(Message("data", {"data": Int()}, api="3.3"))
+
+        # The message is coerced against the new schema.
+        self.store.add({"type": "data", "data": 123, "api": "3.3"})
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "data", "api": "3.3", "data": 123}])
+
     def test_count_pending_messages(self):
         """It is possible to get the total number of pending messages."""
         self.assertEqual(self.store.count_pending_messages(), 0)

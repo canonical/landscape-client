@@ -99,7 +99,6 @@ import uuid
 
 from landscape.lib import bpickle
 from landscape.lib.fs import create_file
-from landscape import SERVER_API
 
 
 HELD = "h"
@@ -289,7 +288,8 @@ class MessageStore(object):
 
         The schema must be an instance of L{landscape.schema.Message}.
         """
-        self._schemas[schema.type] = schema
+        schemas = self._schemas.setdefault(schema.type, {})
+        schemas[schema.api] = schema
 
     def is_pending(self, message_id):
         """Return bool indicating if C{message_id} still hasn't been delivered.
@@ -345,10 +345,15 @@ class MessageStore(object):
         if self._persist.get("blackhole-messages"):
             logging.debug("Dropped message, awaiting resync.")
             return
-        message = self._schemas[message["type"]].coerce(message)
 
         if "api" not in message:
             message["api"] = self.get_server_api()
+
+        schemas = self._schemas[message["type"]]
+        schema = schemas.get(message["api"])
+        if not schema:
+            schema = schemas[None]
+        message = schema.coerce(message)
 
         message_data = bpickle.dumps(message)
 

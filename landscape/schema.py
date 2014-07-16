@@ -201,13 +201,15 @@ class Message(KeyDict):
 
     @param type: The type of the message. The C{type} key will need to
         match this as a constant.
-
     @param schema: A dict of additional schema in a format L{KeyDict}
         will accept.
     @param optional: An optional list of keys that should be optional.
+    @param api: The server API version needed to send this message,
+        if C{None} any version is fine.
     """
-    def __init__(self, type, schema, optional=None):
+    def __init__(self, type, schema, optional=None, api=None):
         self.type = type
+        self.api = api
         schema["timestamp"] = Float()
         schema["api"] = Any(Bytes(), Constant(None))
         schema["type"] = Constant(type)
