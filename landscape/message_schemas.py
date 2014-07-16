@@ -211,6 +211,8 @@ REGISTER_PROVISIONED_MACHINE = Message(
     {"otp": Bytes()})
 
 
+# XXX The register-cloud-vm message is obsolete, it's kept around just to not
+# break older LDS releases that import it. Eventually it shall be dropped.
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
     {"hostname": Unicode(),
