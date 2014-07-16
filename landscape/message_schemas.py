@@ -435,7 +435,7 @@ NETWORK_ACTIVITY = Message(
 UPDATE_MANAGER_INFO = Message("update-manager-info", {"prompt": Unicode()})
 
 
-message_schemas = {}
+message_schemas = []
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
                HARDWARE_INVENTORY, HARDWARE_INFO, LOAD_AVERAGE, MEMORY_INFO,
@@ -448,4 +448,4 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
                CHANGE_HA_SERVICE, JUJU_UNITS_INFO, CLOUD_METADATA]:
-    message_schemas[schema.type] = schema
+    message_schemas.append(schema)
