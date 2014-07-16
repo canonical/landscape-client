@@ -189,6 +189,9 @@ class RegistrationHandler(object):
             message["access_group"] = group
 
         if self._juju_data is not None:
+            # For backwards compatibility, set the juju-info to be one of
+            # the juju infos (it used not to be a list).
+            message["juju-info"] = self._juju_data[0]
             message["juju-info-list"] = self._juju_data
 
         # The computer is a normal computer, possibly a container.
