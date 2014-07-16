@@ -206,6 +206,9 @@ REGISTER = Message(
               "access_group"])
 
 
+# XXX The register-provisioned-machine message is obsolete, it's kept around
+# just to not break older LDS releases that import it. Eventually it shall
+# be dropped.
 REGISTER_PROVISIONED_MACHINE = Message(
     "register-provisioned-machine",
     {"otp": Bytes()})
