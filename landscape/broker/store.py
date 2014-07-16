@@ -99,6 +99,7 @@ import uuid
 
 from landscape.lib import bpickle
 from landscape.lib.fs import create_file
+from landscape.lib.versioning import sort_versions, compare_versions
 
 
 HELD = "h"
@@ -288,8 +289,9 @@ class MessageStore(object):
 
         The schema must be an instance of L{landscape.schema.Message}.
         """
+        api = schema.api or self._api
         schemas = self._schemas.setdefault(schema.type, {})
-        schemas[schema.api] = schema
+        schemas[api] = schema
 
     def is_pending(self, message_id):
         """Return bool indicating if C{message_id} still hasn't been delivered.
@@ -346,13 +348,16 @@ class MessageStore(object):
             logging.debug("Dropped message, awaiting resync.")
             return
 
+        server_api = self.get_server_api()
+
         if "api" not in message:
-            message["api"] = self.get_server_api()
+            message["api"] = server_api
 
         schemas = self._schemas[message["type"]]
-        schema = schemas.get(message["api"])
-        if not schema:
-            schema = schemas[None]
+        for api in sort_versions(schemas.keys()):
+            if compare_versions(server_api, api):
+                schema = schemas[api]
+                break
         message = schema.coerce(message)
 
         message_data = bpickle.dumps(message)
@@ -525,6 +530,6 @@ def get_default_message_store(*args, **kwargs):
     """
     from landscape. message_schemas import message_schemas
     store = MessageStore(*args, **kwargs)
-    for schema in message_schemas.values():
+    for schema in message_schemas:
         store.add_schema(schema)
     return store

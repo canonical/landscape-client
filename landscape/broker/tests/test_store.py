@@ -329,10 +329,10 @@ class MessageStoreTest(LandscapeTest):
         """
         It's possible to change the server API version that messages
         """
-        self.store.set_server_api("X.Y")
+        self.store.set_server_api("3.3")
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": "X.Y"}])
+                         [{"type": "empty", "api": "3.3"}])
 
     def test_custom_api_on_messages(self):
         self.store.add({"type": "empty", "api": "X.Y"})
@@ -372,15 +372,32 @@ class MessageStoreTest(LandscapeTest):
         """
         A message gets coerced to the schema of the API its targeted to.
         """
+        self.store.set_server_api("3.3")
         # Add a new schema for the 'data' message type, with a slightly
         # different definition.
         self.store.add_schema(Message("data", {"data": Int()}, api="3.3"))
 
         # The message is coerced against the new schema.
-        self.store.add({"type": "data", "data": 123, "api": "3.3"})
+        self.store.add({"type": "data", "data": 123})
         self.assertEqual(
             self.store.get_pending_messages(),
             [{"type": "data", "api": "3.3", "data": 123}])
+
+    def test_message_is_coerced_to_highest_compatible_api_schema(self):
+        """
+        A message gets coerced to the schema of the highest compatible
+        API version.
+        """
+        # Add a new schema for the 'data' message type, with a slightly
+        # different definition.
+        self.store.set_server_api("3.2")
+        self.store.add_schema(Message("data", {"data": Int()}, api="3.3"))
+
+        # The message is coerced against the older schema.
+        self.store.add({"type": "data", "data": "foo"})
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "data", "api": "3.2", "data": "foo"}])
 
     def test_count_pending_messages(self):
         """It is possible to get the total number of pending messages."""
