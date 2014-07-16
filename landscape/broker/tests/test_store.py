@@ -304,19 +304,32 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "data", "data": 1, "api": SERVER_API}])
 
-    def test_api_attribute(self):
-        self.assertEqual(self.store.api, SERVER_API)
-        new_api = "New API version!"
-        self.store.api = new_api
-        self.assertEqual(self.store.api, new_api)
+    def test_get_server_api_default(self):
+        """
+        By default the initial server API version is 3.2.
+        """
+        self.assertEqual("3.2", self.store.get_server_api())
+
+    def test_set_server_api(self):
+        """
+        It's possible to change the server API version.
+        """
+        self.store.set_server_api("3.3")
+        self.assertEqual("3.3", self.store.get_server_api())
 
     def test_default_api_on_messages(self):
+        """
+        By default messages are tagged with the 3.2 server API.
+        """
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": SERVER_API}])
+                         [{"type": "empty", "api": "3.2"}])
 
     def test_custom_api_on_store(self):
-        self.store.api = "X.Y"
+        """
+        It's possible to change the server API version that messages
+        """
+        self.store.set_server_api("X.Y")
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "empty", "api": "X.Y"}])
@@ -354,6 +367,20 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "data", "api": "whatever",
                            "data": u"\N{HIRAGANA LETTER A}"}])
+
+    def test_message_is_coerced_to_its_api_schema(self):
+        """
+        A message gets coerced to the schema of the API its targeted to.
+        """
+        # Add a new schema for the 'data' message type, with a slightly
+        # different definition.
+        self.store.add_schema(Message("data", {"data": Int()}, api="3.3"))
+
+        # The message is coerced against the new schema.
+        self.store.add({"type": "data", "data": 123, "api": "3.3"})
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "data", "api": "3.3", "data": 123}])
 
     def test_count_pending_messages(self):
         """It is possible to get the total number of pending messages."""

@@ -2,10 +2,14 @@ DEBIAN_REVISION = ""
 UPSTREAM_VERSION = "14.04"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
-# The "server-api" field of outgoing messages will be set to this value, and
-# used by the server message system to lookup the correct MessageAPI adapter
-# for handling the messages sent by the client. Bump it when the schema of any
-# of the messages sent by the client changes in a backward-incompatible way.
+# The highest server API version that the client is capable of speaking. The
+# client will use it, unless the server declares to support only a lower
+# version. In that case the server's version will be used. The client will set
+# the X-Message-API HTTP header and the "server-api" payload field of outgoing
+# requests to this value, and the server message system will use it to lookup
+# the correct MessageAPI adapter for handling the messages sent by the client.
+# Bump it when the schema of any of the messages sent by the client changes in
+# a backward-incompatible way.
 #
 # Changelog:
 #

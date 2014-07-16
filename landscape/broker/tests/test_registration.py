@@ -4,7 +4,6 @@ import socket
 
 from landscape.broker.registration import (
     InvalidCredentialsError, Identity)
-
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
     BrokerConfigurationHelper, RegistrationHelper)

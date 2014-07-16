@@ -536,10 +536,6 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "c", "api": "1.1"})
         self.mstore.add({"type": "d", "api": "1.1"})
 
-        # Simulate an old 2.0 client, which has no API on messages.
-        self.mstore.add({"type": "e", "api": None})
-        self.mstore.add({"type": "f", "api": None})
-
         self.exchanger.exchange()
 
         payload = self.transport.payloads[-1]
@@ -559,16 +555,6 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(payload.get("client-api"), CLIENT_API)
         self.assertEqual(payload.get("server-api"), "1.1")
         self.assertEqual(self.transport.message_api, "1.1")
-
-        self.exchanger.exchange()
-
-        payload = self.transport.payloads[-1]
-        self.assertMessages(payload["messages"],
-                            [{"type": "e", "api": None},
-                             {"type": "f", "api": None}])
-        self.assertEqual(payload.get("client-api"), CLIENT_API)
-        self.assertEqual(payload.get("server-api"), "2.0")
-        self.assertEqual(self.transport.message_api, "2.0")
 
     def test_exchange_token(self):
         """
@@ -838,6 +824,35 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
         self.assertEqual(messages, [("one", msg), ("two", msg)])
+
+    def test_server_api_with_old_server(self):
+        """
+        If a server doesn't indicate which is its highest server-api, it
+        will be 3.2 for sure.
+        """
+        self.transport.extra.pop("server-api", None)
+        self.exchanger.exchange()
+        self.assertEqual("3.2", self.mstore.get_server_api())
+
+    def test_wb_client_with_older_api_and_server_with_newer(self):
+        """
+        If a server notifies us that it case use a very new API, but we
+        don't know how to speak it, we keep using ours.
+        """
+        self.exchanger._api = "3.3"
+        self.transport.extra["server-api"] = "3.4"
+        self.exchanger.exchange()
+        self.assertEqual("3.3", self.mstore.get_server_api())
+
+    def test_wb_client_with_newer_api_and_server_with_older(self):
+        """
+        If a server notifies us that it can use an API which is older
+        than the one we support, we'll just use the server API.
+        """
+        self.exchanger._api = "3.4"
+        self.transport.extra["server-api"] = "3.3"
+        self.exchanger.exchange()
+        self.assertEqual("3.3", self.mstore.get_server_api())
 
     def test_server_uuid_is_stored_on_message_store(self):
         self.transport.extra["server-uuid"] = "first-uuid"
