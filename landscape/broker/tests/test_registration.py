@@ -509,12 +509,12 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         the registration message.
         """
         self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api("3.3")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
 
         messages = self.mstore.get_pending_messages()
-        return
         self.assertEqual(
             {"environment-uuid": "DEAD-BEEF",
              "machine-id": "1",
@@ -527,6 +527,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         key parts of it are sent in the registration message.
         """
         self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api("3.3")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
@@ -553,6 +554,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
             dirname=self.config.juju_directory, suffix=".json")
 
         self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api("3.3")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")

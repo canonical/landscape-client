@@ -13,6 +13,7 @@ import logging
 from twisted.internet.defer import Deferred
 
 from landscape.lib.juju import get_juju_info
+from landscape.lib.versioning import compare_versions
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
 from landscape.lib.vm_info import get_vm_info, get_container_info
@@ -188,7 +189,9 @@ class RegistrationHandler(object):
 
         if self._juju_data is not None:
             juju_info_list, juju_info = self._juju_data
-            message["juju-info"] = juju_info
+            server_api = self._message_store.get_server_api()
+            if compare_versions(server_api, "3.3"):
+                message["juju-info"] = juju_info
             message["juju-info-list"] = juju_info_list
 
         # The computer is a normal computer, possibly a container.

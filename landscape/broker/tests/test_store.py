@@ -8,7 +8,6 @@ from landscape.schema import InvalidError, Message, Int, Bytes, Unicode
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
-from landscape import SERVER_API
 
 
 class MessageStoreTest(LandscapeTest):
@@ -133,7 +132,7 @@ class MessageStoreTest(LandscapeTest):
         self.assertMessages(messages,
                             [{"type": "data",
                               "data": "A thing",
-                              "api": SERVER_API}])
+                              "api": "3.2"}])
 
     def test_max_pending(self):
         for i in range(10):
@@ -271,7 +270,7 @@ class MessageStoreTest(LandscapeTest):
         messages = self.store.get_pending_messages()
 
         self.assertEqual(messages, [{"type": "data", "data": "2",
-                                     "api": SERVER_API}])
+                                     "api": "3.2"}])
 
         self.store.set_pending_offset(len(messages))
 
@@ -302,7 +301,7 @@ class MessageStoreTest(LandscapeTest):
         self.mocker.verify()
         self.mocker.reset()
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "data", "data": 1, "api": SERVER_API}])
+                         [{"type": "data", "data": 1, "api": "3.2"}])
 
     def test_get_server_api_default(self):
         """

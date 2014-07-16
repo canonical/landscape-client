@@ -184,17 +184,71 @@ REGISTER = Message(
      "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
      "container-info": Unicode(),
-     "juju-info": KeyDict({"environment-uuid": Unicode(),
-                           "machine-id": Unicode(),
-                           "api-addresses": List(Unicode())}),
-     # XXX Old Juju registration field, supported in the 14.08 release, could
-     # be dropped if we stop supporting charm version
-     # cs:trusty/landscape-client-4
+     "juju-info": KeyDict(juju_data, optional=["private-address"]),
+     # Because of backwards compatibility we need another member with the list
+     # of juju-info, so it can safely be ignored by old servers.
      "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
      "access_group": Unicode()},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "juju-info", "juju-info-list",
-              "juju-environment", "access_group"])
+              "container-info", "juju-info", "juju-info-list", "unicode",
+              "access_group"])
+
+
+REGISTER_3_3 = Message(
+    "register",
+    # The term used in the UI is actually 'registration_key', but we keep
+    # the message schema field as 'registration_password' in case a new
+    # client contacts an older server.
+    {"registration_password": Any(Unicode(), Constant(None)),
+     "computer_title": Unicode(),
+     "hostname": Unicode(),
+     "account_name": Unicode(),
+     "tags": Any(Unicode(), Constant(None)),
+     "vm-info": Bytes(),
+     "container-info": Unicode(),
+     "juju-info": KeyDict({"environment-uuid": Unicode(),
+                           "api-addresses": List(Unicode()),
+                           "machine-id": Unicode()}),
+     # XXX temporary field with unit info, will be dropped when we complete
+     # the migration to machine info.
+     "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
+     "access_group": Unicode()},
+    api="3.3",
+    optional=["registration_password", "tags", "vm-info",
+              "container-info", "access_group", "juju-info-list"])
+
+
+# XXX The register-provisioned-machine message is obsolete, it's kept around
+# just to not break older LDS releases that import it. Eventually it shall
+# be dropped.
+REGISTER_PROVISIONED_MACHINE = Message(
+    "register-provisioned-machine",
+    {"otp": Bytes()})
+
+
+# XXX The register-cloud-vm message is obsolete, it's kept around just to not
+# break older LDS releases that import it. Eventually it shall be dropped.
+REGISTER_CLOUD_VM = Message(
+    "register-cloud-vm",
+    {"hostname": Unicode(),
+     "otp": Any(Bytes(), Constant(None)),
+     "instance_key": Unicode(),
+     "account_name": Any(Unicode(), Constant(None)),
+     "registration_password": Any(Unicode(), Constant(None)),
+     "reservation_key": Unicode(),
+     "public_hostname": Unicode(),
+     "local_hostname": Unicode(),
+     "kernel_key": Any(Unicode(), Constant(None)),
+     "ramdisk_key": Any(Unicode(), Constant(None)),
+     "launch_index": Int(),
+     "image_key": Unicode(),
+     "tags": Any(Unicode(), Constant(None)),
+     "vm-info": Bytes(),
+     "public_ipv4": Unicode(),
+     "local_ipv4": Unicode(),
+     "access_group": Unicode()},
+    optional=["tags", "vm-info", "public_ipv4", "local_ipv4", "access_group"])
+
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": Unicode(),
@@ -447,5 +501,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-               CHANGE_HA_SERVICE, JUJU_UNITS_INFO, CLOUD_METADATA]:
+               CHANGE_HA_SERVICE, JUJU_UNITS_INFO, CLOUD_METADATA,
+               REGISTER_3_3]:
     message_schemas.append(schema)
