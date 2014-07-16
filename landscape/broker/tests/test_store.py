@@ -304,19 +304,32 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "data", "data": 1, "api": SERVER_API}])
 
-    def test_api_attribute(self):
-        self.assertEqual(self.store.api, SERVER_API)
-        new_api = "New API version!"
-        self.store.api = new_api
-        self.assertEqual(self.store.api, new_api)
+    def test_get_server_api_default(self):
+        """
+        By default the initial server API version is 3.2.
+        """
+        self.assertEqual("3.2", self.store.get_server_api())
+
+    def test_set_server_api(self):
+        """
+        It's possible to change the server API version.
+        """
+        self.store.set_server_api("3.3")
+        self.assertEqual("3.3", self.store.get_server_api())
 
     def test_default_api_on_messages(self):
+        """
+        By default messages are tagged with the 3.2 server API.
+        """
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": SERVER_API}])
+                         [{"type": "empty", "api": "3.2"}])
 
     def test_custom_api_on_store(self):
-        self.store.api = "X.Y"
+        """
+        It's possible to change the server API version that messages
+        """
+        self.store.set_server_api("X.Y")
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "empty", "api": "X.Y"}])

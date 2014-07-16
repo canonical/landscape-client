@@ -6,10 +6,10 @@ import socket
 
 from twisted.internet.defer import succeed, fail
 
+from landscape import SERVER_API
 from landscape.broker.registration import (
     InvalidCredentialsError, RegistrationHandler, is_cloud_managed, EC2_HOST,
     EC2_API, Identity)
-
 from landscape.broker.config import BrokerConfiguration
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
@@ -1254,7 +1254,8 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
         self.config.provisioning_otp = "ohteepee"
         self.reactor.fire("pre-exchange")
 
-        self.assertMessages([{"otp": "ohteepee", "timestamp": 0, "api": "3.2",
+        self.assertMessages([{"otp": "ohteepee", "timestamp": 0,
+                              "api": SERVER_API,
                               "type": "register-provisioned-machine"}],
                             self.mstore.get_pending_messages())
         self.assertEqual(u"INFO: Queueing message to register with OTP as a"
@@ -1263,7 +1264,8 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
                          self.logfile.getvalue().strip())
 
         self.exchanger.exchange()
-        self.assertMessages([{"otp": "ohteepee", "timestamp": 0, "api": "3.2",
+        self.assertMessages([{"otp": "ohteepee", "timestamp": 0,
+                              "api": SERVER_API,
                               "type": "register-provisioned-machine"}],
                             self.transport.payloads[0]["messages"])
 

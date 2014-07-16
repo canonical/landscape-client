@@ -124,7 +124,12 @@ class MessageStore(object):
     @param directory: base of the file system hierarchy
     """
 
-    api = SERVER_API
+    # The initial message API version that we use to communicate with the
+    # server should be always 3.2, i.e. a version that is known to be
+    # understood by Landscape hosted and by all LDS releases. After the
+    # first exchange the client may decide to upgrade to a newer version
+    # in case the server supports it.
+    _api = "3.2"
 
     def __init__(self, persist, directory, directory_size=1000):
         self._directory = directory
@@ -198,6 +203,23 @@ class MessageStore(object):
     def set_server_uuid(self, uuid):
         """Change the known UUID from the server we're communicating to."""
         self._persist.set("server_uuid", uuid)
+
+    def get_server_api(self):
+        """Return the server API version that client has decided to speak.
+
+        The client will always try to speak the highest server message API
+        version that it knows and that the server declares to be capable
+        of handling.
+        """
+        return self._persist.get("server_api", self._api)
+
+    def set_server_api(self, server_api):
+        """Change the server API version used to communicate with the server.
+
+        All messages added to the store after calling this method will be
+        tagged with the given server API version.
+        """
+        self._persist.set("server_api", server_api)
 
     def get_exchange_token(self):
         """Get the authentication token to use for the next exchange."""
@@ -326,7 +348,7 @@ class MessageStore(object):
         message = self._schemas[message["type"]].coerce(message)
 
         if "api" not in message:
-            message["api"] = self.api
+            message["api"] = self.get_server_api()
 
         message_data = bpickle.dumps(message)
 
