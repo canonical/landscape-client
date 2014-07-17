@@ -353,6 +353,8 @@ class MessageStore(object):
         if "api" not in message:
             message["api"] = server_api
 
+        # We apply the schema with the highest API version that is greater
+        # or equal to the API version the message is tagged with.
         schemas = self._schemas[message["type"]]
         for api in sort_versions(schemas.keys()):
             if compare_versions(server_api, api):
