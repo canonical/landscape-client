@@ -161,8 +161,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("register", messages[0]["type"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
-                         "'account_name' without a password.\n    "
-                         "INFO: Sending registration message to exchange.")
+                         "'account_name' without a password.")
 
     def test_queue_message_on_exchange_with_vm_info(self):
         """
@@ -182,8 +181,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("vmware", messages[0]["vm-info"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
-                         "'account_name' without a password.\n    "
-                         "INFO: Sending registration message to exchange.")
+                         "'account_name' without a password.")
 
     def test_queue_message_on_exchange_with_lxc_container(self):
         """
@@ -214,8 +212,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("SEKRET", password)
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
-                         "'account_name' with a password.\n    "
-                         "INFO: Sending registration message to exchange.")
+                         "'account_name' with a password.")
 
     def test_queue_message_on_exchange_with_tags(self):
         """
@@ -233,8 +230,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags computer,tag with a "
-                         "password.\n    "
-                         "INFO: Sending registration message to exchange.")
+                         "password.")
 
     def test_queue_message_on_exchange_with_invalid_tags(self):
         """
@@ -253,8 +249,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue().strip(),
                          "ERROR: Invalid tags provided for registration.\n    "
                          "INFO: Queueing message to register with account "
-                         "'account_name' with a password.\n    "
-                         "INFO: Sending registration message to exchange.")
+                         "'account_name' with a password.")
 
     def test_queue_message_on_exchange_with_unicode_tags(self):
         """
@@ -274,8 +269,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags prova\xc4\xb5o "
-                         "with a password.\n    "
-                         "INFO: Sending registration message to exchange.")
+                         "with a password.")
 
     def test_queue_message_on_exchange_with_access_group(self):
         """
@@ -292,8 +286,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' in access group 'dinosaurs' and "
-                         "tags server,london without a password.\n    "
-                         "INFO: Sending registration message to exchange.")
+                         "tags server,london without a password.")
 
     def test_queue_message_on_exchange_with_empty_access_group(self):
         """
@@ -575,40 +568,3 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
                      "unit-name": "service-2/0",
                      "private-address": "127.0.0.1"}
         self.assertIn(expected2, juju_info)
-
-
-class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
-
-    def test_provisioned_machine_registration_with_otp(self):
-        """
-        Register provisioned machines using an OTP.
-        """
-        self.mstore.set_accepted_types(["register-provisioned-machine"])
-        self.config.account_name = ""
-        self.config.provisioning_otp = "ohteepee"
-        self.reactor.fire("pre-exchange")
-
-        self.assertMessages([{"otp": "ohteepee", "timestamp": 0, "api": "3.2",
-                              "type": "register-provisioned-machine"}],
-                            self.mstore.get_pending_messages())
-        self.assertEqual(u"INFO: Queueing message to register with OTP as a"
-                         u" newly provisioned machine.\n    "
-                         "INFO: Sending registration message to exchange.",
-                         self.logfile.getvalue().strip())
-
-        self.exchanger.exchange()
-        self.assertMessages([{"otp": "ohteepee", "timestamp": 0, "api": "3.2",
-                              "type": "register-provisioned-machine"}],
-                            self.transport.payloads[0]["messages"])
-
-    def test_provisioned_machine_registration_with_empty_otp(self):
-        """
-        No message should be sent when an empty OTP is passed.
-        """
-        self.mstore.set_accepted_types(["register-provisioned-machine"])
-        self.config.account_name = ""
-        self.config.provisioning_otp = ""
-        self.reactor.fire("pre-exchange")
-
-        self.assertMessages([], self.mstore.get_pending_messages())
-        self.assertEqual(u"", self.logfile.getvalue().strip())
