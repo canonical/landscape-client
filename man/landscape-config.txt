@@ -65,12 +65,6 @@ OPTIONS
   --script-users=USERS     A comma-separated list of users to allow scripts to
                            run. To allow scripts to be run by any user, 
                            enter: ALL.
-  --server-autodiscovery=BOOLEAN    Whether to enable server autodiscovery or not.
-                           Defaults to "False".
-  --autodiscovery-srv-query-string=QUERY    The autodiscovery string for DNS SRV
-                           queries. Defaults to "_landscape._tcp.localdomain".
-  --autodiscover-a-query-string=QUERY   The autodiscovery string for DNS A queries.
-                           Defaults to "landscape.localdomain".
   --include-manager-plugins=PLUGINS   A comma-separated list of manager 
                            plugins to load explicitly.
   -n, --no-start           Don't start the client automatically.

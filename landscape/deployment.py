@@ -350,10 +350,6 @@ class Configuration(BaseConfiguration):
               - C{url} (C{"http://landscape.canonical.com/message-system"})
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
               - C{ssl_public_key}
-              - C{server_autodiscover} (C{"false"})
-              - C{autodiscover_srv_query_string}
-                    (C{"_tcp._landscape.localdomain"})
-              - C{autodiscover_a_query_string} (C{"landscape.localdomain"})
               - C{ignore_sigint} (C{False})
         """
         parser = super(Configuration, self).make_parser()
@@ -375,14 +371,6 @@ class Configuration(BaseConfiguration):
         parser.add_option("-k", "--ssl-public-key",
                           help="The public SSL key to verify the server. "
                                "Only used if the given URL is https.")
-        parser.add_option("--server-autodiscover", type="string",
-                          default=False, help="Enable server autodiscovery.")
-        parser.add_option("--autodiscover-srv-query-string", type="string",
-                          default="_landscape._tcp.localdomain",
-                          help="autodiscovery string for DNS SRV queries")
-        parser.add_option("--autodiscover-a-query-string", type="string",
-                          default="landscape.localdomain",
-                          help="autodiscovery string for DNS A queries")
         parser.add_option("--ignore-sigint", action="store_true",
                           default=False, help="Ignore interrupt signals.")
         parser.add_option("--ignore-sigusr1", action="store_true",
@@ -407,16 +395,6 @@ class Configuration(BaseConfiguration):
                           help=SUPPRESS_HELP)
 
         return parser
-
-    def load(self, args):
-        """
-        Load configuration data from command line arguments and a config file.
-        """
-        super(Configuration, self).load(args)
-
-        if not isinstance(self.server_autodiscover, bool):
-            autodiscover = str(self.server_autodiscover).lower()
-            self.server_autodiscover = (autodiscover == "true")
 
     @property
     def sockets_path(self):

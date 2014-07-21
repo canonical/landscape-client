@@ -15,7 +15,7 @@ from landscape.configuration import (
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
-    fetch_base64_ssl_public_certificate, bootstrap_tree)
+    bootstrap_tree)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -820,7 +820,6 @@ url = https://landscape.canonical.com/message-system
                 "--ping-interval", "30",
                 "--http-proxy", "",
                 "--https-proxy", "",
-                "--otp", "",
                 "--tags", "",
                 "--provisioning-otp", ""]
         config = self.get_config(args)
@@ -837,7 +836,6 @@ url = https://landscape.canonical.com/message-system
             "https_proxy = \n"
             "url = https://landscape.canonical.com/message-system\n"
             "exchange_interval = 900\n"
-            "otp = \n"
             "ping_interval = 30\n"
             "ping_url = http://landscape.canonical.com/ping\n"
             "provisioning_otp = \n"
@@ -861,20 +859,6 @@ url = https://landscape.canonical.com/message-system
 
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
-
-    def test_silent_setup_with_otp(self):
-        """
-        If the OTP is specified, there is no need to pass the account name and
-        the computer title.
-        """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        self.mocker.replay()
-
-        config = self.get_config(["--silent", "--otp", "otp1"])
-        setup(config)
-
-        self.assertEqual("otp1", config.otp)
 
     def test_silent_setup_with_provisioning_otp(self):
         """
@@ -2160,84 +2144,3 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         self.assertEqual(key_filename,
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
-
-    def test_fetch_base64_ssl(self):
-        """
-        L{fetch_base64_ssl_public_certificate} should pull a JSON object from
-        http://providedhostname/get-ca-cert. And return the custom_ca_cert data
-        if it exists.
-        """
-        base64_cert = "base64:  MTIzNDU2Nzg5MA=="  # encoded woo hoo
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
-        self.mocker.result(
-            "{\"custom_ca_cert\": \"%s\"}" % base64_cert)
-        self.mocker.replay()
-
-        def check_info(info):
-            self.assertEqual(
-                "Fetching CA certificate from fakehost if available...",
-                str(info))
-
-        content = fetch_base64_ssl_public_certificate("fakehost",
-                                                      on_info=check_info)
-        self.assertEqual(base64_cert, content)
-
-    def test_fetch_base64_ssl_no_custom_ca(self):
-        """
-        L{fetch_base64_ssl_public_certificate} should pull a JSON object from
-        http://providedhostname/get-ca-cert. And return the custom_ca_cert data
-        if it exists, otherwise it should return an empty string.""
-        """
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
-        self.mocker.result("{}")
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock(
-            "Fetching CA certificate from fakehost if available...")
-        print_text_mock("No custom CA certificate available for fakehost.")
-        self.mocker.replay()
-
-        content = fetch_base64_ssl_public_certificate("fakehost",
-                                                      on_info=print_text)
-        self.assertEqual("", content)
-
-    def test_fetch_base64_ssl_with_http_code_fetch_error(self):
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
-        self.mocker.throw(HTTPCodeError(404, ""))
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock(
-            "Fetching CA certificate from fakehost if available...")
-        self.mocker.replay()
-
-        def check_error(error):
-            self.assertEqual("Unable to fetch CA certificate from discovered "
-                             "server fakehost: Server does not support client "
-                             "auto-registation.",
-                             str(error))
-
-        content = fetch_base64_ssl_public_certificate("fakehost",
-                                                      on_info=print_text,
-                                                      on_error=check_error)
-        self.assertEquals("", content)
-
-    def test_fetch_base64_ssl_with_pycurl_error(self):
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
-        self.mocker.throw(PyCurlError(60, "pycurl message"))
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock(
-            "Fetching CA certificate from fakehost if available...")
-        self.mocker.replay()
-
-        def check_error(error):
-            self.assertEqual("Unable to fetch CA certificate from fakehost: "
-                             "Error 60: pycurl message",
-                             str(error))
-
-        content = fetch_base64_ssl_public_certificate("fakehost",
-                                                      on_info=print_text,
-                                                      on_error=check_error)
-        self.assertEquals("", content)

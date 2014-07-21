@@ -523,57 +523,6 @@ class ConfigurationTest(LandscapeTest):
         options = self.parser.parse_args([])[0]
         self.assertEqual(options.ssl_public_key, None)
 
-    def test_server_autodiscover_option(self):
-        """
-        Ensure options.server_autodiscover option can be read by parse_args.
-        """
-        options = self.parser.parse_args(["--server-autodiscover=true"])[0]
-        self.assertEqual(options.server_autodiscover, "true")
-
-    def test_server_autodiscover_default(self):
-        """Ensure parse_args sets appropriate server_autodiscover default."""
-        options = self.parser.parse_args([])[0]
-        self.assertEqual(options.server_autodiscover, False)
-
-    def test_autodiscover_srv_query_string_option(self):
-        """
-        Ensure options.autodiscover_srv_query_string option can be read by
-        parse_args.
-        """
-        options = self.parser.parse_args(
-            ["--autodiscover-srv-query-string",
-             "_tcp._landscape.someotherdomain"])[0]
-        self.assertEqual(options.autodiscover_srv_query_string,
-                         "_tcp._landscape.someotherdomain")
-
-    def test_autodiscover_srv_query_string_default(self):
-        """
-        Ensure parse_args sets appropriate autodiscover_srv_query_string
-        default.
-        """
-        options = self.parser.parse_args([])[0]
-        self.assertEqual(options.autodiscover_srv_query_string,
-                         "_landscape._tcp.localdomain")
-
-    def test_autodiscover_a_query_string_option(self):
-        """
-        Ensure options.autodiscover_a_query_string option can be read by
-        parse_args.
-        """
-        options = self.parser.parse_args(
-            ["--autodiscover-a-query-string", "customname.mydomain"])[0]
-        self.assertEqual(options.autodiscover_a_query_string,
-                         "customname.mydomain")
-
-    def test_autodiscover_a_query_string_default(self):
-        """
-        Ensure parse_args sets appropriate autodiscover_a_query_string
-        default.
-        """
-        options = self.parser.parse_args([])[0]
-        self.assertEqual(options.autodiscover_a_query_string,
-                         "landscape.localdomain")
-
     def test_log_file_option(self):
         """Ensure options.log_dir option can be read by parse_args."""
         options = self.parser.parse_args(
