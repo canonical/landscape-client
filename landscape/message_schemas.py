@@ -206,6 +206,9 @@ REGISTER = Message(
               "access_group"])
 
 
+# XXX The register-provisioned-machine message is obsolete, it's kept around
+# just to not break older LDS releases that import it the last LDS release
+# to have it is 14.07). Eventually it shall be dropped.
 REGISTER_PROVISIONED_MACHINE = Message(
     "register-provisioned-machine",
     {"otp": Bytes()})
@@ -479,12 +482,12 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
                HARDWARE_INVENTORY, HARDWARE_INFO, LOAD_AVERAGE, MEMORY_INFO,
                RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
-               REGISTER, REGISTER_CLOUD_VM, REGISTER_PROVISIONED_MACHINE,
+               REGISTER,
                TEMPERATURE, PROCESSOR_INFO, USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST,
-               CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
-               EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
+               CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES,
+               NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
                CHANGE_HA_SERVICE, JUJU_INFO, JUJU_UNITS_INFO, CLOUD_METADATA]:

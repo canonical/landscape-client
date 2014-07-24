@@ -107,9 +107,6 @@ class RegistrationHandler(object):
         if id.secure_id:
             return False
 
-        if self._config.provisioning_otp:
-            return self._message_store.accepts("register-provisioned-machine")
-
         return bool(id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
@@ -134,13 +131,6 @@ class RegistrationHandler(object):
             return None
         self._juju_data = juju_info  # A list of dicts
 
-    def _get_data(self, path, accumulate):
-        """
-        Get data at C{path} on the EC2 API endpoint, and add the result to the
-        C{accumulate} list.
-        """
-        return self._fetch_async(EC2_API + path).addCallback(accumulate.append)
-
     def _handle_exchange_done(self):
         """Registered handler for the C{"exchange-done"} event.
 
@@ -158,13 +148,7 @@ class RegistrationHandler(object):
         An exchange is about to happen.  If we don't have a secure id already
         set, and we have the needed information available, queue a registration
         message with the server.
-
-        A computer can fall into several categories:
-            - a "normal" computer
-            - a "provisionned machine".
         """
-        registration_failed = False
-
         # The point of storing this flag is that if we should *not* register
         # now, and then after the exchange we *should*, we schedule an urgent
         # exchange again.  Without this flag we would just spin trying to
@@ -177,6 +161,11 @@ class RegistrationHandler(object):
         # These are just to shorten the code.
         identity = self._identity
         account_name = identity.account_name
+
+        if not account_name:
+            self._reactor.fire("registration-failed")
+            return
+
         tags = identity.tags
         group = identity.access_group
         registration_key = identity.registration_key
@@ -187,51 +176,34 @@ class RegistrationHandler(object):
             tags = None
             logging.error("Invalid tags provided for registration.")
 
-        message = {"type": None,  # either "register" or "register-cloud-vm"
+        message = {"type": "register",
                    "hostname": get_fqdn(),
-                   "account_name": identity.account_name,
-                   "registration_password": None,
+                   "account_name": account_name,
+                   "computer_title": identity.computer_title,
+                   "registration_password": identity.registration_key,
                    "tags": tags,
+                   "container-info": get_container_info(),
                    "vm-info": get_vm_info()}
 
         if group:
             message["access_group"] = group
 
-        if account_name:
-            # The computer is a normal computer, possibly a container.
-            with_word = "with" if bool(registration_key) else "without"
-            with_tags = "and tags %s " % tags if tags else ""
-            with_group = "in access group '%s' " % group if group else ""
+        if self._juju_data is not None:
+            # For backwards compatibility, set the juju-info to be one of
+            # the juju infos (it used not to be a list).
+            message["juju-info"] = self._juju_data[0]
+            message["juju-info-list"] = self._juju_data
 
-            logging.info(u"Queueing message to register with account %r %s%s"
-                         "%s a password." % (account_name, with_group,
-                                             with_tags, with_word))
-            message["type"] = "register"
-            message["computer_title"] = identity.computer_title
-            message["registration_password"] = identity.registration_key
-            message["container-info"] = get_container_info()
+        # The computer is a normal computer, possibly a container.
+        with_word = "with" if bool(registration_key) else "without"
+        with_tags = "and tags %s " % tags if tags else ""
+        with_group = "in access group '%s' " % group if group else ""
 
-            if self._juju_data is not None:
-                # For backwards compatibility, set the juju-info to be one of
-                # the juju infos (it used not to be a list).
-                message["juju-info"] = self._juju_data[0]
-                message["juju-info-list"] = self._juju_data
-
-        elif self._config.provisioning_otp:
-            # This is a newly provisionned machine.
-            # In this case message is overwritten because it's much simpler
-            logging.info(u"Queueing message to register with OTP as a"
-                         u" newly provisioned machine.")
-            message = {"type": "register-provisioned-machine",
-                       "otp": self._config.provisioning_otp}
-        else:
-            registration_failed = True
-
-        if registration_failed:
-            self._reactor.fire("registration-failed")
-        else:
-            logging.info("Sending registration message to exchange.")
-            self._exchange.send(message)
+        logging.info(
+            u"Queueing message to register with account %r %s%s"
+            "%s a password." % (
+                account_name, with_group, with_tags, with_word))
+        self._exchange.send(message)
 
     def _handle_set_id(self, message):
         """Registered handler for the C{"set-id"} event.
