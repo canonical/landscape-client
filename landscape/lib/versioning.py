@@ -23,5 +23,6 @@ def compare_versions(version1, version2):
 
 def sort_versions(versions):
     """Sort a list of software versions from the highest to the lowest."""
-    return sorted(
+    strict_versions = sorted(
         [StrictVersion(version) for version in versions], reverse=True)
+    return [str(strict_version) for strict_version in strict_versions]
