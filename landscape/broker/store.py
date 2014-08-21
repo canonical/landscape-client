@@ -289,7 +289,7 @@ class MessageStore(object):
 
         The schema must be an instance of L{landscape.schema.Message}.
         """
-        api = schema.api or self._api
+        api = schema.api if schema.api else self._api
         schemas = self._schemas.setdefault(schema.type, {})
         schemas[api] = schema
 

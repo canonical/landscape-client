@@ -1,5 +1,7 @@
 """Helpers for dealing with software versioning."""
 
+from distutils.version import StrictVersion
+
 
 def compare_versions(version1, version2):
     """Compare two software versions.
@@ -16,20 +18,10 @@ def compare_versions(version1, version2):
     @return: C{True} if the first version is greater than or equal to
         the second.
     """
-    return _version_to_tuple(version1) >= _version_to_tuple(version2)
+    return StrictVersion(version1) >= StrictVersion(version2)
 
 
 def sort_versions(versions):
     """Sort a list of software versions from the highest to the lowest."""
-    tuples = [_version_to_tuple(version) for version in versions]
-    return [_tuple_to_version(tuple) for tuple in sorted(tuples, reverse=True)]
-
-
-def _version_to_tuple(version):
-    """Convert a version string to a tuple of integers."""
-    return tuple(map(int, version.split(".")))
-
-
-def _tuple_to_version(tuple):
-    """Convert a tuple of integers to a version string."""
-    return ".".join(map(str, tuple))
+    return sorted(
+        [StrictVersion(version) for version in versions], reverse=True)

@@ -327,7 +327,8 @@ class MessageStoreTest(LandscapeTest):
 
     def test_custom_api_on_store(self):
         """
-        It's possible to change the server API version that messages
+        It's possible to change the server API version attached to outgoing
+        messages.
         """
         self.store.set_server_api("3.3")
         self.store.add({"type": "empty"})

@@ -755,11 +755,12 @@ class MessageExchange(object):
             # we're currently using.
             if compare_versions(server_api, self._api):
                 # The highest server API is greater than our one, so let's
-                # use our own, which the most recent we can speak.
+                # use our own, which is the most recent we can speak.
                 message_store.set_server_api(self._api)
             else:
-                # The highest server API is lower or equal than ours, so let's
-                # use the server one, because is the most recent common one.
+                # The highest server API is less than or equal than ours, so
+                # let's use the server one, because is the most recent common
+                # one.
                 message_store.set_server_api(server_api)
 
         message_store.commit()
