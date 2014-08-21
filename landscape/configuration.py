@@ -4,7 +4,6 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
-import json
 import base64
 import time
 import sys
@@ -19,7 +18,7 @@ from landscape.lib.tag import is_valid_tag
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.fetch import fetch, FetchError, HTTPCodeError
+from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.reactor import LandscapeReactor
 from landscape.broker.registration import InvalidCredentialsError
@@ -473,11 +472,10 @@ def setup_http_proxy(config):
 def check_account_name_and_password(config):
     """
     Ensure that silent configurations which plan to start landscape-client are
-    either configured for OTP or have both an account_name and computer title.
+    have both an account_name and computer title.
     """
     if config.silent and not config.no_start:
-        if not (config.get("otp") or config.provisioning_otp or
-                (config.get("account_name") and config.get("computer_title"))):
+        if not (config.get("account_name") and config.get("computer_title")):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
 
@@ -507,45 +505,6 @@ def decode_base64_ssl_public_certificate(config):
         decoded_cert = base64.decodestring(config.ssl_public_key[7:])
         config.ssl_public_key = store_public_key_data(
             config, decoded_cert)
-
-
-def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
-                                        on_error=print_text):
-    """
-    Fetch base64 encoded SSL CA certificate from the discovered landscape
-    server and return that decoded info.
-    """
-    on_info("Fetching CA certificate from %s if available..." % hostname)
-    content = ""
-    encoded_cert = ""
-    ca_url = "http://%s/get-ca-cert" % hostname
-    try:
-        content = fetch(ca_url, insecure=True)
-    except HTTPCodeError, error:
-        on_error("Unable to fetch CA certificate from discovered server %s: "
-                 "Server does not support client auto-registation." % hostname)
-        return encoded_cert
-    except FetchError, error:
-        on_error("Unable to fetch CA certificate from %s: %s"
-                % (hostname, str(error)))
-        return encoded_cert
-
-    if content:
-        ca_dict = json.loads(content)
-        try:
-            if ca_dict["custom_ca_cert"].startswith("base64:"):
-                encoded_cert = ca_dict["custom_ca_cert"]
-            else:
-                on_error("Auto-registration URL %s returns invalid CA JSON: "
-                         "%s." % (ca_url, ca_dict))
-        except KeyError:
-            # No custom CA certificate needed to talk with this server
-            on_info("No custom CA certificate available for %s." % hostname)
-    else:
-        on_error("Unable to fetch CA certificate from discovered server "
-                 "%s.  Proceding without custom CA certificate."
-                % hostname)
-    return encoded_cert
 
 
 def setup(config):
@@ -581,7 +540,7 @@ def setup(config):
     decode_base64_ssl_public_certificate(config)
     config.write()
     # Restart the client to ensure that it's using the new configuration.
-    if not config.no_start and not config.otp:
+    if not config.no_start:
         try:
             sysvconfig.restart_landscape()
         except ProcessError:
@@ -615,7 +574,8 @@ def store_public_key_data(config, certificate_data):
     @return the L{BrokerConfiguration} object that was passed in, updated to
     reflect the path of the ssl_public_key file.
     """
-    key_filename = os.path.join(config.data_path,
+    key_filename = os.path.join(
+        config.data_path,
         os.path.basename(config.get_config_filename() + ".ssl_public_key"))
     print_text("Writing SSL CA certificate to %s..." % key_filename)
     key_file = open(key_filename, "w")

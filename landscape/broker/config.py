@@ -32,9 +32,6 @@ class BrokerConfiguration(Configuration):
               - C{urgent_exchange_interval} (C{1*60})
               - C{http_proxy}
               - C{https_proxy}
-              - C{cloud}
-              - C{otp}
-              - C{provisioning_otp}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
@@ -60,17 +57,11 @@ class BrokerConfiguration(Configuration):
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
-        parser.add_option("--cloud", action="store_true",
-                          help="Set this if your computer is in an EC2 cloud.")
-        parser.add_option("--otp", default="",
-                          help="The OTP to use in cloud configuration.")
         parser.add_option("--access-group", default="",
                           help="Suggested access group for this computer.")
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
-        parser.add_option("--provisioning-otp", default="",
-                          help="The OTP to use for a provisioned machine.")
 
         return parser
 

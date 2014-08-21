@@ -8,23 +8,14 @@ the machinery in this module will notice that we have no identification
 credentials yet and that the server accepts registration messages, so it
 will craft an appropriate one and send it out.
 """
-import time
 import logging
-import socket
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.bpickle import loads
-from landscape.lib.log import log_failure
 from landscape.lib.juju import get_juju_info
-from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
 from landscape.lib.vm_info import get_vm_info, get_container_info
-
-
-EC2_HOST = "169.254.169.254"
-EC2_API = "http://%s/latest" % (EC2_HOST,)
 
 
 class InvalidCredentialsError(Exception):
@@ -99,7 +90,6 @@ class RegistrationHandler(object):
         self._exchange = exchange
         self._pinger = pinger
         self._message_store = message_store
-        self._reactor.call_on("run", self._fetch_ec2_data)
         self._reactor.call_on("run", self._get_juju_data)
         self._reactor.call_on("pre-exchange", self._handle_pre_exchange)
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
@@ -109,22 +99,13 @@ class RegistrationHandler(object):
                                         self._handle_registration)
         self._should_register = None
         self._fetch_async = fetch_async
-        self._otp = None
         self._ec2_data = None
         self._juju_data = None
 
     def should_register(self):
         id = self._identity
         if id.secure_id:
-            # We already have a secure ID, no need to register
-            logging.info("Machine already has a secure-id. Skipping "
-                         "registration.")
             return False
-
-        if self._config.cloud:
-            return self._message_store.accepts("register-cloud-vm")
-        elif self._config.provisioning_otp:
-            return self._message_store.accepts("register-provisioned-machine")
 
         return bool(id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
@@ -150,101 +131,6 @@ class RegistrationHandler(object):
             return None
         self._juju_data = juju_info  # A list of dicts
 
-    def _get_data(self, path, accumulate):
-        """
-        Get data at C{path} on the EC2 API endpoint, and add the result to the
-        C{accumulate} list.
-        """
-        return self._fetch_async(EC2_API + path).addCallback(accumulate.append)
-
-    def _fetch_ec2_data(self):
-        """Retrieve available EC2 information, if in a EC2 compatible cloud."""
-        id = self._identity
-        if self._config.cloud and not id.secure_id:
-            # Fetch data from the EC2 API, to be used later in the registration
-            # process
-            # We ignore errors from user-data because it's common for the
-            # URL to return a 404 when the data is unavailable.
-            ec2_data = []
-            deferred = self._fetch_async(EC2_API + "/user-data").addErrback(
-                log_failure).addCallback(ec2_data.append)
-            paths = [
-                "/meta-data/instance-id",
-                "/meta-data/reservation-id",
-                "/meta-data/local-hostname",
-                "/meta-data/public-hostname",
-                "/meta-data/ami-launch-index",
-                "/meta-data/ami-id",
-                "/meta-data/local-ipv4",
-                "/meta-data/public-ipv4"]
-            # We're not using a DeferredList here because we want to keep the
-            # number of connections to the backend minimal. See lp:567515.
-            for path in paths:
-                deferred.addCallback(
-                    lambda ignore, path=path: self._get_data(path, ec2_data))
-            # Special case the ramdisk retrieval, because it may not be present
-            deferred.addCallback(
-                lambda ignore: self._fetch_async(
-                    EC2_API + "/meta-data/ramdisk-id").addErrback(log_failure))
-            deferred.addCallback(ec2_data.append)
-            # And same for kernel
-            deferred.addCallback(
-                lambda ignore: self._fetch_async(
-                    EC2_API + "/meta-data/kernel-id").addErrback(log_failure))
-            deferred.addCallback(ec2_data.append)
-
-            def record_data(ignore):
-                """Record the instance data returned by the EC2 API."""
-                (raw_user_data, instance_key, reservation_key,
-                 local_hostname, public_hostname, launch_index,
-                 ami_key, local_ip, public_ip, ramdisk_key,
-                 kernel_key) = ec2_data
-                self._ec2_data = {
-                    "instance_key": instance_key,
-                    "reservation_key": reservation_key,
-                    "local_hostname": local_hostname,
-                    "public_hostname": public_hostname,
-                    "launch_index": launch_index,
-                    "kernel_key": kernel_key,
-                    "ramdisk_key": ramdisk_key,
-                    "image_key": ami_key,
-                    "public_ipv4": public_ip,
-                    "local_ipv4": local_ip}
-                for k, v in self._ec2_data.items():
-                    if v is None and k in ("ramdisk_key", "kernel_key"):
-                        continue
-                    self._ec2_data[k] = v.decode("utf-8")
-                self._ec2_data["launch_index"] = int(
-                    self._ec2_data["launch_index"])
-
-                if self._config.otp:
-                    self._otp = self._config.otp
-                    return
-                instance_data = _extract_ec2_instance_data(
-                    raw_user_data, int(launch_index))
-                if instance_data is not None:
-                    self._otp = instance_data["otp"]
-                    exchange_url = instance_data["exchange-url"]
-                    ping_url = instance_data["ping-url"]
-                    self._exchange._transport.set_url(exchange_url)
-                    self._config.url = exchange_url
-                    self._config.ping_url = ping_url
-                    if "ssl-ca-certificate" in instance_data:
-                        from landscape.configuration import \
-                            store_public_key_data
-                        public_key_file = store_public_key_data(
-                            self._config, instance_data["ssl-ca-certificate"])
-                        self._config.ssl_public_key = public_key_file
-                        self._exchange._transport._pubkey = public_key_file
-                    self._config.write()
-
-            def log_error(error):
-                log_failure(error, msg="Got error while fetching meta-data: %r"
-                            % (error.value,))
-
-            deferred.addCallback(record_data)
-            deferred.addErrback(log_error)
-
     def _handle_exchange_done(self):
         """Registered handler for the C{"exchange-done"} event.
 
@@ -262,17 +148,7 @@ class RegistrationHandler(object):
         An exchange is about to happen.  If we don't have a secure id already
         set, and we have the needed information available, queue a registration
         message with the server.
-
-        A computer can fall into several categories:
-            - a "cloud VM"
-            - a "normal" computer
-            - a "provisionned machine".
-
-        Furthermore, Cloud VMs can be registered with either a One Time
-        Password (OTP), or with a normal registration password.
         """
-        registration_failed = False
-
         # The point of storing this flag is that if we should *not* register
         # now, and then after the exchange we *should*, we schedule an urgent
         # exchange again.  Without this flag we would just spin trying to
@@ -285,6 +161,11 @@ class RegistrationHandler(object):
         # These are just to shorten the code.
         identity = self._identity
         account_name = identity.account_name
+
+        if not account_name:
+            self._reactor.fire("registration-failed")
+            return
+
         tags = identity.tags
         group = identity.access_group
         registration_key = identity.registration_key
@@ -293,75 +174,36 @@ class RegistrationHandler(object):
 
         if not is_valid_tag_list(tags):
             tags = None
-            logging.error("Invalid tags provided for cloud registration.")
+            logging.error("Invalid tags provided for registration.")
 
-        message = {"type": None,  # either "register" or "register-cloud-vm"
-                   "otp": None,
+        message = {"type": "register",
                    "hostname": get_fqdn(),
-                   "account_name": identity.account_name,
-                   "registration_password": None,
+                   "account_name": account_name,
+                   "computer_title": identity.computer_title,
+                   "registration_password": identity.registration_key,
                    "tags": tags,
+                   "container-info": get_container_info(),
                    "vm-info": get_vm_info()}
 
         if group:
             message["access_group"] = group
 
-        if self._config.cloud and self._ec2_data is not None:
-            # This is the "cloud VM" case.
-            message["type"] = "register-cloud-vm"
+        if self._juju_data is not None:
+            # For backwards compatibility, set the juju-info to be one of
+            # the juju infos (it used not to be a list).
+            message["juju-info"] = self._juju_data[0]
+            message["juju-info-list"] = self._juju_data
 
-            message.update(self._ec2_data)
-            if self._otp:
-                logging.info("Queueing message to register with OTP")
-                message["otp"] = self._otp
+        # The computer is a normal computer, possibly a container.
+        with_word = "with" if bool(registration_key) else "without"
+        with_tags = "and tags %s " % tags if tags else ""
+        with_group = "in access group '%s' " % group if group else ""
 
-            elif account_name:
-                with_tags = "and tags %s " % tags if tags else ""
-                with_group = "in access group '%s' " % group if group else ""
-                logging.info(
-                    u"Queueing message to register with account %r %s%s"
-                    u"as an EC2 instance." % (
-                        account_name, with_group, with_tags))
-                message["registration_password"] = registration_key
-
-            else:
-                registration_failed = True
-
-        elif account_name:
-            # The computer is a normal computer, possibly a container.
-            with_word = "with" if bool(registration_key) else "without"
-            with_tags = "and tags %s " % tags if tags else ""
-            with_group = "in access group '%s' " % group if group else ""
-
-            logging.info(u"Queueing message to register with account %r %s%s"
-                         "%s a password." % (account_name, with_group,
-                                             with_tags, with_word))
-            message["type"] = "register"
-            message["computer_title"] = identity.computer_title
-            message["registration_password"] = identity.registration_key
-            message["container-info"] = get_container_info()
-
-            if self._juju_data is not None:
-                # For backwards compatibility, set the juju-info to be one of
-                # the juju infos (it used not to be a list).
-                message["juju-info"] = self._juju_data[0]
-                message["juju-info-list"] = self._juju_data
-
-        elif self._config.provisioning_otp:
-            # This is a newly provisionned machine.
-            # In this case message is overwritten because it's much simpler
-            logging.info(u"Queueing message to register with OTP as a"
-                         u" newly provisioned machine.")
-            message = {"type": "register-provisioned-machine",
-                       "otp": self._config.provisioning_otp}
-        else:
-            registration_failed = True
-
-        if registration_failed:
-            self._reactor.fire("registration-failed")
-        else:
-            logging.info("Sending registration message to exchange.")
-            self._exchange.send(message)
+        logging.info(
+            u"Queueing message to register with account %r %s%s"
+            "%s a password." % (
+                account_name, with_group, with_tags, with_word))
+        self._exchange.send(message)
 
     def _handle_set_id(self, message):
         """Registered handler for the C{"set-id"} event.
@@ -433,80 +275,3 @@ class RegistrationResponse(object):
     def _failed(self):
         self.deferred.errback(InvalidCredentialsError())
         self._cancel_calls()
-
-
-def _extract_ec2_instance_data(raw_user_data, launch_index):
-    """
-    Given the raw string of EC2 User Data, parse it and return the dict of
-    instance data for this particular instance.
-
-    If the data can't be parsed, a debug message will be logged and None
-    will be returned.
-    """
-    try:
-        user_data = loads(raw_user_data)
-    except ValueError:
-        logging.debug("Got invalid user-data %r" % (raw_user_data,))
-        return
-
-    if not isinstance(user_data, dict):
-        logging.debug("user-data %r is not a dict" % (user_data,))
-        return
-    for key in "otps", "exchange-url", "ping-url":
-        if key not in user_data:
-            logging.debug("user-data %r doesn't have key %r."
-                          % (user_data, key))
-            return
-    if len(user_data["otps"]) <= launch_index:
-        logging.debug("user-data %r doesn't have OTP for launch index %d"
-                      % (user_data, launch_index))
-        return
-    instance_data = {"otp": user_data["otps"][launch_index],
-                     "exchange-url": user_data["exchange-url"],
-                     "ping-url": user_data["ping-url"]}
-    if "ssl-ca-certificate" in user_data:
-        instance_data["ssl-ca-certificate"] = user_data["ssl-ca-certificate"]
-    return instance_data
-
-
-def _wait_for_network():
-    """
-    Keep trying to connect to the EC2 metadata server until it becomes
-    accessible or until five minutes pass.
-
-    This is necessary because the networking init script on Ubuntu is
-    asynchronous; the network may not actually be up by the time the
-    landscape-client init script is invoked.
-    """
-    timeout = 5 * 60
-    port = 80
-
-    start = time.time()
-    while True:
-        s = socket.socket()
-        try:
-            s.connect((EC2_HOST, port))
-            s.close()
-            return
-        except socket.error:
-            time.sleep(1)
-            if time.time() - start > timeout:
-                break
-
-
-def is_cloud_managed(fetch=fetch):
-    """
-    Return C{True} if the machine has been started by Landscape, i.e. if we can
-    find the expected data inside the EC2 user-data field.
-    """
-    _wait_for_network()
-    try:
-        raw_user_data = fetch(EC2_API + "/user-data",
-                              connect_timeout=5)
-        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index",
-                             connect_timeout=5)
-    except FetchError:
-        return False
-    instance_data = _extract_ec2_instance_data(
-        raw_user_data, int(launch_index))
-    return instance_data is not None
