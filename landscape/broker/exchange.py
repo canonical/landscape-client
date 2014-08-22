@@ -61,6 +61,7 @@ that don't provide a secure ID associated with a computer) are C{dict}s of the
 form::
 
   {'server-uuid': SERVER_UUID,
+   'server-api': SERVER_API,
    'messages': MESSAGES}
 
 where:
@@ -68,17 +69,31 @@ where:
   - C{SERVER_UUID}: A string identifying the particular Landscape server the
     client is talking to.
 
+  - C{SERVER_API}: The version number of the highest server API that this
+    particular server is able to handle. It can be used by the client to
+    implement backward compatibility with old servers, knowing what message
+    schemas the server expects (since schemas can change from version to
+    version).
+
   - C{MESSAGES}: A python list of messages, described below.
 
 Additionally, payloads to registered clients will include these fields::
 
   {'next-expected-sequence': EXPECTED_SEQUENCE_NUMBER,
+   'next-expected-token': EXPECTED_EXCHANGE_TOKEN,
    'client-accepted-types-hash': CLIENT_ACCEPTED_TYPES_DIGEST,
 
 where:
 
   - C{EXPECTED_SEQUENCE_NUMBER}: The sequence number which the server expects
     the next message sent from the client to have.
+
+  - C{EXPECTED_EXCHANGE_TOKEN}: The token (UUID string) that the server expects
+    to receive back the next time the client performs an exchange. Since the
+    client receives a new token at each exchange, this can be used by the
+    server to detect cloned clients (either the orignal client or the cloned
+    client will eventually send an expired token). The token is sent by the
+    client as a special HTTP header (see L{landscape.broker.transport}).
 
   - C{CLIENT_ACCEPTED_TYPES_DIGEST}: A hash of the message types that the
     server thinks are currently accepted by the client. The client can use it
@@ -102,6 +117,23 @@ where:
     to dispatch the message to, also considering the SERVER_API_VERSION value.
 
   - C{...}: Other entries specific to the type of message.
+
+This format is the same for messages sent by the server to the client and for
+messages sent by the client to the server. In addition, messages sent by the
+client to the server will contain also the following extra fields::
+
+  {...
+   'api': SERVER_API,
+   'timestamp': TIMESTAMP,
+   ...}
+
+where:
+
+ - C{SERVER_API}: The server API that the client was targeting when it
+   generated the message. In single exchange the client will only include
+   messages targeted to the same server API.
+
+ - C{TIMESTAMP}: A timestamp indicating when the message was generated.
 
 Message Sequencing
 ==================
@@ -317,6 +349,7 @@ from landscape.lib.hashlib import md5
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.message import got_next_expected, ANCIENT
+from landscape.lib.versioning import is_version_higher, sort_versions
 from landscape.log import format_delta
 from landscape import SERVER_API, CLIENT_API
 
@@ -335,6 +368,9 @@ class MessageExchange(object):
     An exchange is performed with an HTTP POST request, whose body contains
     outgoing messages and whose response contains incoming messages.
     """
+
+    # The highest server API that we are capable of speaking
+    _api = SERVER_API
 
     def __init__(self, reactor, store, transport, registration_info,
                  exchange_store, config,  max_messages=100):
@@ -640,14 +676,8 @@ class MessageExchange(object):
                 i = None
             if i is not None:
                 del messages[i:]
-
-            # DEPRECATED Remove this once API 2.0 is gone:
-            if server_api is None:
-                # The per-message API logic was introduced on API 2.1, so a
-                # missing API must be 2.0.
-                server_api = "2.0"
         else:
-            server_api = SERVER_API
+            server_api = store.get_server_api()
         payload = {"server-api": server_api,
                    "client-api": CLIENT_API,
                    "sequence": store.get_sequence(),
@@ -715,6 +745,20 @@ class MessageExchange(object):
                          % (old_uuid, new_uuid))
             self._reactor.fire("server-uuid-changed", old_uuid, new_uuid)
             message_store.set_server_uuid(new_uuid)
+
+        # Extract the server API from the payload. If it's not there it must
+        # be 3.2, because it's the one that didn't have this field.
+        server_api = result.get("server-api", "3.2")
+
+        if is_version_higher(server_api, message_store.get_server_api()):
+            # The server can handle a message API that is higher than the one
+            # we're currently using. If the highest server API is greater than
+            # our one, so let's use our own, which is the most recent we can
+            # speak. Otherwise if the highest server API is less than or equal
+            # than ours, let's use the server one, because is the most recent
+            # common one.
+            lowest_server_api = sort_versions([server_api, self._api])[-1]
+            message_store.set_server_api(lowest_server_api)
 
         message_store.commit()
 
