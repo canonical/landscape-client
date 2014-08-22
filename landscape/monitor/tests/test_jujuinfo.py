@@ -6,6 +6,7 @@ from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 
 SAMPLE_JUJU_INFO = json.dumps({"environment-uuid": "DEAD-BEEF",
+                               "machine-id": "1",
                                "unit-name": "juju-unit-name",
                                "api-addresses": "10.0.3.1:17070",
                                "private-address": "127.0.0.1"})
@@ -72,6 +73,7 @@ class JujuInfoTest(LandscapeTest):
 
         self.makeFile(
             json.dumps({"environment-uuid": "FEED-BEEF",
+                        "machine-id": "1",
                         "unit-name": "changed-unit-name",
                         "api-addresses": "10.0.3.2:17070",
                         "private-address": "127.0.1.1"}),

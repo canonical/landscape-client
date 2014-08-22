@@ -1,7 +1,7 @@
 """Deployment code for the monitor."""
 
 import os
-from landscape.lib.fetch import fetch_async
+
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.amp import ComponentPublisher
 from landscape.broker.registration import RegistrationHandler, Identity
@@ -61,7 +61,7 @@ class BrokerService(LandscapeService):
             self.reactor, self.identity, self.exchanger, config)
         self.registration = RegistrationHandler(
             config, self.identity, self.reactor, self.exchanger, self.pinger,
-            self.message_store, fetch_async)
+            self.message_store)
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store,
                                    self.pinger)

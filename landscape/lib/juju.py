@@ -9,22 +9,28 @@ from landscape.lib.fs import read_file
 
 def get_juju_info(config):
     """
-    Returns the list of Juju info or C{None} if the path referenced from
+    Returns available Juju info or C{None} if the path referenced from
     L{config} is not a valid directory.
 
-    The list of juju info is constructed by appending all the contents of
+    XXX At the moment this function returns a 2-tuple because we're
+    transitioning from unit-computer associations to machine-computer
+    associations. Once the transition is completed in the server, the
+    old format can be dropped.
+
+    The list of old juju info is constructed by appending all the contents of
     *.json files found in the path referenced from the L{config}.
     """
     juju_directory = config.juju_directory
     legacy_juju_file = config.juju_filename
 
+    new_juju_info = {}
     juju_info_list = []
     juju_file_list = glob("%s/*.json" % juju_directory)
 
     if os.path.exists(legacy_juju_file):
         juju_file_list.append(legacy_juju_file)
 
-    for juju_file in juju_file_list:
+    for index, juju_file in enumerate(juju_file_list):
 
         json_contents = read_file(juju_file)
         try:
@@ -36,11 +42,25 @@ def get_juju_info(config):
             logging.exception(
                 "Error attempting to read JSON from %s" % juju_file)
             return None
-        else:
-            if "api-addresses" in juju_info:
-                split = juju_info["api-addresses"].split()
-                juju_info["api-addresses"] = split
-            juju_info_list.append(juju_info)
+
+        if "api-addresses" in juju_info:
+            split = juju_info["api-addresses"].split()
+            juju_info["api-addresses"] = split
+
+        # Strip away machine-id, which is not understood by the old format
+        machine_id = juju_info.pop("machine-id", None)
+
+        if index == 0 and machine_id is not None:
+            # We care only about the first file, as the machine ID is the same
+            # for all
+            new_juju_info["environment-uuid"] = juju_info["environment-uuid"]
+            new_juju_info["api-addresses"] = juju_info["api-addresses"]
+            new_juju_info["machine-id"] = machine_id
+
+        juju_info_list.append(juju_info)
 
     juju_info_list.sort(key=lambda x: x["unit-name"])
-    return juju_info_list or None
+
+    if juju_info_list:
+        return juju_info_list, new_juju_info
+    return None
