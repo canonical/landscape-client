@@ -99,7 +99,7 @@ import uuid
 
 from landscape.lib import bpickle
 from landscape.lib.fs import create_file
-from landscape.lib.versioning import sort_versions, compare_versions
+from landscape.lib.versioning import sort_versions, is_version_higher
 
 
 HELD = "h"
@@ -357,7 +357,7 @@ class MessageStore(object):
         # or equal to the API version the message is tagged with.
         schemas = self._schemas[message["type"]]
         for api in sort_versions(schemas.keys()):
-            if compare_versions(server_api, api):
+            if is_version_higher(server_api, api):
                 schema = schemas[api]
                 break
         message = schema.coerce(message)

@@ -1,30 +1,30 @@
 from unittest import TestCase
 
-from landscape.lib.versioning import compare_versions, sort_versions
+from landscape.lib.versioning import is_version_higher, sort_versions
 
 
-class CompareVersionsTest(TestCase):
+class IsVersionHigherTest(TestCase):
 
     def test_greater(self):
         """
-        The C{compare_versions} function returns C{True} if the first
+        The C{is_version_higher} function returns C{True} if the first
         version is greater than the second.
         """
-        self.assertTrue(compare_versions("3.2", "3.1"))
+        self.assertTrue(is_version_higher("3.2", "3.1"))
 
     def test_equal(self):
         """
-        The C{compare_versions} function returns C{True} if the first
+        The C{is_version_higher} function returns C{True} if the first
         version is the same as the second.
         """
-        self.assertTrue(compare_versions("3.1", "3.1"))
+        self.assertTrue(is_version_higher("3.1", "3.1"))
 
     def test_lower(self):
         """
-        The C{compare_versions} function returns C{False} if the first
+        The C{is_version_higher} function returns C{False} if the first
         version is lower than the second.
         """
-        self.assertFalse(compare_versions("3.1", "3.2"))
+        self.assertFalse(is_version_higher("3.1", "3.2"))
 
 
 class SortVersionsTest(TestCase):

@@ -349,7 +349,7 @@ from landscape.lib.hashlib import md5
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.message import got_next_expected, ANCIENT
-from landscape.lib.versioning import compare_versions
+from landscape.lib.versioning import is_version_higher, sort_versions
 from landscape.log import format_delta
 from landscape import SERVER_API, CLIENT_API
 
@@ -750,18 +750,15 @@ class MessageExchange(object):
         # be 3.2, because it's the one that didn't have this field.
         server_api = result.get("server-api", "3.2")
 
-        if compare_versions(server_api, message_store.get_server_api()):
+        if is_version_higher(server_api, message_store.get_server_api()):
             # The server can handle a message API that is higher than the one
-            # we're currently using.
-            if compare_versions(server_api, self._api):
-                # The highest server API is greater than our one, so let's
-                # use our own, which is the most recent we can speak.
-                message_store.set_server_api(self._api)
-            else:
-                # The highest server API is less than or equal than ours, so
-                # let's use the server one, because is the most recent common
-                # one.
-                message_store.set_server_api(server_api)
+            # we're currently using. If the highest server API is greater than
+            # our one, so let's use our own, which is the most recent we can
+            # speak. Otherwise if the highest server API is less than or equal
+            # than ours, let's use the server one, because is the most recent
+            # common one.
+            lowest_server_api = sort_versions([server_api, self._api])[-1]
+            message_store.set_server_api(lowest_server_api)
 
         message_store.commit()
 

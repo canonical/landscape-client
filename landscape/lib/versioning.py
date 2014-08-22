@@ -3,10 +3,10 @@
 from distutils.version import StrictVersion
 
 
-def compare_versions(version1, version2):
-    """Compare two software versions.
+def is_version_higher(version1, version2):
+    """Check if a version is higher than another.
 
-    This takes the two software versions of the usual "y.x" form
+    This takes two software versions in the usual "x.y" form
     and split them on the decimal character, converting both parts
     to ints, e.g. "3.2" becomes (3, 2).
 
