@@ -31,8 +31,10 @@ class JujuTest(LandscapeTest):
             contents, dirname=self.stub_config.juju_directory, suffix=".json")
 
     def test_get_juju_info(self):
-        """L{get_juju_info} parses JSON data from the '*.json' files in the
-        juju_directory. A single file is present."""
+        """
+        L{get_juju_info} parses JSON data from the '*.json' files in the
+        juju_directory. A single file is present.
+        """
         self._create_tmp_juju_file(SAMPLE_JUJU_INFO)
         _, juju_info = get_juju_info(self.stub_config)
         self.assertEqual(
@@ -103,7 +105,7 @@ class JujuTest(LandscapeTest):
         """
         self.log_helper.ignore_errors(ValueError)
         self._create_tmp_juju_file("")
-        self.assertIsNone(get_juju_info(self.stub_config))
+        self.assertIs(None, get_juju_info(self.stub_config))
         self.assertIn("Error attempting to read JSON", self.logfile.getvalue())
 
     def test_get_juju_info_no_json_file(self):
@@ -111,7 +113,7 @@ class JujuTest(LandscapeTest):
         If L{get_juju_info} is called with a configuration pointing to
         a directory containing no json files, it returns None.
         """
-        self.assertIsNone(get_juju_info(self.stub_config))
+        self.assertIs(None, get_juju_info(self.stub_config))
 
     def test_get_juju_info_multiple_endpoints(self):
         """L{get_juju_info} turns space separated API addresses into a list."""
