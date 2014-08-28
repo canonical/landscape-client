@@ -5,7 +5,12 @@ from landscape.monitor.plugin import MonitorPlugin
 
 
 class JujuInfo(MonitorPlugin):
-    """Plugin for reporting Juju information."""
+    """Plugin for reporting Juju information.
+
+    XXX this plugin is going to be dropped when the transition from
+    unit-computer association to machine-computer association is
+    completed on the server.
+    """
 
     persist_name = "juju-info"
     scope = "juju"
@@ -34,6 +39,9 @@ class JujuInfo(MonitorPlugin):
              "juju-info-list": [{<juju-info dict>}, {<juju-info dict>}]}
         """
         juju_info = get_juju_info(self.registry.config)
+
+        if juju_info:
+            juju_info = juju_info[0]
 
         if juju_info != self._persist.get("juju-info"):
             self._persist.set("juju-info", juju_info)

@@ -7,7 +7,6 @@ connected to remote test L{BrokerClient}.
 """
 import os
 
-from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 from landscape.watchdog import bootstrap_list
 from landscape.reactor import FakeReactor
@@ -112,20 +111,12 @@ class RegistrationHelper(ExchangeHelper):
     The following attributes will be set in your test case:
 
       - C{handler}: A L{RegistrationHandler}.
-
-      - C{fetch_func}: The C{fetch_async} function used by the C{handler}, it
-        can be customised by test cases.
     """
 
     def set_up(self, test_case):
         super(RegistrationHelper, self).set_up(test_case)
         test_case.pinger = Pinger(test_case.reactor, test_case.identity,
                                   test_case.exchanger, test_case.config)
-
-        def fetch_func(*args, **kwargs):
-            return test_case.fetch_func(*args, **kwargs)
-
-        test_case.fetch_func = fetch_async
         test_case.config.cloud = getattr(test_case, "cloud", False)
         if hasattr(test_case, "juju_contents"):
             if not os.path.exists(test_case.config.juju_directory):
@@ -135,8 +126,7 @@ class RegistrationHelper(ExchangeHelper):
                 dirname=test_case.config.juju_directory, suffix=".json")
         test_case.handler = RegistrationHandler(
             test_case.config, test_case.identity, test_case.reactor,
-            test_case.exchanger, test_case.pinger, test_case.mstore,
-            fetch_async=fetch_func)
+            test_case.exchanger, test_case.pinger, test_case.mstore)
 
 
 class BrokerServerHelper(RegistrationHelper):

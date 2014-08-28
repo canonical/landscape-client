@@ -1,7 +1,6 @@
 from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
-from landscape.lib.fetch import fetch_async
 from landscape.schema import Message, Int
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
@@ -1061,7 +1060,7 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         # message types that we want to catch as well
         self.handler = RegistrationHandler(
             self.config, self.identity, self.reactor, self.exchanger,
-            self.pinger, self.mstore, fetch_async)
+            self.pinger, self.mstore)
 
     def test_register_accepted_message_type(self):
         self.exchanger.register_client_accepted_message_type("type-B")

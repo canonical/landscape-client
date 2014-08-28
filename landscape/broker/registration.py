@@ -126,7 +126,7 @@ class RegistrationHandler(object):
 
     def _get_juju_data(self):
         """Load Juju information."""
-        juju_info = get_juju_info(self._config)
+        juju_info = get_juju_info(self._config)[0]
         if juju_info is None:
             return None
         self._juju_data = juju_info  # A list of dicts
