@@ -498,15 +498,36 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     juju_contents = json.dumps({"environment-uuid": "DEAD-BEEF",
+                                "machine-id": "1",
                                 "unit-name": "service/0",
                                 "api-addresses": "10.0.3.1:17070"})
 
-    def test_juju_information_added_when_present(self):
+    def test_juju_info_added_when_present(self):
+        """
+        When information about the Juju environment is found in
+        the $data_dir/juju-info.d/ directory, it's included in
+        the registration message.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api("3.3")
+        self.config.account_name = "account_name"
+        self.reactor.fire("run")
+        self.reactor.fire("pre-exchange")
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(
+            {"environment-uuid": "DEAD-BEEF",
+             "machine-id": "1",
+             "api-addresses": ["10.0.3.1:17070"]},
+            messages[0]["juju-info"])
+
+    def test_juju_info_list_added_when_present(self):
         """
         When Juju information is found in $data_dir/juju-info.d/*.json,
         key parts of it are sent in the registration message.
         """
         self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api("3.3")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
@@ -517,23 +538,6 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
                     "unit-name": "service/0"}
         self.assertEqual(expected, messages[0]["juju-info-list"][0])
 
-    def test_juju_info_compatibility_present(self):
-        """
-        When Juju information is found in $data_dir/juju-info.d/*.json,
-        the registration message also contains a "juju-info" key for
-        backwards compatibility with older servers.
-        """
-        self.mstore.set_accepted_types(["register"])
-        self.config.account_name = "account_name"
-        self.reactor.fire("run")
-        self.reactor.fire("pre-exchange")
-
-        messages = self.mstore.get_pending_messages()
-        expected = {"environment-uuid": "DEAD-BEEF",
-                    "api-addresses": ["10.0.3.1:17070"],
-                    "unit-name": "service/0"}
-        self.assertEqual(expected, messages[0]["juju-info"])
-
     def test_multiple_juju_information_added_when_present(self):
         """
         When Juju information is found in $data_dir/juju-info.json,
@@ -541,6 +545,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         # Write a second file in the config directory
         contents = json.dumps({"environment-uuid": "DEAD-BEEF",
+                               "machine-id": "1",
                                "unit-name": "service-2/0",
                                "api-addresses": "10.0.3.2:17070",
                                "private-address": "127.0.0.1"})
@@ -549,6 +554,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
             dirname=self.config.juju_directory, suffix=".json")
 
         self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api("3.3")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
@@ -567,3 +573,17 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
                      "unit-name": "service-2/0",
                      "private-address": "127.0.0.1"}
         self.assertIn(expected2, juju_info)
+
+    def test_juju_info_skipped_with_old_server(self):
+        """
+        If a server doesn't speak at least 3.3, the juju-info field is
+        skipped from the message.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api("3.2")
+        self.config.account_name = "account_name"
+        self.reactor.fire("run")
+        self.reactor.fire("pre-exchange")
+
+        messages = self.mstore.get_pending_messages()
+        self.assertNotIn("juju-info", messages[0])

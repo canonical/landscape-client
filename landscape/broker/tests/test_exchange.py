@@ -104,6 +104,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         The send method should cause a message to show up in the next exchange.
         """
+        self.mstore.set_server_api(SERVER_API)
         self.mstore.set_accepted_types(["empty"])
         self.exchanger.send({"type": "empty"})
         self.exchanger.exchange()
@@ -518,6 +519,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         types = ["a", "b", "c", "d", "e", "f"]
         self.mstore.set_accepted_types(types)
+        self.mstore.set_server_api(SERVER_API)
         for t in types:
             self.mstore.add_schema(Message(t, {}))
 

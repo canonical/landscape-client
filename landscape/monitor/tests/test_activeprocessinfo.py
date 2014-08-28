@@ -577,7 +577,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 2)
         self.assertMessages(messages, [{"timestamp": 0,
-                                        "api": SERVER_API,
+                                        "api": "3.2",
                                         "type": "active-process-info",
                                         "kill-all-processes": True,
                                         "add-processes": [{"start-time": 110,
@@ -589,7 +589,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                                             "vm-size": 11676,
                                                             "uid": 0}]},
                                        {"timestamp": 0,
-                                        "api": SERVER_API,
+                                        "api": "3.2",
                                         "type": "active-process-info",
                                         "update-processes": [
                                             {"start-time": 110,
