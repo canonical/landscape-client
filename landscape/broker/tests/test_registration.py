@@ -2,7 +2,6 @@ import json
 import logging
 import socket
 
-from landscape import SERVER_API
 from landscape.broker.registration import (
     InvalidCredentialsError, Identity)
 from landscape.tests.helpers import LandscapeTest
