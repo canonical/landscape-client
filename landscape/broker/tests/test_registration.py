@@ -577,7 +577,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
     def test_juju_info_skipped_with_old_server(self):
         """
         If a server doesn't speak at least 3.3, the juju-info field is
-        skipped from the message.
+        isn't included in the message.
         """
         self.mstore.set_accepted_types(["register"])
         self.mstore.set_server_api("3.2")

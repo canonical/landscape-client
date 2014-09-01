@@ -10,7 +10,6 @@ from landscape.monitor.activeprocessinfo import ActiveProcessInfo
 from landscape.tests.helpers import (LandscapeTest, MonitorHelper,
                                      ProcessDataBuilder)
 from landscape.tests.mocker import ANY
-from landscape import SERVER_API
 
 
 class ActiveProcessInfoTest(LandscapeTest):

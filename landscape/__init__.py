@@ -13,6 +13,8 @@ VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 #
 # Changelog:
 #
+# 3.3:
+#  * Add new schema for the "registration" message, providing Juju information
 # 3.2:
 #  * Add new "eucalyptus-info" and "eucalyptus-info-error" messages.
 #

@@ -130,7 +130,7 @@ class RegistrationHandler(object):
         juju_info = get_juju_info(self._config)
         if juju_info is None:
             return None
-        self._juju_data = juju_info  # A list of dicts
+        self._juju_data = juju_info  # (list of dicts, new juju info struct)
 
     def _handle_exchange_done(self):
         """Registered handler for the C{"exchange-done"} event.
@@ -192,8 +192,8 @@ class RegistrationHandler(object):
         server_api = self._message_store.get_server_api()
         # If we have juju data to send and if the server is recent enough to
         # know how to handle juju data, then we include it in the registration
-        # message. We want to trigger the 3.3 server handler because some
-        # released clients have a different format for the juju-info field,
+        # message. We want to trigger the 3.3 server handler because client
+        # version 14.01 has a different format for the juju-info field,
         # so this makes sure that the correct schema is used by the server
         # when validating our message.
         if self._juju_data and is_version_higher(server_api, "3.3"):

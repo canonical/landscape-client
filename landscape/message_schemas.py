@@ -54,7 +54,6 @@ OPERATION_RESULT = Message(
      "result-text": Unicode()},
     optional=["result-code", "result-text"])
 
-
 COMPUTER_INFO = Message(
     "computer-info",
     {"hostname": Unicode(),
@@ -105,6 +104,7 @@ juju_data = {"environment-uuid": Unicode(),
              "unit-name": Unicode(),
              "private-address": Unicode()}
 
+# The copy of juju_data is needed because Message mutates the dictionary
 JUJU_UNITS_INFO = Message("juju-units-info", {
     "juju-info-list": List(KeyDict(juju_data.copy(),
                                    optional=["private-address"]))
@@ -186,8 +186,7 @@ REGISTER = Message(
      "container-info": Unicode(),
      "access_group": Unicode()},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "juju-info", "juju-info-list", "unicode",
-              "access_group"])
+              "container-info", "access_group"])
 
 
 REGISTER_3_3 = Message(
@@ -210,7 +209,7 @@ REGISTER_3_3 = Message(
      "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
      "access_group": Unicode()},
     api="3.3",
-    optional=["registration_password", "tags", "vm-info",
+    optional=["registration_password", "hostname", "tags", "vm-info",
               "container-info", "access_group", "juju-info", "juju-info-list"])
 
 
