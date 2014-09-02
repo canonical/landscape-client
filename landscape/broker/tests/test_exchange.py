@@ -1,4 +1,4 @@
-from landscape import SERVER_API, CLIENT_API
+from landscape import CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
 from landscape.schema import Message, Int
@@ -111,7 +111,7 @@ class MessageExchangeTest(LandscapeTest):
         messages = self.transport.payloads[0]["messages"]
         self.assertEqual(messages, [{"type": "empty",
                                      "timestamp": 0,
-                                     "api": SERVER_API}])
+                                     "api": "3.2"}])
 
     def test_send_urgent(self):
         """
@@ -528,8 +528,8 @@ class MessageExchangeTest(LandscapeTest):
         payload = self.transport.payloads[-1]
         self.assertMessages(payload["messages"], [])
         self.assertEqual(payload.get("client-api"), CLIENT_API)
-        self.assertEqual(payload.get("server-api"), SERVER_API)
-        self.assertEqual(self.transport.message_api, SERVER_API)
+        self.assertEqual(payload.get("server-api"), "3.2")
+        self.assertEqual(self.transport.message_api, "3.2")
 
         self.mstore.add({"type": "a", "api": "1.0"})
         self.mstore.add({"type": "b", "api": "1.0"})

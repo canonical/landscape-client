@@ -1,7 +1,6 @@
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
 
-from landscape import SERVER_API
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.manager.shutdownmanager import (
     ShutdownManager, ShutdownProcessProtocol)
@@ -44,7 +43,7 @@ class ShutdownManagerTest(LandscapeTest):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             self.assertEqual(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result", "api": SERVER_API,
+                [{"type": "operation-result", "api": "3.2",
                   "operation-id": 100, "timestamp": 10, "status": SUCCEEDED,
                   "result-text": u"Data may arrive in batches."}])
 
@@ -84,7 +83,7 @@ class ShutdownManagerTest(LandscapeTest):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             self.assertEqual(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result", "api": SERVER_API,
+                [{"type": "operation-result", "api": "3.2",
                   "operation-id": 100, "timestamp": 0, "status": FAILED,
                   "result-text": u"Failure text is reported."}])
 

@@ -13,10 +13,12 @@ VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 #
 # Changelog:
 #
+# 3.3:
+#  * Add new schema for the "registration" message, providing Juju information
 # 3.2:
 #  * Add new "eucalyptus-info" and "eucalyptus-info-error" messages.
 #
-SERVER_API = "3.2"
+SERVER_API = "3.3"
 
 # XXX This is needed for backward compatibility in the server code importing
 # the API variable. We should eventually replace it in the server code.

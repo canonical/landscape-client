@@ -16,6 +16,7 @@ from landscape.lib.juju import get_juju_info
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
 from landscape.lib.vm_info import get_vm_info, get_container_info
+from landscape.lib.versioning import is_version_higher
 
 
 class InvalidCredentialsError(Exception):
@@ -126,10 +127,10 @@ class RegistrationHandler(object):
 
     def _get_juju_data(self):
         """Load Juju information."""
-        juju_info = get_juju_info(self._config)[0]
+        juju_info = get_juju_info(self._config)
         if juju_info is None:
             return None
-        self._juju_data = juju_info  # A list of dicts
+        self._juju_data = juju_info  # (list of dicts, new juju info struct)
 
     def _handle_exchange_done(self):
         """Registered handler for the C{"exchange-done"} event.
@@ -188,11 +189,19 @@ class RegistrationHandler(object):
         if group:
             message["access_group"] = group
 
-        if self._juju_data is not None:
-            # For backwards compatibility, set the juju-info to be one of
-            # the juju infos (it used not to be a list).
-            message["juju-info"] = self._juju_data[0]
-            message["juju-info-list"] = self._juju_data
+        server_api = self._message_store.get_server_api()
+        # If we have juju data to send and if the server is recent enough to
+        # know how to handle juju data, then we include it in the registration
+        # message. We want to trigger the 3.3 server handler because client
+        # version 14.01 has a different format for the juju-info field,
+        # so this makes sure that the correct schema is used by the server
+        # when validating our message.
+        if self._juju_data and is_version_higher(server_api, "3.3"):
+            juju_info_list, juju_info = self._juju_data
+            message["juju-info"] = juju_info
+            # XXX the juju-info-list field will be dropped once the migration
+            # to computer-machine association is complete
+            message["juju-info-list"] = juju_info_list
 
         # The computer is a normal computer, possibly a container.
         with_word = "with" if bool(registration_key) else "without"

@@ -5,8 +5,6 @@ import logging
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
-from landscape import SERVER_API
-
 from landscape.manager.customgraph import CustomGraphPlugin
 from landscape.manager.store import ManagerStore
 
@@ -458,7 +456,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": SERVER_API,
+            [{"api": "3.2",
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
@@ -481,7 +479,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": SERVER_API,
+            [{"api": "3.2",
               "data": {},
               "timestamp": 0,
               "type": "custom-graph"}])
@@ -506,13 +504,13 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": SERVER_API,
+            [{"api": "3.2",
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"},
-             {"api": SERVER_API,
+             {"api": "3.2",
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
@@ -540,13 +538,13 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": SERVER_API,
+            [{"api": "3.2",
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"},
-             {"api": SERVER_API,
+             {"api": "3.2",
               "data": {123: {"error": u"",
                              "script-hash": "d483816dc0fbb51ede42502a709b0e2a",
                              "values": []}},
@@ -589,7 +587,7 @@ class CustomGraphManagerTests(LandscapeTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": SERVER_API,
+                [{"api": "3.2",
                   "data": {123: {"error": u"",
                                  "script-hash":
                                     "991e15a81929c79fe1d243b2afd99c62",
@@ -631,7 +629,7 @@ class CustomGraphManagerTests(LandscapeTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": SERVER_API, "data": {}, "timestamp": 0, "type":
+                [{"api": "3.2", "data": {}, "timestamp": 0, "type":
                   "custom-graph"}])
         return result.addCallback(check)
 

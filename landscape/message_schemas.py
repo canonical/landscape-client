@@ -54,14 +54,6 @@ OPERATION_RESULT = Message(
      "result-text": Unicode()},
     optional=["result-code", "result-text"])
 
-#ACTION_INFO is obsolete.
-ACTION_INFO = Message(
-    "action-info",
-    {"response-id": Int(),
-     "success": Bool(),
-     "kind": Bytes(),
-     "parameters": Bytes()})
-
 COMPUTER_INFO = Message(
     "computer-info",
     {"hostname": Unicode(),
@@ -112,11 +104,7 @@ juju_data = {"environment-uuid": Unicode(),
              "unit-name": Unicode(),
              "private-address": Unicode()}
 
-# The copy is needed because Message mutates the dictionary
-JUJU_INFO = Message("juju-info",
-                    juju_data.copy(),
-                    optional=["private-address"])
-
+# The copy of juju_data is needed because Message mutates the dictionary
 JUJU_UNITS_INFO = Message("juju-units-info", {
     "juju-info-list": List(KeyDict(juju_data.copy(),
                                    optional=["private-address"]))
@@ -196,18 +184,37 @@ REGISTER = Message(
      "tags": Any(Unicode(), Constant(None)),
      "vm-info": Bytes(),
      "container-info": Unicode(),
-     "juju-info": KeyDict(juju_data, optional=["private-address"]),
-     # Because of backwards compatibility we need another member with the list
-     # of juju-info, so it can safely be ignored by old servers.
-     "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
      "access_group": Unicode()},
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "juju-info", "juju-info-list", "unicode",
-              "access_group"])
+              "container-info", "access_group"])
+
+
+REGISTER_3_3 = Message(
+    "register",
+    # The term used in the UI is actually 'registration_key', but we keep
+    # the message schema field as 'registration_password' in case a new
+    # client contacts an older server.
+    {"registration_password": Any(Unicode(), Constant(None)),
+     "computer_title": Unicode(),
+     "hostname": Unicode(),
+     "account_name": Unicode(),
+     "tags": Any(Unicode(), Constant(None)),
+     "vm-info": Bytes(),
+     "container-info": Unicode(),
+     "juju-info": KeyDict({"environment-uuid": Unicode(),
+                           "api-addresses": List(Unicode()),
+                           "machine-id": Unicode()}),
+     # XXX temporary field with unit info, will be dropped when we complete
+     # the migration to machine info.
+     "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
+     "access_group": Unicode()},
+    api="3.3",
+    optional=["registration_password", "hostname", "tags", "vm-info",
+              "container-info", "access_group", "juju-info", "juju-info-list"])
 
 
 # XXX The register-provisioned-machine message is obsolete, it's kept around
-# just to not break older LDS releases that import it the last LDS release
+# just to not break older LDS releases that import it (the last LDS release
 # to have it is 14.07). Eventually it shall be dropped.
 REGISTER_PROVISIONED_MACHINE = Message(
     "register-provisioned-machine",
@@ -237,6 +244,7 @@ REGISTER_CLOUD_VM = Message(
      "local_ipv4": Unicode(),
      "access_group": Unicode()},
     optional=["tags", "vm-info", "public_ipv4", "local_ipv4", "access_group"])
+
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": Unicode(),
@@ -482,7 +490,7 @@ message_schemas = (
     OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
     HARDWARE_INVENTORY, HARDWARE_INFO, LOAD_AVERAGE, MEMORY_INFO,
     RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
-    REGISTER,
+    REGISTER, REGISTER_3_3,
     TEMPERATURE, PROCESSOR_INFO, USERS, PACKAGES, PACKAGE_LOCKS,
     CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
     ADD_PACKAGES, PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST,
@@ -490,4 +498,4 @@ message_schemas = (
     NETWORK_DEVICE, NETWORK_ACTIVITY,
     REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
     CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-    CHANGE_HA_SERVICE, JUJU_INFO, JUJU_UNITS_INFO, CLOUD_METADATA)
+    CHANGE_HA_SERVICE, JUJU_UNITS_INFO, CLOUD_METADATA)
