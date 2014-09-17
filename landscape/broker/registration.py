@@ -199,9 +199,6 @@ class RegistrationHandler(object):
         if self._juju_data and is_version_higher(server_api, "3.3"):
             juju_info_list, juju_info = self._juju_data
             message["juju-info"] = juju_info
-            # XXX the juju-info-list field will be dropped once the migration
-            # to computer-machine association is complete
-            message["juju-info-list"] = juju_info_list
 
         # The computer is a normal computer, possibly a container.
         with_word = "with" if bool(registration_key) else "without"

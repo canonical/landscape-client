@@ -204,13 +204,10 @@ REGISTER_3_3 = Message(
      "juju-info": KeyDict({"environment-uuid": Unicode(),
                            "api-addresses": List(Unicode()),
                            "machine-id": Unicode()}),
-     # XXX temporary field with unit info, will be dropped when we complete
-     # the migration to machine info.
-     "juju-info-list": List(KeyDict(juju_data, optional=["private-address"])),
      "access_group": Unicode()},
     api="3.3",
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "access_group", "juju-info", "juju-info-list"])
+              "container-info", "access_group", "juju-info"])
 
 
 # XXX The register-provisioned-machine message is obsolete, it's kept around
