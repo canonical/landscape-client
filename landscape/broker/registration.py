@@ -130,7 +130,7 @@ class RegistrationHandler(object):
         juju_info = get_juju_info(self._config)
         if juju_info is None:
             return None
-        self._juju_data = juju_info  # (list of dicts, new juju info struct)
+        self._juju_data = juju_info
 
     def _handle_exchange_done(self):
         """Registered handler for the C{"exchange-done"} event.
@@ -197,8 +197,10 @@ class RegistrationHandler(object):
         # so this makes sure that the correct schema is used by the server
         # when validating our message.
         if self._juju_data and is_version_higher(server_api, "3.3"):
-            juju_info_list, juju_info = self._juju_data
-            message["juju-info"] = juju_info
+            message["juju-info"] = {
+                "environment-uuid": self._juju_data["environment-uuid"],
+                "api-addresses": self._juju_data["api-addresses"],
+                "machine-id": self._juju_data["machine-id"]}
 
         # The computer is a normal computer, possibly a container.
         with_word = "with" if bool(registration_key) else "without"

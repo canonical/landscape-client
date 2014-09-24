@@ -630,14 +630,14 @@ class ConfigurationTest(LandscapeTest):
             "/var/lib/landscape/client/annotations.d",
             self.config.annotations_path)
 
-    def test_juju_directory(self):
+    def test_juju_filename(self):
         """
-        The L{Configuration.juju_directory} property returns the path to the
-        juju info directory.
+        The L{Configuration.juju_filename} property returns the path to the
+        juju info file.
         """
         self.assertEqual(
-            "/var/lib/landscape/client/juju-info.d",
-            self.config.juju_directory)
+            "/var/lib/landscape/client/juju-info.json",
+            self.config.juju_filename)
 
     def test_clone(self):
         """The L{Configuration.clone} method clones a configuration."""

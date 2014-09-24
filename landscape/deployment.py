@@ -415,10 +415,6 @@ class Configuration(BaseConfiguration):
         backwards-compatibility."""
         return os.path.join(self.data_path, "juju-info.json")
 
-    @property
-    def juju_directory(self):
-        return os.path.join(self.data_path, "juju-info.d")
-
 
 def get_versioned_persist(service):
     """Get a L{Persist} database with upgrade rules applied.
