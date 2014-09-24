@@ -1081,8 +1081,8 @@ class PackageReporterAptTest(LandscapeTest):
     def test_resynchronize(self):
         """
         When a resynchronize task arrives, the reporter should clear
-        out all the data in the package store, except the hash ids and
-        the hash ids requests.
+        out all the data in the package store, except the hash ids.
+
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
         """
@@ -1134,21 +1134,10 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(self.store.get_installed(), [3])
             self.assertEqual(self.store.get_locked(), [3])
 
-            # The two original hash id requests should be still there, and
-            # a new hash id request should also be detected for HASH3.
-            requests_count = 0
-            new_request_found = False
-            for request in self.store.iter_hash_id_requests():
-                requests_count += 1
-                if request.id == request1.id:
-                    self.assertEqual(request.hashes, ["hash3"])
-                elif request.id == request2.id:
-                    self.assertEqual(request.hashes, ["hash4"])
-                elif not new_request_found:
-                    self.assertEqual(request.hashes, [HASH3, HASH1])
-                else:
-                    self.fail("Unexpected hash-id request!")
-            self.assertEqual(requests_count, 3)
+            # The two original hash id requests are gone, and a new hash id
+            # request should be detected for HASH3.
+            [request] = self.store.iter_hash_id_requests()
+            self.assertEqual(request.hashes, [HASH3, HASH1])
 
         deferred.addCallback(check_result)
         return deferred
