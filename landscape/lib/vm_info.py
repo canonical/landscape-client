@@ -59,14 +59,15 @@ def _is_vm_openvz(root_path):
 
 def _get_vm_by_vendor(sys_vendor_path):
     """Return the VM type string (possibly empty) based on the vendor."""
-    vendor = read_file(sys_vendor_path)
+    vendor = read_file(sys_vendor_path).lower()
+    # Use lower-key string for vendors, since we do case-insentive match.
     content_vendors_map = (
-        ("VMware, Inc.", "vmware"),
-        ("Microsoft Corporation", "hyperv"),
-        ("Bochs", "kvm"),
-        ("OpenStack", "kvm"),
-        ("QEMU", "kvm"),
-        ("innotek GmbH", "virtualbox"))
+        ("vmware", "vmware"),
+        ("microsoft", "hyperv"),
+        ("bochs", "kvm"),
+        ("openstack", "kvm"),
+        ("qemu", "kvm"),
+        ("innotek", "virtualbox"))
     for name, vm_type in content_vendors_map:
         if name in vendor:
             return vm_type

@@ -124,6 +124,13 @@ class GetVMInfoTest(LandscapeTest):
         self.make_sys_vendor("Microsoft Corporation")
         self.assertEqual("hyperv", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_matches_insensitive(self):
+        """
+        L{get_vm_info} matches the vendor string in a case-insentive way.
+        """
+        self.make_sys_vendor("openstack foundation")
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_kvm_on_other_architecture(self):
         """
         L{get_vm_info} returns 'kvm', if no sys_vendor is available but the
