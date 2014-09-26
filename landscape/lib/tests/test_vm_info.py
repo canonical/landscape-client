@@ -93,6 +93,14 @@ class GetVMInfoTest(LandscapeTest):
         self.make_sys_vendor("OpenStack Foundation")
         self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_qemu_sys_vendor(self):
+        """
+        L{get_vm_info} should return "kvm" when we detect the sys_vendor is
+        QEMU.
+        """
+        self.make_sys_vendor("QEMU")
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_vmware_sys_vendor(self):
         """
         L{get_vm_info} should return "vmware" when we detect the sys_vendor is
