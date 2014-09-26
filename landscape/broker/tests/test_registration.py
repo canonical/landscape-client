@@ -499,7 +499,6 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     juju_contents = json.dumps({"environment-uuid": "DEAD-BEEF",
                                 "machine-id": "1",
-                                "unit-name": "service/0",
                                 "api-addresses": "10.0.3.1:17070"})
 
     def test_juju_info_added_when_present(self):
