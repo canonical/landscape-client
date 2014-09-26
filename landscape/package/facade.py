@@ -419,7 +419,7 @@ class AptFacade(object):
 
     def is_package_upgrade(self, version):
         """Is the package an upgrade for another installed package?"""
-        if not version.package.installed:
+        if not version.package.is_upgradable or not version.package.installed:
             return False
         return version > version.package.installed
 

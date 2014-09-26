@@ -905,6 +905,26 @@ class AptFacadeTest(LandscapeTest):
         [package] = self.facade.get_packages()
         self.assertFalse(self.facade.is_package_upgrade(package))
 
+    def test_is_package_upgrade_with_apt_preferences(self):
+        """
+        A package is not considered to be an upgrade if the package has
+        a higher version of an installed package, but it's being held back
+        because of APT pinning.
+        """
+        # Create an APT preferences file that assigns a very low priority
+        # to all local packages.
+        self.makeFile(
+            content="Package: *\nPin: origin \"\"\nPin-priority: 10\n",
+            path=os.path.join(self.apt_root, "etc", "apt", "preferences"))
+        self._add_system_package("foo", version="0.5")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [version_05, version_10] = sorted(self.facade.get_packages())
+        self.assertTrue(self.facade.is_package_upgrade(version_10))
+        self.assertFalse(self.facade.is_package_upgrade(version_05))
+
     def test_get_packages_by_name_no_match(self):
         """
         If there are no packages with the given name,
