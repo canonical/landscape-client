@@ -1,8 +1,8 @@
-landscape-client (14.04-0ubuntu1) trusty; urgency=low
+landscape-client (14.08-0ubuntu1) trusty; urgency=low
 
   * Version bump.
 
- -- Andreas Hasenack <andreas@canonical.com>  Tue, 06 May 2014 16:42:39 -0500
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 29 Sep 2014 18:26:22 -0300
 
 landscape-client (13.09-0ubuntu1) precise; urgency=low
 
