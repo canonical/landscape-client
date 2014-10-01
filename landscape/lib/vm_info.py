@@ -62,12 +62,13 @@ def _get_vm_by_vendor(sys_vendor_path):
     vendor = read_file(sys_vendor_path).lower()
     # Use lower-key string for vendors, since we do case-insentive match.
     content_vendors_map = (
-        ("vmware", "vmware"),
-        ("microsoft", "hyperv"),
         ("bochs", "kvm"),
+        ("google", "gce"),
+        ("innotek", "virtualbox"),
+        ("microsoft", "hyperv"),
         ("openstack", "kvm"),
         ("qemu", "kvm"),
-        ("innotek", "virtualbox"))
+        ("vmware", "vmware"))
     for name, vm_type in content_vendors_map:
         if name in vendor:
             return vm_type
