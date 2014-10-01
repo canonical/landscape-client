@@ -93,6 +93,14 @@ class GetVMInfoTest(LandscapeTest):
         self.make_sys_vendor("OpenStack Foundation")
         self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_qemu_sys_vendor(self):
+        """
+        L{get_vm_info} should return "kvm" when we detect the sys_vendor is
+        QEMU.
+        """
+        self.make_sys_vendor("QEMU")
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_vmware_sys_vendor(self):
         """
         L{get_vm_info} should return "vmware" when we detect the sys_vendor is
@@ -104,7 +112,7 @@ class GetVMInfoTest(LandscapeTest):
     def test_get_vm_info_with_virtualbox_sys_vendor(self):
         """
         L{get_vm_info} should return "virtualbox" when we detect the sys_vendor
-        is innotek GmbH.
+        is innotek. GmbH.
         """
         self.make_sys_vendor("innotek GmbH")
         self.assertEqual("virtualbox", get_vm_info(root_path=self.root_path))
@@ -115,6 +123,20 @@ class GetVMInfoTest(LandscapeTest):
         """
         self.make_sys_vendor("Microsoft Corporation")
         self.assertEqual("hyperv", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_with_google_sys_vendor(self):
+        """
+        L{get_vm_info} returns "gce" if the sys_vendor is Google.
+        """
+        self.make_sys_vendor("Google")
+        self.assertEqual("gce", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_matches_insensitive(self):
+        """
+        L{get_vm_info} matches the vendor string in a case-insentive way.
+        """
+        self.make_sys_vendor("openstack foundation")
+        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_kvm_on_other_architecture(self):
         """
