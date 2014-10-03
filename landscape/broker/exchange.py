@@ -572,6 +572,7 @@ class MessageExchange(object):
             exchange_completed()
 
         def handle_failure(error_class, error, traceback):
+            self._exchanging = False
             if isinstance(error, HTTPCodeError) and error.http_code == 404:
                 # If we got a 404 HTTP error it could be that we're trying to
                 # speak a server API version that the server does not support,
@@ -580,8 +581,8 @@ class MessageExchange(object):
                 # again.
                 if self._message_store.get_server_api() != DEFAULT_SERVER_API:
                     self._message_store.set_server_api(DEFAULT_SERVER_API)
-                    self.schedule_exchange(urgent=True)
-            self._exchanging = False
+                    self.exchange()
+                    return
             self._reactor.fire("exchange-failed")
             self._message_store.record_failure(int(self._reactor.time()))
             logging.info("Message exchange failed.")
