@@ -348,10 +348,12 @@ from landscape.lib.hashlib import md5
 
 from twisted.internet.defer import Deferred, succeed
 
+from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.message import got_next_expected, ANCIENT
 from landscape.lib.versioning import is_version_higher, sort_versions
 from landscape.log import format_delta
-from landscape import SERVER_API, CLIENT_API
+
+from landscape import DEFAULT_SERVER_API, SERVER_API, CLIENT_API
 
 
 class MessageExchange(object):
@@ -569,7 +571,16 @@ class MessageExchange(object):
                 logging.info("Message exchange failed.")
             exchange_completed()
 
-        def handle_failure(failure_type, failure_value, failure_tb):
+        def handle_failure(error_class, error, traceback):
+            if isinstance(error, HTTPCodeError) and error.http_code == 404:
+                # If we got a 404 HTTP error it could be that we're trying to
+                # speak a server API version that the server does not support,
+                # e.g. this client was pointed at a different server. We'll to
+                # downgrade to the least possible server API version and try
+                # again.
+                if self._message_store.get_server_api() != DEFAULT_SERVER_API:
+                    self._message_store.set_server_api(DEFAULT_SERVER_API)
+                    self.schedule_exchange(urgent=True)
             self._exchanging = False
             self._reactor.fire("exchange-failed")
             self._message_store.record_failure(int(self._reactor.time()))

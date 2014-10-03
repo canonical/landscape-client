@@ -1,5 +1,6 @@
 from landscape import CLIENT_API
 from landscape.lib.persist import Persist
+from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.hashlib import md5
 from landscape.schema import Message, Int
 from landscape.broker.config import BrokerConfiguration
@@ -12,15 +13,6 @@ from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
 from landscape.tests.mocker import MATCH
 from landscape.broker.tests.helpers import ExchangeHelper
 from landscape.broker.server import BrokerServer
-
-
-class RaisingTransport(object):
-
-    def get_url(self2):
-        return ""
-
-    def exchange(self2, *args):
-        raise RuntimeError("Failed to communicate.")
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -1005,24 +997,19 @@ class MessageExchangeTest(LandscapeTest):
             events.append(None)
 
         self.reactor.call_on("exchange-failed", failed_exchange)
-        self.exchanger._transport = RaisingTransport()
+        self.transport.responses.append(RuntimeError("Failed to communicate."))
         self.exchanger.exchange()
         self.assertEqual([None], events)
 
-    def test_error_exchanging_records_failure_in_message_store(self):
+    def test_wb_error_exchanging_records_failure_in_message_store(self):
         """
         If a traceback occurs whilst exchanging, the failure is recorded
         in the message store.
         """
-        mock_message_store = self.mocker.proxy(self.mstore)
-        mock_message_store.record_failure(MATCH(lambda x: type(x) is int))
-        self.mocker.result(None)
-        self.mocker.replay()
-
-        exchanger = MessageExchange(
-            self.reactor, mock_message_store, RaisingTransport(),
-            self.identity, self.exchange_store, self.config)
-        exchanger.exchange()
+        self.reactor.advance(123)
+        self.transport.responses.append(RuntimeError("Failed to communicate."))
+        self.exchanger.exchange()
+        self.assertEqual(123, self.mstore._persist.get("first-failure-time"))
 
     def test_error_exchanging_marks_exchange_complete(self):
         """
@@ -1035,7 +1022,7 @@ class MessageExchangeTest(LandscapeTest):
             events.append(None)
 
         self.reactor.call_on("exchange-done", exchange_done)
-        self.exchanger._transport = RaisingTransport()
+        self.transport.responses.append(RuntimeError("Failed to communicate."))
         self.exchanger.exchange()
         self.assertEqual([None], events)
 
@@ -1043,9 +1030,18 @@ class MessageExchangeTest(LandscapeTest):
         """
         If a traceback occurs whilst exchanging, the failure is logged.
         """
-        self.exchanger._transport = RaisingTransport()
+        self.transport.responses.append(RuntimeError("Failed to communicate."))
         self.exchanger.exchange()
         self.assertIn("Message exchange failed.", self.logfile.getvalue())
+
+    def test_exchange_error_with_404_downgrades_server_api(self):
+        """
+        If we get a 404, we try to donwgrade our server API version.
+        """
+        self.mstore.set_server_api("3.3")
+        self.transport.responses.append(HTTPCodeError(404, ""))
+        self.exchanger.exchange()
+        self.assertEqual("3.2", self.mstore.get_server_api())
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):

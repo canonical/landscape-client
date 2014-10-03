@@ -1685,7 +1685,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         service = self.broker_service
 
         registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.patch(FakeReactor)
 
@@ -1698,9 +1697,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
 
         # The register() method is called.  We fire the "registration-done"
         # event after it's done, so that it cascades into a deferred callback.
@@ -1739,7 +1735,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         self.log_helper.ignore_errors(InvalidCredentialsError)
         registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.patch(FakeReactor)
 
@@ -1752,9 +1747,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
 
         # The register() method is called.  We fire the "registration-failed"
         # event after it's done, so that it cascades into a deferred errback.
@@ -1794,7 +1786,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         service = self.broker_service
 
         registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.patch(FakeReactor)
 
@@ -1807,9 +1798,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
 
         def register_done():
             service.reactor.fire("exchange-failed")
@@ -1844,7 +1832,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         service = self.broker_service
 
         registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.patch(FakeReactor)
         remote_mock = self.mocker.patch(RemoteBroker)
@@ -1863,9 +1850,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
-
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
 
         remote_mock.call_on_event(ANY)
         self.mocker.result(succeed(None))
@@ -2075,8 +2059,6 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         connector = connector_factory(ANY, configuration)
         connector.connect(max_retries=0, quiet=True)
         self.mocker.result(succeed(remote_broker))
-        remote_broker.reload_configuration()
-        self.mocker.result(succeed(None))
         remote_broker.call_on_event(ANY)
         self.mocker.result(succeed(None))
 
