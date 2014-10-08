@@ -126,6 +126,9 @@ class FakeTransport(object):
         else:
             response = []
 
+        if isinstance(response, Exception):
+            raise response
+
         result = {"next-expected-sequence": self.next_expected_sequence,
                   "next-exchange-token": unicode(uuid.uuid4()),
                   "messages": response}

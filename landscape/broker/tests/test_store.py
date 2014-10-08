@@ -335,9 +335,10 @@ class MessageStoreTest(LandscapeTest):
                          [{"type": "empty", "api": "3.3"}])
 
     def test_custom_api_on_messages(self):
-        self.store.add({"type": "empty", "api": "X.Y"})
+        self.store.set_server_api("3.3")
+        self.store.add({"type": "empty", "api": "3.2"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": "X.Y"}])
+                         [{"type": "empty", "api": "3.2"}])
 
     def test_coercion(self):
         """
@@ -363,9 +364,9 @@ class MessageStoreTest(LandscapeTest):
         self.store.add_schema(Message("data", {"data": Unicode()}))
         self.store.add({"type": "data",
                         "data": u"\N{HIRAGANA LETTER A}".encode("utf-8"),
-                        "api": "whatever"})
+                        "api": "3.2"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "data", "api": "whatever",
+                         [{"type": "data", "api": "3.2",
                            "data": u"\N{HIRAGANA LETTER A}"}])
 
     def test_message_is_coerced_to_its_api_schema(self):

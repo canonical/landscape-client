@@ -2,6 +2,10 @@ DEBIAN_REVISION = ""
 UPSTREAM_VERSION = "14.04"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
+# The minimum server API version that all Landscape servers are known to speak
+# and support. It can serve as fallback in case higher versions are not there.
+DEFAULT_SERVER_API = "3.2"
+
 # The highest server API version that the client is capable of speaking. The
 # client will use it, unless the server declares to support only a lower
 # version. In that case the server's version will be used. The client will set

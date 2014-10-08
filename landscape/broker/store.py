@@ -97,6 +97,7 @@ import logging
 import os
 import uuid
 
+from landscape import DEFAULT_SERVER_API
 from landscape.lib import bpickle
 from landscape.lib.fs import create_file
 from landscape.lib.versioning import sort_versions, is_version_higher
@@ -129,7 +130,7 @@ class MessageStore(object):
     # understood by Landscape hosted and by all LDS releases. After the
     # first exchange the client may decide to upgrade to a newer version
     # in case the server supports it.
-    _api = "3.2"
+    _api = DEFAULT_SERVER_API
 
     def __init__(self, persist, directory, directory_size=1000):
         self._directory = directory
@@ -252,6 +253,7 @@ class MessageStore(object):
     def get_pending_messages(self, max=None):
         """Get any pending messages that aren't being held, up to max."""
         accepted_types = self.get_accepted_types()
+        server_api = self.get_server_api()
         messages = []
         for filename in self._walk_pending_messages():
             if max is not None and len(messages) >= max:
@@ -263,7 +265,9 @@ class MessageStore(object):
                 logging.exception(e)
                 self._add_flags(filename, BROKEN)
             else:
-                if message["type"] not in accepted_types:
+                unknown_type = message["type"] not in accepted_types
+                unknown_api = not is_version_higher(server_api, message["api"])
+                if unknown_type or unknown_api:
                     self._add_flags(filename, HELD)
                 else:
                     messages.append(message)

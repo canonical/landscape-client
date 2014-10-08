@@ -653,7 +653,6 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
                     "registration-failed": failure,
                     "exchange-failed": exchange_failure}
         deferreds = [
-            remote.reload_configuration(),
             remote.call_on_event(handlers),
             remote.register().addErrback(handle_registration_errors)]
         # We consume errors here to ignore errors after the first one.
