@@ -89,14 +89,6 @@ class ReleaseUpgrader(PackageTaskHandler):
         signature_url = message["upgrade-tool-signature-url"]
         allow_third_party = message.get("allow-third-party", False)
         debug = message.get("debug", False)
-        mode = None
-        if current_code_name == "dapper":
-            # On Dapper the upgrade tool must be passed "--mode server"
-            # when run on a server system. As there is no simple and
-            # reliable way to detect if a system is a desktop one, and as
-            # the desktop edition is no longer supported, we default to server
-            # mode.
-            mode = "server"
         directory = self._config.upgrade_tool_directory
         tarball_filename = url_to_filename(tarball_url,
                                            directory=directory)
@@ -110,7 +102,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         result.addCallback(lambda x: self.tweak(current_code_name))
         result.addCallback(lambda x: self.upgrade(
             target_code_name, operation_id,
-            allow_third_party=allow_third_party, debug=debug, mode=mode))
+            allow_third_party=allow_third_party, debug=debug))
         result.addCallback(lambda x: self.finish())
         result.addErrback(self.abort, operation_id)
         return result
@@ -176,44 +168,6 @@ class ReleaseUpgrader(PackageTaskHandler):
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
 
-        if current_code_name == "dapper":
-            config_filename = os.path.join(upgrade_tool_directory,
-                                           "DistUpgrade.cfg.dapper")
-            config = ConfigParser.ConfigParser()
-            config.read(config_filename)
-
-            # Fix a bug in the DistUpgrade.cfg.dapper file contained in
-            # the upgrade tool tarball
-            if not config.has_section("NonInteractive"):
-                config.add_section("NonInteractive")
-                config.set("NonInteractive", "ForceOverwrite", "no")
-
-            # Workaround for Bug #174148, which prevents dbus from restarting
-            # after a dapper->hardy upgrade
-            if not config.has_section("Distro"):
-                config.add_section("Distro")
-            if not config.has_option("Distro", "PostInstallScripts"):
-                config.set("Distro", "PostInstallScripts", "./dbus.sh")
-            else:
-                scripts = config.get("Distro", "PostInstallScripts")
-                scripts += ", ./dbus.sh"
-                config.set("Distro", "PostInstallScripts", scripts)
-
-            # Write config changes to disk
-            fd = open(config_filename, "w")
-            config.write(fd)
-            fd.close()
-
-            # Generate the post-install script that starts DBus
-            dbus_sh_filename = os.path.join(upgrade_tool_directory,
-                                            "dbus.sh")
-            fd = open(dbus_sh_filename, "w")
-            fd.write("#!/bin/sh\n"
-                     "/etc/init.d/dbus start\n"
-                     "sleep 10\n")
-            fd.close()
-            os.chmod(dbus_sh_filename, 0755)
-
         # On some releases the upgrade-tool doesn't support the allow third
         # party environment variable, so this trick is needed to make it
         # possible to upgrade against testing client packages from the
@@ -249,21 +203,17 @@ class ReleaseUpgrader(PackageTaskHandler):
         return buf.getvalue()
 
     def upgrade(self, code_name, operation_id, allow_third_party=False,
-                debug=False, mode=None):
+                debug=False):
         """Run the upgrade-tool command and send a report of the results.
 
         @param code_name: The code-name of the release to upgrade to.
         @param operation_id: The activity id for this task.
         @param allow_third_party: Whether to enable non-official APT repo.
         @param debug: Whether to turn on debug level logging.
-        @param mode: Optionally, the mode to run the upgrade-tool as. It
-            can be "server" or "desktop", and it's relevant only for dapper.
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
         args = ["--frontend", "DistUpgradeViewNonInteractive"]
-        if mode:
-            args.extend(["--mode", mode])
         env = os.environ.copy()
         if allow_third_party:
             env["RELEASE_UPRADER_ALLOW_THIRD_PARTY"] = "True"

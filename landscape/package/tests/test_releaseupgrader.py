@@ -177,51 +177,6 @@ class ReleaseUpgraderTest(LandscapeTest):
         result.addCallback(check_result)
         return result
 
-    def test_tweak_fixes_broken_dapper_config(self):
-        """
-        The L{ReleaseUpgrader.tweak} method fixes a missing section in the
-        dapper config files included in the upgrade tool tarball.
-        """
-        config_filename = os.path.join(self.config.upgrade_tool_directory,
-                                       "DistUpgrade.cfg.dapper")
-        self.makeFile(path=config_filename,
-                      content="[Files]\n"
-                              "BackupExt=distUpgrade\n"
-                              "LogDir=/var/log/dist-upgrade\n")
-
-        result = self.upgrader.tweak("dapper")
-
-        def check_result(ignored):
-            config = ConfigParser.ConfigParser()
-            config.read(config_filename)
-            self.assertFalse(config.getboolean("NonInteractive",
-                                               "ForceOverwrite"))
-
-        result.addCallback(check_result)
-        return result
-
-    def test_tweak_does_not_change_good_dapper_config(self):
-        """
-        The L{ReleaseUpgrader.tweak} method doesn't change the dapper config
-        file if it's not broken.
-        """
-        config_filename = os.path.join(self.config.upgrade_tool_directory,
-                                       "DistUpgrade.cfg.dapper")
-        self.makeFile(path=config_filename,
-                      content="[NonInteractive]\n"
-                              "ForceOverwrite=No\n")
-
-        result = self.upgrader.tweak("dapper")
-
-        def check_result(ignored):
-            config = ConfigParser.ConfigParser()
-            config.read(config_filename)
-            self.assertFalse(config.getboolean("NonInteractive",
-                                               "ForceOverwrite"))
-
-        result.addCallback(check_result)
-        return result
-
     def test_tweak_includes_landscape_ppa_in_mirrors(self):
         """
         The L{ReleaseUpgrader.tweak} method adds the Landscape PPA repository
@@ -239,60 +194,6 @@ class ReleaseUpgraderTest(LandscapeTest):
                                    "trunk/ubuntu/\n")
 
         result = self.upgrader.tweak("hardy")
-        result.addCallback(check_result)
-        return result
-
-    def test_tweak_sets_dbus_start_script(self):
-        """
-        The L{ReleaseUpgrader.tweak} method adds to the upgrade-tool
-        configuration a little script that starts dbus after the upgrade.
-        """
-        config_filename = os.path.join(self.config.upgrade_tool_directory,
-                                       "DistUpgrade.cfg.dapper")
-        self.makeFile(path=config_filename,
-                      content="[Distro]\n"
-                              "PostInstallScripts=/foo.sh\n")
-
-        def check_result(ignored):
-            config = ConfigParser.ConfigParser()
-            config.read(config_filename)
-            self.assertEqual(config.get("Distro", "PostInstallScripts"),
-                             "/foo.sh, ./dbus.sh")
-            dbus_sh = os.path.join(self.config.upgrade_tool_directory,
-                                   "dbus.sh")
-            self.assertFileContent(dbus_sh,
-                                   "#!/bin/sh\n"
-                                   "/etc/init.d/dbus start\n"
-                                   "sleep 10\n")
-
-        result = self.upgrader.tweak("dapper")
-        result.addCallback(check_result)
-        return result
-
-    def test_tweak_sets_dbus_start_script_with_no_post_install_scripts(self):
-        """
-        The L{ReleaseUpgrader.tweak} method adds to the upgrade-tool
-        configuration a little script that starts dbus after the upgrade. This
-        works even when the config file doesn't have a PostInstallScripts entry
-        yet.
-        """
-        config_filename = os.path.join(self.config.upgrade_tool_directory,
-                                       "DistUpgrade.cfg.dapper")
-        self.makeFile(path=config_filename, content="")
-
-        def check_result(ignored):
-            config = ConfigParser.ConfigParser()
-            config.read(config_filename)
-            self.assertEqual(config.get("Distro", "PostInstallScripts"),
-                             "./dbus.sh")
-            dbus_sh = os.path.join(self.config.upgrade_tool_directory,
-                                   "dbus.sh")
-            self.assertFileContent(dbus_sh,
-                                   "#!/bin/sh\n"
-                                   "/etc/init.d/dbus start\n"
-                                   "sleep 10\n")
-
-        result = self.upgrader.tweak("dapper")
         result.addCallback(check_result)
         return result
 
@@ -427,42 +328,6 @@ class ReleaseUpgraderTest(LandscapeTest):
             return ignored
 
         return deferred.addBoth(cleanup)
-
-    def test_upgrade_with_server_mode(self):
-        """
-        The L{ReleaseUpgrader.upgrade} accepts an optional C{mode} parameter
-        which gets passed to the upgrade-tool script as argument for the
-        C{--mode} command line option.
-        """
-        self.upgrader.logs_directory = self.makeDir()
-        upgrade_tool_directory = self.config.upgrade_tool_directory
-        upgrade_tool_filename = os.path.join(upgrade_tool_directory, "hardy")
-        self.makeFile(path=upgrade_tool_filename,
-                      content="#!/bin/sh\n"
-                                "echo $@\n")
-        os.chmod(upgrade_tool_filename, 0755)
-        deferred = Deferred()
-
-        def do_test():
-
-            result = self.upgrader.upgrade("hardy", 100, mode="server")
-
-            def check_result(ignored):
-                result_text = (u"=== Standard output ===\n\n"
-                               "--frontend DistUpgradeViewNonInteractive "
-                               "--mode server\n\n\n")
-                self.assertMessages(self.get_pending_messages(),
-                                    [{"type": "operation-result",
-                                      "operation-id": 100,
-                                      "status": SUCCEEDED,
-                                      "result-text": result_text,
-                                      "result-code": 0}])
-
-            result.addCallback(check_result)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
 
     def test_upgrade_with_env_variables(self):
         """
@@ -810,42 +675,6 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             self.assertEqual(calls, ["fetch", "verify", "extract", "tweak",
                                      "upgrade", "finish"])
-
-        result.addCallback(check_result)
-        return result
-
-    def test_handle_release_upgrade_on_dapper_server(self):
-        """
-        On Dapper server, the L{ReleaseUpgrader.handle_release_upgrade}
-        method calls sets the upgrade-tool running mode to "server".
-        """
-        calls = []
-
-        def upgrade(code_name, operation_id, allow_third_party=False,
-                    debug=False, mode=None):
-            self.assertEqual(mode, "server")
-            calls.append("upgrade")
-
-        self.upgrader.fetch = lambda x, y: succeed(None)
-        self.upgrader.verify = lambda x, y: None
-        self.upgrader.extract = lambda x: None
-        self.upgrader.tweak = lambda x: None
-        self.upgrader.upgrade = upgrade
-        self.upgrader.finish = lambda: None
-
-        self.upgrader.lsb_release_filename = self.makeFile(
-            "DISTRIB_CODENAME=dapper\n")
-
-        message = {"type": "release-upgrade",
-                   "code-name": "hardy",
-                   "upgrade-tool-tarball-url": "http://some/tarball",
-                   "upgrade-tool-signature-url": "http://some/sign",
-                   "operation-id": 100}
-
-        result = self.upgrader.handle_release_upgrade(message)
-
-        def check_result(ignored):
-            self.assertEqual(calls, ["upgrade"])
 
         result.addCallback(check_result)
         return result
