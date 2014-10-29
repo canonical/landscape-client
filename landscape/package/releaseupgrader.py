@@ -6,7 +6,6 @@ import shutil
 import logging
 import tarfile
 import cStringIO
-import ConfigParser
 
 from twisted.internet.defer import succeed
 

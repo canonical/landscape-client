@@ -102,11 +102,6 @@ if ! [ -e "$BASETGZ" ]; then
     COMPONENTS="main universe multiverse restricted"
     OTHERMIRROR="deb ${MIRROR} ${RELEASE}-updates ${COMPONENTS}"
 
-    if [ "${RELEASE}" = "hardy" ] || [ "${RELEASE}" = "dapper" ]; then
-        LANDSCAPE_REPO="deb http://landscape.canonical.com/packages/${RELEASE} ./"
-        OTHERMIRROR="${OTHERMIRROR} | ${LANDSCAPE_REPO}"
-    fi
-
     sudo pbuilder \
         --create \
         --distribution ${RELEASE} \
