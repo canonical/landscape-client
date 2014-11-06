@@ -191,7 +191,7 @@ class BrokerServer(object):
             during the next regularly scheduled exchange.
         @return: The message identifier created when queuing C{message}.
         """
-        if session_id is True and message["type"] in (
+        if isinstance(session_id, bool) and message["type"] in (
                 "operation-result", "change-packages-result"):
             # XXX This means we're performing a Landscape-driven upgrade and
             # we're being invoked by a package-changer or release-upgrader
