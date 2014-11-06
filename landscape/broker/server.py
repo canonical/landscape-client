@@ -191,6 +191,22 @@ class BrokerServer(object):
             during the next regularly scheduled exchange.
         @return: The message identifier created when queuing C{message}.
         """
+        if isinstance(session_id, bool) and message["type"] in (
+                "operation-result", "change-packages-result"):
+            # XXX This means we're performing a Landscape-driven upgrade and
+            # we're being invoked by a package-changer or release-upgrader
+            # process that is running code which doesn't know about the
+            # session_id parameter, i.e. it was written against the old
+            # signature:
+            #
+            #     def send_message(self, message, urgent=False):
+            #
+            # In this case we'll just let the message in. This transitional
+            # code can be dropped once we stop supporting clients without
+            # session IDs (i.e. with versions < 14.01).
+            urgent = True
+            session_id = self.get_session_id()
+
         if session_id is None:
             raise RuntimeError(
                 "Session ID must be set before attempting to send a message")

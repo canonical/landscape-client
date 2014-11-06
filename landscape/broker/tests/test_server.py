@@ -104,6 +104,29 @@ class BrokerServerTest(LandscapeTest):
         self.assertRaises(
             RuntimeError, self.broker.send_message, message, None)
 
+    def test_send_message_with_old_release_upgrader(self):
+        """
+        If we receive a message from an old release-upgrader process that
+        doesn't know about session IDs, we just let the message in.
+        """
+        message = {"type": "operation-result", "operation-id": 99, "status": 5}
+        self.mstore.set_accepted_types(["operation-result"])
+        self.broker.send_message(message, True)
+        self.assertMessages(self.mstore.get_pending_messages(), [message])
+        self.assertTrue(self.exchanger.is_urgent())
+
+    def test_send_message_with_old_package_changer(self):
+        """
+        If we receive a message from an old package-changer process that
+        doesn't know about session IDs, we just let the message in.
+        """
+        message = {"type": "change-packages-result", "operation-id": 99,
+                   "result-code": 123}
+        self.mstore.set_accepted_types(["change-packages-result"])
+        self.broker.send_message(message, True)
+        self.assertMessages(self.mstore.get_pending_messages(), [message])
+        self.assertTrue(self.exchanger.is_urgent())
+
     def test_is_pending(self):
         """
         The L{BrokerServer.is_pending} method indicates if a message with
