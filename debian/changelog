@@ -1,25 +1,171 @@
-landscape-client (14.08-0ubuntu1) trusty; urgency=low
+landscape-client (14.01-0ubuntu3) trusty; urgency=medium
 
-  * Version bump.
+  * landscape-sysinfo should ignore non existent or unreadable default
+    config files. (LP: #1293990)
 
- -- Andreas Hasenack <andreas@canonical.com>  Mon, 29 Sep 2014 18:26:22 -0300
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 28 Mar 2014 10:20:01 -0300
 
-landscape-client (13.09-0ubuntu1) precise; urgency=low
+landscape-client (14.01-0ubuntu2) trusty; urgency=low
 
-  * Fake changelog entry to bump version.
-  * This changelog is used only for locally built pacakges (development).
-    If you need to change the debian version please do so without adding a new
-    entry.
+  * Added missing python-configobj dependency to -common (LP: #1283716)
 
- -- Chris Glass <christopher.glass@canonical.com>  Fri, 13 Sep 2013 10:52:40 +0100
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 24 Feb 2014 09:43:33 -0300
 
-landscape-client (13.02-0ubuntu0) quantal; urgency=low
+landscape-client (14.01-0ubuntu1) trusty; urgency=low
 
-  * Fake changelog entry to bump version.
+  * New upstream release: 14.01
+  * Dropped unity-control-center patch, already applied upstream
 
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 06 Feb 2013 11:51:17 -0200
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 20 Feb 2014 12:03:20 -0300
 
-landscape-client (12.04.3-0ubuntu0.12.04.0) precise; urgency=low
+landscape-client (13.07.3-0ubuntu2) trusty; urgency=medium
+
+  * debian/patches/unity-control-center.patch:
+    - Show in both GNOME control center and Unity control center (LP: #1257505)
+
+ -- Robert Ancell <robert.ancell@canonical.com>  Wed, 29 Jan 2014 10:44:27 +1300
+
+landscape-client (13.07.3-0ubuntu1) saucy; urgency=low
+
+  * New release: 13.07.3
+    - The metadata.d/ directory was renamed to annotations.d/ (LP: #1226087)
+    - Metadata exchange mechanism now uses the less ambiguous term
+      "annotations" instead of "metadata". (LP: #1226597)
+
+ -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Wed, 18 Sep 2013 11:42:28 +0200
+
+landscape-client (13.07.1-0ubuntu2) saucy; urgency=low
+
+  * New upstream version (LP: #1190510)
+   - New metadata exchange mechanism allows clients to send any key-value data
+     to the landscape server (LP: #1123932)
+   - Network devices now report their maximum theoretical speeds, and duplex
+     status to landscape-server (LP: #1126330, LP: #1130130)
+   - Landscape.client is now HA aware when HA is implemented using juju
+     charms (LP: #1122508)
+   - The landscape client will now trigger a reboot if server sends a
+     reboot-required message. (LP: #1133005)
+   - Big AMP code cleanup and refactoring in order to improve testing, improve
+     performance and ease future maintainability (LP: #1165047, LP: #1169102,
+     LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669,
+     LP: #1170669, LP: #1170669, LP: #1170669, LP: #1170669)
+   - Added logic to detect cloned (virtual) computers (LP: #1161856)
+   - The landscape-client and landscape-common packages do not use or depend
+     on dbus code anymore, and the dependencies to python-gi and gudev are
+     dropped. The hardware info plugin now looks at /proc instead of querying
+     DBus (LP: #1175553, LP: #1180691)
+   - The ceph manager plugin is now a monitor plugin and thus does not require
+     root privileges anymore. (LP: #1186973)
+   - The detection logic for virtual machine was changed to account for the
+     different semantics between Openstack Folsom and Grizzly, and was
+     expanded to detect more hypervisors (LP: #1191843)
+   - Removed legacy upgrader code from postinst since support for it was
+     dropped.
+   - French translation patches were removed since the changes were merged
+     upstream.
+   - Removed legacy upgrader from postinst.
+   - The /etc/dbus-1/system.d/landscape.conf file was moved from the
+     landscape-common package to the landscape-client-ui as part of
+     LP: #1175553, LP: #1180691. The added "Replaces:" stanza does not need
+     an equivalent "Breaks:" since packages depend on each other with a
+     strictly equal version number, avoiding the case described in 
+     http://www.debian.org/doc/debian-policy/footnotes.html#f53
+
+ -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Fri, 9 Aug 2013 17:01:28 +0200
+
+landscape-client (12.12-0ubuntu3) raring; urgency=low
+
+  * Fixed sed command that updated registration_key (LP: #1131355).
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 21 Feb 2013 16:35:46 -0300
+
+landscape-client (12.12-0ubuntu2) raring; urgency=low
+
+  * Added some fixes to the French translation file.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jan 2013 11:46:22 -0200
+
+landscape-client (12.12-0ubuntu1) raring; urgency=low
+
+  * New upstream release
+  * Slightly better regexp to change registration_password to
+    registration_key during upgrades.
+  * Detect Microsoft Hyper-V virtualization (LP: #1087185).
+  * Prevent Apport from generating crash reports when dpkg returns an error
+    (LP: #1076150).
+
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 10 Dec 2012 10:27:12 -0200
+
+landscape-client (12.11-0ubuntu1) raring; urgency=low
+
+  * New upstream release.
+  * Dropped lshw-storm-1053057 patch, already applied.
+  * New manpage: landscape-sysinfo(1)
+  * Upstream changed a config setting from registration_password to
+    registration_key. Adjust scripts and configs accordingly.
+  * Install new sample config file in the doc directory.
+  * Only depend on python-gnupginterface for releases before Quantal.
+  * Ensure ownership of our config file (LP: #1066116).
+  * Gearing towards debhelper 7 compatibility. Replaced dh_clean -k with
+    dh_prep.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 21 Nov 2012 15:24:20 -0200
+
+landscape-client (12.05-0ubuntu3) raring; urgency=low
+
+  * Drop python-gnupginterface dependency. (LP: #1045237).
+
+ -- Dmitrijs Ledkovs <dmitrij.ledkov@ubuntu.com>  Fri, 09 Nov 2012 10:55:22 +0000
+
+landscape-client (12.05-0ubuntu2) quantal-proposed; urgency=low
+
+  * Added fix for lshw storm when the client was talking to an old
+    Landscape server which was then upgraded (LP: #1053057).
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 20 Sep 2012 15:28:37 -0700
+
+landscape-client (12.05-0ubuntu1) quantal-proposed; urgency=low
+
+  * New upstream release 12.05 (r561 in trunk) (LP: #1004678).
+  * Make all subpackages that depend on each other require the exact same
+    version, instead of >= $version.
+  * Added python-gi to client depends starting natty.
+  * Make change-packages also handle package holds (LP: #972489).
+  * Fix typo in glade file (LP: #983096).
+  * Tidy up apt facade (LP: #985493).
+  * Remove SmartFacade and its tests, no longer used (LP: #996269).
+  * Remove check for apt version, since we won't release this for
+    Hardy where that check matters (LP: #996837).
+  * Remove methods that were smart specific. We no longer use smart
+    (LP: #996841).
+  * Remove smart-update helper binary. We no longer use smart
+    (LP: #997408).
+  * Remove test-mixins that were useful only during the apt-to-smart
+    code migration. Now with smart gone, they are no longer necessary
+    (LP: #997760).
+  * Build the packages from precise onward, not just precise.
+  * Assorted packaging fixes:
+    - Switched to format 3.0 (quilt).
+    - Added source lintian overrides, with comments.
+    - Updated debian/rules:
+      - Added build-arch and build-indep dummy target.
+      - Build the GUI packages from precise onwards, and not just on precise.
+      - Re-enable dh_lintian.
+      - Strip the binaries (dh_strip), and also call dh_shlibdeps for the
+        automatic shlibs dependency.
+      - Added python-gi from natty onwards.
+    - Used __Choices instead of _Choices in landscape-common.templates, it's
+      better for translators.
+    - Updated standard version to 3.8.2, the version from Lucid (oldest one
+      we support)
+    - Added shlibs depends.
+    - Dropped deprecated ${Source-Version} and replaced it with
+      ${binary:Version}
+    - Require exact version of the sibling package instead of >=.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 01 Jun 2012 17:48:43 -0300
+
+landscape-client (12.04.3-0ubuntu1) precise; urgency=low
 
   * Warn on unicode entry into settings UI (LP: #956612).
   * Sanitise hostname field in settings UI (LP: #954507).
@@ -28,11 +174,95 @@ landscape-client (12.04.3-0ubuntu0.12.04.0) precise; urgency=low
 
  -- David Britton <dpb@canonical.com>  Wed, 28 Mar 2012 10:59:58 -0600
 
-landscape-client (12.04.2-0ubuntu0.12.04.0) precise; urgency=low
+landscape-client (12.04.2-0ubuntu1) precise; urgency=low
 
-  * Placeholder for new release 
+  * Depend on python-aptdaemon.gtk3widgets instead of python-aptdaemon and
+    replace dependency on python-gobject by python-gi (LP: #961894)
+  * Add i18n to the landscape-client-ui-install script. (LP: #961891)
 
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 22 Mar 2012 14:59:01 -0300
+ -- David Britton <dpb@canonical.com>  Thu, 22 Mar 2012 10:10:39 -0600
+
+landscape-client (12.04.1-0ubuntu1) precise; urgency=low
+
+  * Fix default landscape hostname in glib schema.
+  * dpkg test improvements to fix intermittent failures.
+  * If ssl_public_key is supplied, use it also when fetching script
+    attachments. This fixes the case of using script execution with
+    attachments when the Landscape server is using a custom CA,
+    most common in LDS deployments. (LP: #959846)
+  * Make sure we have a PATH variable set before doing package
+    activities, and also set it in the initscript for good measure. If
+    the client was configured and restarted by the new UI configuration
+    tool, PATH wasn't set, triggering an error in dpkg. (LP: #961190)
+  * Make landscape-client-ui depend on landscape-client-ui-install, so
+    that we get an entry in the system settings if just
+    landscape-client-ui is installed. The actual entry comes from
+    landscape-client-ui-install.
+  * Optimization: when adding binaries, don't reload every repo, only the one
+    containing the binaries. (LP: #954822)
+  * Handle the case where the user clicks twice inadvertently on the
+    Landscape icon in system settings and don't start a second copy of
+    itself. (LP: #960211)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 21 Mar 2012 16:15:49 -0300
+
+landscape-client (12.04-0ubuntu1) precise; urgency=low
+
+  * d/control: Dropping python-central and python-support since
+    they are not used except in backports, and are not in main.
+
+ -- Clint Byrum <clint@ubuntu.com>  Mon, 19 Mar 2012 16:05:49 -0700
+
+landscape-client (12.04-0ubuntu0.12.04.0) precise; urgency=low
+
+  * Change package management features to use APT instead of Smart (LP: #856244,
+    #861707, #859615, #861345, #863239, #863259, #865270, #865272, #865285,
+    #865273, #871641, #865299, #873196, #873939, #876493, #881973, #882438,
+    #866014, #881998, #884142, #884151, #884131, #887037, #886208, #887578,
+    #887947, #889067, #889069, #889087, #889099, #865303, #889113, #890605,
+    #890606, #890609, #897416, #891855, #898681, #898683, #897656, #898542,
+    #862212, #903202, #914734, #914735, #914737, #916301, #915280, #914742,
+    #918925, #918175, #919179, #921664, #921699, #922582, #922511, #921712,
+    #928750, #932136, #928941, #937411, #937567, #925543, #947803, #952973,
+    #948142, #953136, #953906, #956590).
+  * Add a GTK interface to configure the client (LP: #911279, #911666, #912163,
+    #911665, #916300, #931937, #931937, #943622, #945025, #911279, #944652,
+    #948464, #948416, #949158, #911671, #950864, #949208, #949147, #953070,
+    #953292, #953463, #953034, #949200, #953026, #954499, #954516, #954285,
+    #953065, #954414, #954332, #954542, #955966, #955139, #956030, #956119).
+  * Add the ability to auto discover the server location on local deployment
+    (LP: #917422, #927620, #917422, #928585, #929087, #932325, #948564) 
+  * Allow the client to accept arbitrary environment variables from the
+    server for script execution (LP: #954999).
+  * Make landscape-config exit non-zero when registration fails and 
+    --ok-no-register is not passed (LP: #271759).
+  * Check for the content of /sys/bus/xen/devices to report a machine as a Xen
+    VM instead of just relying on the existence of /sys/bus/xen (LP: #921970).
+  * Make sure cloud registration succeeds if there is no kernel specified in
+    the meta-data service (LP: #920453).
+  * Report private and public IP adresses from the metadata service at cloud
+    registration time (LP: #918366).
+  * Add support for reporting hardware information using lshw (LP: #899002,
+    #943975, #955734).
+  * Add support for the new attachment service in script execution
+    (LP: #893040).
+  * Adds a new message type, 'register-provisioned-machine', which is meant
+    to register computers using an OTP (LP: #881405).
+  * Add local cloning option for load testing (LP: #872830, #925924).
+  * Add more variables to preseeding (LP: #863204, #867710).
+  * Allow the configuration of the ping interval (LP: #397884).
+  * Add fake package reporters for load testing purposes (LP: #821571,
+    #821570).
+  * Report a package reporter error to the server if no APT sources are
+    configured, to trigger a package reporter alert (LP: #823769).
+
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 19 Mar 2012 09:33:34 -0300
+
+landscape-client (11.07.1.1-0ubuntu2) precise; urgency=low
+
+  * Remove build dependency on python-central | python-support for demotion.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 17 Dec 2011 17:25:00 +0100
 
 landscape-client (11.07.1.1-0ubuntu1.11.10.0) oneiric; urgency=low
 
