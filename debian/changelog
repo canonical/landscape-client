@@ -1,3 +1,19 @@
+landscape-client (14.11-0ubuntu1) vivid; urgency=medium
+
+  * New upstream version:
+    - Fix regression occurring when performing Landscape-driven release
+      upgrades (LP: #1389686)
+    - Fix regression occurring when switching the client between different
+      Landscape servers (LP #376134)
+    - Support reporting QEMU virtualization (LP: #1374501)
+    - Bump Juju integration message format (LP: #1369635, LP: #1362506)
+    - Drop provisioning registration message (LP: #1362506)
+    - Drop cloud registration message (LP: #1342646)
+    - Fix handling broken packages (LP: #1326940)
+    - Add new Swift usage message type (LP: #1320236)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 20 Nov 2014 21:03:56 +0100
+
 landscape-client (14.01-0ubuntu3) trusty; urgency=medium
 
   * landscape-sysinfo should ignore non existent or unreadable default
