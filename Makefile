@@ -92,11 +92,6 @@ sourcepackage: clean origtarball prepchangelog updateversion
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
 
-reinstall:
-	-sudo dpkg -P landscape-client
-	-sudo rm -rf /var/log/landscape /etc/landscape /var/lib/landscape /etc/default/landscape-client
-	-sudo apt-get install landscape-client
-
 freshdata:
 	-sudo rm -rf $(MESSAGE_DIR)
 	-sudo mkdir $(MESSAGE_DIR)
@@ -118,6 +113,9 @@ tags:
 etags:
 	-etags --languages=python -R .
 
+releasetarball:
+	make sdist TARBALL_VERSION=$(UPSTREAM_VERSION)
+
 sdist: clean
 	mkdir -p sdist
 	# --uncommitted because we want any changes the developer might have made
@@ -130,4 +128,4 @@ sdist: clean
 	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
 
-.PHONY: tags etags
+.PHONY: tags etags freshdata run freshrun package sourcepackage updateversion origtarball prepchangelog lint build check releasetarball
