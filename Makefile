@@ -42,7 +42,7 @@ pyflakes:
 	-pyflakes `find landscape -name \*py|grep -v twisted_amp\.py|grep -v configobj\.py|grep -v mocker\.py`
 
 clean:
-	-find landscape -name \*.pyc -exec rm {} \;
+	-find landscape -name \*.pyc -exec rm -f {} \;
 	-rm tags
 	-rm _trial_temp -rf
 	-rm docs/api -rf;
