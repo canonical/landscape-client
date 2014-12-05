@@ -9,6 +9,7 @@ from aptsources.sourceslist import SourcesList
 from apt.cache import LockFailedException
 
 from landscape.constants import UBUNTU_PATH
+from landscape.lib.lsb_release import parse_lsb_release
 from landscape.lib.fs import read_file, create_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,
@@ -21,6 +22,9 @@ from landscape.package.tests.helpers import (
     PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
     create_deb, AptFacadeHelper,
     create_simple_repository)
+
+
+_lsb_release = parse_lsb_release()
 
 
 class FakeOwner(object):
@@ -2650,3 +2654,10 @@ class AptFacadeTest(LandscapeTest):
         test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
             skip_message)
         test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
+
+    if _lsb_release["code-name"] == "lucid":
+        # The 'shortname' attribute was added when multi-arch support
+        # was added to python-apt. So if it's not there, it means that
+        # multi-arch support isn't available.
+        skip_message = "test APT pinning settings not working on lucid"
+        test_is_package_upgrade_with_apt_preferences.skip = skip_message
