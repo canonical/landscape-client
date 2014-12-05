@@ -44,19 +44,23 @@ class PyCurlError(FetchError):
 
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
-          connect_timeout=30, total_timeout=600, insecure=False, follow=True):
+          connect_timeout=30, total_timeout=600, insecure=False, follow=True,
+          user_agent=None):
     """Retrieve a URL and return the content.
 
     @param url: The url to be fetched.
     @param post: If true, the POST method will be used (defaults to GET).
     @param data: Data to be sent to the server as the POST content.
-    @param headers: Dictionary of header => value entries to be used
-                    on the request.
+    @param headers: Dictionary of header => value entries to be used on the
+        request.
+    @param curl: A pycurl.Curl instance to use. If not provided, one will be
+        created.
     @param cainfo: Path to the file with CA certificates.
     @param insecure: If true, perform curl using insecure option which will
-                     not attempt to verify authenticity of the peer's
-                     certificate. (Used during autodiscovery)
+        not attempt to verify authenticity of the peer's certificate. (Used
+        during autodiscovery)
     @param follow: If True, follow HTTP redirects (default True).
+    @param user_agent: The user-agent to set in the request.
     """
     import pycurl
     output = StringIO(data)
@@ -64,6 +68,8 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
 
     if curl is None:
         curl = pycurl.Curl()
+
+    curl.setopt(pycurl.URL, str(url))
 
     if post:
         curl.setopt(pycurl.POST, True)
@@ -82,9 +88,11 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     if insecure:
         curl.setopt(pycurl.SSL_VERIFYPEER, False)
 
-    curl.setopt(pycurl.URL, str(url))
     if follow:
         curl.setopt(pycurl.FOLLOWLOCATION, 1)
+
+    if user_agent is not None:
+        curl.setopt(pycurl.USERAGENT, user_agent)
 
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)
@@ -107,16 +115,6 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
         raise HTTPCodeError(http_code, body)
 
     return body
-
-
-def test(args):
-    parser = OptionParser()
-    parser.add_option("--post", action="store_true")
-    parser.add_option("--data", default="")
-    parser.add_option("--cainfo")
-    options, (url,) = parser.parse_args(args)
-    print fetch(url, post=options.post, data=options.data,
-                cainfo=options.cainfo)
 
 
 def fetch_async(*args, **kwargs):
@@ -187,6 +185,16 @@ def fetch_to_files(urls, directory, logger=None, **kwargs):
         return failure
 
     return fetch_many_async(urls, callback=write, errback=log_error, **kwargs)
+
+
+def test(args):
+    parser = OptionParser()
+    parser.add_option("--post", action="store_true")
+    parser.add_option("--data", default="")
+    parser.add_option("--cainfo")
+    options, (url,) = parser.parse_args(args)
+    print fetch(url, post=options.post, data=options.data,
+                cainfo=options.cainfo)
 
 
 if __name__ == "__main__":

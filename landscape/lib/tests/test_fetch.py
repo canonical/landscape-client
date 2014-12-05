@@ -271,6 +271,14 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertNotIn(pycurl.FOLLOWLOCATION, curl.options.keys())
 
+    def test_pycurl_user_agent(self):
+        """If provided, the user-agent is set in the request."""
+        curl = CurlStub("result")
+        result = fetch(
+            "http://example.com", curl=curl, user_agent="user-agent")
+        self.assertEqual(result, "result")
+        self.assertEqual("user-agent", curl.options[pycurl.USERAGENT])
+
     def test_create_curl(self):
         curls = []
 
