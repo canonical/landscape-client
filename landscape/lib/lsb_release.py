@@ -7,7 +7,7 @@ LSB_RELEASE_INFO_KEYS = {"DISTRIB_ID": "distributor-id",
                          "DISTRIB_CODENAME": "code-name"}
 
 
-def parse_lsb_release(lsb_release_filename=LSB_RELEASE_FILENAME):
+def parse_lsb_release(lsb_release_filename):
     """Return a C{dict} holding information about the system LSB release.
 
     @raises: An IOError exception if C{lsb_release_filename} could not be read.
