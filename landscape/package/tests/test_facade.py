@@ -2650,3 +2650,9 @@ class AptFacadeTest(LandscapeTest):
         test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
             skip_message)
         test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
+
+    if apt_pkg.VERSION.startswith("0.7.25"):
+        # We must be running on lucid, we want to skip the APT pinning test,
+        # see also Bug #1398168.
+        skip_message = "test APT pinning settings not working on lucid"
+        test_is_package_upgrade_with_apt_preferences.skip = skip_message
