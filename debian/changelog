@@ -4,10 +4,10 @@ landscape-client (14.11-0ubuntu1) vivid; urgency=medium
     - Fix regression occurring when performing Landscape-driven release
       upgrades (LP: #1389686)
     - Fix regression occurring when switching the client between different
-      Landscape servers (LP #376134)
+      Landscape servers (LP: #1376134)
     - Support reporting QEMU virtualization (LP: #1374501)
     - Bump Juju integration message format (LP: #1369635, LP: #1362506)
-    - Drop provisioning registration message (LP: #1362506)
+    - Drop provisioning registration message (LP: #1344054)
     - Drop cloud registration message (LP: #1342646)
     - Fix handling broken packages (LP: #1326940)
     - Add new Swift usage message type (LP: #1320236)
