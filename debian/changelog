@@ -1,4 +1,4 @@
-landscape-client (14.11-0ubuntu1) vivid; urgency=medium
+landscape-client (14.12-0ubuntu1) vivid; urgency=medium
 
   * New upstream version:
     - Fix regression occurring when performing Landscape-driven release
@@ -11,8 +11,11 @@ landscape-client (14.11-0ubuntu1) vivid; urgency=medium
     - Drop cloud registration message (LP: #1342646)
     - Fix handling broken packages (LP: #1326940)
     - Add new Swift usage message type (LP: #1320236)
+    - Added a mechanism to set the client's user-agent (LP: #1399139)
+    - Fixed release-upgrader not asking for a seesion ID before attempting to
+      send a message (LP: #1401867)
 
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 20 Nov 2014 21:03:56 +0100
+ -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Fri, 12 Dec 2014 16:43:56 +0300
 
 landscape-client (14.01-0ubuntu3) trusty; urgency=medium
 
