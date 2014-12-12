@@ -505,7 +505,7 @@ class MessageStore(object):
             # session-ids to one per scope.  The or condition here is not
             # strictly necessary, but we *should* do "is" comparisons when we
             # can (so says PEP 8).
-            if scope is stored_scope or scope == stored_scope:
+            if scope == stored_scope:
                 return session_id
         session_id = str(uuid.uuid4())
         session_ids[session_id] = scope

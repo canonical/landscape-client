@@ -276,13 +276,10 @@ class ReleaseUpgrader(PackageTaskHandler):
 
     def _send_message(self, message):
         """Acquire a session ID and send the given message."""
-        deferred = succeed(None)
+        deferred = self.get_session_id()
 
         def send(_):
             self._broker.send_message(message, self._session_id, True)
-
-        if self._session_id is None:
-            deferred.addCallback(lambda _: self.get_session_id())
 
         deferred.addCallback(send)
         return deferred
