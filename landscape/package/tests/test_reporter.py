@@ -1241,6 +1241,58 @@ class PackageReporterAptTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
+    def test_run_apt_update_warns_about_lock_failure(self):
+        """
+        The L{PackageReporter.run_apt_update} method logs a warnings when
+        apt-update fails acquiring the lock.
+        """
+        self._make_fake_apt_update(code=100)
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
+        logging_mock("Could not acquire the apt lock. Retrying in 40 seconds.")
+        self.mocker.replay()
+
+        def call_later(delay, func, deferred):
+            return func(deferred)
+
+        result = self.reporter.run_apt_update(call_later=call_later)
+
+        def callback((out, err, code)):
+            self.assertEqual("", out)
+            self.assertEqual("", err)
+            self.assertEqual(0, code)
+
+        return result.addCallback(callback)
+
+    def test_run_apt_update_stops_retrying_after_lock_acquired(self):
+        """
+        When L{PackageReporter.run_apt_update} method successfully acquires the
+        lock, it will stop retrying.
+        """
+        self._make_fake_apt_update(code=100)
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
+        self.mocker.replay()
+
+        self.count = 0
+
+        def call_later(delay, func, deferred):
+            if self.count == 1:
+                # Simulate a successful apt lock grab.
+                self._make_fake_apt_update(code=0)
+            self.count += 1
+            return func(deferred)
+
+        result = self.reporter.run_apt_update(call_later=call_later)
+
+        def callback((out, err, code)):
+            self.assertEqual("output", out)
+            self.assertEqual("error", err)
+            self.assertEqual(0, code)
+            del self.count  # Collect to prevent side effects.
+
+        return result.addCallback(callback)
+
     def test_run_apt_update_report_apt_failure(self):
         """
         If L{PackageReporter.run_apt_update} fails, a message is sent to the
