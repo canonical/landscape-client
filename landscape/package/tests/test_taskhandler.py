@@ -44,8 +44,9 @@ class PackageTaskHandlerTest(LandscapeTest):
         super(PackageTaskHandlerTest, self).setUp()
         self.config = PackageTaskHandlerConfiguration()
         self.store = PackageStore(self.makeFile())
+        self.reactor = FakeReactor()
         self.handler = PackageTaskHandler(
-            self.store, self.facade, self.remote, self.config)
+            self.store, self.facade, self.remote, self.config, self.reactor)
 
     def test_use_hash_id_db(self):
 
@@ -363,7 +364,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         umask(022)
 
         handler_args = []
-        HandlerMock(ANY, ANY, ANY, ANY)
+        HandlerMock(ANY, ANY, ANY, ANY, ANY)
         self.mocker.passthrough()  # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
@@ -390,7 +391,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         def assert_task_handler(ignored):
 
-            store, facade, broker, config = handler_args
+            store, facade, broker, config, reactor = handler_args
 
             try:
                 # Verify the arguments passed to the reporter constructor.

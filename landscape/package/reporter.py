@@ -19,8 +19,6 @@ from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.store import UnknownHashIDRequest, FakePackageStore
 
-from landscape.reactor import LandscapeReactor
-
 
 HASH_ID_REQUEST_TIMEOUT = 7200
 MAX_UNKNOWN_HASHES_PER_REQUEST = 500
@@ -55,7 +53,6 @@ class PackageReporter(PackageTaskHandler):
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
     _got_task = False
-    reactor = LandscapeReactor()
 
     def run(self):
         self._got_task = False
@@ -198,22 +195,21 @@ class PackageReporter(PackageTaskHandler):
         return (last_update + interval) < time.time()
 
     @inlineCallbacks
-    def run_apt_update(self, call_later=None):
+    def run_apt_update(self):
         """
         Check if an L{_apt_update} call must be performed looping over specific
         delays so it can be retried.
 
         @return: a deferred returning (out, err, code)
         """
-        if call_later is None:
-            call_later = self.reactor.call_later
         if (self._config.force_apt_update or self._apt_sources_have_changed()
             or self._apt_update_timeout_expired(
                 self._config.apt_update_interval)):
 
-            for delay in LOCK_RETRY_DELAYS:
+            for retry in range(len(LOCK_RETRY_DELAYS)):
                 deferred = Deferred()
-                call_later(delay, self._apt_update, deferred)
+                self.reactor.call_later(
+                    LOCK_RETRY_DELAYS[retry], self._apt_update, deferred)
                 out, err, code = yield deferred
 
                 accepted_apt_errors = (
@@ -227,12 +223,10 @@ class PackageReporter(PackageTaskHandler):
 
                 if code != 0:
                     if code == 100:
-                        current_delay_index = LOCK_RETRY_DELAYS.index(delay)
-                        if current_delay_index < len(LOCK_RETRY_DELAYS) - 1:
-                            next_run = current_delay_index + 1
+                        if retry < len(LOCK_RETRY_DELAYS) - 1:
                             logging.warning(
                                 "Could not acquire the apt lock. Retrying in"
-                                " %s seconds." % LOCK_RETRY_DELAYS[next_run])
+                                " %s seconds." % LOCK_RETRY_DELAYS[retry + 1])
                             continue
                         else:
                             # Gracefully give up.

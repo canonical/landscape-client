@@ -97,13 +97,15 @@ class PackageTaskHandler(object):
     # update-notifier-common package is installed.
     update_notifier_stamp = "/var/lib/apt/periodic/update-success-stamp"
 
-    def __init__(self, package_store, package_facade, remote_broker, config):
+    def __init__(self, package_store, package_facade, remote_broker, config,
+                 reactor):
         self._store = package_store
         self._facade = package_facade
         self._broker = remote_broker
         self._config = config
         self._count = 0
         self._session_id = None
+        self._reactor = reactor
 
     def run(self):
         return self.handle_tasks()
@@ -295,7 +297,7 @@ def run_task_handler(cls, args, reactor=None):
 
     connector = RemoteBrokerConnector(reactor, config, retry_on_reconnect=True)
     remote = LazyRemoteBroker(connector)
-    handler = cls(package_store, package_facade, remote, config)
+    handler = cls(package_store, package_facade, remote, config, reactor)
     result = Deferred()
     result.addCallback(lambda x: handler.run())
     result.addCallback(lambda x: finish())
