@@ -1243,6 +1243,7 @@ class PackageReporterAptTest(LandscapeTest):
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
         logging_mock("Could not acquire the apt lock. Retrying in 40 seconds.")
+        logging_mock("Could not acquire the apt lock after retrying.")
 
         spawn_mock = self.mocker.replace(
             "landscape.lib.twisted_util.spawn_process")

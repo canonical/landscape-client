@@ -229,7 +229,8 @@ class PackageReporter(PackageTaskHandler):
                                 " %s seconds." % LOCK_RETRY_DELAYS[retry + 1])
                             continue
                         else:
-                            # Gracefully give up.
+                            logging.warning(
+                                "Could not acquire the apt lock after retrying.")
                             yield returnValue(("", "", 0))
                     else:
                         logging.warning("'%s' exited with status %d (%s)" % (
