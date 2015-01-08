@@ -208,7 +208,7 @@ class PackageReporter(PackageTaskHandler):
 
             for retry in range(len(LOCK_RETRY_DELAYS)):
                 deferred = Deferred()
-                self.reactor.call_later(
+                self._reactor.call_later(
                     LOCK_RETRY_DELAYS[retry], self._apt_update, deferred)
                 out, err, code = yield deferred
 
