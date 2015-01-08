@@ -1186,7 +1186,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         def callback((out, err, code)):
             self.assertEqual("output", out)
-        
+
         result.addCallback(callback)
         self.reactor.advance(1)
         return result
@@ -1206,7 +1206,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         def callback((out, err, code)):
             self.assertEqual("output", out)
-        
+
         result.addCallback(callback)
         self.reactor.advance(1)
         return result
@@ -1224,12 +1224,12 @@ class PackageReporterAptTest(LandscapeTest):
         self.mocker.replay()
 
         result = self.reporter.run_apt_update()
-        
+
         def callback((out, err, code)):
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(2, code)
-        
+
         result.addCallback(callback)
         self.reactor.advance(0)
         return result
@@ -1277,7 +1277,7 @@ class PackageReporterAptTest(LandscapeTest):
         self._make_fake_apt_update(code=100)
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
-        
+
         spawn_mock = self.mocker.replace(
             "landscape.lib.twisted_util.spawn_process")
         spawn_mock(ANY)
@@ -1824,10 +1824,3 @@ class EqualsHashes(object):
 
     def __eq__(self, other):
         return self._hashes == sorted(other)
-
-
-def fake_spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
-                       usePTY=False, wait_pipes=True, line_received=None,
-                       stdin=None):
-    return succeed(('', '', 0))
-    
