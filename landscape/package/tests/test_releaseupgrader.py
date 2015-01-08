@@ -42,7 +42,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         os.mkdir(self.config.upgrade_tool_directory)
         self.store = PackageStore(self.makeFile())
         self.upgrader = ReleaseUpgrader(self.store, None,
-                                        self.remote, self.config)
+                                        self.remote, self.config, None)
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 

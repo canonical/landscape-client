@@ -391,7 +391,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         def assert_task_handler(ignored):
 
-            store, facade, broker, config, reactor = handler_args
+            store, facade, broker, config, _ = handler_args
 
             try:
                 # Verify the arguments passed to the reporter constructor.

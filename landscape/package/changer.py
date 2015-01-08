@@ -66,7 +66,8 @@ class PackageChanger(PackageTaskHandler):
     def __init__(self, store, facade, remote, config, process_factory=reactor,
                  landscape_reactor=None,
                  reboot_required_filename=REBOOT_REQUIRED_FILENAME):
-        super(PackageChanger, self).__init__(store, facade, remote, config)
+        super(PackageChanger, self).__init__(
+            store, facade, remote, config, landscape_reactor)
         self._process_factory = process_factory
         if landscape_reactor is None:  # For testing purposes.
             from landscape.reactor import LandscapeReactor
