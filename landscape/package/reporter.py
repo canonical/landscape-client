@@ -228,23 +228,19 @@ class PackageReporter(PackageTaskHandler):
                                 "Could not acquire the apt lock. Retrying in"
                                 " %s seconds." % LOCK_RETRY_DELAYS[retry + 1])
                             continue
-                        else:
-                            logging.warning(
-                                "Could not acquire the apt lock after retrying.")
-                            yield returnValue(("", "", 0))
-                    else:
-                        logging.warning("'%s' exited with status %d (%s)" % (
-                            self.apt_update_filename, code, err))
+                            
+                    logging.warning("'%s' exited with status %d (%s)" % (
+                        self.apt_update_filename, code, err))
 
-                        # Errors caused by missing cache files are acceptable,
-                        # as they are not an issue for the lists update
-                        # process.
-                        # These errors can happen if an 'apt-get clean' is run
-                        # while 'apt-get update' is running.
-                        for message in accepted_apt_errors:
-                            if message in err:
-                                out, err, code = "", "", 0
-                                break
+                    # Errors caused by missing cache files are acceptable,
+                    # as they are not an issue for the lists update
+                    # process.
+                    # These errors can happen if an 'apt-get clean' is run
+                    # while 'apt-get update' is running.
+                    for message in accepted_apt_errors:
+                        if message in err:
+                            out, err, code = "", "", 0
+                            break
 
                 elif not self._facade.get_channels():
                     code = 1

@@ -1141,7 +1141,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(request.hashes, [HASH3, HASH1])
 
         deferred.addCallback(check_result)
-        self.reactor.advance(1)
+        self.reactor.advance(0)
         return deferred
 
     def test_run_apt_update(self):
@@ -1167,7 +1167,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1188,7 +1188,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("output", out)
 
         result.addCallback(callback)
-        self.reactor.advance(1)
+        self.reactor.advance(0)
         return result
 
     def test_run_apt_update_with_force_apt_update_if_sources_changed(self):
@@ -1208,7 +1208,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("output", out)
 
         result.addCallback(callback)
-        self.reactor.advance(1)
+        self.reactor.advance(0)
         return result
 
     def test_run_apt_update_warns_about_failures(self):
@@ -1243,7 +1243,6 @@ class PackageReporterAptTest(LandscapeTest):
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
         logging_mock("Could not acquire the apt lock. Retrying in 40 seconds.")
-        logging_mock("Could not acquire the apt lock after retrying.")
 
         spawn_mock = self.mocker.replace(
             "landscape.lib.twisted_util.spawn_process")
@@ -1264,7 +1263,7 @@ class PackageReporterAptTest(LandscapeTest):
         def callback((out, err, code)):
             self.assertEqual("", out)
             self.assertEqual("", err)
-            self.assertEqual(0, code)
+            self.assertEqual(100, code)
 
         result.addCallback(callback)
         self.reactor.advance(60)
@@ -1320,7 +1319,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 2, "err": u"error"}])
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1351,7 +1350,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 1, "err": error}])
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1377,7 +1376,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 2, "err": u"error"}])
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1402,7 +1401,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u"message"}])
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1430,7 +1429,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1467,7 +1466,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1504,7 +1503,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u"message"}])
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1526,7 +1525,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertTrue(
                     os.path.exists(self.config.update_stamp_filename))
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1560,7 +1559,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u""}])
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1597,7 +1596,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u""}])
             result.addCallback(callback)
-            self.reactor.advance(1)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1725,7 +1724,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
         def do_test():
             self.reporter.get_session_id()
             result = self.reporter.run_apt_update()
-            self.reactor.advance(1)
+            self.reactor.advance(0)
 
             def callback(ignore):
                 message = {"type": "package-reporter-result",
