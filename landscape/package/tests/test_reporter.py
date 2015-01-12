@@ -1243,7 +1243,9 @@ class PackageReporterAptTest(LandscapeTest):
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
         logging_mock("Could not acquire the apt lock. Retrying in 40 seconds.")
-        logging_mock("'%s' exited with status 100 ()", self.reporter.apt_up)
+        logging_mock("'%s' exited with status 100 ()" %
+                     self.reporter.apt_update_filename)
+
         spawn_mock = self.mocker.replace(
             "landscape.lib.twisted_util.spawn_process")
         spawn_mock(ANY)
