@@ -391,7 +391,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         def assert_task_handler(ignored):
 
-            store, facade, broker, config, _ = handler_args
+            store, facade, broker, config, reactor = handler_args
 
             try:
                 # Verify the arguments passed to the reporter constructor.
@@ -400,6 +400,7 @@ class PackageTaskHandlerTest(LandscapeTest):
                 self.assertEqual(type(broker), LazyRemoteBroker)
                 self.assertEqual(type(config),
                                  PackageTaskHandlerConfiguration)
+                self.assertEqual(type(reactor), LandscapeReactor)
 
                 # Let's see if the store path is where it should be.
                 filename = os.path.join(self.data_path, "package", "database")

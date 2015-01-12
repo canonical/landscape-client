@@ -206,15 +206,15 @@ class PackageReporter(PackageTaskHandler):
             or self._apt_update_timeout_expired(
                 self._config.apt_update_interval)):
 
+            accepted_apt_errors = (
+                "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
+                "Problem renaming the file /var/cache/apt/pkgcache.bin")
+
             for retry in range(len(LOCK_RETRY_DELAYS)):
                 deferred = Deferred()
                 self._reactor.call_later(
                     LOCK_RETRY_DELAYS[retry], self._apt_update, deferred)
                 out, err, code = yield deferred
-
-                accepted_apt_errors = (
-                    "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
-                    "Problem renaming the file /var/cache/apt/pkgcache.bin")
 
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
@@ -228,7 +228,7 @@ class PackageReporter(PackageTaskHandler):
                                 "Could not acquire the apt lock. Retrying in"
                                 " %s seconds." % LOCK_RETRY_DELAYS[retry + 1])
                             continue
-                            
+
                     logging.warning("'%s' exited with status %d (%s)" % (
                         self.apt_update_filename, code, err))
 
