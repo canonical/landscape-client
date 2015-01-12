@@ -29,7 +29,8 @@ class RemoteBroker(RemoteObject):
             callable will be fired.
         """
         result = self.listen_events(handlers.keys())
-        return result.addCallback(lambda event_type: handlers[event_type]())
+        return result.addCallback(
+            lambda (event_type, kwargs): handlers[event_type](**kwargs))
 
 
 class FakeRemoteBroker(object):
