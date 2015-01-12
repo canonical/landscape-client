@@ -1850,7 +1850,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.count(1)
 
         def register_done():
-            service.reactor.fire("exchange-failed", ssl_failure=True)
+            service.reactor.fire("exchange-failed", ssl_error=True)
         registration_mock.register()
         self.mocker.call(register_done)
 
