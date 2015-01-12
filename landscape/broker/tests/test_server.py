@@ -348,19 +348,33 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.listen_events} method returns a deferred which is
         fired when the first of the given events occurs.
         """
-        result = self.broker.listen_events(["event1", "event2"])
+        deferred = self.broker.listen_events(["event1", "event2"])
         self.reactor.fire("event2")
-        return self.assertSuccess(result, "event2")
+        result = self.successResultOf(deferred)
+        self.assertIsNotNone(result)
+
+    def test_listen_events_with_payload(self):
+        """
+        The L{BrokerServer.listen_events} method returns a deferred which is
+        fired when the first of the given events occurs. The result of the
+        deferred is a 2-tuple with name of the event and any keyword arguments
+        passed when the event was fired.
+        """
+        deferred = self.broker.listen_events(["event1", "event2"])
+        self.reactor.fire("event2", foo=123)
+        result = self.successResultOf(deferred)
+        self.assertEqual(("event2", {"foo": 123}), result)
 
     def test_listen_event_only_once(self):
         """
         The L{BrokerServer.listen_events} listens only to one occurrence of
         the given events.
         """
-        result = self.broker.listen_events(["event"])
+        deferred = self.broker.listen_events(["event"])
         self.assertEqual(self.reactor.fire("event"), [None])
         self.assertEqual(self.reactor.fire("event"), [])
-        return self.assertSuccess(result, "event")
+        result = self.successResultOf(deferred)
+        self.assertEqual("event", result[0])
 
     def test_listen_events_call_cancellation(self):
         """

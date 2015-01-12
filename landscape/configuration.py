@@ -626,12 +626,20 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
     def success():
         on_message("System successfully registered.")
 
-    def exchange_failure():
-        on_message("We were unable to contact the server. "
-                   "Your internet connection may be down. "
-                   "The landscape client will continue to try and contact "
-                   "the server periodically.",
-                   error=True)
+    def exchange_failure(ssl_error=False):
+        if ssl_error:
+            message = ("\nThe server's SSL information is incorrect, or fails "
+                       "signature verification!\n"
+                       "If the server is using a self-signed certificate, "
+                       "please ensure you supply it with the --ssl-public-key "
+                       "parameter.")
+        else:
+            message = ("\nWe were unable to contact the server.\n"
+                       "Your internet connection may be down. "
+                       "The landscape client will continue to try and contact "
+                       "the server periodically.")
+
+        on_message(message, error=True)
         return 2
 
     def handle_registration_errors(failure):

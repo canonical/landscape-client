@@ -312,10 +312,10 @@ class BrokerServer(object):
 
         def get_handler(event_type):
 
-            def handler():
+            def handler(**kwargs):
                 for call in calls:
                     self._reactor.cancel_call(call)
-                deferred.callback(event_type)
+                deferred.callback((event_type, kwargs))
 
             return handler
 
