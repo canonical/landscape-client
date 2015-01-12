@@ -993,7 +993,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         events = []
 
-        def failed_exchange():
+        def failed_exchange(ssl_error=False):
             events.append(None)
 
         self.reactor.call_on("exchange-failed", failed_exchange)
@@ -1003,17 +1003,18 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_SSL_error_exchanging_causes_failed_exchange(self):
         """
-        If an SSL error occurs when exchanging, the 'exchange-failed-ssl'
-        event should be fired.
+        If an SSL error occurs when exchanging, the 'exchange-failed'
+        event should be fired with the optional "ssl_error" flag set to True.
         """
         self.log_helper.ignore_errors("Message exchange failed: Failed to "
                                       "communicate.")
         events = []
 
-        def failed_exchange():
-            events.append(None)
+        def failed_exchange(ssl_error):
+            if ssl_error:
+                events.append(None)
 
-        self.reactor.call_on("exchange-failed-ssl", failed_exchange)
+        self.reactor.call_on("exchange-failed", failed_exchange)
         self.transport.responses.append(PyCurlError(60,
                                                     "Failed to communicate."))
         self.exchanger.exchange()
@@ -1022,12 +1023,14 @@ class MessageExchangeTest(LandscapeTest):
     def test_pycurl_error_exchanging_causes_failed_exchange(self):
         """
         If an undefined PyCurl error is raised during exchange, (not an SSL
-        error), the 'exchange-failed' event should be fired.
+        error), the 'exchange-failed' event should be fired with the ssl_error
+        flag set to False.
         """
         events = []
 
-        def failed_exchange():
-            events.append(None)
+        def failed_exchange(ssl_error):
+            if not ssl_error:
+                events.append(None)
 
         self.reactor.call_on("exchange-failed", failed_exchange)
         self.transport.responses.append(PyCurlError(10,  # Not 60

@@ -585,14 +585,15 @@ class MessageExchange(object):
                     self.exchange()
                     return
 
+            ssl_error = False
             if isinstance(error, PyCurlError) and error.error_code == 60:
                 # The error returned is an SSL error, most likely the server
                 # is using a self-signed certificate. Let's fire a special
                 # event so that the GUI can display a nice message.
                 logging.error("Message exchange failed: %s" % error.message)
-                self._reactor.fire("exchange-failed-ssl")
-            else:
-                self._reactor.fire("exchange-failed")
+                ssl_error = True
+
+            self._reactor.fire("exchange-failed", ssl_error=ssl_error)
 
             self._message_store.record_failure(int(self._reactor.time()))
             logging.info("Message exchange failed.")

@@ -1805,7 +1805,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.call(register_done)
 
         # The deferred errback finally prints out this message.
-        print_text_mock("We were unable to contact the server. "
+        print_text_mock("\nWe were unable to contact the server.\n"
                         "Your internet connection may be down. "
                         "The landscape client will continue to try and "
                         "contact the server periodically.",
@@ -1850,7 +1850,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.count(1)
 
         def register_done():
-            service.reactor.fire("exchange-failed-ssl")
+            service.reactor.fire("exchange-failed", ssl_failure=True)
         registration_mock.register()
         self.mocker.call(register_done)
 
