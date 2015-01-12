@@ -23,6 +23,7 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
+from landscape.reactor import FakeReactor
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
@@ -51,8 +52,9 @@ class PackageReporterAptTest(LandscapeTest):
         super(PackageReporterAptTest, self).setUp()
         self.store = PackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
+        self.reactor = FakeReactor()
         self.reporter = PackageReporter(
-            self.store, self.facade, self.remote, self.config)
+            self.store, self.facade, self.remote, self.config, self.reactor)
         self.reporter.get_session_id()
         # Assume update-notifier-common stamp file is not present by
         # default.
@@ -1119,7 +1121,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = self.reporter.run()
 
         def check_result(result):
-
             # The hashes should not go away.
             hash1 = self.store.get_hash_id(foo_hash)
             hash2 = self.store.get_hash_id(HASH2)
@@ -1140,6 +1141,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(request.hashes, [HASH3, HASH1])
 
         deferred.addCallback(check_result)
+        self.reactor.advance(0)
         return deferred
 
     def test_run_apt_update(self):
@@ -1165,6 +1167,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1179,18 +1182,14 @@ class PackageReporterAptTest(LandscapeTest):
         self.config.load(["--force-apt-update"])
         self._make_fake_apt_update()
 
-        deferred = Deferred()
+        result = self.reporter.run_apt_update()
 
-        def do_test():
-            result = self.reporter.run_apt_update()
+        def callback((out, err, code)):
+            self.assertEqual("output", out)
 
-            def callback((out, err, code)):
-                self.assertEqual("output", out)
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
+        result.addCallback(callback)
+        self.reactor.advance(0)
+        return result
 
     def test_run_apt_update_with_force_apt_update_if_sources_changed(self):
         """
@@ -1203,18 +1202,14 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.sources_list_filename = self.makeFile("deb ftp://url ./")
         self._make_fake_apt_update()
 
-        deferred = Deferred()
+        result = self.reporter.run_apt_update()
 
-        def do_test():
-            result = self.reporter.run_apt_update()
+        def callback((out, err, code)):
+            self.assertEqual("output", out)
 
-            def callback((out, err, code)):
-                self.assertEqual("output", out)
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
+        result.addCallback(callback)
+        self.reactor.advance(0)
+        return result
 
     def test_run_apt_update_warns_about_failures(self):
         """
@@ -1225,21 +1220,87 @@ class PackageReporterAptTest(LandscapeTest):
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("'%s' exited with status 2"
                      " (error)" % self.reporter.apt_update_filename)
+
         self.mocker.replay()
-        deferred = Deferred()
 
-        def do_test():
-            result = self.reporter.run_apt_update()
+        result = self.reporter.run_apt_update()
 
-            def callback((out, err, code)):
-                self.assertEqual("output", out)
-                self.assertEqual("error", err)
-                self.assertEqual(2, code)
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
+        def callback((out, err, code)):
+            self.assertEqual("output", out)
+            self.assertEqual("error", err)
+            self.assertEqual(2, code)
 
-        reactor.callWhenRunning(do_test)
-        return deferred
+        result.addCallback(callback)
+        self.reactor.advance(0)
+        return result
+
+    def test_run_apt_update_warns_about_lock_failure(self):
+        """
+        The L{PackageReporter.run_apt_update} method logs a warnings when
+        apt-update fails acquiring the lock.
+        """
+        self._make_fake_apt_update(code=100)
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
+        logging_mock("Could not acquire the apt lock. Retrying in 40 seconds.")
+        logging_mock("'%s' exited with status 100 ()" %
+                     self.reporter.apt_update_filename)
+
+        spawn_mock = self.mocker.replace(
+            "landscape.lib.twisted_util.spawn_process")
+        spawn_mock(ANY)
+        # Simulate the first failure.
+        self.mocker.result(succeed(('', '', 100)))
+        spawn_mock(ANY)
+        # Simulate the second failure.
+        self.mocker.result(succeed(('', '', 100)))
+        spawn_mock(ANY)
+        # Simulate the second failure.
+        self.mocker.result(succeed(('', '', 100)))
+
+        self.mocker.replay()
+
+        result = self.reporter.run_apt_update()
+
+        def callback((out, err, code)):
+            self.assertEqual("", out)
+            self.assertEqual("", err)
+            self.assertEqual(100, code)
+
+        result.addCallback(callback)
+        self.reactor.advance(60)
+        return result
+
+    def test_run_apt_update_stops_retrying_after_lock_acquired(self):
+        """
+        When L{PackageReporter.run_apt_update} method successfully acquires the
+        lock, it will stop retrying.
+        """
+        self._make_fake_apt_update(code=100)
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
+
+        spawn_mock = self.mocker.replace(
+            "landscape.lib.twisted_util.spawn_process")
+        spawn_mock(ANY)
+        # Simulate the first failure.
+        self.mocker.result(succeed(('', '', 100)))
+        spawn_mock(ANY)
+        # Simulate a successful apt lock grab.
+        self.mocker.result(succeed(('output', 'error', 0)))
+
+        self.mocker.replay()
+
+        result = self.reporter.run_apt_update()
+
+        def callback((out, err, code)):
+            self.assertEqual("output", out)
+            self.assertEqual("error", err)
+            self.assertEqual(0, code)
+
+        result.addCallback(callback)
+        self.reactor.advance(20)
+        return result
 
     def test_run_apt_update_report_apt_failure(self):
         """
@@ -1260,6 +1321,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 2, "err": u"error"}])
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1290,6 +1352,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 1, "err": error}])
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1315,6 +1378,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 2, "err": u"error"}])
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1339,6 +1403,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u"message"}])
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1366,6 +1431,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1402,6 +1468,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1438,6 +1505,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u"message"}])
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1459,6 +1527,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertTrue(
                     os.path.exists(self.config.update_stamp_filename))
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1492,6 +1561,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u""}])
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1528,6 +1598,7 @@ class PackageReporterAptTest(LandscapeTest):
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u""}])
             result.addCallback(callback)
+            self.reactor.advance(0)
             result.chainDeferred(deferred)
 
         reactor.callWhenRunning(do_test)
@@ -1632,8 +1703,9 @@ class GlobalPackageReporterAptTest(LandscapeTest):
         super(GlobalPackageReporterAptTest, self).setUp()
         self.store = FakePackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
+        self.reactor = FakeReactor()
         self.reporter = FakeGlobalReporter(
-            self.store, self.facade, self.remote, self.config)
+            self.store, self.facade, self.remote, self.config, self.reactor)
         # Assume update-notifier-common stamp file is not present by
         # default.
         self.reporter.update_notifier_stamp = "/Not/Existing"
@@ -1654,6 +1726,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
         def do_test():
             self.reporter.get_session_id()
             result = self.reporter.run_apt_update()
+            self.reactor.advance(0)
 
             def callback(ignore):
                 message = {"type": "package-reporter-result",
@@ -1683,8 +1756,9 @@ class FakePackageReporterTest(LandscapeTest):
         self.global_store = FakePackageStore(global_file)
         os.environ["FAKE_PACKAGE_STORE"] = global_file
         self.config = PackageReporterConfiguration()
+        self.reactor = FakeReactor()
         self.reporter = FakeReporter(
-            self.store, None, self.remote, self.config)
+            self.store, None, self.remote, self.config, self.reactor)
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
 

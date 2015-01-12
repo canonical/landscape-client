@@ -6,7 +6,8 @@ import os
 import glob
 import apt_pkg
 
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import (
+    Deferred, succeed, inlineCallbacks, returnValue)
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
@@ -21,6 +22,7 @@ from landscape.package.store import UnknownHashIDRequest, FakePackageStore
 
 HASH_ID_REQUEST_TIMEOUT = 7200
 MAX_UNKNOWN_HASHES_PER_REQUEST = 500
+LOCK_RETRY_DELAYS = [0, 20, 40]
 
 
 class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
@@ -192,8 +194,11 @@ class PackageReporter(PackageTaskHandler):
         last_update = os.stat(stamp).st_mtime
         return (last_update + interval) < time.time()
 
+    @inlineCallbacks
     def run_apt_update(self):
-        """Run apt-update and log a warning in case of non-zero exit code.
+        """
+        Check if an L{_apt_update} call must be performed looping over specific
+        delays so it can be retried.
 
         @return: a deferred returning (out, err, code)
         """
@@ -201,12 +206,15 @@ class PackageReporter(PackageTaskHandler):
             or self._apt_update_timeout_expired(
                 self._config.apt_update_interval)):
 
-            result = spawn_process(self.apt_update_filename)
+            accepted_apt_errors = (
+                "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
+                "Problem renaming the file /var/cache/apt/pkgcache.bin")
 
-            def callback((out, err, code)):
-                accepted_apt_errors = (
-                    "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
-                    "Problem renaming the file /var/cache/apt/pkgcache.bin")
+            for retry in range(len(LOCK_RETRY_DELAYS)):
+                deferred = Deferred()
+                self._reactor.call_later(
+                    LOCK_RETRY_DELAYS[retry], self._apt_update, deferred)
+                out, err, code = yield deferred
 
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
@@ -214,11 +222,19 @@ class PackageReporter(PackageTaskHandler):
                         self.apt_update_filename, code, out, err))
 
                 if code != 0:
+                    if code == 100:
+                        if retry < len(LOCK_RETRY_DELAYS) - 1:
+                            logging.warning(
+                                "Could not acquire the apt lock. Retrying in"
+                                " %s seconds." % LOCK_RETRY_DELAYS[retry + 1])
+                            continue
+
                     logging.warning("'%s' exited with status %d (%s)" % (
                         self.apt_update_filename, code, err))
 
-                    # Errors caused by missing cache files are acceptable, as
-                    # they are not an issue for the lists update process.
+                    # Errors caused by missing cache files are acceptable,
+                    # as they are not an issue for the lists update
+                    # process.
                     # These errors can happen if an 'apt-get clean' is run
                     # while 'apt-get update' is running.
                     for message in accepted_apt_errors:
@@ -232,17 +248,25 @@ class PackageReporter(PackageTaskHandler):
                            (self.sources_list_filename,
                             self.sources_list_directory))
 
-                deferred = self._broker.call_if_accepted(
+                yield self._broker.call_if_accepted(
                     "package-reporter-result", self.send_result, code, err)
-                deferred.addCallback(lambda ignore: (out, err, code))
-                return deferred
-
-            return result.addCallback(callback)
-
+                yield returnValue((out, err, code))
         else:
             logging.debug("'%s' didn't run, update interval has not passed" %
                           self.apt_update_filename)
-            return succeed(("", "", 0))
+            yield returnValue(("", "", 0))
+
+    def _apt_update(self, deferred):
+        """
+        Run apt-update using the passed in deferred, which allows for callers
+        to inspect the result code.
+        """
+        result = spawn_process(self.apt_update_filename)
+
+        def callback((out, err, code), deferred):
+            return deferred.callback((out, err, code))
+
+        return result.addCallback(callback, deferred)
 
     def send_result(self, code, err):
         """
