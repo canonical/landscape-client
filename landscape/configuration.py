@@ -640,7 +640,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
         This is a common pitfall when setting up LDS, so this should hopefully
         point the user in the right direction.
         """
-        on_message("The server's SSL information is incorrect, or fails "
+        on_message("\nThe server's SSL information is incorrect, or fails "
                    "signature verification!\n"
                    "If the server is using a self-signed certificate, please "
                    "ensure you supply it with the --ssl-public-key parameter.",

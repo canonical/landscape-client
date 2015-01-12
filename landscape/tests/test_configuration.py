@@ -1855,8 +1855,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.call(register_done)
 
         # The deferred errback finally prints out this message.
-        print_text_mock("The server's SSL information is incorrect, or fails "
-                        "signature verification!\n"
+        print_text_mock("\nThe server's SSL information is incorrect, or "
+                        "fails signature verification!\n"
                         "If the server is using a self-signed certificate, "
                         "please ensure you supply it with the "
                         "--ssl-public-key parameter.",
