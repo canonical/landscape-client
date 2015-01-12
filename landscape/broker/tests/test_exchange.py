@@ -1,6 +1,6 @@
 from landscape import CLIENT_API
 from landscape.lib.persist import Persist
-from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.hashlib import md5
 from landscape.schema import Message, Int
 from landscape.broker.config import BrokerConfiguration
@@ -998,6 +998,40 @@ class MessageExchangeTest(LandscapeTest):
 
         self.reactor.call_on("exchange-failed", failed_exchange)
         self.transport.responses.append(RuntimeError("Failed to communicate."))
+        self.exchanger.exchange()
+        self.assertEqual([None], events)
+
+    def test_SSL_error_exchanging_causes_failed_exchange(self):
+        """
+        If an SSL error occurs when exchanging, the 'exchange-failed-ssl'
+        event should be fired.
+        """
+        self.log_helper.ignore_errors("Message exchange failed: Failed to "
+                                      "communicate.")
+        events = []
+
+        def failed_exchange():
+            events.append(None)
+
+        self.reactor.call_on("exchange-failed-ssl", failed_exchange)
+        self.transport.responses.append(PyCurlError(60,
+                                                    "Failed to communicate."))
+        self.exchanger.exchange()
+        self.assertEqual([None], events)
+
+    def test_pycurl_error_exchanging_causes_failed_exchange(self):
+        """
+        If an undefined PyCurl error is raised during exchange, (not an SSL
+        error), the 'exchange-failed' event should be fired.
+        """
+        events = []
+
+        def failed_exchange():
+            events.append(None)
+
+        self.reactor.call_on("exchange-failed", failed_exchange)
+        self.transport.responses.append(PyCurlError(10,  # Not 60
+                                                    "Failed to communicate."))
         self.exchanger.exchange()
         self.assertEqual([None], events)
 

@@ -1828,6 +1828,57 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         register(self.config, print_text, exit.append, reactor=FakeReactor())
         self.assertEqual([2], exit)
 
+    def test_register_exchange_SSL_failure(self):
+        """
+        When registration fails because the server's SSL certificate could not
+        be validated, a message is printed and the program quits.
+        """
+        service = self.broker_service
+
+        registration_mock = self.mocker.replace(service.registration)
+        print_text_mock = self.mocker.replace(print_text)
+        reactor_mock = self.mocker.patch(FakeReactor)
+
+        # This must necessarily happen in the following order.
+        self.mocker.order()
+
+        # This very informative message is printed out.
+        print_text_mock("Please wait... ", "")
+
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
+
+        def register_done():
+            service.reactor.fire("exchange-failed-ssl")
+        registration_mock.register()
+        self.mocker.call(register_done)
+
+        # The deferred errback finally prints out this message.
+        print_text_mock("The server's SSL information is incorrect, or fails "
+                        "signature verification!\n"
+                        "If the server is using a self-signed certificate, "
+                        "please ensure you supply it with the "
+                        "--ssl-public-key parameter.",
+                        error=True)
+
+        reactor_mock.stop()
+
+        # This is actually called after everything else since all deferreds
+        # are synchronous and callbacks will be executed immediately.
+        reactor_mock.run()
+
+        # Nothing else is printed!
+        print_text_mock(ANY)
+        self.mocker.count(0)
+
+        self.mocker.replay()
+
+        # DO IT!
+        exit = []
+        register(self.config, print_text, exit.append, reactor=FakeReactor())
+        self.assertEqual([2], exit)
+
     def test_register_timeout_failure(self):
         service = self.broker_service
 

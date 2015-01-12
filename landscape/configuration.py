@@ -634,6 +634,19 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
                    error=True)
         return 2
 
+    def exchange_failure_ssl():
+        """
+        The exchange failed because the server's SSL valiation failed.
+        This is a common pitfall when setting up LDS, so this should hopefully
+        point the user in the right direction.
+        """
+        on_message("The server's SSL information is incorrect, or fails "
+                   "signature verification!\n"
+                   "If the server is using a self-signed certificate, please "
+                   "ensure you supply it with the --ssl-public-key parameter.",
+                   error=True)
+        return 2
+
     def handle_registration_errors(failure):
         # We'll get invalid credentials through the signal.
         failure.trap(InvalidCredentialsError, MethodCallError)
@@ -651,7 +664,8 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
     def got_connection(remote):
         handlers = {"registration-done": success,
                     "registration-failed": failure,
-                    "exchange-failed": exchange_failure}
+                    "exchange-failed": exchange_failure,
+                    "exchange-failed-ssl": exchange_failure_ssl}
         deferreds = [
             remote.call_on_event(handlers),
             remote.register().addErrback(handle_registration_errors)]

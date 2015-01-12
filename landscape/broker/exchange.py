@@ -348,7 +348,7 @@ from landscape.lib.hashlib import md5
 
 from twisted.internet.defer import Deferred, succeed
 
-from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.message import got_next_expected, ANCIENT
 from landscape.lib.versioning import is_version_higher, sort_versions
 from landscape.log import format_delta
@@ -573,6 +573,7 @@ class MessageExchange(object):
 
         def handle_failure(error_class, error, traceback):
             self._exchanging = False
+
             if isinstance(error, HTTPCodeError) and error.http_code == 404:
                 # If we got a 404 HTTP error it could be that we're trying to
                 # speak a server API version that the server does not support,
@@ -583,7 +584,16 @@ class MessageExchange(object):
                     self._message_store.set_server_api(DEFAULT_SERVER_API)
                     self.exchange()
                     return
-            self._reactor.fire("exchange-failed")
+
+            if isinstance(error, PyCurlError) and error.error_code == 60:
+                # The error returned is an SSL error, most likely the server
+                # is using a self-signed certificate. Let's fire a special
+                # event so that the GUI can display a nice message.
+                logging.error("Message exchange failed: %s" % error.message)
+                self._reactor.fire("exchange-failed-ssl")
+            else:
+                self._reactor.fire("exchange-failed")
+
             self._message_store.record_failure(int(self._reactor.time()))
             logging.info("Message exchange failed.")
             exchange_completed()
