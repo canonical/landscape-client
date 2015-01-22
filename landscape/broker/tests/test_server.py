@@ -351,7 +351,7 @@ class BrokerServerTest(LandscapeTest):
         deferred = self.broker.listen_events(["event1", "event2"])
         self.reactor.fire("event2")
         result = self.successResultOf(deferred)
-        self.assertIsNotNone(result)
+        self.assertTrue(result is not None)
 
     def test_listen_events_with_payload(self):
         """
