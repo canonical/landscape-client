@@ -100,7 +100,6 @@ class RegistrationHandler(object):
                                         self._handle_registration)
         self._should_register = None
         self._fetch_async = fetch_async
-        self._ec2_data = None
         self._juju_data = None
 
     def should_register(self):
