@@ -15,7 +15,7 @@ from landscape.configuration import (
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
-    bootstrap_tree)
+    bootstrap_tree, got_connection)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -1738,6 +1738,84 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         # Everything was shut down gracefully.
         self.assertTrue(connector.was_disconnected)
         self.assertTrue(reactor.was_stopped)
+
+
+    def test_got_connection_happy_path(self):
+        """got_connection() adds deferreds and callbacks."""
+
+        def faux_got_connection(remote):
+            pass
+
+        class FauxRemote(object):
+            handlers = None
+            deferred = None
+
+            def call_on_event(self, handlers):
+                assert not self.handlers, "Called twice"
+                self.handlers = handlers
+                self.call_on_event_deferred = FauxCallOnEventDeferred()
+                return self.call_on_event_deferred
+
+            def register(self):
+                assert not self.deferred, "Called twice"
+                self.register_deferred = FauxRegisterDeferred()
+                return self.register_deferred
+
+
+        class FauxCallOnEventDeferred(object):
+            def __init__(self):
+                self.callbacks = []
+                self.errbacks = []
+
+            def addCallbacks(self, *funcs, **kws):
+                # TODO
+                self.callbacks.extend(funcs)
+
+        class FauxRegisterDeferred(object):
+            def __init__(self):
+                self.callbacks = []
+                self.errbacks = []
+
+            def addCallback(self, func):
+                # TODO
+                assert func.__name__ == "got_connection", "Unexpected function."
+                self.callbacks.append(faux_got_connection)
+                self.gather_results_deferred = GatherResultsDeferred()
+                return self.gather_results_deferred
+
+            def addCallbacks(self, *funcs, **kws):
+                # TODO
+                self.callbacks.extend(funcs)
+
+            def addErrback(self, func):
+                self.errbacks.append(func)
+                return self
+
+        class GatherResultsDeferred(object):
+            def __init__(self):
+                self.callbacks = []
+                self.errbacks = []
+
+            def addCallbacks(self, *funcs, **kws):
+                # TODO
+                self.callbacks.extend(funcs)
+
+
+        status_results = []
+        faux_remote = FauxRemote()
+        results = got_connection(status_results.append, faux_remote)
+        # We set up two deferreds, one for the RPC call and one for event
+        # handlers.
+        self.assertEqual(2, len(results.resultList))
+        # Handlers are registered for the events we are interested in.
+        self.assertEqual(
+            ['registration-failed', 'exchange-failed'],
+            faux_remote.handlers.keys())
+        # The handlers are as we expect.
+        self.assertEqual(
+            ['failure', 'exchange_failure'],
+            [handler.func.__name__
+                for handler in faux_remote.handlers.values()])
 
 
 class RegisterFunctionRetryTest(LandscapeConfigurationTest):

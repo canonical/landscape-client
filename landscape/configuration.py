@@ -623,6 +623,7 @@ def got_connection(add_result, remote):
     # catch_all will be called for the very first deferred that fails.
     results = gather_results(deferreds, consume_errors=True)
     results.addCallback(partial(done, add_result))
+    return results
 
 
 def got_error(add_result, connector, reactor, failure):
