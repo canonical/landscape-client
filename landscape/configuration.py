@@ -4,12 +4,13 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
+from functools import partial
 import base64
-import time
-import sys
-import os
 import getpass
+import os
 import pwd
+import sys
+import time
 
 from StringIO import StringIO
 
@@ -584,8 +585,55 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
-             max_retries=14):
+def failure(add_result):
+    add_result('failure')
+    return 2
+
+
+def exchange_failure(add_result, ssl_error=False):
+    if ssl_error:
+        add_result('ssl-error')
+    else:
+        add_result('non-ssl-error')
+    return 2
+
+
+def handle_registration_errors(add_result, failure):
+    # We'll get invalid credentials through the signal.
+    failure.trap(InvalidCredentialsError, MethodCallError)
+    connector.disconnect()
+    add_result('registration-error')
+
+
+def done(add_result, *args):
+    add_result('success')
+    connector.disconnect()
+    reactor.stop()
+
+
+def got_connection(add_result, remote):
+    """...from broker."""
+    handlers = {"registration-failed": partial(failure, add_result),
+                "exchange-failed": partial(exchange_failure, add_result)}
+    deferreds = [
+        remote.call_on_event(handlers),
+        remote.register().addErrback(
+            partial(handle_registration_errors, add_result))]
+    # We consume errors here to ignore errors after the first one.
+    # catch_all will be called for the very first deferred that fails.
+    results = gather_results(deferreds, consume_errors=True)
+    results.addCallback(partial(done, add_result))
+
+
+def got_error(add_result, connector, reactor, failure):
+    """...from broker."""
+    add_result('error')
+    connector.disconnect()
+    reactor.stop()
+
+
+def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
+        max_retries=14):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -608,85 +656,21 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
    """
     if reactor is None:
         reactor = LandscapeReactor()
-    exit_with_error = []
 
-    def stop(errors):
-        if not config.ok_no_register:
-            for error in errors:
-                if error is not None:
-                    exit_with_error.append(error)
-        connector.disconnect()
-        reactor.stop()
+    results = []
+    add_result = results.append
 
-    def failure():
-        on_message("Invalid account name or "
-                   "registration key.", error=True)
-        return 2
+    #time.sleep(2) # XXX WHAT?
 
-    def success():
-        on_message("System successfully registered.")
-
-    def exchange_failure(ssl_error=False):
-        if ssl_error:
-            message = ("\nThe server's SSL information is incorrect, or fails "
-                       "signature verification!\n"
-                       "If the server is using a self-signed certificate, "
-                       "please ensure you supply it with the --ssl-public-key "
-                       "parameter.")
-        else:
-            message = ("\nWe were unable to contact the server.\n"
-                       "Your internet connection may be down. "
-                       "The landscape client will continue to try and contact "
-                       "the server periodically.")
-
-        on_message(message, error=True)
-        return 2
-
-    def handle_registration_errors(failure):
-        # We'll get invalid credentials through the signal.
-        failure.trap(InvalidCredentialsError, MethodCallError)
-        connector.disconnect()
-
-    def catch_all(failure):
-        on_message(failure.getTraceback(), error=True)
-        on_message("Unknown error occurred.", error=True)
-        return [2]
-
-    on_message("Please wait... ", "")
-
-    time.sleep(2)
-
-    def got_connection(remote):
-        handlers = {"registration-done": success,
-                    "registration-failed": failure,
-                    "exchange-failed": exchange_failure}
-        deferreds = [
-            remote.call_on_event(handlers),
-            remote.register().addErrback(handle_registration_errors)]
-        # We consume errors here to ignore errors after the first one.
-        # catch_all will be called for the very first deferred that fails.
-        results = gather_results(deferreds, consume_errors=True)
-        results.addErrback(catch_all)
-        results.addCallback(stop)
-
-    def got_error(failure):
-        on_message("There was an error communicating with the Landscape"
-                   " client.", error=True)
-        on_message("This machine will be registered with the provided "
-                   "details when the client runs.", error=True)
-        stop([2])
-
-    connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect(max_retries=max_retries, quiet=True)
-    result.addCallback(got_connection)
-    result.addErrback(got_error)
-
+    connector = connector_factory(reactor, config)
+    connection = connector.connect(max_retries=max_retries, quiet=True)
+    connection.addCallback(partial(got_connection, add_result))
+    connection.addErrback(partial(got_error, add_result, connector, reactor))
     reactor.run()
 
-    if exit_with_error:
-        on_error(exit_with_error[0])
-
-    return result
+    assert len(results) == 1, "We only expected one result."
+    # Results will be things like "success" or "ssl-error".
+    return results[0]
 
 
 def main(args):
