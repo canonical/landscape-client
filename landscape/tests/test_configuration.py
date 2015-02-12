@@ -1816,6 +1816,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             ['failure', 'exchange_failure'],
             [handler.func.__name__
                 for handler in faux_remote.handlers.values()])
+        self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
+        self.assertEqual(
+            'handle_registration_errors', 
+            faux_remote.register_deferred.errbacks[0].func.__name__)
 
 
 class RegisterFunctionRetryTest(LandscapeConfigurationTest):
