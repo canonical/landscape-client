@@ -629,7 +629,7 @@ def got_connection(add_result, connector, reactor, remote):
     return results
 
 
-def got_error(add_result, connector, reactor, failure):
+def got_error(failure, print=print):
     """...from broker."""
     print(failure.getTraceback(), file=sys.stderr)
     raise SystemExit
@@ -669,7 +669,7 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
     connection = connector.connect(max_retries=max_retries, quiet=True)
     connection.addCallback(
         partial(got_connection, add_result, connector, reactor))
-    connection.addErrback(partial(got_error, add_result, connector, reactor))
+    connection.addErrback(got_error)
     reactor.run()
 
     assert len(results) == 1, "We expect exactly one result."

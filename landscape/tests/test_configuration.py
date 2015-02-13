@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
 from getpass import getpass
@@ -14,7 +16,7 @@ from landscape.configuration import (
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
-    handle_registration_errors)
+    handle_registration_errors, done, got_error)
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
@@ -106,6 +108,50 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         self.assertTrue(
             [InvalidCredentialsError, MethodCallError],
             faux_failure.trapped_exceptions)
+
+
+class DoneTests(unittest.TestCase):
+
+    def test_done(self):
+        """The done() function handles cleaning up."""
+        class FauxConnector(object):
+            was_disconnected = False
+
+            def disconnect(self):
+                self.was_disconnected = True
+
+
+        class FauxReactor(object):
+            was_stopped = False
+
+            def stop(self):
+                self.was_stopped = True
+
+
+        faux_connector = FauxConnector()
+        faux_reactor = FauxReactor()
+
+        done(faux_connector, faux_reactor, None)
+        self.assertTrue(faux_connector.was_disconnected)
+        self.assertTrue(faux_reactor.was_stopped)
+
+
+class GotErrorTests(unittest.TestCase):
+
+    def test_done(self):
+        """The got_error() function handles displaying errors and exiting."""
+        class FauxFailure(object):
+
+            def getTraceback(self):
+                return 'traceback'
+
+        printed = []
+        def faux_print(text, file):
+            printed.append((text, file))
+
+        with self.assertRaises(SystemExit):
+            got_error(FauxFailure(), print=faux_print)
+            self.assertEqual([], printed)
 
 
 class PrintTextTest(LandscapeTest):
@@ -1803,7 +1849,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertTrue(1, len(connector.connection.errbacks))
         self.assertEqual(
             'got_error',
-            connector.connection.errbacks[0].func.__name__)
+            connector.connection.errbacks[0].__name__)
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
 
