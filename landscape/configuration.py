@@ -4,6 +4,8 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
+from __future__ import print_function
+
 from functools import partial
 import base64
 import getpass
@@ -628,13 +630,12 @@ def got_connection(add_result, remote):
 
 def got_error(add_result, connector, reactor, failure):
     """...from broker."""
-    add_result('error')
-    connector.disconnect()
-    reactor.stop()
+    print(failure.getTraceback(), file=sys.stderr)
+    raise SystemExit
 
 
 def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
-        got_connection=got_connection, max_retries=14):
+        got_connection=got_connection, max_retries=14, results=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -658,7 +659,8 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
     #if reactor is None:
     #    reactor = LandscapeReactor()
 
-    results = []
+    if results is None:
+        results = []
     add_result = results.append
 
     #time.sleep(2) # XXX WHAT?
@@ -672,6 +674,26 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
     assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
     return results[0]
+
+
+def talk_to_user_about_registering(config, print=print):
+    print("Please wait...")
+    result = register(config)
+    if result == 'success':
+        print("System successfully registered.")
+    elif result == 'failure':
+        print("Invalid account name or registration key.", file=sys.stderr)
+    elif result == 'ssl-error':
+        print("\nThe server's SSL information is incorrect, or fails "
+              "signature verification!\n"
+              "If the server is using a self-signed certificate, "
+              "please ensure you supply it with the --ssl-public-key "
+              "parameter.", file=sys.stderr)
+    elif result == 'non-ssl-error':
+        print("\nWe were unable to contact the server.\n"
+              "Your internet connection may be down. "
+              "The landscape client will continue to try and contact "
+              "the server periodically.", file=sys.stderr)
 
 
 def main(args):
@@ -703,9 +725,9 @@ def main(args):
 
     # Attempt to register the client.
     if config.silent:
-        register(config)
+        talk_to_user_about_registering(config)
     else:
         answer = raw_input("\nRequest a new registration for "
                            "this computer now? (Y/n): ")
         if not answer.upper().startswith("N"):
-            register(config)
+            talk_to_user_about_registering(config)

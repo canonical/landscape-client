@@ -1686,10 +1686,13 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
     def test_register(self):
         """Is the async machinery wired up properly."""
 
+        class FauxFailure(object):
+            def getTraceback(self):
+                return 'traceback'
+
         class FauxReactor(object):
             def run(self):
                 self.was_run = True
-                connector.connection.errbacks[0]('bad things')
 
             def stop(self, *args):
                 self.was_stopped = True
@@ -1713,12 +1716,9 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 self.config = config
 
             def connect(self, max_retries, quiet):
+                self.max_retries = max_retries
                 self.connection = FauxConnection()
                 return self.connection
-
-            def disconnect(self, *args):
-                self.was_disconnected = True
-
 
         reactor = FauxReactor()
         connector = FauxConnector(reactor, self.config)
@@ -1726,7 +1726,9 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         def connector_factory(reactor, config):
             return connector
                 
-        register(self.config, connector_factory, reactor)
+        # We pre-seed a success because no actual result will be generated.
+        register(self.config, connector_factory, reactor, max_retries=99,
+            results=['success'])
         self.assertTrue(reactor.was_run)
         # Only a single callback is registered, it does the real work.
         self.assertTrue(1, len(connector.connection.callbacks))
@@ -1737,9 +1739,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertEqual(
             'got_error', 
             connector.connection.errbacks[0].func.__name__)
-        # Everything was shut down gracefully.
-        self.assertTrue(connector.was_disconnected)
-        self.assertTrue(reactor.was_stopped)
+        # We ask for retries because networks aren't reliable.
+        self.assertEqual(99, connector.max_retries)
 
 
     def test_got_connection(self):
@@ -1830,151 +1831,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.reactor.call_later(1, self.reactor.stop)
         register(self.config, reactor=self.reactor,
             got_connection=faux_got_connection)
-
-
-class RegisterFunctionRetryTest(LandscapeConfigurationTest):
-
-    helpers = [BrokerServiceHelper]
-
-    def setUp(self):
-        super(RegisterFunctionRetryTest, self).setUp()
-        self.config = LandscapeSetupConfiguration()
-        self.config.load(["-c", self.config_filename])
-
-    def test_register_with_retry_parameters(self):
-        """
-        Retry parameters are passed to the L{connect} method of the connector.
-        """
-        print_text_mock = self.mocker.replace(print_text)
-        time_mock = self.mocker.replace("time")
-        sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(LandscapeReactor)
-
-        connector_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
-        connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=12)
-
-        self.mocker.result(succeed(None))
-
-        print_text_mock(ARGS)
-        time_mock.sleep(ANY)
-        reactor_mock.run()
-
-        print_text_mock(
-            CONTAINS("There was an error communicating with the "
-                     "Landscape client"),
-            error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        sys_mock.exit(2)
-        connector.disconnect()
-        reactor_mock.stop()
-
-        self.mocker.replay()
-
-        config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit, max_retries=12)
-
-    def test_register_with_default_retry_parameters(self):
-        """
-        max_retries has reasonable default behavior - retry 14 times which
-        will result in a wait of about 60 seconds, until the broker has time
-        to start on heavily loaded systems.
-
-        initialDelay = 0.05
-        factor =  1.62
-        maxDelay = 30
-        max_retries = 14
-
-        0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
-        """
-        print_text_mock = self.mocker.replace(print_text)
-        time_mock = self.mocker.replace("time")
-        sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(LandscapeReactor)
-
-        connector_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
-        connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=14)
-
-        self.mocker.result(succeed(None))
-
-        print_text_mock(ARGS)
-        time_mock.sleep(ANY)
-        reactor_mock.run()
-
-        print_text_mock(
-            CONTAINS("There was an error communicating with the "
-                     "Landscape client"),
-            error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        sys_mock.exit(2)
-        connector.disconnect()
-        reactor_mock.stop()
-
-        self.mocker.replay()
-
-        config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit)
-
-
-class RegisterFunctionNoServiceTest(LandscapeTest):
-
-    def test_register_unknown_error(self):
-        """
-        When registration fails because of an unknown error, a message is
-        printed and the program exits.
-        """
-        configuration = LandscapeSetupConfiguration()
-
-        # We'll just mock the remote here to have it raise an exception.
-        connector_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
-        remote_broker = self.mocker.mock()
-
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(FakeReactor)
-
-        # This is unordered. It's just way too much of a pain.
-        print_text_mock("Please wait... ", "")
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        # SNORE
-        connector = connector_factory(ANY, configuration)
-        connector.connect(max_retries=0, quiet=True)
-        self.mocker.result(succeed(remote_broker))
-        remote_broker.call_on_event(ANY)
-        self.mocker.result(succeed(None))
-
-        # here it is!
-        remote_broker.register()
-        self.mocker.result(fail(ZeroDivisionError))
-
-        print_text_mock(ANY, error=True)
-
-        def check_logged_failure(text, error):
-            self.assertTrue("ZeroDivisionError" in text)
-        self.mocker.call(check_logged_failure)
-        print_text_mock("Unknown error occurred.", error=True)
-
-        # WHOAH DUDE. This waits for callLater(0, reactor.stop).
-        connector.disconnect()
-        reactor_mock.stop()
-        reactor_mock.run()
-
-        self.mocker.replay()
-
-        exit = []
-        register(configuration, print_text, exit.append, max_retries=0,
-                 reactor=FakeReactor())
-        self.assertEqual(exit, [2])
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):
