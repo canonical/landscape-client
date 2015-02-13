@@ -22,6 +22,8 @@ from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
 from landscape.broker.amp import RemoteBroker
+from landscape.broker.tests.helpers import (
+    RemoteBrokerHelper, BrokerServerHelper, RemoteClientHelper)
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -1674,14 +1676,14 @@ registration_key = shared-secret
 
 class RegisterFunctionTest(LandscapeConfigurationTest):
 
-    helpers = [BrokerServiceHelper]
+    helpers = [RemoteBrokerHelper]
 
     def setUp(self):
         super(RegisterFunctionTest, self).setUp()
         self.config = LandscapeSetupConfiguration()
         self.config.load(["-c", self.config_filename])
 
-    def test_async_wired_up_correctly(self):
+    def test_register(self):
         """Is the async machinery wired up properly."""
 
         class FauxReactor(object):
@@ -1740,7 +1742,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertTrue(reactor.was_stopped)
 
 
-    def test_got_connection_happy_path(self):
+    def test_got_connection(self):
         """got_connection() adds deferreds and callbacks."""
 
         def faux_got_connection(remote):
@@ -1809,17 +1811,25 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertEqual(2, len(results.resultList))
         # Handlers are registered for the events we are interested in.
         self.assertEqual(
-            ['registration-failed', 'exchange-failed'],
+            ['registration-failed', 'exchange-failed', 'registration-done'],
             faux_remote.handlers.keys())
         # The handlers are as we expect.
         self.assertEqual(
-            ['failure', 'exchange_failure'],
+            ['failure', 'exchange_failure', 'success'],
             [handler.func.__name__
                 for handler in faux_remote.handlers.values()])
         self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
         self.assertEqual(
             'handle_registration_errors', 
             faux_remote.register_deferred.errbacks[0].func.__name__)
+
+    def test_register_happy_path(self):
+        """TODO"""
+        def faux_got_connection(add_result, remote):
+            add_result('success')
+        self.reactor.call_later(1, self.reactor.stop)
+        register(self.config, reactor=self.reactor,
+            got_connection=faux_got_connection)
 
 
 class RegisterFunctionRetryTest(LandscapeConfigurationTest):

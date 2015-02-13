@@ -604,24 +604,24 @@ def handle_registration_errors(add_result, failure):
     connector.disconnect()
     add_result('registration-error')
 
+def success(add_result):
+    add_result('success')
 
 def done(add_result, *args):
-    add_result('success')
     connector.disconnect()
     reactor.stop()
 
 
 def got_connection(add_result, remote):
     """...from broker."""
-    handlers = {"registration-failed": partial(failure, add_result),
+    handlers = {"registration-done": partial(success, add_result),
+                "registration-failed": partial(failure, add_result),
                 "exchange-failed": partial(exchange_failure, add_result)}
     deferreds = [
         remote.call_on_event(handlers),
         remote.register().addErrback(
             partial(handle_registration_errors, add_result))]
-    # We consume errors here to ignore errors after the first one.
-    # catch_all will be called for the very first deferred that fails.
-    results = gather_results(deferreds, consume_errors=True)
+    results = gather_results(deferreds)
     results.addCallback(partial(done, add_result))
     return results
 
@@ -634,7 +634,7 @@ def got_error(add_result, connector, reactor, failure):
 
 
 def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
-        max_retries=14):
+        got_connection=got_connection, max_retries=14):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -655,8 +655,8 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
 
         0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
    """
-    if reactor is None:
-        reactor = LandscapeReactor()
+    #if reactor is None:
+    #    reactor = LandscapeReactor()
 
     results = []
     add_result = results.append
@@ -669,7 +669,7 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
     connection.addErrback(partial(got_error, add_result, connector, reactor))
     reactor.run()
 
-    assert len(results) == 1, "We only expected one result."
+    assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
     return results[0]
 
