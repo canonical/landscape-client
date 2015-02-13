@@ -677,20 +677,22 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
     return results[0]
 
 
-def talk_to_user_about_registering(config, print=print):
-    print("Please wait...")
-    result = register(config)
-    if result == 'success':
+def report_registration_outcome(what_happened, print=print):
+    """
+    Report the registrtion interaction outcome to the user in human-readable
+    form.
+    """
+    if what_happened == 'success':
         print("System successfully registered.")
-    elif result == 'failure':
+    elif what_happened == 'failure':
         print("Invalid account name or registration key.", file=sys.stderr)
-    elif result == 'ssl-error':
+    elif what_happened == 'ssl-error':
         print("\nThe server's SSL information is incorrect, or fails "
               "signature verification!\n"
               "If the server is using a self-signed certificate, "
               "please ensure you supply it with the --ssl-public-key "
               "parameter.", file=sys.stderr)
-    elif result == 'non-ssl-error':
+    elif what_happened == 'non-ssl-error':
         print("\nWe were unable to contact the server.\n"
               "Your internet connection may be down. "
               "The landscape client will continue to try and contact "
@@ -724,11 +726,15 @@ def main(args):
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 
+    print("Please wait...")
+
     # Attempt to register the client.
     if config.silent:
-        talk_to_user_about_registering(config)
+        result = register(config)
+        report_registration_outcome(result)
     else:
         answer = raw_input("\nRequest a new registration for "
                            "this computer now? (Y/n): ")
         if not answer.upper().startswith("N"):
-            talk_to_user_about_registering(config)
+            result = register(config)
+            report_registration_outcome(result)

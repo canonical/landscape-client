@@ -4,6 +4,7 @@ from ConfigParser import ConfigParser
 from cStringIO import StringIO
 from getpass import getpass
 import os
+import sys
 import unittest
 
 from landscape.broker.registration import InvalidCredentialsError
@@ -16,7 +17,7 @@ from landscape.configuration import (
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
-    handle_registration_errors, done, got_error)
+    handle_registration_errors, done, got_error, report_registration_outcome)
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
@@ -1966,3 +1967,41 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         self.assertEqual(key_filename,
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
+
+
+class ReportRegistrationOutcomeTest(unittest.TestCase):
+
+    def setUp(self):
+        self.result = []
+        self.output = []
+
+    def record_result(self, result, file=sys.stdout):
+        self.result.append(result)
+        self.output.append(file.name)
+
+    def test_success_case(self):
+        report_registration_outcome("success", print=self.record_result)
+        self.assertIn("System successfully registered.", self.result)
+        self.assertIn(sys.stdout.name, self.output)
+
+    def test_failure_case(self):
+        report_registration_outcome("failure", print=self.record_result)
+        self.assertIn("Invalid account name or registration key.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
+
+    def test_ssl_error_case(self):
+        report_registration_outcome("ssl-error", print=self.record_result)
+        self.assertIn("\nThe server's SSL information is incorrect, or fails "
+              "signature verification!\n"
+              "If the server is using a self-signed certificate, "
+              "please ensure you supply it with the --ssl-public-key "
+              "parameter.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
+
+    def test_non_ssl_error_case(self):
+        report_registration_outcome("non-ssl-error", print=self.record_result)
+        self.assertIn("\nWe were unable to contact the server.\n"
+              "Your internet connection may be down. "
+              "The landscape client will continue to try and contact "
+              "the server periodically.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
