@@ -12,7 +12,6 @@ import getpass
 import os
 import pwd
 import sys
-import time
 
 from StringIO import StringIO
 
@@ -665,8 +664,6 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
     if results is None:
         results = []
     add_result = results.append
-
-    #time.sleep(2) # XXX WHAT?
 
     connector = connector_factory(reactor, config)
     connection = connector.connect(max_retries=max_retries, quiet=True)

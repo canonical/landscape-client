@@ -1,14 +1,8 @@
 import os
-import sys
 from getpass import getpass
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
 
-from twisted.internet.defer import succeed, fail
-from twisted.internet.task import Clock
-
-from landscape.lib.amp import MethodCallSender
-from landscape.reactor import LandscapeReactor, FakeReactor
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
@@ -16,14 +10,10 @@ from landscape.configuration import (
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection)
-from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
-from landscape.broker.amp import RemoteBroker
-from landscape.broker.tests.helpers import (
-    RemoteBrokerHelper, BrokerServerHelper, RemoteClientHelper)
+from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
+from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
+from landscape.broker.tests.helpers import RemoteBrokerHelper
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -1720,13 +1710,12 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             def stop(self, *args):
                 self.was_stopped = True
 
-
         reactor = FauxReactor()
         connector = FauxConnector(reactor, self.config)
 
         def connector_factory(reactor, config):
             return connector
-                
+
         # We pre-seed a success because no actual result will be generated.
         register(self.config, connector_factory, reactor, max_retries=99,
             results=['success'])
@@ -1734,15 +1723,14 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         # Only a single callback is registered, it does the real work.
         self.assertTrue(1, len(connector.connection.callbacks))
         self.assertEqual(
-            'got_connection', 
+            'got_connection',
             connector.connection.callbacks[0].func.__name__)
         self.assertTrue(1, len(connector.connection.errbacks))
         self.assertEqual(
-            'got_error', 
+            'got_error',
             connector.connection.errbacks[0].func.__name__)
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
-
 
     def test_got_connection(self):
         """got_connection() adds deferreds and callbacks."""
@@ -1765,7 +1753,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 self.register_deferred = FauxRegisterDeferred()
                 return self.register_deferred
 
-
         class FauxCallOnEventDeferred(object):
             def __init__(self):
                 self.callbacks = []
@@ -1782,7 +1769,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
             def addCallback(self, func):
                 # TODO
-                assert func.__name__ == "got_connection", "Unexpected function."
+                assert func.__name__ == "got_connection", "Wrong callback."
                 self.callbacks.append(faux_got_connection)
                 self.gather_results_deferred = GatherResultsDeferred()
                 return self.gather_results_deferred
@@ -1824,7 +1811,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 for handler in faux_remote.handlers.values()])
         self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
         self.assertEqual(
-            'handle_registration_errors', 
+            'handle_registration_errors',
             faux_remote.register_deferred.errbacks[0].func.__name__)
 
     def test_register_happy_path(self):
