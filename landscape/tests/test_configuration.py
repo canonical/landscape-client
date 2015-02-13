@@ -62,7 +62,7 @@ class ExchangeFailureTests(unittest.TestCase):
         """The exchange_failure() handler records whether or not the failure
         involved SSL or not and returns non-zero."""
         results = []
-        self.assertNotEqual(0, 
+        self.assertNotEqual(0,
             exchange_failure(results.append, ssl_error=True))
         self.assertEqual(['ssl-error'], results)
 
@@ -72,7 +72,7 @@ class ExchangeFailureTests(unittest.TestCase):
         involved SSL or not and returns non-zero.
         """
         results = []
-        self.assertNotEqual(0, 
+        self.assertNotEqual(0,
             exchange_failure(results.append, ssl_error=False))
         self.assertEqual(['non-ssl-error'], results)
 
@@ -91,17 +91,15 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
             def disconnect(self):
                 self.was_disconnected = True
 
-
         class FauxFailure(object):
             def trap(self, *trapped):
                 self.trapped_exceptions = trapped
-
 
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
         results = []
-        self.assertNotEqual(0, 
+        self.assertNotEqual(0,
             handle_registration_errors(
                 results.append, faux_connector, faux_failure))
         self.assertEqual(['registration-error'], results)
@@ -121,13 +119,11 @@ class DoneTests(unittest.TestCase):
             def disconnect(self):
                 self.was_disconnected = True
 
-
         class FauxReactor(object):
             was_stopped = False
 
             def stop(self):
                 self.was_stopped = True
-
 
         faux_connector = FauxConnector()
         faux_reactor = FauxReactor()
@@ -147,6 +143,7 @@ class GotErrorTests(unittest.TestCase):
                 return 'traceback'
 
         printed = []
+
         def faux_print(text, file):
             printed.append((text, file))
 
