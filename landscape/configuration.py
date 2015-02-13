@@ -611,12 +611,12 @@ def success(add_result):
     add_result('success')
 
 
-def done(add_result, *args):
+def done(connector, reactor):
     connector.disconnect()
     reactor.stop()
 
 
-def got_connection(add_result, remote):
+def got_connection(add_result, remote, connector, reactor):
     """...from broker."""
     handlers = {"registration-done": partial(success, add_result),
                 "registration-failed": partial(failure, add_result),
@@ -626,7 +626,7 @@ def got_connection(add_result, remote):
         remote.register().addErrback(
             partial(handle_registration_errors, add_result))]
     results = gather_results(deferreds)
-    results.addCallback(partial(done, add_result))
+    results.addCallback(partial(done, connector, reactor))
     return results
 
 
@@ -670,7 +670,8 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
 
     connector = connector_factory(reactor, config)
     connection = connector.connect(max_retries=max_retries, quiet=True)
-    connection.addCallback(partial(got_connection, add_result))
+    connection.addCallback(
+        partial(got_connection, add_result, connector, reactor))
     connection.addErrback(partial(got_error, add_result, connector, reactor))
     reactor.run()
 
