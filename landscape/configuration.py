@@ -600,7 +600,7 @@ def exchange_failure(add_result, ssl_error=False):
     return 2
 
 
-def handle_registration_errors(add_result, failure):
+def handle_registration_errors(add_result, connector, failure):
     # We'll get invalid credentials through the signal.
     failure.trap(InvalidCredentialsError, MethodCallError)
     connector.disconnect()
@@ -624,7 +624,7 @@ def got_connection(add_result, connector, reactor, remote):
     deferreds = [
         remote.call_on_event(handlers),
         remote.register().addErrback(
-            partial(handle_registration_errors, add_result))]
+            partial(handle_registration_errors, add_result, connector))]
     results = gather_results(deferreds)
     results.addCallback(partial(done, connector, reactor))
     return results
