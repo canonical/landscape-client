@@ -1674,6 +1674,29 @@ registration_key = shared-secret
                   # we care about are done.
 
 
+class FauxConnection(object):
+    def __init__(self):
+        self.callbacks = []
+        self.errbacks = []
+
+    def addCallback(self, func):
+        self.callbacks.append(func)
+
+    def addErrback(self, func):
+        self.errbacks.append(func)
+
+
+class FauxConnector(object):
+    def __init__(self, reactor, config):
+        self.reactor = reactor
+        self.config = config
+
+    def connect(self, max_retries, quiet):
+        self.max_retries = max_retries
+        self.connection = FauxConnection()
+        return self.connection
+
+
 class RegisterFunctionTest(LandscapeConfigurationTest):
 
     helpers = [RemoteBrokerHelper]
@@ -1697,28 +1720,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             def stop(self, *args):
                 self.was_stopped = True
 
-
-        class FauxConnection(object):
-            def __init__(self):
-                self.callbacks = []
-                self.errbacks = []
-
-            def addCallback(self, func):
-                self.callbacks.append(func)
-
-            def addErrback(self, func):
-                self.errbacks.append(func)
-
-
-        class FauxConnector(object):
-            def __init__(self, reactor, config):
-                self.reactor = reactor
-                self.config = config
-
-            def connect(self, max_retries, quiet):
-                self.max_retries = max_retries
-                self.connection = FauxConnection()
-                return self.connection
 
         reactor = FauxReactor()
         connector = FauxConnector(reactor, self.config)
@@ -1746,7 +1747,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
     def test_got_connection(self):
         """got_connection() adds deferreds and callbacks."""
 
-        def faux_got_connection(remote):
+        def faux_got_connection(add_result, remote, connector, reactor):
             pass
 
         class FauxRemote(object):
@@ -1803,10 +1804,12 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 # TODO
                 self.callbacks.extend(funcs)
 
+        faux_connector = FauxConnector(self.reactor, self.config)
 
         status_results = []
         faux_remote = FauxRemote()
-        results = got_connection(status_results.append, faux_remote)
+        results = got_connection(
+            status_results.append, faux_connector, self.reactor, faux_remote)
         # We set up two deferreds, one for the RPC call and one for event
         # handlers.
         self.assertEqual(2, len(results.resultList))
@@ -1826,7 +1829,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
     def test_register_happy_path(self):
         """TODO"""
-        def faux_got_connection(add_result, remote):
+        def faux_got_connection(add_result, remote, connector, reactor):
             add_result('success')
         self.reactor.call_later(1, self.reactor.stop)
         register(self.config, reactor=self.reactor,

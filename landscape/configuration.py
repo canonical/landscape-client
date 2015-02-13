@@ -611,12 +611,12 @@ def success(add_result):
     add_result('success')
 
 
-def done(connector, reactor):
+def done(connector, reactor, ignored_result):
     connector.disconnect()
     reactor.stop()
 
 
-def got_connection(add_result, remote, connector, reactor):
+def got_connection(add_result, connector, reactor, remote):
     """...from broker."""
     handlers = {"registration-done": partial(success, add_result),
                 "registration-failed": partial(failure, add_result),
