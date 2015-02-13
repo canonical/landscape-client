@@ -606,8 +606,10 @@ def handle_registration_errors(add_result, failure):
     connector.disconnect()
     add_result('registration-error')
 
+
 def success(add_result):
     add_result('success')
+
 
 def done(add_result, *args):
     connector.disconnect()
@@ -655,9 +657,10 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
         max_retries = 14
 
         0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
-   """
-    #if reactor is None:
-    #    reactor = LandscapeReactor()
+    """
+    # TODO test this
+    if reactor is None:
+        reactor = LandscapeReactor()
 
     if results is None:
         results = []
