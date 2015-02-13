@@ -1,19 +1,23 @@
-import os
-from getpass import getpass
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
+from getpass import getpass
+import os
+import unittest
 
+from landscape.broker.registration import InvalidCredentialsError
+from landscape.broker.tests.helpers import RemoteBrokerHelper
+from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
-    bootstrap_tree, got_connection)
+    bootstrap_tree, got_connection, success, failure, exchange_failure,
+    handle_registration_errors)
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
-from landscape.broker.tests.helpers import RemoteBrokerHelper
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -31,6 +35,77 @@ url = https://landscape.canonical.com/message-system
         config = LandscapeSetupConfiguration()
         config.load(args)
         return config
+
+
+class SuccessTests(unittest.TestCase):
+    def test_success(self):
+        """The success handler records the success."""
+        results = []
+        success(results.append)
+        self.assertEqual(['success'], results)
+
+
+class FailureTests(unittest.TestCase):
+    def test_failure(self):
+        """The failure handler records the failure and returns non-zero."""
+        results = []
+        self.assertNotEqual(0, failure(results.append))
+        self.assertEqual(['failure'], results)
+
+
+class ExchangeFailureTests(unittest.TestCase):
+
+    def test_exchange_failure_ssl(self):
+        """The exchange_failure() handler records whether or not the failure
+        involved SSL or not and returns non-zero."""
+        results = []
+        self.assertNotEqual(0, 
+            exchange_failure(results.append, ssl_error=True))
+        self.assertEqual(['ssl-error'], results)
+
+    def test_exchange_failure_non_ssl(self):
+        """
+        The exchange_failure() handler records whether or not the failure
+        involved SSL or not and returns non-zero.
+        """
+        results = []
+        self.assertNotEqual(0, 
+            exchange_failure(results.append, ssl_error=False))
+        self.assertEqual(['non-ssl-error'], results)
+
+
+class HandleRegistrationErrorsTests(unittest.TestCase):
+
+    def test_handle_registration_errors(self):
+        """
+        The handle_registration_errors() function handles
+        InvalidCredentialsError and MethodCallError errors and records the
+        type of failure and disconnects.
+        """
+        class FauxConnector(object):
+            was_disconnected = False
+
+            def disconnect(self):
+                self.was_disconnected = True
+
+
+        class FauxFailure(object):
+            def trap(self, *trapped):
+                self.trapped_exceptions = trapped
+
+
+        faux_connector = FauxConnector()
+        faux_failure = FauxFailure()
+
+        results = []
+        self.assertNotEqual(0, 
+            handle_registration_errors(
+                results.append, faux_connector, faux_failure))
+        self.assertEqual(['registration-error'], results)
+        self.assertTrue(faux_connector.was_disconnected)
+        self.assertTrue(
+            [InvalidCredentialsError, MethodCallError],
+            faux_failure.trapped_exceptions)
 
 
 class PrintTextTest(LandscapeTest):

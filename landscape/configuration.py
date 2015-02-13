@@ -601,9 +601,9 @@ def exchange_failure(add_result, ssl_error=False):
 
 def handle_registration_errors(add_result, connector, failure):
     # We'll get invalid credentials through the signal.
+    add_result('registration-error')
     failure.trap(InvalidCredentialsError, MethodCallError)
     connector.disconnect()
-    add_result('registration-error')
 
 
 def success(add_result):
