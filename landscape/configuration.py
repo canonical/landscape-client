@@ -633,7 +633,7 @@ def got_error(failure, print=print):
     raise SystemExit
 
 
-def register(config, reactor, connector_factory=RemoteBrokerConnector, 
+def register(config, reactor, connector_factory=RemoteBrokerConnector,
         got_connection=got_connection, max_retries=14, results=None):
     """Instruct the Landscape Broker to register the client.
 
