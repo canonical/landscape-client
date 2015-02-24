@@ -45,7 +45,7 @@ class SuccessTests(unittest.TestCase):
         """The success handler records the success."""
         results = []
         success(results.append)
-        self.assertEqual(['success'], results)
+        self.assertEqual(["success"], results)
 
 
 class FailureTests(unittest.TestCase):
@@ -53,7 +53,7 @@ class FailureTests(unittest.TestCase):
         """The failure handler records the failure and returns non-zero."""
         results = []
         self.assertNotEqual(0, failure(results.append))
-        self.assertEqual(['failure'], results)
+        self.assertEqual(["failure"], results)
 
 
 class ExchangeFailureTests(unittest.TestCase):
@@ -64,7 +64,7 @@ class ExchangeFailureTests(unittest.TestCase):
         results = []
         self.assertNotEqual(0,
             exchange_failure(results.append, ssl_error=True))
-        self.assertEqual(['ssl-error'], results)
+        self.assertEqual(["ssl-error"], results)
 
     def test_exchange_failure_non_ssl(self):
         """
@@ -74,7 +74,7 @@ class ExchangeFailureTests(unittest.TestCase):
         results = []
         self.assertNotEqual(0,
             exchange_failure(results.append, ssl_error=False))
-        self.assertEqual(['non-ssl-error'], results)
+        self.assertEqual(["non-ssl-error"], results)
 
 
 class HandleRegistrationErrorsTests(unittest.TestCase):
@@ -85,12 +85,6 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         InvalidCredentialsError and MethodCallError errors and records the
         type of failure and disconnects.
         """
-        class FauxConnector(object):
-            was_disconnected = False
-
-            def disconnect(self):
-                self.was_disconnected = True
-
         class FauxFailure(object):
             def trap(self, *trapped):
                 self.trapped_exceptions = trapped
@@ -102,7 +96,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         self.assertNotEqual(0,
             handle_registration_errors(
                 results.append, faux_connector, faux_failure))
-        self.assertEqual(['registration-error'], results)
+        self.assertEqual(["registration-error"], results)
         self.assertTrue(faux_connector.was_disconnected)
         self.assertTrue(
             [InvalidCredentialsError, MethodCallError],
@@ -140,7 +134,7 @@ class GotErrorTests(unittest.TestCase):
         class FauxFailure(object):
 
             def getTraceback(self):
-                return 'traceback'
+                return "traceback"
 
         printed = []
 
@@ -1149,7 +1143,7 @@ registration_key = shared-secret
         setup_mock(ANY)
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
         self.mocker.count(1)
 
         self.mocker.replay()
@@ -1192,7 +1186,7 @@ registration_key = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
 
         self.mocker.replay()
         main(["--config", self.make_working_config()])
@@ -1252,7 +1246,7 @@ registration_key = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
 
         self.mocker.replay()
         main(["-c", self.make_working_config()])
@@ -1289,7 +1283,7 @@ registration_key = shared-secret
         # The registration logic should be called and passed the configuration
         # file.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
 
         self.mocker.replay()
 
@@ -1796,7 +1790,10 @@ class FauxConnection(object):
 
 
 class FauxConnector(object):
-    def __init__(self, reactor, config):
+
+    was_disconnected = False
+
+    def __init__(self, reactor=None, config=None):
         self.reactor = reactor
         self.config = config
 
@@ -1804,6 +1801,9 @@ class FauxConnector(object):
         self.max_retries = max_retries
         self.connection = FauxConnection()
         return self.connection
+
+    def disconnect(self):
+        self.was_disconnected = True
 
 
 class RegisterFunctionTest(LandscapeConfigurationTest):
@@ -1836,7 +1836,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             return connector
 
         # We pre-seed a success because no actual result will be generated.
-        register(self.config, connector_factory, reactor, max_retries=99,
+        register(self.config, reactor, connector_factory, max_retries=99,
             results=['success'])
         self.assertTrue(reactor.was_run)
         # Only a single callback is registered, it does the real work.
@@ -1878,7 +1878,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 self.errbacks = []
 
             def addCallbacks(self, *funcs, **kws):
-                # TODO
                 self.callbacks.extend(funcs)
 
         class FauxRegisterDeferred(object):
@@ -1887,14 +1886,12 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 self.errbacks = []
 
             def addCallback(self, func):
-                # TODO
                 assert func.__name__ == "got_connection", "Wrong callback."
                 self.callbacks.append(faux_got_connection)
                 self.gather_results_deferred = GatherResultsDeferred()
                 return self.gather_results_deferred
 
             def addCallbacks(self, *funcs, **kws):
-                # TODO
                 self.callbacks.extend(funcs)
 
             def addErrback(self, func):
@@ -1907,7 +1904,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 self.errbacks = []
 
             def addCallbacks(self, *funcs, **kws):
-                # TODO
                 self.callbacks.extend(funcs)
 
         faux_connector = FauxConnector(self.reactor, self.config)
@@ -1934,7 +1930,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             faux_remote.register_deferred.errbacks[0].func.__name__)
 
     def test_register_happy_path(self):
-        """TODO"""
+        """A successful result provokes no exceptions."""
         def faux_got_connection(add_result, remote, connector, reactor):
             add_result('success')
         self.reactor.call_later(1, self.reactor.stop)

@@ -587,27 +587,25 @@ def store_public_key_data(config, certificate_data):
 
 
 def failure(add_result):
-    add_result('failure')
-    return 2
+    add_result("failure")
 
 
 def exchange_failure(add_result, ssl_error=False):
     if ssl_error:
-        add_result('ssl-error')
+        add_result("ssl-error")
     else:
-        add_result('non-ssl-error')
-    return 2
+        add_result("non-ssl-error")
 
 
 def handle_registration_errors(add_result, connector, failure):
     # We'll get invalid credentials through the signal.
-    add_result('registration-error')
     failure.trap(InvalidCredentialsError, MethodCallError)
+    add_result("registration-error")
     connector.disconnect()
 
 
 def success(add_result):
-    add_result('success')
+    add_result("success")
 
 
 def done(connector, reactor, ignored_result):
@@ -635,7 +633,7 @@ def got_error(failure, print=print):
     raise SystemExit
 
 
-def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
+def register(config, reactor, connector_factory=RemoteBrokerConnector, 
         got_connection=got_connection, max_retries=14, results=None):
     """Instruct the Landscape Broker to register the client.
 
@@ -657,10 +655,6 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
 
         0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
     """
-    # TODO test this
-    if reactor is None:
-        reactor = LandscapeReactor()
-
     if results is None:
         results = []
     add_result = results.append
@@ -672,6 +666,7 @@ def register(config, connector_factory=RemoteBrokerConnector, reactor=None,
     connection.addErrback(got_error)
     reactor.run()
 
+    assert len(results) != 0, "There should not be no result."
     assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
     return results[0]
@@ -682,17 +677,17 @@ def report_registration_outcome(what_happened, print=print):
     Report the registrtion interaction outcome to the user in human-readable
     form.
     """
-    if what_happened == 'success':
+    if what_happened == "success":
         print("System successfully registered.")
-    elif what_happened == 'failure':
+    elif what_happened == "failure":
         print("Invalid account name or registration key.", file=sys.stderr)
-    elif what_happened == 'ssl-error':
+    elif what_happened == "ssl-error":
         print("\nThe server's SSL information is incorrect, or fails "
               "signature verification!\n"
               "If the server is using a self-signed certificate, "
               "please ensure you supply it with the --ssl-public-key "
               "parameter.", file=sys.stderr)
-    elif what_happened == 'non-ssl-error':
+    elif what_happened == "non-ssl-error":
         print("\nWe were unable to contact the server.\n"
               "Your internet connection may be down. "
               "The landscape client will continue to try and contact "
@@ -729,12 +724,13 @@ def main(args):
     print("Please wait...")
 
     # Attempt to register the client.
+    reactor = LandscapeReactor()
     if config.silent:
-        result = register(config)
+        result = register(config, reactor)
         report_registration_outcome(result)
     else:
         answer = raw_input("\nRequest a new registration for "
                            "this computer now? (Y/n): ")
         if not answer.upper().startswith("N"):
-            result = register(config)
+            result = register(config, reactor)
             report_registration_outcome(result)
