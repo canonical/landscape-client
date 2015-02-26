@@ -700,7 +700,7 @@ def report_registration_outcome(what_happened, print=print):
               "the server periodically.", file=sys.stderr)
 
 
-def main(args):
+def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
 
     config = LandscapeSetupConfiguration()
@@ -735,10 +735,10 @@ def main(args):
     reactor = LandscapeReactor()
     if config.silent:
         result = register(config, reactor)
-        report_registration_outcome(result)
+        report_registration_outcome(result, print=print)
     else:
         answer = raw_input("\nRequest a new registration for "
                            "this computer now? (Y/n): ")
         if not answer.upper().startswith("N"):
             result = register(config, reactor)
-            report_registration_outcome(result)
+            report_registration_outcome(result, print=print)

@@ -788,6 +788,11 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
         self.assertTrue(os.path.isdir(annotations_path))
 
 
+def noop_print(*args, **kws):
+    """A print that doesn't do anything."""
+    pass
+
+
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     helpers = [EnvironSaverHelper]
@@ -1127,12 +1132,12 @@ registration_key = shared-secret
 
         # This must not be called.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
         self.mocker.count(0)
 
         self.mocker.replay()
 
-        main(["-c", self.make_working_config()])
+        main(["-c", self.make_working_config()], print=noop_print)
 
     def test_main_silent(self):
         """
@@ -1154,7 +1159,121 @@ registration_key = shared-secret
             "account_name = Old Name\n"
             "registration_key = Old Password\n"
             )
-        main(["-c", config_filename, "--silent"])
+        main(["-c", config_filename, "--silent"], print=noop_print)
+
+    def test_main_user_interaction_success(self):
+        """The successful result of register() is communicated to the user."""
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock("\nRequest a new registration for "
+                       "this computer now? (Y/n): ")
+        self.mocker.result("y")
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("success")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["-c", self.make_working_config()], print=faux_print)
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("System successfully registered.", sys.stdout)],
+            printed)
+
+    def test_main_user_interaction_failure(self):
+        """The failed result of register() is communicated to the user."""
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock("\nRequest a new registration for "
+                       "this computer now? (Y/n): ")
+        self.mocker.result("y")
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("failure")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["-c", self.make_working_config()], print=faux_print)
+        # Note that the error is output via sys.stderr.
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("Invalid account name or registration key.", sys.stderr)],
+            printed)
+
+    def test_main_user_interaction_success_silent(self):
+        """A successful result is communicated to the user even with --silent.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("success")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["--silent", "-c", self.make_working_config()], print=faux_print)
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("System successfully registered.", sys.stdout)],
+            printed)
+
+    def test_main_user_interaction_failure_silent(self):
+        """A failure result is communicated to the user even with --silent.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("failure")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["--silent", "-c", self.make_working_config()], print=faux_print)
+        # Note that the error is output via sys.stderr.
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("Invalid account name or registration key.", sys.stderr)],
+            printed)
 
     def make_working_config(self):
         return self.makeFile("[client]\n"
@@ -1189,7 +1308,7 @@ registration_key = shared-secret
         register_mock(ANY, ANY)
 
         self.mocker.replay()
-        main(["--config", self.make_working_config()])
+        main(["--config", self.make_working_config()], print=noop_print)
 
     def test_errors_from_restart_landscape(self):
         """
@@ -1249,7 +1368,7 @@ registration_key = shared-secret
         register_mock(ANY, ANY)
 
         self.mocker.replay()
-        main(["-c", self.make_working_config()])
+        main(["-c", self.make_working_config()], print=noop_print)
 
     def test_setup_init_script_and_start_client(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1287,7 +1406,7 @@ registration_key = shared-secret
 
         self.mocker.replay()
 
-        main(["--silent", "-c", self.make_working_config()])
+        main(["--silent", "-c", self.make_working_config()], print=noop_print)
 
     def test_disable(self):
         stop_client_and_disable_init_script_mock = self.mocker.replace(
