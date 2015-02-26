@@ -673,7 +673,6 @@ def register(config, reactor, connector_factory=RemoteBrokerConnector,
     connection.addErrback(got_error)
     reactor.run()
 
-    assert len(results) != 0, "There should not be no result."
     assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
     return results[0]
