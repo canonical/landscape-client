@@ -37,6 +37,8 @@ class ImportOptionError(ConfigurationError):
 
 
 def print_text(text, end="\n", error=False):
+    """Display the given text to the user, using stderr if flagged as an error.
+    """
     if error:
         stream = sys.stderr
     else:
@@ -587,10 +589,12 @@ def store_public_key_data(config, certificate_data):
 
 
 def failure(add_result):
+    """Handle a failed communication by recording the kind of failure."""
     add_result("failure")
 
 
 def exchange_failure(add_result, ssl_error=False):
+    """Handle a failed call by recording if the failure was SSL-related."""
     if ssl_error:
         add_result("ssl-error")
     else:
@@ -598,6 +602,7 @@ def exchange_failure(add_result, ssl_error=False):
 
 
 def handle_registration_errors(add_result, connector, failure):
+    """HAndle a failed registration by recording the kind of failure."""
     # We'll get invalid credentials through the signal.
     failure.trap(InvalidCredentialsError, MethodCallError)
     add_result("registration-error")
@@ -605,16 +610,18 @@ def handle_registration_errors(add_result, connector, failure):
 
 
 def success(add_result):
+    """Handle a successful communication by recording the fact."""
     add_result("success")
 
 
 def done(connector, reactor, ignored_result):
+    """Clean up after communicating with the server."""
     connector.disconnect()
     reactor.stop()
 
 
 def got_connection(add_result, connector, reactor, remote):
-    """...from broker."""
+    """Handle becomming connected to a broker."""
     handlers = {"registration-done": partial(success, add_result),
                 "registration-failed": partial(failure, add_result),
                 "exchange-failed": partial(exchange_failure, add_result)}
@@ -695,6 +702,8 @@ def report_registration_outcome(what_happened, print=print):
 
 
 def main(args):
+    """Interact with the user and the server to set up client configuration."""
+
     config = LandscapeSetupConfiguration()
     try:
         config.load(args)
