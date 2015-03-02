@@ -513,6 +513,9 @@ class AptPackageChangerTest(LandscapeTest):
                             {"type": "change-packages", "upgrade-all": True,
                              "operation-id": 124})
 
+        # Since this test intentionally induces errors, there's no need for
+        # the facade to wait to see if they go away.
+        self.facade.dpkg_retry_sleep = 0
         result = self.changer.handle_tasks()
 
         def got_result(result):
@@ -546,6 +549,9 @@ class AptPackageChangerTest(LandscapeTest):
                             {"type": "change-packages", "remove": [1],
                              "operation-id": 124})
 
+        # Since this test intentionally induces errors, there's no need for
+        # the facade to wait to see if they go away.
+        self.facade.dpkg_retry_sleep = 0
         result = self.changer.handle_tasks()
 
         def got_result(result):
