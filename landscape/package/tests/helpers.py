@@ -20,6 +20,9 @@ class AptFacadeHelper(object):
         test_case.Facade = AptFacade
         test_case.facade = AptFacade(root=test_case.apt_root)
         test_case.facade.refetch_package_index = True
+        # Since some tests intentionally induces errors, there's no need for
+        # the facade to wait to see if they go away.
+        test_case.facade.dpkg_retry_sleep = 0
         test_case._add_system_package = self._add_system_package
         test_case._install_deb_file = self._install_deb_file
         test_case._add_package_to_deb_dir = self._add_package_to_deb_dir
@@ -337,10 +340,12 @@ SHA1:
  65dca66c72b18d59cdcf671775104e86cbe2123a 407 main/binary-amd64/Packages.gz
  c9810732c61aa7de2887b5194c6a09d0b6118664 79 main/binary-amd64/Release
  4cdb64c700f798f719f5c81ae42e44582be094c5 538 restricted/binary-i386/Packages
- 190f980fd80d58284129ee050f9eb70b9590fedb 384 restricted/binary-i386/Packages.gz
+ 190f980fd80d58284129ee050f9eb70b9590fedb 384 \
+restricted/binary-i386/Packages.gz
  b1d1a4d57f5c8d70184c9661a087b8a92406c76d 84 restricted/binary-i386/Release
  4cdb64c700f798f719f5c81ae42e44582be094c5 538 restricted/binary-amd64/Packages
- 190f980fd80d58284129ee050f9eb70b9590fedb 384 restricted/binary-amd64/Packages.gz
+ 190f980fd80d58284129ee050f9eb70b9590fedb 384\
+ restricted/binary-amd64/Packages.gz
  4bd64fb2ef44037254729ab514d3403a65db7123 85 restricted/binary-amd64/Release
 """,
             "hardy-updates": """Origin: Ubuntu
@@ -374,7 +379,8 @@ SHA1:
  46c6643f07aa7f6bfe7118de926b86defc5087c4 20 restricted/binary-i386/Packages.gz
  b1d1a4d57f5c8d70184c9661a087b8a92406c76d 84 restricted/binary-i386/Release
  da39a3ee5e6b4b0d3255bfef95601890afd80709 0 restricted/binary-amd64/Packages
- 46c6643f07aa7f6bfe7118de926b86defc5087c4 20 restricted/binary-amd64/Packages.gz
+ 46c6643f07aa7f6bfe7118de926b86defc5087c4 20\
+ restricted/binary-amd64/Packages.gz
  4bd64fb2ef44037254729ab514d3403a65db7123 85 restricted/binary-amd64/Release
 """}
 
@@ -385,7 +391,8 @@ Version: 0.0.8
 Architecture: all
 Maintainer: Free Ekanayaka <freee@debian.org>
 Installed-Size: 192
-Pre-Depends: libaugeas0, python-augeas, augeas-tools, jackd, rotter, monit, darkice, soma, python-remix, nfs-kernel-server, icecast2
+Pre-Depends: libaugeas0, python-augeas, augeas-tools, jackd, rotter, monit,\
+ darkice, soma, python-remix, nfs-kernel-server, icecast2
 Priority: extra
 Section: admin
 Filename: pool/restricted/k/kairos/kairos_0.0.8_all.deb
@@ -402,7 +409,8 @@ Version: 0.0.8
 Architecture: all
 Maintainer: Free Ekanayaka <freee@debian.org>
 Installed-Size: 192
-Pre-Depends: libaugeas0, python-augeas, augeas-tools, jackd, rotter, monit, darkice, soma, python-remix, nfs-kernel-server, icecast2
+Pre-Depends: libaugeas0, python-augeas, augeas-tools, jackd, rotter, monit,\
+ darkice, soma, python-remix, nfs-kernel-server, icecast2
 Priority: extra
 Section: admin
 Filename: pool/restricted/k/kairos/kairos_0.0.8_all.deb
@@ -419,7 +427,8 @@ Description: kairos customisation package
 Source: clthreads
 Version: 2.4.0-1
 Architecture: amd64
-Maintainer: Debian Multimedia Maintainers <pkg-multimedia-maintainers@lists.alioth.debian.org>
+Maintainer: Debian Multimedia Maintainers\
+ <pkg-multimedia-maintainers@lists.alioth.debian.org>
 Installed-Size: 80
 Depends: libc6 (>= 2.3.2), libgcc1 (>= 1:4.1.1), libstdc++6 (>= 4.1.1)
 Priority: extra
@@ -438,7 +447,8 @@ Version: 2:3.73+dfsg-2
 Architecture: i386
 Maintainer: Daniel Baumann <daniel@debian.org>
 Installed-Size: 140
-Depends: libc6 (>= 2.7-1), syslinux-common (= 2:3.73+dfsg-2), dosfstools, mtools
+Depends: libc6 (>= 2.7-1), syslinux-common (= 2:3.73+dfsg-2), dosfstools,\
+ mtools
 Homepage: http://syslinux.zytor.com/
 Priority: optional
 Section: utils
@@ -464,7 +474,8 @@ Version: 0.3.5
 Architecture: all
 Maintainer: Julien Danjou <acid@debian.org>
 Installed-Size: 312
-Depends: python (>= 2.5), python-support (>= 0.7.1), lsb-base, python-sqlobject, python-apt
+Depends: python (>= 2.5), python-support (>= 0.7.1), lsb-base,\
+ python-sqlobject, python-apt
 Recommends: pbuilder, python-gdchart2, python-webpy
 Suggests: cowdancer
 Priority: extra
@@ -477,12 +488,14 @@ Description: build daemon aiming at rebuilding Debian packages
  This software allows you to manage a set of jobs. Each job is a package
  rebuilding task. Rebuilding is done by pbuilder (or cowbuilder if you want),
  or anything else, since everything is customizable via configuration file.
- It can also send build logs by email, event each log can be sent to a different
+ It can also send build logs by email, event each log can be sent to a\
+ different
  email address.
  .
  rebuildd is multi-threaded, so you can run multiple build jobs in parallel.
  It is also administrable via a telnet interface. A Web interface is also
- embedded so you can see your jobs queue and watch log file in real-time in your
+ embedded so you can see your jobs queue and watch log file in real-time in\
+ your
  browser.
  .
  rebuildd is designed to be run on multiple hosts even with different
@@ -494,7 +507,8 @@ Version: 0.3.5
 Architecture: all
 Maintainer: Julien Danjou <acid@debian.org>
 Installed-Size: 312
-Depends: python (>= 2.5), python-support (>= 0.7.1), lsb-base, python-sqlobject, python-apt
+Depends: python (>= 2.5), python-support (>= 0.7.1), lsb-base,\
+ python-sqlobject, python-apt
 Recommends: pbuilder, python-gdchart2, python-webpy
 Suggests: cowdancer
 Priority: extra
@@ -507,12 +521,14 @@ Description: build daemon aiming at rebuilding Debian packages
  This software allows you to manage a set of jobs. Each job is a package
  rebuilding task. Rebuilding is done by pbuilder (or cowbuilder if you want),
  or anything else, since everything is customizable via configuration file.
- It can also send build logs by email, event each log can be sent to a different
+ It can also send build logs by email, event each log can be sent to a\
+ different
  email address.
  .
  rebuildd is multi-threaded, so you can run multiple build jobs in parallel.
  It is also administrable via a telnet interface. A Web interface is also
- embedded so you can see your jobs queue and watch log file in real-time in your
+ embedded so you can see your jobs queue and watch log file in real-time in\
+ your
  browser.
  .
  rebuildd is designed to be run on multiple hosts even with different
