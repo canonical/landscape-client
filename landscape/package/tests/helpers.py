@@ -20,6 +20,9 @@ class AptFacadeHelper(object):
         test_case.Facade = AptFacade
         test_case.facade = AptFacade(root=test_case.apt_root)
         test_case.facade.refetch_package_index = True
+        # Since some tests intentionally induces errors, there's no need for
+        # the facade to wait to see if they go away.
+        test_case.facade.dpkg_retry_sleep = 0
         test_case._add_system_package = self._add_system_package
         test_case._install_deb_file = self._install_deb_file
         test_case._add_package_to_deb_dir = self._add_package_to_deb_dir
