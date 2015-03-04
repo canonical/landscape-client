@@ -1,27 +1,29 @@
-import os
-import sys
-from getpass import getpass
+from __future__ import print_function
+
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
+from getpass import getpass
+import os
+import sys
+import unittest
 
-from twisted.internet.defer import succeed, fail
-from twisted.internet.task import Clock
+from twisted.internet.defer import succeed
 
-from landscape.lib.amp import MethodCallSender
-from landscape.reactor import LandscapeReactor, FakeReactor
+from landscape.broker.registration import InvalidCredentialsError
+from landscape.tests.helpers import FakeBrokerServiceHelper
+from landscape.broker.tests.helpers import RemoteBrokerHelper
+from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
-    bootstrap_tree)
-from landscape.broker.registration import InvalidCredentialsError
+    bootstrap_tree, got_connection, success, failure, exchange_failure,
+    handle_registration_errors, done, got_error, report_registration_outcome)
 from landscape.sysvconfig import SysVConfig, ProcessError
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
-from landscape.broker.amp import RemoteBroker
+from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
+from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -39,6 +41,113 @@ url = https://landscape.canonical.com/message-system
         config = LandscapeSetupConfiguration()
         config.load(args)
         return config
+
+
+class SuccessTests(unittest.TestCase):
+    def test_success(self):
+        """The success handler records the success."""
+        results = []
+        success(results.append)
+        self.assertEqual(["success"], results)
+
+
+class FailureTests(unittest.TestCase):
+    def test_failure(self):
+        """The failure handler records the failure and returns non-zero."""
+        results = []
+        self.assertNotEqual(0, failure(results.append))
+        self.assertEqual(["failure"], results)
+
+
+class ExchangeFailureTests(unittest.TestCase):
+
+    def test_exchange_failure_ssl(self):
+        """The exchange_failure() handler records whether or not the failure
+        involved SSL or not and returns non-zero."""
+        results = []
+        self.assertNotEqual(0,
+            exchange_failure(results.append, ssl_error=True))
+        self.assertEqual(["ssl-error"], results)
+
+    def test_exchange_failure_non_ssl(self):
+        """
+        The exchange_failure() handler records whether or not the failure
+        involved SSL or not and returns non-zero.
+        """
+        results = []
+        self.assertNotEqual(0,
+            exchange_failure(results.append, ssl_error=False))
+        self.assertEqual(["non-ssl-error"], results)
+
+
+class HandleRegistrationErrorsTests(unittest.TestCase):
+
+    def test_handle_registration_errors(self):
+        """
+        The handle_registration_errors() function handles
+        InvalidCredentialsError and MethodCallError errors and records the
+        type of failure and disconnects.
+        """
+        class FauxFailure(object):
+            def trap(self, *trapped):
+                self.trapped_exceptions = trapped
+
+        faux_connector = FauxConnector()
+        faux_failure = FauxFailure()
+
+        results = []
+        self.assertNotEqual(0,
+            handle_registration_errors(
+                results.append, faux_connector, faux_failure))
+        self.assertEqual(["registration-error"], results)
+        self.assertTrue(faux_connector.was_disconnected)
+        self.assertTrue(
+            [InvalidCredentialsError, MethodCallError],
+            faux_failure.trapped_exceptions)
+
+
+class DoneTests(unittest.TestCase):
+
+    def test_done(self):
+        """The done() function handles cleaning up."""
+        class FauxConnector(object):
+            was_disconnected = False
+
+            def disconnect(self):
+                self.was_disconnected = True
+
+        class FauxReactor(object):
+            was_stopped = False
+
+            def stop(self):
+                self.was_stopped = True
+
+        faux_connector = FauxConnector()
+        faux_reactor = FauxReactor()
+
+        done(None, faux_connector, faux_reactor)
+        self.assertTrue(faux_connector.was_disconnected)
+        self.assertTrue(faux_reactor.was_stopped)
+
+
+class GotErrorTests(unittest.TestCase):
+
+    def test_got_error(self):
+        """The got_error() function handles displaying errors and exiting."""
+        class FauxFailure(object):
+
+            def getTraceback(self):
+                return "traceback"
+
+        printed = []
+
+        def faux_print(text, file):
+            printed.append((text, file))
+
+        with self.assertRaises(SystemExit):
+            got_error(FauxFailure(), print=faux_print)
+
+        self.assertEqual([('traceback', sys.stderr)], printed)
 
 
 class PrintTextTest(LandscapeTest):
@@ -683,6 +792,11 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
         self.assertTrue(os.path.isdir(annotations_path))
 
 
+def noop_print(*args, **kws):
+    """A print that doesn't do anything."""
+    pass
+
+
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     helpers = [EnvironSaverHelper]
@@ -1022,12 +1136,12 @@ registration_key = shared-secret
 
         # This must not be called.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
         self.mocker.count(0)
 
         self.mocker.replay()
 
-        main(["-c", self.make_working_config()])
+        main(["-c", self.make_working_config()], print=noop_print)
 
     def test_main_silent(self):
         """
@@ -1038,7 +1152,7 @@ registration_key = shared-secret
         setup_mock(ANY)
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
         self.mocker.count(1)
 
         self.mocker.replay()
@@ -1049,7 +1163,121 @@ registration_key = shared-secret
             "account_name = Old Name\n"
             "registration_key = Old Password\n"
             )
-        main(["-c", config_filename, "--silent"])
+        main(["-c", config_filename, "--silent"], print=noop_print)
+
+    def test_main_user_interaction_success(self):
+        """The successful result of register() is communicated to the user."""
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock("\nRequest a new registration for "
+                       "this computer now? (Y/n): ")
+        self.mocker.result("y")
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("success")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["-c", self.make_working_config()], print=faux_print)
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("System successfully registered.", sys.stdout)],
+            printed)
+
+    def test_main_user_interaction_failure(self):
+        """The failed result of register() is communicated to the user."""
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock("\nRequest a new registration for "
+                       "this computer now? (Y/n): ")
+        self.mocker.result("y")
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("failure")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["-c", self.make_working_config()], print=faux_print)
+        # Note that the error is output via sys.stderr.
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("Invalid account name or registration key.", sys.stderr)],
+            printed)
+
+    def test_main_user_interaction_success_silent(self):
+        """A successful result is communicated to the user even with --silent.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("success")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["--silent", "-c", self.make_working_config()], print=faux_print)
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("System successfully registered.", sys.stdout)],
+            printed)
+
+    def test_main_user_interaction_failure_silent(self):
+        """A failure result is communicated to the user even with --silent.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # The register() function will be called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY, ANY)
+        self.mocker.result("failure")
+
+        self.mocker.replay()
+
+        printed = []
+
+        def faux_print(string, file=sys.stdout):
+            printed.append((string, file))
+
+        main(["--silent", "-c", self.make_working_config()], print=faux_print)
+        # Note that the error is output via sys.stderr.
+        self.assertEqual(
+            [("Please wait...", sys.stdout),
+             ("Invalid account name or registration key.", sys.stderr)],
+            printed)
 
     def make_working_config(self):
         return self.makeFile("[client]\n"
@@ -1081,10 +1309,10 @@ registration_key = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
 
         self.mocker.replay()
-        main(["--config", self.make_working_config()])
+        main(["--config", self.make_working_config()], print=noop_print)
 
     def test_errors_from_restart_landscape(self):
         """
@@ -1141,10 +1369,10 @@ registration_key = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
 
         self.mocker.replay()
-        main(["-c", self.make_working_config()])
+        main(["-c", self.make_working_config()], print=noop_print)
 
     def test_setup_init_script_and_start_client(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1178,11 +1406,11 @@ registration_key = shared-secret
         # The registration logic should be called and passed the configuration
         # file.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY)
 
         self.mocker.replay()
 
-        main(["--silent", "-c", self.make_working_config()])
+        main(["--silent", "-c", self.make_working_config()], print=noop_print)
 
     def test_disable(self):
         stop_client_and_disable_init_script_mock = self.mocker.replace(
@@ -1672,469 +1900,203 @@ registration_key = shared-secret
                   # we care about are done.
 
 
+class FakeConnectorFactory(object):
+
+    def __init__(self, remote):
+        self.remote = remote
+
+    def __call__(self, reactor, config):
+        self.reactor = reactor
+        self.config = config
+        return self
+
+    def connect(self, max_retries=None, quiet=False):
+        return succeed(self.remote)
+
+    def disconnect(self):
+        return succeed(None)
+
+
+class RegisterRealFunctionTest(LandscapeConfigurationTest):
+
+    helpers = [FakeBrokerServiceHelper]
+
+    def setUp(self):
+        super(RegisterRealFunctionTest, self).setUp()
+        self.config = LandscapeSetupConfiguration()
+        self.config.load(["-c", self.config_filename])
+
+    def test_register_success(self):
+        self.reactor.call_later(0, self.reactor.fire, "registration-done")
+        connector_factory = FakeConnectorFactory(self.remote)
+        result = register(
+            self.config, self.reactor, connector_factory, max_retries=99)
+        self.assertEqual("success", result)
+
+
+class FauxConnection(object):
+    def __init__(self):
+        self.callbacks = []
+        self.errbacks = []
+
+    def addCallback(self, func, *args, **kws):
+        self.callbacks.append(func)
+
+    def addErrback(self, func, *args, **kws):
+        self.errbacks.append(func)
+
+
+class FauxConnector(object):
+
+    was_disconnected = False
+
+    def __init__(self, reactor=None, config=None):
+        self.reactor = reactor
+        self.config = config
+
+    def connect(self, max_retries, quiet):
+        self.max_retries = max_retries
+        self.connection = FauxConnection()
+        return self.connection
+
+    def disconnect(self):
+        self.was_disconnected = True
+
+
 class RegisterFunctionTest(LandscapeConfigurationTest):
 
-    helpers = [BrokerServiceHelper]
+    helpers = [RemoteBrokerHelper]
 
     def setUp(self):
         super(RegisterFunctionTest, self).setUp()
         self.config = LandscapeSetupConfiguration()
         self.config.load(["-c", self.config_filename])
 
-    def test_register_success(self):
-        service = self.broker_service
-
-        registration_mock = self.mocker.replace(service.registration)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(FakeReactor)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        # The register() method is called.  We fire the "registration-done"
-        # event after it's done, so that it cascades into a deferred callback.
-
-        def register_done():
-            service.reactor.fire("registration-done")
-
-        registration_mock.register()
-        self.mocker.call(register_done)
-
-        # The deferred callback finally prints out this message.
-        print_text_mock("System successfully registered.")
-
-        reactor_mock.stop()
-
-        # This is actually called after everything else since all deferreds
-        # are synchronous and callbacks will be executed immediately.
-        reactor_mock.run()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        return register(self.config, print_text, sys.exit,
-                        reactor=FakeReactor())
-
-    def test_register_failure(self):
-        """
-        When registration fails because of invalid credentials, a message will
-        be printed to the console and the program will exit.
-        """
-        service = self.broker_service
-
-        self.log_helper.ignore_errors(InvalidCredentialsError)
-        registration_mock = self.mocker.replace(service.registration)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(FakeReactor)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        # The register() method is called.  We fire the "registration-failed"
-        # event after it's done, so that it cascades into a deferred errback.
-
-        def register_done():
-            service.reactor.fire("registration-failed")
-
-        registration_mock.register()
-        self.mocker.call(register_done)
-
-        # The deferred errback finally prints out this message.
-        print_text_mock("Invalid account name or registration key.",
-                        error=True)
-
-        reactor_mock.stop()
-
-        # This is actually called after everything else since all deferreds
-        # are synchronous and callbacks will be executed immediately.
-        reactor_mock.run()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        exit = []
-        register(self.config, print_text, exit.append, reactor=FakeReactor())
-        self.assertEqual([2], exit)
-
-    def test_register_exchange_failure(self):
-        """
-        When registration fails because the server couldn't be contacted, a
-        message is printed and the program quits.
-        """
-        service = self.broker_service
-
-        registration_mock = self.mocker.replace(service.registration)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(FakeReactor)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        def register_done():
-            service.reactor.fire("exchange-failed")
-        registration_mock.register()
-        self.mocker.call(register_done)
-
-        # The deferred errback finally prints out this message.
-        print_text_mock("\nWe were unable to contact the server.\n"
-                        "Your internet connection may be down. "
-                        "The landscape client will continue to try and "
-                        "contact the server periodically.",
-                        error=True)
-
-        reactor_mock.stop()
-
-        # This is actually called after everything else since all deferreds
-        # are synchronous and callbacks will be executed immediately.
-        reactor_mock.run()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        exit = []
-        register(self.config, print_text, exit.append, reactor=FakeReactor())
-        self.assertEqual([2], exit)
-
-    def test_register_exchange_SSL_failure(self):
-        """
-        When registration fails because the server's SSL certificate could not
-        be validated, a message is printed and the program quits.
-        """
-        service = self.broker_service
-
-        registration_mock = self.mocker.replace(service.registration)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(FakeReactor)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        def register_done():
-            service.reactor.fire("exchange-failed", ssl_error=True)
-        registration_mock.register()
-        self.mocker.call(register_done)
-
-        # The deferred errback finally prints out this message.
-        print_text_mock("\nThe server's SSL information is incorrect, or "
-                        "fails signature verification!\n"
-                        "If the server is using a self-signed certificate, "
-                        "please ensure you supply it with the "
-                        "--ssl-public-key parameter.",
-                        error=True)
-
-        reactor_mock.stop()
-
-        # This is actually called after everything else since all deferreds
-        # are synchronous and callbacks will be executed immediately.
-        reactor_mock.run()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        exit = []
-        register(self.config, print_text, exit.append, reactor=FakeReactor())
-        self.assertEqual([2], exit)
-
-    def test_register_timeout_failure(self):
-        service = self.broker_service
-
-        registration_mock = self.mocker.replace(service.registration)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(FakeReactor)
-        remote_mock = self.mocker.patch(RemoteBroker)
-
-        protocol_mock = self.mocker.patch(MethodCallSender)
-        protocol_mock.timeout
-        self.mocker.result(0.1)
-        self.mocker.count(0, None)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        remote_mock.call_on_event(ANY)
-        self.mocker.result(succeed(None))
-
-        registration_mock.register()
-        self.mocker.passthrough()
-
-        # This is actually called after everything else since all deferreds
-        # are synchronous and callbacks will be executed immediately.
-        reactor_mock.run()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        fake_reactor = FakeReactor()
-        fake_reactor._reactor = Clock()
-        deferred = register(self.config, print_text, sys.exit,
-                            reactor=fake_reactor)
-        fake_reactor._reactor.advance(100)
-        return deferred
-
-    def test_register_bus_connection_failure(self):
-        """
-        If the socket can't be connected to, landscape-config will print an
-        explanatory message and exit cleanly.
-        """
-        # This will make the RemoteBrokerConnector.connect call fail
-        print_text_mock = self.mocker.replace(print_text)
-        time_mock = self.mocker.replace("time")
-        sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(LandscapeReactor)
-
-        connector_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
-        connector = connector_factory(ANY, ANY)
-        connector.connect(max_retries=0, quiet=True)
-        self.mocker.result(fail(ZeroDivisionError))
-
-        print_text_mock(ARGS)
-        time_mock.sleep(ANY)
-        reactor_mock.run()
-
-        print_text_mock(
-            CONTAINS("There was an error communicating with the "
-                     "Landscape client"),
-            error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        sys_mock.exit(2)
-        connector.disconnect()
-        reactor_mock.stop()
-
-        self.mocker.replay()
-
-        config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit, max_retries=0)
-
-    def test_register_bus_connection_failure_ok_no_register(self):
-        """
-        Exit code 0 will be returned if we can't contact Landscape via DBus and
-        --ok-no-register was passed.
-        """
-        print_text_mock = self.mocker.replace(print_text)
-        time_mock = self.mocker.replace("time")
-        reactor_mock = self.mocker.patch(LandscapeReactor)
-
-        print_text_mock(ARGS)
-        time_mock.sleep(ANY)
-        reactor_mock.run()
-        reactor_mock.stop()
-
-        print_text_mock(
-            CONTAINS("There was an error communicating with the "
-                     "Landscape client"),
-            error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        self.mocker.replay()
-
-        config = self.get_config(
-            ["-a", "accountname", "--silent", "--ok-no-register"])
-        return self.assertSuccess(register(config, print_text, sys.exit,
-                                           max_retries=0))
-
-
-class RegisterFunctionRetryTest(LandscapeConfigurationTest):
-
-    helpers = [BrokerServiceHelper]
-
-    def setUp(self):
-        super(RegisterFunctionRetryTest, self).setUp()
-        self.config = LandscapeSetupConfiguration()
-        self.config.load(["-c", self.config_filename])
-
-    def test_register_with_retry_parameters(self):
-        """
-        Retry parameters are passed to the L{connect} method of the connector.
-        """
-        print_text_mock = self.mocker.replace(print_text)
-        time_mock = self.mocker.replace("time")
-        sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(LandscapeReactor)
-
-        connector_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
-        connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=12)
-
-        self.mocker.result(succeed(None))
-
-        print_text_mock(ARGS)
-        time_mock.sleep(ANY)
-        reactor_mock.run()
-
-        print_text_mock(
-            CONTAINS("There was an error communicating with the "
-                     "Landscape client"),
-            error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        sys_mock.exit(2)
-        connector.disconnect()
-        reactor_mock.stop()
-
-        self.mocker.replay()
-
-        config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit, max_retries=12)
-
-    def test_register_with_default_retry_parameters(self):
-        """
-        max_retries has reasonable default behavior - retry 14 times which
-        will result in a wait of about 60 seconds, until the broker has time
-        to start on heavily loaded systems.
-
-        initialDelay = 0.05
-        factor =  1.62
-        maxDelay = 30
-        max_retries = 14
-
-        0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
-        """
-        print_text_mock = self.mocker.replace(print_text)
-        time_mock = self.mocker.replace("time")
-        sys_mock = self.mocker.replace("sys")
-        reactor_mock = self.mocker.patch(LandscapeReactor)
-
-        connector_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
-        connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=14)
-
-        self.mocker.result(succeed(None))
-
-        print_text_mock(ARGS)
-        time_mock.sleep(ANY)
-        reactor_mock.run()
-
-        print_text_mock(
-            CONTAINS("There was an error communicating with the "
-                     "Landscape client"),
-            error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        sys_mock.exit(2)
-        connector.disconnect()
-        reactor_mock.stop()
-
-        self.mocker.replay()
-
-        config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit)
-
-
-class RegisterFunctionNoServiceTest(LandscapeTest):
-
-    def test_register_unknown_error(self):
-        """
-        When registration fails because of an unknown error, a message is
-        printed and the program exits.
-        """
-        configuration = LandscapeSetupConfiguration()
-
-        # We'll just mock the remote here to have it raise an exception.
-        connector_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
-        remote_broker = self.mocker.mock()
-
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(FakeReactor)
-
-        # This is unordered. It's just way too much of a pain.
-        print_text_mock("Please wait... ", "")
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        # SNORE
-        connector = connector_factory(ANY, configuration)
-        connector.connect(max_retries=0, quiet=True)
-        self.mocker.result(succeed(remote_broker))
-        remote_broker.call_on_event(ANY)
-        self.mocker.result(succeed(None))
-
-        # here it is!
-        remote_broker.register()
-        self.mocker.result(fail(ZeroDivisionError))
-
-        print_text_mock(ANY, error=True)
-
-        def check_logged_failure(text, error):
-            self.assertTrue("ZeroDivisionError" in text)
-        self.mocker.call(check_logged_failure)
-        print_text_mock("Unknown error occurred.", error=True)
-
-        # WHOAH DUDE. This waits for callLater(0, reactor.stop).
-        connector.disconnect()
-        reactor_mock.stop()
-        reactor_mock.run()
-
-        self.mocker.replay()
-
-        exit = []
-        register(configuration, print_text, exit.append, max_retries=0,
-                 reactor=FakeReactor())
-        self.assertEqual(exit, [2])
+    def test_register(self):
+        """Is the async machinery wired up properly?"""
+
+        class FauxFailure(object):
+            def getTraceback(self):
+                return 'traceback'
+
+        class FauxReactor(object):
+            def run(self):
+                self.was_run = True
+
+            def stop(self, *args):
+                self.was_stopped = True
+
+        reactor = FauxReactor()
+        connector = FauxConnector(reactor, self.config)
+
+        def connector_factory(reactor, config):
+            return connector
+
+        # We pre-seed a success because no actual result will be generated.
+        register(self.config, reactor, connector_factory, max_retries=99,
+            results=['success'])
+        self.assertTrue(reactor.was_run)
+        # Only a single callback is registered, it does the real work when a
+        # connection is established.
+        self.assertTrue(1, len(connector.connection.callbacks))
+        self.assertEqual(
+            'got_connection',
+            connector.connection.callbacks[0].func.__name__)
+        # Should something go wrong, there is an error handler registered.
+        self.assertTrue(1, len(connector.connection.errbacks))
+        self.assertEqual(
+            'got_error',
+            connector.connection.errbacks[0].__name__)
+        # We ask for retries because networks aren't reliable.
+        self.assertEqual(99, connector.max_retries)
+
+    def test_got_connection(self):
+        """got_connection() adds deferreds and callbacks."""
+
+        def faux_got_connection(add_result, remote, connector, reactor):
+            pass
+
+        class FauxRemote(object):
+            handlers = None
+            deferred = None
+
+            def call_on_event(self, handlers):
+                assert not self.handlers, "Called twice"
+                self.handlers = handlers
+                self.call_on_event_deferred = FauxCallOnEventDeferred()
+                return self.call_on_event_deferred
+
+            def register(self):
+                assert not self.deferred, "Called twice"
+                self.register_deferred = FauxRegisterDeferred()
+                return self.register_deferred
+
+        class FauxCallOnEventDeferred(object):
+            def __init__(self):
+                self.callbacks = []
+                self.errbacks = []
+
+            def addCallbacks(self, *funcs, **kws):
+                self.callbacks.extend(funcs)
+
+        class FauxRegisterDeferred(object):
+            def __init__(self):
+                self.callbacks = []
+                self.errbacks = []
+
+            def addCallback(self, func):
+                assert func.__name__ == "got_connection", "Wrong callback."
+                self.callbacks.append(faux_got_connection)
+                self.gather_results_deferred = GatherResultsDeferred()
+                return self.gather_results_deferred
+
+            def addCallbacks(self, *funcs, **kws):
+                self.callbacks.extend(funcs)
+
+            def addErrback(self, func, *args, **kws):
+                self.errbacks.append(func)
+                return self
+
+        class GatherResultsDeferred(object):
+            def __init__(self):
+                self.callbacks = []
+                self.errbacks = []
+
+            def addCallbacks(self, *funcs, **kws):
+                self.callbacks.extend(funcs)
+
+        faux_connector = FauxConnector(self.reactor, self.config)
+
+        status_results = []
+        faux_remote = FauxRemote()
+        results = got_connection(
+            status_results.append, faux_connector, self.reactor, faux_remote)
+        # We set up two deferreds, one for the RPC call and one for event
+        # handlers.
+        self.assertEqual(2, len(results.resultList))
+        # Handlers are registered for the events we are interested in.
+        self.assertEqual(
+            ['registration-failed', 'exchange-failed', 'registration-done'],
+            faux_remote.handlers.keys())
+        self.assertEqual(
+            ['failure', 'exchange_failure', 'success'],
+            [handler.func.__name__
+                for handler in faux_remote.handlers.values()])
+        # We include a single error handler to react to exchange errors.
+        self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
+        self.assertEqual(
+            'handle_registration_errors',
+            faux_remote.register_deferred.errbacks[0].__name__)
+
+    def test_register_happy_path(self):
+        """A successful result provokes no exceptions."""
+        def faux_got_connection(add_result, remote, connector, reactor):
+            add_result('success')
+        self.reactor.call_later(1, self.reactor.stop)
+        self.assertEqual(
+            "success",
+            register(self.config, reactor=self.reactor,
+                got_connection=faux_got_connection))
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):
@@ -2159,3 +2121,41 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         self.assertEqual(key_filename,
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
+
+
+class ReportRegistrationOutcomeTest(unittest.TestCase):
+
+    def setUp(self):
+        self.result = []
+        self.output = []
+
+    def record_result(self, result, file=sys.stdout):
+        self.result.append(result)
+        self.output.append(file.name)
+
+    def test_success_case(self):
+        report_registration_outcome("success", print=self.record_result)
+        self.assertIn("System successfully registered.", self.result)
+        self.assertIn(sys.stdout.name, self.output)
+
+    def test_failure_case(self):
+        report_registration_outcome("failure", print=self.record_result)
+        self.assertIn("Invalid account name or registration key.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
+
+    def test_ssl_error_case(self):
+        report_registration_outcome("ssl-error", print=self.record_result)
+        self.assertIn("\nThe server's SSL information is incorrect, or fails "
+              "signature verification!\n"
+              "If the server is using a self-signed certificate, "
+              "please ensure you supply it with the --ssl-public-key "
+              "parameter.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
+
+    def test_non_ssl_error_case(self):
+        report_registration_outcome("non-ssl-error", print=self.record_result)
+        self.assertIn("\nWe were unable to contact the server.\n"
+              "Your internet connection may be down. "
+              "The landscape client will continue to try and contact "
+              "the server periodically.", self.result)
+        self.assertIn(sys.stderr.name, self.output)

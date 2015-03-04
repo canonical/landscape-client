@@ -4,12 +4,14 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
+from __future__ import print_function
+
+from functools import partial
 import base64
-import time
-import sys
-import os
 import getpass
+import os
 import pwd
+import sys
 
 from StringIO import StringIO
 
@@ -35,6 +37,8 @@ class ImportOptionError(ConfigurationError):
 
 
 def print_text(text, end="\n", error=False):
+    """Display the given text to the user, using stderr if flagged as an error.
+    """
     if error:
         stream = sys.stderr
     else:
@@ -584,8 +588,60 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
-             max_retries=14):
+def failure(add_result):
+    """Handle a failed communication by recording the kind of failure."""
+    add_result("failure")
+
+
+def exchange_failure(add_result, ssl_error=False):
+    """Handle a failed call by recording if the failure was SSL-related."""
+    if ssl_error:
+        add_result("ssl-error")
+    else:
+        add_result("non-ssl-error")
+
+
+def handle_registration_errors(add_result, connector, failure):
+    """HAndle a failed registration by recording the kind of failure."""
+    # We'll get invalid credentials through the signal.
+    failure.trap(InvalidCredentialsError, MethodCallError)
+    add_result("registration-error")
+    connector.disconnect()
+
+
+def success(add_result):
+    """Handle a successful communication by recording the fact."""
+    add_result("success")
+
+
+def done(ignored_result, connector, reactor):
+    """Clean up after communicating with the server."""
+    connector.disconnect()
+    reactor.stop()
+
+
+def got_connection(add_result, connector, reactor, remote):
+    """Handle becomming connected to a broker."""
+    handlers = {"registration-done": partial(success, add_result),
+                "registration-failed": partial(failure, add_result),
+                "exchange-failed": partial(exchange_failure, add_result)}
+    deferreds = [
+        remote.call_on_event(handlers),
+        remote.register().addErrback(
+            handle_registration_errors, add_result, connector)]
+    results = gather_results(deferreds)
+    results.addCallback(done, connector, reactor)
+    return results
+
+
+def got_error(failure, print=print):
+    """...from broker."""
+    print(failure.getTraceback(), file=sys.stderr)
+    raise SystemExit
+
+
+def register(config, reactor, connector_factory=RemoteBrokerConnector,
+        got_connection=got_connection, max_retries=14, results=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -605,91 +661,48 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
         max_retries = 14
 
         0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
-   """
-    if reactor is None:
-        reactor = LandscapeReactor()
-    exit_with_error = []
+    """
+    if results is None:
+        results = []
+    add_result = results.append
 
-    def stop(errors):
-        if not config.ok_no_register:
-            for error in errors:
-                if error is not None:
-                    exit_with_error.append(error)
-        connector.disconnect()
-        reactor.stop()
-
-    def failure():
-        on_message("Invalid account name or "
-                   "registration key.", error=True)
-        return 2
-
-    def success():
-        on_message("System successfully registered.")
-
-    def exchange_failure(ssl_error=False):
-        if ssl_error:
-            message = ("\nThe server's SSL information is incorrect, or fails "
-                       "signature verification!\n"
-                       "If the server is using a self-signed certificate, "
-                       "please ensure you supply it with the --ssl-public-key "
-                       "parameter.")
-        else:
-            message = ("\nWe were unable to contact the server.\n"
-                       "Your internet connection may be down. "
-                       "The landscape client will continue to try and contact "
-                       "the server periodically.")
-
-        on_message(message, error=True)
-        return 2
-
-    def handle_registration_errors(failure):
-        # We'll get invalid credentials through the signal.
-        failure.trap(InvalidCredentialsError, MethodCallError)
-        connector.disconnect()
-
-    def catch_all(failure):
-        on_message(failure.getTraceback(), error=True)
-        on_message("Unknown error occurred.", error=True)
-        return [2]
-
-    on_message("Please wait... ", "")
-
-    time.sleep(2)
-
-    def got_connection(remote):
-        handlers = {"registration-done": success,
-                    "registration-failed": failure,
-                    "exchange-failed": exchange_failure}
-        deferreds = [
-            remote.call_on_event(handlers),
-            remote.register().addErrback(handle_registration_errors)]
-        # We consume errors here to ignore errors after the first one.
-        # catch_all will be called for the very first deferred that fails.
-        results = gather_results(deferreds, consume_errors=True)
-        results.addErrback(catch_all)
-        results.addCallback(stop)
-
-    def got_error(failure):
-        on_message("There was an error communicating with the Landscape"
-                   " client.", error=True)
-        on_message("This machine will be registered with the provided "
-                   "details when the client runs.", error=True)
-        stop([2])
-
-    connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect(max_retries=max_retries, quiet=True)
-    result.addCallback(got_connection)
-    result.addErrback(got_error)
-
+    connector = connector_factory(reactor, config)
+    connection = connector.connect(max_retries=max_retries, quiet=True)
+    connection.addCallback(
+        partial(got_connection, add_result, connector, reactor))
+    connection.addErrback(got_error)
     reactor.run()
 
-    if exit_with_error:
-        on_error(exit_with_error[0])
+    assert len(results) == 1, "We expect exactly one result."
+    # Results will be things like "success" or "ssl-error".
+    return results[0]
 
-    return result
+
+def report_registration_outcome(what_happened, print=print):
+    """
+    Report the registrtion interaction outcome to the user in human-readable
+    form.
+    """
+    if what_happened == "success":
+        print("System successfully registered.")
+    elif what_happened == "failure":
+        print("Invalid account name or registration key.", file=sys.stderr)
+    elif what_happened == "ssl-error":
+        print("\nThe server's SSL information is incorrect, or fails "
+              "signature verification!\n"
+              "If the server is using a self-signed certificate, "
+              "please ensure you supply it with the --ssl-public-key "
+              "parameter.", file=sys.stderr)
+    elif what_happened == "non-ssl-error":
+        print("\nWe were unable to contact the server.\n"
+              "Your internet connection may be down. "
+              "The landscape client will continue to try and contact "
+              "the server periodically.", file=sys.stderr)
 
 
-def main(args):
+def main(args, print=print):
+    """Interact with the user and the server to set up client configuration."""
+
     config = LandscapeSetupConfiguration()
     try:
         config.load(args)
@@ -716,11 +729,16 @@ def main(args):
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 
+    print("Please wait...")
+
     # Attempt to register the client.
+    reactor = LandscapeReactor()
     if config.silent:
-        register(config)
+        result = register(config, reactor)
+        report_registration_outcome(result, print=print)
     else:
         answer = raw_input("\nRequest a new registration for "
                            "this computer now? (Y/n): ")
         if not answer.upper().startswith("N"):
-            register(config)
+            result = register(config, reactor)
+            report_registration_outcome(result, print=print)
