@@ -359,6 +359,7 @@ class FakeBrokerServiceHelper(object):
             transport_factory = FakeTransport
 
         test_case.broker_service = FakeBrokerService(config)
+        test_case.reactor = test_case.broker_service.reactor
         test_case.remote = FakeRemoteBroker(
             test_case.broker_service.exchanger,
             test_case.broker_service.message_store,

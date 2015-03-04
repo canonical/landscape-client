@@ -65,6 +65,21 @@ class FakeRemoteBroker(object):
             return maybeDeferred(callable, *args)
         return succeed(None)
 
+    def call_on_event(self, handlers):
+        """Call a given handler as soon as a certain event occurs.
+
+        @param handlers: A dictionary mapping event types to callables, where
+            an event type is string (the name of the event). When the first of
+            the given event types occurs in the broker reactor, the associated
+            callable will be fired.
+        """
+        result = self.broker_server.listen_events(handlers.keys())
+        return result.addCallback(
+            lambda (event_type, kwargs): handlers[event_type](**kwargs))
+
+    def register(self):
+        return succeed(None)
+
 
 class RemoteBrokerConnector(ComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""

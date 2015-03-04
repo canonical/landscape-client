@@ -7,7 +7,10 @@ import os
 import sys
 import unittest
 
+from twisted.internet.defer import succeed
+
 from landscape.broker.registration import InvalidCredentialsError
+from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.broker.tests.helpers import RemoteBrokerHelper
 from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
@@ -122,14 +125,14 @@ class DoneTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_reactor = FauxReactor()
 
-        done(faux_connector, faux_reactor, None)
+        done(None, faux_connector, faux_reactor)
         self.assertTrue(faux_connector.was_disconnected)
         self.assertTrue(faux_reactor.was_stopped)
 
 
 class GotErrorTests(unittest.TestCase):
 
-    def test_done(self):
+    def test_got_error(self):
         """The got_error() function handles displaying errors and exiting."""
         class FauxFailure(object):
 
@@ -143,7 +146,8 @@ class GotErrorTests(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             got_error(FauxFailure(), print=faux_print)
-            self.assertEqual([], printed)
+
+        self.assertEqual([('traceback', sys.stderr)], printed)
 
 
 class PrintTextTest(LandscapeTest):
@@ -1896,15 +1900,49 @@ registration_key = shared-secret
                   # we care about are done.
 
 
+class FakeConnectorFactory(object):
+
+    def __init__(self, remote):
+        self.remote = remote
+
+    def __call__(self, reactor, config):
+        self.reactor = reactor
+        self.config = config
+        return self
+
+    def connect(self, max_retries=None, quiet=False):
+        return succeed(self.remote)
+
+    def disconnect(self):
+        return succeed(None)
+
+
+class RegisterRealFunctionTest(LandscapeConfigurationTest):
+
+    helpers = [FakeBrokerServiceHelper]
+
+    def setUp(self):
+        super(RegisterRealFunctionTest, self).setUp()
+        self.config = LandscapeSetupConfiguration()
+        self.config.load(["-c", self.config_filename])
+
+    def test_register_success(self):
+        self.reactor.call_later(0, self.reactor.fire, "registration-done")
+        connector_factory = FakeConnectorFactory(self.remote)
+        result = register(
+            self.config, self.reactor, connector_factory, max_retries=99)
+        self.assertEqual("success", result)
+
+
 class FauxConnection(object):
     def __init__(self):
         self.callbacks = []
         self.errbacks = []
 
-    def addCallback(self, func):
+    def addCallback(self, func, *args, **kws):
         self.callbacks.append(func)
 
-    def addErrback(self, func):
+    def addErrback(self, func, *args, **kws):
         self.errbacks.append(func)
 
 
@@ -1935,7 +1973,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.config.load(["-c", self.config_filename])
 
     def test_register(self):
-        """Is the async machinery wired up properly."""
+        """Is the async machinery wired up properly?"""
 
         class FauxFailure(object):
             def getTraceback(self):
@@ -1958,11 +1996,13 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         register(self.config, reactor, connector_factory, max_retries=99,
             results=['success'])
         self.assertTrue(reactor.was_run)
-        # Only a single callback is registered, it does the real work.
+        # Only a single callback is registered, it does the real work when a
+        # connection is established.
         self.assertTrue(1, len(connector.connection.callbacks))
         self.assertEqual(
             'got_connection',
             connector.connection.callbacks[0].func.__name__)
+        # Should something go wrong, there is an error handler registered.
         self.assertTrue(1, len(connector.connection.errbacks))
         self.assertEqual(
             'got_error',
@@ -2013,7 +2053,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             def addCallbacks(self, *funcs, **kws):
                 self.callbacks.extend(funcs)
 
-            def addErrback(self, func):
+            def addErrback(self, func, *args, **kws):
                 self.errbacks.append(func)
                 return self
 
@@ -2038,23 +2078,25 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertEqual(
             ['registration-failed', 'exchange-failed', 'registration-done'],
             faux_remote.handlers.keys())
-        # The handlers are as we expect.
         self.assertEqual(
             ['failure', 'exchange_failure', 'success'],
             [handler.func.__name__
                 for handler in faux_remote.handlers.values()])
+        # We include a single error handler to react to exchange errors.
         self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
         self.assertEqual(
             'handle_registration_errors',
-            faux_remote.register_deferred.errbacks[0].func.__name__)
+            faux_remote.register_deferred.errbacks[0].__name__)
 
     def test_register_happy_path(self):
         """A successful result provokes no exceptions."""
         def faux_got_connection(add_result, remote, connector, reactor):
             add_result('success')
         self.reactor.call_later(1, self.reactor.stop)
-        register(self.config, reactor=self.reactor,
-            got_connection=faux_got_connection)
+        self.assertEqual(
+            "success",
+            register(self.config, reactor=self.reactor,
+                got_connection=faux_got_connection))
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):

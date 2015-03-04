@@ -614,7 +614,7 @@ def success(add_result):
     add_result("success")
 
 
-def done(connector, reactor, ignored_result):
+def done(ignored_result, connector, reactor):
     """Clean up after communicating with the server."""
     connector.disconnect()
     reactor.stop()
@@ -628,9 +628,9 @@ def got_connection(add_result, connector, reactor, remote):
     deferreds = [
         remote.call_on_event(handlers),
         remote.register().addErrback(
-            partial(handle_registration_errors, add_result, connector))]
+            handle_registration_errors, add_result, connector)]
     results = gather_results(deferreds)
-    results.addCallback(partial(done, connector, reactor))
+    results.addCallback(done, connector, reactor)
     return results
 
 
