@@ -2088,6 +2088,37 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             'handle_registration_errors',
             faux_remote.register_deferred.errbacks[0].__name__)
 
+    def test_register_with_on_error_and_an_error(self):
+        """A caller-provided on_error callable will be called if errors occur.
+        """
+        def faux_got_connection(add_result, remote, connector, reactor):
+            add_result("something bad")
+
+        on_error_was_called = []
+
+        def on_error(status):
+            # A positive number is provided for the status.
+            self.assertGreater(status, 0)
+            on_error_was_called.append(True)
+
+        self.reactor.call_later(1, self.reactor.stop)
+        register(self.config, reactor=self.reactor, on_error=on_error,
+            got_connection=faux_got_connection)
+        self.assertTrue(on_error_was_called)
+
+    def test_register_with_on_error_and_no_error(self):
+        """A caller-provided on_error callable will not be called if no error.
+        """
+        def faux_got_connection(add_result, remote, connector, reactor):
+            add_result("success")
+
+        def on_error(status):
+            self.fail("This was not supposed to be called.")
+
+        self.reactor.call_later(1, self.reactor.stop)
+        register(self.config, reactor=self.reactor, on_error=on_error,
+            got_connection=faux_got_connection)
+
     def test_register_happy_path(self):
         """A successful result provokes no exceptions."""
         def faux_got_connection(add_result, remote, connector, reactor):

@@ -641,7 +641,8 @@ def got_error(failure, print=print):
 
 
 def register(config, reactor, connector_factory=RemoteBrokerConnector,
-        got_connection=got_connection, max_retries=14, results=None):
+        got_connection=got_connection, max_retries=14, on_error=None,
+        results=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -650,17 +651,19 @@ def register(config, reactor, connector_factory=RemoteBrokerConnector,
     @param reactor: The reactor to use.  Please only pass reactor when you
         have totally mangled everything with mocker.  Otherwise bad things
         will happen.
+    @param connector_factory: A callable that accepts a reactor and a
+        configuration object and returns a new remote broker connection.  Used
+        primarily for dependency injection.
+    @param got_connection: The handler to trigger when the remote broker
+        connects.  Used primarily for dependency injection.
     @param max_retries: The number of times to retry connecting to the
         landscape client service.  The delay between retries is calculated
-        by Twisted and increases geometrically.  The default of 14 results in
-        a total wait time of about 70 seconds.
-
-        initialDelay = 0.05
-        factor =  1.62
-        maxDelay = 30
-        max_retries = 14
-
-        0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
+        by Twisted and increases geometrically.
+    @param on_error: A callable that will be passed a non-zero positive
+        integer argument in the case that some error occurs.  This is a legacy
+        API provided for use by the client charm.
+    @param results: This parameter provides a mechanism to pre-seed the result
+        of registering.  Used for testing.
     """
     if results is None:
         results = []
@@ -675,7 +678,13 @@ def register(config, reactor, connector_factory=RemoteBrokerConnector,
 
     assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
-    return results[0]
+    result = results[0]
+
+    # If there was an error and the caller requested that errors be reported
+    # to the on_error callable, then do so.
+    if result != "success" and on_error is not None:
+        on_error(1)
+    return result
 
 
 def report_registration_outcome(what_happened, print=print):
