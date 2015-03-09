@@ -2090,6 +2090,9 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
     def test_register_with_on_error_and_an_error(self):
         """A caller-provided on_error callable will be called if errors occur.
+
+        The on_error parameter is provided for the client charm which calls
+        register() directly and provides on_error as a keyword argument.
         """
         def faux_got_connection(add_result, remote, connector, reactor):
             add_result("something bad")
@@ -2112,12 +2115,16 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         def faux_got_connection(add_result, remote, connector, reactor):
             add_result("success")
 
+        on_error_was_called = []
+
         def on_error(status):
-            self.fail("This was not supposed to be called.")
+            # A positive number is provided for the status.
+            on_error_was_called.append(True)
 
         self.reactor.call_later(1, self.reactor.stop)
         register(self.config, reactor=self.reactor, on_error=on_error,
             got_connection=faux_got_connection)
+        self.assertFalse(on_error_was_called)
 
     def test_register_happy_path(self):
         """A successful result provokes no exceptions."""
