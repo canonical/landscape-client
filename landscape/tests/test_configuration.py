@@ -10,10 +10,7 @@ import unittest
 from twisted.internet.defer import succeed
 
 from landscape.broker.registration import InvalidCredentialsError
-from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.broker.tests.helpers import RemoteBrokerHelper
-from landscape.lib.amp import MethodCallError
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
@@ -21,10 +18,13 @@ from landscape.configuration import (
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
     handle_registration_errors, done, got_error, report_registration_outcome)
+from landscape.lib.amp import MethodCallError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.sysvconfig import SysVConfig, ProcessError
+from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
-
+import landscape.reactor
 
 class LandscapeConfigurationTest(LandscapeTest):
 
@@ -2009,6 +2009,32 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             connector.connection.errbacks[0].__name__)
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
+
+    def test_register_without_reactor(self):
+        """If no reactor is passed, a LandscapeReactor will be instantiated.
+        
+        This behaviour is exclusively for compatability with the client charm
+        which does not pass in a reactor.
+        """
+
+        def connector_factory(reactor, config):
+            return FauxConnector(reactor, self.config)
+
+        reactor_mock = self.mocker.replace(
+            "landscape.reactor.LandscapeReactor", passthrough=False)
+        # The mock acts as both the constructor...
+        reactor_mock()
+        self.mocker.result(reactor_mock)
+        # ...and the constructed reactor itself.
+        reactor_mock.run()
+        self.mocker.replay()
+
+        # We pre-seed a success because no actual result will be generated.
+        register(self.config, connector_factory=connector_factory,
+            results=["success"])
+        # The reactor mock being run is what this test asserts, which is
+        # verified by the test infrastructure, so there are no assertions
+        # here.
 
     def test_got_connection(self):
         """got_connection() adds deferreds and callbacks."""

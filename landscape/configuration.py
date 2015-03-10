@@ -640,7 +640,7 @@ def got_error(failure, print=print):
     raise SystemExit
 
 
-def register(config, reactor, connector_factory=RemoteBrokerConnector,
+def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
         got_connection=got_connection, max_retries=14, on_error=None,
         results=None):
     """Instruct the Landscape Broker to register the client.
@@ -648,9 +648,8 @@ def register(config, reactor, connector_factory=RemoteBrokerConnector,
     The broker will be instructed to reload its configuration and then to
     attempt a registration.
 
-    @param reactor: The reactor to use.  Please only pass reactor when you
-        have totally mangled everything with mocker.  Otherwise bad things
-        will happen.
+    @param reactor: The reactor to use.  This parameter is used by the client
+        charm and is maintained for compatability with it.
     @param connector_factory: A callable that accepts a reactor and a
         configuration object and returns a new remote broker connection.  Used
         primarily for dependency injection.
@@ -665,6 +664,8 @@ def register(config, reactor, connector_factory=RemoteBrokerConnector,
     @param results: This parameter provides a mechanism to pre-seed the result
         of registering.  Used for testing.
     """
+    if reactor is None:
+        reactor = LandscapeReactor()
     if results is None:
         results = []
     add_result = results.append
