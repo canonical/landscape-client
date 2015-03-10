@@ -24,7 +24,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
-import landscape.reactor
+
 
 class LandscapeConfigurationTest(LandscapeTest):
 
@@ -2012,7 +2012,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
     def test_register_without_reactor(self):
         """If no reactor is passed, a LandscapeReactor will be instantiated.
-        
+
         This behaviour is exclusively for compatability with the client charm
         which does not pass in a reactor.
         """
@@ -2144,7 +2144,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         on_error_was_called = []
 
         def on_error(status):
-            # A positive number is provided for the status.
             on_error_was_called.append(True)
 
         self.reactor.call_later(1, self.reactor.stop)

@@ -648,8 +648,8 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
     The broker will be instructed to reload its configuration and then to
     attempt a registration.
 
-    @param reactor: The reactor to use.  This parameter is used by the client
-        charm and is maintained for compatability with it.
+    @param reactor: The reactor to use.  This parameter is optional because
+        the client charm does not pass it.
     @param connector_factory: A callable that accepts a reactor and a
         configuration object and returns a new remote broker connection.  Used
         primarily for dependency injection.
