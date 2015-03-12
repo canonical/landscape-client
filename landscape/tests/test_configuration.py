@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 
-from twisted.internet.defer import succeed
+from twisted.internet.defer import succeed, Deferred
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.tests.helpers import RemoteBrokerHelper
@@ -98,12 +98,31 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         results = []
         self.assertNotEqual(0,
             handle_registration_errors(
-                results.append, faux_connector, faux_failure))
+                faux_failure, results.append, faux_connector))
         self.assertEqual(["registration-error"], results)
         self.assertTrue(faux_connector.was_disconnected)
         self.assertTrue(
             [InvalidCredentialsError, MethodCallError],
             faux_failure.trapped_exceptions)
+
+    def test_handle_registration_errors_as_callback(self):
+        """
+        Invalid credential errors are trapped properly and don't stacktrace,
+        and a simple "registration-error" string is returned.
+        """
+        results = []
+        faux_connector = FauxConnector()
+
+        def i_raise(result):
+            raise InvalidCredentialsError("Bad mojo")
+
+        deferred = Deferred()
+        deferred.addCallback(i_raise)
+        deferred.addErrback(
+            handle_registration_errors, results.append, faux_connector)
+        deferred.callback("")
+
+        self.assertEqual(["registration-error"], results)
 
 
 class DoneTests(unittest.TestCase):

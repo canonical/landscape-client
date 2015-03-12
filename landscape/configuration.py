@@ -601,8 +601,8 @@ def exchange_failure(add_result, ssl_error=False):
         add_result("non-ssl-error")
 
 
-def handle_registration_errors(add_result, connector, failure):
-    """HAndle a failed registration by recording the kind of failure."""
+def handle_registration_errors(failure, add_result, connector):
+    """Handle a failed registration by recording the kind of failure."""
     # We'll get invalid credentials through the signal.
     failure.trap(InvalidCredentialsError, MethodCallError)
     add_result("registration-error")
