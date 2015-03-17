@@ -82,11 +82,10 @@ class ExchangeFailureTests(unittest.TestCase):
 
 class HandleRegistrationErrorsTests(unittest.TestCase):
 
-    def test_handle_registration_errors(self):
+    def test_handle_registration_errors_traps(self):
         """
-        The handle_registration_errors() function handles
-        InvalidCredentialsError and MethodCallError errors and records the
-        type of failure and disconnects.
+        The handle_registration_errors() function traps InvalidCredentialsError
+        and MethodCallError errors.
         """
         class FauxFailure(object):
             def trap(self, *trapped):
@@ -95,27 +94,48 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
-        self.assertNotEqual(0,
-            handle_registration_errors(faux_failure, faux_connector))
-        self.assertTrue(faux_connector.was_disconnected)
+        self.assertNotEqual(
+            0, handle_registration_errors(faux_failure, faux_connector))
         self.assertTrue(
             [InvalidCredentialsError, MethodCallError],
             faux_failure.trapped_exceptions)
 
+    def test_handle_registration_errors_diconnects_cleanly(self):
+        """
+        The handle_registration_errors function diconnects the broker connector
+        cleanly.
+        """
+        class FauxFailure(object):
+            def trap(self, *trapped):
+                self.trapped_exceptions = trapped
+
+        faux_connector = FauxConnector()
+        faux_failure = FauxFailure()
+
+        self.assertNotEqual(
+            0, handle_registration_errors(faux_failure, faux_connector))
+        self.assertTrue(faux_connector.was_disconnected)
+
     def test_handle_registration_errors_as_callback(self):
         """
-        Invalid credential errors are trapped properly and don't stacktrace,
-        and a simple "registration-error" string is returned.
+        The handle_registration_errors functions works as an errback.
+
+        This test was put in place to assert the parameteres passed to the
+        function when used as a callback are in the correct order.
         """
         faux_connector = FauxConnector()
+        calls = []
 
         def i_raise(result):
+            calls.append(True)
             raise InvalidCredentialsError("Bad mojo")
 
         deferred = Deferred()
         deferred.addCallback(i_raise)
         deferred.addErrback(handle_registration_errors, faux_connector)
-        deferred.callback("")
+        deferred.callback("")  # This kicks off the callback chain.
+
+        self.assertEqual([True], calls)
 
 
 class DoneTests(unittest.TestCase):
