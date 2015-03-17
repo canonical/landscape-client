@@ -100,14 +100,14 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
             [InvalidCredentialsError, MethodCallError],
             faux_failure.trapped_exceptions)
 
-    def test_handle_registration_errors_diconnects_cleanly(self):
+    def test_handle_registration_errors_disconnects_cleanly(self):
         """
-        The handle_registration_errors function diconnects the broker connector
-        cleanly.
+        The handle_registration_errors function disconnects the broker
+        connector cleanly.
         """
         class FauxFailure(object):
             def trap(self, *trapped):
-                self.trapped_exceptions = trapped
+                pass
 
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
@@ -116,12 +116,12 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
             0, handle_registration_errors(faux_failure, faux_connector))
         self.assertTrue(faux_connector.was_disconnected)
 
-    def test_handle_registration_errors_as_callback(self):
+    def test_handle_registration_errors_as_errback(self):
         """
         The handle_registration_errors functions works as an errback.
 
-        This test was put in place to assert the parameteres passed to the
-        function when used as a callback are in the correct order.
+        This test was put in place to assert the parameters passed to the
+        function when used as an errback are in the correct order.
         """
         faux_connector = FauxConnector()
         calls = []
