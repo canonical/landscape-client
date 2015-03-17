@@ -602,10 +602,13 @@ def exchange_failure(add_result, ssl_error=False):
 
 
 def handle_registration_errors(failure, connector):
-    """The connection to the broker succeeded but the registration itself
+    """Handle invalid credentials.
+
+    The connection to the broker succeeded but the registration itself
     failed, because of invalid credentials. We need to trap the exceptions
     so they don't stacktrace (we know what is going on), and try to cleanly
     disconnect from the broker.
+
     Note: "results" contains a failure indication already (or will shortly)
     since the registration-failed signal will fire."""
     failure.trap(InvalidCredentialsError, MethodCallError)
