@@ -95,11 +95,8 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
-        results = []
         self.assertNotEqual(0,
-            handle_registration_errors(
-                faux_failure, results.append, faux_connector))
-        self.assertEqual(["registration-error"], results)
+            handle_registration_errors(faux_failure, faux_connector))
         self.assertTrue(faux_connector.was_disconnected)
         self.assertTrue(
             [InvalidCredentialsError, MethodCallError],
@@ -110,7 +107,6 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         Invalid credential errors are trapped properly and don't stacktrace,
         and a simple "registration-error" string is returned.
         """
-        results = []
         faux_connector = FauxConnector()
 
         def i_raise(result):
@@ -118,11 +114,8 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
 
         deferred = Deferred()
         deferred.addCallback(i_raise)
-        deferred.addErrback(
-            handle_registration_errors, results.append, faux_connector)
+        deferred.addErrback(handle_registration_errors, faux_connector)
         deferred.callback("")
-
-        self.assertEqual(["registration-error"], results)
 
 
 class DoneTests(unittest.TestCase):

@@ -601,7 +601,7 @@ def exchange_failure(add_result, ssl_error=False):
         add_result("non-ssl-error")
 
 
-def handle_registration_errors(failure, add_result, connector):
+def handle_registration_errors(failure, connector):
     """The connection to the broker succeeded but the registration itself
     failed, because of invalid credentials. We need to trap the exceptions
     so they don't stacktrace (we know what is going on), and try to cleanly
@@ -630,8 +630,7 @@ def got_connection(add_result, connector, reactor, remote):
                 "exchange-failed": partial(exchange_failure, add_result)}
     deferreds = [
         remote.call_on_event(handlers),
-        remote.register().addErrback(
-            handle_registration_errors, add_result, connector)]
+        remote.register().addErrback(handle_registration_errors, connector)]
     results = gather_results(deferreds)
     results.addCallback(done, connector, reactor)
     return results
