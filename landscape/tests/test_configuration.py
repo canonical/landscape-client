@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 
-from twisted.internet.defer import succeed, Deferred
+from twisted.internet.defer import succeed, fail, Deferred
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.tests.helpers import RemoteBrokerHelper
@@ -128,7 +128,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
 
         def i_raise(result):
             calls.append(True)
-            raise InvalidCredentialsError("Bad mojo")
+            return InvalidCredentialsError("Bad mojo")
 
         deferred = Deferred()
         deferred.addCallback(i_raise)
@@ -1970,10 +1970,10 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         If we get a registration error, the register() function returns
         "failure".
         """
-        self.reactor.call_later(0, self.reactor.fire, "registration-done")
+        self.reactor.call_later(0, self.reactor.fire, "registration-failed")
 
         def fail_register():
-            raise InvalidCredentialsError("Nope.")
+            return fail(InvalidCredentialsError("Nope."))
 
         self.remote.register = fail_register
 
