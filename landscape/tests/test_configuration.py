@@ -1965,6 +1965,24 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
             self.config, self.reactor, connector_factory, max_retries=99)
         self.assertEqual("success", result)
 
+    def test_register_registration_error(self):
+        """
+        If we get a registration error, the register() function returns
+        "failure".
+        """
+        self.reactor.call_later(0, self.reactor.fire, "registration-done")
+
+        def fail_register():
+            raise InvalidCredentialsError("Nope.")
+
+        self.remote.register = fail_register
+
+        connector_factory = FakeConnectorFactory(self.remote)
+        result = register(
+            config=self.config, reactor=self.reactor,
+            connector_factory=connector_factory, max_retries=99)
+        self.assertEqual("failure", result)
+
 
 class FauxConnection(object):
     def __init__(self):
