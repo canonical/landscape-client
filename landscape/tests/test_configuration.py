@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 
-from twisted.internet.defer import succeed
+from twisted.internet.defer import succeed, fail, Deferred
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.tests.helpers import RemoteBrokerHelper
@@ -82,11 +82,10 @@ class ExchangeFailureTests(unittest.TestCase):
 
 class HandleRegistrationErrorsTests(unittest.TestCase):
 
-    def test_handle_registration_errors(self):
+    def test_handle_registration_errors_traps(self):
         """
-        The handle_registration_errors() function handles
-        InvalidCredentialsError and MethodCallError errors and records the
-        type of failure and disconnects.
+        The handle_registration_errors() function traps InvalidCredentialsError
+        and MethodCallError errors.
         """
         class FauxFailure(object):
             def trap(self, *trapped):
@@ -95,15 +94,48 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
-        results = []
-        self.assertNotEqual(0,
-            handle_registration_errors(
-                results.append, faux_connector, faux_failure))
-        self.assertEqual(["registration-error"], results)
-        self.assertTrue(faux_connector.was_disconnected)
+        self.assertNotEqual(
+            0, handle_registration_errors(faux_failure, faux_connector))
         self.assertTrue(
             [InvalidCredentialsError, MethodCallError],
             faux_failure.trapped_exceptions)
+
+    def test_handle_registration_errors_disconnects_cleanly(self):
+        """
+        The handle_registration_errors function disconnects the broker
+        connector cleanly.
+        """
+        class FauxFailure(object):
+            def trap(self, *trapped):
+                pass
+
+        faux_connector = FauxConnector()
+        faux_failure = FauxFailure()
+
+        self.assertNotEqual(
+            0, handle_registration_errors(faux_failure, faux_connector))
+        self.assertTrue(faux_connector.was_disconnected)
+
+    def test_handle_registration_errors_as_errback(self):
+        """
+        The handle_registration_errors functions works as an errback.
+
+        This test was put in place to assert the parameters passed to the
+        function when used as an errback are in the correct order.
+        """
+        faux_connector = FauxConnector()
+        calls = []
+
+        def i_raise(result):
+            calls.append(True)
+            return InvalidCredentialsError("Bad mojo")
+
+        deferred = Deferred()
+        deferred.addCallback(i_raise)
+        deferred.addErrback(handle_registration_errors, faux_connector)
+        deferred.callback("")  # This kicks off the callback chain.
+
+        self.assertEqual([True], calls)
 
 
 class DoneTests(unittest.TestCase):
@@ -1932,6 +1964,24 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         result = register(
             self.config, self.reactor, connector_factory, max_retries=99)
         self.assertEqual("success", result)
+
+    def test_register_registration_error(self):
+        """
+        If we get a registration error, the register() function returns
+        "failure".
+        """
+        self.reactor.call_later(0, self.reactor.fire, "registration-failed")
+
+        def fail_register():
+            return fail(InvalidCredentialsError("Nope."))
+
+        self.remote.register = fail_register
+
+        connector_factory = FakeConnectorFactory(self.remote)
+        result = register(
+            config=self.config, reactor=self.reactor,
+            connector_factory=connector_factory, max_retries=99)
+        self.assertEqual("failure", result)
 
 
 class FauxConnection(object):
