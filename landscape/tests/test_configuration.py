@@ -1186,6 +1186,7 @@ registration_key = shared-secret
 
         register_mock = self.mocker.replace(register, passthrough=False)
         register_mock(ANY, ANY)
+        self.mocker.result("success")
         self.mocker.count(1)
 
         self.mocker.replay()
@@ -1197,9 +1198,10 @@ registration_key = shared-secret
             "registration_key = Old Password\n"
             )
 
-        self.assertRaises(
+        exception = self.assertRaises(
             SystemExit, main, ["-c", config_filename, "--silent"],
             print=noop_print)
+        self.assertEqual(0, exception.code)
 
     def test_main_user_interaction_success(self):
         """The successful result of register() is communicated to the user."""
