@@ -17,7 +17,8 @@ from landscape.configuration import (
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
-    handle_registration_errors, done, got_error, report_registration_outcome)
+    handle_registration_errors, done, got_error, report_registration_outcome,
+    determine_exit_code)
 from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.sysvconfig import SysVConfig, ProcessError
@@ -1185,6 +1186,7 @@ registration_key = shared-secret
 
         register_mock = self.mocker.replace(register, passthrough=False)
         register_mock(ANY, ANY)
+        self.mocker.result("success")
         self.mocker.count(1)
 
         self.mocker.replay()
@@ -1195,7 +1197,11 @@ registration_key = shared-secret
             "account_name = Old Name\n"
             "registration_key = Old Password\n"
             )
-        main(["-c", config_filename, "--silent"], print=noop_print)
+
+        exception = self.assertRaises(
+            SystemExit, main, ["-c", config_filename, "--silent"],
+            print=noop_print)
+        self.assertEqual(0, exception.code)
 
     def test_main_user_interaction_success(self):
         """The successful result of register() is communicated to the user."""
@@ -1219,7 +1225,10 @@ registration_key = shared-secret
         def faux_print(string, file=sys.stdout):
             printed.append((string, file))
 
-        main(["-c", self.make_working_config()], print=faux_print)
+        exception = self.assertRaises(
+            SystemExit, main, ["-c", self.make_working_config()],
+            print=faux_print)
+        self.assertEqual(0, exception.code)
         self.assertEqual(
             [("Please wait...", sys.stdout),
              ("System successfully registered.", sys.stdout)],
@@ -1247,7 +1256,11 @@ registration_key = shared-secret
         def faux_print(string, file=sys.stdout):
             printed.append((string, file))
 
-        main(["-c", self.make_working_config()], print=faux_print)
+        exception = self.assertRaises(
+            SystemExit, main, ["-c", self.make_working_config()],
+            print=faux_print)
+        self.assertEqual(2, exception.code)
+
         # Note that the error is output via sys.stderr.
         self.assertEqual(
             [("Please wait...", sys.stdout),
@@ -1276,7 +1289,11 @@ registration_key = shared-secret
         def faux_print(string, file=sys.stdout):
             printed.append((string, file))
 
-        main(["--silent", "-c", self.make_working_config()], print=faux_print)
+        exception = self.assertRaises(
+            SystemExit, main, ["--silent", "-c", self.make_working_config()],
+            print=faux_print)
+        self.assertEqual(0, exception.code)
+
         self.assertEqual(
             [("Please wait...", sys.stdout),
              ("System successfully registered.", sys.stdout)],
@@ -1304,7 +1321,10 @@ registration_key = shared-secret
         def faux_print(string, file=sys.stdout):
             printed.append((string, file))
 
-        main(["--silent", "-c", self.make_working_config()], print=faux_print)
+        exception = self.assertRaises(
+            SystemExit, main, ["--silent", "-c", self.make_working_config()],
+            print=faux_print)
+        self.assertEqual(2, exception.code)
         # Note that the error is output via sys.stderr.
         self.assertEqual(
             [("Please wait...", sys.stdout),
@@ -1344,7 +1364,9 @@ registration_key = shared-secret
         register_mock(ANY, ANY)
 
         self.mocker.replay()
-        main(["--config", self.make_working_config()], print=noop_print)
+        self.assertRaises(
+            SystemExit, main, ["--config", self.make_working_config()],
+            print=noop_print)
 
     def test_errors_from_restart_landscape(self):
         """
@@ -1404,7 +1426,8 @@ registration_key = shared-secret
         register_mock(ANY, ANY)
 
         self.mocker.replay()
-        main(["-c", self.make_working_config()], print=noop_print)
+        self.assertRaises(SystemExit, main, ["-c", self.make_working_config()],
+            print=noop_print)
 
     def test_setup_init_script_and_start_client(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1442,7 +1465,9 @@ registration_key = shared-secret
 
         self.mocker.replay()
 
-        main(["--silent", "-c", self.make_working_config()], print=noop_print)
+        self.assertRaises(
+            SystemExit, main, ["--silent", "-c", self.make_working_config()],
+            print=noop_print)
 
     def test_disable(self):
         stop_client_and_disable_init_script_mock = self.mocker.replace(
@@ -2272,3 +2297,23 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
               "The landscape client will continue to try and contact "
               "the server periodically.", self.result)
         self.assertIn(sys.stderr.name, self.output)
+
+
+class DetermineExitCodeTest(unittest.TestCase):
+
+    def test_success_means_exit_code_0(self):
+        """
+        When passed "success" the determine_exit_code function returns 0.
+        """
+        result = determine_exit_code("success")
+        self.assertEqual(0, result)
+
+    def test_a_failure_means_exit_code_2(self):
+        """
+        When passed a failure result, the determine_exit_code function returns
+        2.
+        """
+        failure_codes = ["failure", "ssl-error", "non-ssl-error"]
+        for code in failure_codes:
+            result = determine_exit_code(code)
+            self.assertEqual(2, result)

@@ -694,8 +694,7 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
 
 
 def report_registration_outcome(what_happened, print=print):
-    """
-    Report the registrtion interaction outcome to the user in human-readable
+    """Report the registrtion interaction outcome to the user in human-readable
     form.
     """
     if what_happened == "success":
@@ -713,6 +712,16 @@ def report_registration_outcome(what_happened, print=print):
               "Your internet connection may be down. "
               "The landscape client will continue to try and contact "
               "the server periodically.", file=sys.stderr)
+
+
+def determine_exit_code(what_happened):
+    """Return what the application's exit code should be depending on the
+    registration result.
+    """
+    if what_happened == "success":
+        return 0
+    else:
+        return 2  # An error happened
 
 
 def main(args, print=print):
@@ -751,9 +760,11 @@ def main(args, print=print):
     if config.silent:
         result = register(config, reactor)
         report_registration_outcome(result, print=print)
+        sys.exit(determine_exit_code(result))
     else:
         answer = raw_input("\nRequest a new registration for "
                            "this computer now? (Y/n): ")
         if not answer.upper().startswith("N"):
             result = register(config, reactor)
             report_registration_outcome(result, print=print)
+            sys.exit(determine_exit_code(result))
