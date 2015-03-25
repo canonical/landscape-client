@@ -694,8 +694,7 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
 
 
 def report_registration_outcome(what_happened, print=print):
-    """
-    Report the registrtion interaction outcome to the user in human-readable
+    """Report the registrtion interaction outcome to the user in human-readable
     form.
     """
     if what_happened == "success":
@@ -716,8 +715,7 @@ def report_registration_outcome(what_happened, print=print):
 
 
 def determine_exit_code(what_happened):
-    """
-    Return what the application's exit code should be depending on the
+    """Return what the application's exit code should be depending on the
     registration result.
     """
     if what_happened == "success":
