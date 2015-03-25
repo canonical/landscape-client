@@ -1201,7 +1201,6 @@ registration_key = shared-secret
             SystemExit, main, ["-c", config_filename, "--silent"],
             print=noop_print)
 
-
     def test_main_user_interaction_success(self):
         """The successful result of register() is communicated to the user."""
         setup_mock = self.mocker.replace(setup)
