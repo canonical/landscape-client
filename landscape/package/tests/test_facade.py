@@ -1065,7 +1065,7 @@ class AptFacadeTest(LandscapeTest):
              "Stderr output", "Stdout output again"],
             output)
 
-    def _test_retry_changes(self, error_type):
+    def test_retry_changes_lock_failed(self):
         """
         Test that changes are retried with the given exception type.
         """
@@ -1080,7 +1080,7 @@ class AptFacadeTest(LandscapeTest):
         def commit1(fetch_progress, install_progress):
             self.facade._cache.commit = commit2
             os.write(2, "bad stuff!\n")
-            raise error_type("Oops")
+            raise LockFailedException("Oops")
 
         def commit2(fetch_progress, install_progress):
             install_progress.dpkg_exited = True
@@ -1095,15 +1095,28 @@ class AptFacadeTest(LandscapeTest):
 
     def test_retry_changes_system_error(self):
         """
-        Changes are retried in the event of a SystemError.
+        Changes are not retried in the event of a SystemError, since
+        it's most likely a permanent error.
         """
-        self._test_retry_changes(SystemError)
+        self.facade.max_dpkg_retries = 1
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
 
-    def test_retry_changes_lock_failed(self):
-        """
-        Changes are retried in the event of a L{LockFailedException}.
-        """
-        self._test_retry_changes(LockFailedException)
+        def commit1(fetch_progress, install_progress):
+            self.facade._cache.commit = commit2
+            os.write(2, "bad stuff!\n")
+            raise SystemError("Oops")
+
+        def commit2(fetch_progress, install_progress):
+            install_progress.dpkg_exited = True
+            os.write(1, "good stuff!")
+
+        self.facade._cache.commit = commit1
+        self.assertRaises(TransactionError, self.facade.perform_changes)
 
     def test_perform_changes_dpkg_error_real(self):
         """

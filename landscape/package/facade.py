@@ -675,12 +675,16 @@ class AptFacade(object):
                         install_progress=install_progress)
                     if not install_progress.dpkg_exited:
                         raise SystemError("dpkg didn't exit cleanly.")
-                except (apt.cache.LockFailedException, SystemError), error:
+                except (apt.cache.LockFailedException, SystemError), exception:
                     result_text = (fetch_output.getvalue()
                                    + read_file(install_output_path))
-                    error = TransactionError(error.args[0] +
+                    error = TransactionError(exception.args[0] +
                                              "\n\nPackage operation log:\n" +
                                              result_text)
+                    if isinstance(exception, SystemError):
+                        # No need to retry SystemError, since it's most
+                        # likely a permanent error.
+                        break
                 else:
                     result_text = (fetch_output.getvalue()
                                    + read_file(install_output_path))
