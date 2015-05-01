@@ -107,14 +107,6 @@ class HashIdStoreTest(LandscapeTest):
         self.assertEqual(self.store1.get_id_hash(123), None)
         self.assertEqual(self.store1.get_id_hash(456), "hash1")
 
-    def test_set_hash_ids_timing(self):
-        """Setting 20k hashes must take less than 5 seconds."""
-        hashes = dict((str(i), i) for i in range(20000))
-        started = time.time()
-        self.store1.set_hash_ids(hashes)
-        self.assertTrue(time.time() - started < 5,
-                        "Setting 20k hashes took more than 5 seconds.")
-
     def test_check_sanity(self):
 
         store_filename = self.makeFile()
