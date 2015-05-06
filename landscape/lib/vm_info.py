@@ -29,12 +29,22 @@ def get_vm_info(root_path="/"):
         return _get_vm_legacy(root_path)
 
 
-def get_container_info(path="/run/container_type"):
+def get_container_info(proc_path="/proc",
+                       container_type_path="/run/container_type"):
     """
     Return a string with the type of container the client is running in, if
     any, an empty string otherwise.
     """
-    return read_file(path).strip() if os.path.exists(path) else ""
+    if os.path.exists(container_type_path):
+        return read_file(container_type_path).strip()
+
+    cgroup_file = os.path.join(proc_path, "1/cgroup")
+    if os.path.exists(cgroup_file):
+        for line in read_file(cgroup_file).splitlines():
+            tokens = line.split(":")
+            if tokens[-1].startswith("/lxc/"):
+                return "lxc"
+    return ""
 
 
 def _is_vm_xen(root_path):
