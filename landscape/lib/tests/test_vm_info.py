@@ -1,7 +1,6 @@
 import os
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.lib.fs import create_file
 from landscape.lib.vm_info import get_vm_info, get_container_info
 
 
@@ -164,43 +163,33 @@ class GetContainerInfoTest(LandscapeTest):
 
     def setUp(self):
         super(GetContainerInfoTest, self).setUp()
-        self.proc_path = self.makeDir()
+        self.run_path = self.makeDir()
 
     def test_no_container(self):
         """If not running in a container, an empty string is returned."""
-        pid_path = os.path.join(self.proc_path, "1")
-        os.mkdir(pid_path)
-        create_file(
-            os.path.join(pid_path, "cgroup"),
-            "2:cpu,cpuacct:/\n"
-            "1:name=systemd:/\n")
-        self.assertEqual(
-            "",
-            get_container_info(
-                proc_path=self.proc_path, container_type_path="/not/here"))
+        self.assertEqual("", get_container_info(self.run_path))
 
-    def test_in_container(self):
-        """If running in a container, the container type is returned."""
-        path = self.makeFile(content="lxc")
-        self.assertEqual("lxc", get_container_info(container_type_path=path))
+    def test_in_container_with_container_type_file(self):
+        """
+        If the /run/container_type file is found, the content is returned as
+        container type.
+        """
+        container_type_file = os.path.join(self.run_path, "container_type")
+        self.makeFile(content="lxc", path=container_type_file)
+        self.assertEqual("lxc", get_container_info(run_path=self.run_path))
+
+    def test_in_container_with_systemd_container_file(self):
+        """
+        If the /run/systemd/container file is found, the content is returned as
+        container type.
+        """
+        os.mkdir(os.path.join(self.run_path, "systemd"))
+        container_type_file = os.path.join(self.run_path, "systemd/container")
+        self.makeFile(content="lxc", path=container_type_file)
+        self.assertEqual("lxc", get_container_info(run_path=self.run_path))
 
     def test_strip_newline(self):
         """The container type doesn't contain newlines."""
-        path = self.makeFile(content="lxc\n")
-        self.assertEqual("lxc", get_container_info(container_type_path=path))
-
-    def test_no_container_type_file(self):
-        """
-        The container type is detected from /proc if there is no
-        container_type file.
-        """
-        pid_path = os.path.join(self.proc_path, "1")
-        os.mkdir(pid_path)
-        create_file(
-            os.path.join(pid_path, "cgroup"),
-            "2:cpu,cpuacct:/lxc/a-container\n"
-            "1:name=systemd:/lxc/a-container\n")
-        self.assertEqual(
-            "lxc",
-            get_container_info(
-                proc_path=self.proc_path, container_type_path="/not/here"))
+        container_type_file = os.path.join(self.run_path, "container_type")
+        self.makeFile(content="lxc\n", path=container_type_file)
+        self.assertEqual("lxc", get_container_info(run_path=self.run_path))
