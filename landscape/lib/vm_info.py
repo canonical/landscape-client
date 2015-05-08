@@ -29,12 +29,16 @@ def get_vm_info(root_path="/"):
         return _get_vm_legacy(root_path)
 
 
-def get_container_info(path="/run/container_type"):
+def get_container_info(run_path="/run"):
     """
     Return a string with the type of container the client is running in, if
     any, an empty string otherwise.
     """
-    return read_file(path).strip() if os.path.exists(path) else ""
+    for filename in ("container_type", "systemd/container"):
+        path = os.path.join(run_path, filename)
+        if os.path.exists(path):
+            return read_file(path).strip()
+    return ""
 
 
 def _is_vm_xen(root_path):

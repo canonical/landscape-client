@@ -1,7 +1,6 @@
 import os
 
 from landscape.tests.helpers import LandscapeTest
-
 from landscape.lib.vm_info import get_vm_info, get_container_info
 
 
@@ -162,16 +161,35 @@ class GetVMInfoTest(LandscapeTest):
 
 class GetContainerInfoTest(LandscapeTest):
 
+    def setUp(self):
+        super(GetContainerInfoTest, self).setUp()
+        self.run_path = self.makeDir()
+
     def test_no_container(self):
         """If not running in a container, an empty string is returned."""
-        self.assertEqual("", get_container_info(path="/does/not/exist"))
+        self.assertEqual("", get_container_info(self.run_path))
 
-    def test_in_container(self):
-        """If running in a container, the container type is returned."""
-        path = self.makeFile(content="lxc")
-        self.assertEqual("lxc", get_container_info(path=path))
+    def test_in_container_with_container_type_file(self):
+        """
+        If the /run/container_type file is found, the content is returned as
+        container type.
+        """
+        container_type_file = os.path.join(self.run_path, "container_type")
+        self.makeFile(content="lxc", path=container_type_file)
+        self.assertEqual("lxc", get_container_info(run_path=self.run_path))
+
+    def test_in_container_with_systemd_container_file(self):
+        """
+        If the /run/systemd/container file is found, the content is returned as
+        container type.
+        """
+        os.mkdir(os.path.join(self.run_path, "systemd"))
+        container_type_file = os.path.join(self.run_path, "systemd/container")
+        self.makeFile(content="lxc", path=container_type_file)
+        self.assertEqual("lxc", get_container_info(run_path=self.run_path))
 
     def test_strip_newline(self):
         """The container type doesn't contain newlines."""
-        path = self.makeFile(content="lxc\n")
-        self.assertEqual("lxc", get_container_info(path=path))
+        container_type_file = os.path.join(self.run_path, "container_type")
+        self.makeFile(content="lxc\n", path=container_type_file)
+        self.assertEqual("lxc", get_container_info(run_path=self.run_path))
