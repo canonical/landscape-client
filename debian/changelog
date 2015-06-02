@@ -1,3 +1,16 @@
+landscape-client (15.06-0ubuntu1) wily; urgency=medium
+
+  * New upstream version (LP: #1461123)
+    - Fix container detection on Vivid hosts. (LP: #1449920)
+    - Don't retry package operations if a SystemError is raised.
+      (LP: #1444826)
+    - Retry apt-get update when error 100 is returned. (LP: #1398090)
+    - Better SSL error messages. (LP: #1409700)
+    - Internal refactoring for better SSL user experience in the future.
+      (LP: #1434546, LP: #1429888, LP: #1428826)
+
+ -- David Britton <david.britton@canonical.com>  Tue, 02 Jun 2015 12:13:31 -0600
+
 landscape-client (14.12-0ubuntu1) vivid; urgency=medium
 
   * New upstream version:
