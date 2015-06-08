@@ -1,4 +1,5 @@
 import os
+from threading import local
 
 import pycurl
 
@@ -54,23 +55,29 @@ class CurlManyStub(object):
             else:
                 body = result[0]
                 http_code = result[1]
-            self.curls[url] = CurlStub(body, {pycurl.HTTP_CODE: http_code})
-        self.current = None
+            self.curls[url] = CurlStub(
+                result=body, infos={pycurl.HTTP_CODE: http_code})
+
+        # Use thread local storage to keep the current CurlStub since
+        # CurlManyStub is passed to multiple threads, but the state needs to be
+        # local.
+        self._local = local()
+        self._local.current = None
 
     def getinfo(self, what):
-        if not self.current.performed:
+        if not self._local.current.performed:
             raise AssertionError("getinfo() can't be called before perform()")
-        result = self.current.getinfo(what)
-        self.current = None
+        result = self._local.current.getinfo(what)
+        self._local.current = None
         return result
 
     def setopt(self, option, value):
-        if option is pycurl.URL:
-            self.current = self.curls[value]
-        self.current.setopt(option, value)
+        if option == pycurl.URL:
+            self._local.current = self.curls[value]
+        self._local.current.setopt(option, value)
 
     def perform(self):
-        self.current.perform()
+        self._local.current.perform()
 
 
 class Any(object):
