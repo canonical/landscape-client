@@ -230,7 +230,6 @@ class RegistrationHandler(object):
                      id.secure_id[-10:], id.account_name)
         logging.debug("Using new secure-id: %s", id.secure_id)
         self._reactor.fire("registration-done")
-        self._reactor.fire("resynchronize-clients")
 
     def _handle_registration(self, message):
         if message["info"] == "unknown-account":
@@ -276,6 +275,7 @@ class RegistrationResponse(object):
         self._reactor.cancel_call(self._failed_id)
 
     def _done(self):
+        self._reactor.fire("resynchronize-clients")
         self.deferred.callback(None)
         self._cancel_calls()
 
