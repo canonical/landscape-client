@@ -15,7 +15,7 @@ class UserMonitor(MonitorPlugin):
 
     persist_name = "users"
     scope = "users"
-    run_interval = 3600  # 1 hour
+    run_interval = 60  # 1 hour
     name = "usermonitor"
 
     def __init__(self, provider=None):

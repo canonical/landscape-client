@@ -615,8 +615,9 @@ def handle_registration_errors(failure, connector):
     connector.disconnect()
 
 
-def success(add_result):
+def success(add_result, reactor):
     """Handle a successful communication by recording the fact."""
+    reactor.fire("resynchronize-clients")
     add_result("success")
 
 
@@ -628,7 +629,7 @@ def done(ignored_result, connector, reactor):
 
 def got_connection(add_result, connector, reactor, remote):
     """Handle becomming connected to a broker."""
-    handlers = {"registration-done": partial(success, add_result),
+    handlers = {"registration-done": partial(success, add_result, reactor),
                 "registration-failed": partial(failure, add_result),
                 "exchange-failed": partial(exchange_failure, add_result)}
     deferreds = [
