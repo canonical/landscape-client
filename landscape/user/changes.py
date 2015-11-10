@@ -81,6 +81,8 @@ class UserChanges(object):
         in the result.
         """
         changes = {}
+        info("##### OLD USERS: %s" % self._old_users)
+        info("##### NEW USERS: %s" % self._new_users)
         creates, updates, deletes = diff(self._old_users, self._new_users)
         if creates:
             changes["create-users"] = list(creates.itervalues())
