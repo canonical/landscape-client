@@ -1,3 +1,9 @@
+landscape-client (15.06+bzr829-0ubuntu0) trusty; urgency=medium
+
+  * New local test build
+
+ -- Fernando Correa Neto <fcorrea@client-test>  Tue, 10 Nov 2015 10:06:31 -0200
+
 landscape-client (15.06-0ubuntu1) wily; urgency=medium
 
   * New upstream version (LP: #1461123)

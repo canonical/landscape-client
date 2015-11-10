@@ -1,4 +1,4 @@
-import logging
+from datetime import datetime, timedelta
 
 from twisted.internet.defer import maybeDeferred
 
@@ -17,7 +17,7 @@ class UserMonitor(MonitorPlugin):
 
     persist_name = "users"
     scope = "users"
-    run_interval = 60  # 1 hour
+    run_interval = 3600  # 1 hour
     name = "usermonitor"
 
     def __init__(self, provider=None):
@@ -25,6 +25,7 @@ class UserMonitor(MonitorPlugin):
             provider = UserProvider()
         self._provider = provider
         self._publisher = None
+        self._next_forced_reset = datetime.utcnow() + timedelta(days=1)
 
     def register(self, registry):
         super(UserMonitor, self).register(registry)
@@ -87,8 +88,6 @@ class UserMonitor(MonitorPlugin):
 
     def _detect_changes(self, locked_users, operation_id=None):
 
-        logging.info("############################ RAN USERS PLUGIN #############################")
-        
         def update_snapshot(result):
             changes.snapshot()
             return result
@@ -99,7 +98,15 @@ class UserMonitor(MonitorPlugin):
 
         self._provider.locked_users = locked_users
         changes = UserChanges(self._persist, self._provider)
-        message = changes.create_diff()
+        # XXX We use the mechanism bellow to intruct the client to send the
+        # current user database without creating a diff.
+        # This prevents the system to miscauculate deltas between client
+        # exchanges before registration.
+        should_force_reset = datetime.utcnow() >= self._next_forced_reset
+        force_reset = False
+        if should_force_reset:
+            force_reset = True
+        message = changes.create_diff(force_reset=force_reset)
 
         if message:
             message["type"] = "users"
