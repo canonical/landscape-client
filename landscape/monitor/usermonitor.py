@@ -1,3 +1,5 @@
+import logging
+
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
@@ -85,6 +87,8 @@ class UserMonitor(MonitorPlugin):
 
     def _detect_changes(self, locked_users, operation_id=None):
 
+        logging.info("############################ RAN USERS PLUGIN #############################")
+        
         def update_snapshot(result):
             changes.snapshot()
             return result
