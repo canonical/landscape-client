@@ -105,8 +105,8 @@ class UserMonitor(MonitorPlugin):
 
         self._provider.locked_users = locked_users
         changes = UserChanges(self._persist, self._provider)
-        # XXX We use the mechanism bellow to intruct the client to reset its
-        # database before actually creating the diff.
+        # XXX We use the mechanism bellow to instruct the client to reset its
+        # database before actually creating a new diff.
         # This prevents the system to miscauculate deltas between client
         # exchanges that could happen before registration.
         now = utcnow()
