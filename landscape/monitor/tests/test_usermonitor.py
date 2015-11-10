@@ -291,7 +291,7 @@ class UserMonitorTest(LandscapeTest):
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
                   "type": "users"}])
-            self.assertEqual(next_run, self.plugin._next_forced_reset, )
+            self.assertEqual(next_run, self.plugin._next_forced_reset)
 
         now = datetime(2015, 10, 10, 10, 10)
         self.plugin._next_forced_reset = now
