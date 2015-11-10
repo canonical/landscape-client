@@ -29,7 +29,9 @@ class UserChanges(object):
         if force_reset:
             info("######################## GOING TO FORCE RESET USERS DATABASE #################")
             self._new_users = self._old_users
-            self._new_users = self._old_groups
+            self._new_groups = self._old_groups
+            self._old_users = {}
+            self._old_groups = {}
         else:
             self._new_users = self._create_index(
                 "username", self._provider.get_users())

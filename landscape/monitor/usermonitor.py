@@ -109,7 +109,9 @@ class UserMonitor(MonitorPlugin):
         if should_force_reset:
             logging.info("########### RESETTING USER DB")
             force_reset = True
+            self._next_forced_reset = datetime.utcnow() + timedelta(minutes=5)
         message = changes.create_diff(force_reset=force_reset)
+        logging.info("########### MESSAGE: %s" % message)
 
         if message:
             message["type"] = "users"
