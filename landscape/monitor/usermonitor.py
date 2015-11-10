@@ -1,3 +1,5 @@
+import logging
+
 from datetime import datetime, timedelta
 
 from twisted.internet.defer import maybeDeferred
@@ -105,6 +107,7 @@ class UserMonitor(MonitorPlugin):
         should_force_reset = datetime.utcnow() >= self._next_forced_reset
         force_reset = False
         if should_force_reset:
+            logging.info("########### RESETTING USER DB")
             force_reset = True
         message = changes.create_diff(force_reset=force_reset)
 

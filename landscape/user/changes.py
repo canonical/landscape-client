@@ -1,3 +1,5 @@
+from logging import info
+
 from landscape.diff import diff
 
 
@@ -25,6 +27,7 @@ class UserChanges(object):
         self._old_users = self._persist.get("users", {})
         self._old_groups = self._persist.get("groups", {})
         if force_reset:
+            info("######################## GOING TO FORCE RESET USERS DATABASE #################")
             self._new_users = self._old_users
             self._new_users = self._old_groups
         else:
