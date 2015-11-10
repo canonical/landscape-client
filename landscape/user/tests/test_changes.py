@@ -108,7 +108,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
     def test_create_diff_with_force_reset(self):
         """
         UserChanges.create_diff accepts a force_reset parameter that can be
-        used to for a database cleanup.
+        used to for a database reset.
         """
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 1000, ["jdoe"])]

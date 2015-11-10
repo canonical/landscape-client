@@ -1,10 +1,11 @@
 import logging
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
+from landscape.lib.timestamp import utcnow
 from landscape.amp import ComponentPublisher, ComponentConnector, remote
 
 from landscape.monitor.plugin import MonitorPlugin
@@ -30,7 +31,7 @@ class UserMonitor(MonitorPlugin):
         # XXX If in the future other plugins require a force reset mechanism,
         # the following attribute should be moved to the MonitorPlugin base
         # class or even to the BrokerClientPlugin.
-        self._next_forced_reset = datetime.utcnow() + timedelta(
+        self._next_forced_reset = utcnow() + timedelta(
             seconds=self.run_interval)
 
     def register(self, registry):
@@ -104,17 +105,18 @@ class UserMonitor(MonitorPlugin):
 
         self._provider.locked_users = locked_users
         changes = UserChanges(self._persist, self._provider)
-        # XXX We use the mechanism bellow to intruct the client to send the
-        # current user database without creating a diff.
+        # XXX We use the mechanism bellow to intruct the client to reset its
+        # database before actually creating the diff.
         # This prevents the system to miscauculate deltas between client
-        # exchanges before registration.
-        should_force_reset = datetime.utcnow() >= self._next_forced_reset
+        # exchanges that could happen before registration.
+        now = utcnow()
+        should_force_reset = now >= self._next_forced_reset
         force_reset = False
         if should_force_reset:
             logging.info("Force resetting user database.")
             force_reset = True
             # Reset _next_forced_reset .
-            self._next_forced_reset = datetime.utcnow() + timedelta(
+            self._next_forced_reset = now + timedelta(
                 seconds=self.run_interval)
         message = changes.create_diff(force_reset=force_reset)
 

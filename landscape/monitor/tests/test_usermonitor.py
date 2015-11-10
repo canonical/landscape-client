@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from twisted.internet.defer import fail
 
 from landscape.amp import ComponentPublisher
@@ -264,6 +266,40 @@ class UserMonitorTest(LandscapeTest):
         self.broker_service.message_store.set_accepted_types(["users"])
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
+        self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
+
+        self.monitor.add(self.plugin)
+        connector = RemoteUserMonitorConnector(self.reactor, self.config)
+        result = connector.connect()
+        result.addCallback(lambda remote: remote.detect_changes())
+        result.addCallback(got_result)
+        result.addCallback(lambda x: connector.disconnect())
+        return result
+
+    def test_detect_changes_next_forced_reset(self):
+
+        def got_result(result):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                  "create-groups": [{"gid": 1000, "name": u"webdev"}],
+                  "create-users": [{"enabled": True, "home-phone": None,
+                                    "location": None, "name": u"JD",
+                                    "primary-gid": 1000, "uid": 1000,
+                                    "username": u"jdoe", "work-phone": None}],
+                  "type": "users"}])
+
+        now = datetime(2015, 10, 10, 10, 10)
+        self.plugin._next_forced_reset = now
+        utcnow_mock = self.mocker.replace("landscape.lib.timestamp.utcnow")
+        utcnow_mock()
+        self.mocker.result(now + timedelta(
+            seconds=self.plugin.run_interval + 1))
+        self.mocker.replay()
+
+        self.broker_service.message_store.set_accepted_types(["users"])
+        self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe",
+                                "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
 
         self.monitor.add(self.plugin)
