@@ -21,14 +21,15 @@ class UserChanges(object):
         self._refresh()
 
     def _refresh(self, force_reset=False):
-        """Load the previous snapshot and update current data."""
+        """Load the previous snapshot and update current data.
+
+        @param force_reset: Whether the user and group databases should be
+            reset.
+        """
         self._old_users = self._persist.get("users", {})
         self._old_groups = self._persist.get("groups", {})
         if force_reset:
-            self._old_users = {}
-            self._old_groups = {}
-            self._persist.set("users", self._old_users)
-            self._persist.set("groups", self._old_users)
+            self.clear()
 
         self._new_users = self._create_index(
             "username", self._provider.get_users())
