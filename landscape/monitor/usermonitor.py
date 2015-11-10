@@ -107,18 +107,16 @@ class UserMonitor(MonitorPlugin):
         changes = UserChanges(self._persist, self._provider)
         # XXX We use the mechanism bellow to instruct the client to reset its
         # database before actually creating a new diff.
-        # This prevents the system to miscauculate deltas between client
+        # This prevents the system from miscalculating deltas between client
         # exchanges that could happen before registration.
         now = utcnow()
         should_force_reset = now >= self._next_forced_reset
-        force_reset = False
         if should_force_reset:
             logging.info("Force resetting user database.")
-            force_reset = True
             # Reset _next_forced_reset .
             self._next_forced_reset = now + timedelta(
                 seconds=self.run_interval)
-        message = changes.create_diff(force_reset=force_reset)
+        message = changes.create_diff(force_reset=should_force_reset)
 
         if message:
             message["type"] = "users"
