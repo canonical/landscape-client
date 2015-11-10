@@ -17,7 +17,7 @@ class UserMonitor(MonitorPlugin):
 
     persist_name = "users"
     scope = "users"
-    run_interval = 3600  # 1 hour
+    run_interval = 60  # 1 hour
     name = "usermonitor"
 
     def __init__(self, provider=None):
@@ -25,7 +25,7 @@ class UserMonitor(MonitorPlugin):
             provider = UserProvider()
         self._provider = provider
         self._publisher = None
-        self._next_forced_reset = datetime.utcnow() + timedelta(days=1)
+        self._next_forced_reset = datetime.utcnow() + timedelta(minutes=5)
 
     def register(self, registry):
         super(UserMonitor, self).register(registry)
