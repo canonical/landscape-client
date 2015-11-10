@@ -1,5 +1,3 @@
-from logging import info
-
 from landscape.diff import diff
 
 
@@ -27,16 +25,15 @@ class UserChanges(object):
         self._old_users = self._persist.get("users", {})
         self._old_groups = self._persist.get("groups", {})
         if force_reset:
-            info("######################## GOING TO FORCE RESET USERS DATABASE #################")
-            self._new_users = self._old_users
-            self._new_groups = self._old_groups
             self._old_users = {}
             self._old_groups = {}
-        else:
-            self._new_users = self._create_index(
-                "username", self._provider.get_users())
-            self._new_groups = self._create_index(
-                "name", self._provider.get_groups())
+            self._persist.set("users", self._old_users)
+            self._persist.set("groups", self._old_users)
+
+        self._new_users = self._create_index(
+            "username", self._provider.get_users())
+        self._new_groups = self._create_index(
+            "name", self._provider.get_groups())
 
     def snapshot(self):
         """Save the current state and use it as a comparison snapshot."""
@@ -81,8 +78,6 @@ class UserChanges(object):
         in the result.
         """
         changes = {}
-        info("##### OLD USERS: %s" % self._old_users)
-        info("##### NEW USERS: %s" % self._new_users)
         creates, updates, deletes = diff(self._old_users, self._new_users)
         if creates:
             changes["create-users"] = list(creates.itervalues())

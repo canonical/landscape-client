@@ -19,7 +19,7 @@ class UserMonitor(MonitorPlugin):
 
     persist_name = "users"
     scope = "users"
-    run_interval = 60  # 1 hour
+    run_interval = 3600  # 1 hour
     name = "usermonitor"
 
     def __init__(self, provider=None):
@@ -27,7 +27,11 @@ class UserMonitor(MonitorPlugin):
             provider = UserProvider()
         self._provider = provider
         self._publisher = None
-        self._next_forced_reset = datetime.utcnow() + timedelta(minutes=5)
+        # XXX If in the future other plugins require a force reset mechanism,
+        # the following attribute should be moved to the MonitorPlugin base
+        # class or even to the BrokerClientPlugin.
+        self._next_forced_reset = datetime.utcnow() + timedelta(
+            seconds=self.run_interval)
 
     def register(self, registry):
         super(UserMonitor, self).register(registry)
@@ -107,11 +111,12 @@ class UserMonitor(MonitorPlugin):
         should_force_reset = datetime.utcnow() >= self._next_forced_reset
         force_reset = False
         if should_force_reset:
-            logging.info("########### RESETTING USER DB")
+            logging.info("Force resetting user database.")
             force_reset = True
-            self._next_forced_reset = datetime.utcnow() + timedelta(minutes=5)
+            # Reset _next_forced_reset .
+            self._next_forced_reset = datetime.utcnow() + timedelta(
+                seconds=self.run_interval)
         message = changes.create_diff(force_reset=force_reset)
-        logging.info("########### MESSAGE: %s" % message)
 
         if message:
             message["type"] = "users"
