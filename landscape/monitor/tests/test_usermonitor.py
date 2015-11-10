@@ -276,9 +276,12 @@ class UserMonitorTest(LandscapeTest):
         result.addCallback(lambda x: connector.disconnect())
         return result
 
-    def test_detect_changes_next_forced_reset(self):
-
-        def got_result(result):
+    def test_wb_detect_changes_next_forced_reset(self):
+        """
+        When the _next_forced_reset value is reached, it gets reset and a new
+        message is dispatched with the user changes.
+        """
+        def got_result(result, next_run):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
                 [{"create-group-members": {u"webdev":[u"jdoe"]},
@@ -288,13 +291,14 @@ class UserMonitorTest(LandscapeTest):
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
                   "type": "users"}])
+            self.assertEqual(next_run, self.plugin._next_forced_reset, )
 
         now = datetime(2015, 10, 10, 10, 10)
         self.plugin._next_forced_reset = now
         utcnow_mock = self.mocker.replace("landscape.lib.timestamp.utcnow")
         utcnow_mock()
         self.mocker.result(now + timedelta(
-            seconds=self.plugin.run_interval + 1))
+            seconds=1))
         self.mocker.replay()
 
         self.broker_service.message_store.set_accepted_types(["users"])
@@ -306,7 +310,8 @@ class UserMonitorTest(LandscapeTest):
         connector = RemoteUserMonitorConnector(self.reactor, self.config)
         result = connector.connect()
         result.addCallback(lambda remote: remote.detect_changes())
-        result.addCallback(got_result)
+        result.addCallback(got_result, now + timedelta(
+            seconds=self.plugin.run_interval + 1))
         result.addCallback(lambda x: connector.disconnect())
         return result
 
