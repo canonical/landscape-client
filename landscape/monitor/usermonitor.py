@@ -49,7 +49,9 @@ class UserMonitor(MonitorPlugin):
         return self.registry.broker.call_if_accepted(
             "users", self._run_detect_changes, operation_id)
 
-    run = detect_changes
+    def run(self, operation_id=None):
+        return self.registry.broker.call_if_accepted(
+            "users", self._run_detect_changes, operation_id, True)
 
     def _run_detect_changes(self, operation_id=None, force_reset=False):
         """
