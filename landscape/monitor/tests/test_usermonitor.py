@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from twisted.internet.defer import fail
 
 from landscape.amp import ComponentPublisher
