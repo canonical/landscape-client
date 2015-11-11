@@ -1,11 +1,10 @@
 import logging
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
-from landscape.lib.timestamp import utcnow
 from landscape.amp import ComponentPublisher, ComponentConnector, remote
 
 from landscape.monitor.plugin import MonitorPlugin
@@ -22,6 +21,7 @@ class UserMonitor(MonitorPlugin):
     scope = "users"
     run_interval = 3600  # 1 hour
     name = "usermonitor"
+    utcnow = datetime.utcnow
 
     def __init__(self, provider=None):
         if provider is None:
@@ -31,7 +31,7 @@ class UserMonitor(MonitorPlugin):
         # XXX If in the future other plugins require a force reset mechanism,
         # the following attribute should be moved to the MonitorPlugin base
         # class or even to the BrokerClientPlugin.
-        self._next_forced_reset = utcnow() + timedelta(
+        self._next_forced_reset = self.utcnow() + timedelta(
             seconds=self.run_interval)
 
     def register(self, registry):
@@ -109,7 +109,7 @@ class UserMonitor(MonitorPlugin):
         # database before actually creating a new diff.
         # This prevents the system from miscalculating deltas between client
         # exchanges that could happen before registration.
-        now = utcnow()
+        now = self.utcnow()
         should_force_reset = now >= self._next_forced_reset
         if should_force_reset:
             logging.info("Force resetting user database.")

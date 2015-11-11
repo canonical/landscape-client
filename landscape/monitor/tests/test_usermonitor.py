@@ -295,15 +295,11 @@ class UserMonitorTest(LandscapeTest):
 
         now = datetime(2015, 10, 10, 10, 10)
         self.plugin._next_forced_reset = now
-        utcnow_mock = self.mocker.replace("landscape.lib.timestamp.utcnow")
-        utcnow_mock()
-        self.mocker.result(now + timedelta(
-            seconds=1))
-        self.mocker.replay()
+        self.plugin.utcnow = lambda: now + timedelta(seconds=1)
 
         self.broker_service.message_store.set_accepted_types(["users"])
-        self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe",
-                                "/bin/sh")]
+        self.provider.users = [
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
 
         self.monitor.add(self.plugin)
