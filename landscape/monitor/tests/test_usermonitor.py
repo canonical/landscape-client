@@ -276,41 +276,6 @@ class UserMonitorTest(LandscapeTest):
         result.addCallback(lambda x: connector.disconnect())
         return result
 
-    def test_wb_detect_changes_next_forced_reset(self):
-        """
-        When the _next_forced_reset value is reached, it gets reset and a new
-        message is dispatched with the user changes.
-        """
-        def got_result(result, next_run):
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
-                  "create-groups": [{"gid": 1000, "name": u"webdev"}],
-                  "create-users": [{"enabled": True, "home-phone": None,
-                                    "location": None, "name": u"JD",
-                                    "primary-gid": 1000, "uid": 1000,
-                                    "username": u"jdoe", "work-phone": None}],
-                  "type": "users"}])
-            self.assertEqual(next_run, self.plugin._next_forced_reset)
-
-        now = datetime(2015, 10, 10, 10, 10)
-        self.plugin._next_forced_reset = now
-        self.plugin.utcnow = lambda: now + timedelta(seconds=1)
-
-        self.broker_service.message_store.set_accepted_types(["users"])
-        self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
-        self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
-
-        self.monitor.add(self.plugin)
-        connector = RemoteUserMonitorConnector(self.reactor, self.config)
-        result = connector.connect()
-        result.addCallback(lambda remote: remote.detect_changes())
-        result.addCallback(got_result, now + timedelta(
-            seconds=self.plugin.run_interval + 1))
-        result.addCallback(lambda x: connector.disconnect())
-        return result
-
     def test_detect_changes_with_operation_id(self):
         """
         The L{UserMonitor} should expose a remote
