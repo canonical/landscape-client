@@ -27,7 +27,7 @@ class UserMonitor(MonitorPlugin):
     def register(self, registry):
         super(UserMonitor, self).register(registry)
 
-        self.call_on_accepted("users", self._run_detect_changes, None)
+        self.call_on_accepted("users", self._run_detect_changes, None, True)
 
         self._publisher = ComponentPublisher(self, self.registry.reactor,
                                              self.registry.config)
@@ -49,9 +49,11 @@ class UserMonitor(MonitorPlugin):
         return self.registry.broker.call_if_accepted(
             "users", self._run_detect_changes, operation_id)
 
-    run = detect_changes
+    def run(self, operation_id=None):
+        return self.registry.broker.call_if_accepted(
+            "users", self._run_detect_changes, operation_id, True)
 
-    def _run_detect_changes(self, operation_id=None):
+    def _run_detect_changes(self, operation_id=None, force_reset=False):
         """
         If changes are detected an C{urgent-exchange} is fired to send
         updates to the server immediately.
@@ -66,7 +68,7 @@ class UserMonitor(MonitorPlugin):
         # We'll skip checking the locked users if we're in monitor-only mode.
         if getattr(self.registry.config, "monitor_only", False):
             result = maybeDeferred(self._detect_changes,
-                                   [], operation_id)
+                                   [], operation_id, force_reset)
         else:
 
             def get_locked_usernames(user_manager):
@@ -79,11 +81,13 @@ class UserMonitor(MonitorPlugin):
             result = user_manager_connector.connect()
             result.addCallback(get_locked_usernames)
             result.addCallback(disconnect)
-            result.addCallback(self._detect_changes, operation_id)
-            result.addErrback(lambda f: self._detect_changes([], operation_id))
+            result.addCallback(self._detect_changes, operation_id, force_reset)
+            result.addErrback(lambda f: self._detect_changes([], operation_id,
+                                                             force_reset))
         return result
 
-    def _detect_changes(self, locked_users, operation_id=None):
+    def _detect_changes(self, locked_users, operation_id=None,
+                        force_reset=False):
 
         def update_snapshot(result):
             changes.snapshot()
@@ -95,7 +99,7 @@ class UserMonitor(MonitorPlugin):
 
         self._provider.locked_users = locked_users
         changes = UserChanges(self._persist, self._provider)
-        message = changes.create_diff()
+        message = changes.create_diff(force_reset=force_reset)
 
         if message:
             message["type"] = "users"

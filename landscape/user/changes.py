@@ -20,10 +20,17 @@ class UserChanges(object):
         # that from the necessary places.
         self._refresh()
 
-    def _refresh(self):
-        """Load the previous snapshot and update current data."""
+    def _refresh(self, force_reset=False):
+        """Load the previous snapshot and update current data.
+
+        @param force_reset: Whether the user and group databases should be
+            reset.
+        """
         self._old_users = self._persist.get("users", {})
         self._old_groups = self._persist.get("groups", {})
+        if force_reset:
+            self.clear()
+
         self._new_users = self._create_index(
             "username", self._provider.get_users())
         self._new_groups = self._create_index(
@@ -52,13 +59,13 @@ class UserChanges(object):
             index[data[key]] = data
         return index
 
-    def create_diff(self):
+    def create_diff(self, force_reset=False):
         """Returns the changes since the last snapshot.
-        
+
         See landscape.message_schemas.USERS schema for a description of the
         dictionary returned by this method.
         """
-        self._refresh()
+        self._refresh(force_reset=force_reset)
         changes = {}
         changes.update(self._detect_user_changes())
         changes.update(self._detect_group_changes())

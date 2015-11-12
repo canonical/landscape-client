@@ -105,6 +105,21 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.snapshot()
         self.assertEqual(changes.create_diff(), {})
 
+    def test_create_diff_with_force_reset(self):
+        """
+        UserChanges.create_diff accepts a force_reset parameter that can be
+        used to force a database reset.
+        """
+        users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
+        groups = [("webdev", "x", 1000, ["jdoe"])]
+        provider = FakeUserProvider(users=users, groups=groups)
+        FakeUserInfo(provider=provider)
+
+        changes = UserChanges(self.persist, provider)
+        changes.create_diff()
+        changes.snapshot()
+        self.assertEqual({}, changes.create_diff(force_reset=True))
+
     def test_add_user(self):
         """
         L{UserChanges.create_diff} should report new users created
