@@ -206,28 +206,6 @@ class UserMonitorTest(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    def test_run_passes_force_reset_as_true(self):
-        """
-        The run method will pass True for the underlying _run_detect_changes
-        method to force a database reset.
-        """
-        original_run_detect_changes = self.plugin._run_detect_changes
-
-        def fake_run_detect_changes(operation_id=None, force_reset=False):
-            return force_reset
-
-        self.plugin._run_detect_changes = fake_run_detect_changes
-
-        def got_result(result):
-            self.assertTrue(result)
-
-        self.broker_service.message_store.set_accepted_types(["users"])
-        self.monitor.add(self.plugin)
-        result = self.plugin.run()
-        result.addCallback(got_result)
-        self.plugin._run_detect_changes = original_run_detect_changes
-        return result
-
     def test_run_interval(self):
         """
         L{UserMonitor.register} calls the C{register} method on it's
