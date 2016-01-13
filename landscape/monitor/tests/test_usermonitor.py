@@ -113,6 +113,18 @@ class UserMonitorTest(LandscapeTest):
                                 "work-phone": None}],
               "type": "users"}])
 
+    def test_resynchronize_gets_new_session_id(self):
+        """
+        When a 'resynchronize' reactor event is fired, the UserMonitor
+        acquires a new session ID (as the old one will be blocked).
+        """
+        self.monitor.add(self.plugin)
+        session_id = self.plugin._session_id
+
+        self.plugin.client.broker.message_store.drop_session_ids()
+        self.monitor.reactor.fire("resynchronize")
+        self.assertNotEqual(session_id, self.plugin._session_id)
+
     def test_wb_resynchronize_event_with_global_scope(self):
         """
         When a C{resynchronize} event, with global scope, occurs we act exactly
