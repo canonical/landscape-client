@@ -23,13 +23,13 @@ class UserMonitorNoManagerTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
-                                    "type": "users"}])
+                  "type": "users"}])
             plugin.stop()
 
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
@@ -91,20 +91,20 @@ class UserMonitorTest(LandscapeTest):
         self.assertTrue(persist.get("groups"))
         self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
-                                    "type": "users"}])
+                  "type": "users"}])
         self.broker_service.message_store.delete_all_messages()
         deferred = self.monitor.reactor.fire(
             "resynchronize", scopes=["users"])[0]
         self.successResultOf(deferred)
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"create-group-members": {u"webdev":[u"jdoe"]},
+            [{"create-group-members": {u"webdev": [u"jdoe"]},
               "create-groups": [{"gid": 1000, "name": u"webdev"}],
               "create-users": [{"enabled": True, "home-phone": None,
                                 "location": None, "name": u"JD",
@@ -129,19 +129,19 @@ class UserMonitorTest(LandscapeTest):
         self.assertTrue(persist.get("groups"))
         self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
-                                    "type": "users"}])
+                  "type": "users"}])
         self.broker_service.message_store.delete_all_messages()
         deferred = self.monitor.reactor.fire("resynchronize")[0]
         self.successResultOf(deferred)
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"create-group-members": {u"webdev":[u"jdoe"]},
+            [{"create-group-members": {u"webdev": [u"jdoe"]},
               "create-groups": [{"gid": 1000, "name": u"webdev"}],
               "create-users": [{"enabled": True, "home-phone": None,
                                 "location": None, "name": u"JD",
@@ -166,7 +166,7 @@ class UserMonitorTest(LandscapeTest):
         self.assertTrue(persist.get("groups"))
         self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
@@ -189,13 +189,13 @@ class UserMonitorTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
-                                    "type": "users"}])
+                  "type": "users"}])
 
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
@@ -230,14 +230,14 @@ class UserMonitorTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
-                                    "operation-id": 1001,
-                                    "type": "users"}])
+                  "operation-id": 1001,
+                  "type": "users"}])
 
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
@@ -253,12 +253,12 @@ class UserMonitorTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
                                     "primary-gid": 1000, "uid": 1000,
-                  "username": u"jdoe", "work-phone": None}],
+                                    "username": u"jdoe", "work-phone": None}],
                   "type": "users"}])
 
         self.broker_service.message_store.set_accepted_types(["users"])
@@ -283,7 +283,7 @@ class UserMonitorTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
@@ -332,8 +332,9 @@ class UserMonitorTest(LandscapeTest):
 
         def got_result(result):
             mstore = self.broker_service.message_store
-            self.assertMessages(mstore.get_pending_messages(),
-                [{"create-group-members": {u"webdev":[u"jdoe"]},
+            self.assertMessages(
+                mstore.get_pending_messages(),
+                [{"create-group-members": {u"webdev": [u"jdoe"]},
                   "create-groups": [{"gid": 1000, "name": u"webdev"}],
                   "create-users": [{"enabled": True, "home-phone": None,
                                     "location": None, "name": u"JD",
@@ -376,7 +377,7 @@ class UserMonitorTest(LandscapeTest):
         self.mocker.replay()
 
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
-                       "/home/jdoe", "/bin/sh")]
+                                "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
         connector = RemoteUserMonitorConnector(self.reactor, self.config)

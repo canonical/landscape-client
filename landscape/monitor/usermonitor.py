@@ -39,10 +39,14 @@ class UserMonitor(MonitorPlugin):
             self._publisher.stop()
             self._publisher = None
 
-    def _reset(self):
+    def _resynchronize(self, scopes=None):
         """Reset user and group data."""
-        super(UserMonitor, self)._reset()
-        return self._run_detect_changes()
+        deferred = super(UserMonitor, self)._resynchronize(scopes=scopes)
+        # Wait for the superclass' asynchronous _resynchronize method to
+        # complete, so we have a new session ID at hand and we can craft a
+        # valid message (l.broker.client.BrokerClientPlugin._resynchronize).
+        deferred.addCallback(lambda _: self._run_detect_changes())
+        return deferred
 
     @remote
     def detect_changes(self, operation_id=None):

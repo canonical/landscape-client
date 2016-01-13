@@ -1,6 +1,6 @@
 from logging import info, exception
 
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import maybeDeferred, succeed
 
 from landscape.log import format_object
 from landscape.lib.twisted_util import gather_results
@@ -67,7 +67,7 @@ class BrokerClientPlugin(object):
         """
         if not (scopes is None or self.scope in scopes):
             # This resynchronize event is out of scope for us. Do nothing
-            return
+            return succeed(None)
 
         # Because the broker will drop session IDs already associated to scope
         # of the resynchronisation, it isn't safe to send messages until the
