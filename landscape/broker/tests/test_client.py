@@ -47,7 +47,7 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin)
         self.assertEqual(test_session_id, plugin._session_id)
 
-    def test_resynchronizing_refreshes_foo(self):
+    def test_resynchronizing_out_of_scope(self):
         """
         When a 'reysnchronize' event happens and the plugin scope is not part
         of the scopes that were passed, BrokerClientPlugin succeeds.
@@ -56,7 +56,7 @@ class BrokerClientTest(LandscapeTest):
         plugin.scope = "foo"
         self.client.add(plugin)
         deferred = self.client_reactor.fire("resynchronize", scopes=["bar"])[0]
-        self.successResultOf(deferred)
+        self.assertIsNone(self.successResultOf(deferred))
 
     def test_resynchronizing_refreshes_session_id(self):
         """
