@@ -113,17 +113,28 @@ class UserMonitorTest(LandscapeTest):
                                 "work-phone": None}],
               "type": "users"}])
 
-    def test_resynchronize_gets_new_session_id(self):
+    def test_new_message_after_resynchronize_event(self):
         """
-        When a 'resynchronize' reactor event is fired, the UserMonitor
-        acquires a new session ID (as the old one will be blocked).
+        When a 'resynchronize' reactor event is fired, a new session is
+        created and the UserMonitor creates a new message.
         """
+        self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
+                                "/home/jdoe", "/bin/sh")]
+        self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
+        self.broker_service.message_store.set_accepted_types(["users"])
         self.monitor.add(self.plugin)
-        session_id = self.plugin._session_id
-
         self.plugin.client.broker.message_store.drop_session_ids()
-        self.monitor.reactor.fire("resynchronize")
-        self.assertNotEqual(session_id, self.plugin._session_id)
+        deferred = self.reactor.fire("resynchronize")[0]
+        self.successResultOf(deferred)
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"create-group-members": {u"webdev": [u"jdoe"]},
+              "create-groups": [{"gid": 1000, "name": u"webdev"}],
+              "create-users": [{"enabled": True, "home-phone": None,
+                                "location": None, "name": u"JD",
+                                "primary-gid": 1000, "uid": 1000,
+                                "username": u"jdoe", "work-phone": None}],
+              "type": "users"}])
 
     def test_wb_resynchronize_event_with_global_scope(self):
         """
