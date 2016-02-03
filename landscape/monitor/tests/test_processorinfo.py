@@ -367,6 +367,44 @@ CPU1:           online
                          "TI UltraSparc IIIi (Jalapeno)")
         self.assertEqual(processor_1["processor-id"], 1)
 
+class S390XMessageTest(LandscapeTest):
+    """Tests for sparc-specific message builder."""
+
+    helpers = [MonitorHelper]
+
+    S390X = """
+vendor_id       : IBM/S390
+# processors    : 4
+bogomips per cpu: 3033.00
+features	: esan3 zarch stfle msa ldisp eimm dfp etf3eh highgprs 
+cache0          : level=1 type=Data scope=Private size=128K line_size=256 associativity=8
+cache1          : level=1 type=Instruction scope=Private size=96K line_size=256 associativity=6
+cache2          : level=2 type=Data scope=Private size=2048K line_size=256 associativity=8
+cache3          : level=2 type=Instruction scope=Private size=2048K line_size=256 associativity=8
+cache4          : level=3 type=Unified scope=Shared size=65536K line_size=256 associativity=16
+cache5          : level=4 type=Unified scope=Shared size=491520K line_size=256 associativity=30
+processor 0: version = FF,  identification = 018F67,  machine = 2964
+processor 1: version = FF,  identification = 018F67,  machine = 2964
+processor 2: version = FF,  identification = 018F67,  machine = 2964
+processor 3: version = FF,  identification = 018F67,  machine = 2964
+"""
+
+    def test_read_sample_s390x_data(self):
+        """Ensure the plugin can parse /proc/cpuinfo from an IBM zSeries machine."""
+        filename = self.makeFile(self.S390X)
+        plugin = ProcessorInfo(machine_name="s390x",
+                               source_filename=filename)
+        message = plugin.create_message()
+        self.assertEqual(message["type"], "processor-info")
+        self.assertTrue(len(message["processors"]) == 4)
+
+        for id in range(4):
+            processor = message["processors"][id]
+            self.assertEqual(len(processor), 3)
+            self.assertEqual(processor["vendor"], "IBM/S390")
+            self.assertEqual(processor["model"], "2964")
+            self.assertEqual(processor["processor-id"], id)
+
 
 class X86MessageTest(LandscapeTest):
     """Test for x86-specific message handling."""

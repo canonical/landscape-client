@@ -263,7 +263,50 @@ class X86MessageFactory:
         return processors
 
 
+class S390XMessageFactory:
+    """Factory for s390x-based processors provides processor information.
+
+    @param source_filename: The file name of the data source.
+    """
+
+    def __init__(self, source_filename):
+        self._source_filename = source_filename
+
+    def create_message(self):
+        """Returns a list containing information about each processor."""
+        processors = []
+        vendor=None
+        file = open(self._source_filename)
+
+        try:
+            current = None
+
+            for line in file:
+                parts = line.split(":", 1)
+                key = parts[0].strip()
+
+                if key == "vendor_id":
+                    vendor = parts[1].strip()
+                    continue
+                
+                if key.startswith("processor "):
+                    id = int(key.split()[1])
+                    model = parts[1].split()[-1]
+                    current = {
+                        "processor-id": id,
+                        "model": model,
+                        "vendor": vendor
+                    }
+                    processors.append(current)
+                    continue
+        finally:
+            file.close()
+
+        return processors
+
+
 message_factories = [("(arm*|aarch64)", ARMMessageFactory),
                      ("ppc(64)?", PowerPCMessageFactory),
                      ("sparc[64]", SparcMessageFactory),
-                     ("i[3-7]86|x86_64", X86MessageFactory)]
+                     ("i[3-7]86|x86_64", X86MessageFactory),
+                     ("s390x", S390XMessageFactory)]
