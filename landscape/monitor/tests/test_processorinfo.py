@@ -373,7 +373,7 @@ class S390XMessageTest(LandscapeTest):
 
     helpers = [MonitorHelper]
 
-    S390X = """ # noqa
+    S390X = """
 vendor_id       : IBM/S390
 # processors    : 4
 bogomips per cpu: 3033.00
@@ -388,7 +388,7 @@ processor 0: version = FF,  identification = 018F67,  machine = 2964
 processor 1: version = FF,  identification = 018F67,  machine = 2964
 processor 2: version = FF,  identification = 018F67,  machine = 2964
 processor 3: version = FF,  identification = 018F67,  machine = 2964
-"""
+""" # noqa
 
     def test_read_sample_s390x_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from an IBM zSeries machine."""
