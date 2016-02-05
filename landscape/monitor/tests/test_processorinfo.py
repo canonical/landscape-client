@@ -367,6 +367,7 @@ CPU1:           online
                          "TI UltraSparc IIIi (Jalapeno)")
         self.assertEqual(processor_1["processor-id"], 1)
 
+
 class S390XMessageTest(LandscapeTest):
     """Tests for sparc-specific message builder."""
 
@@ -395,15 +396,16 @@ processor 3: version = FF,  identification = 018F67,  machine = 2964
         plugin = ProcessorInfo(machine_name="s390x",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEqual(message["type"], "processor-info")
-        self.assertTrue(len(message["processors"]) == 4)
+        self.assertEqual("processor-info", message["type"])
+        self.assertEqual(4, len(message["processors"]))
 
-        for id in range(4):
-            processor = message["processors"][id]
-            self.assertEqual(len(processor), 3)
-            self.assertEqual(processor["vendor"], "IBM/S390")
-            self.assertEqual(processor["model"], "2964")
-            self.assertEqual(processor["processor-id"], id)
+        for id, processor in enumerate(message["processors"]):
+            self.assertEqual(
+                {"vendor": "IBM/S390",
+                 "model": "2964",
+                 "processor-id": id,
+                 "cache-size": 491520,
+                 }, processor)
 
 
 class X86MessageTest(LandscapeTest):

@@ -275,7 +275,8 @@ class S390XMessageFactory:
     def create_message(self):
         """Returns a list containing information about each processor."""
         processors = []
-        vendor=None
+        vendor = None
+        cache_size = 0
         file = open(self._source_filename)
 
         try:
@@ -288,14 +289,21 @@ class S390XMessageFactory:
                 if key == "vendor_id":
                     vendor = parts[1].strip()
                     continue
-                
+
+                if key.startswith("cache"):
+                    for word in parts[1].split():
+                        if word.startswith("size="):
+                            cache_size = int(word[5:-1])
+                            continue
+
                 if key.startswith("processor "):
                     id = int(key.split()[1])
                     model = parts[1].split()[-1]
                     current = {
                         "processor-id": id,
                         "model": model,
-                        "vendor": vendor
+                        "vendor": vendor,
+                        "cache-size": cache_size,
                     }
                     processors.append(current)
                     continue
