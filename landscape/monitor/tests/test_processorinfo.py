@@ -369,11 +369,11 @@ CPU1:           online
 
 
 class S390XMessageTest(LandscapeTest):
-    """Tests for sparc-specific message builder."""
+    """Tests for s390x message builder."""
 
     helpers = [MonitorHelper]
 
-    S390X = """
+    S390X = """ # noqa
 vendor_id       : IBM/S390
 # processors    : 4
 bogomips per cpu: 3033.00
