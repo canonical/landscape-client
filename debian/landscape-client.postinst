@@ -23,6 +23,8 @@ PACKAGE=landscape-client
 # running the landscape client.
 PYTHON=/usr/bin/python
 
+DATA_PATH=/var/lib/landscape/client
+
 case "$1" in
     configure)
 
@@ -35,7 +37,7 @@ case "$1" in
 log_level = info
 url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
-data_path = /var/lib/landscape/client
+data_path = $DATA_PATH
 END
             chown landscape $TEMPFILE
             mv $TEMPFILE $CONFIG_FILE
@@ -119,6 +121,12 @@ END
             fi
          fi
 
+        # In response to bug 1508110 we need to trigger a complete update of
+        # user information.  The flag file will be removed by the client when
+        # the update completes.
+        USER_UPDATE_FLAG_FILE=$DATA_PATH/user-update-flag
+        echo "This file indicates that the Landscape client needs to send updated user information to the server." >> $USER_UPDATE_FLAG_FILE
+        chown landscape $USER_UPDATE_FLAG_FILE
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

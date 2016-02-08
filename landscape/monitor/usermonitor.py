@@ -1,3 +1,7 @@
+import logging
+import os
+import os.path
+
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
@@ -6,6 +10,10 @@ from landscape.amp import ComponentPublisher, ComponentConnector, remote
 from landscape.monitor.plugin import MonitorPlugin
 from landscape.user.changes import UserChanges
 from landscape.user.provider import UserProvider
+
+
+# Part of bug 1048576 remediation:
+USER_UPDATE_FLAG_FILE = "user-update-flag"
 
 
 class UserMonitor(MonitorPlugin):
@@ -87,7 +95,8 @@ class UserMonitor(MonitorPlugin):
             result.addErrback(lambda f: self._detect_changes([], operation_id))
         return result
 
-    def _detect_changes(self, locked_users, operation_id=None):
+    def _detect_changes(self, locked_users, operation_id=None,
+            UserChanges=UserChanges):
 
         def update_snapshot(result):
             changes.snapshot()
@@ -99,6 +108,15 @@ class UserMonitor(MonitorPlugin):
 
         self._provider.locked_users = locked_users
         changes = UserChanges(self._persist, self._provider)
+
+        # Part of bug 1048576 remediation: If the flag file exists, we need to
+        # do a full update of user data.
+        full_refresh = os.path.exists(self.user_update_flag_file_path)
+        if full_refresh:
+            # Clear the record of what changes have been sent to the server in
+            # order to force sending of all user data.
+            changes.clear()
+
         message = changes.create_diff()
 
         if message:
@@ -108,8 +126,34 @@ class UserMonitor(MonitorPlugin):
             result = self.registry.broker.send_message(
                 message, self._session_id, urgent=True)
             result.addCallback(update_snapshot)
+
+            # Part of bug 1048576 remediation:
+            if full_refresh:
+                # If we are doing a full refresh, we want to remove the flag
+                # file that triggered the refresh if it completes successfully.
+                result.addCallback(lambda _: self._remove_update_flag_file())
+
             result.addErrback(log_error)
             return result
+
+    def _remove_update_flag_file(self):
+        """Remove the full update flag file, logging any errors.
+
+        This is part of the bug 1048576 remediation.
+        """
+        try:
+            os.remove(self.user_update_flag_file_path)
+        except OSError:
+            logging.exception("Error removing user update flag file.")
+
+    @property
+    def user_update_flag_file_path(self):
+        """Location of the user update flag file.
+
+        This is part of the bug 1048576 remediation.
+        """
+        return os.path.join(
+            self.registry.config.data_path, USER_UPDATE_FLAG_FILE)
 
 
 class RemoteUserMonitorConnector(ComponentConnector):

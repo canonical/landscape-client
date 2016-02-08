@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 from twisted.internet.defer import fail
 
 from landscape.amp import ComponentPublisher
@@ -7,6 +10,7 @@ from landscape.manager.usermanager import UserManager
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
+import landscape.monitor.usermonitor
 
 
 class UserMonitorNoManagerTest(LandscapeTest):
@@ -59,10 +63,16 @@ class UserMonitorTest(LandscapeTest):
         self.publisher.start()
         self.provider = FakeUserProvider()
         self.plugin = UserMonitor(self.provider)
+        # Part of bug 1048576 remediation:
+        self._original_USER_UPDATE_FLAG_FILE = (
+            landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE)
 
     def tearDown(self):
         self.publisher.stop()
         self.plugin.stop()
+        # Part of bug 1048576 remediation:
+        landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = (
+            self._original_USER_UPDATE_FLAG_FILE)
         return super(UserMonitorTest, self).tearDown()
 
     def test_constants(self):
@@ -323,6 +333,65 @@ class UserMonitorTest(LandscapeTest):
         connector = RemoteUserMonitorConnector(self.reactor, self.config)
         result = connector.connect()
         result.addCallback(lambda remote: remote.detect_changes(1001))
+        result.addCallback(got_result)
+        result.addCallback(lambda x: connector.disconnect())
+        return result
+
+    def test_detect_changes_clears_user_provider_if_flag_file_exists(self):
+        """
+        Temporary bug 1508110 remediation: If a special flag file exists,
+        cached user data is dumped and a complete refresh of all user data is
+        transmitted.
+        """
+        self.monitor.add(self.plugin)
+
+        class FauxUserChanges(object):
+            cleared = False
+
+            def __init__(self, *args):
+                pass
+
+            def create_diff(self):
+                return None
+
+            def clear(self):
+                self.__class__.cleared = True
+
+        # Create the (temporary, test) user update flag file.
+        landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
+            update_flag_file = tempfile.mkstemp()[1]
+        self.addCleanup(lambda: os.remove(update_flag_file))
+
+        # Trigger a detect changes.
+        self.plugin._persist = None
+        self.plugin._detect_changes([], UserChanges=FauxUserChanges)
+
+        # The clear() method was called.
+        self.assertTrue(FauxUserChanges.cleared)
+
+    def test_detect_changes_deletes_flag_file(self):
+        """
+        Temporary bug 1508110 remediation: The total user data refresh flag
+        file is deleted once the data has been sent.
+        """
+
+        def got_result(result):
+            # The flag file has been deleted.
+            self.assertFalse(os.path.exists(update_flag_file))
+
+        # Create the (temporary, test) user update flag file.
+        landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
+            update_flag_file = tempfile.mkstemp()[1]
+
+        self.broker_service.message_store.set_accepted_types(["users"])
+        self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
+                                "/home/jdoe", "/bin/sh")]
+        self.provider.groups = []
+
+        self.monitor.add(self.plugin)
+        connector = RemoteUserMonitorConnector(self.reactor, self.config)
+        result = connector.connect()
+        result.addCallback(lambda remote: remote.detect_changes())
         result.addCallback(got_result)
         result.addCallback(lambda x: connector.disconnect())
         return result
