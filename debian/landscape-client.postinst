@@ -37,7 +37,7 @@ case "$1" in
 log_level = info
 url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
-data_path = $DATA_PATH
+data_path = /var/lib/landscape/client
 END
             chown landscape $TEMPFILE
             mv $TEMPFILE $CONFIG_FILE
@@ -124,7 +124,8 @@ END
         # In response to bug 1508110 we need to trigger a complete update of
         # user information.  The flag file will be removed by the client when
         # the update completes.
-        USER_UPDATE_FLAG_FILE=$DATA_PATH/user-update-flag
+        DATA_PATH="`grep ^data_path /etc/landscape/client.conf | cut -d= -f2 | tr -d '[[:space:]]'`"
+        USER_UPDATE_FLAG_FILE="$DATA_PATH/user-update-flag"
         echo "This file indicates that the Landscape client needs to send updated user information to the server." >> $USER_UPDATE_FLAG_FILE
         chown landscape $USER_UPDATE_FLAG_FILE
     ;;

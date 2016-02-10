@@ -114,7 +114,14 @@ class UserMonitor(MonitorPlugin):
         full_refresh = os.path.exists(self.user_update_flag_file_path)
         if full_refresh:
             # Clear the record of what changes have been sent to the server in
-            # order to force sending of all user data.
+            # order to force sending of all user data which will do one of two
+            # things server side:  either the server has no user data at all,
+            # in which case it will now have a complete copy, otherwise it
+            # will have at least some user data which this message will
+            # duplicate, provoking the server to note the inconsistency and
+            # request a full resync of the user data.  Either way, the result
+            # is the same: the client and server will be in sync with regard
+            # to users.
             changes.clear()
 
         message = changes.create_diff()
