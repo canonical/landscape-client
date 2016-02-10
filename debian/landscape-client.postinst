@@ -23,8 +23,6 @@ PACKAGE=landscape-client
 # running the landscape client.
 PYTHON=/usr/bin/python
 
-DATA_PATH=/var/lib/landscape/client
-
 case "$1" in
     configure)
 
