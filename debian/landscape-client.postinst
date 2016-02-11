@@ -119,6 +119,13 @@ END
             fi
          fi
 
+        # In response to bug 1508110 we need to trigger a complete update of
+        # user information.  The flag file will be removed by the client when
+        # the update completes.
+        DATA_PATH="`grep ^data_path /etc/landscape/client.conf | cut -d= -f2 | tr -d '[[:space:]]'`"
+        USER_UPDATE_FLAG_FILE="$DATA_PATH/user-update-flag"
+        echo "This file indicates that the Landscape client needs to send updated user information to the server." >> $USER_UPDATE_FLAG_FILE
+        chown landscape $USER_UPDATE_FLAG_FILE
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

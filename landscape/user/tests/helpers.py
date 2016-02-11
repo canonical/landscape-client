@@ -42,7 +42,7 @@ class FakeUserManagement(object):
             gecos_string = "%s,%s,%s,%s" % (name, location or "",
                                             work_phone or "", home_phone or "")
             userdata = (username, "x", uid, primary_gid, gecos_string,
-                        "/bin/sh" , "/home/user")
+                        "/bin/sh", "/home/user")
             self.provider.users.append(userdata)
         except KeyError:
             raise UserManagementError("add_user failed")
@@ -61,7 +61,8 @@ class FakeUserManagement(object):
         data = self._users.get(username, None)
         if data:
             data["enabled"] = True
-            # This will generate a shadow file with only the unlocked user in it.
+            # This will generate a shadow file with only the unlocked user in
+            # it.
             self._make_fake_shadow_file([], [username])
             return "unlock_user succeeded"
         raise UserManagementError("unlock_user failed")
@@ -94,7 +95,7 @@ class FakeUserManagement(object):
         userdata = (username, "x", data["uid"], data["primary-gid"],
                     "%s,%s,%s,%s," % (name, location, work_number,
                                       home_number),
-                    "/bin/sh" , "/home/user")
+                    "/bin/sh", "/home/user")
         self.provider.users = [userdata]
         return "set_user_details succeeded"
 
@@ -150,7 +151,7 @@ class FakeUserManagement(object):
 
 class FakeUserProvider(UserProviderBase):
 
-    def __init__(self, users=None, groups=None, popen=None, shadow_file=None, 
+    def __init__(self, users=None, groups=None, popen=None, shadow_file=None,
                  locked_users=None):
         self.users = users
         self.groups = groups
@@ -168,6 +169,7 @@ class FakeUserProvider(UserProviderBase):
         if self.groups is None:
             self.groups = []
         return self.groups
+
 
 class FakeUserInfo(object):
     """Implements enough functionality to work for Changes tests."""
