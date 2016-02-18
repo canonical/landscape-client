@@ -40,10 +40,7 @@ case "$1" in
 	start)
 		check_config
 		log_daemon_msg "Starting the $NAME daemon"
-		if [ ! -e $PIDDIR ]; then
-			mkdir $PIDDIR
-			chown landscape $PIDDIR
-		fi
+		install --owner=landscape --directory $PIDDIR
 		# Cleanup leftover sockets if there's no other landscape process
 		# running. This shouldn't be usually necessary, but it can
 		# happen in case the client crashed badly and the socket points
