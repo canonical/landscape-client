@@ -123,6 +123,10 @@ END
         # user information.  The flag file will be removed by the client when
         # the update completes.
         DATA_PATH="`grep ^data_path /etc/landscape/client.conf | cut -d= -f2 | tr -d '[[:space:]]'`"
+        if [ ! -e $DATA_PATH ]; then
+                mkdir $DATA_PATH
+                chown landscape $DATA_PATH
+        fi
         USER_UPDATE_FLAG_FILE="$DATA_PATH/user-update-flag"
         echo "This file indicates that the Landscape client needs to send updated user information to the server." >> $USER_UPDATE_FLAG_FILE
         chown landscape $USER_UPDATE_FLAG_FILE
