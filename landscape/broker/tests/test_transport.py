@@ -67,7 +67,8 @@ class HTTPTransportTest(LandscapeTest):
         bpickled request body.
         """
         resource = DataCollectingResource()
-        port = reactor.listenTCP(0, server.Site(resource), interface="127.0.0.1")
+        port = reactor.listenTCP(
+            0, server.Site(resource), interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(
             None, "http://localhost:%d/" % (port.getHost().port,))
@@ -78,12 +79,15 @@ class HTTPTransportTest(LandscapeTest):
             try:
                 get_header = resource.request.requestHeaders.getRawHeaders
             except AttributeError:
+                # For backwards compatibility with Twisted versions
+                # without requestHeaders
                 def get_header(header):
                     return [resource.request.received_headers[header]]
 
             self.assertEqual(get_header(u"x-computer-id"), ["34"])
             self.assertEqual(get_header("x-exchange-token"), ["abcd-efgh"])
-            self.assertEqual(get_header("user-agent"), ["landscape-client/%s" % (VERSION,)])
+            self.assertEqual(
+                get_header("user-agent"), ["landscape-client/%s" % (VERSION,)])
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), "HI")
         result.addCallback(got_result)
@@ -109,10 +113,13 @@ class HTTPTransportTest(LandscapeTest):
             try:
                 get_header = resource.request.requestHeaders.getRawHeaders
             except AttributeError:
+                # For backwards compatibility with Twisted versions
+                # without requestHeaders
                 def get_header(header):
                     return [resource.request.received_headers[header]]
             self.assertEqual(get_header("x-computer-id"), ["34"])
-            self.assertEqual(get_header("user-agent"), ["landscape-client/%s" % (VERSION,)])
+            self.assertEqual(
+                get_header("user-agent"), ["landscape-client/%s" % (VERSION,)])
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), "HI")
         result.addCallback(got_result)
