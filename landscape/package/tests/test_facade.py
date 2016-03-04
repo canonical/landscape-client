@@ -3,6 +3,7 @@ import sys
 import textwrap
 import tempfile
 
+import apt
 import apt_pkg
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
@@ -41,6 +42,14 @@ class FakeFetchItem(object):
     def __init__(self, owner, description):
         self.owner = owner
         self.description = description
+
+
+class TestCache(apt.cache.Cache):
+    _update_called = False
+
+    def update(self):
+        self._update_called = True
+        return super(TestCache, self).update()
 
 
 class AptFacadeTest(LandscapeTest):
@@ -267,10 +276,10 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
-        stanza = self.facade.get_package_stanza(deb_file)
+        stanza = set(self.facade.get_package_stanza(deb_file).split("\n"))
         SHA256 = (
             "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
-        self.assertEqual(textwrap.dedent("""\
+        self.assertEqual(set(textwrap.dedent("""\
             Package: name1
             Priority: optional
             Section: Group1
@@ -291,7 +300,7 @@ class AptFacadeTest(LandscapeTest):
             SHA256: %(sha256)s
             Description: Summary1
              Description1
-            """ % {"filename": PKGNAME1, "sha256": SHA256}),
+            """ % {"filename": PKGNAME1, "sha256": SHA256}).split("\n")),
             stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
@@ -418,14 +427,12 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         new_facade = AptFacade(root=self.apt_root)
-        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._touch_packages_file(deb_dir)
         new_facade.refetch_package_index = False
+        new_facade._cache = TestCache(rootdir=new_facade._root)
         new_facade.reload_channels()
-        self.assertEqual(
-            ["foo"],
-            sorted(version.package.name
-                   for version in new_facade.get_packages()))
+        self.assertFalse(new_facade._cache._update_called)
 
     def test_reload_channels_force_reload_binaries(self):
         """
@@ -440,11 +447,9 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "bar")
         self._touch_packages_file(deb_dir)
         self.facade.refetch_package_index = False
+        self.facade._cache = TestCache(rootdir=self.facade._root)
         self.facade.reload_channels(force_reload_binaries=True)
-        self.assertEqual(
-            ["bar", "foo"],
-            sorted(version.package.name
-                   for version in self.facade.get_packages()))
+        self.assertTrue(self.facade._cache._update_called)
 
     def test_reload_channels_no_force_reload_binaries(self):
         """
