@@ -44,6 +44,8 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-twisted-web,
          python-pycurl,
          landscape-common (= ${binary:Version})
+Replaces: landscape-client-ui, landscape-client-ui-install
+Conflicts: landscape-client-ui, landscape-client-ui-install
 Suggests: ${extra:Suggests}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
