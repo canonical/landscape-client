@@ -276,10 +276,10 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
-        stanza = set(self.facade.get_package_stanza(deb_file).split("\n"))
+        stanza = self.facade.get_package_stanza(deb_file).split("\n")
         SHA256 = (
             "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
-        self.assertEqual(set(textwrap.dedent("""\
+        self.assertItemsEqual(textwrap.dedent("""\
             Package: name1
             Priority: optional
             Section: Group1
@@ -300,7 +300,7 @@ class AptFacadeTest(LandscapeTest):
             SHA256: %(sha256)s
             Description: Summary1
              Description1
-            """ % {"filename": PKGNAME1, "sha256": SHA256}).split("\n")),
+            """ % {"filename": PKGNAME1, "sha256": SHA256}).split("\n"),
             stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
