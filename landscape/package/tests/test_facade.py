@@ -45,6 +45,15 @@ class FakeFetchItem(object):
 
 
 class TestCache(apt.cache.Cache):
+    """An apt cache wrapper which we can tell has been updated.
+
+    When updating the client to work with Xenial, apt.cache.Cache behaviour
+    which tests depended on changed in such a way that we could no longer
+    easily tell from the outside if the cache had been updated or not.  This
+    wrapper was introduced to regain that ability.  See bug 1548946 for more
+    information.
+    """
+
     _update_called = False
 
     def update(self):
