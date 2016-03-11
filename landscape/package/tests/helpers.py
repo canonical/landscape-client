@@ -86,7 +86,7 @@ class AptFacadeHelper(object):
             version=version, control_fields=control_fields)
 
     def _touch_packages_file(self, deb_dir):
-        """Make sure the Packages file get a newer mtime value.
+        """Make sure the Packages file gets a newer mtime value.
 
         If we rely on simply writing to the file to update the mtime, we
         might end up with the same as before, since the resolution is
