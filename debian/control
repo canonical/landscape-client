@@ -44,6 +44,8 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-twisted-web,
          python-pycurl,
          landscape-common (= ${binary:Version})
+Replaces: landscape-client-ui, landscape-client-ui-install
+Conflicts: landscape-client-ui, landscape-client-ui-install
 Suggests: ${extra:Suggests}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -51,40 +53,4 @@ Description: The Landscape administration system client
  Landscape account.
  .
  This package provides the Landscape client and requires a Landscape account.
-XB-Python-Version: ${python:Versions}
-
-Package: landscape-client-ui
-Architecture: any
-Depends: ${python:Depends}, ${misc:Depends},
-         landscape-client (= ${binary:Version}),
-         landscape-client-ui-install (= ${binary:Version}),
-         python-gi,
-         python-dbus,
-         policykit-1,
-         gir1.2-notify-0.7,
-         gir1.2-gtk-3.0
-# Added when we moved the /etc/dbus-1/system.d/landscape.conf file from -client to
-# -client-ui in r682. There is no accompaining "Breaks" because -client-ui requires
-# the exact same version of -client, which will trigger the upgrade
-# and avoid the case discussed in
-# http://www.debian.org/doc/debian-policy/footnotes.html#f53
-Replaces: landscape-client (<< 13.05.1+bzr682)
-Description: The Landscape administration system client - UI configuration
- Landscape is a web-based tool for managing Ubuntu systems.
- .
- This package provides the Landscape client configuration UI.
-XB-Python-Version: ${python:Versions}
-
-Package: landscape-client-ui-install
-Architecture: any
-Depends: ${python:Depends}, ${misc:Depends},
-         python-gi,
-         python-dbus,
-         policykit-1,
-         gir1.2-gtk-3.0,
-         python-aptdaemon.gtk3widgets
-Description: The Landscape administration system client - UI installer
- Landscape is a web-based tool for managing Ubuntu systems.
- .
- This package provides an automatic installer for landscape-client-ui.
 XB-Python-Version: ${python:Versions}

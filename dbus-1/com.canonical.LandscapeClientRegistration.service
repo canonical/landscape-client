@@ -1,4 +1,0 @@
-[D-BUS Service]
-Name=com.canonical.LandscapeClientRegistration
-Exec=/usr/bin/landscape-client-registration-mechanism
-User=root

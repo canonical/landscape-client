@@ -23,7 +23,6 @@ from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
 
 from landscape.lib.fs import append_file, create_file, read_file, touch_file
-from landscape.constants import UBUNTU_PATH
 from landscape.package.skeleton import build_skeleton_apt
 
 
@@ -592,23 +591,11 @@ class AptFacade(object):
         os.environ["APT_LISTCHANGES_FRONTEND"] = "none"
         os.environ["APT_LISTBUGS_FRONTEND"] = "none"
 
-    def _default_path_when_missing(self):
-        """
-        If no PATH is set in the environment, use the Ubuntu default PATH.
-
-        When the client is launched from the landscape-client-settings-ui the
-        PATH variable is incorrectly set, this method rectifies that.
-        """
-        # dpkg will fail if no path is set.
-        if "PATH" not in os.environ:
-            os.environ["PATH"] = UBUNTU_PATH
-
     def _setup_dpkg_for_changes(self):
         """
         Setup environment and apt options for successful package operations.
         """
         self._set_frontend_noninteractive()
-        self._default_path_when_missing()
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
 

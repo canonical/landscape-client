@@ -1,4 +1,0 @@
-[D-BUS Service]
-Name=com.canonical.LandscapeClientSettings
-Exec=/usr/bin/landscape-client-settings-mechanism
-User=root

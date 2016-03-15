@@ -9,7 +9,6 @@ from apt.package import Package
 from aptsources.sourceslist import SourcesList
 from apt.cache import LockFailedException
 
-from landscape.constants import UBUNTU_PATH
 from landscape.lib.fs import read_file, create_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,
@@ -973,16 +972,6 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual("noninteractive", os.environ["DEBIAN_FRONTEND"])
         self.assertEqual(["--force-confold"],
                          apt_pkg.config.value_list("DPkg::options"))
-
-    def test_perform_changes_with_no_path(self):
-        """
-        perform_changes() sets C{PATH} if it's not set already, since
-        dpkg requires it to be set.
-        """
-        del os.environ["PATH"]
-        self.facade.reload_channels()
-        self.assertEqual(self.facade.perform_changes(), None)
-        self.assertEqual(UBUNTU_PATH, os.environ["PATH"])
 
     def test_perform_changes_with_path(self):
         """

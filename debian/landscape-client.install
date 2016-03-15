@@ -9,3 +9,4 @@ usr/bin/landscape-package-reporter
 usr/bin/landscape-release-upgrader
 usr/bin/landscape-dbus-proxy
 usr/lib/landscape
+etc/dbus-1/system.d/landscape.conf

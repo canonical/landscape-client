@@ -9,10 +9,6 @@ ifeq (,$(filter $(dist_release), hardy lucid))
 endif
 
 dh_extra_flags = -plandscape-common -plandscape-client
-ifeq (,$(filter $(dist_release),hardy lucid natty oneiric))
-	# We want landscape-client-ui only from precise onward
-	dh_extra_flags += -plandscape-client-ui -plandscape-client-ui-install
-endif
 
 -include /usr/share/python/python.mk
 ifeq (,$(py_sitename))
@@ -49,7 +45,6 @@ clean:
 	rm -rf build
 	make -C apt-update clean
 	dh_clean
-	debconf-updatepo
 	sed -i -e "s/^DEBIAN_REVISION = .*/DEBIAN_REVISION = \"\"/g" landscape/__init__.py
 
 install: build

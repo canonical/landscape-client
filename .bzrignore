@@ -16,17 +16,10 @@ debian/landscape-common.postinst.debhelper
 debian/landscape-common.postrm.debhelper
 debian/landscape-common.prerm.debhelper
 debian/landscape-common.substvars
-debian/landscape-client-ui/
-debian/landscape-client-ui-install/
-debian/landscape-client-ui-install.debhelper.log
-debian/landscape-client-ui-install.substvars
-debian/landscape-client-ui.debhelper.log
-debian/landscape-client-ui.substvars
 man/landscape-client.1
 man/landscape-config.1
 man/landscape-message.1
 man/landscape-sysinfo.1
-smart-update/smart-update
 apt-update/apt-update
 docs
 tags
