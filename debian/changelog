@@ -1,6 +1,12 @@
-landscape-client (16.01-0ubuntu1) UNRELEASED; urgency=medium
+landscape-client (16.03-0ubuntu1) xenial; urgency=medium
 
-  * Trunk build
+  * New upstream release 16.03:
+    - drop UI packages for xenial (LP: #1557502)
+    - fix xenial test failures (LP: #1548946, #1551892)
+    - fix curl test failures (LP: #1462427)
+    - fix user listing on server (LP: #1508110, #1532887, #1508110, #1508110)
+    - added support for s390x CPU arch (LP: #1541074)
+    - fix creating a file before the parent directory exists (LP: #1546743)
 
  -- Andreas Hasenack <andreas@canonical.com>  Mon, 18 Jan 2016 13:30:49 -0200
 
