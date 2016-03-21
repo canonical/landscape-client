@@ -7,12 +7,18 @@ landscape-client (16.04-0ubuntu1) UNRELEASED; urgency=medium
 landscape-client (16.03-0ubuntu1) xenial; urgency=medium
 
   * New upstream release 16.03:
-    - drop UI packages for xenial (LP: #1557502)
-    - fix xenial test failures (LP: #1548946, #1551892)
-    - fix curl test failures (LP: #1462427)
-    - fix user listing on server (LP: #1508110, #1532887, #1508110, #1508110)
-    - added support for s390x CPU arch (LP: #1541074)
-    - fix creating a file before the parent directory exists (LP: #1546743)
+    - Drop UI packages for xenial (LP: #1557502)
+    - Fix xenial test failures (LP: #1548946, #1551892)
+    - Fix curl test failures (LP: #1462427)
+    - Fix user listing on server (LP: #1508110, #1532887, #1508110, #1508110)
+    - Add support for s390x CPU arch (LP: #1541074)
+    - Fix creating a file before the parent directory exists (LP: #1546743)
+    - Add more information about ssl errors during registation (LP: #1409700)
+    - Retry apt-get update on errors (LP: #1398090)
+    - Better SSL error and user interaction
+    - Don't retry package operations in the case of a system error
+      (LP: #1444419)
+    - Fix container detection under systemd (LP: #1449920)
 
  -- Andreas Hasenack <andreas@canonical.com>  Mon, 18 Jan 2016 13:30:49 -0200
 
