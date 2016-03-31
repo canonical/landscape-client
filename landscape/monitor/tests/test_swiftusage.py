@@ -279,4 +279,3 @@ class SwiftUsageTest(LandscapeTest):
         host = ("192.168.1.10", 6000)
         response = plugin._perform_recon_call(host)
         self.assertEqual(response, expected_disk_usage)
-        
