@@ -1,8 +1,15 @@
 from twisted.internet.defer import succeed
+from unittest import skipUnless
 
-from landscape.monitor.swiftusage import SwiftUsage, Scout
+from landscape.monitor.swiftusage import SwiftUsage
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
+
+try:
+    from swift.cli.recon import Scout
+    has_swift = True
+except ImportError:
+    has_swift = False
 
 
 class FakeRing(object):
@@ -261,7 +268,8 @@ class SwiftUsageTest(LandscapeTest):
         self.plugin._handle_usage(recon_response)
         self.assertNotIn("vdc", self.plugin._persist.get("usage"))
         self.assertEqual(["vdb"], self.plugin._persist.get("devices"))
-
+    
+    @skipUnless(has_swift, "Test relies on python-swift being installed")
     def test_perform_recon_call(self):
         """
         Checks that disk usage is correctly returned after the change
