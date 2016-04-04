@@ -268,7 +268,7 @@ class SwiftUsageTest(LandscapeTest):
         self.plugin._handle_usage(recon_response)
         self.assertNotIn("vdc", self.plugin._persist.get("usage"))
         self.assertEqual(["vdb"], self.plugin._persist.get("devices"))
-    
+
     @skipUnless(has_swift, "Test relies on python-swift being installed")
     def test_perform_recon_call(self):
         """
