@@ -287,3 +287,21 @@ class SwiftUsageTest(LandscapeTest):
         host = ("192.168.1.10", 6000)
         response = plugin._perform_recon_call(host)
         self.assertEqual(response, expected_disk_usage)
+
+    @skipUnless(has_swift, "Test relies on python-swift being installed")
+    def test_perform_old_recon_call(self):
+        """
+        Checks that disk usage is correctly returned with the old scout()
+        result format as well
+        """
+        plugin = SwiftUsage(create_time=self.reactor.time)
+        expected_disk_usage = [
+            {u"device": u"vdb",
+             u"mounted": True,
+             u"size": 100000,
+             u"avail": 70000,
+             u"used": 30000}]
+        Scout.scout = lambda _, host: ("recon_url", expected_disk_usage, 200)
+        host = ("192.168.1.10", 6000)
+        response = plugin._perform_recon_call(host)
+        self.assertEqual(response, expected_disk_usage)
