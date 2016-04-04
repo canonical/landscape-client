@@ -118,8 +118,10 @@ class SwiftUsage(MonitorPlugin):
 
         scout = Scout("diskusage")
         # Perform the actual call
-        _, disk_usage, code = scout.scout(host)
-        if code == 200:
+        scout_result = scout.scout(host)
+        disk_usage = scout_result[1]
+        status_code = scout_result[2]
+        if status_code == 200:
             return disk_usage
 
     def _handle_usage(self, disk_usage):

@@ -1,8 +1,15 @@
 from twisted.internet.defer import succeed
+from unittest import skipUnless
 
 from landscape.monitor.swiftusage import SwiftUsage
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
+
+try:
+    from swift.cli.recon import Scout
+    has_swift = True
+except ImportError:
+    has_swift = False
 
 
 class FakeRing(object):
@@ -261,3 +268,40 @@ class SwiftUsageTest(LandscapeTest):
         self.plugin._handle_usage(recon_response)
         self.assertNotIn("vdc", self.plugin._persist.get("usage"))
         self.assertEqual(["vdb"], self.plugin._persist.get("devices"))
+
+    @skipUnless(has_swift, "Test relies on python-swift being installed")
+    def test_perform_recon_call(self):
+        """
+        Checks that disk usage is correctly returned after the change
+        in scout() results
+        """
+        plugin = SwiftUsage(create_time=self.reactor.time)
+        expected_disk_usage = [
+            {u"device": u"vdb",
+             u"mounted": True,
+             u"size": 100000,
+             u"avail": 70000,
+             u"used": 30000}]
+        Scout.scout = lambda _, host: ("recon_url", expected_disk_usage, 200,
+                                       1459286522.711885, 1459286522.716989)
+        host = ("192.168.1.10", 6000)
+        response = plugin._perform_recon_call(host)
+        self.assertEqual(response, expected_disk_usage)
+
+    @skipUnless(has_swift, "Test relies on python-swift being installed")
+    def test_perform_old_recon_call(self):
+        """
+        Checks that disk usage is correctly returned with the old scout()
+        result format as well
+        """
+        plugin = SwiftUsage(create_time=self.reactor.time)
+        expected_disk_usage = [
+            {u"device": u"vdb",
+             u"mounted": True,
+             u"size": 100000,
+             u"avail": 70000,
+             u"used": 30000}]
+        Scout.scout = lambda _, host: ("recon_url", expected_disk_usage, 200)
+        host = ("192.168.1.10", 6000)
+        response = plugin._perform_recon_call(host)
+        self.assertEqual(response, expected_disk_usage)
