@@ -305,3 +305,22 @@ class SwiftUsageTest(LandscapeTest):
         host = ("192.168.1.10", 6000)
         response = plugin._perform_recon_call(host)
         self.assertEqual(response, expected_disk_usage)
+
+    def test_device_enconding(self):
+        """
+        Checks that unicode responses can be processed without errors
+        """
+        recon_response = [
+            {u"device": u"vdb",
+             u"mounted": True,
+             u"size": 100000,
+             u"avail": 70000,
+             u"used": 30000}]
+        self.plugin._perform_recon_call = lambda host: succeed(recon_response)
+        self.plugin._get_recon_host = lambda: ("192.168.1.10", 6000)
+
+        self.monitor.add(self.plugin)
+        self.reactor.advance(self.monitor.step_size)
+        self.plugin._handle_usage(recon_response)
+        self.assertEqual(
+            [u"vdb"], sorted(self.plugin._persist.get("devices")))
