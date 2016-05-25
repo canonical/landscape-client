@@ -187,11 +187,8 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         [client1, client2] = self.broker.get_clients()
-        client1.exit = self.mocker.mock()
-        client2.exit = self.mocker.mock()
-        self.expect(client1.exit()).result(succeed(None))
-        self.expect(client2.exit()).result(fail(Exception()))
-        self.mocker.replay()
+        client1.exit = Mock(return_result=succeed(None))
+        client2.exit = Mock(return_result=fail(Exception()))
         return self.assertFailure(self.broker.stop_clients(), Exception)
 
     def test_reload_configuration(self):
