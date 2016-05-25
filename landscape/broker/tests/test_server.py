@@ -1,9 +1,10 @@
-from twisted.internet.defer import succeed, fail
-from mock import Mock
 from configobj import ConfigObj
+from mock import Mock
+from twisted.internet.defer import succeed, fail
+from twisted.trial.unittest import TestCase
 
 from landscape.manager.manager import FAILED
-from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
+from landscape.tests.helpers import (HelperTestCase, LandscapeTest, DEFAULT_ACCEPTED_TYPES)
 from landscape.broker.tests.helpers import (
     BrokerServerHelper, RemoteClientHelper)
 from landscape.broker.tests.test_ping import FakePageGetter
@@ -176,6 +177,10 @@ class BrokerServerTest(LandscapeTest):
             client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.stop_clients())
 
+    def getTimeout(self):
+        # XXX Without this, test_stop_clients_with_failure takes 120s to pass.
+        return 0
+
     def test_stop_clients_with_failure(self):
         """
         The L{BrokerServer.stop_clients} method calls the C{exit} method
@@ -214,9 +219,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
-            client.exit = self.mocker.mock()
-            self.expect(client.exit()).result(succeed(None))
-        self.mocker.replay()
+            client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.reload_configuration())
 
     def test_register(self):
@@ -277,9 +280,7 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.fire_event} method fires an event in the broker
         reactor.
         """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
+        callback = Mock()
         self.reactor.call_on("event", callback)
         self.broker.fire_event("event")
 
