@@ -1,5 +1,5 @@
 from twisted.internet.defer import succeed, fail
-
+from mock import Mock
 from configobj import ConfigObj
 
 from landscape.manager.manager import FAILED
@@ -173,9 +173,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
-            client.exit = self.mocker.mock()
-            self.expect(client.exit()).result(succeed(None))
-        self.mocker.replay()
+            client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.stop_clients())
 
     def test_stop_clients_with_failure(self):
@@ -297,9 +295,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
-            client.exit = self.mocker.mock()
-            self.expect(client.exit()).result(succeed(None))
-        self.mocker.replay()
+            client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.exit())
 
     def test_exit_exits_when_other_daemons_blow_up(self):
@@ -310,9 +306,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
-        client.exit = self.mocker.mock()
-        self.expect(client.exit()).result(fail(ZeroDivisionError()))
-        self.mocker.replay()
+        client.exit = Mock(return_value=fail(ZeroDivisionError()))
 
         def assert_event(ignored):
             self.reactor.advance(1)
@@ -328,14 +322,11 @@ class BrokerServerTest(LandscapeTest):
         self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
-        self.mocker.order()
 
-        client.exit = self.mocker.mock()
-        self.reactor.stop = self.mocker.mock()
+        client.exit = Mock(return_value=fail(ZeroDivisionError()))
+        self.reactor.stop = Mock()
         self.broker.stop_exchanger()
-        self.expect(client.exit()).result(fail(ZeroDivisionError()))
         self.reactor.stop()
-        self.mocker.replay()
 
         def assert_stopped(ignored):
             self.reactor.advance(1)
