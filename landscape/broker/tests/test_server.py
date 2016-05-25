@@ -412,9 +412,7 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.resynchronize} method broadcasts a C{resynchronize}
         event to all connected clients.
         """
-        callback = self.mocker.mock()
-        self.expect(callback(["foo"])).result("foo")
-        self.mocker.replay()
+        callback = Mock(return_value="foo")
         self.client_reactor.call_on("resynchronize", callback)
         return self.assertSuccess(self.broker.resynchronize(["foo"]),
                                   [["foo"]])
@@ -424,12 +422,18 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.impending_exchange} method broadcasts an
         C{impending-exchange} event to all connected clients.
         """
-        plugin = self.mocker.mock()
-        plugin.register(self.client)
-        plugin.exchange()
-        self.mocker.replay()
+        plugin = Mock()
+        plugin.register = Mock()
+        plugin.exchange = Mock()
         self.client.add(plugin)
-        return self.assertSuccess(self.broker.impending_exchange(), [[None]])
+
+        def assert_calls(ignored):
+            plugin.register.assert_called_with(self.client)
+            plugin.exchange.assert_called_with()
+
+        deferred = self.assertSuccess(self.broker.impending_exchange(), [[None]])
+        deferred.addCallback(assert_calls)
+        return deferred
 
     def test_broker_started(self):
         """
