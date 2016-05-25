@@ -428,8 +428,8 @@ class EventTest(LandscapeTest):
         self.client.add(plugin)
 
         def assert_calls(ignored):
-            plugin.register.assert_called_with(self.client)
-            plugin.exchange.assert_called_with()
+            plugin.register.assert_called_once_with(self.client)
+            plugin.exchange.assert_called_once_with()
 
         deferred = self.assertSuccess(self.broker.impending_exchange(), [[None]])
         deferred.addCallback(assert_calls)
@@ -443,13 +443,16 @@ class EventTest(LandscapeTest):
         """
 
         def assert_broker_started(ignored):
-            self.remote.register_client_accepted_message_type = \
-                                                        self.mocker.mock()
-            self.remote.register_client_accepted_message_type("type")
-            self.remote.register_client = self.mocker.mock()
-            self.remote.register_client("client")
-            self.mocker.replay()
-            return self.assertSuccess(self.broker.broker_reconnect(), [[None]])
+            self.remote.register_client_accepted_message_type = Mock()
+            self.remote.register_client = Mock()
+
+            def assert_calls_made(ignored):
+                self.remote.register_client_accepted_message_type\
+                    .assert_called_once_with("type")
+                self.remote.register_client.assert_called_once_with("client")
+                
+            deferred = self.assertSuccess(self.broker.broker_reconnect(), [[None]])
+            return deferred.addCallback(assert_calls_made)
 
         registered = self.client.register_message("type", lambda x: None)
         return registered.addCallback(assert_broker_started)
@@ -459,12 +462,16 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.server_uuid_changed} method broadcasts a
         C{server-uuid-changed} event to all connected clients.
         """
-        callback = self.mocker.mock()
-        callback(None, "abc")
-        self.mocker.replay()
+        callback = Mock(return_value=None)
+
+        def assert_calls(ignored):
+            callback.assert_called_once_with(None, "abc")
+
         self.client_reactor.call_on("server-uuid-changed", callback)
-        return self.assertSuccess(self.broker.server_uuid_changed(None, "abc"),
-                                  [[None]])
+        deferred = self.assertSuccess(
+            self.broker.server_uuid_changed(None, "abc"), [[None]])
+        return deferred.addCallback(assert_calls)
+
 
     def test_message_type_acceptance_changed(self):
         """
@@ -472,6 +479,7 @@ class EventTest(LandscapeTest):
         a C{message-type-acceptance-changed} event to all connected clients.
         """
         callback = self.mocker.mock()
+        callback = Mock(return_value=None)
         callback(True)
         self.mocker.replay()
         self.client_reactor.call_on(
