@@ -3,7 +3,6 @@ import random
 from configobj import ConfigObj
 from mock import Mock
 from twisted.internet.defer import succeed, fail
-from twisted.trial.unittest import TestCase
 
 from landscape.manager.manager import FAILED
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
@@ -433,7 +432,8 @@ class EventTest(LandscapeTest):
             plugin.register.assert_called_once_with(self.client)
             plugin.exchange.assert_called_once_with()
 
-        deferred = self.assertSuccess(self.broker.impending_exchange(), [[None]])
+        deferred = self.assertSuccess(
+            self.broker.impending_exchange(), [[None]])
         deferred.addCallback(assert_called)
         return deferred
 
@@ -452,8 +452,9 @@ class EventTest(LandscapeTest):
                 self.remote.register_client_accepted_message_type\
                     .assert_called_once_with("type")
                 self.remote.register_client.assert_called_once_with("client")
-                
-            deferred = self.assertSuccess(self.broker.broker_reconnect(), [[None]])
+
+            deferred = self.assertSuccess(
+                self.broker.broker_reconnect(), [[None]])
             return deferred.addCallback(assert_called_made)
 
         registered = self.client.register_message("type", lambda x: None)
@@ -474,7 +475,6 @@ class EventTest(LandscapeTest):
         deferred = self.assertSuccess(
             self.broker.server_uuid_changed(None, "abc"), [[return_value]])
         return deferred.addCallback(assert_called)
-
 
     def test_message_type_acceptance_changed(self):
         """
