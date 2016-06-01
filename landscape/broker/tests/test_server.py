@@ -180,9 +180,8 @@ class BrokerServerTest(LandscapeTest):
 
     def test_stop_clients_with_failure(self):
         """
-        The L{BrokerServer.stop_clients} method calls the C{exit} method
-        of each registered client, and returns a deferred resulting in C{None}
-        if all C{exit} calls were successful.
+        The L{BrokerServer.stop_clients} method calls the C{exit} method of
+        each registered client, and raises an exception if any calls fail.
         """
         self.broker.connectors_registry = {"foo": FakeCreator,
                                            "bar": FakeCreator}
