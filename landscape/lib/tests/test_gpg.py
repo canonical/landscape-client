@@ -1,3 +1,4 @@
+import mock
 import os
 
 from twisted.internet import reactor
@@ -20,15 +21,11 @@ class GPGTest(LandscapeTest):
                             "echo -n $@ > %s\n" % gpg_options)
         os.chmod(gpg, 0755)
         gpg_home = self.makeDir()
-        mkdtemp_mock = self.mocker.replace("tempfile.mkdtemp")
-        mkdtemp_mock()
-        self.mocker.result(gpg_home)
-        self.mocker.replay()
-
         deferred = Deferred()
 
-        def do_test():
-
+        @mock.patch("tempfile.mkdtemp")
+        def do_test(mkdtemp_mock):
+            mkdtemp_mock.return_value = gpg_home
             result = gpg_verify("/some/file", "/some/signature", gpg=gpg)
 
             def check_result(ignored):
@@ -53,15 +50,11 @@ class GPGTest(LandscapeTest):
         gpg = self.makeFile("#!/bin/sh\necho out; echo err >&2; exit 1\n")
         os.chmod(gpg, 0755)
         gpg_home = self.makeDir()
-        mkdtemp_mock = self.mocker.replace("tempfile.mkdtemp")
-        mkdtemp_mock()
-        self.mocker.result(gpg_home)
-        self.mocker.replay()
-
         deferred = Deferred()
 
-        def do_test():
-
+        @mock.patch("tempfile.mkdtemp")
+        def do_test(mkdtemp_mock):
+            mkdtemp_mock.return_value = gpg_home
             result = gpg_verify("/some/file", "/some/signature", gpg=gpg)
 
             def check_failure(failure):
