@@ -178,10 +178,6 @@ class BrokerServerTest(LandscapeTest):
             client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.stop_clients())
 
-    def getTimeout(self):
-        # XXX Without this, test_stop_clients_with_failure takes 120s to pass.
-        return 0
-
     def test_stop_clients_with_failure(self):
         """
         The L{BrokerServer.stop_clients} method calls the C{exit} method
@@ -193,8 +189,8 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         [client1, client2] = self.broker.get_clients()
-        client1.exit = Mock(return_result=succeed(None))
-        client2.exit = Mock(return_result=fail(Exception()))
+        client1.exit = Mock(return_value=succeed(None))
+        client2.exit = Mock(return_value=fail(Exception()))
         return self.assertFailure(self.broker.stop_clients(), Exception)
 
     def test_reload_configuration(self):
