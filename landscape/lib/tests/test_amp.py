@@ -22,7 +22,7 @@ class FakeTransport(object):
         self.stream.append(data)
 
     def loseConnection(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def getPeer(self):
         pass

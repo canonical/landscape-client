@@ -1,6 +1,8 @@
-from twisted.internet.defer import succeed, fail
+import random
 
 from configobj import ConfigObj
+from mock import Mock
+from twisted.internet.defer import succeed, fail
 
 from landscape.manager.manager import FAILED
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
@@ -173,27 +175,21 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
-            client.exit = self.mocker.mock()
-            self.expect(client.exit()).result(succeed(None))
-        self.mocker.replay()
+            client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.stop_clients())
 
     def test_stop_clients_with_failure(self):
         """
-        The L{BrokerServer.stop_clients} method calls the C{exit} method
-        of each registered client, and returns a deferred resulting in C{None}
-        if all C{exit} calls were successful.
+        The L{BrokerServer.stop_clients} method calls the C{exit} method of
+        each registered client, and raises an exception if any calls fail.
         """
         self.broker.connectors_registry = {"foo": FakeCreator,
                                            "bar": FakeCreator}
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         [client1, client2] = self.broker.get_clients()
-        client1.exit = self.mocker.mock()
-        client2.exit = self.mocker.mock()
-        self.expect(client1.exit()).result(succeed(None))
-        self.expect(client2.exit()).result(fail(Exception()))
-        self.mocker.replay()
+        client1.exit = Mock(return_value=succeed(None))
+        client2.exit = Mock(return_value=fail(Exception()))
         return self.assertFailure(self.broker.stop_clients(), Exception)
 
     def test_reload_configuration(self):
@@ -219,9 +215,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
-            client.exit = self.mocker.mock()
-            self.expect(client.exit()).result(succeed(None))
-        self.mocker.replay()
+            client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.reload_configuration())
 
     def test_register(self):
@@ -282,9 +276,7 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.fire_event} method fires an event in the broker
         reactor.
         """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
+        callback = Mock()
         self.reactor.call_on("event", callback)
         self.broker.fire_event("event")
 
@@ -297,9 +289,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
-            client.exit = self.mocker.mock()
-            self.expect(client.exit()).result(succeed(None))
-        self.mocker.replay()
+            client.exit = Mock(return_value=succeed(None))
         return self.assertSuccess(self.broker.exit())
 
     def test_exit_exits_when_other_daemons_blow_up(self):
@@ -310,9 +300,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
-        client.exit = self.mocker.mock()
-        self.expect(client.exit()).result(fail(ZeroDivisionError()))
-        self.mocker.replay()
+        client.exit = Mock(return_value=fail(ZeroDivisionError()))
 
         def assert_event(ignored):
             self.reactor.advance(1)
@@ -328,14 +316,11 @@ class BrokerServerTest(LandscapeTest):
         self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
-        self.mocker.order()
 
-        client.exit = self.mocker.mock()
-        self.reactor.stop = self.mocker.mock()
+        client.exit = Mock(return_value=fail(ZeroDivisionError()))
+        self.reactor.stop = Mock()
         self.broker.stop_exchanger()
-        self.expect(client.exit()).result(fail(ZeroDivisionError()))
         self.reactor.stop()
-        self.mocker.replay()
 
         def assert_stopped(ignored):
             self.reactor.advance(1)
@@ -423,9 +408,7 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.resynchronize} method broadcasts a C{resynchronize}
         event to all connected clients.
         """
-        callback = self.mocker.mock()
-        self.expect(callback(["foo"])).result("foo")
-        self.mocker.replay()
+        callback = Mock(return_value="foo")
         self.client_reactor.call_on("resynchronize", callback)
         return self.assertSuccess(self.broker.resynchronize(["foo"]),
                                   [["foo"]])
@@ -435,12 +418,19 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.impending_exchange} method broadcasts an
         C{impending-exchange} event to all connected clients.
         """
-        plugin = self.mocker.mock()
-        plugin.register(self.client)
-        plugin.exchange()
-        self.mocker.replay()
+        plugin = Mock()
+        plugin.register = Mock()
+        plugin.exchange = Mock()
         self.client.add(plugin)
-        return self.assertSuccess(self.broker.impending_exchange(), [[None]])
+
+        def assert_called(ignored):
+            plugin.register.assert_called_once_with(self.client)
+            plugin.exchange.assert_called_once_with()
+
+        deferred = self.assertSuccess(
+            self.broker.impending_exchange(), [[None]])
+        deferred.addCallback(assert_called)
+        return deferred
 
     def test_broker_started(self):
         """
@@ -450,13 +440,17 @@ class EventTest(LandscapeTest):
         """
 
         def assert_broker_started(ignored):
-            self.remote.register_client_accepted_message_type = \
-                                                        self.mocker.mock()
-            self.remote.register_client_accepted_message_type("type")
-            self.remote.register_client = self.mocker.mock()
-            self.remote.register_client("client")
-            self.mocker.replay()
-            return self.assertSuccess(self.broker.broker_reconnect(), [[None]])
+            self.remote.register_client_accepted_message_type = Mock()
+            self.remote.register_client = Mock()
+
+            def assert_called_made(ignored):
+                self.remote.register_client_accepted_message_type\
+                    .assert_called_once_with("type")
+                self.remote.register_client.assert_called_once_with("client")
+
+            deferred = self.assertSuccess(
+                self.broker.broker_reconnect(), [[None]])
+            return deferred.addCallback(assert_called_made)
 
         registered = self.client.register_message("type", lambda x: None)
         return registered.addCallback(assert_broker_started)
@@ -466,36 +460,39 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.server_uuid_changed} method broadcasts a
         C{server-uuid-changed} event to all connected clients.
         """
-        callback = self.mocker.mock()
-        callback(None, "abc")
-        self.mocker.replay()
+        return_value = random.randint(1, 100)
+        callback = Mock(return_value=return_value)
+
+        def assert_called(ignored):
+            callback.assert_called_once_with(None, "abc")
+
         self.client_reactor.call_on("server-uuid-changed", callback)
-        return self.assertSuccess(self.broker.server_uuid_changed(None, "abc"),
-                                  [[None]])
+        deferred = self.assertSuccess(
+            self.broker.server_uuid_changed(None, "abc"), [[return_value]])
+        return deferred.addCallback(assert_called)
 
     def test_message_type_acceptance_changed(self):
         """
         The L{BrokerServer.message_type_acceptance_changed} method broadcasts
         a C{message-type-acceptance-changed} event to all connected clients.
         """
-        callback = self.mocker.mock()
-        callback(True)
-        self.mocker.replay()
+        return_value = random.randint(1, 100)
+        callback = Mock(return_value=return_value)
         self.client_reactor.call_on(
             ("message-type-acceptance-changed", "type"), callback)
         result = self.broker.message_type_acceptance_changed("type", True)
-        return self.assertSuccess(result, [[None]])
+        return self.assertSuccess(result, [[return_value]])
 
     def test_package_data_changed(self):
         """
         The L{BrokerServer.package_data_changed} method broadcasts a
         C{package-data-changed} event to all connected clients.
         """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
+        return_value = random.randint(1, 100)
+        callback = Mock(return_value=return_value)
         self.client_reactor.call_on("package-data-changed", callback)
-        return self.assertSuccess(self.broker.package_data_changed(), [[None]])
+        return self.assertSuccess(
+            self.broker.package_data_changed(), [[return_value]])
 
 
 class HandlersTest(LandscapeTest):
@@ -514,12 +511,10 @@ class HandlersTest(LandscapeTest):
         registered plugins when messages are received from the server.
         """
         message = {"type": "foobar", "value": 42}
-        self.client.message = self.mocker.mock()
-        self.client.message(message)
-        self.mocker.result(succeed(True))
-        self.mocker.replay()
+        self.client.message = Mock(return_value=succeed(True))
         self.transport.responses.append([{"type": "foobar", "value": 42}])
         self.exchanger.exchange()
+        self.client.message.assert_called_once_with(message)
 
     def test_message_failed_operation_without_plugins(self):
         """
@@ -530,10 +525,7 @@ class HandlersTest(LandscapeTest):
         self.log_helper.ignore_errors("Nobody handled the foobar message.")
         self.mstore.set_accepted_types(["operation-result"])
         message = {"type": "foobar", "operation-id": 4}
-        self.client.message = self.mocker.mock()
-        self.client.message(message)
-        self.mocker.result(succeed(False))
-        self.mocker.replay()
+        self.client.message = Mock(return_value=succeed(False))
         result = self.reactor.fire("message", message)
         result = [i for i in result if i is not None][0]
 
@@ -544,6 +536,7 @@ class HandlersTest(LandscapeTest):
                     "Landscape client failed to handle this request (foobar)")
 
         def broadcasted(ignored):
+            self.client.message.assert_called_once_with(message)
             self.assertMessages(
                 self.mstore.get_pending_messages(),
                 [{"type": "operation-result", "status": FAILED,
@@ -557,52 +550,44 @@ class HandlersTest(LandscapeTest):
         When an C{impending-exchange} event is fired by the reactor, the
         broker broadcasts it to its clients.
         """
-        self.client.fire_event = self.mocker.mock()
-        self.client.fire_event("impending-exchange")
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
+        self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("impending-exchange")
+        self.client.fire_event.assert_called_once_with("impending-exchange")
 
     def test_message_type_acceptance_changed(self):
         """
         When a C{message-type-acceptance-changed} event is fired by the
         reactor, the broker broadcasts it to its clients.
         """
-        self.client.fire_event = self.mocker.mock()
-        self.client.fire_event("message-type-acceptance-changed", "test", True)
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
+        self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("message-type-acceptance-changed", "test", True)
+        self.client.fire_event.assert_called_once_with(
+            "message-type-acceptance-changed", "test", True)
 
     def test_server_uuid_changed(self):
         """
         When a C{server-uuid-changed} event is fired by the reactor, the
         broker broadcasts it to its clients.
         """
-        self.client.fire_event = self.mocker.mock()
-        self.client.fire_event("server-uuid-changed", None, 123)
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
+        self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("server-uuid-changed", None, 123)
+        self.client.fire_event.assert_called_once_with(
+            "server-uuid-changed", None, 123)
 
     def test_package_data_changed(self):
         """
         When a C{package-data-changed} event is fired by the reactor, the
         broker broadcasts it to its clients.
         """
-        self.client.fire_event = self.mocker.mock()
-        self.client.fire_event("package-data-changed")
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
+        self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("package-data-changed")
+        self.client.fire_event.assert_called_once_with("package-data-changed")
 
     def test_resynchronize_clients(self):
         """
         When a C{resynchronize} event is fired by the reactor, the
         broker broadcasts it to its clients.
         """
-        self.client.fire_event = self.mocker.mock()
-        self.client.fire_event("resynchronize")
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
+        self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("resynchronize-clients")
+        self.client.fire_event.assert_called_once_with("resynchronize")
