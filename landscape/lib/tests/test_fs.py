@@ -1,4 +1,5 @@
 import os
+from mock import patch
 import time
 
 from landscape.tests.helpers import LandscapeTest
@@ -42,16 +43,15 @@ class ReadFileTest(LandscapeTest):
 
 class TouchFileTest(LandscapeTest):
 
-    def test_touch_file(self):
+    @patch("os.utime")
+    def test_touch_file(self, utime_mock):
         """
         The L{touch_file} function touches a file, setting its last
         modification time.
         """
         path = self.makeFile()
-        utime_mock = self.mocker.replace("os.utime")
-        self.expect(utime_mock(path, None))
-        self.mocker.replay()
         touch_file(path)
+        utime_mock.assert_called_with(path, None)
         self.assertFileContent(path, "")
 
     def test_touch_file_multiple_times(self):
