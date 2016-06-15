@@ -35,8 +35,7 @@ class CleanFDsTests(LandscapeTest):
         """
         closed_fds = []
 
-        with patch.object(
-                os, "close", side_effect=closed_fds.append) as close_mock:
+        with patch("os.close", side_effect=closed_fds.append) as close_mock:
             with self.mock_getrlimit(4100) as getrlimit_mock:
                 clean_fds()
 
@@ -59,8 +58,7 @@ class CleanFDsTests(LandscapeTest):
             closed_fds.append(fd)
             raise OSError("Bad FD!")
 
-        with patch.object(
-                os, "close", side_effect=remember_and_throw) as close_mock:
+        with patch("os.close", side_effect=remember_and_throw) as close_mock:
             with self.mock_getrlimit(10) as getrlimit_mock:
                 clean_fds()
 
@@ -78,7 +76,6 @@ class CleanFDsTests(LandscapeTest):
         def throw_up(fd):
             raise MemoryError()
 
-        with patch.object(
-                os, "close", side_effect=throw_up):
+        with patch("os.close", side_effect=throw_up):
             with self.mock_getrlimit(10):
                 self.assertRaises(MemoryError, clean_fds)
