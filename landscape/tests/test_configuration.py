@@ -739,7 +739,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
 class BootstrapTreeTest(LandscapeConfigurationTest):
 
-    def test_bootstrap_tree(self):
+    @mock.patch("os.chmod")
+    def test_bootstrap_tree(self, mock_chmod):
         """
         The L{bootstrap_tree} function creates the client dir and
         /annotations.d under it with the correct permissions.
@@ -747,13 +748,10 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
         client_path = self.makeDir()
         annotations_path = os.path.join(client_path, "annotations.d")
 
-        mock_chmod = self.mocker.replace("os.chmod")
-        mock_chmod(client_path, 0755)
-        mock_chmod(annotations_path, 0755)
-        self.mocker.replay()
-
         config = self.get_config([], data_path=client_path)
         bootstrap_tree(config)
+        mock_chmod.assert_any_call(client_path, 0755)
+        mock_chmod.assert_called_with(annotations_path, 0755)
         self.assertTrue(os.path.isdir(client_path))
         self.assertTrue(os.path.isdir(annotations_path))
 
