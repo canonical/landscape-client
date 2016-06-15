@@ -401,14 +401,11 @@ class RunScriptTests(LandscapeTest):
         username = info.pw_name
         gid = info.pw_gid
 
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ANY, uid, gid)
-        self.mocker.count(3)
+        patch_chown = mock.patch("os.chown")
+        mock_chown = patch_chown.start()
 
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-
-        self.mocker.replay()
 
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username,
             attachments={u"file 1": "some data"})
@@ -430,8 +427,13 @@ class RunScriptTests(LandscapeTest):
         def check(data):
             self.assertEqual(data, "foobar")
             self.assertFalse(os.path.exists(attachment_dir))
+            mock_chown.assert_has_calls(
+                [mock.call(mock.ANY, uid, gid) for x in range(3)])
 
-        return result.addCallback(check)
+        def cleanup(_):
+            patch_chown.stop()
+
+        return result.addCallback(check).addCallback(cleanup)
 
     def test_limit_size(self):
         """Data returned from the command is limited."""
