@@ -5,7 +5,7 @@ from landscape.monitor.computeruptime import (LoginInfo, LoginInfoReader,
                                               ComputerUptime, BootTimes,
                                               get_uptime)
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.tests.mocker import ANY
+from mock import ANY, Mock
 
 
 def append_login_data(filename, login_type=0, pid=0, tty_device="/dev/",
@@ -296,13 +296,12 @@ class ComputerUptimeTest(LandscapeTest):
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
 
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.replay()
+        self.remote.send_message = Mock()
 
         self.reactor.fire(("message-type-acceptance-changed",
                            "computer-uptime"),
                           True)
+        self.remote.send_message.assert_called_once_with(ANY, ANY, urgent=True)
 
     def test_no_message_if_not_accepted(self):
         """

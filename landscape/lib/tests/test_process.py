@@ -1,4 +1,5 @@
 import unittest
+import mock
 import os
 
 from landscape.tests.helpers import LandscapeTest
@@ -39,15 +40,14 @@ class ProcessInfoTest(LandscapeTest):
         stat = " ".join(stat_array)
         create_file(os.path.join(process_dir, "stat"), stat)
 
-    def test_missing_process_race(self):
+    @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
+    @mock.patch("os.listdir")
+    def test_missing_process_race(self, list_dir_mock, jiffies_mock):
         """
         We use os.listdir("/proc") to get the list of active processes, if a
         process ends before we attempt to read the process' information, then
         this should not trigger an error.
         """
-        listdir_mock = self.mocker.replace("os.listdir")
-        listdir_mock("/proc")
-        self.mocker.result(["12345"])
 
         class FakeFile(object):
 
@@ -67,20 +67,21 @@ class ProcessInfoTest(LandscapeTest):
             def close(self):
                 self.closed = True
 
-        open_mock = self.mocker.replace("__builtin__.open")
-        open_mock("/proc/12345/cmdline", "r")
+        list_dir_mock.return_value = ["12345"]
         fakefile1 = FakeFile("test-binary")
-        self.mocker.result(fakefile1)
-
-        open_mock("/proc/12345/status", "r")
         fakefile2 = FakeFile(None)
-        self.mocker.result(fakefile2)
 
-        self.mocker.replay()
-
-        process_info = ProcessInformation("/proc")
-        processes = list(process_info.get_all_process_info())
+        with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
+            # This means "return fakefile1, then fakefile2"
+            open_mock.side_effect = [fakefile1, fakefile2]
+            process_info = ProcessInformation("/proc")
+            processes = list(process_info.get_all_process_info())
+            calls = [
+                mock.call("/proc/12345/cmdline", "r"),
+                mock.call("/proc/12345/status", "r")]
+            open_mock.assert_has_calls(calls)
         self.assertEqual(processes, [])
+        list_dir_mock.assert_called_with("/proc")
         self.assertTrue(fakefile1.closed)
         self.assertTrue(fakefile2.closed)
 

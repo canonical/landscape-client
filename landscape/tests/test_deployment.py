@@ -1,4 +1,3 @@
-import sys
 import os
 from optparse import OptionParser
 from StringIO import StringIO
@@ -11,7 +10,7 @@ from landscape.deployment import (
 from landscape.manager.config import ManagerConfiguration
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
-from landscape.tests.mocker import ANY
+import mock
 
 
 class BabbleConfiguration(Configuration):
@@ -124,7 +123,8 @@ class ConfigurationTest(LandscapeTest):
 
         self.assertEqual(MyConfiguration().foo_bar, None)
 
-    def test_command_line_with_required_options(self):
+    @mock.patch("sys.exit")
+    def test_command_line_with_required_options(self, mock_exit):
 
         class MyConfiguration(Configuration):
             required_options = ("foo_bar",)
@@ -138,12 +138,9 @@ class ConfigurationTest(LandscapeTest):
         self.reset_config(configuration_class=MyConfiguration)
         self.write_config_file()
 
-        sys_exit_mock = self.mocker.replace(sys.exit)
-        sys_exit_mock(ANY)
-        self.mocker.count(1)
-        self.mocker.replay()
-
         self.config.load([])  # This will call our mocked sys.exit.
+        mock_exit.assert_called_once_with(mock.ANY)
+
         self.config.load(["--foo-bar", "ooga"])
         self.assertEqual(self.config.foo_bar, "ooga")
 
@@ -709,14 +706,8 @@ class GetVersionedPersistTest(LandscapeTest):
             persist_filename = self.makePersistFile(content="")
             service_name = "monitor"
 
-        upgrade_managers = self.mocker.replace(
-            "landscape.upgraders.UPGRADE_MANAGERS", passthrough=False)
-        upgrade_manager = upgrade_managers["monitor"]
-        upgrade_manager.apply(ANY)
-
-        stash = []
-        self.mocker.call(stash.append)
-        self.mocker.replay()
-
-        persist = get_versioned_persist(FakeService())
-        self.assertEqual(stash[0], persist)
+        mock_monitor = mock.Mock()
+        with mock.patch.dict("landscape.upgraders.UPGRADE_MANAGERS",
+                             {"monitor": mock_monitor}):
+            persist = get_versioned_persist(FakeService())
+            mock_monitor.apply.assert_called_with(persist)

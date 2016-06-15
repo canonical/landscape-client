@@ -1,3 +1,5 @@
+from mock import Mock
+
 from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
 from landscape.reactor import FakeReactor
 from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
@@ -67,11 +69,10 @@ class MonitorServiceTest(LandscapeTest):
         The L{MonitorService.stopService} method flushes the data before
         shutting down the monitor, and closes the connection with the broker.
         """
-        self.service.monitor = self.mocker.mock()
-        self.service.monitor.flush()
-        self.service.connector = self.mocker.mock()
-        self.service.connector.disconnect()
-        self.service.publisher = self.mocker.mock()
-        self.service.publisher.stop()
-        self.mocker.replay()
+        self.service.monitor = Mock()
+        self.service.connector = Mock()
+        self.service.publisher = Mock()
         self.service.stopService()
+        self.service.monitor.flush.assert_called_once_with()
+        self.service.connector.disconnect.assert_called_once_with()
+        self.service.publisher.stop.assert_called_once_with()

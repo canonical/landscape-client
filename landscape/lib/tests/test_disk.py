@@ -1,5 +1,7 @@
 import os
 
+from mock import patch
+
 from landscape.lib.disk import (
     get_filesystem_for_path, get_mount_info, is_device_removable,
     _get_device_removable_file_path)
@@ -107,7 +109,8 @@ class DiskUtilitiesTest(LandscapeTest):
 
 class RemovableDiskTest(LandscapeTest):
 
-    def test_wb_get_device_removable_file_path(self):
+    @patch("os.path.islink")
+    def test_wb_get_device_removable_file_path(self, is_link_mock):
         """
         When passed a device in /dev, the L{_get_device_removable_file_path}
         function returns the corresponding removable file path in /sys/block.
@@ -115,15 +118,15 @@ class RemovableDiskTest(LandscapeTest):
         device = "/dev/sdb"
         expected = "/sys/block/sdb/removable"
 
-        is_link_mock = self.mocker.replace(os.path.islink)
-        is_link_mock(device)
-        self.mocker.result(False)
-        self.mocker.replay()
+        is_link_mock.return_value = False
 
         result = _get_device_removable_file_path(device)
+
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
-    def test_wb_get_device_removable_file_path_with_partition(self):
+    @patch("os.path.islink")
+    def test_wb_with_partition(self, is_link_mock):
         """
         When passed a device in /dev with a partition number, the
         L{_get_device_removable_file_path} function returns the corresponding
@@ -132,15 +135,15 @@ class RemovableDiskTest(LandscapeTest):
         device = "/dev/sdb1"
         expected = "/sys/block/sdb/removable"
 
-        is_link_mock = self.mocker.replace(os.path.islink)
-        is_link_mock(device)
-        self.mocker.result(False)
-        self.mocker.replay()
+        is_link_mock.return_value = False
 
         result = _get_device_removable_file_path(device)
+
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
-    def test_wb_get_device_removable_file_path_without_dev(self):
+    @patch("os.path.islink")
+    def test_wb_get_device_removable_file_path_without_dev(self, is_link_mock):
         """
         When passed a device name (not the whole path), the
         L{_get_device_removable_file_path} function returns the corresponding
@@ -149,15 +152,16 @@ class RemovableDiskTest(LandscapeTest):
         device = "sdb1"
         expected = "/sys/block/sdb/removable"
 
-        is_link_mock = self.mocker.replace(os.path.islink)
-        is_link_mock(device)
-        self.mocker.result(False)
-        self.mocker.replay()
+        is_link_mock.return_value = False
 
         result = _get_device_removable_file_path(device)
+
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
-    def test_wb_get_device_removable_file_path_with_symlink(self):
+    @patch("os.path.islink")
+    @patch("os.readlink")
+    def test_wb_with_symlink(self, readlink_mock, is_link_mock):
         """
         When the device path passed to L{_get_device_removable_file_path} is a
         symlink (it's the case when disks are mounted by uuid or by label),
@@ -166,21 +170,18 @@ class RemovableDiskTest(LandscapeTest):
         """
         device = "/dev/disk/by-uuid/8b2ec410-ebd2-49ec-bb3c-b8b13effab08"
 
-        readlink_mock = self.mocker.replace(os.readlink)
-        readlink_mock(device)
-        self.mocker.result("../../sda1")
-
-        is_link_mock = self.mocker.replace(os.path.islink)
-        is_link_mock(device)
-        self.mocker.result(True)
-
-        self.mocker.replay()
+        readlink_mock.return_value = "../../sda1"
+        is_link_mock.return_value = True
 
         expected = "/sys/block/sda/removable"
         result = _get_device_removable_file_path(device)
+
+        readlink_mock.assert_called_once_with(device)
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
-    def test_wb_get_device_removable_file_path_raid_device(self):
+    @patch("os.path.islink")
+    def test_wb_get_device_removable_file_path_raid_device(self, is_link_mock):
         """
         When passed a more exotic device file, like for example a raid device
         (e.g. /dev/cciss/c0d1p1), the L{_get_device_removable_file_path}
@@ -191,16 +192,14 @@ class RemovableDiskTest(LandscapeTest):
         # The expected path does not exists, but it doesn't matter here.
         expected = "/sys/block/c/removable"
 
-        is_link_mock = self.mocker.replace(os.path.islink)
-        is_link_mock(device)
-        self.mocker.result(False)
-
-        self.mocker.replay()
+        is_link_mock.return_value = False
 
         result = _get_device_removable_file_path(device)
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
-    def test_is_device_removable(self):
+    @patch("landscape.lib.disk._get_device_removable_file_path")
+    def test_is_device_removable(self, removable_mock):
         """
         Given the path to a file, determine if it means the device is removable
         or not.
@@ -208,14 +207,13 @@ class RemovableDiskTest(LandscapeTest):
         device = "/dev/sdb1"
         path = self.makeFile("1")
 
-        removable_mock = self.mocker.replace(_get_device_removable_file_path)
-        removable_mock(device)
-        self.mocker.result(path)
-        self.mocker.replay()
+        removable_mock.return_value = path
 
         self.assertTrue(is_device_removable(device))
+        removable_mock.assert_called_once_with(device)
 
-    def test_is_device_removable_false(self):
+    @patch("landscape.lib.disk._get_device_removable_file_path")
+    def test_is_device_removable_false(self, removable_mock):
         """
         Given the path to a file, determine if it means the device is removable
         or not.
@@ -223,14 +221,13 @@ class RemovableDiskTest(LandscapeTest):
         device = "/dev/sdb1"
         path = self.makeFile("0")
 
-        removable_mock = self.mocker.replace(_get_device_removable_file_path)
-        removable_mock(device)
-        self.mocker.result(path)
-        self.mocker.replay()
+        removable_mock.return_value = path
 
         self.assertFalse(is_device_removable(device))
+        removable_mock.assert_called_once_with(device)
 
-    def test_is_device_removable_garbage(self):
+    @patch("landscape.lib.disk._get_device_removable_file_path")
+    def test_is_device_removable_garbage(self, removable_mock):
         """
         Given the path to a file, determine if it means the device is removable
         or not.
@@ -238,40 +235,36 @@ class RemovableDiskTest(LandscapeTest):
         device = "/dev/sdb1"
         path = self.makeFile("Some garbage")
 
-        removable_mock = self.mocker.replace(_get_device_removable_file_path)
-        removable_mock(device)
-        self.mocker.result(path)
-        self.mocker.replay()
+        removable_mock.return_value = path
 
         self.assertFalse(is_device_removable(device))
+        removable_mock.assert_called_once_with(device)
 
-    def test_is_device_removable_path_doesnt_exist(self):
+    @patch("landscape.lib.disk._get_device_removable_file_path")
+    def test_is_device_removable_path_doesnt_exist(self, removable_mock):
         """
         When given a non-existing path, report the device as not removable.
         """
         device = "/dev/sdb1"
         path = "/what/ever"
 
-        removable_mock = self.mocker.replace(_get_device_removable_file_path)
-        removable_mock(device)
-        self.mocker.result(path)
-        self.mocker.replay()
+        removable_mock.return_value = path
 
         self.assertFalse(is_device_removable(device))
+        removable_mock.assert_called_once_with(device)
 
-    def test_is_removable_raid_device(self):
+    @patch("os.path.islink")
+    def test_is_removable_raid_device(self, is_link_mock):
         """
         When passed the path to a raid device (e.g. /dev/cciss/c0d0p0), the
         is_device_removable function returns False.
         """
         device = "/dev/cciss/c0d1p1"
 
-        is_link_mock = self.mocker.replace(os.path.islink)
-        is_link_mock(device)
-        self.mocker.result(False)
-        self.mocker.replay()
+        is_link_mock.return_value = False
 
         self.assertFalse(is_device_removable(device))
+        is_link_mock.assert_called_once_with(device)
 
     def test_is_device_removable_memory_card(self):
         """

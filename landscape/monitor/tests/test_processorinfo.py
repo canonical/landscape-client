@@ -1,7 +1,7 @@
 from landscape.plugin import PluginConfigError
 from landscape.monitor.processorinfo import ProcessorInfo
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.tests.mocker import ANY
+from mock import ANY, Mock
 
 
 # The extra blank line at the bottom of some sample data definitions
@@ -28,16 +28,17 @@ class ProcessorInfoTest(LandscapeTest):
             self.assertTrue("model" in processor)
 
     def test_call_on_accepted(self):
+        """
+        When processor-info messages are accepted, send ProcessorInfo message.
+        """
         plugin = ProcessorInfo()
         self.monitor.add(plugin)
 
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.replay()
-
+        self.remote.send_message = Mock()
         self.reactor.fire(
             ("message-type-acceptance-changed", "processor-info"),
             True)
+        self.remote.send_message.assert_called_once_with(ANY, ANY, urgent=True)
 
 
 class ResynchTest(LandscapeTest):
