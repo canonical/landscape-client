@@ -11,9 +11,7 @@ from landscape.tests.helpers import LandscapeTest
 class CleanFDsTests(LandscapeTest):
     """Tests for L{clean_fds}."""
 
-    def mock_rlimit(self, limit=None, side_effect=None):
-        if side_effect:
-            return patch.object(resource, "getrlimit", side_effect=side_effect)
+    def mock_rlimit(self, limit):
         return patch.object(resource, "getrlimit", return_value=[None, limit])
 
 
@@ -33,7 +31,6 @@ class CleanFDsTests(LandscapeTest):
         close_mock.assert_has_calls(calls, any_order=True)
         self.assert_rlimit(getrlimit_mock)
 
-
     def test_clean_fds_sanity(self):
         """
         If the process limit for file descriptors is very high (> 4096), then
@@ -41,12 +38,17 @@ class CleanFDsTests(LandscapeTest):
         """
         closed_fds = []
         
-        with patch.object(os, "close", side_effect=closed_fds.append):
+        with patch.object(
+                os, "close", side_effect=closed_fds.append) as close_mock:
             with self.mock_rlimit(limit=4100) as getrlimit_mock:
                 clean_fds()
 
         self.assert_rlimit(getrlimit_mock)
+
         expected_fds = range(3, 4096)
+        calls = [call(i) for i in expected_fds]
+        close_mock.assert_has_calls(calls, any_order=True)
+
         self.assertEqual(closed_fds, expected_fds)
 
     # def test_ignore_OSErrors(self):
@@ -63,7 +65,14 @@ class CleanFDsTests(LandscapeTest):
     #         closed_fds.append(fd)
     #         raise OSError("Bad FD!")
 
-    #     close_mock = self.mocker.replace("os.close", passthrough=False)
+    #     with patch.object(os, "close", side_effect=remember_and_throw):
+    #         clean_fds()
+        
+    #     calls = [call(i) for i in range(3, 10)]
+    #     close_mock.assert_has_calls(calls, any_order=True)
+
+
+    #         close_mock = self.mocker.replace("os.close", passthrough=False)
     #     close_mock(ANY)
     #     self.mocker.count(7)
     #     self.mocker.call(remember_and_throw)
