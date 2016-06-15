@@ -4,6 +4,8 @@ import sys
 import tempfile
 import stat
 
+import mock
+
 from twisted.internet.defer import gatherResults, succeed, fail
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
@@ -24,7 +26,7 @@ from landscape.tests.mocker import ANY, ARGS
 def get_default_environment():
     username = pwd.getpwuid(os.getuid())[0]
     uid, gid, home = get_user_info(username)
-    return  {
+    return {
         "PATH": UBUNTU_PATH,
         "USER": username,
         "HOME": home}
@@ -162,32 +164,46 @@ class RunScriptTests(LandscapeTest):
         # Get original umask.
         old_umask = os.umask(0)
         os.umask(old_umask)
-        mock_umask = self.mocker.replace("os.umask")
-        mock_umask(0022)
-        self.mocker.result(old_umask)
-        mock_umask(old_umask)
-        self.mocker.replay()
+
+        patch_umask = mock.patch("os.umask")
+        mock_umask = patch_umask.start()
+        mock_umask.return_value = old_umask
         result = self.plugin.run_script("/bin/sh", "umask")
-        result.addCallback(self.assertEqual, "%04o\n" % old_umask)
-        return result
+
+        def check(result):
+            self.assertEqual("%04o\n" % old_umask, result)
+            mock_umask.assert_has_calls(
+                [mock.call(0o22), mock.call(old_umask)])
+
+        result.addCallback(check)
+        return result.addCallback(lambda _: patch_umask.stop())
 
     def test_restore_umask_in_event_of_error(self):
         """
         We set the umask before executing the script, in the event that there's
         an error setting up the script, we want to restore the umask.
         """
-        mock_umask = self.mocker.replace("os.umask")
-        mock_umask(0022)
-        self.mocker.result(0077)
-        mock_mkdtemp = self.mocker.replace("tempfile.mkdtemp",
-                                           passthrough=False)
-        mock_mkdtemp()
-        self.mocker.throw(OSError("Fail!"))
-        mock_umask(0077)
-        self.mocker.replay()
-        result = self.plugin.run_script("/bin/sh", "umask",
-                                        attachments={u"file1": "some data"})
-        return self.assertFailure(result, OSError)
+        patch_umask = mock.patch("os.umask", return_value=0o077)
+        mock_umask = patch_umask.start()
+
+        patch_mkdtemp = mock.patch(
+            "tempfile.mkdtemp", side_effect=OSError("Fail!"))
+        mock_mkdtemp = patch_mkdtemp.start()
+
+        result = self.plugin.run_script(
+            "/bin/sh", "umask", attachments={u"file1": "some data"})
+
+        def check(error):
+            self.assertIsInstance(error.value, OSError)
+            self.assertEqual("Fail!", str(error.value))
+            mock_umask.assert_has_calls([mock.call(0o022)])
+            mock_mkdtemp.assert_called_with()
+
+        def cleanup(_):
+            patch_umask.stop()
+            patch_mkdtemp.stop()
+
+        return result.addErrback(check).addBoth(cleanup)
 
     def test_run_with_attachments(self):
         result = self.plugin.run_script(
@@ -213,15 +229,15 @@ class RunScriptTests(LandscapeTest):
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
         persist.save()
-        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
-                                         passthrough=False)
+
+        patch_fetch = mock.patch(
+            "landscape.manager.scriptexecution.fetch_async")
+        mock_fetch = patch_fetch.start()
+        mock_fetch.return_value = succeed("some other data")
+
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers,
-                   cainfo=None)
-        self.mocker.result(succeed("some other data"))
-        self.mocker.replay()
 
         result = self.plugin.run_script(
             u"/bin/sh",
@@ -230,9 +246,14 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertEqual(result, "file1\nsome other data")
+            mock_fetch.assert_called_with(
+                "https://localhost/attachment/14", headers=headers,
+                cainfo=None)
 
-        result.addCallback(check)
-        return result
+        def cleanup(_):
+            patch_fetch.stop()
+
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_run_with_attachment_ids_and_ssl(self):
         """
@@ -246,15 +267,15 @@ class RunScriptTests(LandscapeTest):
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
         persist.save()
-        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
-                                         passthrough=False)
+
+        patch_fetch = mock.patch(
+            "landscape.manager.scriptexecution.fetch_async")
+        mock_fetch = patch_fetch.start()
+        mock_fetch.return_value = succeed("some other data")
+
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers,
-                   cainfo="/some/key")
-        self.mocker.result(succeed("some other data"))
-        self.mocker.replay()
 
         result = self.plugin.run_script(
             u"/bin/sh",
@@ -263,9 +284,14 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertEqual(result, "file1\nsome other data")
+            mock_fetch.assert_called_with(
+                "https://localhost/attachment/14", headers=headers,
+                cainfo="/some/key")
 
-        result.addCallback(check)
-        return result
+        def cleanup(_):
+            patch_fetch.stop()
+
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_self_remove_script(self):
         """
@@ -293,17 +319,15 @@ class RunScriptTests(LandscapeTest):
         return result
 
     def _run_script(self, username, uid, gid, path):
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
         expected_uid = uid if uid != os.getuid() else None
         expected_gid = gid if gid != os.getgid() else None
 
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
 
-        self.mocker.replay()
+        # ignore the call to chown!
+        patch_chown = mock.patch("os.chown")
+        mock_chown = patch_chown.start()
 
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username)
 
@@ -312,14 +336,21 @@ class RunScriptTests(LandscapeTest):
         self.assertEqual(spawn[4], path)
         self.assertEqual(spawn[5], expected_uid)
         self.assertEqual(spawn[6], expected_gid)
-        result.addCallback(self.assertEqual, "foobar")
 
         protocol = spawn[0]
         protocol.childDataReceived(1, "foobar")
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
-        return result
+
+        def check(result):
+            mock_chown.assert_called_with()
+            self.assertEqual(result, "foobar")
+
+        def cleanup(_):
+            patch_chown.stop()
+
+        return result.addErrback(check).addBoth(cleanup)
 
     def test_user(self):
         """
@@ -341,16 +372,25 @@ class RunScriptTests(LandscapeTest):
         When the user specified to C{run_script} doesn't have a home, the
         script executes in '/'.
         """
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+        patch_getpwnam = mock.patch("pwd.getpwnam")
+        mock_getpwnam = patch_getpwnam.start()
 
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
 
-        self.expect(mock_getpwnam("user")).result(pwnam)
+        mock_getpwnam.return_value = pwnam
 
-        return self._run_script("user", 1234, 5678, "/")
+        result = self._run_script("user", 1234, 5678, "/")
+
+        def check(result):
+            mock_getpwnam.assert_called_with("user")
+
+        def cleanup(_):
+            patch_getpwnam.stop()
+
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_user_with_attachments(self):
         uid = os.getuid()
@@ -358,14 +398,11 @@ class RunScriptTests(LandscapeTest):
         username = info.pw_name
         gid = info.pw_gid
 
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ANY, uid, gid)
-        self.mocker.count(3)
+        patch_chown = mock.patch("os.chown")
+        mock_chown = patch_chown.start()
 
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-
-        self.mocker.replay()
 
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username,
             attachments={u"file 1": "some data"})
@@ -387,8 +424,13 @@ class RunScriptTests(LandscapeTest):
         def check(data):
             self.assertEqual(data, "foobar")
             self.assertFalse(os.path.exists(attachment_dir))
+            mock_chown.assert_has_calls(
+                [mock.call(mock.ANY, uid, gid) for x in range(3)])
 
-        return result.addCallback(check)
+        def cleanup(_):
+            patch_chown.stop()
+
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_limit_size(self):
         """Data returned from the command is limited."""
@@ -514,14 +556,13 @@ class RunScriptTests(LandscapeTest):
         """
         The script is removed after it is finished.
         """
-        mock_mkstemp = self.mocker.replace("tempfile.mkstemp",
-                                           passthrough=False)
         fd, filename = tempfile.mkstemp()
-        self.expect(mock_mkstemp()).result((fd, filename))
-        self.mocker.replay()
-        d = self.plugin.run_script("/bin/sh", "true")
-        d.addCallback(lambda ign: self.assertFalse(os.path.exists(filename)))
-        return d
+
+        with mock.patch("tempfile.mkstemp") as mock_mkstemp:
+            mock_mkstemp.return_value = (fd, filename)
+            d = self.plugin.run_script("/bin/sh", "true")
+            return d.addCallback(
+                lambda _: self.assertFalse(os.path.exists(filename)))
 
     def test_unknown_interpreter(self):
         """
