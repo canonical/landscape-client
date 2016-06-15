@@ -308,21 +308,19 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
-    def test_run_user(self):
+    @mock.patch("pwd.getpwnam")
+    def test_run_user(self, mock_getpwnam):
         filename = self.makeFile("some content")
         self.store.add_graph(123, filename, "bar")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
-
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
 
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
 
-        self.expect(mock_getpwnam("bar")).result(pwnam)
-        self.mocker.replay()
+        mock_getpwnam.return_value = pwnam
 
         result = self.graph_manager.run()
 
@@ -334,6 +332,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEqual(spawn[4], "/")
         self.assertEqual(spawn[5], 1234)
         self.assertEqual(spawn[6], 5678)
+        mock_getpwnam.assert_called_with("bar")
 
         self._exit_process_protocol(spawn[0], "spam")
 
