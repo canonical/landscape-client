@@ -707,14 +707,8 @@ class GetVersionedPersistTest(LandscapeTest):
             persist_filename = self.makePersistFile(content="")
             service_name = "monitor"
 
-        upgrade_managers = self.mocker.replace(
-            "landscape.upgraders.UPGRADE_MANAGERS", passthrough=False)
-        upgrade_manager = upgrade_managers["monitor"]
-        upgrade_manager.apply(ANY)
-
-        stash = []
-        self.mocker.call(stash.append)
-        self.mocker.replay()
-
-        persist = get_versioned_persist(FakeService())
-        self.assertEqual(stash[0], persist)
+        mock_monitor = mock.Mock()
+        with mock.patch.dict("landscape.upgraders.UPGRADE_MANAGERS",
+                             {"monitor": mock_monitor}):
+            persist = get_versioned_persist(FakeService())
+            mock_monitor.apply.assert_called_with(persist)
