@@ -59,7 +59,7 @@ class LandscapeServiceTest(LandscapeTest):
         A L{LandscapeService} installs the DBus extensions of bpickle.
         """
         TestService(self.config)
-        mock_install.assert_called_with()
+        mock_install.assert_called_once_with()
 
     def test_usr1_rotates_logs(self):
         """
