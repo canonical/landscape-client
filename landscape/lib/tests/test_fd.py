@@ -15,10 +15,6 @@ class CleanFDsTests(LandscapeTest):
         """Return a context with getrlimit patched for testing."""
         return patch.object(resource, "getrlimit", return_value=[None, limit])
 
-    def assert_getrlimit_called(self, patchee):
-        """getrlimit is called exactly once. """
-        patchee.assert_called_once_with(resource.RLIMIT_NOFILE)
-
     @patch("os.close")
     def test_clean_fds_rlimit(self, close_mock):
         """
@@ -30,7 +26,7 @@ class CleanFDsTests(LandscapeTest):
 
         calls = [call(i) for i in range(3, 10)]
         close_mock.assert_has_calls(calls, any_order=True)
-        self.assert_getrlimit_called(getrlimit_mock)
+        getrlimit_mock.assert_called_once_with(resource.RLIMIT_NOFILE)
 
     def test_clean_fds_sanity(self):
         """
@@ -44,7 +40,7 @@ class CleanFDsTests(LandscapeTest):
             with self.mock_getrlimit(4100) as getrlimit_mock:
                 clean_fds()
 
-        self.assert_getrlimit_called(getrlimit_mock)
+        getrlimit_mock.assert_called_once_with(resource.RLIMIT_NOFILE)
 
         expected_fds = range(3, 4096)
         calls = [call(i) for i in expected_fds]
@@ -68,7 +64,7 @@ class CleanFDsTests(LandscapeTest):
             with self.mock_getrlimit(10) as getrlimit_mock:
                 clean_fds()
 
-        self.assert_getrlimit_called(getrlimit_mock)
+        getrlimit_mock.assert_called_once_with(resource.RLIMIT_NOFILE)
         expected_fds = range(3, 10)
         calls = [call(i) for i in expected_fds]
         close_mock.assert_has_calls(calls, any_order=True)
