@@ -85,16 +85,14 @@ class HAServiceTests(LandscapeTest):
               u"high-availability service not supported.",
               "status": FAILED, "operation-id": 1}])
 
-    def test_incorrect_juju_unit(self):
+    @patch("logging.error",
+           return_value=("This computer is not juju unit some-other-service-0."
+                         " Unable to modify high-availability services."))
+    def test_incorrect_juju_unit(self, logging_mock):
         """
         When not the specific juju charmed computer, L{HAService} reponds
         with an error due to missing the JUJU_UNITS_BASE/$JUJU_UNIT dir.
         """
-        logging_mock = self.mocker.replace("logging.error")
-        logging_mock("This computer is not juju unit some-other-service-0. "
-                     "Unable to modify high-availability services.")
-        self.mocker.replay()
-
         self.manager.dispatch_message(
             {"type": "change-ha-service", "service-name": "some-other-service",
              "unit-name": "some-other-service-0", "service-state": "standby",
