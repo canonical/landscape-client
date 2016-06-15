@@ -72,10 +72,6 @@ class CleanFDsTests(LandscapeTest):
         """
         If other errors are raised from os.close, L{clean_fds} propagates them.
         """
-
-        def throw_up(fd):
-            raise MemoryError()
-
-        with patch("os.close", side_effect=throw_up):
+        with patch("os.close", side_effect=MemoryError()):
             with self.mock_getrlimit(10):
                 self.assertRaises(MemoryError, clean_fds)
