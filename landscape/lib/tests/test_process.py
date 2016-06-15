@@ -40,7 +40,9 @@ class ProcessInfoTest(LandscapeTest):
         stat = " ".join(stat_array)
         create_file(os.path.join(process_dir, "stat"), stat)
 
-    def test_missing_process_race(self):
+    @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
+    @mock.patch("os.listdir")
+    def test_missing_process_race(self, list_dir_mock, jiffies_mock):
         """
         We use os.listdir("/proc") to get the list of active processes, if a
         process ends before we attempt to read the process' information, then
@@ -65,29 +67,24 @@ class ProcessInfoTest(LandscapeTest):
             def close(self):
                 self.closed = True
 
-        @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
-        @mock.patch("os.listdir")
-        def do_test(list_dir_mock, detect_jiffies_mock):
 
-            list_dir_mock.return_value = ["12345"]
-            fakefile1 = FakeFile("test-binary")
-            fakefile2 = FakeFile(None)
+        list_dir_mock.return_value = ["12345"]
+        fakefile1 = FakeFile("test-binary")
+        fakefile2 = FakeFile(None)
 
-            with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
-                # This means "return fakefile1, then fakefile2"
-                open_mock.side_effect = [fakefile1, fakefile2]
-                process_info = ProcessInformation("/proc")
-                processes = list(process_info.get_all_process_info())
-                self.assertEqual(processes, [])
-                list_dir_mock.assert_called_with("/proc")
-                calls = [
-                    mock.call("/proc/12345/cmdline", "r"),
-                    mock.call("/proc/12345/status", "r")]
-                open_mock.assert_has_calls(calls)
-            self.assertTrue(fakefile1.closed)
-            self.assertTrue(fakefile2.closed)
-
-        do_test()
+        with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
+            # This means "return fakefile1, then fakefile2"
+            open_mock.side_effect = [fakefile1, fakefile2]
+            process_info = ProcessInformation("/proc")
+            processes = list(process_info.get_all_process_info())
+            self.assertEqual(processes, [])
+            list_dir_mock.assert_called_with("/proc")
+            calls = [
+                mock.call("/proc/12345/cmdline", "r"),
+                mock.call("/proc/12345/status", "r")]
+            open_mock.assert_has_calls(calls)
+        self.assertTrue(fakefile1.closed)
+        self.assertTrue(fakefile2.closed)
 
     def test_get_process_info_state(self):
         """
