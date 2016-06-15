@@ -246,28 +246,24 @@ class RunTest(LandscapeTest):
         self.assertFalse(logger.propagate)
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
-        mock_os = self.mocker.replace("os")
-        mock_os.getuid()
-        self.mocker.result(0)
+        with mock.patch.object(os, "getuid", return_value=0) as mock_getuid, \
+             mock.patch.object(
+                 os.path, "isdir", return_value=False) as mock_isdir, \
+             mock.patch.object(os, "mkdir") as mock_mkdir, \
+             mock.patch("__builtin__.open") as mock_open:
+            logger = getLogger("landscape-sysinfo")
+            self.assertEqual(logger.handlers, [])
 
-        # Ugh, sorry
-        mock_os.path.isdir("/var/log/landscape")
-        self.mocker.result(False)
-        mock_os.mkdir("/var/log/landscape")
+            setup_logging()
+            mock_getuid.assert_called_with()
+            mock_isdir.assert_called_with("/var/log/landscape")
+            mock_mkdir.assert_called_with("/var/log/landscape")
+            mock_open.assert_called_with("/var/log/landscape/sysinfo.log", "a")
 
-        self.mocker.replace("__builtin__.open", passthrough=False)(
-            "/var/log/landscape/sysinfo.log", "a")
-
-        self.mocker.replay()
-
-        logger = getLogger("landscape-sysinfo")
-        self.assertEqual(logger.handlers, [])
-
-        setup_logging()
-        handler = logger.handlers[0]
-        self.assertTrue(isinstance(handler, RotatingFileHandler))
-        self.assertEqual(handler.baseFilename,
-                         "/var/log/landscape/sysinfo.log")
+            handler = logger.handlers[0]
+            self.assertTrue(isinstance(handler, RotatingFileHandler))
+            self.assertEqual(handler.baseFilename,
+                             "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
         log_dir = self.makeFile()
