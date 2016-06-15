@@ -61,17 +61,15 @@ class HAServiceTests(LandscapeTest):
               u"Invalid cluster participation state requested BOGUS.",
               "status": FAILED, "operation-id": 1}])
 
-    def test_not_a_juju_computer(self):
+    @patch("logging.error",
+           return_value=("This computer is not deployed with juju. "
+                         "Changing high-availability service not supported."))
+    def test_not_a_juju_computer(self, loggin_mock):
         """
         When not a juju charmed computer, L{HAService} reponds with an error
         due to missing JUJU_UNITS_BASE dir.
         """
         self.ha_service.JUJU_UNITS_BASE = "/I/don't/exist"
-
-        logging_mock = self.mocker.replace("logging.error")
-        logging_mock("This computer is not deployed with juju. "
-                     "Changing high-availability service not supported.")
-        self.mocker.replay()
 
         self.manager.dispatch_message(
             {"type": "change-ha-service", "service-name": "my-service",
