@@ -1,3 +1,5 @@
+import mock
+
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.network import (
     get_active_device_info)
@@ -47,12 +49,10 @@ class NetworkDeviceTest(LandscapeTest):
         """When the active network devices change a message is generated."""
         self.plugin.exchange()
         self.mstore.delete_all_messages()
-        plugin = self.mocker.patch(self.plugin)
-        plugin._device_info()
-        self.mocker.result([])
-        self.mocker.replay()
-        self.plugin.exchange()
-        self.assertTrue(self.mstore.count_pending_messages())
+        with mock.patch.object(self.plugin, "_device_info"):
+            self.plugin._device_info.return_value = []
+            self.plugin.exchange()
+            self.assertTrue(self.mstore.count_pending_messages())
 
     def test_config(self):
         """The network device plugin is enabled by default."""
