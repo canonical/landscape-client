@@ -786,22 +786,14 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid, path, env):
+        def spawnProcess(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
 
-        process_factory = self.mocker.mock()
-        process_factory.spawnProcess(
-            ANY, ANY, uid=None, gid=None, path=ANY,
-            env=get_default_environment())
-        self.mocker.call(spawn_called)
-
-        self.mocker.replay()
+        process_factory = mock.Mock()
+        process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
 
         self.manager.add(
             ScriptExecutionPlugin(process_factory=process_factory))
@@ -814,10 +806,12 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "operation-id": 123,
                   "result-text": u"hi!\n",
                   "status": SUCCEEDED}])
+            process_factory.spawnProcess.assert_called_with(
+                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
+                env=get_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
-        result.addCallback(got_result)
-        return result
+        return result.addCallback(got_result)
 
     def test_binary_output(self):
         """
@@ -843,14 +837,12 @@ class ScriptExecutionMessageTests(LandscapeTest):
             self.assertEqual(
                 message["result-text"],
                 u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
-
-        def check(_):
             process_factory.spawnProcess.assert_called_with(
                 mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
                 env=get_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
-        return result.addCallback(got_result).addCallback(check)
+        return result.addCallback(got_result)
 
     def test_parse_error_causes_operation_failure(self):
         """
