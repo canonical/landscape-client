@@ -378,7 +378,7 @@ class S390XMessageTest(LandscapeTest):
 vendor_id       : IBM/S390
 # processors    : 4
 bogomips per cpu: 3033.00
-features	: esan3 zarch stfle msa ldisp eimm dfp etf3eh highgprs
+features	: esan3 zarch stfle msa ldisp eimm dfp etf3eh highgprs 
 cache0          : level=1 type=Data scope=Private size=128K line_size=256 associativity=8
 cache1          : level=1 type=Instruction scope=Private size=96K line_size=256 associativity=6
 cache2          : level=2 type=Data scope=Private size=2048K line_size=256 associativity=8
@@ -389,7 +389,7 @@ processor 0: version = FF,  identification = 018F67,  machine = 2964
 processor 1: version = FF,  identification = 018F67,  machine = 2964
 processor 2: version = FF,  identification = 018F67,  machine = 2964
 processor 3: version = FF,  identification = 018F67,  machine = 2964
-"""  # noqa
+""" # noqa
 
     def test_read_sample_s390x_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from an IBM zSeries machine."""
