@@ -322,17 +322,15 @@ class RunScriptTests(LandscapeTest):
         return result
 
     def _run_script(self, username, uid, gid, path):
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
         expected_uid = uid if uid != os.getuid() else None
         expected_gid = gid if gid != os.getgid() else None
 
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
 
-        self.mocker.replay()
+        # ignore the call to chown!
+        patch_chown = mock.patch("os.chown")
+        mock_chown = patch_chown.start()
 
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username)
 
@@ -341,14 +339,21 @@ class RunScriptTests(LandscapeTest):
         self.assertEqual(spawn[4], path)
         self.assertEqual(spawn[5], expected_uid)
         self.assertEqual(spawn[6], expected_gid)
-        result.addCallback(self.assertEqual, "foobar")
 
         protocol = spawn[0]
         protocol.childDataReceived(1, "foobar")
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
-        return result
+
+        def check(result):
+            mock_chown.assert_called_with()
+            self.assertEqual(result, "foobar")
+
+        def cleanup(_):
+            patch_chown.stop()
+
+        return result.addErrback(check).addCallback(cleanup)
 
     def test_user(self):
         """
@@ -370,16 +375,25 @@ class RunScriptTests(LandscapeTest):
         When the user specified to C{run_script} doesn't have a home, the
         script executes in '/'.
         """
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+        patch_getpwnam = mock.patch("pwd.getpwnam")
+        mock_getpwnam = patch_getpwnam.start()
 
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
 
-        self.expect(mock_getpwnam("user")).result(pwnam)
+        mock_getpwnam.return_value = pwnam
 
-        return self._run_script("user", 1234, 5678, "/")
+        result = self._run_script("user", 1234, 5678, "/")
+
+        def check(result):
+            mock_getpwnam.assert_called_with("user")
+
+        def cleanup(_):
+            patch_getpwnam.stop()
+
+        return result.addCallback(check).addCallback(cleanup)
 
     def test_user_with_attachments(self):
         uid = os.getuid()
