@@ -12,7 +12,6 @@ from landscape.broker.store import MessageStore
 from landscape.broker.ping import Pinger
 from landscape.broker.registration import RegistrationHandler
 from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
-from landscape.tests.mocker import MATCH
 from landscape.broker.tests.helpers import ExchangeHelper
 from landscape.broker.server import BrokerServer
 
@@ -367,15 +366,17 @@ class MessageExchangeTest(LandscapeTest):
         When a successful exchange occurs, that success is recorded in the
         message store.
         """
-        mock_message_store = self.mocker.proxy(self.mstore)
-        mock_message_store.record_success(MATCH(lambda x: type(x) is int))
-        self.mocker.result(None)
-        self.mocker.replay()
+        mock_record_success = mock.Mock()
+        self.mstore.record_success = mock_record_success
 
         exchanger = MessageExchange(
-            self.reactor, mock_message_store, self.transport,
+            self.reactor, self.mstore, self.transport,
             self.identity, self.exchange_store, self.config)
         exchanger.exchange()
+
+        mock_record_success.assert_called_with(mock.ANY)
+        self.assertTrue(
+            type(mock_record_success.call_args[0][0]) is int)
 
     def test_ancient_causes_resynchronize(self):
         """
