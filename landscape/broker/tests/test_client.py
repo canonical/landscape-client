@@ -1,3 +1,5 @@
+import mock
+
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
@@ -76,10 +78,9 @@ class BrokerClientTest(LandscapeTest):
         plugin.scope = "test"
         self.client.add(plugin)
 
-        plugin._resest = self.mocker.mock()
-        self.expect(plugin._reset())
-        self.mocker.replay()
+        plugin._reset = mock.Mock()
         self.client_reactor.fire("resynchronize")
+        plugin._reset.assert_called_once_with()
 
     def test_get_plugins(self):
         """
@@ -116,12 +117,11 @@ class BrokerClientTest(LandscapeTest):
         C{run_interval} seconds.
         """
         plugin = BrokerClientPlugin()
-        plugin.run = self.mocker.mock()
-        self.expect(plugin.run()).count(2)
-        self.mocker.replay()
+        plugin.run = mock.Mock()
         self.client.add(plugin)
         self.client_reactor.advance(plugin.run_interval)
         self.client_reactor.advance(plugin.run_interval)
+        self.assertEqual(2, plugin.run.call_count)
 
     def test_run_interval_blocked_during_resynch(self):
         """
@@ -159,11 +159,10 @@ class BrokerClientTest(LandscapeTest):
         the plugin will be run immediately at registration.
         """
         plugin = BrokerClientPlugin()
-        plugin.run = self.mocker.mock()
         plugin.run_immediately = True
-        self.expect(plugin.run()).count(1)
-        self.mocker.replay()
+        plugin.run = mock.Mock()
         self.client.add(plugin)
+        plugin.run.assert_called_once_with()
 
     def test_register_message(self):
         """
@@ -186,12 +185,11 @@ class BrokerClientTest(LandscapeTest):
         handler and return its value.
         """
         message = {"type": "foo"}
-        handle_message = self.mocker.mock()
-        self.expect(handle_message(message)).result(123)
-        self.mocker.replay()
+        handle_message = mock.Mock(return_value=123)
 
         def dispatch_message(result):
             self.assertEqual(self.client.dispatch_message(message), 123)
+            handle_message.assert_called_once_with(message)
 
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
@@ -202,9 +200,7 @@ class BrokerClientTest(LandscapeTest):
         by message handlers.
         """
         message = {"type": "foo"}
-        handle_message = self.mocker.mock()
-        self.expect(handle_message(message)).throw(ZeroDivisionError)
-        self.mocker.replay()
+        handle_message = mock.Mock(side_effect=ZeroDivisionError)
 
         self.log_helper.ignore_errors("Error running message handler.*")
 
@@ -212,6 +208,7 @@ class BrokerClientTest(LandscapeTest):
             self.assertIs(self.client.dispatch_message(message), None)
             self.assertTrue("Error running message handler for type 'foo'" in
                             self.logfile.getvalue())
+            handle_message.assert_called_once_with(message)
 
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
@@ -231,13 +228,11 @@ class BrokerClientTest(LandscapeTest):
         returns C{True} if an handler for it was found.
         """
         message = {"type": "foo"}
-
-        handle_message = self.mocker.mock()
-        handle_message(message)
-        self.mocker.replay()
+        handle_message = mock.Mock()
 
         def dispatch_message(result):
             self.assertEqual(self.client.message(message), True)
+            handle_message.assert_called_once_with(message)
 
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
@@ -256,11 +251,11 @@ class BrokerClientTest(LandscapeTest):
         plugins, if available.
         """
         plugin = BrokerClientPlugin()
-        plugin.exchange = self.mocker.mock()
-        plugin.exchange()
-        self.mocker.replay()
+        plugin.exchange = mock.Mock()
+
         self.client.add(plugin)
         self.client.exchange()
+        plugin.exchange.assert_called_once_with()
 
     def test_exchange_on_plugin_without_exchange_method(self):
         """
@@ -279,17 +274,18 @@ class BrokerClientTest(LandscapeTest):
         self.log_helper.ignore_errors(ZeroDivisionError)
         plugin1 = BrokerClientPlugin()
         plugin2 = BrokerClientPlugin()
-        plugin1.exchange = self.mocker.mock()
-        plugin2.exchange = self.mocker.mock()
-        self.expect(plugin1.exchange()).throw(ZeroDivisionError)
-        plugin2.exchange()
-        self.mocker.replay()
+
+        plugin1.exchange = mock.Mock(side_effect=ZeroDivisionError)
+        plugin2.exchange = mock.Mock()
+
         self.client.add(plugin1)
         self.client.add(plugin2)
         self.client.exchange()
         self.assertTrue("Error during plugin exchange" in
                         self.logfile.getvalue())
         self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
+        plugin1.exchange.assert_called_once_with()
+        plugin2.exchange.assert_called_once_with()
 
     def test_notify_exchange(self):
         """
@@ -298,35 +294,32 @@ class BrokerClientTest(LandscapeTest):
         logging the event.
         """
         plugin = BrokerClientPlugin()
-        plugin.exchange = self.mocker.mock()
-        plugin.exchange()
-        self.mocker.replay()
+        plugin.exchange = mock.Mock()
         self.client.add(plugin)
         self.client_reactor.fire("impending-exchange")
         self.assertTrue("Got notification of impending exchange. "
                         "Notifying all plugins." in self.logfile.getvalue())
+        plugin.exchange.assert_called_once_with()
 
     def test_fire_event(self):
         """
         The L{BrokerClient.fire_event} method makes the reactor fire the
         given event.
         """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
+        callback = mock.Mock()
         self.client_reactor.call_on("event", callback)
         self.client.fire_event("event")
+        callback.assert_called_once_with()
 
     def test_fire_event_with_arguments(self):
         """
         The L{BrokerClient.fire_event} accepts optional arguments and keyword
         arguments to pass to the registered callback.
         """
-        callback = self.mocker.mock()
-        callback(True, kwarg=2)
-        self.mocker.replay()
+        callback = mock.Mock()
         self.client_reactor.call_on("event", callback)
         self.client.fire_event("event", True, kwarg=2)
+        callback.assert_called_once_with(True, kwarg=2)
 
     def test_fire_event_with_mixed_results(self):
         """
@@ -334,16 +327,20 @@ class BrokerClientTest(LandscapeTest):
         and part not.
         """
         deferred = Deferred()
-        callback1 = self.mocker.mock()
-        callback2 = self.mocker.mock()
-        self.expect(callback1()).result(123)
-        self.expect(callback2()).result(deferred)
-        self.mocker.replay()
+        callback1 = mock.Mock(return_value=123)
+        callback2 = mock.Mock(return_value=deferred)
+
         self.client_reactor.call_on("event", callback1)
         self.client_reactor.call_on("event", callback2)
         result = self.client.fire_event("event")
         reactor.callLater(0, lambda: deferred.callback("abc"))
-        return self.assertSuccess(result, [123, "abc"])
+
+        def check_calls(result):
+            self.assertEqual(result, [123, "abc"])
+            callback1.assert_called_once_with()
+            callback2.assert_called_once_with()
+
+        return result.addCallback(check_calls)
 
     def test_fire_event_with_acceptance_changed(self):
         """
@@ -351,11 +348,10 @@ class BrokerClientTest(LandscapeTest):
         fired event will be a 2-tuple of the eventy type and the message type.
         """
         event_type = "message-type-acceptance-changed"
-        callback = self.mocker.mock()
-        callback(False)
-        self.mocker.replay()
+        callback = mock.Mock()
         self.client_reactor.call_on((event_type, "test"), callback)
         self.client.fire_event(event_type, "test", False)
+        callback.assert_called_once_with(False)
 
     def test_handle_reconnect(self):
         """
@@ -367,12 +363,17 @@ class BrokerClientTest(LandscapeTest):
         result2 = self.client.register_message("bar", lambda m: None)
 
         def got_result(result):
-            self.client.broker = self.mocker.mock()
-            self.client.broker.register_client_accepted_message_type("foo")
-            self.client.broker.register_client_accepted_message_type("bar")
-            self.client.broker.register_client("client")
-            self.mocker.replay()
+            broker = mock.Mock()
+            message_type_mock = mock.Mock()
+            register_mock = mock.Mock()
+            broker.register_client_accepted_message_type = message_type_mock
+            broker.register_client = register_mock
+            self.client.broker = broker
+
             self.client_reactor.fire("broker-reconnect")
+            calls = [mock.call("bar"), mock.call("foo")]
+            message_type_mock.assert_has_calls(calls, any_order=True)
+            register_mock.assert_called_once_with("client")
 
         return gather_results([result1, result2]).addCallback(got_result)
 
@@ -380,8 +381,7 @@ class BrokerClientTest(LandscapeTest):
         """
         The L{BrokerClient.exit} method causes the reactor to be stopped.
         """
-        self.client.reactor.stop = self.mocker.mock()
-        self.client.reactor.stop()
-        self.mocker.replay()
+        self.client.reactor.stop = mock.Mock()
         self.client.exit()
         self.client.reactor.advance(0.1)
+        self.client.reactor.stop.assert_called_once_with()
