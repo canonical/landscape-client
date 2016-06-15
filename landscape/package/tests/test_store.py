@@ -412,7 +412,7 @@ class PackageStoreTest(LandscapeTest):
         with mock.patch("time.time", return_value=123):
             request1 = self.store1.add_hash_id_request(["hash1"])
             request2 = self.store2.get_hash_id_request(request1.id)
-        self.assertEqual(request2.timestamp, 123)
+        self.assertEqual(123, request2.timestamp)
 
     def test_update_hash_id_request_timestamp(self):
         request1 = self.store1.add_hash_id_request(["hash1"])
@@ -483,7 +483,7 @@ class PackageStoreTest(LandscapeTest):
         with mock.patch("time.time", return_value=123):
             self.store1.add_task("reporter", [1])
         task = self.store2.get_next_task("reporter")
-        self.assertEqual(task.timestamp, 123)
+        self.assertEqual(123, task.timestamp)
 
     def test_next_tasks_ordered_by_timestamp(self):
         with mock.patch("time.time", return_value=222):
@@ -493,12 +493,12 @@ class PackageStoreTest(LandscapeTest):
             self.store1.add_task("reporter", [2])
 
         task = self.store2.get_next_task("reporter")
-        self.assertEqual(task.timestamp, 111)
+        self.assertEqual(111, task.timestamp)
 
         task.remove()
 
         task = self.store2.get_next_task("reporter")
-        self.assertEqual(task.timestamp, 222)
+        self.assertEqual(222, task.timestamp)
 
     def test_clear_hash_id_requests(self):
         request1 = self.store1.add_hash_id_request(["hash1"])
