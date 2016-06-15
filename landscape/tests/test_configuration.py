@@ -7,6 +7,7 @@ import os
 import sys
 import unittest
 
+import mock
 from twisted.internet.defer import succeed, fail, Deferred
 
 from landscape.broker.registration import InvalidCredentialsError
@@ -185,53 +186,20 @@ class GotErrorTests(unittest.TestCase):
 
 class PrintTextTest(LandscapeTest):
 
-    def test_default(self):
-        stdout_mock = self.mocker.replace("sys.stdout")
-
-        self.mocker.order()
-        stdout_mock.write("Hi!\n")
-        stdout_mock.flush()
-        self.mocker.unorder()
-
-        # Trial likes to flush things inside run().
-        stdout_mock.flush()
-        self.mocker.count(0, None)
-
-        self.mocker.replay()
-
+    @mock.patch("sys.stdout", new_callable=StringIO)
+    def test_default(self, stdout):
         print_text("Hi!")
+        self.assertEqual("Hi!\n", stdout.getvalue())
 
-    def test_error(self):
-        stderr_mock = self.mocker.replace("sys.stderr")
-
-        self.mocker.order()
-        stderr_mock.write("Hi!\n")
-        stderr_mock.flush()
-        self.mocker.unorder()
-
-        # Trial likes to flush things inside run().
-        stderr_mock.flush()
-        self.mocker.count(0, None)
-
-        self.mocker.replay()
-
+    @mock.patch("sys.stderr", new_callable=StringIO)
+    def test_error(self, stderr):
         print_text("Hi!", error=True)
+        self.assertEqual("Hi!\n", stderr.getvalue())
 
-    def test_end(self):
-        stdout_mock = self.mocker.replace("sys.stdout")
-
-        self.mocker.order()
-        stdout_mock.write("Hi!END")
-        stdout_mock.flush()
-        self.mocker.unorder()
-
-        # Trial likes to flush things inside run().
-        stdout_mock.flush()
-        self.mocker.count(0, None)
-
-        self.mocker.replay()
-
+    @mock.patch("sys.stdout", new_callable=StringIO)
+    def test_end(self, stdout):
         print_text("Hi!", "END")
+        self.assertEqual("Hi!END", stdout.getvalue())
 
 
 class LandscapeSetupScriptTest(LandscapeTest):
