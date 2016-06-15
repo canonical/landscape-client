@@ -1,5 +1,7 @@
 import os
 
+from mock import patch, Mock
+
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.bootstrap import (
@@ -16,85 +18,78 @@ class BootstrapPathTest(LandscapeTest):
         self.path = os.path.join(self.dirname, "$my_var")
         self.real_path = os.path.join(self.dirname, "my_var_value")
 
-    def test_username(self):
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        getpwnam("username").pw_uid
-        self.mocker.result(1234)
+    @patch("os.chown")
+    @patch("os.getuid")
+    @patch("pwd.getpwnam")
+    def test_username(self, getpwnam, getuid, chown):
+        getpwnam.return_value = Mock()
+        getpwnam.return_value.pw_uid = 1234
 
-        getuid = self.mocker.replace("os.getuid")
-        getuid()
-        self.mocker.result(0)
-
-        chown = self.mocker.replace("os.chown")
-        chown(self.real_path, 1234, -1)
-
-        self.mocker.replay()
+        getuid.return_value = 0
 
         file = self.bootstrap_class(self.real_path, username="username")
         file.bootstrap(my_var="my_var_value")
 
-    def test_group(self):
-        getgrnam = self.mocker.replace("grp.getgrnam")
-        getgrnam("group").gr_gid
-        self.mocker.result(5678)
+        getpwnam.assert_called_with("username")
+        getuid.assert_called_with()
+        chown.assert_called_with(self.real_path, 1234, -1)
 
-        getuid = self.mocker.replace("os.getuid")
-        getuid()
-        self.mocker.result(0)
+    @patch("os.chown")
+    @patch("os.getuid")
+    @patch("grp.getgrnam")
+    def test_group(self, getgrnam, getuid, chown):
+        getgrnam.return_value = Mock()
+        getgrnam.return_value.gr_gid = 5678
 
-        chown = self.mocker.replace("os.chown")
-        chown(self.real_path, -1, 5678)
-
-        self.mocker.replay()
+        getuid.return_value = 0
 
         file = self.bootstrap_class(self.path, group="group")
         file.bootstrap(my_var="my_var_value")
 
-    def test_mode(self):
-        chmod = self.mocker.replace("os.chmod")
-        chmod(self.real_path, 0644)
+        getgrnam.assert_called_with("group")
+        getuid.assert_called_with()
+        chown.assert_called_with(self.real_path, -1, 5678)
 
-        self.mocker.replay()
-
+    @patch("os.chmod")
+    def test_mode(self, chmod):
         file = self.bootstrap_class(self.path, mode=0644)
         file.bootstrap(my_var="my_var_value")
 
-    def test_all_details(self):
-        getuid = self.mocker.replace("os.getuid")
-        getuid()
-        self.mocker.result(0)
+        chmod.assert_called_with(self.real_path, 0644)
 
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        getpwnam("username").pw_uid
-        self.mocker.result(1234)
+    @patch("os.chmod")
+    @patch("os.chown")
+    @patch("grp.getgrnam")
+    @patch("pwd.getpwnam")
+    @patch("os.getuid")
+    def test_all_details(self, getuid, getpwnam, getgrnam, chown, chmod):
+        getuid.return_value = 0
 
-        getgrnam = self.mocker.replace("grp.getgrnam")
-        getgrnam("group").gr_gid
-        self.mocker.result(5678)
+        getpwnam.return_value = Mock()
+        getpwnam.return_value.pw_uid = 1234
 
-        chown = self.mocker.replace("os.chown")
-        chown(self.real_path, 1234, 5678)
-
-        chmod = self.mocker.replace("os.chmod")
-        chmod(self.real_path, 0644)
-
-        self.mocker.replay()
+        getgrnam.return_value = Mock()
+        getgrnam.return_value.gr_gid = 5678
 
         file = self.bootstrap_class(self.path, "username", "group", 0644)
         file.bootstrap(my_var="my_var_value")
 
-    def test_all_details_with_non_root(self):
-        getuid = self.mocker.replace("os.getuid")
-        getuid()
-        self.mocker.result(1000)
+        getuid.assert_called_with()
+        getpwnam.assert_called_with("username")
+        getgrnam.assert_called_with("group")
+        chown.assert_called_with(self.real_path, 1234, 5678)
+        chmod.assert_called_with(self.real_path, 0644)
 
-        chmod = self.mocker.replace("os.chmod")
-        chmod(self.real_path, 0644)
-
-        self.mocker.replay()
+    @patch("os.chmod")
+    @patch("os.getuid")
+    def test_all_details_with_non_root(self, getuid, chmod):
+        getuid.return_value = 1000
 
         file = self.bootstrap_class(self.path, "username", "group", 0644)
         file.bootstrap(my_var="my_var_value")
+
+        getuid.assert_called_with()
+        chmod.assert_called_with(self.real_path, 0644)
 
 
 class BootstrapCreationTest(BootstrapPathTest):
