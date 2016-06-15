@@ -129,10 +129,10 @@ class PackageMonitorTest(LandscapeTest):
     def test_spawn_reporter(self):
         command = self.makeFile("#!/bin/sh\necho 'I am the reporter!' >&2\n")
         os.chmod(command, 0755)
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result(command)
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            'landscape.monitor.packagemonitor.find_reporter_command',
+            return_value=command)
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -142,6 +142,7 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("I am the reporter!", log)
             self.assertNotIn(command, log)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
