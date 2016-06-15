@@ -1,3 +1,4 @@
+import mock
 import os
 import re
 
@@ -7,7 +8,6 @@ from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import create_file
 from landscape.monitor.computerinfo import ComputerInfo, METADATA_RETRY_MAX
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.tests.mocker import ANY
 
 SAMPLE_LSB_RELEASE = "DISTRIB_ID=Ubuntu\n"                         \
                      "DISTRIB_RELEASE=6.06\n"                      \
@@ -321,27 +321,25 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
     def test_computer_info_call_on_accepted(self):
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         self.monitor.add(plugin)
-
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.replay()
-
         self.mstore.set_accepted_types(["computer-info"])
-        self.reactor.fire(("message-type-acceptance-changed", "computer-info"),
-                          True)
+
+        with mock.patch.object(self.remote, "send_message"):
+            self.reactor.fire(("message-type-acceptance-changed",
+                               "computer-info"), True)
+            self.remote.send_message.assert_called_once_with(
+                mock.ANY, mock.ANY, urgent=True)
 
     def test_distribution_info_call_on_accepted(self):
         plugin = ComputerInfo()
         self.monitor.add(plugin)
 
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.replay()
-
         self.mstore.set_accepted_types(["distribution-info"])
-        self.reactor.fire(("message-type-acceptance-changed",
-                           "distribution-info"),
-                          True)
+
+        with mock.patch.object(self.remote, "send_message"):
+            self.reactor.fire(("message-type-acceptance-changed",
+                               "distribution-info"), True)
+            self.remote.send_message.assert_called_once_with(
+                mock.ANY, mock.ANY, urgent=True)
 
     def test_message_if_not_accepted(self):
         """
