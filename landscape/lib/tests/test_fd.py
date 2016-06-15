@@ -13,7 +13,7 @@ class CleanFDsTests(LandscapeTest):
 
     def mock_getrlimit(self, limit):
         """Return a context with getrlimit patched for testing."""
-        return patch.object(resource, "getrlimit", return_value=[None, limit])
+        return patch("resource.getrlimit", return_value=[None, limit])
 
     @patch("os.close")
     def test_clean_fds_rlimit(self, close_mock):
