@@ -1,5 +1,7 @@
 import os
 
+from mock import Mock
+
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.broker.service import BrokerService
@@ -70,13 +72,10 @@ class BrokerServiceTest(LandscapeTest):
         listening to the broker socket, and starts the L{Exchanger} and
         the L{Pinger} as well.
         """
-        self.service.exchanger.start = self.mocker.mock()
-        self.service.exchanger.start()
-        self.service.pinger.start = self.mocker.mock()
-        self.service.pinger.start()
-        self.service.exchanger.stop = self.mocker.mock()
-        self.service.exchanger.stop()
-        self.mocker.replay()
+        self.service.exchanger.start = Mock()
+        self.service.pinger.start = Mock()
+        self.service.exchanger.stop = Mock()
+
         self.service.startService()
         reactor = FakeReactor()
         connector = RemoteBrokerConnector(reactor, self.config)
@@ -84,4 +83,7 @@ class BrokerServiceTest(LandscapeTest):
         connected.addCallback(lambda remote: remote.get_server_uuid())
         connected.addCallback(lambda x: connector.disconnect())
         connected.addCallback(lambda x: self.service.stopService())
-        return connected
+
+        self.service.exchanger.start.assert_called_with()
+        self.service.pinger.start.assert_called_with()
+        self.service.exchanger.stop.assert_called_with()
