@@ -1,3 +1,5 @@
+from mock import Mock
+
 from landscape.monitor.monitor import Monitor
 from landscape.lib.persist import Persist
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
@@ -46,11 +48,10 @@ class MonitorTest(LandscapeTest):
         The L{Monitor.flush} method gets called every C{flush_interval}
         seconds, and perists data to the disk.
         """
-        self.monitor.persist.save = self.mocker.mock()
-        self.monitor.persist.save(self.monitor.persist_filename)
-        self.mocker.count(3)
-        self.mocker.replay()
+        self.monitor.persist.save = Mock()
         self.reactor.advance(self.config.flush_interval * 3)
+        self.monitor.persist.save.assert_called_with(self.monitor.persist_filename)
+        self.assertEqual(self.monitor.persist.save.call_count, 3)
 
     def test_creating_loads_persist(self):
         """
