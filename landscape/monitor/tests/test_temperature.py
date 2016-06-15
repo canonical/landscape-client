@@ -152,7 +152,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
         with mock.patch.object(self.remote, "send_message"):
             self.reactor.fire(("message-type-acceptance-changed",
                                "temperature"), True)
-            self.remote.send_message.assert_called_with(
+            self.remote.send_message.assert_called_once_with(
                 mock.ANY, mock.ANY, urgent=True)
 
     def test_no_message_if_not_accepted(self):
