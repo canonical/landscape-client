@@ -139,8 +139,7 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file()
 
         self.config.load([])  # This will call our mocked sys.exit.
-        mock_exit.assert_called_with(mock.ANY)
-        self.assertEqual(1, mock_exit.call_count)
+        mock_exit.assert_called_once_with(mock.ANY)
 
         self.config.load(["--foo-bar", "ooga"])
         self.assertEqual(self.config.foo_bar, "ooga")
