@@ -665,40 +665,39 @@ class ScriptExecutionMessageTests(LandscapeTest):
         factory = StubProcessFactory()
 
         # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
+        with mock.patch("os.chown"):
+            self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        self.manager.add(ScriptExecutionPlugin(process_factory=factory))
+            self.mocker.replay()
+            result = self._send_script(sys.executable, "print 'hi'",
+                                       server_supplied_env={"Dog": "Woof"})
 
-        self.mocker.replay()
-        result = self._send_script(sys.executable, "print 'hi'",
-                                   server_supplied_env={"Dog": "Woof"})
+            self._verify_script(
+                factory.spawns[0][1], sys.executable, "print 'hi'")
+            # Verify environment was passed
+            self.assertIn("HOME", factory.spawns[0][3])
+            self.assertIn("USER", factory.spawns[0][3])
+            self.assertIn("PATH", factory.spawns[0][3])
+            self.assertIn("Dog", factory.spawns[0][3])
+            self.assertEqual("Woof", factory.spawns[0][3]["Dog"])
 
-        self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
-        # Verify environment was passed
-        self.assertIn("HOME", factory.spawns[0][3])
-        self.assertIn("USER", factory.spawns[0][3])
-        self.assertIn("PATH", factory.spawns[0][3])
-        self.assertIn("Dog", factory.spawns[0][3])
-        self.assertEqual("Woof", factory.spawns[0][3]["Dog"])
-
-        self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(), [])
-
-        # Now let's simulate the completion of the process
-        factory.spawns[0][0].childDataReceived(1, "Woof\n")
-        factory.spawns[0][0].processEnded(Failure(ProcessDone(0)))
-
-        def got_result(r):
             self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result",
-                  "operation-id": 123,
-                  "status": SUCCEEDED,
-                  "result-text": u"Woof\n"}])
+                self.broker_service.message_store.get_pending_messages(), [])
 
-        result.addCallback(got_result)
-        return result
+            # Now let's simulate the completion of the process
+            factory.spawns[0][0].childDataReceived(1, "Woof\n")
+            factory.spawns[0][0].processEnded(Failure(ProcessDone(0)))
+
+            def got_result(r):
+                self.assertMessages(
+                    self.broker_service.message_store.get_pending_messages(),
+                    [{"type": "operation-result",
+                      "operation-id": 123,
+                      "status": SUCCEEDED,
+                      "result-text": u"Woof\n"}])
+
+            result.addCallback(got_result)
+            return result
 
     def test_user(self):
         """A user can be specified in the message."""
