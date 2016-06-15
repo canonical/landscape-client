@@ -73,12 +73,11 @@ class HAServiceTests(LandscapeTest):
              "unit-name": self.unit_name,
              "service-state": self.ha_service.STATE_STANDBY,
              "operation-id": 1})
-        
+
         logging_mock.assert_called_once_with(
             "This computer is not deployed with juju. Changing "
             "high-availability service not supported.")
 
-        
         service = self.broker_service
         self.assertMessages(
             service.message_store.get_pending_messages(),
