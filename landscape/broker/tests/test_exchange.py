@@ -1,3 +1,5 @@
+import mock
+
 from landscape import CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
@@ -687,10 +689,10 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(len(self.transport.payloads), 2)
 
     def test_pre_exchange_event(self):
-        reactor_mock = self.mocker.patch(self.reactor)
-        reactor_mock.fire("pre-exchange")
-        self.mocker.replay()
+        reactor_mock = mock.Mock()
+        self.exchanger._reactor = reactor_mock
         self.exchanger.exchange()
+        reactor_mock.fire.assert_called_once_with("pre-exchange")
 
     def test_schedule_exchange(self):
         self.exchanger.schedule_exchange()
