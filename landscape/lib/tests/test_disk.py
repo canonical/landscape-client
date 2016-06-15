@@ -122,7 +122,7 @@ class RemovableDiskTest(LandscapeTest):
 
         result = _get_device_removable_file_path(device)
 
-        is_link_mock.assert_called_with(device)
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
     @patch("os.path.islink")
@@ -139,7 +139,7 @@ class RemovableDiskTest(LandscapeTest):
 
         result = _get_device_removable_file_path(device)
 
-        is_link_mock.assert_called_with(device)
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
     @patch("os.path.islink")
@@ -156,7 +156,7 @@ class RemovableDiskTest(LandscapeTest):
 
         result = _get_device_removable_file_path(device)
 
-        is_link_mock.assert_called_with(device)
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
     @patch("os.path.islink")
@@ -176,8 +176,8 @@ class RemovableDiskTest(LandscapeTest):
         expected = "/sys/block/sda/removable"
         result = _get_device_removable_file_path(device)
 
-        readlink_mock.assert_called_with(device)
-        is_link_mock.assert_called_with(device)
+        readlink_mock.assert_called_once_with(device)
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
     @patch("os.path.islink")
@@ -195,7 +195,7 @@ class RemovableDiskTest(LandscapeTest):
         is_link_mock.return_value = False
 
         result = _get_device_removable_file_path(device)
-        is_link_mock.assert_called_with(device)
+        is_link_mock.assert_called_once_with(device)
         self.assertEqual(expected, result)
 
     @patch("landscape.lib.disk._get_device_removable_file_path")
@@ -210,7 +210,7 @@ class RemovableDiskTest(LandscapeTest):
         removable_mock.return_value = path
 
         self.assertTrue(is_device_removable(device))
-        removable_mock.assert_called_with(device)
+        removable_mock.assert_called_once_with(device)
 
     @patch("landscape.lib.disk._get_device_removable_file_path")
     def test_is_device_removable_false(self, removable_mock):
@@ -224,7 +224,7 @@ class RemovableDiskTest(LandscapeTest):
         removable_mock.return_value = path
 
         self.assertFalse(is_device_removable(device))
-        removable_mock.assert_called_with(device)
+        removable_mock.assert_called_once_with(device)
 
     @patch("landscape.lib.disk._get_device_removable_file_path")
     def test_is_device_removable_garbage(self, removable_mock):
@@ -238,7 +238,7 @@ class RemovableDiskTest(LandscapeTest):
         removable_mock.return_value = path
 
         self.assertFalse(is_device_removable(device))
-        removable_mock.assert_called_with(device)
+        removable_mock.assert_called_once_with(device)
 
     @patch("landscape.lib.disk._get_device_removable_file_path")
     def test_is_device_removable_path_doesnt_exist(self, removable_mock):
@@ -251,7 +251,7 @@ class RemovableDiskTest(LandscapeTest):
         removable_mock.return_value = path
 
         self.assertFalse(is_device_removable(device))
-        removable_mock.assert_called_with(device)
+        removable_mock.assert_called_once_with(device)
 
     @patch("os.path.islink")
     def test_is_removable_raid_device(self, is_link_mock):
@@ -264,7 +264,7 @@ class RemovableDiskTest(LandscapeTest):
         is_link_mock.return_value = False
 
         self.assertFalse(is_device_removable(device))
-        is_link_mock.assert_called_with(device)
+        is_link_mock.assert_called_once_with(device)
 
     def test_is_device_removable_memory_card(self):
         """
