@@ -39,8 +39,7 @@ class HAServiceTests(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
-    @patch("logging.error",
-           return_value="Invalid cluster participation state requested BOGUS.")
+    @patch("logging.error")
     def test_invalid_server_service_state_request(self, logging_mock):
         """
         When the landscape server requests a C{service-state} other than
@@ -51,6 +50,9 @@ class HAServiceTests(LandscapeTest):
              "unit-name": self.unit_name, "service-state": "BOGUS",
              "operation-id": 1})
 
+        logging_mock.assert_called_once_with(
+            "Invalid cluster participation state requested BOGUS.")
+
         service = self.broker_service
         self.assertMessages(
             service.message_store.get_pending_messages(),
@@ -58,10 +60,8 @@ class HAServiceTests(LandscapeTest):
               u"Invalid cluster participation state requested BOGUS.",
               "status": FAILED, "operation-id": 1}])
 
-    @patch("logging.error",
-           return_value=("This computer is not deployed with juju. "
-                         "Changing high-availability service not supported."))
-    def test_not_a_juju_computer(self, loggin_mock):
+    @patch("logging.error")
+    def test_not_a_juju_computer(self, logging_mock):
         """
         When not a juju charmed computer, L{HAService} reponds with an error
         due to missing JUJU_UNITS_BASE dir.
@@ -73,7 +73,12 @@ class HAServiceTests(LandscapeTest):
              "unit-name": self.unit_name,
              "service-state": self.ha_service.STATE_STANDBY,
              "operation-id": 1})
+        
+        logging_mock.assert_called_once_with(
+            "This computer is not deployed with juju. Changing "
+            "high-availability service not supported.")
 
+        
         service = self.broker_service
         self.assertMessages(
             service.message_store.get_pending_messages(),
@@ -82,9 +87,7 @@ class HAServiceTests(LandscapeTest):
               u"high-availability service not supported.",
               "status": FAILED, "operation-id": 1}])
 
-    @patch("logging.error",
-           return_value=("This computer is not juju unit some-other-service-0."
-                         " Unable to modify high-availability services."))
+    @patch("logging.error")
     def test_incorrect_juju_unit(self, logging_mock):
         """
         When not the specific juju charmed computer, L{HAService} reponds
@@ -94,6 +97,10 @@ class HAServiceTests(LandscapeTest):
             {"type": "change-ha-service", "service-name": "some-other-service",
              "unit-name": "some-other-service-0", "service-state": "standby",
              "operation-id": 1})
+
+        logging_mock.assert_called_once_with(
+            "This computer is not juju unit some-other-service-0."
+            " Unable to modify high-availability services.")
 
         service = self.broker_service
         self.assertMessages(
