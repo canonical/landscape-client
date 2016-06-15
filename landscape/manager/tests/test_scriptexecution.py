@@ -20,7 +20,6 @@ from landscape.manager.scriptexecution import (
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
-from landscape.tests.mocker import ANY, ARGS
 
 
 def get_default_environment():
@@ -515,7 +514,12 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    def test_script_is_owned_by_user(self):
+    @mock.patch("os.chown")
+    @mock.patch("os.chmod")
+    @mock.patch("tempfile.mkstemp")
+    @mock.patch("os.fdopen")
+    def test_script_is_owned_by_user(self, mock_fdopen, mock_mkstemp,
+                                     mock_chmod, mock_chown):
         """
         This is a very white-box test. When a script is generated, it must be
         created such that data NEVER gets into it before the file has the
@@ -525,32 +529,49 @@ class RunScriptTests(LandscapeTest):
         username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
-        mock_mkstemp = self.mocker.replace("tempfile.mkstemp",
-                                           passthrough=False)
-        mock_fdopen = self.mocker.replace("os.fdopen", passthrough=False)
-        process_factory = self.mocker.mock()
+        called_mocks = []
+
+        mock_chown.side_effect = lambda *_: called_mocks.append(mock_chown)
+        mock_chmod.side_effect = lambda *_: called_mocks.append(mock_chmod)
+
+        def mock_mkstemp_side_effect(*_):
+            called_mocks.append(mock_mkstemp)
+            return (99, "tempo!")
+
+        mock_mkstemp.side_effect = mock_mkstemp_side_effect
+
+        script_file = mock.Mock()
+
+        def mock_fdopen_side_effect(*_):
+            called_mocks.append(mock_fdopen)
+            return script_file
+
+        mock_fdopen.side_effect = mock_fdopen_side_effect
+
+        def spawnProcess(protocol, filename, uid, gid, path, env):
+            self.assertIsNone(uid)
+            self.assertIsNone(gid)
+            self.assertEqual(get_default_environment(), env)
+            protocol.result_deferred.callback(None)
+
+        process_factory = mock.Mock()
+        process_factory.spawnProcess = spawnProcess
         self.plugin.process_factory = process_factory
 
-        self.mocker.order()
+        result = self.plugin.run_script("/bin/sh", "code",
+                                        user=pwd.getpwuid(uid)[0])
 
-        self.expect(mock_mkstemp()).result((99, "tempo!"))
+        def check(_):
+            mock_fdopen.assert_called_with(99, "w")
+            mock_chmod.assert_called_with("tempo!", 0o700)
+            mock_chown.assert_called_with("tempo!", uid, gid)
+            script_file.write.assert_called_with("#!/bin/sh\ncode")
+            script_file.close.assert_called_with()
+            self.assertEqual(
+                [mock_mkstemp, mock_fdopen, mock_chmod, mock_chown],
+                called_mocks)
 
-        script_file = mock_fdopen(99, "w")
-        mock_chmod("tempo!", 0700)
-        mock_chown("tempo!", uid, gid)
-        # The contents are written *after* the permissions have been set up!
-        script_file.write("#!/bin/sh\ncode")
-        script_file.close()
-        process_factory.spawnProcess(
-            ANY, ANY, uid=None, gid=None, path=ANY,
-            env=get_default_environment())
-        self.mocker.replay()
-        # We don't really care about the deferred that's returned, as long as
-        # those things happened in the correct order.
-        self.plugin.run_script("/bin/sh", "code",
-                               user=pwd.getpwuid(uid)[0])
+        return result.addCallback(check)
 
     def test_script_removed(self):
         """
