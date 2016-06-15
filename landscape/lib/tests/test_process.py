@@ -73,8 +73,8 @@ class ProcessInfoTest(LandscapeTest):
             fakefile1 = FakeFile("test-binary")
             fakefile2 = FakeFile(None)
 
-            # This means "return fakefile1, then fakefile2"
             with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
+                # This means "return fakefile1, then fakefile2"
                 open_mock.side_effect = [fakefile1, fakefile2]
                 process_info = ProcessInformation("/proc")
                 processes = list(process_info.get_all_process_info())
