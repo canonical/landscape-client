@@ -227,15 +227,14 @@ class RunScriptTests(LandscapeTest):
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
         persist.save()
-        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
-                                         passthrough=False)
+
+        mock_fetch = mock.patch(
+            "landscape.manager.scriptexecution.fetch_async").start()
+        mock_fetch.return_value = succeed("some other data")
+
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers,
-                   cainfo=None)
-        self.mocker.result(succeed("some other data"))
-        self.mocker.replay()
 
         result = self.plugin.run_script(
             u"/bin/sh",
@@ -244,9 +243,14 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertEqual(result, "file1\nsome other data")
+            mock_fetch.assert_called_with(
+                "https://localhost/attachment/14", headers=headers,
+                cainfo=None)
 
-        result.addCallback(check)
-        return result
+        def cleanup(_):
+            mock_fetch.stop()
+
+        return result.addCallback(check).addCallback(cleanup)
 
     def test_run_with_attachment_ids_and_ssl(self):
         """
