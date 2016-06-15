@@ -1,29 +1,27 @@
 import array
-from cStringIO import StringIO
 import socket
+
+from mock import patch, ANY
+
+from cStringIO import StringIO
 from subprocess import Popen, PIPE
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
     get_fqdn, get_network_interface_speed)
-from landscape.tests.mocker import ANY
 
 
 class NetworkInfoTest(LandscapeTest):
 
-    def test_get_active_device_info(self):
+    @patch("landscape.lib.network.get_network_interface_speed")
+    def test_get_active_device_info(self, mock_get_network_interface_speed):
         """
         Device info returns a sequence of information about active
         network devices, compare and verify the output against
         that returned by ifconfig.
         """
-        mock_get_network_interface_speed = self.mocker.replace(
-            get_network_interface_speed)
-        mock_get_network_interface_speed(ANY, ANY)
-        self.mocker.result((100, True))
-        self.mocker.count(min=1, max=None)
-        self.mocker.replay()
+        mock_get_network_interface_speed.return_value = (100, True)
 
         device_info = get_active_device_info()
         result = Popen(["/sbin/ifconfig"], stdout=PIPE).communicate()[0]
@@ -52,35 +50,37 @@ class NetworkInfoTest(LandscapeTest):
             self.assertEqual(100, device["speed"])
             self.assertEqual(True, device["duplex"])
 
+        self.assertTrue(mock_get_network_interface_speed.call_count >= 1)
+        mock_get_network_interface_speed.assert_called_with(ANY, ANY)
+
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("lo", interfaces)
 
-    def test_skip_vlan(self):
+    @patch("landscape.lib.network.get_active_interfaces")
+    def test_skip_vlan(self, mock_get_active_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
-        mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
-        mock_get_active_interfaces(ANY)
-        self.mocker.passthrough(
-            result_callback=lambda result: list(result) + ["eth0.1"])
-        self.mocker.replay()
+        mock_get_active_interfaces.side_effect = lambda sock: (
+            list(get_active_interfaces(sock)) + ["eth0.1"])
         device_info = get_active_device_info()
+        mock_get_active_interfaces.assert_called_with(ANY)
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0.1", interfaces)
 
-    def test_skip_alias(self):
+    @patch("landscape.lib.network.get_active_interfaces")
+    def test_skip_alias(self, mock_get_active_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
-        mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
-        mock_get_active_interfaces(ANY)
-        self.mocker.passthrough(
-            result_callback=lambda result: list(result) + ["eth0:foo"])
-        self.mocker.replay()
+        mock_get_active_interfaces.side_effect = lambda sock: (
+            list(get_active_interfaces(sock)) + ["eth0:foo"])
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0:foo", interfaces)
 
-    def test_duplicate_network_interfaces(self):
+    @patch("struct.unpack")
+    @patch("fcntl.ioctl")
+    def test_duplicate_network_interfaces(self, mock_ioctl, mock_unpack):
         """
         L{get_active_interfaces} doesn't return duplicate network interfaces.
         The call to C{fcntl.ioctl} might return the same interface several
@@ -112,36 +112,33 @@ class NetworkInfoTest(LandscapeTest):
             "\x00\xac\x13\x02A")
 
         fake_array = array.array("B", response + "\0" * 4855)
-        mock_array = self.mocker.replace("array")
-        mock_array.array("B", ANY)
-        self.mocker.result(fake_array)
 
-        mock_ioctl = self.mocker.replace("fcntl")
-        mock_ioctl.ioctl(ANY, ANY, ANY)
-        self.mocker.result(0)
+        with patch("array.array") as mock_array:
+            mock_array.return_value = fake_array
+            mock_ioctl.return_value = 0
+            mock_unpack.return_value = (280, 38643456)
 
-        mock_unpack = self.mocker.replace("struct")
-        mock_unpack.unpack("iL", ANY)
-        self.mocker.result((280, 38643456))
+            sock = socket.socket(
+                socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+            interfaces = list(get_active_interfaces(sock))
 
-        self.mocker.replay()
+        mock_array.assert_called_with("B", ANY)
+        mock_ioctl.assert_called_with(ANY, ANY, ANY)
+        mock_unpack.assert_called_with("iL", ANY)
 
-        sock = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
         self.assertEqual(
             ["lo", "eth1:pub", "br1:metadata", "br1:0", "br1", "br1:priv"],
-            list(get_active_interfaces(sock)))
+            interfaces)
 
-    def test_get_network_traffic(self):
+    @patch("__builtin__.open")
+    def test_get_network_traffic(self, mock_open):
         """
         Network traffic is assessed via reading /proc/net/dev, verify
         the parsed output against a known sample.
         """
-        open_mock = self.mocker.replace("__builtin__.open")
-        open_mock("/proc/net/dev", "r")
-        self.mocker.result(StringIO(test_proc_net_dev_output))
-        self.mocker.replay()
+        mock_open.return_value = StringIO(test_proc_net_dev_output)
         traffic = get_network_traffic()
+        mock_open.assert_called_with("/proc/net/dev", "r")
         self.assertEqual(traffic, test_proc_net_dev_parsed)
 
 
@@ -214,46 +211,45 @@ class FQDNTest(LandscapeTest):
 
 class NetworkInterfaceSpeedTest(LandscapeTest):
 
-    def test_get_network_interface_speed(self):
+    @patch("struct.unpack")
+    @patch("fcntl.ioctl")
+    def test_get_network_interface_speed(self, mock_ioctl, mock_unpack):
         """
         The link speed is reported as unpacked from the ioctl() call.
         """
         sock = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
         # ioctl always succeeds
-        mock_ioctl = self.mocker.replace("fcntl")
-        mock_ioctl.ioctl(ANY, ANY, ANY)
-        self.mocker.result(0)
+        mock_unpack.return_value = (100, False)
 
-        mock_unpack = self.mocker.replace("struct")
-        mock_unpack.unpack("12xHB28x", ANY)
-        self.mocker.result((100, False))
+        result = get_network_interface_speed(sock, "eth0")
 
-        self.mocker.replay()
+        mock_ioctl.assert_called_with(ANY, ANY, ANY)
+        mock_unpack.assert_called_with("12xHB28x", ANY)
 
-        self.assertEqual((100, False),
-                         get_network_interface_speed(sock, "eth0"))
+        self.assertEqual((100, False), result)
 
-    def test_get_network_interface_speed_unplugged(self):
+    @patch("struct.unpack")
+    @patch("fcntl.ioctl")
+    def test_unplugged(self, mock_ioctl, mock_unpack):
         """
         The link speed for an unplugged interface is reported as 0.
         """
         sock = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+
         # ioctl always succeeds
-        mock_ioctl = self.mocker.replace("fcntl")
-        mock_ioctl.ioctl(ANY, ANY, ANY)
-        self.mocker.result((0, False))
+        mock_unpack.return_value = (65535, False)
 
-        mock_unpack = self.mocker.replace("struct")
-        mock_unpack.unpack("12xHB28x", ANY)
-        self.mocker.result((65535, False))
+        result = get_network_interface_speed(sock, "eth0")
 
-        self.mocker.replay()
+        mock_ioctl.assert_called_with(ANY, ANY, ANY)
+        mock_unpack.assert_called_with("12xHB28x", ANY)
 
-        self.assertEqual((0, False), get_network_interface_speed(sock, "eth0"))
+        self.assertEqual((0, False), result)
 
-    def test_get_network_interface_speed_not_supported(self):
+    @patch("fcntl.ioctl")
+    def test_get_network_interface_speed_not_supported(self, mock_ioctl):
         """
         Some drivers do not report the needed interface speed. In this case
         an C{IOError} with errno 95 is raised ("Operation not supported").
@@ -266,16 +262,16 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         theerror.message = "Operation not supported"
 
         # ioctl always raises
-        mock_ioctl = self.mocker.replace("fcntl")
-        mock_ioctl.ioctl(ANY, ANY, ANY)
-        self.mocker.throw(theerror)
+        mock_ioctl.side_effect = theerror
 
-        self.mocker.replay()
+        result = get_network_interface_speed(sock, "eth0")
 
-        self.assertEqual((-1, False),
-                         get_network_interface_speed(sock, "eth0"))
+        mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
-    def test_get_network_interface_speed_not_permitted(self):
+        self.assertEqual((-1, False), result)
+
+    @patch("fcntl.ioctl")
+    def test_get_network_interface_speed_not_permitted(self, mock_ioctl):
         """
         In some cases (lucid seems to be affected), the ioctl() call is not
         allowed for non-root users. In that case we intercept the error and
@@ -288,16 +284,16 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         theerror.message = "Operation not permitted"
 
         # ioctl always raises
-        mock_ioctl = self.mocker.replace("fcntl")
-        mock_ioctl.ioctl(ANY, ANY, ANY)
-        self.mocker.throw(theerror)
+        mock_ioctl.side_effect = theerror
 
-        self.mocker.replay()
+        result = get_network_interface_speed(sock, "eth0")
 
-        self.assertEqual((-1, False),
-                         get_network_interface_speed(sock, "eth0"))
+        mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
-    def test_get_network_interface_speed_other_io_error(self):
+        self.assertEqual((-1, False), result)
+
+    @patch("fcntl.ioctl")
+    def test_get_network_interface_speed_other_io_error(self, mock_ioctl):
         """
         In case we get an IOError that is not "Operation not permitted", the
         exception should be raised.
@@ -309,10 +305,6 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         theerror.message = "Whatever"
 
         # ioctl always raises
-        mock_ioctl = self.mocker.replace("fcntl")
-        mock_ioctl.ioctl(ANY, ANY, ANY)
-        self.mocker.throw(theerror)
-
-        self.mocker.replay()
+        mock_ioctl.side_effect = theerror
 
         self.assertRaises(IOError, get_network_interface_speed, sock, "eth0")
