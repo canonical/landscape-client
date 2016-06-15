@@ -2,7 +2,7 @@
 
 import os
 import resource
-from mock import Mock, patch, call
+from mock import patch, call
 
 from landscape.lib.fd import clean_fds
 from landscape.tests.helpers import LandscapeTest
@@ -27,7 +27,7 @@ class CleanFDsTests(LandscapeTest):
         """
         with self.mock_getrlimit(10) as getrlimit_mock:
             clean_fds()
-            
+
         calls = [call(i) for i in range(3, 10)]
         close_mock.assert_has_calls(calls, any_order=True)
         self.assert_getrlimit_called(getrlimit_mock)
@@ -38,7 +38,7 @@ class CleanFDsTests(LandscapeTest):
         we only close 4096 file descriptors.
         """
         closed_fds = []
-        
+
         with patch.object(
                 os, "close", side_effect=closed_fds.append) as close_mock:
             with self.mock_getrlimit(4100) as getrlimit_mock:
@@ -68,7 +68,7 @@ class CleanFDsTests(LandscapeTest):
             with self.mock_getrlimit(10) as getrlimit_mock:
                 clean_fds()
 
-        self.assert_getrlimit_called(getrlimit_mock)                
+        self.assert_getrlimit_called(getrlimit_mock)
         expected_fds = range(3, 10)
         calls = [call(i) for i in expected_fds]
         close_mock.assert_has_calls(calls, any_order=True)
@@ -81,9 +81,8 @@ class CleanFDsTests(LandscapeTest):
 
         def throw_up(fd):
             raise MemoryError()
-        
-        with patch.object(
-                os, "close", side_effect=throw_up) as close_mock:
-            with self.mock_getrlimit(10):
-                self.assertRaises(MemoryError, clean_fds)            
 
+        with patch.object(
+                os, "close", side_effect=throw_up):
+            with self.mock_getrlimit(10):
+                self.assertRaises(MemoryError, clean_fds)
