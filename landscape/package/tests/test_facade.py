@@ -14,7 +14,7 @@ from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,
     LandscapeInstallProgress)
 
-from landscape.tests.mocker import ANY
+import mock
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
@@ -1178,13 +1178,11 @@ class AptFacadeTest(LandscapeTest):
         to be printed to stderr.
         """
         progress = LandscapeInstallProgress()
-        sys_except_hook = self.mocker.replace("sys.__excepthook__")
-        error = SystemError("error")
-        tb = object()
-        sys_except_hook(SystemError, error, tb)
-        self.mocker.result(None)
-        self.mocker.replay()
-        progress._prevent_dpkg_apport_error(SystemError, error, tb)
+        with mock.patch("sys.__excepthook__") as sys_except_hook:
+            error = SystemError("error")
+            tb = object()
+            progress._prevent_dpkg_apport_error(SystemError, error, tb)
+            sys_except_hook.assert_called_once_with(SystemError, error, tb)
 
     def test_prevent_dpkg_apport_error_non_system_error(self):
         """
@@ -1679,20 +1677,20 @@ class AptFacadeTest(LandscapeTest):
         old_stdout = os.dup(1)
         old_stderr = os.dup(2)
         fd, outfile = tempfile.mkstemp()
-        mkstemp = self.mocker.replace("tempfile.mkstemp")
-        mkstemp()
-        self.mocker.result((fd, outfile))
-        dup = self.mocker.replace("os.dup")
-        dup(1)
-        self.mocker.result(old_stdout)
-        dup(2)
-        self.mocker.result(old_stderr)
-        dup2 = self.mocker.replace("os.dup2")
-        dup2(old_stdout, 1)
-        self.mocker.passthrough()
-        dup2(old_stderr, 2)
-        self.mocker.passthrough()
-        return outfile
+        mkstemp_patcher = mock.patch("tempfile.mkstemp")
+        mock_mkstemp = mkstemp_patcher.start()
+        self.addCleanup(mkstemp_patcher.stop)
+        mock_mkstemp.return_value = (fd, outfile)
+
+        dup_patcher = mock.patch("os.dup")
+        mock_dup = dup_patcher.start()
+        self.addCleanup(dup_patcher.stop)
+        mock_dup.side_effect = lambda fd: {1: old_stdout, 2: old_stderr}[fd]
+
+        dup2_patcher = mock.patch("os.dup2", wraps=os.dup2)
+        mock_dup2 = dup2_patcher.start()
+        self.addCleanup(dup2_patcher.stop)
+        return outfile, mock_dup2
 
     def test_perform_changes_dpkg_output_reset(self):
         """
@@ -1705,12 +1703,13 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
-        outfile = self._mock_output_restore()
-        self.mocker.replay()
+        outfile, mock_dup2 = self._mock_output_restore()
         self.patch_cache_commit()
         self.facade.perform_changes()
         # Make sure we don't leave the tempfile behind.
         self.assertFalse(os.path.exists(outfile))
+        mock_dup2.assert_any_call(mock.ANY, 1)
+        mock_dup2.assert_any_call(mock.ANY, 2)
 
     def test_perform_changes_dpkg_output_reset_error(self):
         """
@@ -1724,8 +1723,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
-        outfile = self._mock_output_restore()
-        self.mocker.replay()
+        outfile, mock_dup2 = self._mock_output_restore()
 
         def commit(fetch_progress, install_progress):
             raise SystemError("Error")
@@ -1734,6 +1732,8 @@ class AptFacadeTest(LandscapeTest):
         self.assertRaises(TransactionError, self.facade.perform_changes)
         # Make sure we don't leave the tempfile behind.
         self.assertFalse(os.path.exists(outfile))
+        mock_dup2.assert_any_call(mock.ANY, 1)
+        mock_dup2.assert_any_call(mock.ANY, 2)
 
     def test_reset_marks(self):
         """
@@ -2154,12 +2154,12 @@ class AptFacadeTest(LandscapeTest):
 
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
-        cache = self.mocker.replace(self.facade._cache)
-        cache.commit(fetch_progress=ANY, install_progress=ANY)
-        self.mocker.throw(SystemError("Something went wrong."))
-        self.mocker.replay()
-        exception = self.assertRaises(TransactionError,
-                                      self.facade.perform_changes)
+        with mock.patch.object(self.facade._cache, "commit") as mock_commit:
+            mock_commit.side_effect = SystemError("Something went wrong.")
+            exception = self.assertRaises(TransactionError,
+                                          self.facade.perform_changes)
+            mock_commit.assert_called_with(
+                fetch_progress=mock.ANY, install_progress=mock.ANY)
         self.assertIn("Something went wrong.", exception.args[0])
 
     def test_mark_install_transaction_error(self):

@@ -1,6 +1,7 @@
+import mock
+
 from landscape.monitor.loadaverage import LoadAverage
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.tests.mocker import ANY
 
 
 def get_load_average():
@@ -133,12 +134,11 @@ class LoadAveragePluginTest(LandscapeTest):
 
         self.reactor.advance(self.monitor.step_size * 1)
 
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.replay()
-
-        self.reactor.fire(("message-type-acceptance-changed", "load-average"),
-                          True)
+        with mock.patch.object(self.remote, "send_message"):
+            self.reactor.fire(("message-type-acceptance-changed",
+                               "load-average"), True)
+            self.remote.send_message.assert_called_once_with(
+                mock.ANY, mock.ANY, urgent=True)
 
     def test_no_message_if_not_accepted(self):
         """
