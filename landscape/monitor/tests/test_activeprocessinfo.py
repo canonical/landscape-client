@@ -533,8 +533,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10)
         self.monitor.add(plugin)
 
-        self.monitor.broker.send_message = Mock()
-        self.monitor.broker.send_message.side_effect = [fail(MyException())]
+        self.monitor.broker.send_message = Mock(return_value=fail(MyException()))
 
         message = plugin.get_message()
 
