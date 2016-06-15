@@ -155,7 +155,6 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
             self.remote.send_message.assert_called_with(
                 mock.ANY, mock.ANY, urgent=True)
 
-
     def test_no_message_if_not_accepted(self):
         """
         Don't add any messages at all if the broker isn't currently
