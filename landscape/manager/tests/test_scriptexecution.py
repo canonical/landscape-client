@@ -183,13 +183,11 @@ class RunScriptTests(LandscapeTest):
         We set the umask before executing the script, in the event that there's
         an error setting up the script, we want to restore the umask.
         """
-        patch_umask = mock.patch(
-            "landscape.manager.scriptexecution.os.umask", return_value=0o077)
+        patch_umask = mock.patch("os.umask", return_value=0o077)
         mock_umask = patch_umask.start()
 
         patch_mkdtemp = mock.patch(
-            "landscape.manager.scriptexecution.tempfile.mkdtemp",
-            side_effect=OSError("Fail!"))
+            "tempfile.mkdtemp", side_effect=OSError("Fail!"))
         mock_mkdtemp = patch_mkdtemp.start()
 
         result = self.plugin.run_script(
@@ -205,7 +203,7 @@ class RunScriptTests(LandscapeTest):
             patch_umask.stop()
             patch_mkdtemp.stop()
 
-        return result.addErrback(check).addCallback(cleanup)
+        return result.addErrback(check).addBoth(cleanup)
 
     def test_run_with_attachments(self):
         result = self.plugin.run_script(
@@ -255,7 +253,7 @@ class RunScriptTests(LandscapeTest):
         def cleanup(_):
             patch_fetch.stop()
 
-        return result.addCallback(check).addCallback(cleanup)
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_run_with_attachment_ids_and_ssl(self):
         """
@@ -293,7 +291,7 @@ class RunScriptTests(LandscapeTest):
         def cleanup(_):
             patch_fetch.stop()
 
-        return result.addCallback(check).addCallback(cleanup)
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_self_remove_script(self):
         """
@@ -352,7 +350,7 @@ class RunScriptTests(LandscapeTest):
         def cleanup(_):
             patch_chown.stop()
 
-        return result.addErrback(check).addCallback(cleanup)
+        return result.addErrback(check).addBoth(cleanup)
 
     def test_user(self):
         """
@@ -392,7 +390,7 @@ class RunScriptTests(LandscapeTest):
         def cleanup(_):
             patch_getpwnam.stop()
 
-        return result.addCallback(check).addCallback(cleanup)
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_user_with_attachments(self):
         uid = os.getuid()
@@ -432,7 +430,7 @@ class RunScriptTests(LandscapeTest):
         def cleanup(_):
             patch_chown.stop()
 
-        return result.addCallback(check).addCallback(cleanup)
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_limit_size(self):
         """Data returned from the command is limited."""
