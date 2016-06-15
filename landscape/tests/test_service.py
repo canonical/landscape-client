@@ -5,7 +5,6 @@ import mock
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
-import landscape.lib.bpickle_dbus
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
