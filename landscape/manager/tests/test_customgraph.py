@@ -365,11 +365,9 @@ class CustomGraphManagerTests(LandscapeTest):
 
         return result.addCallback(check)
 
-    def test_run_unknown_user(self):
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
-        mock_getpwnam("foo")
-        self.mocker.throw(KeyError("foo"))
-        self.mocker.replay()
+    @mock.patch("pwd.getpwnam")
+    def test_run_unknown_user(self, mock_getpwnam):
+        mock_getpwnam.side_effect = KeyError("foo")
 
         self.manager.config.script_users = "foo"
 
@@ -389,6 +387,7 @@ class CustomGraphManagerTests(LandscapeTest):
                        "script-hash": "",
                        "values": []}},
                   "type": "custom-graph"}])
+            mock_getpwnam.assert_called_with("foo")
 
         return result.addCallback(check)
 
