@@ -1678,27 +1678,19 @@ class AptFacadeTest(LandscapeTest):
         old_stderr = os.dup(2)
         fd, outfile = tempfile.mkstemp()
         mkstemp_patcher = mock.patch("tempfile.mkstemp")
-        mkstemp = mkstemp_patcher.start()
+        mock_mkstemp = mkstemp_patcher.start()
         self.addCleanup(mkstemp_patcher.stop)
-        mkstemp.return_value = (fd, outfile)
+        mock_mkstemp.return_value = (fd, outfile)
 
         dup_patcher = mock.patch("os.dup")
-        dup = dup_patcher.start()
+        mock_dup = dup_patcher.start()
         self.addCleanup(dup_patcher.stop)
-        dup.side_effect = lambda fd: {1: old_stdout, 2: old_stderr}[fd]
+        mock_dup.side_effect = lambda fd: {1: old_stdout, 2: old_stderr}[fd]
 
-        orig_dup2 = os.dup2
-        dup2_patcher = mock.patch("os.dup2")
-        dup2 = dup2_patcher.start()
+        dup2_patcher = mock.patch("os.dup2", wraps=os.dup2)
+        mock_dup2 = dup2_patcher.start()
         self.addCleanup(dup2_patcher.stop)
-
-        def fake_dup2(old_fd, new_fd):
-            if old_fd == old_stdout and new_fd == 1:
-                orig_dup2(old_fd, new_fd)
-            if old_fd == old_stderr and new_fd == 2:
-                orig_dup2(old_fd, new_fd)
-        dup2.side_effect = fake_dup2
-        return outfile
+        return outfile, mock_dup2
 
     def test_perform_changes_dpkg_output_reset(self):
         """
@@ -1711,11 +1703,13 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
-        outfile = self._mock_output_restore()
+        outfile, mock_dup2 = self._mock_output_restore()
         self.patch_cache_commit()
         self.facade.perform_changes()
         # Make sure we don't leave the tempfile behind.
         self.assertFalse(os.path.exists(outfile))
+        mock_dup2.assert_any_call(mock.ANY, 1)
+        mock_dup2.assert_any_call(mock.ANY, 2)
 
     def test_perform_changes_dpkg_output_reset_error(self):
         """
@@ -1729,7 +1723,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
-        outfile = self._mock_output_restore()
+        outfile, mock_dup2 = self._mock_output_restore()
 
         def commit(fetch_progress, install_progress):
             raise SystemError("Error")
@@ -1738,6 +1732,8 @@ class AptFacadeTest(LandscapeTest):
         self.assertRaises(TransactionError, self.facade.perform_changes)
         # Make sure we don't leave the tempfile behind.
         self.assertFalse(os.path.exists(outfile))
+        mock_dup2.assert_any_call(mock.ANY, 1)
+        mock_dup2.assert_any_call(mock.ANY, 2)
 
     def test_reset_marks(self):
         """
@@ -2158,11 +2154,11 @@ class AptFacadeTest(LandscapeTest):
 
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
-        with mock.patch.object(self.facade._cache, "commit") as cache:
-            cache.side_effect = SystemError("Something went wrong.")
+        with mock.patch.object(self.facade._cache, "commit") as mock_commit:
+            mock_commit.side_effect = SystemError("Something went wrong.")
             exception = self.assertRaises(TransactionError,
                                           self.facade.perform_changes)
-            cache.assert_called_with(
+            mock_commit.assert_called_with(
                 fetch_progress=mock.ANY, install_progress=mock.ANY)
         self.assertIn("Something went wrong.", exception.args[0])
 
