@@ -364,16 +364,14 @@ class BrokerClientTest(LandscapeTest):
 
         def got_result(result):
             broker = mock.Mock()
-            message_type_mock = mock.Mock()
-            register_mock = mock.Mock()
-            broker.register_client_accepted_message_type = message_type_mock
-            broker.register_client = register_mock
             self.client.broker = broker
 
             self.client_reactor.fire("broker-reconnect")
             calls = [mock.call("bar"), mock.call("foo")]
-            message_type_mock.assert_has_calls(calls, any_order=True)
-            register_mock.assert_called_once_with("client")
+
+            broker.register_client_accepted_message_type.assert_has_calls(
+                calls, any_order=True)
+            broker.register_client.assert_called_once_with("client")
 
         return gather_results([result1, result2]).addCallback(got_result)
 
