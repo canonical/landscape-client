@@ -50,7 +50,8 @@ class MonitorTest(LandscapeTest):
         """
         self.monitor.persist.save = Mock()
         self.reactor.advance(self.config.flush_interval * 3)
-        self.monitor.persist.save.assert_called_with(self.monitor.persist_filename)
+        self.monitor.persist.save.assert_called_with(
+            self.monitor.persist_filename)
         self.assertEqual(self.monitor.persist.save.call_count, 3)
 
     def test_creating_loads_persist(self):
