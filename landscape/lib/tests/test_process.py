@@ -1,4 +1,5 @@
 import unittest
+import mock
 import os
 
 from landscape.tests.helpers import LandscapeTest
@@ -45,9 +46,6 @@ class ProcessInfoTest(LandscapeTest):
         process ends before we attempt to read the process' information, then
         this should not trigger an error.
         """
-        listdir_mock = self.mocker.replace("os.listdir")
-        listdir_mock("/proc")
-        self.mocker.result(["12345"])
 
         class FakeFile(object):
 
@@ -67,22 +65,29 @@ class ProcessInfoTest(LandscapeTest):
             def close(self):
                 self.closed = True
 
-        open_mock = self.mocker.replace("__builtin__.open")
-        open_mock("/proc/12345/cmdline", "r")
-        fakefile1 = FakeFile("test-binary")
-        self.mocker.result(fakefile1)
+        @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
+        @mock.patch("os.listdir")
+        def do_test(list_dir_mock, detect_jiffies_mock):
 
-        open_mock("/proc/12345/status", "r")
-        fakefile2 = FakeFile(None)
-        self.mocker.result(fakefile2)
+            list_dir_mock.return_value = ["12345"]
+            fakefile1 = FakeFile("test-binary")
+            fakefile2 = FakeFile(None)
 
-        self.mocker.replay()
+            # This means "return fakefile1, then fakefile2"
+            with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
+                open_mock.side_effect = [fakefile1, fakefile2]
+                process_info = ProcessInformation("/proc")
+                processes = list(process_info.get_all_process_info())
+                self.assertEqual(processes, [])
+                list_dir_mock.assert_called_with("/proc")
+                calls = [
+                    mock.call("/proc/12345/cmdline", "r"),
+                    mock.call("/proc/12345/status", "r")]
+                open_mock.assert_has_calls(calls)
+            self.assertTrue(fakefile1.closed)
+            self.assertTrue(fakefile2.closed)
 
-        process_info = ProcessInformation("/proc")
-        processes = list(process_info.get_all_process_info())
-        self.assertEqual(processes, [])
-        self.assertTrue(fakefile1.closed)
-        self.assertTrue(fakefile2.closed)
+        do_test()
 
     def test_get_process_info_state(self):
         """
