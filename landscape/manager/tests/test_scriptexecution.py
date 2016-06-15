@@ -4,6 +4,8 @@ import sys
 import tempfile
 import stat
 
+import mock
+
 from twisted.internet.defer import gatherResults, succeed, fail
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
@@ -162,14 +164,18 @@ class RunScriptTests(LandscapeTest):
         # Get original umask.
         old_umask = os.umask(0)
         os.umask(old_umask)
-        mock_umask = self.mocker.replace("os.umask")
-        mock_umask(0022)
-        self.mocker.result(old_umask)
-        mock_umask(old_umask)
-        self.mocker.replay()
+
+        mock_umask = mock.patch("os.umask").start()
+        mock_umask.return_value = old_umask
         result = self.plugin.run_script("/bin/sh", "umask")
-        result.addCallback(self.assertEqual, "%04o\n" % old_umask)
-        return result
+
+        def check(result):
+            self.assertEqual("%04o\n" % old_umask, result)
+            mock_umask.assert_has_calls(
+                [mock.call(0022), mock.call(old_umask)])
+
+        result.addCallback(check)
+        return result.addCallback(lambda _: mock_umask.stop())
 
     def test_restore_umask_in_event_of_error(self):
         """
