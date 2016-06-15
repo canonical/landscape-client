@@ -1,10 +1,10 @@
+import mock
 import os
 import tempfile
 
 from landscape.monitor.temperature import Temperature
 from landscape.lib.tests.test_sysstats import ThermalZoneTest
 from landscape.tests.helpers import MonitorHelper
-from landscape.tests.mocker import ANY
 
 
 class TemperatureTestWithSampleData(ThermalZoneTest):
@@ -149,12 +149,12 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
 
         self.reactor.advance(plugin.registry.step_size)
 
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.replay()
+        with mock.patch.object(self.remote, "send_message"):
+            self.reactor.fire(("message-type-acceptance-changed",
+                               "temperature"), True)
+            self.remote.send_message.assert_called_with(
+                mock.ANY, mock.ANY, urgent=True)
 
-        self.reactor.fire(("message-type-acceptance-changed", "temperature"),
-                          True)
 
     def test_no_message_if_not_accepted(self):
         """
