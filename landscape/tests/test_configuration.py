@@ -707,34 +707,25 @@ class LandscapeSetupScriptTest(LandscapeTest):
         call, = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
-    @mock.patch(
-        "landscape.configuration.LandscapeSetupScript.query_tags")
-    @mock.patch(
-        "landscape.configuration.LandscapeSetupScript.query_access_group")
-    @mock.patch(
-        "landscape.configuration.LandscapeSetupScript.query_script_plugin")
-    @mock.patch(
-        "landscape.configuration.LandscapeSetupScript.query_proxies")
-    @mock.patch(
-        "landscape.configuration.LandscapeSetupScript.query_registration_key")
-    @mock.patch(
-        "landscape.configuration.LandscapeSetupScript.query_account_name")
-    @mock.patch(
-        "landscape.configuration.LandscapeSetupScript.query_computer_title")
-    @mock.patch("landscape.configuration.LandscapeSetupScript.show_header")
-    def test_run(self, mock_show_header, mock_query_computer_title,
-                 mock_query_account_name, mock_query_registration_key,
-                 mock_query_proxies, mock_query_script_plugin,
-                 mock_query_access_group, mock_query_tags):
+    def test_run(self):
+        self.script.show_header = mock.Mock()
+        self.script.query_computer_title = mock.Mock()
+        self.script.query_account_name = mock.Mock()
+        self.script.query_registration_key = mock.Mock()
+        self.script.query_proxies = mock.Mock()
+        self.script.query_script_plugin = mock.Mock()
+        self.script.query_access_group = mock.Mock()
+        self.script.query_tags = mock.Mock()
         self.script.run()
-        mock_show_header.assert_called_once_with()
-        mock_query_computer_title.assert_called_once_with()
-        mock_query_account_name.assert_called_once_with()
-        mock_query_registration_key.assert_called_once_with()
-        mock_query_proxies.assert_called_once_with()
-        mock_query_script_plugin.assert_called_once_with()
-        mock_query_access_group.assert_called_once_with()
-        mock_query_tags.assert_called_once_with()
+
+        self.script.show_header.assert_called_once_with()
+        self.script.query_computer_title.assert_called_once_with()
+        self.script.query_account_name.assert_called_once_with()
+        self.script.query_registration_key.assert_called_once_with()
+        self.script.query_proxies.assert_called_once_with()
+        self.script.query_script_plugin.assert_called_once_with()
+        self.script.query_access_group.assert_called_once_with()
+        self.script.query_tags.assert_called_once_with()
 
 
 class BootstrapTreeTest(LandscapeConfigurationTest):
