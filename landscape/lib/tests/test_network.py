@@ -61,6 +61,7 @@ class NetworkInfoTest(LandscapeTest):
 
     @patch("landscape.lib.network.get_active_interfaces")
     def test_skip_vlan(self, mock_get_active_interfaces):
+        """VLAN interfaces are not reported by L{get_active_device_info}."""
         mock_get_active_interfaces.side_effect = lambda sock: (
             list(get_active_interfaces(sock)) + ["eth0.1"])
         device_info = get_active_device_info()
@@ -121,8 +122,7 @@ class NetworkInfoTest(LandscapeTest):
                 socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
             interfaces = list(get_active_interfaces(sock))
 
-            mock_array.assert_called_with("B", ANY)
-
+        mock_array.assert_called_with("B", ANY)
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
         mock_unpack.assert_called_with("iL", ANY)
 
@@ -220,7 +220,6 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         sock = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
         # ioctl always succeeds
-        mock_ioctl.return_value = 0
         mock_unpack.return_value = (100, False)
 
         result = get_network_interface_speed(sock, "eth0")
@@ -240,7 +239,6 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
 
         # ioctl always succeeds
-        mock_ioctl.return_value = 0
         mock_unpack.return_value = (65535, False)
 
         result = get_network_interface_speed(sock, "eth0")
