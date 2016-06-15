@@ -73,16 +73,16 @@ class CleanFDsTests(LandscapeTest):
         close_mock.assert_has_calls(calls, any_order=True)
         self.assertEqual(closed_fds, expected_fds)
 
+    def test_dont_ignore_other_errors(self):
+        """
+        If other errors are raised from os.close, L{clean_fds} propagates them.
+        """
 
-    # def test_dont_ignore_other_errors(self):
-    #     """
-    #     If other errors are raised from os.close, L{clean_fds} propagates them.
-    #     """
-    #     self.mocker.order()
-    #     self.mock_rlimit(10)
-    #     close_mock = self.mocker.replace("os.close", passthrough=False)
-    #     close_mock(ANY)
-    #     self.mocker.throw(MemoryError())
+        def throw_up(fd):
+            raise MemoryError()
+        
+        with patch.object(
+                os, "close", side_effect=throw_up) as close_mock:
+            with self.mock_rlimit(10):
+                self.assertRaises(MemoryError, clean_fds)            
 
-    #     self.mocker.replay()
-    #     self.assertRaises(MemoryError, clean_fds)
