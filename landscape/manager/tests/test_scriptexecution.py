@@ -184,14 +184,13 @@ class RunScriptTests(LandscapeTest):
         an error setting up the script, we want to restore the umask.
         """
         patch_umask = mock.patch(
-            "landscape.manager.scriptexecution.os.umask")
+            "landscape.manager.scriptexecution.os.umask", return_value=0o077)
         mock_umask = patch_umask.start()
-        mock_umask.return_value = 0o077
 
         patch_mkdtemp = mock.patch(
-            "landscape.manager.scriptexecution.tempfile.mkdtemp")
+            "landscape.manager.scriptexecution.tempfile.mkdtemp",
+            side_effect=OSError("Fail!"))
         mock_mkdtemp = patch_mkdtemp.start()
-        mock_mkdtemp.side_effect = OSError("Fail!")
 
         result = self.plugin.run_script(
             "/bin/sh", "umask", attachments={u"file1": "some data"})
