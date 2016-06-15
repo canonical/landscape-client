@@ -1,6 +1,5 @@
 """Tests for L{landscape.lib.fd}"""
 
-import os
 import resource
 from mock import patch, call
 
