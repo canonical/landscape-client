@@ -279,12 +279,11 @@ class RunTest(LandscapeTest):
         setup_logging_mock.assert_called_once_with()
 
     def test_run_setup_logging_exits_gracefully(self):
-        setup_logging_mock = self.mocker.replace(
-            "landscape.sysinfo.deployment.setup_logging")
-        setup_logging_mock()
-        self.mocker.throw(IOError("Read-only filesystem."))
-        self.mocker.replay()
-        error = self.assertRaises(SystemExit, run,
-                                  ["--sysinfo-plugins", "TestPlugin"])
-        self.assertEqual(error.message,
-                         "Unable to setup logging. Read-only filesystem.")
+        error = IOError("Read-only filesystem.")
+        with mock.patch(
+                "landscape.sysinfo.deployment.setup_logging",
+                side_effect=error) as setup_logging_mock:
+            error = self.assertRaises(
+                SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
+        self.assertEqual(
+            error.message, "Unable to setup logging. Read-only filesystem.")
