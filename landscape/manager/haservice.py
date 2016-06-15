@@ -109,6 +109,17 @@ class HAService(ManagerPlugin):
             "run-parts", [health_dir], env=os.environ)
         return result.addCallback(parse_output)
 
+    def _run_script(self, script):
+        result = getProcessValue(script, env=os.environ)
+
+        def validate_exit_code(code, script):
+            if code != 0:
+                raise CharmScriptError(script, code)
+            else:
+                return "%s succeeded." % script
+
+        return result.addCallback(validate_exit_code, script)
+
     def _change_cluster_participation(self, _, scripts_path, service_state):
         """
         Enables or disables a unit's participation in a cluster based on
@@ -130,17 +141,7 @@ class HAService(ManagerPlugin):
                 "This computer is always a participant in its high-availabilty"
                 " cluster. No juju charm cluster settings changed.")
 
-        def run_script(script):
-            result = getProcessValue(script, env=os.environ)
-
-            def validate_exit_code(code, script):
-                if code != 0:
-                    raise CharmScriptError(script, code)
-                else:
-                    return "%s succeeded." % script
-            return result.addCallback(validate_exit_code, script)
-
-        return run_script(script)
+        return self._run_script(script)
 
     def _perform_state_change(self, scripts_path, service_state, operation_id):
         """

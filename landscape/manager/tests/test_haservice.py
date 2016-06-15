@@ -2,12 +2,9 @@ import os
 
 from mock import patch, ANY, Mock
 
-from twisted.internet.defer import Deferred, succeed
-
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.tests.mocker import ANY
 
 
 class HAServiceTests(LandscapeTest):
@@ -273,14 +270,14 @@ class HAServiceTests(LandscapeTest):
                   "result-text": u"%s succeeded." % cluster_script,
                   "status": SUCCEEDED, "operation-id": 1}])
             return result
-        
+
         self.ha_service._respond_success = Mock(side_effect=validate_message)
 
         self.manager.add(self.ha_service)
         handler = self.manager.dispatch_message(message)
 
         # Just to be sure we're really running the assertion
-        self.ha_service._respond_success.has_call(ANY)        
+        self.ha_service._respond_success.has_call(ANY)
         return handler
 
     def test_run_success_cluster_online(self):
@@ -293,7 +290,6 @@ class HAServiceTests(LandscapeTest):
                     "unit-name": self.unit_name,
                     "service-state": self.ha_service.STATE_ONLINE,
                     "operation-id": 1})
-
 
         real_respond_success = self.ha_service._respond_success
 
@@ -310,12 +306,12 @@ class HAServiceTests(LandscapeTest):
                   "result-text": u"%s succeeded." % cluster_script,
                   "status": SUCCEEDED, "operation-id": 1}])
             return result
-        
+
         self.ha_service._respond_success = Mock(side_effect=validate_message)
 
         self.manager.add(self.ha_service)
         handler = self.manager.dispatch_message(message)
 
         # Just to be sure we're really running the assertion
-        self.ha_service._respond_success.has_call(ANY)        
+        self.ha_service._respond_success.has_call(ANY)
         return handler
