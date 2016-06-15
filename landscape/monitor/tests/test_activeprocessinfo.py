@@ -9,7 +9,7 @@ from twisted.internet.defer import fail
 from landscape.monitor.activeprocessinfo import ActiveProcessInfo
 from landscape.tests.helpers import (LandscapeTest, MonitorHelper,
                                      ProcessDataBuilder)
-from landscape.tests.mocker import ANY
+from mock import ANY, Mock
 
 
 class ActiveProcessInfoTest(LandscapeTest):
@@ -533,10 +533,8 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10)
         self.monitor.add(plugin)
 
-        broker_mock = self.mocker.replace(self.monitor.broker)
-        broker_mock.send_message(ANY, ANY, urgent=ANY)
-        self.mocker.result(fail(MyException()))
-        self.mocker.replay()
+        self.monitor.broker.send_message = Mock()
+        self.monitor.broker.send_message.side_effect = [fail(MyException())]
 
         message = plugin.get_message()
 
@@ -545,6 +543,8 @@ class ActiveProcessInfoTest(LandscapeTest):
 
         result = plugin.exchange()
         result.addCallback(assert_message)
+        self.monitor.broker.send_message.assert_called_once_with(
+            ANY, ANY, urgent=ANY)
         return result
 
     def test_process_updates(self):
