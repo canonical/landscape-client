@@ -94,11 +94,11 @@ class PackageMonitorTest(LandscapeTest):
         # returns, chaining both deferreds at that point.
         deferred = Deferred()
 
-        def run_has_run(run_result_deferred):
+        def run_is_finished(run_result_deferred):
             return run_result_deferred.chainDeferred(deferred)
 
         package_monitor_mock.run()
-        self.mocker.passthrough(run_has_run)
+        self.mocker.passthrough(run_is_finished)
 
         self.mocker.replay()
 
@@ -108,16 +108,13 @@ class PackageMonitorTest(LandscapeTest):
         return deferred
 
     def test_spawn_reporter_on_run_if_message_accepted(self):
-
         self.broker_service.message_store.set_accepted_types(["packages"])
-
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.count(2)  # Once for registration, then again explicitly.
-        self.mocker.replay()
-
-        self.monitor.add(self.package_monitor)
-        return self.package_monitor.run()
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mocked:
+            self.monitor.add(self.package_monitor)
+            # We want to ignore calls made as a result of the above line.
+            mocked.reset_mock()
+            self.successResultOf(self.package_monitor.run())
+            self.assertEqual(mocked.call_count, 1)
 
     def test_package_ids_handling(self):
         self.monitor.add(self.package_monitor)
