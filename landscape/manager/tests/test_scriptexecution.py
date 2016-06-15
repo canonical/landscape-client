@@ -165,7 +165,8 @@ class RunScriptTests(LandscapeTest):
         old_umask = os.umask(0)
         os.umask(old_umask)
 
-        mock_umask = mock.patch("os.umask").start()
+        patch_umask = mock.patch("os.umask")
+        mock_umask = patch_umask.start()
         mock_umask.return_value = old_umask
         result = self.plugin.run_script("/bin/sh", "umask")
 
@@ -175,17 +176,21 @@ class RunScriptTests(LandscapeTest):
                 [mock.call(0o22), mock.call(old_umask)])
 
         result.addCallback(check)
-        return result.addCallback(lambda _: mock_umask.stop())
+        return result.addCallback(lambda _: patch_umask.stop())
 
     def test_restore_umask_in_event_of_error(self):
         """
         We set the umask before executing the script, in the event that there's
         an error setting up the script, we want to restore the umask.
         """
-        mock_umask = mock.patch("os.umask").start()
+        patch_umask = mock.patch(
+            "landscape.manager.scriptexecution.os.umask")
+        mock_umask = patch_umask.start()
         mock_umask.return_value = 0o077
 
-        mock_mkdtemp = mock.patch("tempfile.mkdtemp").start()
+        patch_mkdtemp = mock.patch(
+            "landscape.manager.scriptexecution.tempfile.mkdtemp")
+        mock_mkdtemp = patch_mkdtemp.start()
         mock_mkdtemp.side_effect = OSError("Fail!")
 
         result = self.plugin.run_script(
@@ -198,8 +203,8 @@ class RunScriptTests(LandscapeTest):
             mock_mkdtemp.assert_called_with()
 
         def cleanup(_):
-            mock_umask.stop()
-            mock_mkdtemp.stop()
+            patch_umask.stop()
+            patch_mkdtemp.stop()
 
         return result.addErrback(check).addCallback(cleanup)
 
@@ -228,8 +233,9 @@ class RunScriptTests(LandscapeTest):
         registration_persist.set("secure-id", "secure_id")
         persist.save()
 
-        mock_fetch = mock.patch(
-            "landscape.manager.scriptexecution.fetch_async").start()
+        patch_fetch = mock.patch(
+            "landscape.manager.scriptexecution.fetch_async")
+        mock_fetch = patch_fetch.start()
         mock_fetch.return_value = succeed("some other data")
 
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
@@ -248,7 +254,7 @@ class RunScriptTests(LandscapeTest):
                 cainfo=None)
 
         def cleanup(_):
-            mock_fetch.stop()
+            patch_fetch.stop()
 
         return result.addCallback(check).addCallback(cleanup)
 
@@ -265,8 +271,9 @@ class RunScriptTests(LandscapeTest):
         registration_persist.set("secure-id", "secure_id")
         persist.save()
 
-        mock_fetch = mock.patch(
-            "landscape.manager.scriptexecution.fetch_async").start()
+        patch_fetch = mock.patch(
+            "landscape.manager.scriptexecution.fetch_async")
+        mock_fetch = patch_fetch.start()
         mock_fetch.return_value = succeed("some other data")
 
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
@@ -285,7 +292,7 @@ class RunScriptTests(LandscapeTest):
                 cainfo="/some/key")
 
         def cleanup(_):
-            mock_fetch.stop()
+            patch_fetch.stop()
 
         return result.addCallback(check).addCallback(cleanup)
 
