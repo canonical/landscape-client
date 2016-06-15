@@ -67,7 +67,6 @@ class ProcessInfoTest(LandscapeTest):
             def close(self):
                 self.closed = True
 
-
         list_dir_mock.return_value = ["12345"]
         fakefile1 = FakeFile("test-binary")
         fakefile2 = FakeFile(None)
