@@ -1,7 +1,7 @@
 import logging
 import signal
+import mock
 
-from mock import Mock
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
@@ -54,13 +54,13 @@ class LandscapeServiceTest(LandscapeTest):
         service = TestService(self.config)
         self.assertFalse(hasattr(service, "persist"))
 
-    def test_install_bpickle_dbus(self):
+    @mock.patch("landscape.lib.bpickle_dbus.install")
+    def test_install_bpickle_dbus(self, mock_install):
         """
         A L{LandscapeService} installs the DBus extensions of bpickle.
         """
-        landscape.lib.bpickle_dbus.install = Mock()
         TestService(self.config)
-        landscape.lib.bpickle_dbus.install.assert_called_with()
+        mock_install.assert_called_with()
 
     def test_usr1_rotates_logs(self):
         """
