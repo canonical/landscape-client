@@ -628,7 +628,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        # self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'")
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
@@ -835,22 +834,14 @@ class ScriptExecutionMessageTests(LandscapeTest):
         If a script outputs non-printable characters not handled by utf-8, they
         are replaced during the encoding phase but the script succeeds.
         """
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
-        def spawn_called(protocol, filename, uid, gid, path, env):
-            protocol.childDataReceived(1,
-            "\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
+        def spawnProcess(protocol, filename, uid, gid, path, env):
+            protocol.childDataReceived(
+                1, "\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
 
-        process_factory = self.mocker.mock()
-        process_factory.spawnProcess(
-            ANY, ANY, uid=None, gid=None, path=ANY,
-            env=get_default_environment())
-        self.mocker.call(spawn_called)
-
-        self.mocker.replay()
+        process_factory = mock.Mock()
+        process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
 
         self.manager.add(
             ScriptExecutionPlugin(process_factory=process_factory))
@@ -861,11 +852,15 @@ class ScriptExecutionMessageTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages())
             self.assertEqual(
                 message["result-text"],
-                 u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
+                u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
+
+        def check(_):
+            process_factory.spawnProcess.assert_called_with(
+                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
+                env=get_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
-        result.addCallback(got_result)
-        return result
+        return result.addCallback(got_result).addCallback(check)
 
     def test_parse_error_causes_operation_failure(self):
         """
@@ -894,15 +889,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
         If a script exits with a nen-zero exit code, the operation associated
         with it should fail, but the data collected should still be sent.
         """
-        # Mock a bunch of crap so that we can run a real process
-        self.mocker.replace("os.chown", passthrough=False)(ARGS)
-        self.mocker.replace("os.setuid", passthrough=False)(ARGS)
-        self.mocker.count(0, None)
-        self.mocker.replace("os.setgid", passthrough=False)(ARGS)
-        self.mocker.count(0, None)
-        self.mocker.count(0, None)
-        self.mocker.replay()
-
         self.manager.add(ScriptExecutionPlugin())
         result = self._send_script("/bin/sh", "echo hi; exit 1")
 
@@ -925,13 +911,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         """
         factory = StubProcessFactory()
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'")
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
