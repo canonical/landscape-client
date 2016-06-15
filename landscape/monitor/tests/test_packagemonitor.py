@@ -1,4 +1,5 @@
 import os
+import mock
 
 from twisted.internet.defer import Deferred
 
@@ -62,13 +63,11 @@ class PackageMonitorTest(LandscapeTest):
         self.assertFalse(os.path.isfile(filename))
 
         self.monitor.add(package_monitor)
-        package_monitor_mock = self.mocker.patch(package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.replay()
-
-        message = {"type": "package-ids"}
-        self.monitor.dispatch_message(message)
-        self.assertTrue(os.path.isfile(filename))
+        with mock.patch.object(package_monitor, 'spawn_reporter') as mocked:
+            message = {"type": "package-ids"}
+            self.monitor.dispatch_message(message)
+            self.assertTrue(os.path.isfile(filename))
+            mocked.assert_called_once_with()
 
     def test_run_interval(self):
         """
@@ -81,14 +80,9 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_dont_spawn_reporter_if_message_not_accepted(self):
         self.monitor.add(self.package_monitor)
-
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        return self.package_monitor.run()
+        self.successResultOf(self.package_monitor.run())
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mocked:
+            self.assertEqual(mocked.mock_calls, [])
 
     def test_spawn_reporter_on_registration_when_already_accepted(self):
         package_monitor_mock = self.mocker.patch(self.package_monitor)
