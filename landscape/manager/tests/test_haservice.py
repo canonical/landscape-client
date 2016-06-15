@@ -1,7 +1,8 @@
 import os
 
-from twisted.internet.defer import Deferred
+from mock import patch, ANY
 
+from twisted.internet.defer import Deferred
 
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
@@ -41,15 +42,13 @@ class HAServiceTests(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
-    def test_invalid_server_service_state_request(self):
+    @patch("logging.error",
+           return_value="Invalid cluster participation state requested BOGUS.")
+    def test_invalid_server_service_state_request(self, logging_mock):
         """
         When the landscape server requests a C{service-state} other than
         'online' or 'standby' the client responds with the appropriate error.
         """
-        logging_mock = self.mocker.replace("logging.error")
-        logging_mock("Invalid cluster participation state requested BOGUS.")
-        self.mocker.replay()
-
         self.manager.dispatch_message(
             {"type": "change-ha-service", "service-name": "my-service",
              "unit-name": self.unit_name, "service-state": "BOGUS",
