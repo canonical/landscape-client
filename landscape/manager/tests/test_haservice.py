@@ -1,8 +1,8 @@
 import os
 
-from mock import patch, ANY
+from mock import patch, ANY, Mock
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
@@ -257,30 +257,31 @@ class HAServiceTests(LandscapeTest):
                     "unit-name": self.unit_name,
                     "service-state": self.ha_service.STATE_STANDBY,
                     "operation-id": 1})
-        deferred = Deferred()
 
-        def validate_messages(value):
+        real_respond_success = self.ha_service._respond_success
+
+        def validate_message(data, message, operation_id):
             cluster_script = "%s/%s" % (
                 self.scripts_dir, self.ha_service.CLUSTER_STANDBY)
+
+            result = real_respond_success(data, message, operation_id)
             service = self.broker_service
+            messages = service.message_store.get_pending_messages()
             self.assertMessages(
-                service.message_store.get_pending_messages(),
+                messages,
                 [{"type": "operation-result",
                   "result-text": u"%s succeeded." % cluster_script,
                   "status": SUCCEEDED, "operation-id": 1}])
+            return result
+        
+        self.ha_service._respond_success = Mock(side_effect=validate_message)
 
-        def handle_has_run(handle_result_deferred):
-            handle_result_deferred.chainDeferred(deferred)
-            return deferred.addCallback(validate_messages)
-
-        ha_service_mock = self.mocker.patch(self.ha_service)
-        ha_service_mock.handle_change_ha_service(ANY)
-        self.mocker.passthrough(handle_has_run)
-        self.mocker.replay()
         self.manager.add(self.ha_service)
-        self.manager.dispatch_message(message)
+        handler = self.manager.dispatch_message(message)
 
-        return deferred
+        # Just to be sure we're really running the assertion
+        self.ha_service._respond_success.has_call(ANY)        
+        return handler
 
     def test_run_success_cluster_online(self):
         """
