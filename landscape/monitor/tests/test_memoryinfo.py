@@ -162,9 +162,10 @@ VmallocChunk:   510252 kB
         self.reactor.advance(self.monitor.step_size * 1)
 
         with mock.patch.object(self.remote, "send_message"):
-            self.reactor.fire(("message-type-acceptance-changed", "memory-info"),
-                          True)
-            self.remote.send_message.assert_called_with(mock.ANY, mock.ANY, urgent=True)
+            self.reactor.fire(("message-type-acceptance-changed",
+                               "memory-info"), True)
+            self.remote.send_message.assert_called_with(
+                mock.ANY, mock.ANY, urgent=True)
 
     def test_no_message_if_not_accepted(self):
         """
