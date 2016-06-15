@@ -51,35 +51,28 @@ class CleanFDsTests(LandscapeTest):
 
         self.assertEqual(closed_fds, expected_fds)
 
-    # def test_ignore_OSErrors(self):
-    #     """
-    #     If os.close raises an OSError, it is ignored and we continue to close
-    #     the rest of the FDs.
-    #     """
-    #     self.mocker.order()
-    #     self.mock_rlimit(10)
+    def test_ignore_OSErrors(self):
+        """
+        If os.close raises an OSError, it is ignored and we continue to close
+        the rest of the FDs.
+        """
+        closed_fds = []
 
-    #     closed_fds = []
+        def remember_and_throw(fd):
+            closed_fds.append(fd)
+            raise OSError("Bad FD!")
 
-    #     def remember_and_throw(fd):
-    #         closed_fds.append(fd)
-    #         raise OSError("Bad FD!")
+        with patch.object(
+                os, "close", side_effect=remember_and_throw) as close_mock:
+            with self.mock_rlimit(10) as getrlimit_mock:
+                clean_fds()
 
-    #     with patch.object(os, "close", side_effect=remember_and_throw):
-    #         clean_fds()
-        
-    #     calls = [call(i) for i in range(3, 10)]
-    #     close_mock.assert_has_calls(calls, any_order=True)
+        self.assert_rlimit(getrlimit_mock)                
+        expected_fds = range(3, 10)
+        calls = [call(i) for i in expected_fds]
+        close_mock.assert_has_calls(calls, any_order=True)
+        self.assertEqual(closed_fds, expected_fds)
 
-
-    #         close_mock = self.mocker.replace("os.close", passthrough=False)
-    #     close_mock(ANY)
-    #     self.mocker.count(7)
-    #     self.mocker.call(remember_and_throw)
-
-    #     self.mocker.replay()
-    #     clean_fds()
-    #     self.assertEqual(closed_fds, range(3, 10))
 
     # def test_dont_ignore_other_errors(self):
     #     """
