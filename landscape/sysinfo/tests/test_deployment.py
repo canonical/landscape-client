@@ -223,11 +223,10 @@ class RunTest(LandscapeTest):
         If landscape-sysinfo is running as a privileged user, then the logs
         should be stored in the system-wide log directory.
         """
-        uid_mock = self.mocker.replace("os.getuid")
-        uid_mock()
-        self.mocker.result(0)
-        self.mocker.replay()
-        self.assertEqual(get_landscape_log_directory(), "/var/log/landscape")
+        with mock.patch("os.getuid", return_value=0) as uid_mock:
+            self.assertEqual(
+                get_landscape_log_directory(), "/var/log/landscape")
+            uid_mock.assert_called_once_with()
 
     def test_wb_logging_setup(self):
         """
