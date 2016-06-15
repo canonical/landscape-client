@@ -626,13 +626,9 @@ class ScriptExecutionMessageTests(LandscapeTest):
         # access to the deferred.
         factory = StubProcessFactory()
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        self.mocker.replay()
+        # self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'")
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
