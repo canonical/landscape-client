@@ -1,4 +1,3 @@
-import sys
 import os
 from optparse import OptionParser
 from StringIO import StringIO
@@ -11,7 +10,6 @@ from landscape.deployment import (
 from landscape.manager.config import ManagerConfiguration
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
-from landscape.tests.mocker import ANY
 import mock
 
 
