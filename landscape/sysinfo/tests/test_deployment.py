@@ -272,12 +272,11 @@ class RunTest(LandscapeTest):
         self.assertTrue(os.path.exists(log_dir))
 
     def test_run_sets_up_logging(self):
-        setup_logging_mock = self.mocker.replace(
-            "landscape.sysinfo.deployment.setup_logging")
-        setup_logging_mock()
-        self.mocker.replay()
-
-        run(["--sysinfo-plugins", "TestPlugin"])
+        with mock.patch(
+                "landscape.sysinfo.deployment"
+                ".setup_logging") as setup_logging_mock:
+            run(["--sysinfo-plugins", "TestPlugin"])
+        setup_logging_mock.assert_called_once_with()
 
     def test_run_setup_logging_exits_gracefully(self):
         setup_logging_mock = self.mocker.replace(
