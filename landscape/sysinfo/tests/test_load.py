@@ -20,6 +20,6 @@ class LoadTest(LandscapeTest):
     def test_run_adds_header(self, mock_getloadavg):
         self.load.run()
 
-        mock_getloadavg.assert_called_with()
+        mock_getloadavg.assert_called_once_with()
         self.assertEqual(self.sysinfo.get_headers(),
                          [("System load", "1.5")])
