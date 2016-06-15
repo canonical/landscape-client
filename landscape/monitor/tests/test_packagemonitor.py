@@ -286,10 +286,10 @@ class PackageMonitorTest(LandscapeTest):
         os.chdir(dir)
         os.chmod(dir, 0)
 
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result(command)
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            'landscape.monitor.packagemonitor.find_reporter_command',
+            return_value=command)
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -301,6 +301,7 @@ class PackageMonitorTest(LandscapeTest):
             self.assertIn("RUN", log)
             # restore permissions to the dir so tearDown can clean it up
             os.chmod(dir, 0766)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
