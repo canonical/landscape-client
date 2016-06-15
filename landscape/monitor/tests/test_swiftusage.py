@@ -3,7 +3,7 @@ from unittest import skipUnless
 
 from landscape.monitor.swiftusage import SwiftUsage
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.tests.mocker import ANY
+from mock import ANY, Mock
 
 try:
     from swift.cli.recon import Scout
@@ -150,14 +150,10 @@ class SwiftUsageTest(LandscapeTest):
         self.monitor.add(self.plugin)
         self.reactor.advance(self.plugin.run_interval)
 
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.result(succeed(None))
-        self.mocker.count(1)  # 1 send message is called
-        self.mocker.replay()
-
+        self.remote.send_message = Mock(return_value=succeed(None))
         self.reactor.fire(
             ("message-type-acceptance-changed", "swift-usage"), True)
+        self.remote.send_message.assert_called_once_with(ANY, ANY, urgent=True)
 
     def test_message_only_mounted_devices(self):
         """
