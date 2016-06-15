@@ -5,7 +5,7 @@ from mock import patch, Mock, ANY
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
-from landscape.reactor import LandscapeReactor, FakeReactor
+from landscape.reactor import FakeReactor
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
@@ -15,11 +15,6 @@ from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import AptFacadeHelper
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ANY as ANY_, MATCH
-
-
-def ISTYPE(match_type):
-    return MATCH(lambda arg: type(arg) is match_type)
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -349,28 +344,22 @@ class PackageTaskHandlerTest(LandscapeTest):
 
             store, facade, broker, config, reactor = handler_args
 
-            try:
-                # Verify the arguments passed to the reporter constructor.
-                self.assertEqual(type(store), PackageStore)
-                self.assertEqual(type(facade), AptFacade)
-                self.assertEqual(type(broker), LazyRemoteBroker)
-                self.assertEqual(type(config),
-                                 PackageTaskHandlerConfiguration)
-                self.assertIn("mock-reactor", repr(reactor))
+            # Verify the arguments passed to the reporter constructor.
+            self.assertEqual(type(store), PackageStore)
+            self.assertEqual(type(facade), AptFacade)
+            self.assertEqual(type(broker), LazyRemoteBroker)
+            self.assertEqual(type(config), PackageTaskHandlerConfiguration)
+            self.assertIn("mock-reactor", repr(reactor))
 
-                # Let's see if the store path is where it should be.
-                filename = os.path.join(self.data_path, "package", "database")
-                store.add_available([1, 2, 3])
-                other_store = PackageStore(filename)
-                self.assertEqual(other_store.get_available(), [1, 2, 3])
+            # Let's see if the store path is where it should be.
+            filename = os.path.join(self.data_path, "package", "database")
+            store.add_available([1, 2, 3])
+            other_store = PackageStore(filename)
+            self.assertEqual(other_store.get_available(), [1, 2, 3])
 
-                # Check the hash=>id database directory as well
-                self.assertTrue(os.path.exists(
-                    os.path.join(self.data_path, "package", "hash-id")))
-
-            finally:
-                # Put reactor back in place before returning.
-                self.mocker.reset()
+            # Check the hash=>id database directory as well
+            self.assertTrue(os.path.exists(
+                os.path.join(self.data_path, "package", "hash-id")))
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
 
