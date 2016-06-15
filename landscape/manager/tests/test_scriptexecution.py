@@ -956,7 +956,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    def test_fetch_attachment_failure(self):
+    @mock.patch("landscape.manager.scriptexecution.fetch_async")
+    def test_fetch_attachment_failure(self, mock_fetch):
         """
         If the plugin fails to retrieve the attachments with a
         L{HTTPCodeError}, a specific error code is shown.
@@ -967,15 +968,11 @@ class ScriptExecutionMessageTests(LandscapeTest):
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
         persist.save()
-        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
-                                         passthrough=False)
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers,
-                   cainfo=None)
-        self.mocker.result(fail(HTTPCodeError(404, "Not found")))
-        self.mocker.replay()
+
+        mock_fetch.return_value = fail(HTTPCodeError(404, "Not found"))
 
         self.manager.add(ScriptExecutionPlugin())
         result = self._send_script(
@@ -989,5 +986,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "result-text": "Server returned HTTP code 404",
                   "result-code": FETCH_ATTACHMENTS_FAILED_RESULT,
                   "status": FAILED}])
+            mock_fetch.assert_called_with(
+                "https://localhost/attachment/14", headers=headers,
+                cainfo=None)
 
         return result.addCallback(got_result)
