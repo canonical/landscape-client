@@ -334,7 +334,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_computer_title()
         self.script.prompt.assert_called_once_with(
             "computer_title", "This computer's title", True)
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("__builtin__.raw_input")
@@ -351,7 +351,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_account_name()
         self.script.prompt.assert_called_once_with(
             "account_name", "Account name", True)
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
         self.script.query_account_name()
@@ -369,7 +369,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_registration_key()
         self.script.password_prompt.assert_called_once_with(
             "registration_key", "Account registration key")
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("landscape.configuration.getpass.getpass")
@@ -388,7 +388,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         calls = [mock.call("http_proxy", "HTTP proxy URL"),
                  mock.call("https_proxy", "HTTPS proxy URL")]
         self.script.prompt.assert_has_calls(calls)
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("__builtin__.raw_input")
@@ -405,7 +405,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.config.load_command_line(["--http-proxy", "localhost:8080"])
         self.script.query_proxies()
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_query_https_proxy_defined_on_command_line(self):
@@ -416,7 +416,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_proxies()
         self.script.prompt.assert_called_once_with(
             "http_proxy", "HTTP proxy URL")
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_query_script_plugin_no(self):
@@ -428,7 +428,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEqual(self.config.include_manager_plugins, "")
         self.script.prompt_yes_no.assert_called_once_with(
             "Enable script execution?", default=False)
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_query_script_plugin_yes(self):
@@ -468,7 +468,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.prompt_yes_no.assert_called_once_with(
             "Enable script execution?", default=True)
         self.assertEqual(self.config.include_manager_plugins, "")
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_disabling_script_plugin_leaves_existing_inclusions(self):
@@ -633,7 +633,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_tags()
         self.script.prompt.assert_called_once_with(
             "tags", "Tags", False)
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_invalid_tags_entered_by_user(self):
@@ -686,7 +686,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.show_help = mock.Mock()
         self.script.prompt = mock.Mock()
         self.script.query_access_group()
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("__builtin__.raw_input")
@@ -704,7 +704,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         help_snippet = "This script will"
         self.script.show_help = mock.Mock()
         self.script.show_header()
-        call, = self.script.show_help.mock_calls
+        [call] = self.script.show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_run(self):
