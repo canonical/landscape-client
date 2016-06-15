@@ -1,8 +1,8 @@
 """Tests for L{landscape.lib.fd}"""
 
+import os
 import resource
 from mock import Mock, patch, call
-from landscape.tests.mocker import ANY
 
 from landscape.lib.fd import clean_fds
 from landscape.tests.helpers import LandscapeTest
@@ -11,13 +11,11 @@ from landscape.tests.helpers import LandscapeTest
 class CleanFDsTests(LandscapeTest):
     """Tests for L{clean_fds}."""
 
-    # def mock_rlimit(self, limit):
-    #     getrlimit_mock = self.mocker.replace("resource.getrlimit")
-    #     getrlimit_mock(resource.RLIMIT_NOFILE)
-    #     self.mocker.result([None, limit])
-
-    def mock_rlimit(self, limit):
+    def mock_rlimit(self, limit=None, side_effect=None):
+        if side_effect:
+            return patch.object(resource, "getrlimit", side_effect=side_effect)
         return patch.object(resource, "getrlimit", return_value=[None, limit])
+
 
     def assert_rlimit(self, patchee):
         patchee.assert_called_once_with(resource.RLIMIT_NOFILE)
@@ -28,30 +26,28 @@ class CleanFDsTests(LandscapeTest):
         L{clean_fds} cleans all non-stdio file descriptors up to the process
         limit for file descriptors.
         """
-        with self.mock_rlimit(10) as getrlimit_mock:
+        with self.mock_rlimit(limit=10) as getrlimit_mock:
             clean_fds()
             
         calls = [call(i) for i in range(3, 10)]
         close_mock.assert_has_calls(calls, any_order=True)
         self.assert_rlimit(getrlimit_mock)
-                
 
 
-    # def test_clean_fds_sanity(self):
-    #     """
-    #     If the process limit for file descriptors is very high (> 4096), then
-    #     we only close 4096 file descriptors.
-    #     """
-    #     self.mocker.order()
-    #     self.mock_rlimit(4100)
-    #     close_mock = self.mocker.replace("os.close", passthrough=False)
-    #     closed_fds = []
-    #     close_mock(ANY)
-    #     self.mocker.call(closed_fds.append)
-    #     self.mocker.count(4093)
-    #     self.mocker.replay()
-    #     clean_fds()
-    #     self.assertEqual(closed_fds, range(3, 4096))
+    def test_clean_fds_sanity(self):
+        """
+        If the process limit for file descriptors is very high (> 4096), then
+        we only close 4096 file descriptors.
+        """
+        closed_fds = []
+        
+        with patch.object(os, "close", side_effect=closed_fds.append):
+            with self.mock_rlimit(limit=4100) as getrlimit_mock:
+                clean_fds()
+
+        self.assert_rlimit(getrlimit_mock)
+        expected_fds = range(3, 4096)
+        self.assertEqual(closed_fds, expected_fds)
 
     # def test_ignore_OSErrors(self):
     #     """
