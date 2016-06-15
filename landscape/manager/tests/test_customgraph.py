@@ -12,10 +12,10 @@ from landscape.manager.store import ManagerStore
 
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
-from landscape.tests.mocker import ANY
 
 
 class CustomGraphManagerTests(LandscapeTest):
+
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -80,22 +80,18 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertTrue(error_message in self.logfile.getvalue())
         mock_getpwnam.assert_called_with("foo")
 
-    def test_add_graph_for_user(self):
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ANY, 1234, 5678)
-
-        mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
-        mock_chmod(ANY, 0700)
-
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+    @mock.patch("os.chown")
+    @mock.patch("os.chmod")
+    @mock.patch("pwd.getpwnam")
+    def test_add_graph_for_user(self, mock_getpwnam, mock_chmod, mock_chown):
 
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
 
-        self.expect(mock_getpwnam("bar")).result(pwnam)
-        self.mocker.replay()
+        mock_getpwnam.return_value = pwnam
+
         self.manager.dispatch_message(
             {"type": "custom-graph-add",
                      "interpreter": "/bin/sh",
@@ -107,6 +103,10 @@ class CustomGraphManagerTests(LandscapeTest):
             [(123, os.path.join(self.data_path, "custom-graph-scripts",
                                 "graph-123"),
                    "bar")])
+
+        mock_chown.assert_called_with(mock.ANY, 1234, 5678)
+        mock_chmod.assert_called_with(mock.ANY, 0700)
+        mock_getpwnam.assert_called_with("bar")
 
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(
