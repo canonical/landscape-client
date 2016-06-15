@@ -484,7 +484,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.prompt_yes_no.assert_called_once_with(
             "Enable script execution?", default=True)
         self.assertEqual(self.config.include_manager_plugins, "FooPlugin")
-        self.script.show_help.assert_called_with(mock.ANY)
+        self.script.show_help.assert_called_once_with(mock.ANY)
 
     def test_enabling_script_plugin_leaves_existing_inclusions(self):
         """
