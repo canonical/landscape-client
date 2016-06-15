@@ -172,7 +172,7 @@ class RunScriptTests(LandscapeTest):
         def check(result):
             self.assertEqual("%04o\n" % old_umask, result)
             mock_umask.assert_has_calls(
-                [mock.call(0022), mock.call(old_umask)])
+                [mock.call(0o22), mock.call(old_umask)])
 
         result.addCallback(check)
         return result.addCallback(lambda _: mock_umask.stop())
@@ -182,18 +182,26 @@ class RunScriptTests(LandscapeTest):
         We set the umask before executing the script, in the event that there's
         an error setting up the script, we want to restore the umask.
         """
-        mock_umask = self.mocker.replace("os.umask")
-        mock_umask(0022)
-        self.mocker.result(0077)
-        mock_mkdtemp = self.mocker.replace("tempfile.mkdtemp",
-                                           passthrough=False)
-        mock_mkdtemp()
-        self.mocker.throw(OSError("Fail!"))
-        mock_umask(0077)
-        self.mocker.replay()
-        result = self.plugin.run_script("/bin/sh", "umask",
-                                        attachments={u"file1": "some data"})
-        return self.assertFailure(result, OSError)
+        mock_umask = mock.patch("os.umask").start()
+        mock_umask.return_value = 0o077
+
+        mock_mkdtemp = mock.patch("tempfile.mkdtemp").start()
+        mock_mkdtemp.side_effect = OSError("Fail!")
+
+        result = self.plugin.run_script(
+            "/bin/sh", "umask", attachments={u"file1": "some data"})
+
+        def check(error):
+            self.assertIsInstance(error.value, OSError)
+            self.assertEqual("Fail!", str(error.value))
+            mock_umask.assert_has_calls([mock.call(0o022)])
+            mock_mkdtemp.assert_called_with()
+
+        def cleanup(_):
+            mock_umask.stop()
+            mock_mkdtemp.stop()
+
+        return result.addErrback(check).addCallback(cleanup)
 
     def test_run_with_attachments(self):
         result = self.plugin.run_script(
