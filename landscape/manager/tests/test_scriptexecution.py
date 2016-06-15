@@ -26,7 +26,7 @@ from landscape.tests.mocker import ANY, ARGS
 def get_default_environment():
     username = pwd.getpwuid(os.getuid())[0]
     uid, gid, home = get_user_info(username)
-    return  {
+    return {
         "PATH": UBUNTU_PATH,
         "USER": username,
         "HOME": home}
@@ -558,14 +558,13 @@ class RunScriptTests(LandscapeTest):
         """
         The script is removed after it is finished.
         """
-        mock_mkstemp = self.mocker.replace("tempfile.mkstemp",
-                                           passthrough=False)
         fd, filename = tempfile.mkstemp()
-        self.expect(mock_mkstemp()).result((fd, filename))
-        self.mocker.replay()
-        d = self.plugin.run_script("/bin/sh", "true")
-        d.addCallback(lambda ign: self.assertFalse(os.path.exists(filename)))
-        return d
+
+        with mock.patch("tempfile.mkstemp") as mock_mkstemp:
+            mock_mkstemp.return_value = (fd, filename)
+            d = self.plugin.run_script("/bin/sh", "true")
+            return d.addCallback(
+                lambda _: self.assertFalse(os.path.exists(filename)))
 
     def test_unknown_interpreter(self):
         """
