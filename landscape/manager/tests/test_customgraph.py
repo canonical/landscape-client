@@ -2,6 +2,8 @@ import os
 import pwd
 import logging
 
+import mock
+
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
@@ -54,16 +56,14 @@ class CustomGraphManagerTests(LandscapeTest):
                            "graph-123"),
               username)])
 
-    def test_add_graph_unknown_user(self):
+    @mock.patch("pwd.getpwnam")
+    def test_add_graph_unknown_user(self, mock_getpwnam):
         """
         Attempting to add a graph with an unknown user should not result in an
         error, instead a message should be logged, the error will be picked up
         when the graph executes.
         """
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
-        mock_getpwnam("foo")
-        self.mocker.throw(KeyError("foo"))
-        self.mocker.replay()
+        mock_getpwnam.side_effect = KeyError("foo")
         error_message = "Attempt to add graph with unknown user foo"
         self.log_helper.ignore_errors(error_message)
         self.logger.setLevel(logging.ERROR)
@@ -78,6 +78,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEqual(graph[0], 123)
         self.assertEqual(graph[2], u"foo")
         self.assertTrue(error_message in self.logfile.getvalue())
+        mock_getpwnam.assert_called_with("foo")
 
     def test_add_graph_for_user(self):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
