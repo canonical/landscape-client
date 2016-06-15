@@ -49,10 +49,9 @@ class NetworkDeviceTest(LandscapeTest):
         """When the active network devices change a message is generated."""
         self.plugin.exchange()
         self.mstore.delete_all_messages()
-        with mock.patch.object(self.plugin, "_device_info"):
-            self.plugin._device_info.return_value = []
+        with mock.patch.object(self.plugin, "_device_info", return_value=[]):
             self.plugin.exchange()
-            self.assertTrue(self.mstore.count_pending_messages())
+            self.assertEqual(1, self.mstore.count_pending_messages())
 
     def test_config(self):
         """The network device plugin is enabled by default."""
