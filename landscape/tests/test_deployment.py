@@ -12,6 +12,7 @@ from landscape.manager.config import ManagerConfiguration
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
 from landscape.tests.mocker import ANY
+import mock
 
 
 class BabbleConfiguration(Configuration):
@@ -124,7 +125,8 @@ class ConfigurationTest(LandscapeTest):
 
         self.assertEqual(MyConfiguration().foo_bar, None)
 
-    def test_command_line_with_required_options(self):
+    @mock.patch("sys.exit")
+    def test_command_line_with_required_options(self, mock_exit):
 
         class MyConfiguration(Configuration):
             required_options = ("foo_bar",)
@@ -138,12 +140,8 @@ class ConfigurationTest(LandscapeTest):
         self.reset_config(configuration_class=MyConfiguration)
         self.write_config_file()
 
-        sys_exit_mock = self.mocker.replace(sys.exit)
-        sys_exit_mock(ANY)
-        self.mocker.count(1)
-        self.mocker.replay()
-
         self.config.load([])  # This will call our mocked sys.exit.
+        self.assertTrue(mock_exit.called)
         self.config.load(["--foo-bar", "ooga"])
         self.assertEqual(self.config.foo_bar, "ooga")
 
