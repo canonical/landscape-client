@@ -11,11 +11,12 @@ from landscape.tests.helpers import LandscapeTest
 class CleanFDsTests(LandscapeTest):
     """Tests for L{clean_fds}."""
 
-    def mock_rlimit(self, limit):
+    def mock_getrlimit(self, limit):
+        """Return a context with getrlimit patched for testing."""
         return patch.object(resource, "getrlimit", return_value=[None, limit])
 
-
-    def assert_rlimit(self, patchee):
+    def assert_getrlimit_called(self, patchee):
+        """getrlimit is called exactly once. """
         patchee.assert_called_once_with(resource.RLIMIT_NOFILE)
 
     @patch("os.close")
@@ -24,12 +25,12 @@ class CleanFDsTests(LandscapeTest):
         L{clean_fds} cleans all non-stdio file descriptors up to the process
         limit for file descriptors.
         """
-        with self.mock_rlimit(limit=10) as getrlimit_mock:
+        with self.mock_getrlimit(10) as getrlimit_mock:
             clean_fds()
             
         calls = [call(i) for i in range(3, 10)]
         close_mock.assert_has_calls(calls, any_order=True)
-        self.assert_rlimit(getrlimit_mock)
+        self.assert_getrlimit_called(getrlimit_mock)
 
     def test_clean_fds_sanity(self):
         """
@@ -40,10 +41,10 @@ class CleanFDsTests(LandscapeTest):
         
         with patch.object(
                 os, "close", side_effect=closed_fds.append) as close_mock:
-            with self.mock_rlimit(limit=4100) as getrlimit_mock:
+            with self.mock_getrlimit(4100) as getrlimit_mock:
                 clean_fds()
 
-        self.assert_rlimit(getrlimit_mock)
+        self.assert_getrlimit_called(getrlimit_mock)
 
         expected_fds = range(3, 4096)
         calls = [call(i) for i in expected_fds]
@@ -64,10 +65,10 @@ class CleanFDsTests(LandscapeTest):
 
         with patch.object(
                 os, "close", side_effect=remember_and_throw) as close_mock:
-            with self.mock_rlimit(10) as getrlimit_mock:
+            with self.mock_getrlimit(10) as getrlimit_mock:
                 clean_fds()
 
-        self.assert_rlimit(getrlimit_mock)                
+        self.assert_getrlimit_called(getrlimit_mock)                
         expected_fds = range(3, 10)
         calls = [call(i) for i in expected_fds]
         close_mock.assert_has_calls(calls, any_order=True)
@@ -83,6 +84,6 @@ class CleanFDsTests(LandscapeTest):
         
         with patch.object(
                 os, "close", side_effect=throw_up) as close_mock:
-            with self.mock_rlimit(10):
+            with self.mock_getrlimit(10):
                 self.assertRaises(MemoryError, clean_fds)            
 
