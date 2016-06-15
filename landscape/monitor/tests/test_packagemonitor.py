@@ -78,7 +78,7 @@ class PackageMonitorTest(LandscapeTest):
         self.package_monitor.register(self.monitor)
         self.assertEqual(1234, self.package_monitor.run_interval)
 
-    def test_dont_spawn_reporter_if_message_not_accepted(self):
+    def test_do_not_spawn_reporter_if_message_not_accepted(self):
         self.monitor.add(self.package_monitor)
         self.successResultOf(self.package_monitor.run())
         with mock.patch.object(self.package_monitor, 'spawn_reporter') as mocked:
@@ -208,14 +208,16 @@ class PackageMonitorTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_call_on_accepted(self):
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
-
-        self.mocker.replay()
-
-        self.monitor.add(self.package_monitor)
-        self.monitor.reactor.fire(
-            ("message-type-acceptance-changed", "packages"), True)
+        called = []
+        def record_call():
+            called.append(True)
+        with mock.patch.object(
+                self.package_monitor, 'spawn_reporter',
+                side_effect=record_call):
+            self.monitor.add(self.package_monitor)
+            self.monitor.reactor.fire(
+                ("message-type-acceptance-changed", "packages"), True)
+        self.assertTrue(called)
 
     def test_resynchronize(self):
         """
