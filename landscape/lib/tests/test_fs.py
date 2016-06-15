@@ -78,7 +78,8 @@ class TouchFileTest(LandscapeTest):
                 touch_file(path, offset_seconds=-1)
 
         time_mock.assert_called_once_with()
-        utime_mock.assert_called_once_with(path, (expected_time, expected_time))
+        utime_mock.assert_called_once_with(
+            path, (expected_time, expected_time))
 
         self.assertFileContent(path, "")
 
