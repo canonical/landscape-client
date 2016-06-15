@@ -1,3 +1,4 @@
+import mock
 import os
 
 from logging.handlers import RotatingFileHandler
@@ -13,6 +14,8 @@ from landscape.sysinfo.deployment import (
 from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
+
+import landscape.sysinfo
 
 from landscape.tests.helpers import LandscapeTest, StandardIOHelper
 from landscape.tests.mocker import ARGS, KWARGS
@@ -109,27 +112,21 @@ class RunTest(LandscapeTest):
         self.assertEqual(sysinfo.get_notes(), ["Test note"])
         self.assertEqual(sysinfo.get_footnotes(), ["Test footnote"])
 
-    def test_format_sysinfo_gets_correct_information(self):
-        format_sysinfo = self.mocker.replace("landscape.sysinfo.sysinfo."
-                                             "format_sysinfo")
-        format_sysinfo([("Test header", "Test value")],
-                       ["Test note"], ["Test footnote"],
-                       indent="  ")
-        format_sysinfo(ARGS, KWARGS)
-        self.mocker.count(0)
-        self.mocker.replay()
-
+    @mock.patch("landscape.sysinfo.deployment.format_sysinfo")
+    def test_format_sysinfo_gets_correct_information(self, format_sysinfo):
         run(["--sysinfo-plugins", "TestPlugin"])
+        format_sysinfo.assert_called_once_with(
+            [("Test header", "Test value")],
+            ["Test note"], ["Test footnote"],
+            indent="  ")
 
     def test_format_sysinfo_output_is_printed(self):
-        format_sysinfo = self.mocker.replace("landscape.sysinfo.sysinfo."
-                                             "format_sysinfo")
-        format_sysinfo(ARGS, KWARGS)
-        self.mocker.result("Hello there!")
-        self.mocker.replay()
+        with mock.patch(
+                "landscape.sysinfo.deployment.format_sysinfo",
+                return_value="Hello there!") as format_sysinfo:
+            run(["--sysinfo-plugins", "TestPlugin"])
 
-        run(["--sysinfo-plugins", "TestPlugin"])
-
+        self.assertTrue(format_sysinfo.called)
         self.assertEqual(self.stdout.getvalue(), "Hello there!\n")
 
     def test_output_is_only_displayed_once_deferred_fires(self):
