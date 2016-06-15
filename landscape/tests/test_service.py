@@ -1,9 +1,11 @@
 import logging
 import signal
 
+from mock import Mock
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
+import landscape.lib.bpickle_dbus
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
@@ -56,10 +58,9 @@ class LandscapeServiceTest(LandscapeTest):
         """
         A L{LandscapeService} installs the DBus extensions of bpickle.
         """
-        dbus_mock = self.mocker.replace("landscape.lib.bpickle_dbus.install")
-        dbus_mock()
-        self.mocker.replay()
+        landscape.lib.bpickle_dbus.install = Mock()
         TestService(self.config)
+        landscape.lib.bpickle_dbus.install.assert_called_with()
 
     def test_usr1_rotates_logs(self):
         """
