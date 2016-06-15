@@ -649,8 +649,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    @mock.patch("os.chown")
-    def test_success_with_server_supplied_env(self, mock_chown):
+    def test_success_with_server_supplied_env(self):
         """
         When a C{execute-script} message is received from the server, the
         specified script will be run with the supplied environment and an
@@ -660,7 +659,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
         # access to the deferred.
         factory = StubProcessFactory()
 
-        # ignore the call to chown!
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
         result = self._send_script(sys.executable, "print 'hi'",
@@ -693,8 +691,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    @mock.patch("os.chown")
-    def test_user(self, mock_chown):
+    def test_user(self):
         """A user can be specified in the message."""
         username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
@@ -748,11 +745,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
         factory = StubProcessFactory()
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
-        self.mocker.replay()
         result = self._send_script(sys.executable, "bar", time_limit=30)
         self._verify_script(factory.spawns[0][1], sys.executable, "bar")
 
