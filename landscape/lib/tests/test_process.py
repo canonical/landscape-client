@@ -77,12 +77,12 @@ class ProcessInfoTest(LandscapeTest):
             open_mock.side_effect = [fakefile1, fakefile2]
             process_info = ProcessInformation("/proc")
             processes = list(process_info.get_all_process_info())
-            self.assertEqual(processes, [])
-            list_dir_mock.assert_called_with("/proc")
             calls = [
                 mock.call("/proc/12345/cmdline", "r"),
                 mock.call("/proc/12345/status", "r")]
             open_mock.assert_has_calls(calls)
+        self.assertEqual(processes, [])
+        list_dir_mock.assert_called_with("/proc")
         self.assertTrue(fakefile1.closed)
         self.assertTrue(fakefile2.closed)
 
