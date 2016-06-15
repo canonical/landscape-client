@@ -1,3 +1,4 @@
+import mock
 import threading
 import time
 
@@ -408,22 +409,10 @@ class PackageStoreTest(LandscapeTest):
         self.assertEqual(hashes, hashes1 + hashes2)
 
     def test_get_initial_hash_id_request_timestamp(self):
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(123)
-        self.mocker.replay()
-
-        try:
+        with mock.patch("time.time", return_value=123):
             request1 = self.store1.add_hash_id_request(["hash1"])
             request2 = self.store2.get_hash_id_request(request1.id)
-
-            self.assertEqual(request2.timestamp, 123)
-
-            # We handle mocker explicitly so that our hacked time()
-            # won't break Twisted's internals.
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        self.assertEqual(request2.timestamp, 123)
 
     def test_update_hash_id_request_timestamp(self):
         request1 = self.store1.add_hash_id_request(["hash1"])
@@ -491,48 +480,25 @@ class PackageStoreTest(LandscapeTest):
         self.assertEqual(task, None)
 
     def test_get_task_timestamp(self):
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(123)
-        self.mocker.replay()
-
-        try:
+        with mock.patch("time.time", return_value=123):
             self.store1.add_task("reporter", [1])
-            task = self.store2.get_next_task("reporter")
-
-            self.assertEqual(task.timestamp, 123)
-
-            # We handle mocker explicitly so that our hacked time()
-            # won't break Twisted's internals.
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        task = self.store2.get_next_task("reporter")
+        self.assertEqual(task.timestamp, 123)
 
     def test_next_tasks_ordered_by_timestamp(self):
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(222)
-        time_mock()
-        self.mocker.result(111)
-        self.mocker.replay()
-
-        try:
+        with mock.patch("time.time", return_value=222):
             self.store1.add_task("reporter", [1])
+
+        with mock.patch("time.time", return_value=111):
             self.store1.add_task("reporter", [2])
 
-            task = self.store2.get_next_task("reporter")
-            self.assertEqual(task.timestamp, 111)
+        task = self.store2.get_next_task("reporter")
+        self.assertEqual(task.timestamp, 111)
 
-            task.remove()
+        task.remove()
 
-            task = self.store2.get_next_task("reporter")
-            self.assertEqual(task.timestamp, 222)
-
-            # We handle mocker explicitly so that our hacked time()
-            # won't break Twisted's internals.
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        task = self.store2.get_next_task("reporter")
+        self.assertEqual(task.timestamp, 222)
 
     def test_clear_hash_id_requests(self):
         request1 = self.store1.add_hash_id_request(["hash1"])
