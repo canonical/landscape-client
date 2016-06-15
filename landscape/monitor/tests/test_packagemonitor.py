@@ -119,15 +119,12 @@ class PackageMonitorTest(LandscapeTest):
     def test_package_ids_handling(self):
         self.monitor.add(self.package_monitor)
 
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.replay()
-
-        message = {"type": "package-ids", "ids": [None], "request-id": 1}
-        self.monitor.dispatch_message(message)
-        task = self.package_store.get_next_task("reporter")
-        self.assertTrue(task)
-        self.assertEqual(task.data, message)
+        with mock.patch.object(self.package_monitor, 'spawn_reporter'):
+            message = {"type": "package-ids", "ids": [None], "request-id": 1}
+            self.monitor.dispatch_message(message)
+            task = self.package_store.get_next_task("reporter")
+            self.assertTrue(task)
+            self.assertEqual(task.data, message)
 
     def test_spawn_reporter(self):
         command = self.makeFile("#!/bin/sh\necho 'I am the reporter!' >&2\n")
