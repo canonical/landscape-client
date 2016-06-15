@@ -1,7 +1,8 @@
+import mock
+
 from landscape.monitor.updatemanager import UpdateManager
 from landscape.tests.helpers import (
     LandscapeTest, MonitorHelper, LogKeeperHelper)
-from landscape.tests.mocker import ANY
 
 
 class UpdateManagerTest(LandscapeTest):
@@ -90,10 +91,10 @@ Prompt=never
         If the server can accept them, the plugin should send
         C{update-manager} messages.
         """
-        broker_mock = self.mocker.replace(self.remote)
-        broker_mock.send_message(ANY, ANY)
-        self.mocker.replay()
-        self.plugin.run()
+        with mock.patch.object(self.remote, "send_message"):
+            self.plugin.run()
+            self.remote.send_message.assert_called_once_with(
+                mock.ANY, mock.ANY)
         self.mstore.set_accepted_types([])
         self.plugin.run()
 
