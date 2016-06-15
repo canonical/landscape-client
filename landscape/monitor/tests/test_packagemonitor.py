@@ -147,10 +147,10 @@ class PackageMonitorTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_spawn_reporter_without_output(self):
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result("/bin/true")
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            'landscape.monitor.packagemonitor.find_reporter_command',
+            return_value="/bin/true")
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -159,6 +159,7 @@ class PackageMonitorTest(LandscapeTest):
         def got_result(result):
             log = self.logfile.getvalue()
             self.assertNotIn("reporter output", log)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
