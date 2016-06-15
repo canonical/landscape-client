@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from mock import Mock
 
 from landscape.lib.persist import Persist
 from landscape.lib.twisted_util import gather_results
@@ -1466,8 +1467,8 @@ class RemoteUserManagerTest(LandscapeTest):
         The L{get_locked_usernames} method forwards the request to the
         remote L{UserManager} object.
         """
-        self.user_manager.get_locked_usernames = self.mocker.mock()
-        self.expect(self.user_manager.get_locked_usernames()).result(["fred"])
-        self.mocker.replay()
-        result = self.remote_user_manager.get_locked_usernames()
-        return self.assertSuccess(result, ["fred"])
+        self.user_manager.get_locked_usernames = Mock(return_value=["fred"])
+        deferred = self.remote_user_manager.get_locked_usernames()
+        result = self.successResultOf(deferred)
+        self.assertEqual(result, ['fred'])
+        self.user_manager.get_locked_usernames.assert_called_once_with()
