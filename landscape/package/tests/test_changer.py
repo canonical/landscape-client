@@ -730,24 +730,17 @@ class AptPackageChangerTest(LandscapeTest):
 
 
     def test_run(self):
-        changer_mock = self.mocker.patch(self.changer)
-
-        self.mocker.order()
+        changer_mock = patch.object(self, "changer")
 
         results = [Deferred() for i in range(2)]
 
-        changer_mock.use_hash_id_db()
-        self.mocker.result(results[0])
-
-        changer_mock.handle_tasks()
-        self.mocker.result(results[1])
-
-        self.mocker.replay()
+        changer_mock.use_hash_id_db = Mock(return_value=results[0])
+        changer_mock.handle_tasks = Mock(return_value=results[1])
 
         self.changer.run()
 
-        # It must raise an error because deferreds weren't yet fired.
-        self.assertRaises(AssertionError, self.mocker.verify)
+        changer_mock.use_hash_id_db.assert_not_called()
+        changer_mock.handle_tasks.assert_not_called()
 
         for deferred in reversed(results):
             deferred.callback(None)
