@@ -11,7 +11,6 @@ from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 from twisted.python.fakepwd import UserDatabase
 
-from landscape.tests.mocker import ARGS, KWARGS
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
     LandscapeTest, EnvironSaverHelper, FakeBrokerServiceHelper)
