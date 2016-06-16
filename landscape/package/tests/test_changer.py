@@ -672,7 +672,7 @@ class AptPackageChangerTest(LandscapeTest):
                                             "operation-id": 123})
 
             self.successResultOf(self.changer.run())
-            
+
         system_mock.assert_called_once_with(
             "/fake/bin/landscape-package-reporter")
 
@@ -714,8 +714,9 @@ class AptPackageChangerTest(LandscapeTest):
         # We are running as root
         with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
             with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
-                with patch("landscape.package.changer.find_reporter_command",
-                           return_value="/fake/bin/landscape-package-reporter"):
+                with patch(
+                        "landscape.package.changer.find_reporter_command",
+                        return_value="/fake/bin/landscape-package-reporter"):
                     # Add a task that will do nothing besides producing an
                     # answer.  The reporter is only spawned if at least
                     # one task was handled.
