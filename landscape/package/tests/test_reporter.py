@@ -1022,14 +1022,12 @@ class PackageReporterAptTest(LandscapeTest):
         # Twisted is ensuring that things run in the proper order.
         for deferred in reversed(results):
             deferred.callback(None)
-    @mock.patch("landscape.package.taskhandler.run_task_handler")
-    def test_main(self, task_handler_mock):
-        #run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-         #                                      ".run_task_handler",
-          #                                     passthrough=False)
-        task_handler_mock.return_value = "RESULT"
-        self.assertEqual(main(["ARGS"]), "RESULT")
-        task_handler_mock.assert_called_once_with(PackageReporter, ["ARGS"])
+
+    def test_main(self):
+        with mock.patch("landscape.package.reporter.run_task_handler") as m:
+            m.return_value = "RESULT"
+            self.assertEqual("RESULT", main(["ARGS"]))
+        m.assert_called_once_with(PackageReporter, ["ARGS"])
 
     def test_find_reporter_command(self):
         dirname = self.makeDir()
