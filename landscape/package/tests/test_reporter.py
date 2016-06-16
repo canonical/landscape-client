@@ -266,7 +266,7 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
 
-    @patch("logging.info")
+    @patch("logging.info", return_value=None)
     def test_fetch_hash_id_db(self, logging_mock):
 
         # Assume package_hash_id_url is set
@@ -345,7 +345,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         return result
 
-    @patch("logging.warning")
+    @patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_server_uuid(self, logging_mock):
         """
         If the server-uuid can't be determined for some reason, no download
@@ -354,14 +354,13 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_server_uuid(None)
 
-
         result = self.reporter.fetch_hash_id_db()
         logging_mock.assert_called_once_with(
             "Couldn't determine which hash=>id database to use: "
             "server UUID not available")
         return result
 
-    @patch("logging.warning")
+    @patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_codename(self, logging_mock):
 
         # Fake uuid
@@ -378,7 +377,7 @@ class PackageReporterAptTest(LandscapeTest):
             "missing code-name key in %s" % self.reporter.lsb_release_filename)
         return result
 
-    @patch("logging.warning")
+    @patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_arch(self, logging_mock):
 
         # Fake uuid and codename
@@ -432,7 +431,7 @@ class PackageReporterAptTest(LandscapeTest):
         result.addCallback(callback)
         return result
 
-    @patch("logging.warning")
+    @patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_with_download_error(self, logging_mock):
 
         # Assume package_hash_id_url is set
@@ -471,7 +470,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         return result
 
-    @patch("logging.warning")
+    @patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_with_undetermined_url(self, logging_mock):
 
         # We don't know where to fetch the hash=>id database from
@@ -1216,7 +1215,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.reactor.advance(0)
         return result
 
-    @patch("logging.warning")
+    @patch("logging.warning", return_value=None)
     def test_run_apt_update_warns_about_lock_failure(self, logging_mock):
         """
         The L{PackageReporter.run_apt_update} method logs a warnings when
