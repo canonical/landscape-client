@@ -15,10 +15,7 @@ from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
 
-import landscape.sysinfo
-
 from landscape.tests.helpers import LandscapeTest, StandardIOHelper
-from landscape.tests.mocker import ARGS, KWARGS
 
 
 class DeploymentTest(LandscapeTest):
@@ -131,13 +128,22 @@ class RunTest(LandscapeTest):
 
     def test_output_is_only_displayed_once_deferred_fires(self):
         deferred = Deferred()
-        sysinfo = self.mocker.patch(SysInfoPluginRegistry)
-        sysinfo.run()
-        self.mocker.passthrough()
-        self.mocker.result(deferred)
-        self.mocker.replay()
 
-        run(["--sysinfo-plugins", "TestPlugin"])
+        # We mock the sysinfo.run() to return a Deferred but still
+        # run the actual sysinfo.run() to gather the results from all
+        # the plugins.  We cannot easily combine return_value and
+        # side_effect because side_effect operates on the return_value,
+        # thus firing the callback and writing sysinfo out to stdout.
+        sysinfo = SysInfoPluginRegistry()
+        original_sysinfo_run = sysinfo.run
+        def wrapped_sysinfo_run(*args, **kwargs):
+            original_sysinfo_run(*args, **kwargs)
+            return deferred
+        sysinfo.run = mock.Mock(side_effect=wrapped_sysinfo_run)
+
+        run(["--sysinfo-plugins", "TestPlugin"], sysinfo=sysinfo)
+
+        sysinfo.run.assert_called_once_with()
 
         self.assertNotIn("Test note", self.stdout.getvalue())
         deferred.callback(None)
