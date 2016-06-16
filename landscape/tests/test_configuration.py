@@ -1782,9 +1782,8 @@ registration_key = shared-secret
                              "http://proxy",
                              "--import", "https://config.url"])
         except ImportOptionError:
-            pass  # The returned content is empty.  We don't really
-                  # care for this test.  Mocker will ensure the tests
-                  # we care about are done.
+            pass  # The returned content is empty.  We don't really care for
+                  # this test.
         mock_print_text.assert_called_once_with(
             "Fetching configuration from https://config.url...")
 

@@ -251,8 +251,6 @@ class PackageTaskHandler(object):
 
 
 def run_task_handler(cls, args, reactor=None):
-    # please only pass reactor when you have totally mangled everything with
-    # mocker. Otherwise bad things will happen.
     if reactor is None:
         reactor = LandscapeReactor()
 
