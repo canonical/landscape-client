@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 import base64
-import contextlib
 import time
 import sys
 import os
@@ -705,7 +704,6 @@ class AptPackageChangerTest(LandscapeTest):
             
         class FakeUser(object):
             pw_uid = 199
-
             
         # We are running as root
         with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
