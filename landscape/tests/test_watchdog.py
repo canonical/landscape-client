@@ -230,7 +230,7 @@ class WatchDogTest(LandscapeTest):
         monitor_ping_result.callback(False)
 
         def check(_):
-            # # And the monitor should never be explicitly stopped / restarted.
+            # The monitor should never be explicitly stopped / restarted.
             self.monitor.stop.assert_not_called()
             self.monitor.start.assert_not_called()
             self.assert_request_exit()
