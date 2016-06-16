@@ -23,6 +23,7 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
+import mock
 from landscape.reactor import FakeReactor
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -265,7 +266,8 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
 
-    def test_fetch_hash_id_db(self):
+    @mock.patch("logging.info", return_value=None)
+    def test_fetch_hash_id_db(self, logging_mock):
 
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
@@ -289,11 +291,6 @@ class PackageReporterAptTest(LandscapeTest):
         fetch_async_result.callback("hash-ids")
         self.mocker.result(fetch_async_result)
 
-        # The download should be properly logged
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("Downloaded hash=>id database from %s" % hash_id_db_url)
-        self.mocker.result(None)
-
         # We don't have our hash=>id database yet
         self.assertFalse(os.path.exists(hash_id_db_filename))
 
@@ -307,6 +304,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
         result.addCallback(callback)
 
+        logging_mock.assert_called_once_with(
+            "Downloaded hash=>id database from %s" % hash_id_db_url)
         return result
 
     def test_fetch_hash_id_db_does_not_download_twice(self):
@@ -346,7 +345,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         return result
 
-    def test_fetch_hash_id_db_undetermined_server_uuid(self):
+    @mock.patch("logging.warning", return_value=None)
+    def test_fetch_hash_id_db_undetermined_server_uuid(self, logging_mock):
         """
         If the server-uuid can't be determined for some reason, no download
         should be attempted and the failure should be properly logged.
@@ -354,16 +354,14 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_server_uuid(None)
 
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "
-                     "server UUID not available")
-        self.mocker.result(None)
-        self.mocker.replay()
-
         result = self.reporter.fetch_hash_id_db()
+        logging_mock.assert_called_once_with(
+            "Couldn't determine which hash=>id database to use: "
+            "server UUID not available")
         return result
 
-    def test_fetch_hash_id_db_undetermined_codename(self):
+    @mock.patch("logging.warning", return_value=None)
+    def test_fetch_hash_id_db_undetermined_codename(self, logging_mock):
 
         # Fake uuid
         message_store = self.broker_service.message_store
@@ -372,20 +370,15 @@ class PackageReporterAptTest(LandscapeTest):
         # Undetermined codename
         self.reporter.lsb_release_filename = self.makeFile("Foo=bar")
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "
-                     "missing code-name key in %s" %
-                     self.reporter.lsb_release_filename)
-        self.mocker.result(None)
-
-        # Go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
 
+        logging_mock.assert_called_once_with(
+            "Couldn't determine which hash=>id database to use: "
+            "missing code-name key in %s" % self.reporter.lsb_release_filename)
         return result
 
-    def test_fetch_hash_id_db_undetermined_arch(self):
+    @mock.patch("logging.warning", return_value=None)
+    def test_fetch_hash_id_db_undetermined_arch(self, logging_mock):
 
         # Fake uuid and codename
         message_store = self.broker_service.message_store
@@ -395,16 +388,10 @@ class PackageReporterAptTest(LandscapeTest):
         # Undetermined arch
         self.facade.set_arch("")
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "
-                     "unknown dpkg architecture")
-        self.mocker.result(None)
-
-        # Go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
-
+        logging_mock.assert_called_once_with(
+            "Couldn't determine which hash=>id database to use: "
+            "unknown dpkg architecture")
         return result
 
     def test_fetch_hash_id_db_with_default_url(self):
@@ -444,7 +431,8 @@ class PackageReporterAptTest(LandscapeTest):
         result.addCallback(callback)
         return result
 
-    def test_fetch_hash_id_db_with_download_error(self):
+    @mock.patch("logging.warning", return_value=None)
+    def test_fetch_hash_id_db_with_download_error(self, logging_mock):
 
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
@@ -465,11 +453,6 @@ class PackageReporterAptTest(LandscapeTest):
         fetch_async_result.errback(FetchError("fetch error"))
         self.mocker.result(fetch_async_result)
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't download hash=>id database: fetch error")
-        self.mocker.result(None)
-
         # Now go!
         self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
@@ -482,9 +465,13 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
+        logging_mock.assert_called_once_with(
+            "Couldn't download hash=>id database: fetch error")
+
         return result
 
-    def test_fetch_hash_id_db_with_undetermined_url(self):
+    @mock.patch("logging.warning", return_value=None)
+    def test_fetch_hash_id_db_with_undetermined_url(self, logging_mock):
 
         # We don't know where to fetch the hash=>id database from
         self.config.url = None
@@ -496,14 +483,6 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Can't determine the hash=>id database url")
-        self.mocker.result(None)
-
-        # Let's go
-        self.mocker.replay()
-
         result = self.reporter.fetch_hash_id_db()
 
         # We shouldn't have any hash=>id database
@@ -514,6 +493,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
+        logging_mock.assert_called_once_with(
+            "Can't determine the hash=>id database url")
         return result
 
     def test_fetch_hash_id_db_with_custom_certificate(self):
@@ -1234,17 +1215,13 @@ class PackageReporterAptTest(LandscapeTest):
         self.reactor.advance(0)
         return result
 
-    def test_run_apt_update_warns_about_lock_failure(self):
+    @mock.patch("logging.warning", return_value=None)
+    def test_run_apt_update_warns_about_lock_failure(self, logging_mock):
         """
         The L{PackageReporter.run_apt_update} method logs a warnings when
         apt-update fails acquiring the lock.
         """
         self._make_fake_apt_update(code=100)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
-        logging_mock("Could not acquire the apt lock. Retrying in 40 seconds.")
-        logging_mock("'%s' exited with status 100 ()" %
-                     self.reporter.apt_update_filename)
 
         spawn_mock = self.mocker.replace(
             "landscape.lib.twisted_util.spawn_process")
@@ -1269,6 +1246,12 @@ class PackageReporterAptTest(LandscapeTest):
 
         result.addCallback(callback)
         self.reactor.advance(60)
+        message = "Could not acquire the apt lock. Retrying in {} seconds."
+        calls = [mock.call(message.format(20)),
+                 mock.call(message.format(40)),
+                 mock.call("'{}' exited with status 1000 ()".format(
+                     self.reporter.apt_update_filename))]
+        logging_mock.has_calls(calls)
         return result
 
     def test_run_apt_update_stops_retrying_after_lock_acquired(self):
