@@ -4,7 +4,6 @@ import sys
 import os
 import signal
 import logging
-import mock
 
 import mock
 
