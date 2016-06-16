@@ -14,17 +14,16 @@ from landscape.broker.tests.helpers import RemoteBrokerHelper
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
-    stop_client_and_disable_init_script, ConfigurationError,
+    ConfigurationError,
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
     handle_registration_errors, done, got_error, report_registration_outcome,
     determine_exit_code)
 from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
-from landscape.sysvconfig import SysVConfig, ProcessError
+from landscape.sysvconfig import ProcessError
 from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
-from landscape.tests.mocker import ANY, CONTAINS
 
 
 class LandscapeConfigurationTest(LandscapeTest):
