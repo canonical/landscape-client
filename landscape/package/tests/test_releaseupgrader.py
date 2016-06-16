@@ -1,7 +1,8 @@
+import mock
 import os
-import unittest
 import signal
 import tarfile
+import unittest
 
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail, Deferred
@@ -49,7 +50,8 @@ class ReleaseUpgraderTest(LandscapeTest):
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
 
-    def test_fetch(self):
+    @mock.patch("landscape.lib.fetch.fetch_async")
+    def test_fetch(self, fetch_mock):
         """
         L{ReleaseUpgrader.fetch} fetches the upgrade tool tarball and signature
         from the given URLs.
@@ -57,14 +59,14 @@ class ReleaseUpgraderTest(LandscapeTest):
         tarball_url = "http://some/where/karmic.tar.gz"
         signature_url = "http://some/where/karmic.tar.gz.gpg"
 
-        os.rmdir(self.config.upgrade_tool_directory)
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_mock(tarball_url)
-        self.mocker.result(succeed("tarball"))
-        fetch_mock(signature_url)
-        self.mocker.result(succeed("signature"))
+        method_returns = {
+            tarball_url: succeed("tarball"),
+            signature_url: succeed("signature")}
+        def side_effect(param):
+            return method_returns[param]
+        fetch_mock.side_effect = side_effect
 
-        self.mocker.replay()
+        os.rmdir(self.config.upgrade_tool_directory)
         result = self.upgrader.fetch(tarball_url,
                                      signature_url)
 
@@ -76,11 +78,14 @@ class ReleaseUpgraderTest(LandscapeTest):
                 os.path.join(directory, "karmic.tar.gz.gpg"), "signature")
             self.assertIn("INFO: Successfully fetched upgrade-tool files",
                           self.logfile.getvalue())
+            calls = [mock.call(tarball_url), mock.call(signature_url)]
+            fetch_mock.assert_has_calls(calls, any_order=True)
 
         result.addCallback(check_result)
         return result
 
-    def test_fetch_with_errors(self):
+    @mock.patch("landscape.lib.fetch.fetch_async")
+    def test_fetch_with_errors(self, fetch_mock):
         """
         L{ReleaseUpgrader.fetch} logs a warning in case any of the upgrade tool
         files fails to be fetched.
@@ -88,12 +93,12 @@ class ReleaseUpgraderTest(LandscapeTest):
         tarball_url = "http://some/where/karmic.tar.gz"
         signature_url = "http://some/where/karmic.tar.gz.gpg"
 
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_mock(tarball_url)
-        self.mocker.result(succeed("tarball"))
-        fetch_mock(signature_url)
-        self.mocker.result(fail(HTTPCodeError(404, "not found")))
-        self.mocker.replay()
+        method_returns = {
+            tarball_url: succeed("tarball"),
+            signature_url: fail(HTTPCodeError(404, "not found"))}
+        def side_effect(param):
+            return method_returns[param]
+        fetch_mock.side_effect = side_effect
 
         result = self.upgrader.fetch(tarball_url,
                                      signature_url)
@@ -104,12 +109,16 @@ class ReleaseUpgraderTest(LandscapeTest):
                           self.logfile.getvalue())
             self.assertIn("WARNING: Couldn't fetch all upgrade-tool files",
                           self.logfile.getvalue())
+            calls = [mock.call(tarball_url), mock.call(signature_url)]
+            fetch_mock.assert_has_calls(calls, any_order=True)
 
         result.addCallback(self.fail)
         result.addErrback(check_failure)
         return result
 
-    def test_verify(self):
+    @mock.patch("landscape.package.releaseupgrader.gpg_verify",
+                return_value=succeed(True))
+    def test_verify(self, gpg_mock):
         """
         L{ReleaseUpgrader.verify} verifies the upgrade tool tarball against
         its signature.
@@ -117,38 +126,34 @@ class ReleaseUpgraderTest(LandscapeTest):
         tarball_filename = "/some/tarball"
         signature_filename = "/some/signature"
 
-        gpg_verify_mock = self.mocker.replace("landscape.lib.gpg.gpg_verify")
-        gpg_verify_mock(tarball_filename, signature_filename)
-        self.mocker.result(succeed(True))
-        self.mocker.replay()
-
         result = self.upgrader.verify(tarball_filename, signature_filename)
 
         def check_result(ignored):
             self.assertIn("INFO: Successfully verified upgrade-tool tarball",
                           self.logfile.getvalue())
+            gpg_mock.assert_called_once_with(
+                tarball_filename, signature_filename)
 
         result.addCallback(check_result)
         return result
 
-    def test_verify_invalid_signature(self):
+    @mock.patch("landscape.package.releaseupgrader.gpg_verify")
+    def test_verify_invalid_signature(self, gpg_mock):
         """
         L{ReleaseUpgrader.verify} logs a warning in case the tarball signature
         is not valid.
         """
+        gpg_mock.return_value = fail(InvalidGPGSignature("gpg error"))
         tarball_filename = "/some/tarball"
         signature_filename = "/some/signature"
-
-        gpg_verify_mock = self.mocker.replace("landscape.lib.gpg.gpg_verify")
-        gpg_verify_mock(tarball_filename, signature_filename)
-        self.mocker.result(fail(InvalidGPGSignature("gpg error")))
-        self.mocker.replay()
 
         result = self.upgrader.verify(tarball_filename, signature_filename)
 
         def check_failure(failure):
             self.assertIn("WARNING: Invalid signature for upgrade-tool "
                           "tarball: gpg error", self.logfile.getvalue())
+            gpg_mock.assert_called_once_with(
+                tarball_filename, signature_filename)
 
         result.addCallback(self.fail)
         result.addErrback(check_failure)
@@ -501,16 +506,13 @@ class ReleaseUpgraderTest(LandscapeTest):
                                           "echo $(pwd)\n")
         os.chmod(reporter_filename, 0755)
 
-        find_reporter_mock = self.mocker.replace("landscape.package.reporter."
-                                                 "find_reporter_command")
-        find_reporter_mock()
-        self.mocker.result(reporter_filename)
-        self.mocker.replay()
 
         deferred = Deferred()
 
-        def do_test():
+        @mock.patch("landscape.package.releaseupgrader.find_reporter_command")
+        def do_test(find_reporter_mock):
 
+            find_reporter_mock.return_value = reporter_filename
             result = self.upgrader.finish()
 
             def check_result((out, err, code)):
@@ -519,6 +521,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                                   % os.getcwd())
                 self.assertEqual(err, "")
                 self.assertEqual(code, 0)
+                find_reporter_mock.assert_called_once_with()
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -526,37 +529,27 @@ class ReleaseUpgraderTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_finish_as_root(self):
+    @mock.patch("grp.getgrnam")
+    @mock.patch("pwd.getpwnam")
+    @mock.patch("os.getuid", return_value=0)
+    @mock.patch("landscape.package.releaseupgrader.find_reporter_command",
+                return_value="reporter")
+    def test_finish_as_root(
+            self, find_reporter_mock, getuid_mock, getpwnam_mock,
+            getgrnam_mock):
         """
         If the release-upgrader process is run as root, as it alwyas should,
         the L{ReleaseUpgrader.finish} method spawns the package-reporter with
         the landscape uid and gid.
         """
 
-        find_reporter_mock = self.mocker.replace("landscape.package.reporter."
-                                                 "find_reporter_command")
-        find_reporter_mock()
-        self.mocker.result("reporter")
-
-        getuid_mock = self.mocker.replace("os.getuid")
-        getuid_mock()
-        self.mocker.result(0)
-
-        getpwnam_mock = self.mocker.replace("pwd.getpwnam")
-        getpwnam_mock("landscape")
-
         class FakePwNam(object):
             pw_uid = 1234
-
-        self.mocker.result(FakePwNam())
-
-        getgrnam_mock = self.mocker.replace("grp.getgrnam")
-        getgrnam_mock("landscape")
+        getpwnam_mock.return_value = FakePwNam()
 
         class FakeGrNam(object):
             gr_gid = 5678
-
-        self.mocker.result(FakeGrNam())
+        getgrnam_mock.return_value = FakeGrNam()
 
         spawn_process_calls = []
 
@@ -569,13 +562,16 @@ class ReleaseUpgraderTest(LandscapeTest):
         saved_spawn_process = reactor.spawnProcess
         reactor.spawnProcess = spawn_process
 
-        self.mocker.replay()
-
         try:
             self.upgrader.finish()
         finally:
             reactor.spawnProcess = saved_spawn_process
         self.assertEqual(spawn_process_calls, [True])
+
+        find_reporter_mock.assert_called_once_with()
+        getuid_mock.assert_called_once_with()
+        getpwnam_mock.assert_called_once_with("landscape")
+        getgrnam_mock.assert_called_once_with("landscape")
 
     def test_finish_with_config_file(self):
         """
@@ -585,16 +581,13 @@ class ReleaseUpgraderTest(LandscapeTest):
         reporter_filename = self.makeFile("#!/bin/sh\necho $@\n")
         os.chmod(reporter_filename, 0755)
         self.config.config = "/some/config"
-        find_reporter_mock = self.mocker.replace("landscape.package.reporter."
-                                                 "find_reporter_command")
-        find_reporter_mock()
-        self.mocker.result(reporter_filename)
-        self.mocker.replay()
 
         deferred = Deferred()
 
-        def do_test():
+        @mock.patch("landscape.package.releaseupgrader.find_reporter_command")
+        def do_test(find_reporter_mock):
 
+            find_reporter_mock.return_value = reporter_filename
             result = self.upgrader.finish()
 
             def check_result((out, err, code)):
@@ -602,6 +595,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                                        "--config=/some/config\n")
                 self.assertEqual(err, "")
                 self.assertEqual(code, 0)
+                find_reporter_mock.assert_called_once_with()
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -793,24 +787,18 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         self.assertEqual(self.upgrader.handle_task(FakeTask()), None)
 
-    def test_main(self):
+    @mock.patch("os.setsid")
+    @mock.patch("os.getpgrp")
+    @mock.patch("landscape.package.releaseupgrader.run_task_handler",
+        return_value="RESULT")
+    def test_main(self, run_task_handler, getpgrp_mock, setsid_mock):
         """
         The L{main} function creates a new session if the process is not
         running in its own process group.
         """
-        self.mocker.order()
-
-        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-                                               ".run_task_handler",
-                                               passthrough=False)
-        getpgrp = self.mocker.replace("os.getpgrp")
-        self.expect(getpgrp()).result(os.getpid() + 1)
-        setsid = self.mocker.replace("os.setsid")
-        setsid()
-
-        run_task_handler(ReleaseUpgrader, ["ARGS"])
-        self.mocker.result("RESULT")
-
-        self.mocker.replay()
+        getpgrp_mock.return_value = os.getpid() + 1
 
         self.assertEqual(main(["ARGS"]), "RESULT")
+        run_task_handler.assert_called_once_with(ReleaseUpgrader, ["ARGS"])
+        getpgrp_mock.assert_called_once_with()
+        setsid_mock.assert_called_once_with()
