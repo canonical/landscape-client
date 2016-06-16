@@ -1282,16 +1282,12 @@ class PackageReporterAptTest(LandscapeTest):
         warning_patcher =  mock.patch.object(reporter.logging, "warning")
         warning_mock = warning_patcher.start()
 
-        spawn_mock = self.mocker.replace(
-            "landscape.lib.twisted_util.spawn_process")
-        spawn_mock(ANY)
-        # Simulate the first failure.
-        self.mocker.result(succeed(('', '', 100)))
-        spawn_mock(ANY)
-        # Simulate a successful apt lock grab.
-        self.mocker.result(succeed(('output', 'error', 0)))
-
-        self.mocker.replay()
+        spawn_patcher =  mock.patch.object(reporter, "spawn_process",
+            side_effect=[
+                # Simulate a failed apt lock grab then a successful one.
+                succeed(('', '', 100)),
+                succeed(('output', 'error', 0))])
+        spawn_mock = spawn_patcher.start()
 
         result = self.reporter.run_apt_update()
 
@@ -1302,6 +1298,7 @@ class PackageReporterAptTest(LandscapeTest):
             warning_mock.assert_called_once_with(
                 "Could not acquire the apt lock. Retrying in 20 seconds.")
             warning_patcher.stop()
+            spawn_patcher.stop()
 
         result.addCallback(callback)
         self.reactor.advance(20)
