@@ -2,6 +2,8 @@ import os
 import pwd
 import logging
 
+import mock
+
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
@@ -10,10 +12,10 @@ from landscape.manager.store import ManagerStore
 
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
-from landscape.tests.mocker import ANY
 
 
 class CustomGraphManagerTests(LandscapeTest):
+
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -54,16 +56,14 @@ class CustomGraphManagerTests(LandscapeTest):
                            "graph-123"),
               username)])
 
-    def test_add_graph_unknown_user(self):
+    @mock.patch("pwd.getpwnam")
+    def test_add_graph_unknown_user(self, mock_getpwnam):
         """
         Attempting to add a graph with an unknown user should not result in an
         error, instead a message should be logged, the error will be picked up
         when the graph executes.
         """
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
-        mock_getpwnam("foo")
-        self.mocker.throw(KeyError("foo"))
-        self.mocker.replay()
+        mock_getpwnam.side_effect = KeyError("foo")
         error_message = "Attempt to add graph with unknown user foo"
         self.log_helper.ignore_errors(error_message)
         self.logger.setLevel(logging.ERROR)
@@ -78,23 +78,20 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEqual(graph[0], 123)
         self.assertEqual(graph[2], u"foo")
         self.assertTrue(error_message in self.logfile.getvalue())
+        mock_getpwnam.assert_called_with("foo")
 
-    def test_add_graph_for_user(self):
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ANY, 1234, 5678)
-
-        mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
-        mock_chmod(ANY, 0700)
-
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+    @mock.patch("os.chown")
+    @mock.patch("os.chmod")
+    @mock.patch("pwd.getpwnam")
+    def test_add_graph_for_user(self, mock_getpwnam, mock_chmod, mock_chown):
 
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
 
-        self.expect(mock_getpwnam("bar")).result(pwnam)
-        self.mocker.replay()
+        mock_getpwnam.return_value = pwnam
+
         self.manager.dispatch_message(
             {"type": "custom-graph-add",
                      "interpreter": "/bin/sh",
@@ -106,6 +103,10 @@ class CustomGraphManagerTests(LandscapeTest):
             [(123, os.path.join(self.data_path, "custom-graph-scripts",
                                 "graph-123"),
                    "bar")])
+
+        mock_chown.assert_called_with(mock.ANY, 1234, 5678)
+        mock_chmod.assert_called_with(mock.ANY, 0700)
+        mock_getpwnam.assert_called_with("bar")
 
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(
@@ -307,21 +308,19 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
-    def test_run_user(self):
+    @mock.patch("pwd.getpwnam")
+    def test_run_user(self, mock_getpwnam):
         filename = self.makeFile("some content")
         self.store.add_graph(123, filename, "bar")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
-
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
 
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
 
-        self.expect(mock_getpwnam("bar")).result(pwnam)
-        self.mocker.replay()
+        mock_getpwnam.return_value = pwnam
 
         result = self.graph_manager.run()
 
@@ -333,6 +332,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEqual(spawn[4], "/")
         self.assertEqual(spawn[5], 1234)
         self.assertEqual(spawn[6], 5678)
+        mock_getpwnam.assert_called_with("bar")
 
         self._exit_process_protocol(spawn[0], "spam")
 
@@ -365,11 +365,9 @@ class CustomGraphManagerTests(LandscapeTest):
 
         return result.addCallback(check)
 
-    def test_run_unknown_user(self):
-        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
-        mock_getpwnam("foo")
-        self.mocker.throw(KeyError("foo"))
-        self.mocker.replay()
+    @mock.patch("pwd.getpwnam")
+    def test_run_unknown_user(self, mock_getpwnam):
+        mock_getpwnam.side_effect = KeyError("foo")
 
         self.manager.config.script_users = "foo"
 
@@ -389,6 +387,7 @@ class CustomGraphManagerTests(LandscapeTest):
                        "script-hash": "",
                        "values": []}},
                   "type": "custom-graph"}])
+            mock_getpwnam.assert_called_with("foo")
 
         return result.addCallback(check)
 
