@@ -497,7 +497,6 @@ class PackageReporterAptTest(LandscapeTest):
                          "uuid_codename_arch"
 
         # Now go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
             hash_id_db_url, cainfo=self.config.ssl_public_key)
@@ -980,7 +979,6 @@ class PackageReporterAptTest(LandscapeTest):
 
         # It should be False because deferreds weren't yet fired.
         self.assertFalse(self.reporter.detect_changes.called)
-        # self.assertRaises(AssertionError, self.mocker.verify)
 
         # Call them in reversed order. It must not make a difference because
         # Twisted is ensuring that things run in the proper order.
