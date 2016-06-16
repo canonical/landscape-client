@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 import base64
+import contextlib
 import time
 import sys
 import os
@@ -701,24 +702,25 @@ class AptPackageChangerTest(LandscapeTest):
         class FakeUser(object):
             pw_uid = 199
 
+            
         # We are running as root
-        with patch("os.getuid", return_value=0):
-            with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
-                # First the changer should change the group
-                with patch("os.setgid") as setgid_mock:
-                    # And a known uid as well
-                    with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
-                        # And now the user as well
-                        with patch("os.setuid") as setuid_mock:
-                            # Finally, we don't really want the package reporter to run.
-                            with patch("os.system") as system_mock:
-
-                                # Add a task that will do nothing besides producing an answer.
-                                # The reporter is only spawned if at least one task was handled.
-                                self.store.add_task("changer", {"type": "change-packages",
-                                                                "operation-id": 123})
-                                self.successResultOf(self.changer.run())
-
+        with contextlib.nested(
+                patch("os.getuid", return_value=0),
+                patch("grp.getgrnam", return_value=FakeGroup()),
+                patch("os.setgid"),
+                patch("pwd.getpwnam", return_value=FakeUser()),
+                patch("os.setuid"),
+                patch("os.system")) as (getuid_mock,
+                                        grnam_mock,
+                                        setgid_mock,
+                                        pwnam_mock,
+                                        setuid_mock,
+                                        system_mock):
+            # Add a task that will do nothing besides producing an answer.
+            # The reporter is only spawned if at least one task was handled.
+            self.store.add_task("changer", {"type": "change-packages",
+                                            "operation-id": 123})
+            self.successResultOf(self.changer.run())
 
         grnam_mock.assert_called_once_with("landscape")
         setgid_mock.assert_called_once_with(199)
