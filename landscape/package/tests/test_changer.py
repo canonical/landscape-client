@@ -11,6 +11,7 @@ from twisted.internet.error import ProcessTerminated, ProcessDone
 from mock import patch, Mock, call
 
 from landscape.lib.fs import create_file, read_file, touch_file
+from landscape.package.reporter import find_reporter_command
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -663,29 +664,15 @@ class AptPackageChangerTest(LandscapeTest):
         result = self.changer.run()
         return result.addCallback(assert_log)
 
-    def test_spawn_reporter_after_running(self):
-        output_filename = self.makeFile("REPORTER NOT RUN")
-        reporter_filename = self.makeFile("#!/bin/sh\necho REPORTER RUN > %s" %
-                                          output_filename)
-        os.chmod(reporter_filename, 0755)
-
-        find_command_mock = self.mocker.replace(
-            "landscape.package.reporter.find_reporter_command")
-        find_command_mock()
-        self.mocker.result(reporter_filename)
-        self.mocker.replay()
-
+    @patch("os.system")
+    def test_spawn_reporter_after_running(self, system_mock):
         # Add a task that will do nothing besides producing an answer.
         # The reporter is only spawned if at least one task was handled.
         self.store.add_task("changer", {"type": "change-packages",
                                         "operation-id": 123})
-
-        result = self.changer.run()
-
-        def got_result(result):
-            self.assertEqual(open(output_filename).read().strip(),
-                             "REPORTER RUN")
-        return result.addCallback(got_result)
+        
+        result = self.successResultOf(self.changer.run())
+        system_mock.assert_called_once_with("/usr/bin/landscape-package-reporter")
 
     def test_spawn_reporter_after_running_with_config(self):
         """The changer passes the config to the reporter when running it."""
