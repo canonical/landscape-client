@@ -663,14 +663,18 @@ class AptPackageChangerTest(LandscapeTest):
 
     @patch("os.system")
     def test_spawn_reporter_after_running(self, system_mock):
-        # Add a task that will do nothing besides producing an answer.
-        # The reporter is only spawned if at least one task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
+        with patch("landscape.package.changer.find_reporter_command",
+                   return_value="/fake/bin/landscape-package-reporter"):
+            # Add a task that will do nothing besides producing an
+            # answer.  The reporter is only spawned if at least one
+            # task was handled.
+            self.store.add_task("changer", {"type": "change-packages",
+                                            "operation-id": 123})
 
-        self.successResultOf(self.changer.run())
+            self.successResultOf(self.changer.run())
+            
         system_mock.assert_called_once_with(
-            "/usr/bin/landscape-package-reporter")
+            "/fake/bin/landscape-package-reporter")
 
     @patch("os.system")
     def test_spawn_reporter_after_running_with_config(self, system_mock):
