@@ -10,7 +10,6 @@ import mock
 from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
-from twisted.internet.task import deferLater
 from twisted.python.fakepwd import UserDatabase
 
 from landscape.tests.mocker import ARGS, KWARGS, ANY
