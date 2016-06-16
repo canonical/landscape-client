@@ -1131,6 +1131,8 @@ class WatchDogServiceTest(LandscapeTest):
         service.stopService()
         self.assertTrue(mock_watchdog().request_exit.called)
         self.assertTrue(os.path.exists(pid_file))
+        mock_access.assert_called_once_with(
+            pid_file, os.W_OK)
 
     @mock.patch("landscape.watchdog.reactor")
     @mock.patch("landscape.watchdog.bootstrap_list")
