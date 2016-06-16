@@ -1333,7 +1333,7 @@ class WatchDogRunTests(LandscapeTest):
 
     def setUp(self):
         super(WatchDogRunTests, self).setUp()
-        self._fake_pwd = UserDatabase()
+        self.fake_pwd = UserDatabase()
 
     @mock.patch("os.getuid", return_value=1000)
     def test_non_root(self, mock_getuid):
@@ -1341,9 +1341,9 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog should print an error message and exit if run by a normal
         user.
         """
-        self._fake_pwd.addUser(
+        self.fake_pwd.addUser(
             "landscape", None, 1001, None, None, None, None)
-        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
             sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("landscape-client can only be run"
                       " as 'root' or 'landscape'.", str(sys_exit))
@@ -1352,10 +1352,10 @@ class WatchDogRunTests(LandscapeTest):
         """
         The watchdog *can* be run as the 'landscape' user.
         """
-        self._fake_pwd.addUser(
+        self.fake_pwd.addUser(
             "landscape", None, os.getuid(), None, None, None, None)
         reactor = FakeReactor()
-        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
             run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertTrue(reactor.running)
 
@@ -1364,12 +1364,12 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog should print an error message and exit if the
         'landscape' user doesn't exist.
         """
-        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
             sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("The 'landscape' user doesn't exist!", str(sys_exit))
 
     def test_clean_environment(self):
-        self._fake_pwd.addUser(
+        self.fake_pwd.addUser(
             "landscape", None, os.getuid(), None, None, None, None)
         os.environ["DEBIAN_YO"] = "yo"
         os.environ["DEBCONF_YO"] = "yo"
@@ -1378,7 +1378,7 @@ class WatchDogRunTests(LandscapeTest):
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
-        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
             run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)
