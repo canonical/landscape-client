@@ -964,8 +964,8 @@ class PackageReporterAptTest(LandscapeTest):
         """
         The L{PackageReporter.detect_changes} method package changes.
         """
-        with mock.patch.object(self.reporter, "detect_packages_changes") as reporter_mock:
-            reporter_mock.return_value = succeed(True)
+        with mock.patch.object(self.reporter, "detect_packages_changes",
+                               return_value=succeed(True)) as reporter_mock:
             self.successResultOf(self.reporter.detect_changes())
         reporter_mock.assert_called_once_with()
 
@@ -975,15 +975,13 @@ class PackageReporterAptTest(LandscapeTest):
         type 'package-data-changed' if we detected something has changed
         with respect to our previous run.
         """
-        reporter_mock = self.mocker.patch(self.reporter)
-        reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(True))
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
-
+        callback = mock.Mock()
         self.broker_service.reactor.call_on("package-data-changed", callback)
-        return self.reporter.detect_changes()
+        with mock.patch.object(self.reporter, "detect_packages_changes",
+                               return_value=succeed(True)) as reporter_mock:
+            self.successResultOf(self.reporter.detect_changes())
+        reporter_mock.assert_called_once_with()
+        callback.assert_called_once_with()
 
     def test_run(self):
         reporter_mock = self.mocker.patch(self.reporter)
