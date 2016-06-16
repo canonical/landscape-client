@@ -16,6 +16,7 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
+from landscape.package.skeleton import PackageSkeleton
 from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SimpleRepositoryHelper,
@@ -188,7 +189,8 @@ class PackageReporterAptTest(LandscapeTest):
                              "ids": [123, None, 456],
                              "request-id": request1.id})
 
-        def got_result(result):
+        def got_result(result, mocked_get_package_skeleton):
+            self.assertTrue(mocked_get_package_skeleton.called)
             message = message_store.get_pending_messages()[0]
             request2 = self.store.get_hash_id_request(message["request-id"])
             self.assertMessages(
@@ -216,12 +218,13 @@ class PackageReporterAptTest(LandscapeTest):
             installed_size = None
             relations = []
 
-        mock_facade = self.mocker.patch(self.Facade)
-        mock_facade.get_package_skeleton(ANY)
-        self.mocker.result(FakePackage())
-        self.mocker.replay()
-        deferred = self.reporter.handle_tasks()
-        return deferred.addCallback(got_result)
+            def get_hash(self):
+                return HASH1  # Need to match the hash of the initial request 
+
+        with mock.patch.object(self.Facade, "get_package_skeleton",
+                               return_value=FakePackage()) as mocked:
+            deferred = self.reporter.handle_tasks()
+            return deferred.addCallback(got_result, mocked)
 
     def test_set_package_ids_with_unknown_hashes_and_failed_send_msg(self):
         message_store = self.broker_service.message_store
