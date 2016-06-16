@@ -4,6 +4,7 @@ import sys
 import os
 import signal
 import logging
+import mock
 
 from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import Deferred, succeed, fail
@@ -827,7 +828,9 @@ time.sleep(999)
         result.addCallback(self.assertFalse)
         return result
 
-    def test_spawn_process_with_uid(self):
+    @mock.patch("pwd.getpwnam")
+    @mock.patch("os.getuid", return_value=0)
+    def test_spawn_process_with_uid(self, getuid, getpwnam):
         """
         When the current UID as reported by os.getuid is not the uid of the
         username of the daemon, the watchdog explicitly switches to the uid of
@@ -836,26 +839,26 @@ time.sleep(999)
         """
         self.makeFile("", path=self.exec_name)
 
-        getuid = self.mocker.replace("os.getuid")
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        reactor = self.mocker.mock()
-        self.expect(getuid()).result(0)
-        info = getpwnam("landscape")
-        self.expect(info.pw_uid).result(123)
-        self.expect(info.pw_gid).result(456)
-        self.expect(info.pw_dir).result("/var/lib/landscape")
+        getpwnam_result = object()
+        getpwnam_result.pw_uid = 123
+        getpwnam_result.pw_gid = 456
+        getpwnam_result.pw_dir = "/var/lib/landscape"
+        getpwnam.return_value = getpwnam_result
+
+        reactor = mock.Mock()
+
+        daemon = self.get_daemon(reactor=reactor)
+        daemon.start()
+
+        getuid.assert_called_with()
+        getpwnam.assert_called_with("landscape")
 
         env = os.environ.copy()
         env["HOME"] = "/var/lib/landscape"
         env["USER"] = "landscape"
         env["LOGNAME"] = "landscape"
 
-        reactor.spawnProcess(ARGS, KWARGS, env=env, uid=123, gid=456)
-
-        self.mocker.replay()
-
-        daemon = self.get_daemon(reactor=reactor)
-        daemon.start()
+        reactor.spawnProcess.assert_called_with(env=env, uid=123, gid=456)
 
     def test_spawn_process_without_root(self):
         """
