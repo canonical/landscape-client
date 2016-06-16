@@ -8,10 +8,9 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
 
-from mock import patch, Mock, call, mock_open
+from mock import patch, Mock, call
 
 from landscape.lib.fs import create_file, read_file, touch_file
-from landscape.package.reporter import find_reporter_command
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -21,7 +20,6 @@ from landscape.package.facade import (
     DependencyError, TransactionError)
 from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
-from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, StubProcessFactory)
 from landscape.package.tests.helpers import (
@@ -237,7 +235,6 @@ class AptPackageChangerTest(LandscapeTest):
 
         time_mock.assert_called_with()
 
-
         self.assertIn("Package data not yet synchronized with server (123)",
                       self.logfile.getvalue())
 
@@ -343,15 +340,16 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         [package1] = self.facade.get_packages_by_name("name1")
 
-        self.facade.perform_changes = Mock(side_effect=[DependencyError([package1]), "success"])
-        
+        self.facade.perform_changes = Mock(
+            side_effect=[DependencyError([package1]), "success"])
+
         self.facade.mark_install = Mock()
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
         self.facade.perform_changes.has_calls([call(), call()])
         self.facade.mark_install.assert_called_once_with(package1)
-                                           
+
         self.assertEqual(result.code, SUCCESS_RESULT)
         self.assertEqual(result.text, "success")
         self.assertEqual(result.installs, [1])
@@ -396,7 +394,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.perform_changes = Mock(
             side_effect=[DependencyError([package1]),
                          DependencyError([package2])])
-        
+
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
         self.facade.perform_changes.has_calls([call(), call()])
@@ -446,13 +444,13 @@ class AptPackageChangerTest(LandscapeTest):
                          "success"])
         self.facade.mark_install = Mock()
         self.facade.mark_remove = Mock()
-        
+
         result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
 
         self.facade.perform_changes.has_calls([call(), call()])
         self.facade.mark_install.assert_called_once_with(package2)
         self.facade.mark_remove.assert_called_once_with(package1)
-        
+
         self.assertEqual(result.code, SUCCESS_RESULT)
         self.assertEqual(result.text, "success")
         self.assertEqual(result.installs, [2])
@@ -669,9 +667,10 @@ class AptPackageChangerTest(LandscapeTest):
         # The reporter is only spawned if at least one task was handled.
         self.store.add_task("changer", {"type": "change-packages",
                                         "operation-id": 123})
-        
+
         self.successResultOf(self.changer.run())
-        system_mock.assert_called_once_with("/usr/bin/landscape-package-reporter")
+        system_mock.assert_called_once_with(
+            "/usr/bin/landscape-package-reporter")
 
     @patch("os.system")
     def test_spawn_reporter_after_running_with_config(self, system_mock):
@@ -683,7 +682,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.store.add_task("changer", {"type": "change-packages",
                                         "operation-id": 123})
 
-        result = self.successResultOf(self.changer.run())
+        self.successResultOf(self.changer.run())
         system_mock.assert_called_once_with(
             "/usr/bin/landscape-package-reporter -c test.conf")
 
@@ -701,15 +700,16 @@ class AptPackageChangerTest(LandscapeTest):
 
         class FakeGroup(object):
             gr_gid = 199
-            
+
         class FakeUser(object):
             pw_uid = 199
-            
+
         # We are running as root
         with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
             with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
-                # Add a task that will do nothing besides producing an answer.
-                # The reporter is only spawned if at least one task was handled.
+                # Add a task that will do nothing besides producing an
+                # answer.  The reporter is only spawned if at least
+                # one task was handled.
                 self.store.add_task("changer", {"type": "change-packages",
                                                 "operation-id": 123})
                 self.successResultOf(self.changer.run())
@@ -718,8 +718,8 @@ class AptPackageChangerTest(LandscapeTest):
         setgid_mock.assert_called_once_with(199)
         pwnam_mock.assert_called_once_with("landscape")
         setuid_mock.assert_called_once_with(199)
-        system_mock.assert_called_once_with("/usr/bin/landscape-package-reporter")
-
+        system_mock.assert_called_once_with(
+            "/usr/bin/landscape-package-reporter")
 
     def test_run(self):
         changer_mock = patch.object(self, "changer")
@@ -738,7 +738,8 @@ class AptPackageChangerTest(LandscapeTest):
             deferred.callback(None)
 
     @patch("os.system")
-    def test_dont_spawn_reporter_after_running_if_nothing_done(self, system_mock):
+    def test_dont_spawn_reporter_after_running_if_nothing_done(
+            self, system_mock):
         self.successResultOf(self.changer.run())
         system_mock.assert_not_called()
 
@@ -764,10 +765,9 @@ class AptPackageChangerTest(LandscapeTest):
         with patch("os.getpgrp", return_value=pid) as pgrp:
             with patch("landscape.package.changer.run_task_handler") as task:
                 main(["ARGS"])
-                    
+
         pgrp.assert_called_once_with()
         task.assert_called_once_with(PackageChanger, ["ARGS"])
-
 
     def test_find_changer_command(self):
         dirname = self.makeDir()
