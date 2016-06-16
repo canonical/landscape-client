@@ -3,7 +3,6 @@ import time
 import sys
 import os
 import signal
-import logging
 
 import mock
 
@@ -241,11 +240,11 @@ class WatchDogTest(LandscapeTest):
         """
         SIGUSR1 should cause logs to be reopened.
         """
-        reactor = mock.Mock()
-        watchdog = WatchDog(reactor=reactor, config=self.config)
+        mock_reactor = mock.Mock()
+        watchdog = WatchDog(reactor=mock_reactor, config=self.config)
         os.kill(os.getpid(), signal.SIGUSR1)
 
-        reactor.callFromThread.assert_called_once_with(
+        mock_reactor.callFromThread.assert_called_once_with(
             watchdog._notify_rotate_logs)
 
 
