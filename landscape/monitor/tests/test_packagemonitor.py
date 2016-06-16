@@ -97,8 +97,6 @@ class PackageMonitorTest(LandscapeTest):
             run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        self.mocker.replay()
-
         with mock.patch.object(self.package_monitor, 'spawn_reporter') \
                     as mock_spawn_reporter, \
                 mock.patch.object(self.package_monitor, 'run',
@@ -106,7 +104,8 @@ class PackageMonitorTest(LandscapeTest):
             self.broker_service.message_store.set_accepted_types(["packages"])
             self.monitor.add(self.package_monitor)
             self.successResultOf(deferred)
-            mock_spawn_reporter.assert_called_once_with()
+
+        mock_spawn_reporter.assert_called_once_with()
 
     def test_spawn_reporter_on_run_if_message_accepted(self):
         self.broker_service.message_store.set_accepted_types(["packages"])
@@ -115,7 +114,8 @@ class PackageMonitorTest(LandscapeTest):
             # We want to ignore calls made as a result of the above line.
             mkd.reset_mock()
             self.successResultOf(self.package_monitor.run())
-            self.assertEqual(mkd.call_count, 1)
+
+        self.assertEqual(mkd.call_count, 1)
 
     def test_package_ids_handling(self):
         self.monitor.add(self.package_monitor)
@@ -124,14 +124,15 @@ class PackageMonitorTest(LandscapeTest):
             message = {"type": "package-ids", "ids": [None], "request-id": 1}
             self.monitor.dispatch_message(message)
             task = self.package_store.get_next_task("reporter")
-            self.assertTrue(task)
-            self.assertEqual(task.data, message)
+
+        self.assertTrue(task)
+        self.assertEqual(task.data, message)
 
     def test_spawn_reporter(self):
         command = self.makeFile("#!/bin/sh\necho 'I am the reporter!' >&2\n")
         os.chmod(command, 0755)
         find_command_mock_patcher = mock.patch(
-            'landscape.monitor.packagemonitor.find_reporter_command',
+            "landscape.monitor.packagemonitor.find_reporter_command",
             return_value=command)
         find_command_mock_patcher.start()
 
@@ -149,7 +150,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_without_output(self):
         find_command_mock_patcher = mock.patch(
-            'landscape.monitor.packagemonitor.find_reporter_command',
+            "landscape.monitor.packagemonitor.find_reporter_command",
             return_value="/bin/true")
         find_command_mock_patcher.start()
 
@@ -168,7 +169,7 @@ class PackageMonitorTest(LandscapeTest):
         command = self.makeFile("#!/bin/sh\necho VAR: $VAR\n")
         os.chmod(command, 0755)
         find_command_mock_patcher = mock.patch(
-            'landscape.monitor.packagemonitor.find_reporter_command',
+            "landscape.monitor.packagemonitor.find_reporter_command",
             return_value=command)
         find_command_mock_patcher.start()
 
@@ -191,7 +192,7 @@ class PackageMonitorTest(LandscapeTest):
         command = self.makeFile("#!/bin/sh\necho OPTIONS: $@\n")
         os.chmod(command, 0755)
         find_command_mock_patcher = mock.patch(
-            'landscape.monitor.packagemonitor.find_reporter_command',
+            "landscape.monitor.packagemonitor.find_reporter_command",
             return_value=command)
         find_command_mock_patcher.start()
 
@@ -284,7 +285,7 @@ class PackageMonitorTest(LandscapeTest):
         os.chmod(dir, 0)
 
         find_command_mock_patcher = mock.patch(
-            'landscape.monitor.packagemonitor.find_reporter_command',
+            "landscape.monitor.packagemonitor.find_reporter_command",
             return_value=command)
         find_command_mock_patcher.start()
 
