@@ -236,7 +236,7 @@ class WatchDogTest(LandscapeTest):
 
         return result.addCallback(check)
 
-    def test_log_notification(self):
+    def test_wb_log_notification(self):
         """
         SIGUSR1 should cause logs to be reopened.
         """
