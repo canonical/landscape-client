@@ -681,14 +681,17 @@ class AptPackageChangerTest(LandscapeTest):
         """The changer passes the config to the reporter when running it."""
         self.config.config = "test.conf"
 
-        # Add a task that will do nothing besides producing an answer.
-        # The reporter is only spawned if at least one task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
+        with patch("landscape.package.changer.find_reporter_command",
+                   return_value="/fake/bin/landscape-package-reporter"):
+            # Add a task that will do nothing besides producing an
+            # answer.  The reporter is only spawned if at least one
+            # task was handled.
+            self.store.add_task("changer", {"type": "change-packages",
+                                            "operation-id": 123})
+            self.successResultOf(self.changer.run())
 
-        self.successResultOf(self.changer.run())
         system_mock.assert_called_once_with(
-            "/usr/bin/landscape-package-reporter -c test.conf")
+            "/fake/bin/landscape-package-reporter -c test.conf")
 
     @patch("os.getuid", return_value=0)
     @patch("os.setgid")
