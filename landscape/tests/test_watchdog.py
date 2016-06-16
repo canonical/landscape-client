@@ -2,7 +2,6 @@ import stat
 import time
 import sys
 import os
-import pwd
 import signal
 import logging
 
