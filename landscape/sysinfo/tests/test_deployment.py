@@ -60,8 +60,7 @@ class DeploymentTest(LandscapeTest):
 
 class FakeReactor(object):
     """
-    Something that's easier to understand and more reusable than a bunch of
-    mocker
+    Something that's simpler and more reusable than a bunch of mocked objects.
     """
     def __init__(self):
         self.queued_calls = []
