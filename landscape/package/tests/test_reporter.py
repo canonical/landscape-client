@@ -1108,19 +1108,18 @@ class PackageReporterAptTest(LandscapeTest):
         self.reactor.advance(0)
         return deferred
 
-    def test_run_apt_update(self):
+    @mock.patch("logging.warning")
+    def test_run_apt_update(self, warning_mock):
         """
         The L{PackageReporter.run_apt_update} method should run apt-update.
         """
         self.reporter.sources_list_filename = "/I/Dont/Exist"
         self.reporter.sources_list_directory = "/I/Dont/Exist"
         self._make_fake_apt_update()
-        debug_mock = self.mocker.replace("logging.debug")
-        debug_mock("'%s' exited with status 0 (out='output', err='error')" %
-                   self.reporter.apt_update_filename)
-        warning_mock = self.mocker.replace("logging.warning")
-        self.expect(warning_mock(ANY)).count(0)
-        self.mocker.replay()
+        debug_patcher = mock.patch.object(reporter.logging, "debug")
+        debug_mock = debug_patcher.start()
+        self.addCleanup(debug_patcher.stop)
+
         deferred = Deferred()
 
         def do_test():
@@ -1130,6 +1129,9 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("output", out)
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
+                self.assertFalse(warning_mock.called)
+                debug_mock.assert_called_once_with("'%s' exited with status 0 (out='output', err='error')" %
+                           self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
