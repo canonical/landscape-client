@@ -1066,8 +1066,6 @@ registration_key = shared-secret
                                  "https_proxy = https://config\n"
                                  "url = http://url\n")
 
-        self.mocker.replay()
-
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
         mock_setup_script().run.assert_called_once_with()
@@ -1352,11 +1350,6 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.SysVConfig")
     def test_stop_client_and_disable_init_scripts(
             self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(False)
-        sysvconfig_mock.stop_landscape()
-        self.mocker.replay()
-
         main(["--disable", "-c", self.make_working_config()])
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
         mock_sysvconfig().stop_landscape.assert_called_once_with()
@@ -1368,32 +1361,27 @@ registration_key = shared-secret
         mock_getuid.assert_called_once_with()
         self.assertIn("landscape-config must be run as root", str(sys_exit))
 
-    @mock.patch("sys.stdout.write")
+    @mock.patch("sys.stdout", new_callable=StringIO)
     def test_main_with_help_and_non_root(
-            self, mock_write, mock_getuid, mock_bootstrap_tree):
+            self, mock_stdout, mock_getuid, mock_bootstrap_tree):
         """It's possible to call 'landscape-config --help' as normal user."""
         mock_getuid.return_value = 1000
         self.assertRaises(SystemExit, main, ["--help"])
-        mock_write.assert_called_with(
-            "show this help message and exit")
+        self.assertIn(
+            "show this help message and exit", mock_stdout.getvalue())
 
-    def test_main_with_help_and_non_root_short(self):
+    @mock.patch("sys.stdout", new_callable=StringIO)
+    def test_main_with_help_and_non_root_short(
+            self, mock_stdout, mock_getuid, mock_bootstrap_tree):
         """It's possible to call 'landscape-config -h' as normal user."""
-        self.mocker.reset()  # Forget the thing done in setUp
-        output = StringIO()
-        self.mocker.replace("sys.stdout").write(ANY)
-        self.mocker.call(output.write)
-        self.mocker.replay()
+        mock_getuid.return_value = 1000
         self.assertRaises(SystemExit, main, ["-h"])
-        self.assertIn("show this help message and exit", output.getvalue())
+        self.assertIn(
+            "show this help message and exit", mock_stdout.getvalue())
 
-    def test_import_from_file(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_import_from_file(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         configuration = (
             "[client]\n"
             "computer_title = New Title\n"
@@ -1411,6 +1399,9 @@ registration_key = shared-secret
                                   "--import", import_filename])
         setup(config)
 
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
+
         options = ConfigParser()
         options.read(config_filename)
 
@@ -1422,9 +1413,7 @@ registration_key = shared-secret
                           "https_proxy": "https://new.proxy",
                           "url": "http://new.url"})
 
-    def test_import_from_empty_file(self):
-        self.mocker.replay()
-
+    def test_import_from_empty_file(self, mock_getuid, mock_bootstrap_tree):
         config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile("", basename="import_config")
 
@@ -1438,9 +1427,8 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_non_existent_file(self):
-        self.mocker.replay()
-
+    def test_import_from_non_existent_file(
+            self, mock_getuid, mock_bootstrap_tree):
         config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile(basename="import_config")
 
@@ -1454,9 +1442,8 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_file_with_empty_client_section(self):
-        self.mocker.replay()
-
+    def test_import_from_file_with_empty_client_section(
+            self, mock_getuid, mock_bootstrap_tree):
         old_configuration = "[client]\n"
 
         config_filename = self.makeFile("", old_configuration,
@@ -1473,9 +1460,7 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_bogus_file(self):
-        self.mocker.replay()
-
+    def test_import_from_bogus_file(self, mock_getuid, mock_bootstrap_tree):
         config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile("<strong>BOGUS!</strong>",
                                         basename="import_config")
@@ -1490,12 +1475,12 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_unreadable_file(self):
+    def test_import_from_unreadable_file(
+            self, mock_getuid, mock_bootstrap_tree):
         """
         An error is raised when unable to read configuration from the
         specified file.
         """
-        self.mocker.replay()
         import_filename = self.makeFile(
             "[client]\nfoo=bar", basename="import_config")
         # Remove read permissions
@@ -1506,13 +1491,9 @@ registration_key = shared-secret
                             import_filename)
         self.assertEqual(str(error), expected_message)
 
-    def test_import_from_file_preserves_old_options(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_import_from_file_preserves_old_options(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         old_configuration = (
             "[client]\n"
             "computer_title = Old Title\n"
@@ -1539,6 +1520,8 @@ registration_key = shared-secret
                                   "-p", "Command Line Password"])
         setup(config)
 
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
         options = ConfigParser()
         options.read(config_filename)
 
@@ -1550,18 +1533,14 @@ registration_key = shared-secret
                           "https_proxy": "https://old.proxy",
                           "url": "http://new.url"})
 
-    def test_import_from_file_may_reset_old_options(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_import_from_file_may_reset_old_options(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """
         This test ensures that setting an empty option in an imported
         configuration file will actually set the local value to empty
         too, rather than being ignored.
         """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-        self.mocker.replay()
-
         old_configuration = (
             "[client]\n"
             "computer_title = Old Title\n"
@@ -1581,6 +1560,8 @@ registration_key = shared-secret
         config = self.get_config(["--config", config_filename, "--silent",
                                   "--import", import_filename])
         setup(config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -1591,12 +1572,13 @@ registration_key = shared-secret
                           "registration_key": "",  # <==
                           "url": "http://old.url"})
 
-    def test_import_from_url(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch")
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_import_from_url(
+            self, mock_sysvconfig, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
+        mock_sysvconfig().restart_landscape.return_value = True
         configuration = (
             "[client]\n"
             "computer_title = New Title\n"
@@ -1606,20 +1588,18 @@ registration_key = shared-secret
             "https_proxy = https://new.proxy\n"
             "url = http://new.url\n")
 
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://config.url")
-        self.mocker.result(configuration)
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching configuration from https://config.url...")
-
-        self.mocker.replay()
+        mock_fetch.return_value = configuration
 
         config_filename = self.makeFile("", basename="final_config")
 
         config = self.get_config(["--config", config_filename, "--silent",
                                   "--import", "https://config.url"])
         setup(config)
+        mock_fetch.assert_called_once_with("https://config.url")
+        mock_print_text.assert_called_once_with(
+            "Fetching configuration from https://config.url...")
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -1632,16 +1612,12 @@ registration_key = shared-secret
                           "https_proxy": "https://new.proxy",
                           "url": "http://new.url"})
 
-    def test_import_from_url_with_http_code_fetch_error(self):
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://config.url")
-        self.mocker.throw(HTTPCodeError(501, ""))
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching configuration from https://config.url...")
-
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch")
+    def test_import_from_url_with_http_code_fetch_error(
+            self, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
+        mock_fetch.side_effect = HTTPCodeError(501, "")
         config_filename = self.makeFile("", basename="final_config")
 
         try:
@@ -1654,16 +1630,16 @@ registration_key = shared-secret
                              "returned HTTP code 501")
         else:
             self.fail("ImportOptionError not raised")
+        mock_fetch.assert_called_once_with("https://config.url")
+        mock_print_text.assert_called_once_with(
+            "Fetching configuration from https://config.url...")
 
-    def test_import_from_url_with_pycurl_error(self):
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://config.url")
-        self.mocker.throw(PyCurlError(60, "pycurl message"))
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching configuration from https://config.url...")
-
-        self.mocker.replay()
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch")
+    def test_import_from_url_with_pycurl_error(
+            self, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
+        mock_fetch.side_effect = PyCurlError(60, "pycurl message")
 
         config_filename = self.makeFile("", basename="final_config")
 
@@ -1676,17 +1652,15 @@ registration_key = shared-secret
                              "https://config.url: Error 60: pycurl message")
         else:
             self.fail("ImportOptionError not raised")
+        mock_fetch.assert_called_once_with("https://config.url")
+        mock_print_text.assert_called_once_with(
+            "Fetching configuration from https://config.url...")
 
-    def test_import_from_url_with_empty_content(self):
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://config.url")
-        self.mocker.result("")
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching configuration from https://config.url...")
-
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch", return_value="")
+    def test_import_from_url_with_empty_content(
+            self, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
@@ -1695,17 +1669,16 @@ registration_key = shared-secret
                              "Nothing to import at https://config.url.")
         else:
             self.fail("ImportOptionError not raised")
+        mock_fetch.assert_called_once_with("https://config.url")
+        mock_print_text.assert_called_once_with(
+            "Fetching configuration from https://config.url...")
 
-    def test_import_from_url_with_bogus_content(self):
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://config.url")
-        self.mocker.result("<strong>BOGUS!</strong>")
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching configuration from https://config.url...")
-
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch",
+                return_value="<strong>BOGUS!</strong>")
+    def test_import_from_url_with_bogus_content(
+            self, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
@@ -1714,38 +1687,36 @@ registration_key = shared-secret
                              str(error))
         else:
             self.fail("ImportOptionError not raised")
+        mock_fetch.assert_called_once_with("https://config.url")
+        mock_print_text.assert_called_once_with(
+            "Fetching configuration from https://config.url...")
 
-    def test_import_error_is_handled_nicely_by_main(self):
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://config.url")
-        self.mocker.throw(HTTPCodeError(404, ""))
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching configuration from https://config.url...")
-        print_text_mock(CONTAINS("Server returned HTTP code 404"), error=True)
-
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch",
+                side_effect=HTTPCodeError(404, ""))
+    def test_import_error_is_handled_nicely_by_main(
+            self, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
         system_exit = self.assertRaises(
             SystemExit, main, ["--import", "https://config.url"])
         self.assertEqual(system_exit.code, 1)
+        mock_fetch.assert_called_once_with("https://config.url")
+        mock_print_text.assert_any_call(
+            "Fetching configuration from https://config.url...")
+        mock_print_text.assert_called_with(
+            "Couldn't download configuration from https://config.url: "
+            "Server returned HTTP code 404", error=True)
 
-    def test_base64_ssl_public_key_is_exported_to_file(self):
-
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_base64_ssl_public_key_is_exported_to_file(
+            self, mock_sysvconfig, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
+        mock_sysvconfig().restart_landscape.return_value = True
         data_path = self.makeDir()
         config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
         key_filename = os.path.join(data_path,
             os.path.basename(config_filename) + ".ssl_public_key")
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
-
-        self.mocker.replay()
 
         config = self.get_config(["--silent", "-c", config_filename,
                                   "-u", "url", "-a", "account", "-t", "title",
@@ -1753,6 +1724,10 @@ registration_key = shared-secret
         config.data_path = data_path
         setup(config)
 
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_print_text.assert_called_once_with(
+            "Writing SSL CA certificate to %s..." % key_filename)
         self.assertEqual("Hi there!", open(key_filename, "r").read())
 
         options = ConfigParser()
@@ -1760,13 +1735,10 @@ registration_key = shared-secret
         self.assertEqual(options.get("client", "ssl_public_key"),
                          key_filename)
 
-    def test_normal_ssl_public_key_is_not_exported_to_file(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_normal_ssl_public_key_is_not_exported_to_file(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+        mock_sysvconfig().restart_landscape.return_value = True
         config_filename = self.makeFile("")
 
         config = self.get_config(["--silent", "-c", config_filename,
@@ -1774,6 +1746,8 @@ registration_key = shared-secret
                                   "--ssl-public-key", "/some/filename"])
         setup(config)
 
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
         key_filename = config_filename + ".ssl_public_key"
         self.assertFalse(os.path.isfile(key_filename))
 
@@ -1783,28 +1757,32 @@ registration_key = shared-secret
                          "/some/filename")
 
     # We test them individually since they must work individually.
-    def test_import_from_url_honors_http_proxy(self):
-        self.ensure_import_from_url_honors_proxy_options("http_proxy")
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch")
+    def test_import_from_url_honors_http_proxy(
+            self, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
+        self.ensure_import_from_url_honors_proxy_options(
+            "http_proxy", mock_fetch, mock_print_text)
 
-    def test_import_from_url_honors_https_proxy(self):
-        self.ensure_import_from_url_honors_proxy_options("https_proxy")
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.fetch")
+    def test_import_from_url_honors_https_proxy(
+            self, mock_fetch, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
+        self.ensure_import_from_url_honors_proxy_options(
+            "https_proxy", mock_fetch, mock_print_text)
 
-    def ensure_import_from_url_honors_proxy_options(self, proxy_option):
+    def ensure_import_from_url_honors_proxy_options(
+            self, proxy_option, mock_fetch, mock_print_text):
 
         def check_proxy(url):
+            self.assertEqual("https://config.url", url)
             self.assertEqual(os.environ.get(proxy_option), "http://proxy")
+            # Doesn't matter.  We just want to check the context around it.
+            return ""
 
-        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://config.url")
-        self.mocker.call(check_proxy)
-
-        # Doesn't matter.  We just want to check the context around it.
-        self.mocker.result("")
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching configuration from https://config.url...")
-
-        self.mocker.replay()
+        mock_fetch.side_effect = check_proxy
 
         config_filename = self.makeFile("", basename="final_config")
 
@@ -1817,6 +1795,8 @@ registration_key = shared-secret
             pass  # The returned content is empty.  We don't really
                   # care for this test.  Mocker will ensure the tests
                   # we care about are done.
+        mock_print_text.assert_called_once_with(
+            "Fetching configuration from https://config.url...")
 
 
 class FakeConnectorFactory(object):
