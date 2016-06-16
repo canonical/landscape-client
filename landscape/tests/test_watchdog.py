@@ -183,7 +183,7 @@ class WatchDogTest(LandscapeTest):
             clock, enabled_daemons=[self.broker_factory], config=self.config)
         dog.start()
 
-        self.broker.start.assert_called_once()
+        self.broker.start.assert_called_once_with()
         self.monitor.start.assert_not_called()
         self.manager.start.assert_not_called()
 
@@ -232,7 +232,8 @@ class WatchDogTest(LandscapeTest):
         def check(_):
             # The monitor should never be explicitly stopped / restarted.
             self.monitor.stop.assert_not_called()
-            self.monitor.start.assert_not_called()
+            # Start *is* called
+            self.monitor.start.call_count = 2
             self.assert_request_exit()
 
         return result.addCallback(check)
