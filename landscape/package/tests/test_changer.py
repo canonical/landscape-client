@@ -695,50 +695,37 @@ class AptPackageChangerTest(LandscapeTest):
         change to the "landscape" user and "landscape" group.
         """
 
-        # We are running as root
-        getuid_mock = self.mocker.replace("os.getuid")
-        getuid_mock()
-        self.mocker.result(0)
-
-        self.mocker.order()
-
-        # We want to return a known gid
-        grnam_mock = self.mocker.replace("grp.getgrnam")
-        grnam_mock("landscape")
-
         class FakeGroup(object):
             gr_gid = 199
-
-        self.mocker.result(FakeGroup())
-
-        # First the changer should change the group
-        setgid_mock = self.mocker.replace("os.setgid")
-        setgid_mock(199)
-
-        # And a known uid as well
-        pwnam_mock = self.mocker.replace("pwd.getpwnam")
-        pwnam_mock("landscape")
-
+            
         class FakeUser(object):
             pw_uid = 199
 
-        self.mocker.result(FakeUser())
+        # We are running as root
+        with patch("os.getuid", return_value=0):
+            with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
+                # First the changer should change the group
+                with patch("os.setgid") as setgid_mock:
+                    # And a known uid as well
+                    with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
+                        # And now the user as well
+                        with patch("os.setuid") as setuid_mock:
+                            # Finally, we don't really want the package reporter to run.
+                            with patch("os.system") as system_mock:
 
-        # And now the user as well
-        setuid_mock = self.mocker.replace("os.setuid")
-        setuid_mock(199)
+                                # Add a task that will do nothing besides producing an answer.
+                                # The reporter is only spawned if at least one task was handled.
+                                self.store.add_task("changer", {"type": "change-packages",
+                                                                "operation-id": 123})
+                                self.successResultOf(self.changer.run())
 
-        # Finally, we don't really want the package reporter to run.
-        system_mock = self.mocker.replace("os.system")
-        system_mock(ANY)
 
-        self.mocker.replay()
+        grnam_mock.assert_called_once_with("landscape")
+        setgid_mock.assert_called_once_with(199)
+        pwnam_mock.assert_called_once_with("landscape")
+        setuid_mock.assert_called_once_with(199)
+        system_mock.assert_called_once_with("/usr/bin/landscape-package-reporter")
 
-        # Add a task that will do nothing besides producing an answer.
-        # The reporter is only spawned if at least one task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
-        return self.changer.run()
 
     def test_run(self):
         changer_mock = self.mocker.patch(self.changer)
