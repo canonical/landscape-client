@@ -878,24 +878,22 @@ time.sleep(999)
             mock.ANY, mock.ANY, args=mock.ANY, env=mock.ANY, uid=None,
             gid=None)
 
-    def test_spawn_process_same_uid(self):
+    @mock.patch("os.getgid", return_value=0)
+    @mock.patch("os.getuid", return_value=0)
+    def test_spawn_process_same_uid(self, getuid, getgid):
         """
         If the daemon is specified to run as root, and the watchdog is running
         as root, no uid or gid switching will occur.
         """
         self.makeFile("", path=self.exec_name)
-        getuid = self.mocker.replace("os.getuid")
-        self.expect(getuid()).result(0)
-        getgid = self.mocker.replace("os.getgid")
-        self.expect(getgid()).result(0)
-        reactor = self.mocker.mock()
-
-        reactor.spawnProcess(ARGS, KWARGS, uid=None, gid=None)
-
-        self.mocker.replay()
+        reactor = mock.Mock()
 
         daemon = self.get_daemon(reactor=reactor, username="root")
         daemon.start()
+
+        reactor.spawnProcess.assert_called_with(
+            mock.ANY, mock.ANY, args=mock.ANY, env=mock.ANY, uid=None,
+            gid=None)
 
     def test_request_exit(self):
         """The request_exit() method calls exit() on the broker process."""
