@@ -710,20 +710,16 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-        remote_mock = self.mocker.patch(self.reporter._broker)
-        remote_mock.send_message(ANY, ANY, True)
-        self.mocker.result(deferred)
-        self.mocker.replay()
-
-        def got_result(result):
+        def got_result(result, send_mock):
+            send_mock.assert_called_once_with(mock.ANY, mock.ANY, True)
             self.assertMessages(message_store.get_pending_messages(), [])
             self.assertEqual(list(self.store.iter_hash_id_requests()), [])
 
-        result = self.reporter.request_unknown_hashes()
-
-        self.assertFailure(result, Boom)
-
-        return result.addCallback(got_result)
+        with mock.patch.object(self.reporter._broker, "send_message") as send_mock:
+            send_mock.return_value = deferred
+            result = self.reporter.request_unknown_hashes()
+            self.assertFailure(result, Boom)
+            return result.addCallback(got_result, send_mock)
 
     def test_detect_packages_creates_stamp_file(self):
         """
