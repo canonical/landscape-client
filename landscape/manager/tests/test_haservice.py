@@ -1,12 +1,10 @@
 import os
 
-from twisted.internet.defer import Deferred
-
+from mock import patch, ANY, Mock
 
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.tests.mocker import ANY
 
 
 class HAServiceTests(LandscapeTest):
@@ -41,19 +39,19 @@ class HAServiceTests(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
-    def test_invalid_server_service_state_request(self):
+    @patch("logging.error")
+    def test_invalid_server_service_state_request(self, logging_mock):
         """
         When the landscape server requests a C{service-state} other than
         'online' or 'standby' the client responds with the appropriate error.
         """
-        logging_mock = self.mocker.replace("logging.error")
-        logging_mock("Invalid cluster participation state requested BOGUS.")
-        self.mocker.replay()
-
         self.manager.dispatch_message(
             {"type": "change-ha-service", "service-name": "my-service",
              "unit-name": self.unit_name, "service-state": "BOGUS",
              "operation-id": 1})
+
+        logging_mock.assert_called_once_with(
+            "Invalid cluster participation state requested BOGUS.")
 
         service = self.broker_service
         self.assertMessages(
@@ -62,23 +60,23 @@ class HAServiceTests(LandscapeTest):
               u"Invalid cluster participation state requested BOGUS.",
               "status": FAILED, "operation-id": 1}])
 
-    def test_not_a_juju_computer(self):
+    @patch("logging.error")
+    def test_not_a_juju_computer(self, logging_mock):
         """
         When not a juju charmed computer, L{HAService} reponds with an error
         due to missing JUJU_UNITS_BASE dir.
         """
         self.ha_service.JUJU_UNITS_BASE = "/I/don't/exist"
 
-        logging_mock = self.mocker.replace("logging.error")
-        logging_mock("This computer is not deployed with juju. "
-                     "Changing high-availability service not supported.")
-        self.mocker.replay()
-
         self.manager.dispatch_message(
             {"type": "change-ha-service", "service-name": "my-service",
              "unit-name": self.unit_name,
              "service-state": self.ha_service.STATE_STANDBY,
              "operation-id": 1})
+
+        logging_mock.assert_called_once_with(
+            "This computer is not deployed with juju. Changing "
+            "high-availability service not supported.")
 
         service = self.broker_service
         self.assertMessages(
@@ -88,20 +86,20 @@ class HAServiceTests(LandscapeTest):
               u"high-availability service not supported.",
               "status": FAILED, "operation-id": 1}])
 
-    def test_incorrect_juju_unit(self):
+    @patch("logging.error")
+    def test_incorrect_juju_unit(self, logging_mock):
         """
         When not the specific juju charmed computer, L{HAService} reponds
         with an error due to missing the JUJU_UNITS_BASE/$JUJU_UNIT dir.
         """
-        logging_mock = self.mocker.replace("logging.error")
-        logging_mock("This computer is not juju unit some-other-service-0. "
-                     "Unable to modify high-availability services.")
-        self.mocker.replay()
-
         self.manager.dispatch_message(
             {"type": "change-ha-service", "service-name": "some-other-service",
              "unit-name": "some-other-service-0", "service-state": "standby",
              "operation-id": 1})
+
+        logging_mock.assert_called_once_with(
+            "This computer is not juju unit some-other-service-0."
+            " Unable to modify high-availability services.")
 
         service = self.broker_service
         self.assertMessages(
@@ -262,30 +260,31 @@ class HAServiceTests(LandscapeTest):
                     "unit-name": self.unit_name,
                     "service-state": self.ha_service.STATE_STANDBY,
                     "operation-id": 1})
-        deferred = Deferred()
 
-        def validate_messages(value):
+        real_respond_success = self.ha_service._respond_success
+
+        def validate_message(data, message, operation_id):
             cluster_script = "%s/%s" % (
                 self.scripts_dir, self.ha_service.CLUSTER_STANDBY)
+
+            result = real_respond_success(data, message, operation_id)
             service = self.broker_service
+            messages = service.message_store.get_pending_messages()
             self.assertMessages(
-                service.message_store.get_pending_messages(),
+                messages,
                 [{"type": "operation-result",
                   "result-text": u"%s succeeded." % cluster_script,
                   "status": SUCCEEDED, "operation-id": 1}])
+            return result
 
-        def handle_has_run(handle_result_deferred):
-            handle_result_deferred.chainDeferred(deferred)
-            return deferred.addCallback(validate_messages)
+        self.ha_service._respond_success = Mock(side_effect=validate_message)
 
-        ha_service_mock = self.mocker.patch(self.ha_service)
-        ha_service_mock.handle_change_ha_service(ANY)
-        self.mocker.passthrough(handle_has_run)
-        self.mocker.replay()
         self.manager.add(self.ha_service)
-        self.manager.dispatch_message(message)
+        handler = self.manager.dispatch_message(message)
 
-        return deferred
+        # Just to be sure we're really running the assertion
+        self.ha_service._respond_success.has_call(ANY)
+        return handler
 
     def test_run_success_cluster_online(self):
         """
@@ -297,27 +296,28 @@ class HAServiceTests(LandscapeTest):
                     "unit-name": self.unit_name,
                     "service-state": self.ha_service.STATE_ONLINE,
                     "operation-id": 1})
-        deferred = Deferred()
 
-        def validate_messages(value):
+        real_respond_success = self.ha_service._respond_success
+
+        def validate_message(data, message, operation_id):
             cluster_script = "%s/%s" % (
                 self.scripts_dir, self.ha_service.CLUSTER_ONLINE)
+
+            result = real_respond_success(data, message, operation_id)
             service = self.broker_service
+            messages = service.message_store.get_pending_messages()
             self.assertMessages(
-                service.message_store.get_pending_messages(),
+                messages,
                 [{"type": "operation-result",
                   "result-text": u"%s succeeded." % cluster_script,
                   "status": SUCCEEDED, "operation-id": 1}])
+            return result
 
-        def handle_has_run(handle_result_deferred):
-            handle_result_deferred.chainDeferred(deferred)
-            return deferred.addCallback(validate_messages)
+        self.ha_service._respond_success = Mock(side_effect=validate_message)
 
-        ha_service_mock = self.mocker.patch(self.ha_service)
-        ha_service_mock.handle_change_ha_service(ANY)
-        self.mocker.passthrough(handle_has_run)
-        self.mocker.replay()
         self.manager.add(self.ha_service)
-        self.manager.dispatch_message(message)
+        handler = self.manager.dispatch_message(message)
 
-        return deferred
+        # Just to be sure we're really running the assertion
+        self.ha_service._respond_success.has_call(ANY)
+        return handler

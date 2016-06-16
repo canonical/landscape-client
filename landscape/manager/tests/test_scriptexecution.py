@@ -20,7 +20,6 @@ from landscape.manager.scriptexecution import (
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
-from landscape.tests.mocker import ANY, ARGS
 
 
 def get_default_environment():
@@ -515,7 +514,12 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    def test_script_is_owned_by_user(self):
+    @mock.patch("os.chown")
+    @mock.patch("os.chmod")
+    @mock.patch("tempfile.mkstemp")
+    @mock.patch("os.fdopen")
+    def test_script_is_owned_by_user(self, mock_fdopen, mock_mkstemp,
+                                     mock_chmod, mock_chown):
         """
         This is a very white-box test. When a script is generated, it must be
         created such that data NEVER gets into it before the file has the
@@ -525,32 +529,49 @@ class RunScriptTests(LandscapeTest):
         username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
-        mock_mkstemp = self.mocker.replace("tempfile.mkstemp",
-                                           passthrough=False)
-        mock_fdopen = self.mocker.replace("os.fdopen", passthrough=False)
-        process_factory = self.mocker.mock()
+        called_mocks = []
+
+        mock_chown.side_effect = lambda *_: called_mocks.append(mock_chown)
+        mock_chmod.side_effect = lambda *_: called_mocks.append(mock_chmod)
+
+        def mock_mkstemp_side_effect(*_):
+            called_mocks.append(mock_mkstemp)
+            return (99, "tempo!")
+
+        mock_mkstemp.side_effect = mock_mkstemp_side_effect
+
+        script_file = mock.Mock()
+
+        def mock_fdopen_side_effect(*_):
+            called_mocks.append(mock_fdopen)
+            return script_file
+
+        mock_fdopen.side_effect = mock_fdopen_side_effect
+
+        def spawnProcess(protocol, filename, uid, gid, path, env):
+            self.assertIsNone(uid)
+            self.assertIsNone(gid)
+            self.assertEqual(get_default_environment(), env)
+            protocol.result_deferred.callback(None)
+
+        process_factory = mock.Mock()
+        process_factory.spawnProcess = spawnProcess
         self.plugin.process_factory = process_factory
 
-        self.mocker.order()
+        result = self.plugin.run_script("/bin/sh", "code",
+                                        user=pwd.getpwuid(uid)[0])
 
-        self.expect(mock_mkstemp()).result((99, "tempo!"))
+        def check(_):
+            mock_fdopen.assert_called_with(99, "w")
+            mock_chmod.assert_called_with("tempo!", 0o700)
+            mock_chown.assert_called_with("tempo!", uid, gid)
+            script_file.write.assert_called_with("#!/bin/sh\ncode")
+            script_file.close.assert_called_with()
+            self.assertEqual(
+                [mock_mkstemp, mock_fdopen, mock_chmod, mock_chown],
+                called_mocks)
 
-        script_file = mock_fdopen(99, "w")
-        mock_chmod("tempo!", 0700)
-        mock_chown("tempo!", uid, gid)
-        # The contents are written *after* the permissions have been set up!
-        script_file.write("#!/bin/sh\ncode")
-        script_file.close()
-        process_factory.spawnProcess(
-            ANY, ANY, uid=None, gid=None, path=ANY,
-            env=get_default_environment())
-        self.mocker.replay()
-        # We don't really care about the deferred that's returned, as long as
-        # those things happened in the correct order.
-        self.plugin.run_script("/bin/sh", "code",
-                               user=pwd.getpwuid(uid)[0])
+        return result.addCallback(check)
 
     def test_script_removed(self):
         """
@@ -624,13 +645,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         # access to the deferred.
         factory = StubProcessFactory()
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'")
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
@@ -662,17 +678,13 @@ class ScriptExecutionMessageTests(LandscapeTest):
         # access to the deferred.
         factory = StubProcessFactory()
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'",
                                    server_supplied_env={"Dog": "Woof"})
 
-        self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
+        self._verify_script(
+            factory.spawns[0][1], sys.executable, "print 'hi'")
         # Verify environment was passed
         self.assertIn("HOME", factory.spawns[0][3])
         self.assertIn("USER", factory.spawns[0][3])
@@ -703,27 +715,24 @@ class ScriptExecutionMessageTests(LandscapeTest):
         username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
-        def spawn_called(protocol, filename, uid, gid, path, env):
+        def spawnProcess(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
 
-        process_factory = self.mocker.mock()
-        process_factory.spawnProcess(
-            ANY, ANY, uid=None, gid=None, path=ANY,
-            env=get_default_environment())
-        self.mocker.call(spawn_called)
-        self.mocker.replay()
-
+        process_factory = mock.Mock()
+        process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
         self.manager.add(
             ScriptExecutionPlugin(process_factory=process_factory))
 
         result = self._send_script(sys.executable, "print 'hi'", user=username)
-        return result
+
+        def check(_):
+            process_factory.spawnProcess.assert_called_with(
+                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
+                env=get_default_environment())
+
+        return result.addCallback(check)
 
     def test_unknown_user_with_unicode(self):
         """
@@ -755,11 +764,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
         factory = StubProcessFactory()
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
-        self.mocker.replay()
         result = self._send_script(sys.executable, "bar", time_limit=30)
         self._verify_script(factory.spawns[0][1], sys.executable, "bar")
 
@@ -803,22 +807,14 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid, path, env):
+        def spawnProcess(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
 
-        process_factory = self.mocker.mock()
-        process_factory.spawnProcess(
-            ANY, ANY, uid=None, gid=None, path=ANY,
-            env=get_default_environment())
-        self.mocker.call(spawn_called)
-
-        self.mocker.replay()
+        process_factory = mock.Mock()
+        process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
 
         self.manager.add(
             ScriptExecutionPlugin(process_factory=process_factory))
@@ -831,32 +827,26 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "operation-id": 123,
                   "result-text": u"hi!\n",
                   "status": SUCCEEDED}])
+            process_factory.spawnProcess.assert_called_with(
+                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
+                env=get_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
-        result.addCallback(got_result)
-        return result
+        return result.addCallback(got_result)
 
     def test_binary_output(self):
         """
         If a script outputs non-printable characters not handled by utf-8, they
         are replaced during the encoding phase but the script succeeds.
         """
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
-        def spawn_called(protocol, filename, uid, gid, path, env):
-            protocol.childDataReceived(1,
-            "\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
+        def spawnProcess(protocol, filename, uid, gid, path, env):
+            protocol.childDataReceived(
+                1, "\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
 
-        process_factory = self.mocker.mock()
-        process_factory.spawnProcess(
-            ANY, ANY, uid=None, gid=None, path=ANY,
-            env=get_default_environment())
-        self.mocker.call(spawn_called)
-
-        self.mocker.replay()
+        process_factory = mock.Mock()
+        process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
 
         self.manager.add(
             ScriptExecutionPlugin(process_factory=process_factory))
@@ -867,11 +857,13 @@ class ScriptExecutionMessageTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages())
             self.assertEqual(
                 message["result-text"],
-                 u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
+                u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
+            process_factory.spawnProcess.assert_called_with(
+                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
+                env=get_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
-        result.addCallback(got_result)
-        return result
+        return result.addCallback(got_result)
 
     def test_parse_error_causes_operation_failure(self):
         """
@@ -900,15 +892,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
         If a script exits with a nen-zero exit code, the operation associated
         with it should fail, but the data collected should still be sent.
         """
-        # Mock a bunch of crap so that we can run a real process
-        self.mocker.replace("os.chown", passthrough=False)(ARGS)
-        self.mocker.replace("os.setuid", passthrough=False)(ARGS)
-        self.mocker.count(0, None)
-        self.mocker.replace("os.setgid", passthrough=False)(ARGS)
-        self.mocker.count(0, None)
-        self.mocker.count(0, None)
-        self.mocker.replay()
-
         self.manager.add(ScriptExecutionPlugin())
         result = self._send_script("/bin/sh", "echo hi; exit 1")
 
@@ -931,13 +914,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         """
         factory = StubProcessFactory()
 
-        # ignore the call to chown!
-        mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ARGS)
-
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
-        self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'")
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
@@ -958,7 +936,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    def test_fetch_attachment_failure(self):
+    @mock.patch("landscape.manager.scriptexecution.fetch_async")
+    def test_fetch_attachment_failure(self, mock_fetch):
         """
         If the plugin fails to retrieve the attachments with a
         L{HTTPCodeError}, a specific error code is shown.
@@ -969,15 +948,11 @@ class ScriptExecutionMessageTests(LandscapeTest):
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
         persist.save()
-        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
-                                         passthrough=False)
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers,
-                   cainfo=None)
-        self.mocker.result(fail(HTTPCodeError(404, "Not found")))
-        self.mocker.replay()
+
+        mock_fetch.return_value = fail(HTTPCodeError(404, "Not found"))
 
         self.manager.add(ScriptExecutionPlugin())
         result = self._send_script(
@@ -991,5 +966,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "result-text": "Server returned HTTP code 404",
                   "result-code": FETCH_ATTACHMENTS_FAILED_RESULT,
                   "status": FAILED}])
+            mock_fetch.assert_called_with(
+                "https://localhost/attachment/14", headers=headers,
+                cainfo=None)
 
         return result.addCallback(got_result)
