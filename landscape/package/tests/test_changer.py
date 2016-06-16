@@ -767,21 +767,14 @@ class AptPackageChangerTest(LandscapeTest):
         this simulates the case where the process is already the process
         session leader, in this case the os.setsid would fail.
         """
-        getpgrp = self.mocker.replace("os.getpgrp")
-        getpgrp()
-        self.mocker.result(os.getpid())
+        pid = os.getpid()
+        with patch("os.getpgrp", return_value=pid) as pgrp:
+            with patch("landscape.package.changer.run_task_handler") as task:
+                main(["ARGS"])
+                    
+        pgrp.assert_called_once_with()
+        task.assert_called_once_with(PackageChanger, ["ARGS"])
 
-        setsid = self.mocker.replace("os.setsid")
-        setsid()
-        self.mocker.count(0, 0)
-
-        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-                                               ".run_task_handler",
-                                               passthrough=False)
-        run_task_handler(PackageChanger, ["ARGS"])
-        self.mocker.replay()
-
-        main(["ARGS"])
 
     def test_find_changer_command(self):
         dirname = self.makeDir()
