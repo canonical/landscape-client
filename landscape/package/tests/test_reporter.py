@@ -1183,11 +1183,9 @@ class PackageReporterAptTest(LandscapeTest):
         case apt-update terminates with a non-zero exit code.
         """
         self._make_fake_apt_update(code=2)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("'%s' exited with status 2"
-                     " (error)" % self.reporter.apt_update_filename)
-
-        self.mocker.replay()
+        warning_patcher = mock.patch.object(reporter.logging, "warning")
+        warning_mock = warning_patcher.start()
+        self.addCleanup(warning_patcher.stop)
 
         result = self.reporter.run_apt_update()
 
@@ -1195,6 +1193,9 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(2, code)
+            warning_mock.assert_called_once_with(
+                "'%s' exited with status 2 (error)" %
+                self.reporter.apt_update_filename)
 
         result.addCallback(callback)
         self.reactor.advance(0)
