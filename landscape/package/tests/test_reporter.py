@@ -1223,9 +1223,6 @@ class PackageReporterAptTest(LandscapeTest):
         """
         self._make_fake_apt_update(code=100)
 
-        warning_patcher = mock.patch.object(reporter.logging, "warning")
-        warning_mock = warning_patcher.start()
-
         spawn_patcher = mock.patch.object(reporter, "spawn_process",
             side_effect=[
                 # Simulate series of failures to acquire the apt lock.
@@ -1233,6 +1230,7 @@ class PackageReporterAptTest(LandscapeTest):
                 succeed(('', '', 100)),
                 succeed(('', '', 100))])
         spawn_patcher.start()
+        self.addCleanup(spawn_patcher.stop)
 
         result = self.reporter.run_apt_update()
 
@@ -1240,16 +1238,6 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("", out)
             self.assertEqual("", err)
             self.assertEqual(100, code)
-            self.assertEqual(warning_mock.mock_calls,
-                [mock.call(
-                    "Could not acquire the apt lock. Retrying in 20 seconds."),
-                 mock.call(
-                    "Could not acquire the apt lock. Retrying in 40 seconds."),
-                 mock.call(
-                    "'%s' exited with status 100 ()"
-                        % self.reporter.apt_update_filename)])
-            warning_patcher.stop()
-            spawn_patcher.stop()
 
         result.addCallback(callback)
         self.reactor.advance(60)
@@ -1270,6 +1258,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         warning_patcher = mock.patch.object(reporter.logging, "warning")
         warning_mock = warning_patcher.start()
+        self.addCleanup(warning_patcher.stop)
 
         spawn_patcher = mock.patch.object(reporter, "spawn_process",
             side_effect=[
@@ -1277,6 +1266,7 @@ class PackageReporterAptTest(LandscapeTest):
                 succeed(('', '', 100)),
                 succeed(('output', 'error', 0))])
         spawn_patcher.start()
+        self.addCleanup(spawn_patcher.stop)
 
         result = self.reporter.run_apt_update()
 
@@ -1286,8 +1276,6 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(0, code)
             warning_mock.assert_called_once_with(
                 "Could not acquire the apt lock. Retrying in 20 seconds.")
-            warning_patcher.stop()
-            spawn_patcher.stop()
 
         result.addCallback(callback)
         self.reactor.advance(20)
@@ -1410,6 +1398,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         debug_patcher = mock.patch.object(reporter.logging, "debug")
         debug_mock = debug_patcher.start()
+        self.addCleanup(debug_patcher.stop)
 
         deferred = Deferred()
 
@@ -1423,7 +1412,6 @@ class PackageReporterAptTest(LandscapeTest):
                 debug_mock.assert_called_once_with(
                     "'%s' didn't run, update interval has not passed" %
                      self.reporter.apt_update_filename)
-                debug_patcher.stop()
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1450,6 +1438,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         debug_patcher = mock.patch.object(reporter.logging, "debug")
         debug_mock = debug_patcher.start()
+        self.addCleanup(debug_patcher.stop)
 
         deferred = Deferred()
 
@@ -1463,7 +1452,6 @@ class PackageReporterAptTest(LandscapeTest):
                 debug_mock.assert_called_once_with(
                     "'%s' didn't run, update interval has not passed" %
                      self.reporter.apt_update_filename)
-                debug_patcher.stop()
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
