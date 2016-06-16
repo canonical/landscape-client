@@ -1278,8 +1278,9 @@ class PackageReporterAptTest(LandscapeTest):
         lock, it will stop retrying.
         """
         self._make_fake_apt_update(code=100)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
+
+        warning_patcher =  mock.patch.object(reporter.logging, "warning")
+        warning_mock = warning_patcher.start()
 
         spawn_mock = self.mocker.replace(
             "landscape.lib.twisted_util.spawn_process")
@@ -1298,6 +1299,9 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(0, code)
+            warning_mock.assert_called_once_with(
+                "Could not acquire the apt lock. Retrying in 20 seconds.")
+            warning_patcher.stop()
 
         result.addCallback(callback)
         self.reactor.advance(20)
