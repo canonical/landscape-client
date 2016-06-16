@@ -1,8 +1,8 @@
 import os
+import mock
 
 from twisted.internet.defer import Deferred
 
-from landscape.package.reporter import find_reporter_command
 from landscape.package.store import PackageStore
 
 from landscape.monitor.packagemonitor import PackageMonitor
@@ -62,13 +62,12 @@ class PackageMonitorTest(LandscapeTest):
         self.assertFalse(os.path.isfile(filename))
 
         self.monitor.add(package_monitor)
-        package_monitor_mock = self.mocker.patch(package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.replay()
+        with mock.patch.object(package_monitor, 'spawn_reporter') as mocked:
+            message = {"type": "package-ids"}
+            self.monitor.dispatch_message(message)
 
-        message = {"type": "package-ids"}
-        self.monitor.dispatch_message(message)
         self.assertTrue(os.path.isfile(filename))
+        mocked.assert_called_once_with()
 
     def test_run_interval(self):
         """
@@ -79,20 +78,14 @@ class PackageMonitorTest(LandscapeTest):
         self.package_monitor.register(self.monitor)
         self.assertEqual(1234, self.package_monitor.run_interval)
 
-    def test_dont_spawn_reporter_if_message_not_accepted(self):
+    def test_do_not_spawn_reporter_if_message_not_accepted(self):
         self.monitor.add(self.package_monitor)
-
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        return self.package_monitor.run()
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+            self.successResultOf(self.package_monitor.run())
+            self.assertEqual(mkd.mock_calls, [])
 
     def test_spawn_reporter_on_registration_when_already_accepted(self):
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
+        real_run = self.package_monitor.run
 
         # Slightly tricky as we have to wait for the result of run(),
         # but we don't have its deferred yet.  To handle it, we create
@@ -100,51 +93,48 @@ class PackageMonitorTest(LandscapeTest):
         # returns, chaining both deferreds at that point.
         deferred = Deferred()
 
-        def run_has_run(run_result_deferred):
+        def run_has_run():
+            run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        package_monitor_mock.run()
-        self.mocker.passthrough(run_has_run)
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') \
+                    as mock_spawn_reporter, \
+                mock.patch.object(self.package_monitor, 'run',
+                    side_effect=run_has_run):
+            self.broker_service.message_store.set_accepted_types(["packages"])
+            self.monitor.add(self.package_monitor)
+            self.successResultOf(deferred)
 
-        self.mocker.replay()
-
-        self.broker_service.message_store.set_accepted_types(["packages"])
-        self.monitor.add(self.package_monitor)
-
-        return deferred
+        mock_spawn_reporter.assert_called_once_with()
 
     def test_spawn_reporter_on_run_if_message_accepted(self):
-
         self.broker_service.message_store.set_accepted_types(["packages"])
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+            self.monitor.add(self.package_monitor)
+            # We want to ignore calls made as a result of the above line.
+            mkd.reset_mock()
+            self.successResultOf(self.package_monitor.run())
 
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.count(2)  # Once for registration, then again explicitly.
-        self.mocker.replay()
-
-        self.monitor.add(self.package_monitor)
-        return self.package_monitor.run()
+        self.assertEqual(mkd.call_count, 1)
 
     def test_package_ids_handling(self):
         self.monitor.add(self.package_monitor)
 
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
-        self.mocker.replay()
+        with mock.patch.object(self.package_monitor, 'spawn_reporter'):
+            message = {"type": "package-ids", "ids": [None], "request-id": 1}
+            self.monitor.dispatch_message(message)
+            task = self.package_store.get_next_task("reporter")
 
-        message = {"type": "package-ids", "ids": [None], "request-id": 1}
-        self.monitor.dispatch_message(message)
-        task = self.package_store.get_next_task("reporter")
         self.assertTrue(task)
         self.assertEqual(task.data, message)
 
     def test_spawn_reporter(self):
         command = self.makeFile("#!/bin/sh\necho 'I am the reporter!' >&2\n")
         os.chmod(command, 0755)
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result(command)
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            "landscape.monitor.packagemonitor.find_reporter_command",
+            return_value=command)
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -154,14 +144,15 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("I am the reporter!", log)
             self.assertNotIn(command, log)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
     def test_spawn_reporter_without_output(self):
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result("/bin/true")
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            "landscape.monitor.packagemonitor.find_reporter_command",
+            return_value="/bin/true")
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -170,16 +161,17 @@ class PackageMonitorTest(LandscapeTest):
         def got_result(result):
             log = self.logfile.getvalue()
             self.assertNotIn("reporter output", log)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
     def test_spawn_reporter_copies_environment(self):
         command = self.makeFile("#!/bin/sh\necho VAR: $VAR\n")
         os.chmod(command, 0755)
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result(command)
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            "landscape.monitor.packagemonitor.find_reporter_command",
+            return_value=command)
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -192,16 +184,17 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("VAR: HI!", log)
             self.assertNotIn(command, log)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
     def test_spawn_reporter_passes_quiet_option(self):
         command = self.makeFile("#!/bin/sh\necho OPTIONS: $@\n")
         os.chmod(command, 0755)
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result(command)
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            "landscape.monitor.packagemonitor.find_reporter_command",
+            return_value=command)
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -212,18 +205,17 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("OPTIONS: --quiet", log)
             self.assertNotIn(command, log)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
     def test_call_on_accepted(self):
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+            self.monitor.add(self.package_monitor)
+            self.monitor.reactor.fire(
+                ("message-type-acceptance-changed", "packages"), True)
 
-        self.mocker.replay()
-
-        self.monitor.add(self.package_monitor)
-        self.monitor.reactor.fire(
-            ("message-type-acceptance-changed", "packages"), True)
+        mkd.assert_called_once_with()
 
     def test_resynchronize(self):
         """
@@ -292,10 +284,10 @@ class PackageMonitorTest(LandscapeTest):
         os.chdir(dir)
         os.chmod(dir, 0)
 
-        find_command_mock = self.mocker.replace(find_reporter_command)
-        find_command_mock()
-        self.mocker.result(command)
-        self.mocker.replay()
+        find_command_mock_patcher = mock.patch(
+            "landscape.monitor.packagemonitor.find_reporter_command",
+            return_value=command)
+        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -307,6 +299,7 @@ class PackageMonitorTest(LandscapeTest):
             self.assertIn("RUN", log)
             # restore permissions to the dir so tearDown can clean it up
             os.chmod(dir, 0766)
+            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
