@@ -9,7 +9,7 @@ from twisted.internet.defer import fail
 from landscape.monitor.activeprocessinfo import ActiveProcessInfo
 from landscape.tests.helpers import (LandscapeTest, MonitorHelper,
                                      ProcessDataBuilder)
-from mock import ANY, Mock
+from mock import ANY, Mock, patch
 
 
 class ActiveProcessInfoTest(LandscapeTest):
@@ -556,22 +556,21 @@ class ActiveProcessInfoTest(LandscapeTest):
                                    jiffies=10, boot_time=0)
         self.monitor.add(plugin)
 
-        registry_mocker = self.mocker.replace(plugin.registry)
-        registry_mocker.flush()
-        self.mocker.count(2)
-        self.mocker.result(None)
-        self.mocker.replay()
+        with patch.object(plugin.registry, 'flush') as flush_mock:
+            plugin.exchange()
+            flush_mock.assert_called_once_with()
 
-        plugin.exchange()
+            flush_mock.reset_mock()
 
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(len(messages), 1)
+            messages = self.mstore.get_pending_messages()
+            self.assertEqual(len(messages), 1)
 
-        self.builder.remove_data(1)
-        self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_boot=1100, process_name="init",
-                                 vmsize=20000)
-        plugin.exchange()
+            self.builder.remove_data(1)
+            self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
+                                    started_after_boot=1100, process_name="init",
+                                    vmsize=20000)
+            plugin.exchange()
+            flush_mock.assert_called_once_with()
 
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 2)
