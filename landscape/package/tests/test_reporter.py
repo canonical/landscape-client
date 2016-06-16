@@ -1241,25 +1241,17 @@ class PackageReporterAptTest(LandscapeTest):
         apt-update fails acquiring the lock.
         """
         self._make_fake_apt_update(code=100)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
-        logging_mock("Could not acquire the apt lock. Retrying in 40 seconds.")
-        logging_mock("'%s' exited with status 100 ()" %
-                     self.reporter.apt_update_filename)
 
-        spawn_mock = self.mocker.replace(
-            "landscape.lib.twisted_util.spawn_process")
-        spawn_mock(ANY)
-        # Simulate the first failure.
-        self.mocker.result(succeed(('', '', 100)))
-        spawn_mock(ANY)
-        # Simulate the second failure.
-        self.mocker.result(succeed(('', '', 100)))
-        spawn_mock(ANY)
-        # Simulate the second failure.
-        self.mocker.result(succeed(('', '', 100)))
+        warning_patcher =  mock.patch.object(reporter.logging, "warning")
+        warning_mock = warning_patcher.start()
 
-        self.mocker.replay()
+        spawn_patcher =  mock.patch.object(reporter, "spawn_process",
+            side_effect=[
+                # Simulate series of failures to acquire the apt lock.
+                succeed(('', '', 100)),
+                succeed(('', '', 100)),
+                succeed(('', '', 100))])
+        spawn_mock = spawn_patcher.start()
 
         result = self.reporter.run_apt_update()
 
@@ -1267,6 +1259,16 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("", out)
             self.assertEqual("", err)
             self.assertEqual(100, code)
+            self.assertEqual(warning_mock.mock_calls,
+                [mock.call(
+                    "Could not acquire the apt lock. Retrying in 20 seconds."),
+                 mock.call(
+                    "Could not acquire the apt lock. Retrying in 40 seconds."),
+                 mock.call(
+                    "'%s' exited with status 100 ()"
+                        % self.reporter.apt_update_filename)])
+            warning_patcher.stop()
+            spawn_patcher.stop()
 
         result.addCallback(callback)
         self.reactor.advance(60)
