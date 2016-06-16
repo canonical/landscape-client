@@ -1,6 +1,7 @@
 import json
 import logging
 import socket
+import mock
 
 from landscape.broker.registration import (
     InvalidCredentialsError, Identity)
@@ -8,7 +9,6 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
     BrokerConfigurationHelper, RegistrationHelper)
 from landscape.lib.persist import Persist
-from landscape.lib.vm_info import get_vm_info
 
 
 class IdentityTest(LandscapeTest):
@@ -93,11 +93,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         When new ids are received from the server, a "registration-done"
         event is fired.
         """
-        reactor_mock = self.mocker.patch(self.reactor)
-        reactor_mock.fire("registration-done")
-        self.mocker.replay()
+        reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
+        reactor_fire_mock.assert_any_call("registration-done")
 
     def test_unknown_id(self):
         self.identity.secure_id = "old_id"
@@ -162,16 +161,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
 
-    def test_queue_message_on_exchange_with_vm_info(self):
+    @mock.patch("landscape.broker.registration.get_vm_info")
+    def test_queue_message_on_exchange_with_vm_info(self, get_vm_info_mock):
         """
         When a computer_title and account_name are available, no
         secure_id is set, and an exchange is about to happen,
         queue a registration message with VM information.
         """
-        get_vm_info_mock = self.mocker.replace(get_vm_info)
-        get_vm_info_mock()
-        self.mocker.result("vmware")
-        self.mocker.replay()
+        get_vm_info_mock.return_value = "vmware"
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
@@ -181,23 +178,23 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
+        get_vm_info_mock.assert_called_once_with()
 
-    def test_queue_message_on_exchange_with_lxc_container(self):
+    @mock.patch("landscape.broker.registration.get_container_info")
+    def test_queue_message_on_exchange_with_lxc_container(
+            self, get_container_info_mock):
         """
         If the client is running in an LXC container, the information is
         included in the registration message.
         """
-        get_container_info_mock = self.mocker.replace(
-            "landscape.lib.vm_info.get_container_info")
-        get_container_info_mock()
-        self.mocker.result("lxc")
-        self.mocker.replay()
+        get_container_info_mock.return_value = "lxc"
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         self.assertEqual("lxc", messages[0]["container-info"])
+        get_container_info_mock.assert_called_once_with()
 
     def test_queue_message_on_exchange_with_password(self):
         """If a registration password is available, we pass it on!"""
@@ -329,10 +326,6 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
     def test_no_message_when_should_register_is_false(self):
         """If we already have a secure id, do not queue a register message.
         """
-        handler_mock = self.mocker.patch(self.handler)
-        handler_mock.should_register()
-        self.mocker.result(False)
-
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
@@ -343,11 +336,12 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         # we can test it individually.
         self.assertTrue(self.handler.should_register())
 
-        # Now let's see.
-        self.mocker.replay()
+        handler_mock = self.handler.should_register = mock.Mock()
+        handler_mock.return_value = False
 
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(), [])
+        handler_mock.assert_called_once_with()
 
     def test_registration_failed_event(self):
         """
@@ -355,23 +349,21 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         with L{InvalidCredentialsError} if the server responds with a
         failure message.
         """
-        reactor_mock = self.mocker.patch(self.reactor)
-        reactor_mock.fire("registration-failed")
-        self.mocker.replay()
+        reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
+        reactor_fire_mock.assert_called_with("registration-failed")
 
     def test_registration_failed_event_not_fired_when_uncertain(self):
         """
         If the data in the registration message isn't what we expect,
         the event isn't fired.
         """
-        reactor_mock = self.mocker.patch(self.reactor)
-        reactor_mock.fire("registration-failed")
-        self.mocker.count(0)
-        self.mocker.replay()
+        reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
             {"type": "registration", "info": "blah-blah"})
+        for name, args, kwargs in reactor_fire_mock.mock_calls:
+            self.assertNotEquals("registration-failed", args[0])
 
     def test_register_resets_ids(self):
         self.identity.secure_id = "foo"
@@ -381,11 +373,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.identity.insecure_id, None)
 
     def test_register_calls_urgent_exchange(self):
-        exchanger_mock = self.mocker.patch(self.exchanger)
-        exchanger_mock.exchange()
-        self.mocker.passthrough()
-        self.mocker.replay()
+        self.exchanger.exchange = mock.Mock(wraps=self.exchanger.exchange)
         self.handler.register()
+        self.exchanger.exchange.assert_called_once_with()
 
     def test_register_deferred_called_on_done(self):
         # We don't want informational messages.
@@ -463,27 +453,21 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.logfile.getvalue(), "")
 
     def test_exchange_done_calls_exchange(self):
-        exchanger_mock = self.mocker.patch(self.exchanger)
-        exchanger_mock.exchange()
-        self.mocker.passthrough()
-        self.mocker.replay()
-
+        self.exchanger.exchange = mock.Mock(wraps=self.exchanger.exchange)
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("exchange-done")
+        self.exchanger.exchange.assert_called_once_with()
 
     def test_exchange_done_wont_call_exchange_when_just_tried(self):
-        exchanger_mock = self.mocker.patch(self.exchanger)
-        exchanger_mock.exchange()
-        self.mocker.count(0)
-        self.mocker.replay()
-
+        self.exchanger.exchange = mock.Mock(wraps=self.exchanger.exchange)
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
         self.reactor.fire("exchange-done")
+        self.assertNot(self.exchanger.exchange.called)
 
     def test_default_hostname(self):
         self.mstore.set_accepted_types(["register"])
