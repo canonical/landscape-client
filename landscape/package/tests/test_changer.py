@@ -8,6 +8,8 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
 
+from mock import patch
+
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
@@ -227,18 +229,13 @@ class AptPackageChangerTest(LandscapeTest):
                             {"type": "change-packages", "remove": [123],
                              "operation-id": 123})
 
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT)
-        self.mocker.count(1, None)
-        self.mocker.replay()
-
-        try:
+        the_time = time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT
+        with patch("time.time", return_value=the_time) as time_mock:
+            time_mock()
             result = self.changer.handle_tasks()
-            self.mocker.verify()
-        finally:
-            # Reset it earlier so that Twisted has the true time function.
-            self.mocker.reset()
+
+        time_mock.assert_called_with()
+
 
         self.assertIn("Package data not yet synchronized with server (123)",
                       self.logfile.getvalue())
