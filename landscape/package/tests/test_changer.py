@@ -416,15 +416,17 @@ class AptPackageChangerTest(LandscapeTest):
                              "install": [1],
                              "policy": POLICY_ALLOW_INSTALLS,
                              "operation-id": 123})
-        self.changer.change_packages = self.mocker.mock()
-        self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
         result = ChangePackagesResult()
         result.code = SUCCESS_RESULT
-        self.mocker.result(result)
-        self.mocker.replay()
+
+        self.changer.change_packages = Mock(return_value=result)
 
         self.disable_clear_channels()
-        return self.changer.handle_tasks()
+
+        self.successResultOf(self.changer.handle_tasks())
+        self.changer.change_packages.assert_called_once_with(
+            POLICY_ALLOW_INSTALLS)
 
     def test_perform_changes_with_policy_allow_all_changes(self):
         """
