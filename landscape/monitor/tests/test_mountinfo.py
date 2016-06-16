@@ -1,10 +1,8 @@
+import mock
 import tempfile
-
-from twisted.internet.defer import succeed
 
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
-from landscape.tests.mocker import ANY
 
 
 mb = lambda x: x * 1024 * 1024
@@ -228,10 +226,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.monitor.add(plugin)
 
         # Exchange should trigger a flush of the persist database
-        registry_mocker = self.mocker.replace(plugin.registry)
-        registry_mocker.flush()
-        self.mocker.result(None)
-        self.mocker.replay()
+        plugin.registry.flush = mock.Mock()
 
         self.reactor.advance(step_size * 2)
         self.monitor.exchange()
@@ -245,6 +240,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
             self.assertEqual(free_space[i][0], (i + 1) * step_size)
             self.assertEqual(free_space[i][1], "/")
             self.assertEqual(free_space[i][2], 409600)
+
+        plugin.registry.flush.assert_called_with()
 
     def test_messaging_flushes(self):
         """
@@ -552,14 +549,13 @@ addr=ennui 0 0
 
         self.reactor.advance(plugin.run_interval)
 
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.result(succeed(None))
-        self.mocker.count(2)
-        self.mocker.replay()
-
-        self.reactor.fire(("message-type-acceptance-changed", "mount-info"),
-                          True)
+        with mock.patch.object(self.remote, "send_message"):
+            self.reactor.fire(
+                ("message-type-acceptance-changed", "mount-info"),
+                True)
+            self.remote.send_message.assert_called_with(
+                mock.ANY, mock.ANY, urgent=True)
+            self.assertEqual(self.remote.send_message.call_count, 2)
 
     def test_persist_timing(self):
         """Mount info are only persisted when exchange happens.
@@ -621,10 +617,7 @@ addr=ennui 0 0
         self.monitor.add(plugin)
 
         # Exchange should trigger a flush of the persist database
-        registry_mocker = self.mocker.replace(plugin.registry)
-        registry_mocker.flush()
-        self.mocker.result(None)
-        self.mocker.replay()
+        plugin.registry.flush = mock.Mock()
 
         # Generate 10 data points
         self.reactor.advance(step_size * 10)
@@ -664,3 +657,5 @@ addr=ennui 0 0
         self.monitor.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 0)
+
+        plugin.registry.flush.assert_called_with()

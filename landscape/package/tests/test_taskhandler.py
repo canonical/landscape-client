@@ -1,9 +1,11 @@
 import os
 
+from mock import patch, Mock, ANY
+
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
-from landscape.reactor import LandscapeReactor, FakeReactor
+from landscape.reactor import FakeReactor
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
@@ -13,11 +15,6 @@ from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import AptFacadeHelper
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ANY, ARGS, MATCH
-
-
-def ISTYPE(match_type):
-    return MATCH(lambda arg: type(arg) is match_type)
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -67,7 +64,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.facade.set_arch("arch")
 
         # Attach the hash=>id database to our store
-        self.mocker.replay()
         result = self.handler.use_hash_id_db()
 
         # Now we do have the hash=>id mapping
@@ -77,7 +73,8 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         return result
 
-    def test_use_hash_id_db_undetermined_codename(self):
+    @patch("logging.warning")
+    def test_use_hash_id_db_undetermined_codename(self, logging_mock):
 
         # Fake uuid
         message_store = self.broker_service.message_store
@@ -86,19 +83,18 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Undetermined codename
         self.handler.lsb_release_filename = self.makeFile("Foo=bar")
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "
-                     "missing code-name key in %s" %
-                     self.handler.lsb_release_filename)
-        self.mocker.result(None)
-
         # Go!
-        self.mocker.replay()
         result = self.handler.use_hash_id_db()
+
+        # The failure should be properly logged
+        logging_mock.assert_called_with(
+            "Couldn't determine which hash=>id database to use: "
+            "missing code-name key in %s" % self.handler.lsb_release_filename)
+
         return result
 
-    def test_use_hash_id_db_wit_non_existing_lsb_release(self):
+    @patch("logging.warning")
+    def test_use_hash_id_db_wit_non_existing_lsb_release(self, logging_mock):
 
         # Fake uuid
         message_store = self.broker_service.message_store
@@ -107,16 +103,15 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Undetermined codename
         self.handler.lsb_release_filename = self.makeFile()
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "
-                     "[Errno 2] No such file or directory: '%s'" %
-                     self.handler.lsb_release_filename)
-        self.mocker.result(None)
-
         # Go!
-        self.mocker.replay()
         result = self.handler.use_hash_id_db()
+
+        # The failure should be properly logged
+        logging_mock.assert_called_with(
+            "Couldn't determine which hash=>id database to use: "
+            "[Errno 2] No such file or directory: '%s'" %
+            self.handler.lsb_release_filename)
+
         return result
 
     def test_wb_determine_hash_id_db_filename_server_uuid_is_none(self):
@@ -134,7 +129,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         result.addCallback(callback)
         return result
 
-    def test_use_hash_id_db_undetermined_server_uuid(self):
+    @patch("logging.warning")
+    def test_use_hash_id_db_undetermined_server_uuid(self, logging_mock):
         """
         If the server-uuid can't be determined for some reason, no hash-id db
         should be used and the failure should be properly logged.
@@ -142,13 +138,11 @@ class PackageTaskHandlerTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_server_uuid(None)
 
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "
-                     "server UUID not available")
-        self.mocker.result(None)
-        self.mocker.replay()
-
         result = self.handler.use_hash_id_db()
+
+        logging_mock.assert_called_with(
+            "Couldn't determine which hash=>id database to use: "
+            "server UUID not available")
 
         def callback(ignore):
             self.assertFalse(self.store.has_hash_id_db())
@@ -167,7 +161,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         result.addCallback(assertHaveSessionId)
         return result
 
-    def test_use_hash_id_db_undetermined_arch(self):
+    @patch("logging.warning")
+    def test_use_hash_id_db_undetermined_arch(self, logging_mock):
 
         # Fake uuid and codename
         message_store = self.broker_service.message_store
@@ -177,15 +172,13 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Undetermined arch
         self.facade.set_arch(None)
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "\
-                     "unknown dpkg architecture")
-        self.mocker.result(None)
-
         # Go!
-        self.mocker.replay()
         result = self.handler.use_hash_id_db()
+
+        # The failure should be properly logged
+        logging_mock.assert_called_with(
+            "Couldn't determine which hash=>id database to use: "
+            "unknown dpkg architecture")
 
         return result
 
@@ -201,7 +194,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.facade.set_arch("arch")
 
         # Let's try
-        self.mocker.replay()
         result = self.handler.use_hash_id_db()
 
         # We go on without the hash=>id database
@@ -211,7 +203,8 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         return result
 
-    def test_use_hash_id_with_invalid_database(self):
+    @patch("logging.warning")
+    def test_use_hash_id_with_invalid_database(self, logging_mock):
 
         # Let's say the appropriate database is actually garbage
         self.config.data_path = self.makeDir()
@@ -226,14 +219,12 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Invalid hash=>id database %s" % hash_id_db_filename)
-        self.mocker.result(None)
-
         # Try to attach it
-        self.mocker.replay()
         result = self.handler.use_hash_id_db()
+
+        # The failure should be properly logged
+        logging_mock.assert_called_with(
+            "Invalid hash=>id database %s" % hash_id_db_filename)
 
         # We remove the broken hash=>id database and go on without it
         def callback(ignored):
@@ -244,12 +235,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         return result
 
     def test_run(self):
-        handler_mock = self.mocker.patch(self.handler)
-        handler_mock.handle_tasks()
-        self.mocker.result("WAYO!")
-
-        self.mocker.replay()
-
+        self.handler.handle_tasks = Mock(return_value="WAYO!")
         self.assertEqual(self.handler.run(), "WAYO!")
 
     def test_handle_tasks(self):
@@ -268,11 +254,7 @@ class PackageTaskHandlerTest(LandscapeTest):
             result.addCallback(lambda x: stash.append(task.data))
             return result
 
-        handler_mock = self.mocker.patch(self.handler)
-        handler_mock.handle_task(ANY)
-        self.mocker.call(handle_task)
-        self.mocker.count(3)
-        self.mocker.replay()
+        self.handler.handle_task = Mock(side_effect=handle_task)
 
         handle_tasks_result = self.handler.handle_tasks()
 
@@ -294,6 +276,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         handle_tasks_result = self.handler.handle_tasks()
         self.assertTrue(handle_tasks_result.called)
+        self.assertEqual(3, self.handler.handle_task.call_count)
 
     def test_handle_tasks_hooks_errback(self):
         queue_name = PackageTaskHandler.queue_name
@@ -308,10 +291,7 @@ class PackageTaskHandlerTest(LandscapeTest):
             result.errback(MyException())
             return result
 
-        handler_mock = self.mocker.patch(self.handler)
-        handler_mock.handle_task(ANY)
-        self.mocker.call(handle_task)
-        self.mocker.replay()
+        self.handler.handle_task = Mock(side_effect=handle_task)
 
         stash = []
         handle_tasks_result = self.handler.handle_tasks()
@@ -325,98 +305,82 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.assertTrue(isinstance(result, Deferred))
         self.assertTrue(result.called)
 
-    def _mock_run_task_handler(self):
-        """
-        Mock the different parts of run_task_handler(), to ensure it
-        does what it's supposed to do, without actually creating files
-        and starting processes.
-        """
-        # This is a slightly lengthy one, so bear with me.
-
-        # Prepare the mock objects.
-        lock_path_mock = self.mocker.replace("landscape.lib.lock.lock_path",
-                                             passthrough=False)
-        init_logging_mock = self.mocker.replace("landscape.deployment"
-                                                ".init_logging",
-                                                passthrough=False)
-        reactor_mock = self.mocker.patch(LandscapeReactor)
-        connector_mock = self.mocker.patch(RemoteBrokerConnector)
-        HandlerMock = self.mocker.proxy(PackageTaskHandler)
-
-        # The goal of this method is to perform a sequence of tasks
-        # where the ordering is important.
-        self.mocker.order()
-
-        # First, we must acquire a lock as the same task handler should
-        # never have two instances running in parallel.  The 'default'
-        # below comes from the queue_name attribute.
-        lock_path_mock(os.path.join(self.data_path, "package", "default.lock"))
-
-        # Once locking is done, it's safe to start logging without
-        # corrupting the file.  We don't want any output unless it's
-        # breaking badly, so the quiet option should be set.
-        init_logging_mock(ISTYPE(PackageTaskHandlerConfiguration),
-                          "package-task-handler")
-
-        # We also expect the umask to be set appropriately before running the
-        # commands
-        umask = self.mocker.replace("os.umask")
-        umask(022)
-
-        handler_args = []
-        HandlerMock(ANY, ANY, ANY, ANY, ANY)
-        self.mocker.passthrough()  # Let the real constructor run for testing.
-        self.mocker.call(lambda *args: handler_args.extend(args))
-
-        call_when_running = []
-        reactor_mock.call_when_running(ANY)
-        self.mocker.call(lambda f: call_when_running.append(f))
-        reactor_mock.run()
-        self.mocker.call(lambda: call_when_running[0]())
-        connector_mock.disconnect()
-        reactor_mock.call_later(0, ANY)
-        self.mocker.result(None)
-
-        # Okay, the whole playground is set.
-        self.mocker.replay()
-
-        return HandlerMock, handler_args
-
-    def test_run_task_handler(self):
+    @patch("os.umask")
+    @patch("landscape.package.taskhandler.RemoteBrokerConnector")
+    @patch("landscape.package.taskhandler.LandscapeReactor")
+    @patch("landscape.package.taskhandler.init_logging")
+    @patch("landscape.package.taskhandler.lock_path")
+    def test_run_task_handler(self, lock_path_mock, init_logging_mock,
+                              reactor_class_mock, connector_class_mock, umask):
         """
         The L{run_task_handler} function creates and runs the given task
         handler with the proper arguments.
         """
-        HandlerMock, handler_args = self._mock_run_task_handler()
+        # Mock the different parts of run_task_handler(), to ensure it
+        # does what it's supposed to do, without actually creating files
+        # and starting processes.
+
+        # This is a slightly lengthy one, so bear with me.
+
+        # Prepare the mock objects.
+        connector_mock = Mock(name="mock-connector")
+        connector_class_mock.return_value = connector_mock
+
+        handler_args = []
+
+        class HandlerMock(PackageTaskHandler):
+
+            def __init__(self, *args):
+                handler_args.extend(args)
+                super(HandlerMock, self).__init__(*args)
+
+        call_when_running = []
+        reactor_mock = Mock(name="mock-reactor")
+        reactor_class_mock.return_value = reactor_mock
+        reactor_mock.call_when_running.side_effect = call_when_running.append
+        reactor_mock.run.side_effect = lambda: call_when_running[0]()
 
         def assert_task_handler(ignored):
 
             store, facade, broker, config, reactor = handler_args
 
-            try:
-                # Verify the arguments passed to the reporter constructor.
-                self.assertEqual(type(store), PackageStore)
-                self.assertEqual(type(facade), AptFacade)
-                self.assertEqual(type(broker), LazyRemoteBroker)
-                self.assertEqual(type(config),
-                                 PackageTaskHandlerConfiguration)
-                self.assertEqual(type(reactor), LandscapeReactor)
+            # Verify the arguments passed to the reporter constructor.
+            self.assertEqual(type(store), PackageStore)
+            self.assertEqual(type(facade), AptFacade)
+            self.assertEqual(type(broker), LazyRemoteBroker)
+            self.assertEqual(type(config), PackageTaskHandlerConfiguration)
+            self.assertIn("mock-reactor", repr(reactor))
 
-                # Let's see if the store path is where it should be.
-                filename = os.path.join(self.data_path, "package", "database")
-                store.add_available([1, 2, 3])
-                other_store = PackageStore(filename)
-                self.assertEqual(other_store.get_available(), [1, 2, 3])
+            # Let's see if the store path is where it should be.
+            filename = os.path.join(self.data_path, "package", "database")
+            store.add_available([1, 2, 3])
+            other_store = PackageStore(filename)
+            self.assertEqual(other_store.get_available(), [1, 2, 3])
 
-                # Check the hash=>id database directory as well
-                self.assertTrue(os.path.exists(
-                    os.path.join(self.data_path, "package", "hash-id")))
-
-            finally:
-                # Put reactor back in place before returning.
-                self.mocker.reset()
+            # Check the hash=>id database directory as well
+            self.assertTrue(os.path.exists(
+                os.path.join(self.data_path, "package", "hash-id")))
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
+
+        # Assert that we acquired a lock as the same task handler should
+        # never have two instances running in parallel.  The 'default'
+        # below comes from the queue_name attribute.
+        lock_path_mock.assert_called_once_with(
+            os.path.join(self.data_path, "package", "default.lock"))
+
+        # Once locking is done, it's safe to start logging without
+        # corrupting the file.  We don't want any output unless it's
+        # breaking badly, so the quiet option should be set.
+        init_logging_mock.assert_called_once_with(ANY, "handler-mock")
+
+        connector_mock.disconnect.assert_called_once()
+        reactor_mock.call_later.assert_called_once_with(0, ANY)
+
+        # We also expect the umask to be set appropriately before running the
+        # commands
+        umask.assert_called_once_with(022)
+
         return result.addCallback(assert_task_handler)
 
     def test_run_task_handler_when_already_locked(self):
@@ -441,33 +405,29 @@ class PackageTaskHandlerTest(LandscapeTest):
         else:
             self.fail("SystemExit not raised")
 
-    def test_errors_in_tasks_are_printed_and_exit_program(self):
-        # Ignore a bunch of crap that we don't care about
-        init_logging_mock = self.mocker.replace("landscape.deployment"
-                                                ".init_logging",
-                                                passthrough=False)
-        init_logging_mock(ARGS)
+    @patch("landscape.package.taskhandler.init_logging")
+    def test_errors_are_printed_and_exit_program(self, init_logging_mock):
 
         class MyException(Exception):
             pass
 
         self.log_helper.ignore_errors(MyException)
 
-        # Simulate a task handler which errors out.
-        handler_factory_mock = self.mocker.proxy(PackageTaskHandler)
-        handler_mock = handler_factory_mock(ARGS)
-        self.expect(handler_mock.run()).result(fail(MyException("Hey error")))
+        class HandlerMock(PackageTaskHandler):
 
-        self.mocker.replay()
+            def run(self):
+                return fail(MyException("Hey error"))
 
         # Ok now for some real stuff
 
         def assert_log(ignored):
             self.assertIn("MyException", self.logfile.getvalue())
 
-        result = run_task_handler(handler_factory_mock,
+        result = run_task_handler(HandlerMock,
                                   ["-c", self.config_filename],
                                   reactor=FakeReactor())
+
+        init_logging_mock.assert_called_once()
         return result.addCallback(assert_log)
 
 

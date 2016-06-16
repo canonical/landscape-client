@@ -1,5 +1,6 @@
 from cStringIO import StringIO
 from logging import getLogger, StreamHandler
+import mock
 import os
 
 from twisted.internet.defer import Deferred, succeed, fail
@@ -210,18 +211,13 @@ class SysInfoPluginRegistryTest(LandscapeTest):
             self.sysinfo.get_notes(),
             [self.plugin_exception_message % path])
 
-    def test_exception_running_as_privileged_user(self):
+    @mock.patch("os.getuid", return_value=0)
+    def test_exception_running_as_privileged_user(self, uid_mock):
         """
         If a Plugin fails while running and the sysinfo binary is running with
         a uid of 0, Landscape sysinfo should write to the system logs
         directory.
         """
-        uid_mock = self.mocker.replace("os.getuid")
-        uid_mock()
-        self.mocker.count(1, max=None)
-        self.mocker.result(0)
-        self.mocker.replay()
-        self.log_helper.ignore_errors(ZeroDivisionError)
 
         class AsyncBadPlugin(object):
 
@@ -231,9 +227,12 @@ class SysInfoPluginRegistryTest(LandscapeTest):
             def run(self):
                 return fail(ZeroDivisionError("Hi"))
 
+        self.log_helper.ignore_errors(ZeroDivisionError)
+
         plugin = AsyncBadPlugin()
         self.sysinfo.add(plugin)
         self.sysinfo.run()
+        uid_mock.assert_called_with()
 
         path = "/var/log/landscape"
         self.assertEqual(
