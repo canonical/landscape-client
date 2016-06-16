@@ -24,7 +24,6 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
-import mock
 from landscape.reactor import FakeReactor
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -1224,16 +1223,16 @@ class PackageReporterAptTest(LandscapeTest):
         """
         self._make_fake_apt_update(code=100)
 
-        warning_patcher =  mock.patch.object(reporter.logging, "warning")
+        warning_patcher = mock.patch.object(reporter.logging, "warning")
         warning_mock = warning_patcher.start()
 
-        spawn_patcher =  mock.patch.object(reporter, "spawn_process",
+        spawn_patcher = mock.patch.object(reporter, "spawn_process",
             side_effect=[
                 # Simulate series of failures to acquire the apt lock.
                 succeed(('', '', 100)),
                 succeed(('', '', 100)),
                 succeed(('', '', 100))])
-        spawn_mock = spawn_patcher.start()
+        spawn_patcher.start()
 
         result = self.reporter.run_apt_update()
 
@@ -1269,15 +1268,15 @@ class PackageReporterAptTest(LandscapeTest):
         """
         self._make_fake_apt_update(code=100)
 
-        warning_patcher =  mock.patch.object(reporter.logging, "warning")
+        warning_patcher = mock.patch.object(reporter.logging, "warning")
         warning_mock = warning_patcher.start()
 
-        spawn_patcher =  mock.patch.object(reporter, "spawn_process",
+        spawn_patcher = mock.patch.object(reporter, "spawn_process",
             side_effect=[
                 # Simulate a failed apt lock grab then a successful one.
                 succeed(('', '', 100)),
                 succeed(('output', 'error', 0))])
-        spawn_mock = spawn_patcher.start()
+        spawn_patcher.start()
 
         result = self.reporter.run_apt_update()
 
@@ -1409,7 +1408,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter._apt_sources_have_changed = lambda: False
         self.makeFile("", path=self.config.update_stamp_filename)
 
-        debug_patcher =  mock.patch.object(reporter.logging, "debug")
+        debug_patcher = mock.patch.object(reporter.logging, "debug")
         debug_mock = debug_patcher.start()
 
         deferred = Deferred()
@@ -1449,7 +1448,7 @@ class PackageReporterAptTest(LandscapeTest):
         # expired.
         self.reporter.update_notifier_stamp = self.makeFile("")
 
-        debug_patcher =  mock.patch.object(reporter.logging, "debug")
+        debug_patcher = mock.patch.object(reporter.logging, "debug")
         debug_mock = debug_patcher.start()
 
         deferred = Deferred()
