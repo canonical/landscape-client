@@ -72,6 +72,21 @@ class WatchDogTest(LandscapeTest):
         self.manager_factory.assert_called_with(
             mock.ANY, verbose=False, config=None)
 
+    def setup_request_exit(self):
+        self.broker.request_exit.return_value = succeed(True)
+        self.broker.wait_or_die.return_value = succeed(None)
+        self.monitor.wait_or_die.return_value = succeed(None)
+        self.manager.wait_or_die.return_value = succeed(None)
+
+    def assert_request_exit(self):
+        self.broker.prepare_for_shutdown.assert_called_with()
+        self.broker.request_exit.assert_called_with()
+        self.broker.wait_or_die.assert_called_with()
+        self.monitor.prepare_for_shutdown.assert_called_with()
+        self.monitor.wait_or_die.assert_called_with()
+        self.manager.prepare_for_shutdown.assert_called_with()
+        self.manager.wait_or_die.assert_called_with()
+
     def test_daemon_construction(self):
         """The WatchDog sets up some daemons when constructed."""
         self.setup_daemons_mocks()
@@ -138,33 +153,23 @@ class WatchDogTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    # def expect_request_exit(self):
-    #     self.expect(self.broker.prepare_for_shutdown())
-    #     self.expect(self.monitor.prepare_for_shutdown())
-    #     self.expect(self.manager.prepare_for_shutdown())
-    #     self.expect(self.broker.request_exit()).result(succeed(True))
-    #     self.expect(self.broker.wait_or_die()).result(succeed(None))
-    #     self.expect(self.monitor.wait_or_die()).result(succeed(None))
-    #     self.expect(self.manager.wait_or_die()).result(succeed(None))
+    def test_start_and_stop_daemons(self):
+        """The WatchDog will start all daemons, starting with the broker."""
+        self.setup_daemons_mocks()
 
-    # def test_start_and_stop_daemons(self):
-    #     """The WatchDog will start all daemons, starting with the broker."""
-    #     self.start_all_daemons()
-    #     self.mocker.order()
+        self.broker.start()
+        self.monitor.start()
+        self.manager.start()
 
-    #     self.broker.start()
-    #     self.monitor.start()
-    #     self.manager.start()
+        self.setup_request_exit()
 
-    #     self.expect_request_exit()
-
-    #     self.mocker.replay()
-
-    #     clock = Clock()
-    #     dog = WatchDog(clock, config=self.config)
-    #     dog.start()
-    #     clock.advance(0)
-    #     return dog.request_exit()
+        clock = Clock()
+        dog = WatchDog(clock, config=self.config)
+        dog.start()
+        clock.advance(0)
+        result = dog.request_exit()
+        result.addCallback(lambda _: self.assert_request_exit())
+        return result
 
     # def test_start_limited_daemons(self):
     #     """
