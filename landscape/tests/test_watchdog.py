@@ -1075,11 +1075,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.configuration.pid_file = pid_file
         service = WatchDogService(self.configuration)
 
-        try:
-            service.startService()
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        service.startService()
         self.assertFalse(os.path.exists(pid_file))
         mock_daemonize.assert_not_called()
         mock_watchdog().check_running.assert_called_once_with()
@@ -1146,11 +1142,7 @@ class WatchDogServiceTest(LandscapeTest):
 
         service.watchdog = mock.Mock()
         service.watchdog.check_running.return_value = succeed([StubDaemon()])
-        try:
-            result = service.startService()
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        result = service.startService()
         self.assertEqual(service.exit_code, 1)
         mock_bootstrap_list.bootstrap.assert_called_once_with(
             data_path=self.data_path, log_dir=self.log_dir)
@@ -1170,11 +1162,7 @@ class WatchDogServiceTest(LandscapeTest):
         deferred = fail(ZeroDivisionError("I'm an unknown error!"))
         service.watchdog.start.return_value = deferred
 
-        try:
-            result = service.startService()
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        result = service.startService()
         self.assertEqual(service.exit_code, 2)
         mock_bootstrap_list.bootstrap.assert_called_once_with(
             data_path=self.data_path, log_dir=self.log_dir)
