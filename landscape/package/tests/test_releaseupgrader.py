@@ -62,8 +62,10 @@ class ReleaseUpgraderTest(LandscapeTest):
         method_returns = {
             tarball_url: succeed("tarball"),
             signature_url: succeed("signature")}
+
         def side_effect(param):
             return method_returns[param]
+
         fetch_mock.side_effect = side_effect
 
         os.rmdir(self.config.upgrade_tool_directory)
@@ -96,8 +98,10 @@ class ReleaseUpgraderTest(LandscapeTest):
         method_returns = {
             tarball_url: succeed("tarball"),
             signature_url: fail(HTTPCodeError(404, "not found"))}
+
         def side_effect(param):
             return method_returns[param]
+
         fetch_mock.side_effect = side_effect
 
         result = self.upgrader.fetch(tarball_url,
@@ -505,7 +509,6 @@ class ReleaseUpgraderTest(LandscapeTest):
                                           "echo $@\n"
                                           "echo $(pwd)\n")
         os.chmod(reporter_filename, 0755)
-
 
         deferred = Deferred()
 
