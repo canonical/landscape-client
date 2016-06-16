@@ -1251,7 +1251,7 @@ registration_key = shared-secret
         system_exit = self.assertRaises(SystemExit, setup, config)
         self.assertEqual(system_exit.code, 2)
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscapeassert_called_once_with()
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
         mock_print_text.assert_any_call(
             "Couldn't restart the Landscape client.", error=True)
         mock_print_text.assert_called_with(
@@ -1274,7 +1274,7 @@ registration_key = shared-secret
         system_exit = self.assertRaises(SystemExit, setup, config)
         self.assertEqual(system_exit.code, 0)
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscapeassert_called_once_with()
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
         mock_print_text.assert_any_call(
             "Couldn't restart the Landscape client.", error=True)
         mock_print_text.assert_called_with(
