@@ -1,3 +1,5 @@
+import mock
+
 from landscape.lib.amp import MethodCallError
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
@@ -22,11 +24,10 @@ class RemoteBrokerTest(LandscapeTest):
         The L{RemoteBroker.register_client} method forwards a registration
         request to the remote L{BrokerServer} object.
         """
-        self.broker.register_client = self.mocker.mock()
-        self.expect(self.broker.register_client("client"))
-        self.mocker.replay()
+        self.broker.register_client = mock.Mock(return_value=None)
         result = self.remote.register_client("client")
-        return self.assertSuccess(result)
+        self.successResultOf(result)
+        self.broker.register_client.assert_called_once_with("client")
 
     def test_send_message(self):
         """
@@ -147,11 +148,10 @@ class RemoteBrokerTest(LandscapeTest):
         given message type is accepted.
         """
         self.mstore.set_accepted_types(["test"])
-        function = self.mocker.mock()
-        self.expect(function(123)).result("cool")
-        self.mocker.replay()
+        function = mock.Mock(return_value="cool")
         result = self.remote.call_if_accepted("test", function, 123)
-        return self.assertSuccess(result, "cool")
+        self.assertEqual("cool", self.successResultOf(result))
+        function.assert_called_once_with(123)
 
     def test_call_if_accepted_with_not_accepted(self):
         """
@@ -178,28 +178,26 @@ class RemoteBrokerTest(LandscapeTest):
         L{RemoteBroker.call_on_events} fires the given callback when the
         first of the given events occurs in the broker reactor.
         """
-        callback1 = self.mocker.mock()
-        self.expect(callback1()).count(0)
-        callback2 = self.mocker.mock()
-        self.expect(callback2()).result(123)
-        self.mocker.replay()
+        callback1 = mock.Mock()
+        callback2 = mock.Mock(return_value=123)
         deferred = self.remote.call_on_event({"event1": callback1,
                                               "event2": callback2})
         self.reactor.call_later(0.05, self.reactor.fire, "event2")
         self.reactor.advance(0.05)
         self.remote._factory.fake_connection.flush()
         self.assertEqual(123, self.successResultOf(deferred))
+        callback1.assert_not_called()
+        callback2.assert_called_once_with()
 
     def test_fire_event(self):
         """
         The L{RemoteBroker.fire_event} method fires an event in the broker
         reactor.
         """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
+        callback = mock.Mock()
         self.reactor.call_on("event", callback)
-        return self.assertSuccess(self.remote.fire_event("event"))
+        self.successResultOf(self.remote.fire_event("event"))
+        callback.assert_called_once_with()
 
     def test_method_call_error(self):
         """
@@ -228,17 +226,16 @@ class RemoteClientTest(LandscapeTest):
         the remote L{BrokerClient} instance and returns its result with
         a L{Deferred}.
         """
-        handler = self.mocker.mock()
-        handler({"type": "test"})
-        self.client.broker = self.mocker.mock()
-        self.client.broker.register_client_accepted_message_type("test")
-        self.mocker.replay()
-
-        # We need to register a test message handler to let the dispatch
-        # message method call succeed
-        self.client.register_message("test", handler)
-        result = self.remote_client.message({"type": "test"})
-        return self.assertSuccess(result, True)
+        handler = mock.Mock()
+        with mock.patch.object(self.client.broker,
+                               "register_client_accepted_message_type") as m:
+            # We need to register a test message handler to let the dispatch
+            # message method call succeed
+            self.client.register_message("test", handler)
+            result = self.remote_client.message({"type": "test"})
+            self.successResultOf(result)
+            m.assert_called_once_with("test")
+        handler.assert_called_once_with({"type": "test"})
 
     def test_fire_event(self):
         """
@@ -246,12 +243,11 @@ class RemoteClientTest(LandscapeTest):
         the remote L{BrokerClient} instance and returns its result with a
         L{Deferred}.
         """
-        callback = self.mocker.mock()
-        callback(True, kwarg=2)
-        self.mocker.replay()
+        callback = mock.Mock(return_value=None)
         self.client_reactor.call_on("event", callback)
         result = self.remote_client.fire_event("event", True, kwarg=2)
-        return self.assertSuccess(result, [None])
+        self.assertEqual([None], self.successResultOf(result))
+        callback.assert_called_once_with(True, kwarg=2)
 
     def test_exit(self):
         """

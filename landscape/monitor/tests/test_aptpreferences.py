@@ -1,11 +1,9 @@
 import os
-
-from twisted.internet.defer import succeed
+import mock
 
 from landscape.monitor.aptpreferences import AptPreferences
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.helpers import MonitorHelper
-from landscape.tests.mocker import ANY
 
 
 class AptPreferencesTest(LandscapeTest):
@@ -150,16 +148,17 @@ class AptPreferencesTest(LandscapeTest):
         C{apt-preferences} urgent messages.
         """
         self.mstore.set_accepted_types(["apt-preferences"])
-        broker_mock = self.mocker.replace(self.remote)
-        broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
+
         preferences_filename = os.path.join(self.etc_apt_directory,
                                             "preferences")
         self.makeFile(path=preferences_filename, content="crap")
-        self.plugin.run()
-        self.mstore.set_accepted_types([])
-        self.plugin.run()
+
+        with mock.patch.object(self.remote, "send_message"):
+            self.plugin.run()
+            self.mstore.set_accepted_types([])
+            self.plugin.run()
+            self.remote.send_message.assert_called_once_with(
+                mock.ANY, mock.ANY, urgent=True)
 
     def test_resynchronize(self):
         """
