@@ -17,14 +17,12 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
-from landscape.package.skeleton import PackageSkeleton
 from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SimpleRepositoryHelper,
     HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ANY
 from landscape.reactor import FakeReactor
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
