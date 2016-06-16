@@ -9,7 +9,7 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
 
-from mock import patch, Mock, call
+from mock import patch, Mock, call, mock_open
 
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.reporter import find_reporter_command
@@ -439,7 +439,6 @@ class AptPackageChangerTest(LandscapeTest):
         self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
         self.facade.reload_channels()
 
-        self.mocker.order()
         package1 = self.facade.get_package_by_hash(installed_hash)
         [package2] = self.facade.get_packages_by_name("name2")
 
@@ -745,42 +744,22 @@ class AptPackageChangerTest(LandscapeTest):
         for deferred in reversed(results):
             deferred.callback(None)
 
-    def test_dont_spawn_reporter_after_running_if_nothing_done(self):
-        output_filename = self.makeFile("REPORTER NOT RUN")
-        reporter_filename = self.makeFile("#!/bin/sh\necho REPORTER RUN > %s" %
-                                          output_filename)
-        os.chmod(reporter_filename, 0755)
-
-        find_command_mock = self.mocker.replace(
-            "landscape.package.reporter.find_reporter_command")
-        find_command_mock()
-        self.mocker.result(reporter_filename)
-        self.mocker.count(0, None)
-        self.mocker.replay()
-
-        result = self.changer.run()
-
-        def got_result(result):
-            self.assertEqual(open(output_filename).read().strip(),
-                             "REPORTER NOT RUN")
-        return result.addCallback(got_result)
+    @patch("os.system")
+    def test_dont_spawn_reporter_after_running_if_nothing_done(self, system_mock):
+        self.successResultOf(self.changer.run())
+        system_mock.assert_not_called()
 
     def test_main(self):
-        self.mocker.order()
+        pid = os.getpid() + 1
+        with patch("os.getpgrp", return_value=pid) as getpgrp_mock:
+            with patch("os.setsid") as setsid_mock:
+                with patch("landscape.package.changer.run_task_handler",
+                           return_value="RESULT") as run_task_handler_mock:
+                    self.assertEqual(main(["ARGS"]), "RESULT")
 
-        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-                                               ".run_task_handler",
-                                               passthrough=False)
-        getpgrp = self.mocker.replace("os.getpgrp")
-        self.expect(getpgrp()).result(os.getpid() + 1)
-        setsid = self.mocker.replace("os.setsid")
-        setsid()
-        run_task_handler(PackageChanger, ["ARGS"])
-        self.mocker.result("RESULT")
-
-        self.mocker.replay()
-
-        self.assertEqual(main(["ARGS"]), "RESULT")
+        getpgrp_mock.assert_called_once_with()
+        setsid_mock.assert_called_once_with()
+        run_task_handler_mock.assert_called_once_with(PackageChanger, ["ARGS"])
 
     def test_main_run_from_shell(self):
         """
