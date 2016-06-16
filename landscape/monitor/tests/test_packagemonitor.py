@@ -65,8 +65,9 @@ class PackageMonitorTest(LandscapeTest):
         with mock.patch.object(package_monitor, 'spawn_reporter') as mocked:
             message = {"type": "package-ids"}
             self.monitor.dispatch_message(message)
-            self.assertTrue(os.path.isfile(filename))
-            mocked.assert_called_once_with()
+
+        self.assertTrue(os.path.isfile(filename))
+        mocked.assert_called_once_with()
 
     def test_run_interval(self):
         """
@@ -79,8 +80,8 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_do_not_spawn_reporter_if_message_not_accepted(self):
         self.monitor.add(self.package_monitor)
-        self.successResultOf(self.package_monitor.run())
         with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+            self.successResultOf(self.package_monitor.run())
             self.assertEqual(mkd.mock_calls, [])
 
     def test_spawn_reporter_on_registration_when_already_accepted(self):
@@ -208,18 +209,12 @@ class PackageMonitorTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_call_on_accepted(self):
-        called = []
-
-        def record_call():
-            called.append(True)
-
-        with mock.patch.object(
-                self.package_monitor, 'spawn_reporter',
-                side_effect=record_call):
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
             self.monitor.add(self.package_monitor)
             self.monitor.reactor.fire(
                 ("message-type-acceptance-changed", "packages"), True)
-        self.assertTrue(called)
+
+        mkd.assert_called_once_with()
 
     def test_resynchronize(self):
         """
