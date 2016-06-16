@@ -17,6 +17,7 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
+from landscape.package.skeleton import PackageSkeleton
 from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SimpleRepositoryHelper,
@@ -188,7 +189,8 @@ class PackageReporterAptTest(LandscapeTest):
                              "ids": [123, None, 456],
                              "request-id": request1.id})
 
-        def got_result(result):
+        def got_result(result, mocked_get_package_skeleton):
+            self.assertTrue(mocked_get_package_skeleton.called)
             message = message_store.get_pending_messages()[0]
             request2 = self.store.get_hash_id_request(message["request-id"])
             self.assertMessages(
@@ -216,12 +218,13 @@ class PackageReporterAptTest(LandscapeTest):
             installed_size = None
             relations = []
 
-        mock_facade = self.mocker.patch(self.Facade)
-        mock_facade.get_package_skeleton(ANY)
-        self.mocker.result(FakePackage())
-        self.mocker.replay()
-        deferred = self.reporter.handle_tasks()
-        return deferred.addCallback(got_result)
+            def get_hash(self):
+                return HASH1  # Need to match the hash of the initial request 
+
+        with mock.patch.object(self.Facade, "get_package_skeleton",
+                               return_value=FakePackage()) as mocked:
+            deferred = self.reporter.handle_tasks()
+            return deferred.addCallback(got_result, mocked)
 
     def test_set_package_ids_with_unknown_hashes_and_failed_send_msg(self):
         message_store = self.broker_service.message_store
@@ -233,10 +236,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-        remote_mock = self.mocker.patch(self.reporter._broker)
-        remote_mock.send_message(ANY, ANY, True)
-        self.mocker.result(deferred)
-        self.mocker.replay()
 
         request_id = self.store.add_hash_id_request(["foo", HASH1, "bar"]).id
 
@@ -244,15 +243,18 @@ class PackageReporterAptTest(LandscapeTest):
                                          "ids": [123, None, 456],
                                          "request-id": request_id})
 
-        def got_result(result):
+        def got_result(result, send_mock):
+            send_mock.assert_called_once_with(mock.ANY, mock.ANY, True)
             self.assertMessages(message_store.get_pending_messages(), [])
             self.assertEqual(
                 [request.id for request in self.store.iter_hash_id_requests()],
                 [request_id])
 
-        result = self.reporter.handle_tasks()
-        self.assertFailure(result, Boom)
-        return result.addCallback(got_result)
+        with mock.patch.object(self.reporter._broker, "send_message") as send_mock:
+            send_mock.return_value = deferred
+            result = self.reporter.handle_tasks()
+            self.assertFailure(result, Boom)
+            return result.addCallback(got_result, send_mock)
 
     def test_set_package_ids_removes_request_id_when_done(self):
         request = self.store.add_hash_id_request(["hash1"])
@@ -689,20 +691,16 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-        remote_mock = self.mocker.patch(self.reporter._broker)
-        remote_mock.send_message(ANY, ANY, True)
-        self.mocker.result(deferred)
-        self.mocker.replay()
-
-        def got_result(result):
+        def got_result(result, send_mock):
+            send_mock.assert_called_once_with(mock.ANY, mock.ANY, True)
             self.assertMessages(message_store.get_pending_messages(), [])
             self.assertEqual(list(self.store.iter_hash_id_requests()), [])
 
-        result = self.reporter.request_unknown_hashes()
-
-        self.assertFailure(result, Boom)
-
-        return result.addCallback(got_result)
+        with mock.patch.object(self.reporter._broker, "send_message") as send_mock:
+            send_mock.return_value = deferred
+            result = self.reporter.request_unknown_hashes()
+            self.assertFailure(result, Boom)
+            return result.addCallback(got_result, send_mock)
 
     def test_detect_packages_creates_stamp_file(self):
         """
@@ -947,12 +945,10 @@ class PackageReporterAptTest(LandscapeTest):
         """
         The L{PackageReporter.detect_changes} method package changes.
         """
-        reporter_mock = self.mocker.patch(self.reporter)
-        reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(True))
-
-        self.mocker.replay()
-        return self.reporter.detect_changes()
+        with mock.patch.object(self.reporter, "detect_packages_changes",
+                               return_value=succeed(True)) as reporter_mock:
+            self.successResultOf(self.reporter.detect_changes())
+        reporter_mock.assert_called_once_with()
 
     def test_detect_changes_fires_package_data_changed(self):
         """
@@ -960,15 +956,13 @@ class PackageReporterAptTest(LandscapeTest):
         type 'package-data-changed' if we detected something has changed
         with respect to our previous run.
         """
-        reporter_mock = self.mocker.patch(self.reporter)
-        reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(True))
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
-
+        callback = mock.Mock()
         self.broker_service.reactor.call_on("package-data-changed", callback)
-        return self.reporter.detect_changes()
+        with mock.patch.object(self.reporter, "detect_packages_changes",
+                               return_value=succeed(True)) as reporter_mock:
+            self.successResultOf(self.reporter.detect_changes())
+        reporter_mock.assert_called_once_with()
+        callback.assert_called_once_with()
 
     def test_run(self):
         results = [Deferred() for i in range(7)]
@@ -1001,14 +995,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.assertTrue(self.reporter.detect_changes.called)
 
     def test_main(self):
-        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-                                               ".run_task_handler",
-                                               passthrough=False)
-        run_task_handler(PackageReporter, ["ARGS"])
-        self.mocker.result("RESULT")
-        self.mocker.replay()
-
-        self.assertEqual(main(["ARGS"]), "RESULT")
+        with mock.patch("landscape.package.reporter.run_task_handler") as m:
+            m.return_value = "RESULT"
+            self.assertEqual("RESULT", main(["ARGS"]))
+        m.assert_called_once_with(PackageReporter, ["ARGS"])
 
     def test_find_reporter_command(self):
         dirname = self.makeDir()
@@ -1089,19 +1079,18 @@ class PackageReporterAptTest(LandscapeTest):
         self.reactor.advance(0)
         return deferred
 
-    def test_run_apt_update(self):
+    @mock.patch("logging.warning")
+    def test_run_apt_update(self, warning_mock):
         """
         The L{PackageReporter.run_apt_update} method should run apt-update.
         """
         self.reporter.sources_list_filename = "/I/Dont/Exist"
         self.reporter.sources_list_directory = "/I/Dont/Exist"
         self._make_fake_apt_update()
-        debug_mock = self.mocker.replace("logging.debug")
-        debug_mock("'%s' exited with status 0 (out='output', err='error')" %
-                   self.reporter.apt_update_filename)
-        warning_mock = self.mocker.replace("logging.warning")
-        self.expect(warning_mock(ANY)).count(0)
-        self.mocker.replay()
+        debug_patcher = mock.patch.object(reporter.logging, "debug")
+        debug_mock = debug_patcher.start()
+        self.addCleanup(debug_patcher.stop)
+
         deferred = Deferred()
 
         def do_test():
@@ -1111,6 +1100,9 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("output", out)
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
+                self.assertFalse(warning_mock.called)
+                debug_mock.assert_called_once_with("'%s' exited with status 0 (out='output', err='error')" %
+                           self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1162,11 +1154,9 @@ class PackageReporterAptTest(LandscapeTest):
         case apt-update terminates with a non-zero exit code.
         """
         self._make_fake_apt_update(code=2)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("'%s' exited with status 2"
-                     " (error)" % self.reporter.apt_update_filename)
-
-        self.mocker.replay()
+        warning_patcher = mock.patch.object(reporter.logging, "warning")
+        warning_mock = warning_patcher.start()
+        self.addCleanup(warning_patcher.stop)
 
         result = self.reporter.run_apt_update()
 
@@ -1174,6 +1164,9 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(2, code)
+            warning_mock.assert_called_once_with(
+                "'%s' exited with status 2 (error)" %
+                self.reporter.apt_update_filename)
 
         result.addCallback(callback)
         self.reactor.advance(0)
