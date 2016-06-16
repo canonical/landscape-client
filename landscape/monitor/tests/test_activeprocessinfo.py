@@ -567,8 +567,8 @@ class ActiveProcessInfoTest(LandscapeTest):
 
             self.builder.remove_data(1)
             self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                    started_after_boot=1100, process_name="init",
-                                    vmsize=20000)
+                                    started_after_boot=1100,
+                                    process_name="init", vmsize=20000)
             plugin.exchange()
             flush_mock.assert_called_once_with()
 
