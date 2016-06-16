@@ -688,7 +688,12 @@ class AptPackageChangerTest(LandscapeTest):
         system_mock.assert_called_once_with(
             "/usr/bin/landscape-package-reporter -c test.conf")
 
-    def test_set_effective_uid_and_gid_when_running_as_root(self):
+    @patch("os.getuid", return_value=0)
+    @patch("os.setgid")
+    @patch("os.setuid")
+    @patch("os.system")
+    def test_set_effective_uid_and_gid_when_running_as_root(
+            self, system_mock, setuid_mock, setgid_mock, getuid_mock):
         """
         After the package changer has run, we want the package-reporter to run
         to report the recent changes.  If we're running as root, we want to
@@ -703,23 +708,13 @@ class AptPackageChangerTest(LandscapeTest):
 
             
         # We are running as root
-        with contextlib.nested(
-                patch("os.getuid", return_value=0),
-                patch("grp.getgrnam", return_value=FakeGroup()),
-                patch("os.setgid"),
-                patch("pwd.getpwnam", return_value=FakeUser()),
-                patch("os.setuid"),
-                patch("os.system")) as (getuid_mock,
-                                        grnam_mock,
-                                        setgid_mock,
-                                        pwnam_mock,
-                                        setuid_mock,
-                                        system_mock):
-            # Add a task that will do nothing besides producing an answer.
-            # The reporter is only spawned if at least one task was handled.
-            self.store.add_task("changer", {"type": "change-packages",
-                                            "operation-id": 123})
-            self.successResultOf(self.changer.run())
+        with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
+            with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
+                # Add a task that will do nothing besides producing an answer.
+                # The reporter is only spawned if at least one task was handled.
+                self.store.add_task("changer", {"type": "change-packages",
+                                                "operation-id": 123})
+                self.successResultOf(self.changer.run())
 
         grnam_mock.assert_called_once_with("landscape")
         setgid_mock.assert_called_once_with(199)
