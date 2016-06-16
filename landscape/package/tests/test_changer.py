@@ -1132,18 +1132,11 @@ class AptPackageChangerTest(LandscapeTest):
                              "hold": [123],
                              "operation-id": 123})
 
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT)
-        self.mocker.count(1, None)
-        self.mocker.replay()
-
-        try:
+        thetime = time.time()
+        with patch("time.time") as time_mock:
+            time_mock.return_value = thetime + UNKNOWN_PACKAGE_DATA_TIMEOUT
             result = self.changer.handle_tasks()
-            self.mocker.verify()
-        finally:
-            # Reset it earlier so that Twisted has the true time function.
-            self.mocker.reset()
+        time_mock.assert_any_call()
 
         self.assertIn("Package data not yet synchronized with server (123)",
                       self.logfile.getvalue())
