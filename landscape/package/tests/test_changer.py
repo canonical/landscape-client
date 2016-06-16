@@ -8,7 +8,7 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
 
-from mock import patch
+from mock import patch, Mock, call
 
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
@@ -342,19 +342,15 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         [package1] = self.facade.get_packages_by_name("name1")
 
-        self.mocker.order()
-        self.facade.perform_changes = self.mocker.mock()
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package1]))
-
-        self.facade.mark_install = self.mocker.mock()
-        self.facade.mark_install(package1)
-        self.facade.perform_changes()
-        self.mocker.result("success")
-        self.mocker.replay()
+        self.facade.perform_changes = Mock(side_effect=[DependencyError([package1]), "success"])
+        
+        self.facade.mark_install = Mock()
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
+        self.facade.perform_changes.has_calls([call(), call()])
+        self.facade.mark_install.assert_called_once_with(package1)
+                                           
         self.assertEqual(result.code, SUCCESS_RESULT)
         self.assertEqual(result.text, "success")
         self.assertEqual(result.installs, [1])
