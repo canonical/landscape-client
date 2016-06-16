@@ -1,13 +1,13 @@
 import tempfile
 import shutil
 import os
+import mock
 
 from landscape.lib.persist import Persist
 from landscape.broker.store import MessageStore
 from landscape.schema import InvalidError, Message, Int, Bytes, Unicode
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.tests.mocker import ANY
 
 
 class MessageStoreTest(LandscapeTest):
@@ -288,18 +288,16 @@ class MessageStoreTest(LandscapeTest):
         self.store.add({"type": "data", "data": 1})
         # We simulate it by creating a fake file which raises halfway through
         # writing a file.
-        replaced_file_factory = self.mocker.replace("__builtin__.open",
-                                                    passthrough=False)
-        replaced_file = replaced_file_factory(ANY, "w")
-        replaced_file.write(ANY)
-        self.mocker.throw(IOError("Sorry, pal!"))
-        self.mocker.replay()
-        # This kind of ensures that raising an exception is somewhat
-        # similar to unplugging the power -- i.e., we're not relying
-        # on special exception-handling in the file-writing code.
-        self.assertRaises(IOError, self.store.add, {"type": "data", "data": 2})
-        self.mocker.verify()
-        self.mocker.reset()
+        with mock.patch("__builtin__.open") as mock_open:
+            mocked_file = mock_open.return_value
+            mocked_file.write.side_effect = IOError("Sorry, pal!")
+            # This kind of ensures that raising an exception is somewhat
+            # similar to unplugging the power -- i.e., we're not relying
+            # on special exception-handling in the file-writing code.
+            self.assertRaises(
+                IOError, self.store.add, {"type": "data", "data": 2})
+            mock_open.assert_called_with(mock.ANY, "w")
+            mocked_file.write.assert_called_once_with(mock.ANY)
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "data", "data": 1, "api": "3.2"}])
 
