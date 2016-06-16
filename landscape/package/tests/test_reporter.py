@@ -1418,10 +1418,9 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter._apt_sources_have_changed = lambda: False
         self.makeFile("", path=self.config.update_stamp_filename)
 
-        logging_mock = self.mocker.replace("logging.debug")
-        logging_mock("'%s' didn't run, update interval has not passed" %
-                     self.reporter.apt_update_filename)
-        self.mocker.replay()
+        debug_patcher =  mock.patch.object(reporter.logging, "debug")
+        debug_mock = debug_patcher.start()
+
         deferred = Deferred()
 
         def do_test():
@@ -1431,6 +1430,10 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
+                debug_mock.assert_called_once_with(
+                    "'%s' didn't run, update interval has not passed" %
+                     self.reporter.apt_update_filename)
+                debug_patcher.stop()
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
