@@ -374,7 +374,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # breaking badly, so the quiet option should be set.
         init_logging_mock.assert_called_once_with(ANY, "handler-mock")
 
-        connector_mock.disconnect.assert_called_once()
+        connector_mock.disconnect.assert_called_once_with()
         reactor_mock.call_later.assert_called_once_with(0, ANY)
 
         # We also expect the umask to be set appropriately before running the
@@ -422,12 +422,12 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         def assert_log(ignored):
             self.assertIn("MyException", self.logfile.getvalue())
+            init_logging_mock.assert_called_once_with(ANY, "handler-mock")
 
         result = run_task_handler(HandlerMock,
                                   ["-c", self.config_filename],
                                   reactor=FakeReactor())
 
-        init_logging_mock.assert_called_once()
         return result.addCallback(assert_log)
 
 
