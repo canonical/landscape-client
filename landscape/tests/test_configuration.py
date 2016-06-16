@@ -1917,7 +1917,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
 
-    def test_register_without_reactor(self):
+    @mock.patch("landscape.configuration.LandscapeReactor")
+    def test_register_without_reactor(self, mock_reactor):
         """If no reactor is passed, a LandscapeReactor will be instantiated.
 
         This behaviour is exclusively for compatability with the client charm
@@ -1927,21 +1928,11 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         def connector_factory(reactor, config):
             return FauxConnector(reactor, self.config)
 
-        reactor_mock = self.mocker.replace(
-            "landscape.reactor.LandscapeReactor", passthrough=False)
-        # The mock acts as both the constructor...
-        reactor_mock()
-        self.mocker.result(reactor_mock)
-        # ...and the constructed reactor itself.
-        reactor_mock.run()
-        self.mocker.replay()
-
         # We pre-seed a success because no actual result will be generated.
         register(self.config, connector_factory=connector_factory,
-            results=["success"])
-        # The reactor mock being run is what this test asserts, which is
-        # verified by the test infrastructure, so there are no assertions
-        # here.
+                 results=["success"])
+        mock_reactor.assert_called_once_with()
+        mock_reactor().run.assert_called_once_with()
 
     def test_got_connection(self):
         """got_connection() adds deferreds and callbacks."""
@@ -2071,7 +2062,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):
 
-    def test_store_public_key_data(self):
+    @mock.patch("landscape.configuration.print_text")
+    def test_store_public_key_data(self, mock_print_text):
         """
         L{store_public_key_data} writes the SSL CA supplied by the server to a
         file for later use, this file is called after the name of the
@@ -2083,14 +2075,11 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
             config.data_path,
             os.path.basename(config.get_config_filename()) + ".ssl_public_key")
 
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Writing SSL CA certificate to %s..." %
-                        key_filename)
-        self.mocker.replay()
-
         self.assertEqual(key_filename,
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
+        mock_print_text.assert_called_once_with(
+            "Writing SSL CA certificate to %s..." % key_filename)
 
 
 class ReportRegistrationOutcomeTest(unittest.TestCase):
