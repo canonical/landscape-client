@@ -176,62 +176,65 @@ class WatchDogTest(LandscapeTest):
         start only starts the daemons which are actually enabled.
         """
         self.setup_daemons_mocks()
-                
+
         clock = Clock()
-        dog = WatchDog(clock, enabled_daemons=[self.broker_factory], config=self.config)
+        dog = WatchDog(
+            clock, enabled_daemons=[self.broker_factory], config=self.config)
         dog.start()
 
         self.broker.start.assert_called_once()
         self.monitor.start.assert_not_called()
         self.manager.start.assert_not_called()
 
-    # def test_request_exit(self):
-    #     """request_exit() asks the broker to exit.
+    def test_request_exit(self):
+        """request_exit() asks the broker to exit.
 
-    #     The broker itself is responsible for notifying other plugins to exit.
+        The broker itself is responsible for notifying other plugins to exit.
 
-    #     When the deferred returned from request_exit fires, the process should
-    #     definitely be gone.
-    #     """
-    #     self.start_all_daemons()
-    #     self.expect_request_exit()
-    #     self.mocker.replay()
-    #     return WatchDog(config=self.config).request_exit()
+        When the deferred returned from request_exit fires, the process should
+        definitely be gone.
+        """
+        self.setup_daemons_mocks()
+        self.setup_request_exit()
+        result = WatchDog(config=self.config).request_exit()
+        result.addCallback(lambda _: self.assert_request_exit())
+        return result
 
-    # def test_ping_reply_after_request_exit_should_not_restart_processes(self):
-    #     """
-    #     When request_exit occurs between a ping request and response, a failing
-    #     ping response should not cause the process to be restarted.
-    #     """
-    #     self.start_all_daemons()
-    #     self.mocker.order()
+    def test_ping_reply_after_request_exit_should_not_restart_processes(self):
+        """
+        When request_exit occurs between a ping request and response, a failing
+        ping response should not cause the process to be restarted.
+        """
+        self.setup_daemons_mocks()
 
-    #     self.broker.start()
-    #     self.monitor.start()
-    #     self.manager.start()
+        self.broker.start()
+        self.monitor.start()
+        self.manager.start()
 
-    #     monitor_ping_result = Deferred()
-    #     self.expect(self.broker.is_running()).result(succeed(True))
-    #     self.expect(self.monitor.is_running()).result(monitor_ping_result)
-    #     self.expect(self.manager.is_running()).result(succeed(True))
+        monitor_ping_result = Deferred()
 
-    #     self.expect_request_exit()
+        self.broker.is_running.return_value = succeed(True)
+        self.monitor.is_running.return_value = monitor_ping_result
+        self.manager.is_running.return_value = succeed(True)
 
-    #     # And the monitor should never be explicitly stopped / restarted.
-    #     self.expect(self.monitor.stop()).count(0)
-    #     self.expect(self.monitor.start()).count(0)
+        self.setup_request_exit()
 
-    #     self.mocker.replay()
+        clock = Clock()
 
-    #     clock = Clock()
+        dog = WatchDog(clock, config=self.config)
+        dog.start()
+        clock.advance(0)
+        clock.advance(5)
+        result = dog.request_exit()
+        monitor_ping_result.callback(False)
 
-    #     dog = WatchDog(clock, config=self.config)
-    #     dog.start()
-    #     clock.advance(0)
-    #     clock.advance(5)
-    #     result = dog.request_exit()
-    #     monitor_ping_result.callback(False)
-    #     return result
+        def check(_):
+            # # And the monitor should never be explicitly stopped / restarted.
+            self.monitor.stop.assert_not_called()
+            self.monitor.start.assert_not_called()
+            self.assert_request_exit()
+
+        return result.addCallback(check)
 
 
 START = "start"
