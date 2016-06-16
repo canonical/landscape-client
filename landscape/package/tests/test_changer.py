@@ -230,7 +230,6 @@ class AptPackageChangerTest(LandscapeTest):
 
         the_time = time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT
         with patch("time.time", return_value=the_time) as time_mock:
-            time_mock()
             result = self.changer.handle_tasks()
 
         time_mock.assert_called_with()
