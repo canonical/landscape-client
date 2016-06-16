@@ -707,19 +707,21 @@ class AptPackageChangerTest(LandscapeTest):
         # We are running as root
         with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
             with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
-                # Add a task that will do nothing besides producing an
-                # answer.  The reporter is only spawned if at least
-                # one task was handled.
-                self.store.add_task("changer", {"type": "change-packages",
-                                                "operation-id": 123})
-                self.successResultOf(self.changer.run())
+                with patch("landscape.package.changer.find_reporter_command",
+                           return_value="/fake/bin/landscape-package-reporter"):
+                    # Add a task that will do nothing besides producing an
+                    # answer.  The reporter is only spawned if at least
+                    # one task was handled.
+                    self.store.add_task("changer", {"type": "change-packages",
+                                                    "operation-id": 123})
+                    self.successResultOf(self.changer.run())
 
         grnam_mock.assert_called_once_with("landscape")
         setgid_mock.assert_called_once_with(199)
         pwnam_mock.assert_called_once_with("landscape")
         setuid_mock.assert_called_once_with(199)
         system_mock.assert_called_once_with(
-            "/usr/bin/landscape-package-reporter")
+            "/fake/bin/landscape-package-reporter")
 
     def test_run(self):
         changer_mock = patch.object(self, "changer")
