@@ -4,12 +4,12 @@ import time
 import apt_pkg
 import mock
 
-from twisted.internet.defer import Deferred, succeed, inlineCallbacks
+from twisted.internet.defer import Deferred, succeed, fail, inlineCallbacks
 from twisted.internet import reactor
 
 
 from landscape.lib.fs import create_file, touch_file
-from landscape.lib.fetch import fetch_async, FetchError
+from landscape.lib.fetch import FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
     PackageStore, UnknownHashIDRequest, FakePackageStore)
@@ -266,8 +266,10 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
 
+    @mock.patch("landscape.package.reporter.fetch_async",
+                return_value=succeed("hash-ids"))
     @mock.patch("logging.info", return_value=None)
-    def test_fetch_hash_id_db(self, logging_mock):
+    def test_fetch_hash_id_db(self, logging_mock, mock_fetch_async):
 
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
@@ -284,18 +286,10 @@ class PackageReporterAptTest(LandscapeTest):
 
         # Let's say fetch_async is successful
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib."
-                                               "fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url, cainfo=None)
-        fetch_async_result = Deferred()
-        fetch_async_result.callback("hash-ids")
-        self.mocker.result(fetch_async_result)
 
         # We don't have our hash=>id database yet
         self.assertFalse(os.path.exists(hash_id_db_filename))
 
-        # Now go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
 
         # Check the database
@@ -306,9 +300,11 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Downloaded hash=>id database from %s" % hash_id_db_url)
+        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
         return result
 
-    def test_fetch_hash_id_db_does_not_download_twice(self):
+    @mock.patch("landscape.package.reporter.fetch_async")
+    def test_fetch_hash_id_db_does_not_download_twice(self, mock_fetch_async):
 
         # Let's say that the hash=>id database is already there
         self.config.package_hash_id_url = "http://fake.url/path/"
@@ -324,19 +320,11 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
-        # Intercept any call to fetch_async
-        fetch_async_mock = self.mocker.replace("landscape.lib."
-                                               "fetch.fetch_async")
-        fetch_async_mock(ANY)
-
-        # Go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
 
         def callback(ignored):
             # Check that fetch_async hasn't been called
-            self.assertRaises(AssertionError, self.mocker.verify)
-            fetch_async(None)
+            mock_fetch_async.assert_not_called()
 
             # The hash=>id database is still there
             self.assertEqual(open(hash_id_db_filename).read(), "test")
@@ -394,8 +382,9 @@ class PackageReporterAptTest(LandscapeTest):
             "unknown dpkg architecture")
         return result
 
-    def test_fetch_hash_id_db_with_default_url(self):
-
+    @mock.patch("landscape.package.reporter.fetch_async",
+                return_value=succeed("hash-ids"))
+    def test_fetch_hash_id_db_with_default_url(self, mock_fetch_async):
         # Let's say package_hash_id_url is not set but url is
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = None
@@ -413,15 +402,6 @@ class PackageReporterAptTest(LandscapeTest):
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib."
-                                               "fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url, cainfo=None)
-        fetch_async_result = Deferred()
-        fetch_async_result.callback("hash-ids")
-        self.mocker.result(fetch_async_result)
-
-        # Now go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
 
         # Check the database
@@ -429,10 +409,14 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertTrue(os.path.exists(hash_id_db_filename))
             self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
         result.addCallback(callback)
+        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
         return result
 
+    @mock.patch("landscape.package.reporter.fetch_async",
+                return_value=fail(FetchError("fetch error")))
     @mock.patch("logging.warning", return_value=None)
-    def test_fetch_hash_id_db_with_download_error(self, logging_mock):
+    def test_fetch_hash_id_db_with_download_error(
+            self, logging_mock, mock_fetch_async):
 
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
@@ -446,15 +430,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         # Let's say fetch_async fails
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib."
-                                               "fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url, cainfo=None)
-        fetch_async_result = Deferred()
-        fetch_async_result.errback(FetchError("fetch error"))
-        self.mocker.result(fetch_async_result)
 
-        # Now go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
 
         # We shouldn't have any hash=>id database
@@ -467,7 +443,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Couldn't download hash=>id database: fetch error")
-
+        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
         return result
 
     @mock.patch("logging.warning", return_value=None)
@@ -497,7 +473,9 @@ class PackageReporterAptTest(LandscapeTest):
             "Can't determine the hash=>id database url")
         return result
 
-    def test_fetch_hash_id_db_with_custom_certificate(self):
+    @mock.patch("landscape.package.reporter.fetch_async",
+                return_value=succeed("hash-ids"))
+    def test_fetch_hash_id_db_with_custom_certificate(self, mock_fetch_async):
         """
         The L{PackageReporter.fetch_hash_id_db} method takes into account the
         possible custom SSL certificate specified in the client configuration.
@@ -515,16 +493,12 @@ class PackageReporterAptTest(LandscapeTest):
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib."
-                                               "fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url, cainfo=self.config.ssl_public_key)
-        fetch_async_result = Deferred()
-        fetch_async_result.callback("hash-ids")
-        self.mocker.result(fetch_async_result)
 
         # Now go!
         self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=self.config.ssl_public_key)
 
         return result
 
@@ -997,44 +971,34 @@ class PackageReporterAptTest(LandscapeTest):
         return self.reporter.detect_changes()
 
     def test_run(self):
-        reporter_mock = self.mocker.patch(self.reporter)
-
-        self.mocker.order()
-
         results = [Deferred() for i in range(7)]
-
-        reporter_mock.run_apt_update()
-        self.mocker.result(results[0])
-
-        reporter_mock.fetch_hash_id_db()
-        self.mocker.result(results[1])
-
-        reporter_mock.use_hash_id_db()
-        self.mocker.result(results[2])
-
-        reporter_mock.handle_tasks()
-        self.mocker.result(results[3])
-
-        reporter_mock.remove_expired_hash_id_requests()
-        self.mocker.result(results[4])
-
-        reporter_mock.request_unknown_hashes()
-        self.mocker.result(results[5])
-
-        reporter_mock.detect_changes()
-        self.mocker.result(results[6])
-
-        self.mocker.replay()
+        self.reporter.run_apt_update = mock.Mock(return_value=results[0])
+        self.reporter.fetch_hash_id_db = mock.Mock(return_value=results[1])
+        self.reporter.use_hash_id_db = mock.Mock(return_value=results[2])
+        self.reporter.handle_tasks = mock.Mock(return_value=results[3])
+        self.reporter.remove_expired_hash_id_requests = mock.Mock(
+            return_value=results[4])
+        self.reporter.request_unknown_hashes = mock.Mock(
+            return_value=results[5])
+        self.reporter.detect_changes = mock.Mock(return_value=results[6])
 
         self.reporter.run()
 
-        # It must raise an error because deferreds weren't yet fired.
-        self.assertRaises(AssertionError, self.mocker.verify)
+        # It should be False because deferreds weren't yet fired.
+        self.assertFalse(self.reporter.detect_changes.called)
+        # self.assertRaises(AssertionError, self.mocker.verify)
 
         # Call them in reversed order. It must not make a difference because
         # Twisted is ensuring that things run in the proper order.
         for deferred in reversed(results):
             deferred.callback(None)
+        self.assertTrue(self.reporter.run_apt_update.called)
+        self.assertTrue(self.reporter.fetch_hash_id_db.called)
+        self.assertTrue(self.reporter.use_hash_id_db.called)
+        self.assertTrue(self.reporter.handle_tasks.called)
+        self.assertTrue(self.reporter.remove_expired_hash_id_requests.called)
+        self.assertTrue(self.reporter.request_unknown_hashes.called)
+        self.assertTrue(self.reporter.detect_changes.called)
 
     def test_main(self):
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
