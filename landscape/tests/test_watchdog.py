@@ -2,13 +2,17 @@ import stat
 import time
 import sys
 import os
+import pwd
 import signal
 import logging
+
+import mock
 
 from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
+from twisted.python.fakepwd import UserDatabase
 
 from landscape.tests.mocker import ARGS, KWARGS, ANY
 from landscape.tests.clock import Clock
@@ -1328,19 +1332,20 @@ class WatchDogRunTests(LandscapeTest):
 
     helpers = [EnvironSaverHelper]
 
-    def test_non_root(self):
+    def setUp(self):
+        super(WatchDogRunTests, self).setUp()
+        self._fake_pwd = UserDatabase()
+
+    @mock.patch("os.getuid", return_value=1000)
+    def test_non_root(self, mock_getuid):
         """
         The watchdog should print an error message and exit if run by a normal
         user.
         """
-        self.mocker.replace("os.getuid")()
-        self.mocker.count(1, None)
-        self.mocker.result(1000)
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        getpwnam("landscape").pw_uid
-        self.mocker.result(1001)
-        self.mocker.replay()
-        sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
+        self._fake_pwd.addUser(
+            "landscape", None, 1001, None, None, None, None)
+        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+            sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("landscape-client can only be run"
                       " as 'root' or 'landscape'.", str(sys_exit))
 
@@ -1348,12 +1353,11 @@ class WatchDogRunTests(LandscapeTest):
         """
         The watchdog *can* be run as the 'landscape' user.
         """
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        getpwnam("landscape").pw_uid
-        self.mocker.result(os.getuid())
-        self.mocker.replay()
+        self._fake_pwd.addUser(
+            "landscape", None, os.getuid(), None, None, None, None)
         reactor = FakeReactor()
-        run(["--log-dir", self.makeFile()], reactor=reactor)
+        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+            run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertTrue(reactor.running)
 
     def test_no_landscape_user(self):
@@ -1361,19 +1365,13 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog should print an error message and exit if the
         'landscape' user doesn't exist.
         """
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        getpwnam("landscape")
-        self.mocker.throw(KeyError())
-        self.mocker.replay()
-        sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
+        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+            sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("The 'landscape' user doesn't exist!", str(sys_exit))
 
     def test_clean_environment(self):
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        getpwnam("landscape").pw_uid
-        self.mocker.result(os.getuid())
-        self.mocker.replay()
-
+        self._fake_pwd.addUser(
+            "landscape", None, os.getuid(), None, None, None, None)
         os.environ["DEBIAN_YO"] = "yo"
         os.environ["DEBCONF_YO"] = "yo"
         os.environ["LANDSCAPE_ATTACHMENTS"] = "some attachments"
@@ -1381,7 +1379,8 @@ class WatchDogRunTests(LandscapeTest):
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
-        run(["--log-dir", self.makeFile()], reactor=reactor)
+        with mock.patch("landscape.watchdog.pwd", new=self._fake_pwd):
+            run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)
         self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)
