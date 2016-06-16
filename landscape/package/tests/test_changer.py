@@ -8,6 +8,8 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
 
+from mock import patch, Mock, call
+
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
@@ -18,7 +20,6 @@ from landscape.package.facade import (
     DependencyError, TransactionError)
 from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
-from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, StubProcessFactory)
 from landscape.package.tests.helpers import (
@@ -227,18 +228,11 @@ class AptPackageChangerTest(LandscapeTest):
                             {"type": "change-packages", "remove": [123],
                              "operation-id": 123})
 
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT)
-        self.mocker.count(1, None)
-        self.mocker.replay()
-
-        try:
+        the_time = time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT
+        with patch("time.time", return_value=the_time) as time_mock:
             result = self.changer.handle_tasks()
-            self.mocker.verify()
-        finally:
-            # Reset it earlier so that Twisted has the true time function.
-            self.mocker.reset()
+
+        time_mock.assert_called_with()
 
         self.assertIn("Package data not yet synchronized with server (123)",
                       self.logfile.getvalue())
@@ -345,18 +339,15 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         [package1] = self.facade.get_packages_by_name("name1")
 
-        self.mocker.order()
-        self.facade.perform_changes = self.mocker.mock()
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package1]))
+        self.facade.perform_changes = Mock(
+            side_effect=[DependencyError([package1]), "success"])
 
-        self.facade.mark_install = self.mocker.mock()
-        self.facade.mark_install(package1)
-        self.facade.perform_changes()
-        self.mocker.result("success")
-        self.mocker.replay()
+        self.facade.mark_install = Mock()
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.facade.perform_changes.has_calls([call(), call()])
+        self.facade.mark_install.assert_called_once_with(package1)
 
         self.assertEqual(result.code, SUCCESS_RESULT)
         self.assertEqual(result.text, "success")
@@ -374,12 +365,13 @@ class AptPackageChangerTest(LandscapeTest):
 
         package1 = self.facade.get_package_by_hash(installed_hash)
         [package2] = self.facade.get_packages_by_name("name2")
-        self.facade.perform_changes = self.mocker.mock()
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package1, package2]))
-        self.mocker.replay()
+
+        self.facade.perform_changes = Mock(
+            side_effect=DependencyError([package1, package2]))
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.facade.perform_changes.assert_called_once_with()
 
         self.assertEqual(result.code, DEPENDENCY_ERROR_RESULT)
         self.assertEqual(result.text, None)
@@ -398,14 +390,13 @@ class AptPackageChangerTest(LandscapeTest):
         [package1] = self.facade.get_packages_by_name("name1")
         [package2] = self.facade.get_packages_by_name("name2")
 
-        self.facade.perform_changes = self.mocker.mock()
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package1]))
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package2]))
-        self.mocker.replay()
+        self.facade.perform_changes = Mock(
+            side_effect=[DependencyError([package1]),
+                         DependencyError([package2])])
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.facade.perform_changes.has_calls([call(), call()])
 
         self.assertEqual(result.code, DEPENDENCY_ERROR_RESULT)
         self.assertEqual(result.text, None)
@@ -423,15 +414,17 @@ class AptPackageChangerTest(LandscapeTest):
                              "install": [1],
                              "policy": POLICY_ALLOW_INSTALLS,
                              "operation-id": 123})
-        self.changer.change_packages = self.mocker.mock()
-        self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
         result = ChangePackagesResult()
         result.code = SUCCESS_RESULT
-        self.mocker.result(result)
-        self.mocker.replay()
+
+        self.changer.change_packages = Mock(return_value=result)
 
         self.disable_clear_channels()
-        return self.changer.handle_tasks()
+
+        self.successResultOf(self.changer.handle_tasks())
+        self.changer.change_packages.assert_called_once_with(
+            POLICY_ALLOW_INSTALLS)
 
     def test_perform_changes_with_policy_allow_all_changes(self):
         """
@@ -442,21 +435,20 @@ class AptPackageChangerTest(LandscapeTest):
         self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
         self.facade.reload_channels()
 
-        self.mocker.order()
         package1 = self.facade.get_package_by_hash(installed_hash)
         [package2] = self.facade.get_packages_by_name("name2")
-        self.facade.perform_changes = self.mocker.mock()
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package1, package2]))
-        self.facade.mark_install = self.mocker.mock()
-        self.facade.mark_remove = self.mocker.mock()
-        self.facade.mark_install(package2)
-        self.facade.mark_remove(package1)
-        self.facade.perform_changes()
-        self.mocker.result("success")
-        self.mocker.replay()
+
+        self.facade.perform_changes = Mock(
+            side_effect=[DependencyError([package1, package2]),
+                         "success"])
+        self.facade.mark_install = Mock()
+        self.facade.mark_remove = Mock()
 
         result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
+
+        self.facade.perform_changes.has_calls([call(), call()])
+        self.facade.mark_install.assert_called_once_with(package2)
+        self.facade.mark_remove.assert_called_once_with(package1)
 
         self.assertEqual(result.code, SUCCESS_RESULT)
         self.assertEqual(result.text, "success")
@@ -668,167 +660,109 @@ class AptPackageChangerTest(LandscapeTest):
         result = self.changer.run()
         return result.addCallback(assert_log)
 
-    def test_spawn_reporter_after_running(self):
-        output_filename = self.makeFile("REPORTER NOT RUN")
-        reporter_filename = self.makeFile("#!/bin/sh\necho REPORTER RUN > %s" %
-                                          output_filename)
-        os.chmod(reporter_filename, 0755)
+    @patch("os.system")
+    def test_spawn_reporter_after_running(self, system_mock):
+        with patch("landscape.package.changer.find_reporter_command",
+                   return_value="/fake/bin/landscape-package-reporter"):
+            # Add a task that will do nothing besides producing an
+            # answer.  The reporter is only spawned if at least one
+            # task was handled.
+            self.store.add_task("changer", {"type": "change-packages",
+                                            "operation-id": 123})
 
-        find_command_mock = self.mocker.replace(
-            "landscape.package.reporter.find_reporter_command")
-        find_command_mock()
-        self.mocker.result(reporter_filename)
-        self.mocker.replay()
+            self.successResultOf(self.changer.run())
 
-        # Add a task that will do nothing besides producing an answer.
-        # The reporter is only spawned if at least one task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
+        system_mock.assert_called_once_with(
+            "/fake/bin/landscape-package-reporter")
 
-        result = self.changer.run()
-
-        def got_result(result):
-            self.assertEqual(open(output_filename).read().strip(),
-                             "REPORTER RUN")
-        return result.addCallback(got_result)
-
-    def test_spawn_reporter_after_running_with_config(self):
+    @patch("os.system")
+    def test_spawn_reporter_after_running_with_config(self, system_mock):
         """The changer passes the config to the reporter when running it."""
         self.config.config = "test.conf"
-        output_filename = self.makeFile("REPORTER NOT RUN")
-        reporter_filename = self.makeFile("#!/bin/sh\necho ARGS $@ > %s" %
-                                          output_filename)
-        os.chmod(reporter_filename, 0755)
 
-        find_command_mock = self.mocker.replace(
-            "landscape.package.reporter.find_reporter_command")
-        find_command_mock()
-        self.mocker.result(reporter_filename)
-        self.mocker.replay()
+        with patch("landscape.package.changer.find_reporter_command",
+                   return_value="/fake/bin/landscape-package-reporter"):
+            # Add a task that will do nothing besides producing an
+            # answer.  The reporter is only spawned if at least one
+            # task was handled.
+            self.store.add_task("changer", {"type": "change-packages",
+                                            "operation-id": 123})
+            self.successResultOf(self.changer.run())
 
-        # Add a task that will do nothing besides producing an answer.
-        # The reporter is only spawned if at least one task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
+        system_mock.assert_called_once_with(
+            "/fake/bin/landscape-package-reporter -c test.conf")
 
-        result = self.changer.run()
-
-        def got_result(result):
-            self.assertEqual(open(output_filename).read().strip(),
-                             "ARGS -c test.conf")
-        return result.addCallback(got_result)
-
-    def test_set_effective_uid_and_gid_when_running_as_root(self):
+    @patch("os.getuid", return_value=0)
+    @patch("os.setgid")
+    @patch("os.setuid")
+    @patch("os.system")
+    def test_set_effective_uid_and_gid_when_running_as_root(
+            self, system_mock, setuid_mock, setgid_mock, getuid_mock):
         """
         After the package changer has run, we want the package-reporter to run
         to report the recent changes.  If we're running as root, we want to
         change to the "landscape" user and "landscape" group.
         """
 
-        # We are running as root
-        getuid_mock = self.mocker.replace("os.getuid")
-        getuid_mock()
-        self.mocker.result(0)
-
-        self.mocker.order()
-
-        # We want to return a known gid
-        grnam_mock = self.mocker.replace("grp.getgrnam")
-        grnam_mock("landscape")
-
         class FakeGroup(object):
             gr_gid = 199
-
-        self.mocker.result(FakeGroup())
-
-        # First the changer should change the group
-        setgid_mock = self.mocker.replace("os.setgid")
-        setgid_mock(199)
-
-        # And a known uid as well
-        pwnam_mock = self.mocker.replace("pwd.getpwnam")
-        pwnam_mock("landscape")
 
         class FakeUser(object):
             pw_uid = 199
 
-        self.mocker.result(FakeUser())
+        # We are running as root
+        with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
+            with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
+                with patch(
+                        "landscape.package.changer.find_reporter_command",
+                        return_value="/fake/bin/landscape-package-reporter"):
+                    # Add a task that will do nothing besides producing an
+                    # answer.  The reporter is only spawned if at least
+                    # one task was handled.
+                    self.store.add_task("changer", {"type": "change-packages",
+                                                    "operation-id": 123})
+                    self.successResultOf(self.changer.run())
 
-        # And now the user as well
-        setuid_mock = self.mocker.replace("os.setuid")
-        setuid_mock(199)
-
-        # Finally, we don't really want the package reporter to run.
-        system_mock = self.mocker.replace("os.system")
-        system_mock(ANY)
-
-        self.mocker.replay()
-
-        # Add a task that will do nothing besides producing an answer.
-        # The reporter is only spawned if at least one task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
-        return self.changer.run()
+        grnam_mock.assert_called_once_with("landscape")
+        setgid_mock.assert_called_once_with(199)
+        pwnam_mock.assert_called_once_with("landscape")
+        setuid_mock.assert_called_once_with(199)
+        system_mock.assert_called_once_with(
+            "/fake/bin/landscape-package-reporter")
 
     def test_run(self):
-        changer_mock = self.mocker.patch(self.changer)
-
-        self.mocker.order()
+        changer_mock = patch.object(self, "changer")
 
         results = [Deferred() for i in range(2)]
 
-        changer_mock.use_hash_id_db()
-        self.mocker.result(results[0])
-
-        changer_mock.handle_tasks()
-        self.mocker.result(results[1])
-
-        self.mocker.replay()
+        changer_mock.use_hash_id_db = Mock(return_value=results[0])
+        changer_mock.handle_tasks = Mock(return_value=results[1])
 
         self.changer.run()
 
-        # It must raise an error because deferreds weren't yet fired.
-        self.assertRaises(AssertionError, self.mocker.verify)
+        changer_mock.use_hash_id_db.assert_not_called()
+        changer_mock.handle_tasks.assert_not_called()
 
         for deferred in reversed(results):
             deferred.callback(None)
 
-    def test_dont_spawn_reporter_after_running_if_nothing_done(self):
-        output_filename = self.makeFile("REPORTER NOT RUN")
-        reporter_filename = self.makeFile("#!/bin/sh\necho REPORTER RUN > %s" %
-                                          output_filename)
-        os.chmod(reporter_filename, 0755)
-
-        find_command_mock = self.mocker.replace(
-            "landscape.package.reporter.find_reporter_command")
-        find_command_mock()
-        self.mocker.result(reporter_filename)
-        self.mocker.count(0, None)
-        self.mocker.replay()
-
-        result = self.changer.run()
-
-        def got_result(result):
-            self.assertEqual(open(output_filename).read().strip(),
-                             "REPORTER NOT RUN")
-        return result.addCallback(got_result)
+    @patch("os.system")
+    def test_dont_spawn_reporter_after_running_if_nothing_done(
+            self, system_mock):
+        self.successResultOf(self.changer.run())
+        system_mock.assert_not_called()
 
     def test_main(self):
-        self.mocker.order()
+        pid = os.getpid() + 1
+        with patch("os.getpgrp", return_value=pid) as getpgrp_mock:
+            with patch("os.setsid") as setsid_mock:
+                with patch("landscape.package.changer.run_task_handler",
+                           return_value="RESULT") as run_task_handler_mock:
+                    self.assertEqual(main(["ARGS"]), "RESULT")
 
-        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-                                               ".run_task_handler",
-                                               passthrough=False)
-        getpgrp = self.mocker.replace("os.getpgrp")
-        self.expect(getpgrp()).result(os.getpid() + 1)
-        setsid = self.mocker.replace("os.setsid")
-        setsid()
-        run_task_handler(PackageChanger, ["ARGS"])
-        self.mocker.result("RESULT")
-
-        self.mocker.replay()
-
-        self.assertEqual(main(["ARGS"]), "RESULT")
+        getpgrp_mock.assert_called_once_with()
+        setsid_mock.assert_called_once_with()
+        run_task_handler_mock.assert_called_once_with(PackageChanger, ["ARGS"])
 
     def test_main_run_from_shell(self):
         """
@@ -836,21 +770,13 @@ class AptPackageChangerTest(LandscapeTest):
         this simulates the case where the process is already the process
         session leader, in this case the os.setsid would fail.
         """
-        getpgrp = self.mocker.replace("os.getpgrp")
-        getpgrp()
-        self.mocker.result(os.getpid())
+        pid = os.getpid()
+        with patch("os.getpgrp", return_value=pid) as pgrp:
+            with patch("landscape.package.changer.run_task_handler") as task:
+                main(["ARGS"])
 
-        setsid = self.mocker.replace("os.setsid")
-        setsid()
-        self.mocker.count(0, 0)
-
-        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-                                               ".run_task_handler",
-                                               passthrough=False)
-        run_task_handler(PackageChanger, ["ARGS"])
-        self.mocker.replay()
-
-        main(["ARGS"])
+        pgrp.assert_called_once_with()
+        task.assert_called_once_with(PackageChanger, ["ARGS"])
 
     def test_find_changer_command(self):
         dirname = self.makeDir()
@@ -1208,18 +1134,11 @@ class AptPackageChangerTest(LandscapeTest):
                              "hold": [123],
                              "operation-id": 123})
 
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT)
-        self.mocker.count(1, None)
-        self.mocker.replay()
-
-        try:
+        thetime = time.time()
+        with patch("time.time") as time_mock:
+            time_mock.return_value = thetime + UNKNOWN_PACKAGE_DATA_TIMEOUT
             result = self.changer.handle_tasks()
-            self.mocker.verify()
-        finally:
-            # Reset it earlier so that Twisted has the true time function.
-            self.mocker.reset()
+        time_mock.assert_any_call()
 
         self.assertIn("Package data not yet synchronized with server (123)",
                       self.logfile.getvalue())

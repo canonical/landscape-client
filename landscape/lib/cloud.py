@@ -8,7 +8,7 @@ MAX_LENGTH = 64
 def fetch_ec2_meta_data(fetch=None):
     """Fetch EC2 information about the cloud instance.
 
-    The C{fetch} parameter provided above is non-mocker testing purposes.
+    The fetch parameter provided above is for non-mocked testing purposes.
     """
     cloud_data = []
     # We're not using a DeferredList here because we want to keep the

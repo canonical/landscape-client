@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import apt_pkg
+import mock
 
 from twisted.internet.defer import Deferred, succeed, inlineCallbacks
 from twisted.internet import reactor
@@ -24,7 +25,6 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
-import mock
 from landscape.reactor import FakeReactor
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -1209,19 +1209,14 @@ class PackageReporterAptTest(LandscapeTest):
         """
         self._make_fake_apt_update(code=100)
 
-        spawn_mock = self.mocker.replace(
-            "landscape.lib.twisted_util.spawn_process")
-        spawn_mock(ANY)
-        # Simulate the first failure.
-        self.mocker.result(succeed(('', '', 100)))
-        spawn_mock(ANY)
-        # Simulate the second failure.
-        self.mocker.result(succeed(('', '', 100)))
-        spawn_mock(ANY)
-        # Simulate the second failure.
-        self.mocker.result(succeed(('', '', 100)))
-
-        self.mocker.replay()
+        spawn_patcher = mock.patch.object(reporter, "spawn_process",
+            side_effect=[
+                # Simulate series of failures to acquire the apt lock.
+                succeed(('', '', 100)),
+                succeed(('', '', 100)),
+                succeed(('', '', 100))])
+        spawn_patcher.start()
+        self.addCleanup(spawn_patcher.stop)
 
         result = self.reporter.run_apt_update()
 
@@ -1246,19 +1241,18 @@ class PackageReporterAptTest(LandscapeTest):
         lock, it will stop retrying.
         """
         self._make_fake_apt_update(code=100)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Could not acquire the apt lock. Retrying in 20 seconds.")
 
-        spawn_mock = self.mocker.replace(
-            "landscape.lib.twisted_util.spawn_process")
-        spawn_mock(ANY)
-        # Simulate the first failure.
-        self.mocker.result(succeed(('', '', 100)))
-        spawn_mock(ANY)
-        # Simulate a successful apt lock grab.
-        self.mocker.result(succeed(('output', 'error', 0)))
+        warning_patcher = mock.patch.object(reporter.logging, "warning")
+        warning_mock = warning_patcher.start()
+        self.addCleanup(warning_patcher.stop)
 
-        self.mocker.replay()
+        spawn_patcher = mock.patch.object(reporter, "spawn_process",
+            side_effect=[
+                # Simulate a failed apt lock grab then a successful one.
+                succeed(('', '', 100)),
+                succeed(('output', 'error', 0))])
+        spawn_patcher.start()
+        self.addCleanup(spawn_patcher.stop)
 
         result = self.reporter.run_apt_update()
 
@@ -1266,6 +1260,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(0, code)
+            warning_mock.assert_called_once_with(
+                "Could not acquire the apt lock. Retrying in 20 seconds.")
 
         result.addCallback(callback)
         self.reactor.advance(20)
@@ -1386,10 +1382,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter._apt_sources_have_changed = lambda: False
         self.makeFile("", path=self.config.update_stamp_filename)
 
-        logging_mock = self.mocker.replace("logging.debug")
-        logging_mock("'%s' didn't run, update interval has not passed" %
-                     self.reporter.apt_update_filename)
-        self.mocker.replay()
+        debug_patcher = mock.patch.object(reporter.logging, "debug")
+        debug_mock = debug_patcher.start()
+        self.addCleanup(debug_patcher.stop)
+
         deferred = Deferred()
 
         def do_test():
@@ -1399,6 +1395,9 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
+                debug_mock.assert_called_once_with(
+                    "'%s' didn't run, update interval has not passed" %
+                     self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1423,10 +1422,10 @@ class PackageReporterAptTest(LandscapeTest):
         # expired.
         self.reporter.update_notifier_stamp = self.makeFile("")
 
-        logging_mock = self.mocker.replace("logging.debug")
-        logging_mock("'%s' didn't run, update interval has not passed" %
-                     self.reporter.apt_update_filename)
-        self.mocker.replay()
+        debug_patcher = mock.patch.object(reporter.logging, "debug")
+        debug_mock = debug_patcher.start()
+        self.addCleanup(debug_patcher.stop)
+
         deferred = Deferred()
 
         def do_test():
@@ -1436,6 +1435,9 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
+                debug_mock.assert_called_once_with(
+                    "'%s' didn't run, update interval has not passed" %
+                     self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
