@@ -367,10 +367,8 @@ class AptPackageChangerTest(LandscapeTest):
 
         package1 = self.facade.get_package_by_hash(installed_hash)
         [package2] = self.facade.get_packages_by_name("name2")
-        self.facade.perform_changes = self.mocker.mock()
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package1, package2]))
-        self.mocker.replay()
+
+        self.facade.perform_changes = Mock(side_effect=DependencyError([package1, package2]))
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
