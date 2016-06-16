@@ -839,11 +839,12 @@ time.sleep(999)
         """
         self.makeFile("", path=self.exec_name)
 
-        getpwnam_result = object()
-        getpwnam_result.pw_uid = 123
-        getpwnam_result.pw_gid = 456
-        getpwnam_result.pw_dir = "/var/lib/landscape"
-        getpwnam.return_value = getpwnam_result
+        class getpwnam_result:
+            pw_uid = 123
+            pw_gid = 456
+            pw_dir = "/var/lib/landscape"
+
+        getpwnam.return_value = getpwnam_result()
 
         reactor = mock.Mock()
 
@@ -858,24 +859,24 @@ time.sleep(999)
         env["USER"] = "landscape"
         env["LOGNAME"] = "landscape"
 
-        reactor.spawnProcess.assert_called_with(env=env, uid=123, gid=456)
+        reactor.spawnProcess.assert_called_with(
+            mock.ANY, mock.ANY, args=mock.ANY, env=env, uid=123, gid=456)
 
-    def test_spawn_process_without_root(self):
+    @mock.patch("os.getuid", return_value=555)
+    def test_spawn_process_without_root(self, mock_getuid):
         """
         If the watchdog is not running as root, no uid or gid switching will
         occur.
         """
         self.makeFile("", path=self.exec_name)
-        getuid = self.mocker.replace("os.getuid")
-        reactor = self.mocker.mock()
-        self.expect(getuid()).result(555)
 
-        reactor.spawnProcess(ARGS, KWARGS, uid=None, gid=None)
-
-        self.mocker.replay()
-
+        reactor = mock.Mock()
         daemon = self.get_daemon(reactor=reactor)
         daemon.start()
+
+        reactor.spawnProcess.assert_called_with(
+            mock.ANY, mock.ANY, args=mock.ANY, env=mock.ANY, uid=None,
+            gid=None)
 
     def test_spawn_process_same_uid(self):
         """
