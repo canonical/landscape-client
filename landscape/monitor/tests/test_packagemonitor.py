@@ -3,7 +3,6 @@ import mock
 
 from twisted.internet.defer import Deferred
 
-from landscape.package.reporter import find_reporter_command
 from landscape.package.store import PackageStore
 
 from landscape.monitor.packagemonitor import PackageMonitor
@@ -81,8 +80,8 @@ class PackageMonitorTest(LandscapeTest):
     def test_do_not_spawn_reporter_if_message_not_accepted(self):
         self.monitor.add(self.package_monitor)
         self.successResultOf(self.package_monitor.run())
-        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mocked:
-            self.assertEqual(mocked.mock_calls, [])
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+            self.assertEqual(mkd.mock_calls, [])
 
     def test_spawn_reporter_on_registration_when_already_accepted(self):
         real_run = self.package_monitor.run
@@ -98,7 +97,7 @@ class PackageMonitorTest(LandscapeTest):
             return run_result_deferred.chainDeferred(deferred)
 
         self.mocker.replay()
-    
+
         with mock.patch.object(self.package_monitor, 'spawn_reporter') \
                     as mock_spawn_reporter, \
                 mock.patch.object(self.package_monitor, 'run',
@@ -110,12 +109,12 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_on_run_if_message_accepted(self):
         self.broker_service.message_store.set_accepted_types(["packages"])
-        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mocked:
+        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
             self.monitor.add(self.package_monitor)
             # We want to ignore calls made as a result of the above line.
-            mocked.reset_mock()
+            mkd.reset_mock()
             self.successResultOf(self.package_monitor.run())
-            self.assertEqual(mocked.call_count, 1)
+            self.assertEqual(mkd.call_count, 1)
 
     def test_package_ids_handling(self):
         self.monitor.add(self.package_monitor)
@@ -210,8 +209,10 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_call_on_accepted(self):
         called = []
+
         def record_call():
             called.append(True)
+
         with mock.patch.object(
                 self.package_monitor, 'spawn_reporter',
                 side_effect=record_call):
