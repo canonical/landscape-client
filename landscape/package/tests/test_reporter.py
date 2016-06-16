@@ -236,10 +236,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-        remote_mock = self.mocker.patch(self.reporter._broker)
-        remote_mock.send_message(ANY, ANY, True)
-        self.mocker.result(deferred)
-        self.mocker.replay()
 
         request_id = self.store.add_hash_id_request(["foo", HASH1, "bar"]).id
 
@@ -247,15 +243,18 @@ class PackageReporterAptTest(LandscapeTest):
                                          "ids": [123, None, 456],
                                          "request-id": request_id})
 
-        def got_result(result):
+        def got_result(result, send_mock):
+            send_mock.assert_called_once_with(mock.ANY, mock.ANY, True)
             self.assertMessages(message_store.get_pending_messages(), [])
             self.assertEqual(
                 [request.id for request in self.store.iter_hash_id_requests()],
                 [request_id])
 
-        result = self.reporter.handle_tasks()
-        self.assertFailure(result, Boom)
-        return result.addCallback(got_result)
+        with mock.patch.object(self.reporter._broker, "send_message") as send_mock:
+            send_mock.return_value = deferred
+            result = self.reporter.handle_tasks()
+            self.assertFailure(result, Boom)
+            return result.addCallback(got_result, send_mock)
 
     def test_set_package_ids_removes_request_id_when_done(self):
         request = self.store.add_hash_id_request(["hash1"])
@@ -311,7 +310,8 @@ class PackageReporterAptTest(LandscapeTest):
             "Downloaded hash=>id database from %s" % hash_id_db_url)
         return result
 
-    def test_fetch_hash_id_db_does_not_download_twice(self):
+    @mock.patch("landscape.lib.fetch.fetch_async")
+    def test_fetch_hash_id_db_does_not_download_twice(self, fetch_async_mock):
 
         # Let's say that the hash=>id database is already there
         self.config.package_hash_id_url = "http://fake.url/path/"
@@ -327,18 +327,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
-        # Intercept any call to fetch_async
-        fetch_async_mock = self.mocker.replace("landscape.lib."
-                                               "fetch.fetch_async")
-        fetch_async_mock(ANY)
-
-        # Go!
-        self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
 
         def callback(ignored):
-            # Check that fetch_async hasn't been called
-            self.assertRaises(AssertionError, self.mocker.verify)
+            self.assertFalse(fetch_async_mock.called)
             fetch_async(None)
 
             # The hash=>id database is still there
