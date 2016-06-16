@@ -1,7 +1,8 @@
+import mock
+
 from landscape.monitor.rebootrequired import RebootRequired
 from landscape.tests.helpers import (
     LandscapeTest, MonitorHelper, LogKeeperHelper)
-from landscape.tests.mocker import ANY
 
 
 class RebootRequiredTest(LandscapeTest):
@@ -104,10 +105,10 @@ class RebootRequiredTest(LandscapeTest):
         If the server can accept them, the plugin should send
         C{reboot-required} messages.
         """
-        broker_mock = self.mocker.replace(self.remote)
-        broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.replay()
-        self.plugin.run()
+        with mock.patch.object(self.remote, "send_message"):
+            self.plugin.run()
+            self.remote.send_message.assert_called_once_with(
+                mock.ANY, mock.ANY, urgent=True)
         self.mstore.set_accepted_types([])
         self.plugin.run()
 

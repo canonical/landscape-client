@@ -1,3 +1,5 @@
+import mock
+
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.sysvconfig import SysVConfig, ProcessError
@@ -52,36 +54,34 @@ class SysVConfigTest(LandscapeTest):
         sysvconfig = SysVConfig(filename)
         self.assertTrue(sysvconfig.is_configured_to_run())
 
-    def test_run_landscape(self):
-        system = self.mocker.replace("os.system")
-        system("/etc/init.d/landscape-client restart")
-        self.mocker.replay()
+    @mock.patch("os.system", return_value=0)
+    def test_run_landscape(self, system_mock):
         filename = self.makeFile("RUN=1\n")
         sysvconfig = SysVConfig(filename)
         sysvconfig.restart_landscape()
+        system_mock.assert_called_once_with(
+            "/etc/init.d/landscape-client restart")
 
-    def test_run_landscape_with_error(self):
-        system = self.mocker.replace("os.system")
-        system("/etc/init.d/landscape-client restart")
-        self.mocker.result(-1)
-        self.mocker.replay()
+    @mock.patch("os.system", return_value=-1)
+    def test_run_landscape_with_error(self, system_mock):
         filename = self.makeFile("RUN=1\n")
         sysvconfig = SysVConfig(filename)
         self.assertRaises(ProcessError, sysvconfig.restart_landscape)
+        system_mock.assert_called_once_with(
+            "/etc/init.d/landscape-client restart")
 
-    def test_stop_landscape(self):
-        system = self.mocker.replace("os.system")
-        system("/etc/init.d/landscape-client stop")
-        self.mocker.replay()
+    @mock.patch("os.system", return_value=0)
+    def test_stop_landscape(self, system_mock):
         filename = self.makeFile("RUN=1\n")
         sysvconfig = SysVConfig(filename)
         sysvconfig.stop_landscape()
+        system_mock.assert_called_once_with(
+            "/etc/init.d/landscape-client stop")
 
-    def test_stop_landscape_with_error(self):
-        system = self.mocker.replace("os.system")
-        system("/etc/init.d/landscape-client stop")
-        self.mocker.result(-1)
-        self.mocker.replay()
+    @mock.patch("os.system", return_value=-1)
+    def test_stop_landscape_with_error(self, system_mock):
         filename = self.makeFile("RUN=1\n")
         sysvconfig = SysVConfig(filename)
         self.assertRaises(ProcessError, sysvconfig.stop_landscape)
+        system_mock.assert_called_once_with(
+            "/etc/init.d/landscape-client stop")

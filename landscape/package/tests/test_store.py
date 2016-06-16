@@ -1,3 +1,4 @@
+import mock
 import threading
 import time
 
@@ -224,24 +225,10 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_available([1])
         self.assertEqual(self.store2.get_available(), [1])
 
-    def test_add_available_timing(self):
-        """Adding 20k ids must take less than 5 seconds."""
-        started = time.time()
-        self.store1.add_available(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Adding 20k available ids took more than 5 seconds.")
-
     def test_remove_available(self):
         self.store1.add_available([1, 2, 3, 4])
         self.store1.remove_available([2, 3])
         self.assertEqual(self.store2.get_available(), [1, 4])
-
-    def test_remove_available_timing(self):
-        self.store1.add_available(range(20000))
-        started = time.time()
-        self.store1.remove_available(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Removing 20k available ids took more than 5 seconds.")
 
     def test_clear_available(self):
         self.store1.add_available([1, 2, 3, 4])
@@ -408,22 +395,10 @@ class PackageStoreTest(LandscapeTest):
         self.assertEqual(hashes, hashes1 + hashes2)
 
     def test_get_initial_hash_id_request_timestamp(self):
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(123)
-        self.mocker.replay()
-
-        try:
+        with mock.patch("time.time", return_value=123):
             request1 = self.store1.add_hash_id_request(["hash1"])
             request2 = self.store2.get_hash_id_request(request1.id)
-
-            self.assertEqual(request2.timestamp, 123)
-
-            # We handle mocker explicitly so that our hacked time()
-            # won't break Twisted's internals.
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        self.assertEqual(123, request2.timestamp)
 
     def test_update_hash_id_request_timestamp(self):
         request1 = self.store1.add_hash_id_request(["hash1"])
@@ -491,48 +466,25 @@ class PackageStoreTest(LandscapeTest):
         self.assertEqual(task, None)
 
     def test_get_task_timestamp(self):
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(123)
-        self.mocker.replay()
-
-        try:
+        with mock.patch("time.time", return_value=123):
             self.store1.add_task("reporter", [1])
-            task = self.store2.get_next_task("reporter")
-
-            self.assertEqual(task.timestamp, 123)
-
-            # We handle mocker explicitly so that our hacked time()
-            # won't break Twisted's internals.
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        task = self.store2.get_next_task("reporter")
+        self.assertEqual(123, task.timestamp)
 
     def test_next_tasks_ordered_by_timestamp(self):
-        time_mock = self.mocker.replace("time.time")
-        time_mock()
-        self.mocker.result(222)
-        time_mock()
-        self.mocker.result(111)
-        self.mocker.replay()
-
-        try:
+        with mock.patch("time.time", return_value=222):
             self.store1.add_task("reporter", [1])
+
+        with mock.patch("time.time", return_value=111):
             self.store1.add_task("reporter", [2])
 
-            task = self.store2.get_next_task("reporter")
-            self.assertEqual(task.timestamp, 111)
+        task = self.store2.get_next_task("reporter")
+        self.assertEqual(111, task.timestamp)
 
-            task.remove()
+        task.remove()
 
-            task = self.store2.get_next_task("reporter")
-            self.assertEqual(task.timestamp, 222)
-
-            # We handle mocker explicitly so that our hacked time()
-            # won't break Twisted's internals.
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        task = self.store2.get_next_task("reporter")
+        self.assertEqual(222, task.timestamp)
 
     def test_clear_hash_id_requests(self):
         request1 = self.store1.add_hash_id_request(["hash1"])

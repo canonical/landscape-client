@@ -2,11 +2,11 @@ from __future__ import print_function
 
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
-from getpass import getpass
 import os
 import sys
 import unittest
 
+import mock
 from twisted.internet.defer import succeed, fail, Deferred
 
 from landscape.broker.registration import InvalidCredentialsError
@@ -24,7 +24,7 @@ from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
-from landscape.tests.mocker import ANY, MATCH, CONTAINS, expect
+from landscape.tests.mocker import ANY, CONTAINS, expect
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -185,53 +185,20 @@ class GotErrorTests(unittest.TestCase):
 
 class PrintTextTest(LandscapeTest):
 
-    def test_default(self):
-        stdout_mock = self.mocker.replace("sys.stdout")
-
-        self.mocker.order()
-        stdout_mock.write("Hi!\n")
-        stdout_mock.flush()
-        self.mocker.unorder()
-
-        # Trial likes to flush things inside run().
-        stdout_mock.flush()
-        self.mocker.count(0, None)
-
-        self.mocker.replay()
-
+    @mock.patch("sys.stdout", new_callable=StringIO)
+    def test_default(self, stdout):
         print_text("Hi!")
+        self.assertEqual("Hi!\n", stdout.getvalue())
 
-    def test_error(self):
-        stderr_mock = self.mocker.replace("sys.stderr")
-
-        self.mocker.order()
-        stderr_mock.write("Hi!\n")
-        stderr_mock.flush()
-        self.mocker.unorder()
-
-        # Trial likes to flush things inside run().
-        stderr_mock.flush()
-        self.mocker.count(0, None)
-
-        self.mocker.replay()
-
+    @mock.patch("sys.stderr", new_callable=StringIO)
+    def test_error(self, stderr):
         print_text("Hi!", error=True)
+        self.assertEqual("Hi!\n", stderr.getvalue())
 
-    def test_end(self):
-        stdout_mock = self.mocker.replace("sys.stdout")
-
-        self.mocker.order()
-        stdout_mock.write("Hi!END")
-        stdout_mock.flush()
-        self.mocker.unorder()
-
-        # Trial likes to flush things inside run().
-        stdout_mock.flush()
-        self.mocker.count(0, None)
-
-        self.mocker.replay()
-
+    @mock.patch("sys.stdout", new_callable=StringIO)
+    def test_end(self, stdout):
         print_text("Hi!", "END")
+        self.assertEqual("Hi!END", stdout.getvalue())
 
 
 class LandscapeSetupScriptTest(LandscapeTest):
@@ -245,121 +212,89 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config = MyLandscapeSetupConfiguration()
         self.script = LandscapeSetupScript(self.config)
 
-    def test_show_help(self):
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("\nHello\n\nworld!\n")
-        print_text_mock(ANY)
-        self.mocker.count(0)
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.print_text")
+    def test_show_help(self, mock_print_text):
         self.script.show_help("\n\n \n  Hello  \n  \n  world!  \n \n\n")
+        mock_print_text.assert_called_once_with("\nHello\n\nworld!\n")
 
-    def test_prompt_simple(self):
-        mock = self.mocker.replace(raw_input, passthrough=False)
-        mock("Message: ")
-        self.mocker.result("Desktop")
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input", return_value="Desktop")
+    def test_prompt_simple(self, mock_raw_input):
         self.script.prompt("computer_title", "Message")
-
+        mock_raw_input.assert_called_once_with("Message: ")
         self.assertEqual(self.config.computer_title, "Desktop")
 
-    def test_prompt_with_default(self):
-        mock = self.mocker.replace(raw_input, passthrough=False)
-        mock("Message [default]: ")
-        self.mocker.result("")
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input", return_value="")
+    def test_prompt_with_default(self, mock_raw_input):
         self.config.computer_title = "default"
         self.script.prompt("computer_title", "Message")
 
+        mock_raw_input.assert_called_once_with("Message [default]: ")
         self.assertEqual(self.config.computer_title, "default")
 
-    def test_prompt_with_required(self):
-        self.mocker.order()
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        script_mock = self.mocker.patch(self.script)
-        raw_input_mock("Message: ")
-        self.mocker.result("")
-        script_mock.show_help("This option is required to "
-                              "configure Landscape.")
-        raw_input_mock("Message: ")
-        self.mocker.result("Desktop")
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input", side_effect=("", "Desktop"))
+    def test_prompt_with_required(self, mock_raw_input):
+        self.script.show_help = mock.Mock()
         self.script.prompt("computer_title", "Message", True)
+        self.script.show_help.assert_called_once_with(
+            "This option is required to configure Landscape.")
+
+        calls = [mock.call("Message: "), mock.call("Message: ")]
+        mock_raw_input.assert_has_calls(calls)
 
         self.assertEqual(self.config.computer_title, "Desktop")
 
-    def test_prompt_with_required_and_default(self):
-        self.mocker.order()
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        raw_input_mock("Message [Desktop]: ")
-        self.mocker.result("")
-        self.mocker.replay()
+    @mock.patch("__builtin__.raw_input", return_value="")
+    def test_prompt_with_required_and_default(self, mock_raw_input):
         self.config.computer_title = "Desktop"
         self.script.prompt("computer_title", "Message", True)
+        mock_raw_input.assert_called_once_with("Message [Desktop]: ")
         self.assertEqual(self.config.computer_title, "Desktop")
 
-    def test_prompt_for_unknown_variable(self):
+    @mock.patch("__builtin__.raw_input", return_value="Yay")
+    def test_prompt_for_unknown_variable(self, mock_raw_input):
         """
         It should be possible to prompt() defining a variable that doesn't
         'exist' in the configuration, and still have it set there.
         """
-        self.mocker.order()
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
         self.assertFalse(hasattr(self.config, "variable"))
-        self.expect(raw_input_mock("Variable: ")).result("Yay")
-        self.mocker.replay()
+
         self.script.prompt("variable", "Variable")
+        mock_raw_input.assert_called_once_with("Variable: ")
         self.assertEqual(self.config.variable, "Yay")
 
-    def test_password_prompt_simple_matching(self):
-        mock = self.mocker.replace(getpass, passthrough=False)
-        mock("Password: ")
-        self.mocker.result("password")
-        mock("Please confirm: ")
-        self.mocker.result("password")
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.getpass.getpass",
+                side_effect=("password", "password"))
+    def test_password_prompt_simple_matching(self, mock_getpass):
         self.script.password_prompt("registration_key", "Password")
+        calls = [mock.call("Password: "), mock.call("Please confirm: ")]
+        mock_getpass.assert_has_calls(calls)
         self.assertEqual(self.config.registration_key, "password")
 
-    def test_password_prompt_simple_non_matching(self):
-        mock = self.mocker.replace(getpass, passthrough=False)
-        mock("Password: ")
-        self.mocker.result("password")
+    @mock.patch("landscape.configuration.getpass.getpass",
+                side_effect=("password", "", "password", "password"))
+    def test_password_prompt_simple_non_matching(self, mock_getpass):
+        self.script.show_help = mock.Mock()
 
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("Keys must match.")
-
-        mock("Please confirm: ")
-        self.mocker.result("")
-        mock("Password: ")
-        self.mocker.result("password")
-        mock("Please confirm: ")
-        self.mocker.result("password")
-        self.mocker.replay()
         self.script.password_prompt("registration_key", "Password")
+
+        calls = [mock.call("Password: "), mock.call("Please confirm: "),
+                 mock.call("Password: "), mock.call("Please confirm: ")]
+        mock_getpass.assert_has_calls(calls)
+        self.script.show_help.assert_called_once_with("Keys must match.")
         self.assertEqual(self.config.registration_key, "password")
 
-    def test_password_prompt_simple_matching_required(self):
-        mock = self.mocker.replace(getpass, passthrough=False)
-        mock("Password: ")
-        self.mocker.result("")
-
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("This option is required to "
-                              "configure Landscape.")
-
-        mock("Password: ")
-        self.mocker.result("password")
-        mock("Please confirm: ")
-        self.mocker.result("password")
-
-        self.mocker.replay()
+    @mock.patch("landscape.configuration.getpass.getpass",
+                side_effect=("", "password", "password"))
+    def test_password_prompt_simple_matching_required(self, mock_getpass):
+        self.script.show_help = mock.Mock()
 
         self.script.password_prompt("registration_key", "Password", True)
+
+        calls = [mock.call("Password: "), mock.call("Password: "),
+                 mock.call("Please confirm: ")]
+        mock_getpass.assert_has_calls(calls)
+        self.script.show_help.assert_called_once_with(
+            "This option is required to configure Landscape.")
         self.assertEqual(self.config.registration_key, "password")
 
     def test_prompt_yes_no(self):
@@ -373,143 +308,128 @@ class LandscapeSetupScriptTest(LandscapeTest):
                        ("no", False),
                        ("", True)]
 
-        self.mocker.order()
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        for comparison in comparisons:
-            self.expect(raw_input_mock("Foo [Y/n]")).result(comparison[0])
-        self.mocker.replay()
-        for comparison in comparisons:
-            self.assertEqual(self.script.prompt_yes_no("Foo"), comparison[1])
+        for input_string, result in comparisons:
+            with mock.patch("__builtin__.raw_input",
+                            return_value=input_string) as mock_raw_input:
+                self.script.prompt_yes_no("Foo")
+            mock_raw_input.assert_called_once_with("Foo [Y/n]")
 
-    def test_prompt_yes_no_default(self):
-        self.mocker.order()
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock("Foo [y/N]")).result("")
-        self.mocker.replay()
+    @mock.patch("__builtin__.raw_input", return_value="")
+    def test_prompt_yes_no_default(self, mock_raw_input):
         self.assertFalse(self.script.prompt_yes_no("Foo", default=False))
+        mock_raw_input.assert_called_once_with("Foo [y/N]")
 
-    def test_prompt_yes_no_invalid(self):
-        self.mocker.order()
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        script_mock = self.mocker.patch(self.script)
-        self.expect(raw_input_mock("Foo [Y/n]")).result("x")
-        script_mock.show_help("Invalid input.")
-        self.expect(raw_input_mock("Foo [Y/n]")).result("n")
-        self.mocker.replay()
+    @mock.patch("__builtin__.raw_input", side_effect=("x", "n"))
+    def test_prompt_yes_no_invalid(self, mock_raw_input):
+        self.script.show_help = mock.Mock()
         self.assertFalse(self.script.prompt_yes_no("Foo"))
-
-    def get_matcher(self, help_snippet):
-
-        def match_help(help):
-            return help.strip().startswith(help_snippet)
-        return MATCH(match_help)
+        self.script.show_help.assert_called_once_with("Invalid input.")
+        calls = [mock.call("Foo [Y/n]"), mock.call("Foo [Y/n]")]
+        mock_raw_input.assert_has_calls(calls)
 
     def test_query_computer_title(self):
         help_snippet = "The computer title you"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt("computer_title", "This computer's title", True)
-        self.mocker.replay()
-
+        self.script.show_help = mock.Mock()
+        self.script.prompt = mock.Mock()
         self.script.query_computer_title()
+        self.script.prompt.assert_called_once_with(
+            "computer_title", "This computer's title", True)
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
-    def test_query_computer_title_defined_on_command_line(self):
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input")
+    def test_query_computer_title_defined_on_command_line(
+            self, mock_raw_input):
         self.config.load_command_line(["-t", "Computer title"])
         self.script.query_computer_title()
+        mock_raw_input.assert_not_called()
 
     def test_query_account_name(self):
         help_snippet = "You must now specify the name of the Landscape account"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt("account_name", "Account name", True)
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt = mock.Mock()
+        self.script.query_account_name()
+        self.script.prompt.assert_called_once_with(
+            "account_name", "Account name", True)
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
         self.script.query_account_name()
 
-    def test_query_account_name_defined_on_command_line(self):
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input")
+    def test_query_account_name_defined_on_command_line(self, mock_raw_input):
         self.config.load_command_line(["-a", "Account name"])
         self.script.query_account_name()
+        mock_raw_input.assert_not_called()
 
     def test_query_registration_key(self):
         help_snippet = "A registration key may be"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.password_prompt("registration_key",
-                                    "Account registration key")
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.password_prompt = mock.Mock()
         self.script.query_registration_key()
+        self.script.password_prompt.assert_called_once_with(
+            "registration_key", "Account registration key")
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
-    def test_query_registration_key_defined_on_command_line(self):
-        getpass_mock = self.mocker.replace("getpass.getpass",
-                                           passthrough=False)
-        self.expect(getpass_mock(ANY)).count(0)
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.getpass.getpass")
+    def test_query_registration_key_defined_on_command_line(
+            self, mock_getpass):
         self.config.load_command_line(["-p", "shared-secret"])
         self.script.query_registration_key()
+        mock_getpass.assert_not_called()
 
     def test_query_proxies(self):
         help_snippet = "The Landscape client communicates"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt("http_proxy", "HTTP proxy URL")
-        script_mock.prompt("https_proxy", "HTTPS proxy URL")
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt = mock.Mock()
+
         self.script.query_proxies()
+        calls = [mock.call("http_proxy", "HTTP proxy URL"),
+                 mock.call("https_proxy", "HTTPS proxy URL")]
+        self.script.prompt.assert_has_calls(calls)
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
-    def test_query_proxies_defined_on_command_line(self):
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input")
+    def test_query_proxies_defined_on_command_line(self, mock_raw_input):
         self.config.load_command_line(["--http-proxy", "localhost:8080",
                                        "--https-proxy", "localhost:8443"])
         self.script.query_proxies()
+        mock_raw_input.assert_not_called()
 
     def test_query_http_proxy_defined_on_command_line(self):
         help_snippet = "The Landscape client communicates"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt("https_proxy", "HTTPS proxy URL")
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt = mock.Mock()
 
         self.config.load_command_line(["--http-proxy", "localhost:8080"])
         self.script.query_proxies()
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_query_https_proxy_defined_on_command_line(self):
         help_snippet = "The Landscape client communicates"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt("http_proxy", "HTTP proxy URL")
-        self.mocker.replay()
-
+        self.script.show_help = mock.Mock()
+        self.script.prompt = mock.Mock()
         self.config.load_command_line(["--https-proxy", "localhost:8443"])
         self.script.query_proxies()
+        self.script.prompt.assert_called_once_with(
+            "http_proxy", "HTTP proxy URL")
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_query_script_plugin_no(self):
         help_snippet = "Landscape has a feature which enables administrators"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt_yes_no("Enable script execution?", default=False)
-        self.mocker.result(False)
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=False)
+
         self.script.query_script_plugin()
         self.assertEqual(self.config.include_manager_plugins, "")
+        self.script.prompt_yes_no.assert_called_once_with(
+            "Enable script execution?", default=False)
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_query_script_plugin_yes(self):
         """
@@ -517,16 +437,20 @@ class LandscapeSetupScriptTest(LandscapeTest):
         users to enable it for.
         """
         help_snippet = "Landscape has a feature which enables administrators"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt_yes_no("Enable script execution?", default=False)
-        self.mocker.result(True)
-        script_mock.show_help(
-            self.get_matcher("By default, scripts are restricted"))
-        script_mock.prompt("script_users", "Script users")
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=True)
+        self.script.prompt = mock.Mock()
+
         self.script.query_script_plugin()
+        self.script.prompt_yes_no.assert_called_once_with(
+            "Enable script execution?", default=False)
+        first_call, second_call = self.script.show_help.mock_calls
+        self.assertTrue(first_call.strip().startswith(help_snippet))
+        self.assertTrue(second_call.strip().startswith(
+            "By default, scripts are restricted"))
+
+        self.script.prompt.assert_called_once_with(
+            "script_users", "Script users")
         self.assertEqual(self.config.include_manager_plugins,
                          "ScriptExecution")
 
@@ -537,14 +461,15 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         self.config.include_manager_plugins = "ScriptExecution"
         help_snippet = "Landscape has a feature which enables administrators"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt_yes_no("Enable script execution?", default=True)
-        self.mocker.result(False)
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=False)
+
         self.script.query_script_plugin()
+        self.script.prompt_yes_no.assert_called_once_with(
+            "Enable script execution?", default=True)
         self.assertEqual(self.config.include_manager_plugins, "")
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_disabling_script_plugin_leaves_existing_inclusions(self):
         """
@@ -552,14 +477,14 @@ class LandscapeSetupScriptTest(LandscapeTest):
         plugins.
         """
         self.config.include_manager_plugins = "FooPlugin, ScriptExecution"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(ANY)
-        script_mock.prompt_yes_no("Enable script execution?", default=True)
-        self.mocker.result(False)
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=False)
+
         self.script.query_script_plugin()
+        self.script.prompt_yes_no.assert_called_once_with(
+            "Enable script execution?", default=True)
         self.assertEqual(self.config.include_manager_plugins, "FooPlugin")
+        self.script.show_help.assert_called_once_with(mock.ANY)
 
     def test_enabling_script_plugin_leaves_existing_inclusions(self):
         """
@@ -567,92 +492,85 @@ class LandscapeSetupScriptTest(LandscapeTest):
         plugins.
         """
         self.config.include_manager_plugins = "FooPlugin"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(ANY)
-        script_mock.prompt_yes_no("Enable script execution?", default=False)
-        self.mocker.result(True)
-        script_mock.show_help(ANY)
-        script_mock.prompt("script_users", "Script users")
-        self.mocker.replay()
+
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=True)
+        self.script.prompt = mock.Mock()
+
         self.script.query_script_plugin()
+        self.script.prompt_yes_no.assert_called_once_with(
+            "Enable script execution?", default=False)
+
+        self.script.prompt.assert_called_once_with(
+            "script_users", "Script users")
+        self.assertEqual(2, self.script.show_help.call_count)
         self.assertEqual(self.config.include_manager_plugins,
                          "FooPlugin, ScriptExecution")
 
-    def test_query_script_plugin_defined_on_command_line(self):
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input")
+    def test_query_script_plugin_defined_on_command_line(self, mock_raw_input):
         self.config.load_command_line(
             ["--include-manager-plugins", "ScriptExecution",
              "--script-users", "root, nobody"])
         self.script.query_script_plugin()
+        mock_raw_input.assert_not_called()
         self.assertEqual(self.config.include_manager_plugins,
                          "ScriptExecution")
         self.assertEqual(self.config.script_users, "root, nobody")
 
     def test_query_script_manager_plugins_defined_on_command_line(self):
-        self.config.include_manager_plugins = "FooPlugin"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(ANY)
-        script_mock.prompt_yes_no("Enable script execution?", default=False)
-        self.mocker.result(True)
-        script_mock.show_help(ANY)
-        script_mock.prompt("script_users", "Script users")
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=True)
+        self.script.prompt = mock.Mock()
 
         self.config.load_command_line(
             ["--include-manager-plugins", "FooPlugin, ScriptExecution"])
         self.script.query_script_plugin()
+        self.script.prompt.assert_called_once_with(
+            "script_users", "Script users")
+        self.assertEqual(2, self.script.show_help.call_count)
         self.assertEqual(self.config.include_manager_plugins,
                          "FooPlugin, ScriptExecution")
 
-    def test_query_script_users_defined_on_command_line(self):
+    @mock.patch("landscape.configuration.pwd.getpwnam", return_value=None)
+    def test_query_script_users_defined_on_command_line(self, mock_getpwnam):
         """
         Confirm with the user for users specified for the ScriptPlugin.
         """
-        pwnam_mock = self.mocker.replace("pwd.getpwnam")
-        pwnam_mock("landscape")
-        self.mocker.result(None)
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=True)
+        self.script.prompt_get_input = mock.Mock(return_value=None)
+
         self.config.include_manager_plugins = "FooPlugin"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(ANY)
-        script_mock.prompt_yes_no("Enable script execution?", default=False)
-        self.mocker.result(True)
-        script_mock.show_help(ANY)
-        script_mock.prompt_get_input(
-            "Script users [root, nobody, landscape]: ", False)
-        self.mocker.replay()
 
         self.config.load_command_line(
             ["--script-users", "root, nobody, landscape"])
         self.script.query_script_plugin()
+
+        mock_getpwnam.assert_called_with("landscape")
+        self.script.prompt_yes_no.assert_called_once_with(
+            "Enable script execution?", default=False)
+        self.script.prompt_get_input.assert_called_once_with(
+            "Script users [root, nobody, landscape]: ", False)
+        self.assertEqual(2, self.script.show_help.call_count)
         self.assertEqual(self.config.script_users,
                          "root, nobody, landscape")
 
-    def test_query_script_users_on_command_line_with_unknown_user(self):
+    @mock.patch("landscape.configuration.pwd.getpwnam",
+                side_effect=(None, None, None, KeyError()))
+    def test_query_script_users_on_command_line_with_unknown_user(
+            self, mock_getpwnam):
         """
         If several users are provided on the command line, we verify the users
         and raise a ConfigurationError if any are unknown on this system.
         """
-        pwnam_mock = self.mocker.replace("pwd.getpwnam")
-        pwnam_mock("root")
-        self.mocker.result(None)
-        pwnam_mock("nobody")
-        self.mocker.result(None)
-        pwnam_mock("landscape")
-        self.mocker.result(None)
-        pwnam_mock("unknown")
-        self.mocker.throw(KeyError())
-        self.mocker.replay()
-
         self.config.load_command_line(
             ["--script-users", "root, nobody, landscape, unknown",
-            "--include-manager-plugins", "ScriptPlugin"])
+             "--include-manager-plugins", "ScriptPlugin"])
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+        calls = [mock.call("root"), mock.call("nobody"),
+                 mock.call("landscape"), mock.call("unknown")]
+        mock_getpwnam.assert_has_calls(calls)
 
     def test_query_script_users_defined_on_command_line_with_all_user(self):
         """
@@ -660,7 +578,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         self.config.load_command_line(
             ["--script-users", "all",
-            "--include-manager-plugins", "ScriptPlugin"])
+             "--include-manager-plugins", "ScriptPlugin"])
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
     def test_query_script_users_defined_on_command_line_with_ALL_user(self):
@@ -671,8 +589,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
             ["--script-users", "ALL",
              "--include-manager-plugins", "ScriptPlugin"])
         self.script.query_script_plugin()
-        self.assertEqual(self.config.script_users,
-                         "ALL")
+        self.assertEqual(self.config.script_users, "ALL")
 
     def test_query_script_users_command_line_with_ALL_and_extra_user(self):
         """
@@ -681,7 +598,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         self.config.load_command_line(
             ["--script-users", "ALL, kevin",
-            "--include-manager-plugins", "ScriptPlugin"])
+             "--include-manager-plugins", "ScriptPlugin"])
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
     def test_invalid_user_entered_by_user(self):
@@ -690,33 +607,34 @@ class LandscapeSetupScriptTest(LandscapeTest):
         informed and prompted again.
         """
         help_snippet = "Landscape has a feature which enables administrators"
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.prompt_yes_no("Enable script execution?", default=False)
-        self.mocker.result(True)
-        script_mock.show_help(
-            self.get_matcher("By default, scripts are restricted"))
-        script_mock.prompt_get_input("Script users: ", False)
-        self.mocker.result(u"nonexistent")
-        script_mock.show_help("Unknown system users: nonexistent")
-        script_mock.prompt_get_input("Script users: ", False)
-        self.mocker.result(u"root")
-        self.mocker.replay()
+        self.script.show_help = mock.Mock()
+        self.script.prompt_yes_no = mock.Mock(return_value=True)
+        self.script.prompt_get_input = mock.Mock(
+            side_effect=(u"nonexistent", u"root"))
+
         self.script.query_script_plugin()
         self.assertEqual(self.config.script_users, "root")
+        first_call, second_call, third_call = self.script.show_help.mock_calls
+        self.assertTrue(first_call.strip().startswith(help_snippet))
+        self.assertTrue(second_call.strip().startswith(
+            "By default, scripts are restricted"))
+        self.assertTrue(third_call.strip().startswith(
+            "Unknown system users: nonexistsent"))
 
     def test_tags_not_defined_on_command_line(self):
         """
         If tags are not provided, the user should be prompted for them.
         """
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("You may provide tags for this computer e.g. "
-                              "server,precise.")
-        script_mock.prompt("tags", "Tags", False)
-        self.mocker.replay()
+        help_snippet = ("You may provide tags for this computer e.g. "
+                        "server,precise.")
+        self.script.show_help = mock.Mock()
+        self.script.prompt = mock.Mock()
+
         self.script.query_tags()
+        self.script.prompt.assert_called_once_with(
+            "tags", "Tags", False)
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_invalid_tags_entered_by_user(self):
         """
@@ -724,84 +642,90 @@ class LandscapeSetupScriptTest(LandscapeTest):
         they should be valid tags, if not the user should be prompted for them
         again.
         """
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("You may provide tags for this computer e.g. "
-                              "server,precise.")
-        script_mock.prompt_get_input("Tags: ", False)
-        self.mocker.result(u"<script>alert();</script>")
-        script_mock.show_help("Tag names may only contain alphanumeric "
-                              "characters.")
-        script_mock.prompt_get_input("Tags: ", False)
-        self.mocker.result(u"london")
-        self.mocker.replay()
-        self.script.query_tags()
+        self.script.show_help = mock.Mock()
+        self.script.prompt_get_input = mock.Mock(
+            side_effect=(u"<script>alert();</script>", u"london"))
 
-    def test_tags_defined_on_command_line(self):
+        self.script.query_tags()
+        first_call, second_call = self.script.show_help.mock_calls
+        self.assertTrue(
+            first_call.strip().startswith("You may provide tags for this "
+                                          "computer e.g. server,precise."))
+        self.assertTrue(
+            second_call.strip().startswith("Tag names may only contain "
+                                           "alphanumeric characters."))
+        calls = [("Tags: ", False), ("Tags: ", False)]
+        self.script.prompt_get_input.has_calls(calls)
+
+    @mock.patch("__builtin__.raw_input")
+    def test_tags_defined_on_command_line(self, mock_raw_input):
         """
         Tags defined on the command line can be verified by the user.
         """
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
         self.config.load_command_line(["--tags", u"server,london"])
         self.script.query_tags()
         self.assertEqual(self.config.tags, u"server,london")
+        mock_raw_input.assert_not_called()
 
-    def test_invalid_tags_defined_on_command_line_raises_error(self):
+    @mock.patch("__builtin__.raw_input")
+    def test_invalid_tags_defined_on_command_line_raises_error(
+            self, mock_raw_input):
         """
         Invalid tags on the command line raises a ConfigurationError.
         """
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
         self.config.load_command_line(["--tags", u"<script>alert();</script>"])
         self.assertRaises(ConfigurationError, self.script.query_tags)
+        mock_raw_input.assert_not_called()
 
     def test_access_group_not_defined_on_command_line(self):
         """
         If an access group is not provided, the user should be prompted for it.
         """
-        self.mocker.order()
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("You may provide an access group for this "
-                              "computer e.g. webservers.")
-        script_mock.prompt("access_group", "Access group", False)
-        self.mocker.replay()
+        help_snippet = ("You may provide an access group for this computer "
+                        "e.g. webservers.")
+        self.script.show_help = mock.Mock()
+        self.script.prompt = mock.Mock()
         self.script.query_access_group()
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
-    def test_access_group_defined_on_command_line(self):
+    @mock.patch("__builtin__.raw_input")
+    def test_access_group_defined_on_command_line(self, mock_raw_input):
         """
         When an access group is provided on the command line, do not prompt
         the user for it.
         """
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
         self.config.load_command_line(["--access-group", u"webservers"])
         self.script.query_access_group()
         self.assertEqual(self.config.access_group, u"webservers")
+        mock_raw_input.assert_not_called()
 
     def test_show_header(self):
         help_snippet = "This script will"
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(self.get_matcher(help_snippet))
-        self.mocker.replay()
-
+        self.script.show_help = mock.Mock()
         self.script.show_header()
+        [call] = self.script.show_help.mock_calls
+        self.assertTrue(call.strip().startswith(help_snippet))
 
     def test_run(self):
-        script_mock = self.mocker.patch(self.script)
-        script_mock.show_header()
-        script_mock.query_computer_title()
-        script_mock.query_account_name()
-        script_mock.query_registration_key()
-        script_mock.query_proxies()
-        script_mock.query_script_plugin()
-        script_mock.query_access_group()
-        script_mock.query_tags()
-        self.mocker.replay()
-
+        self.script.show_header = mock.Mock()
+        self.script.query_computer_title = mock.Mock()
+        self.script.query_account_name = mock.Mock()
+        self.script.query_registration_key = mock.Mock()
+        self.script.query_proxies = mock.Mock()
+        self.script.query_script_plugin = mock.Mock()
+        self.script.query_access_group = mock.Mock()
+        self.script.query_tags = mock.Mock()
         self.script.run()
+
+        self.script.show_header.assert_called_once_with()
+        self.script.query_computer_title.assert_called_once_with()
+        self.script.query_account_name.assert_called_once_with()
+        self.script.query_registration_key.assert_called_once_with()
+        self.script.query_proxies.assert_called_once_with()
+        self.script.query_script_plugin.assert_called_once_with()
+        self.script.query_access_group.assert_called_once_with()
+        self.script.query_tags.assert_called_once_with()
 
 
 class BootstrapTreeTest(LandscapeConfigurationTest):

@@ -1,4 +1,5 @@
 from datetime import datetime
+from mock import patch
 import signal
 import subprocess
 
@@ -40,21 +41,20 @@ class ProcessKillerTests(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
-    def _test_signal_name(self, signame, signum):
+    @patch("os.kill")
+    def _test_signal_name(self, signame, signum, kill_mock):
         self.manager.add(self.signaller)
         self.builder.create_data(100, self.builder.RUNNING,
                                  uid=1000, gid=1000, started_after_boot=10,
                                  process_name="ooga")
 
-        kill = self.mocker.replace("os.kill", passthrough=False)
-        kill(100, signum)
-        self.mocker.replay()
 
         self.manager.dispatch_message(
             {"type": "signal-process",
              "operation-id": 1,
              "pid": 100, "name": "ooga",
              "start-time": 20, "signal": signame})
+        kill_mock.assert_called_once_with(100, signum)
 
     def test_kill_process_signal(self):
         """
@@ -204,7 +204,8 @@ class ProcessKillerTests(LandscapeTest):
                               "result-text": expected_text}])
         self.assertTrue("SignalProcessError" in self.logfile.getvalue())
 
-    def test_accept_small_start_time_skews(self):
+    @patch("os.kill")
+    def test_accept_small_start_time_skews(self, kill_mock):
         """
         The boot time isn't very precise, so accept small skews in the
         computed process start time.
@@ -214,12 +215,9 @@ class ProcessKillerTests(LandscapeTest):
                                  uid=1000, gid=1000, started_after_boot=10,
                                  process_name="ooga")
 
-        kill = self.mocker.replace("os.kill", passthrough=False)
-        kill(100, signal.SIGKILL)
-        self.mocker.replay()
-
         self.manager.dispatch_message(
             {"type": "signal-process",
              "operation-id": 1,
              "pid": 100, "name": "ooga",
              "start-time": 21, "signal": "KILL"})
+        kill_mock.assert_called_once_with(100, signal.SIGKILL)

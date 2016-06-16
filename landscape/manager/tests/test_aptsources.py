@@ -1,5 +1,7 @@
 import os
 
+import mock
+
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.manager.aptsources import AptSources
@@ -69,35 +71,43 @@ class AptSourcesTests(LandscapeTest):
         When getting a repository message, L{AptSources} keeps sources.list
         permissions.
         """
-        sources = file(self.sourceslist.SOURCES_LIST, "w")
+        sources = open(self.sourceslist.SOURCES_LIST, "w")
         sources.write("oki\n\ndoki\n#comment\n # other comment\n")
         sources.close()
         # change file mode from default to check it's restored
-        os.chmod(self.sourceslist.SOURCES_LIST, 0400)
+        os.chmod(self.sourceslist.SOURCES_LIST, 0o400)
         sources_stat_orig = os.stat(self.sourceslist.SOURCES_LIST)
 
         fake_stats = FakeStatResult(st_mode=sources_stat_orig.st_mode,
                                     st_uid=30, st_gid=30)
-        os_stat = self.mocker.replace("os.stat")
-        os_stat(self.sourceslist.SOURCES_LIST)
-        self.mocker.result(fake_stats)
-        self.mocker.count(1, max=10)
-        os_chown = self.mocker.replace("os.chown")
-        os_chown(self.sourceslist.SOURCES_LIST,
-                 fake_stats.st_uid, fake_stats.st_gid)
-        self.mocker.replay()
 
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
-             "operation-id": 1})
+        orig_stat = os.stat
 
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "status": SUCCEEDED, "operation-id": 1}])
+        def mocked_stat(filename):
+            if filename.endswith("sources.list"):
+                return fake_stats
+            return orig_stat(filename)
+
+        with mock.patch("os.stat", side_effect=mocked_stat) as mock_stat, \
+             mock.patch("os.chown") as mock_chown:
+
+            self.manager.dispatch_message(
+                {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+                 "operation-id": 1})
+
+            service = self.broker_service
+            self.assertMessages(service.message_store.get_pending_messages(),
+                                [{"type": "operation-result",
+                                  "status": SUCCEEDED, "operation-id": 1}])
+
+            mock_stat.assert_any_call(self.sourceslist.SOURCES_LIST)
+            mock_chown.assert_any_call(
+                self.sourceslist.SOURCES_LIST, fake_stats.st_uid,
+                fake_stats.st_gid)
 
         sources_stat_after = os.stat(self.sourceslist.SOURCES_LIST)
-        self.assertEqual(sources_stat_orig.st_mode, sources_stat_after.st_mode)
+        self.assertEqual(
+            sources_stat_orig.st_mode, sources_stat_after.st_mode)
 
     def test_random_failures(self):
         """

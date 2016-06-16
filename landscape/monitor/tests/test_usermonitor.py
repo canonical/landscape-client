@@ -1,6 +1,7 @@
 import os
 import tempfile
 
+from mock import Mock, ANY
 from twisted.internet.defer import fail
 
 from landscape.amp import ComponentPublisher
@@ -9,7 +10,6 @@ from landscape.monitor.usermonitor import (
 from landscape.manager.usermanager import UserManager
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.tests.mocker import ANY
 import landscape.monitor.usermonitor
 
 
@@ -245,13 +245,13 @@ class UserMonitorTest(LandscapeTest):
         super class, which sets up a looping call to run the plugin
         every L{UserMonitor.run_interval} seconds.
         """
-        self.plugin.run = self.mocker.mock()
-        self.expect(self.plugin.run()).count(5)
-        self.mocker.replay()
-        self.monitor.add(self.plugin)
+        self.plugin.run = Mock()
 
+        self.monitor.add(self.plugin)
         self.broker_service.message_store.set_accepted_types(["users"])
         self.reactor.advance(self.plugin.run_interval * 5)
+
+        self.assertEqual(self.plugin.run.call_count, 5)
 
     def test_run_with_operation_id(self):
         """
@@ -463,10 +463,9 @@ class UserMonitorTest(LandscapeTest):
             self.assertFalse(persist.get("groups"))
 
         self.broker_service.message_store.set_accepted_types(["users"])
-        self.monitor.broker.send_message = self.mocker.mock()
-        self.monitor.broker.send_message(ANY, ANY, urgent=True)
-        self.mocker.result(fail(RuntimeError()))
-        self.mocker.replay()
+
+        self.monitor.broker.send_message = Mock(return_value=fail(
+            RuntimeError()))
 
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
@@ -477,4 +476,5 @@ class UserMonitorTest(LandscapeTest):
         result.addCallback(lambda remote: remote.detect_changes(1001))
         result.addCallback(got_result)
         result.addCallback(lambda x: connector.disconnect())
-        return result
+        self.monitor.broker.send_message.assert_called_once_with(
+            ANY, ANY, urgent=True)

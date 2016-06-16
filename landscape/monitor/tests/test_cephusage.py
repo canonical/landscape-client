@@ -1,3 +1,4 @@
+import mock
 import tempfile
 from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
@@ -109,19 +110,19 @@ class CephUsagePluginTest(LandscapeTest):
         plugin._ceph_config = None
         self.assertFalse(plugin._should_run())
 
-    def test_wb_should_run_no_rados(self):
+   
+    @mock.patch("logging.info") 
+    def test_wb_should_run_no_rados(self, logging):
         """
         If the Rados library cannot be imported (CephUsage._has_rados is False)
         the plugin logs a message then deactivates itself.
         """
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("This machine does not appear to be a Ceph machine. "
-                     "Deactivating plugin.")
-        self.mocker.replay()
-
         plugin = CephUsage()
         plugin._has_rados = False
         self.assertFalse(plugin._should_run())
+        logging.assert_called_once_with(
+            "This machine does not appear to be a Ceph machine. "
+            "Deactivating plugin.")
 
     def test_wb_should_run(self):
         """
