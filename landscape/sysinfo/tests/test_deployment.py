@@ -1,3 +1,4 @@
+import mock
 import os
 
 from logging.handlers import RotatingFileHandler
@@ -15,7 +16,6 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
 
 from landscape.tests.helpers import LandscapeTest, StandardIOHelper
-from landscape.tests.mocker import ARGS, KWARGS
 
 
 class DeploymentTest(LandscapeTest):
@@ -109,38 +109,41 @@ class RunTest(LandscapeTest):
         self.assertEqual(sysinfo.get_notes(), ["Test note"])
         self.assertEqual(sysinfo.get_footnotes(), ["Test footnote"])
 
-    def test_format_sysinfo_gets_correct_information(self):
-        format_sysinfo = self.mocker.replace("landscape.sysinfo.sysinfo."
-                                             "format_sysinfo")
-        format_sysinfo([("Test header", "Test value")],
-                       ["Test note"], ["Test footnote"],
-                       indent="  ")
-        format_sysinfo(ARGS, KWARGS)
-        self.mocker.count(0)
-        self.mocker.replay()
-
+    @mock.patch("landscape.sysinfo.deployment.format_sysinfo")
+    def test_format_sysinfo_gets_correct_information(self, format_sysinfo):
         run(["--sysinfo-plugins", "TestPlugin"])
+        format_sysinfo.assert_called_once_with(
+            [("Test header", "Test value")],
+            ["Test note"], ["Test footnote"],
+            indent="  ")
 
     def test_format_sysinfo_output_is_printed(self):
-        format_sysinfo = self.mocker.replace("landscape.sysinfo.sysinfo."
-                                             "format_sysinfo")
-        format_sysinfo(ARGS, KWARGS)
-        self.mocker.result("Hello there!")
-        self.mocker.replay()
+        with mock.patch(
+                "landscape.sysinfo.deployment.format_sysinfo",
+                return_value="Hello there!") as format_sysinfo:
+            run(["--sysinfo-plugins", "TestPlugin"])
 
-        run(["--sysinfo-plugins", "TestPlugin"])
-
+        self.assertTrue(format_sysinfo.called)
         self.assertEqual(self.stdout.getvalue(), "Hello there!\n")
 
     def test_output_is_only_displayed_once_deferred_fires(self):
         deferred = Deferred()
-        sysinfo = self.mocker.patch(SysInfoPluginRegistry)
-        sysinfo.run()
-        self.mocker.passthrough()
-        self.mocker.result(deferred)
-        self.mocker.replay()
 
-        run(["--sysinfo-plugins", "TestPlugin"])
+        # We mock the sysinfo.run() to return a Deferred but still
+        # run the actual sysinfo.run() to gather the results from all
+        # the plugins.  We cannot easily combine return_value and
+        # side_effect because side_effect operates on the return_value,
+        # thus firing the callback and writing sysinfo out to stdout.
+        sysinfo = SysInfoPluginRegistry()
+        original_sysinfo_run = sysinfo.run
+        def wrapped_sysinfo_run(*args, **kwargs):
+            original_sysinfo_run(*args, **kwargs)
+            return deferred
+        sysinfo.run = mock.Mock(side_effect=wrapped_sysinfo_run)
+
+        run(["--sysinfo-plugins", "TestPlugin"], sysinfo=sysinfo)
+
+        sysinfo.run.assert_called_once_with()
 
         self.assertNotIn("Test note", self.stdout.getvalue())
         deferred.callback(None)
@@ -226,11 +229,10 @@ class RunTest(LandscapeTest):
         If landscape-sysinfo is running as a privileged user, then the logs
         should be stored in the system-wide log directory.
         """
-        uid_mock = self.mocker.replace("os.getuid")
-        uid_mock()
-        self.mocker.result(0)
-        self.mocker.replay()
-        self.assertEqual(get_landscape_log_directory(), "/var/log/landscape")
+        with mock.patch("os.getuid", return_value=0) as uid_mock:
+            self.assertEqual(
+                get_landscape_log_directory(), "/var/log/landscape")
+            uid_mock.assert_called_once_with()
 
     def test_wb_logging_setup(self):
         """
@@ -250,28 +252,24 @@ class RunTest(LandscapeTest):
         self.assertFalse(logger.propagate)
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
-        mock_os = self.mocker.replace("os")
-        mock_os.getuid()
-        self.mocker.result(0)
+        with mock.patch.object(os, "getuid", return_value=0) as mock_getuid, \
+             mock.patch.object(
+                 os.path, "isdir", return_value=False) as mock_isdir, \
+             mock.patch.object(os, "mkdir") as mock_mkdir, \
+             mock.patch("__builtin__.open") as mock_open:
+            logger = getLogger("landscape-sysinfo")
+            self.assertEqual(logger.handlers, [])
 
-        # Ugh, sorry
-        mock_os.path.isdir("/var/log/landscape")
-        self.mocker.result(False)
-        mock_os.mkdir("/var/log/landscape")
+            setup_logging()
+            mock_getuid.assert_called_with()
+            mock_isdir.assert_called_with("/var/log/landscape")
+            mock_mkdir.assert_called_with("/var/log/landscape")
+            mock_open.assert_called_with("/var/log/landscape/sysinfo.log", "a")
 
-        self.mocker.replace("__builtin__.open", passthrough=False)(
-            "/var/log/landscape/sysinfo.log", "a")
-
-        self.mocker.replay()
-
-        logger = getLogger("landscape-sysinfo")
-        self.assertEqual(logger.handlers, [])
-
-        setup_logging()
-        handler = logger.handlers[0]
-        self.assertTrue(isinstance(handler, RotatingFileHandler))
-        self.assertEqual(handler.baseFilename,
-                         "/var/log/landscape/sysinfo.log")
+            handler = logger.handlers[0]
+            self.assertTrue(isinstance(handler, RotatingFileHandler))
+            self.assertEqual(handler.baseFilename,
+                             "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
         log_dir = self.makeFile()
@@ -280,20 +278,18 @@ class RunTest(LandscapeTest):
         self.assertTrue(os.path.exists(log_dir))
 
     def test_run_sets_up_logging(self):
-        setup_logging_mock = self.mocker.replace(
-            "landscape.sysinfo.deployment.setup_logging")
-        setup_logging_mock()
-        self.mocker.replay()
-
-        run(["--sysinfo-plugins", "TestPlugin"])
+        with mock.patch(
+                "landscape.sysinfo.deployment"
+                ".setup_logging") as setup_logging_mock:
+            run(["--sysinfo-plugins", "TestPlugin"])
+        setup_logging_mock.assert_called_once_with()
 
     def test_run_setup_logging_exits_gracefully(self):
-        setup_logging_mock = self.mocker.replace(
-            "landscape.sysinfo.deployment.setup_logging")
-        setup_logging_mock()
-        self.mocker.throw(IOError("Read-only filesystem."))
-        self.mocker.replay()
-        error = self.assertRaises(SystemExit, run,
-                                  ["--sysinfo-plugins", "TestPlugin"])
-        self.assertEqual(error.message,
-                         "Unable to setup logging. Read-only filesystem.")
+        io_error = IOError("Read-only filesystem.")
+        with mock.patch(
+                "landscape.sysinfo.deployment.setup_logging",
+                side_effect=io_error) as setup_logging_mock:
+            error = self.assertRaises(
+                SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
+        self.assertEqual(
+            error.message, "Unable to setup logging. Read-only filesystem.")
