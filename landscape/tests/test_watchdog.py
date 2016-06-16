@@ -773,6 +773,8 @@ time.sleep(999)
         When a daemon repeatedly dies, the watchdog gives up entirely and shuts
         down.
         """
+        stop = []
+        stopped = []
         self.log_helper.ignore_errors("Can't keep landscape-broker running. "
                                       "Exiting.")
 
@@ -788,18 +790,20 @@ time.sleep(999)
 
             self.assertTrue("Can't keep landscape-broker running." in
                             self.logfile.getvalue())
-
-        reactor_mock = self.mocker.proxy(reactor, passthrough=True)
-        reactor_mock.stop()
-        self.mocker.replay()
+            self.assertItemsEqual([True], stopped)
+            reactor.stop = stop[0]
 
         result = Deferred()
-        result.addCallback(lambda x: self.daemon.stop())
         result.addCallback(got_result)
 
+        def mock_reactor_stop():
+            stop.append(reactor.stop)
+            reactor.stop = lambda: stopped.append(True)
+
+        reactor.callLater(0, mock_reactor_stop)
         reactor.callLater(1, result.callback, None)
 
-        daemon = self.get_daemon(reactor=reactor_mock)
+        daemon = self.get_daemon(reactor=reactor)
         daemon.start()
 
         return result
