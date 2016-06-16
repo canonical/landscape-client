@@ -107,36 +107,36 @@ class WatchDogTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    # def test_check_running_many(self):
-    #     self.start_all_daemons()
-    #     self.expect(self.broker.is_running()).result(succeed(True))
-    #     self.expect(self.monitor.is_running()).result(succeed(True))
-    #     self.expect(self.manager.is_running()).result(succeed(True))
-    #     self.mocker.replay()
-    #     result = WatchDog(config=self.config).check_running()
+    def test_check_running_many(self):
+        self.setup_daemons_mocks()
+        self.broker.is_running.return_value = succeed(True)
+        self.monitor.is_running.return_value = succeed(True)
+        self.manager.is_running.return_value = succeed(True)
+        result = WatchDog(config=self.config).check_running()
 
-    #     def got_result(r):
-    #         self.assertEqual([daemon.program for daemon in r],
-    #                          ["landscape-broker", "landscape-monitor",
-    #                           "landscape-manager"])
-    #     return result.addCallback(got_result)
+        def got_result(r):
+            self.assertEqual([daemon.program for daemon in r],
+                             ["landscape-broker", "landscape-monitor",
+                              "landscape-manager"])
+            self.assert_daemons_mocks()
 
-    # def test_check_running_limited_daemons(self):
-    #     """
-    #     When the user has explicitly asked not to run some daemons, those
-    #     daemons which are not being run should not checked.
-    #     """
-    #     self.broker = self.broker_factory(ANY, verbose=False, config=None)
-    #     self.expect(self.broker.program).result("landscape-broker")
-    #     self.expect(self.broker.is_running()).result(succeed(True))
-    #     self.mocker.replay()
-    #     result = WatchDog(enabled_daemons=[Broker],
-    #                       config=self.config).check_running()
+        return result.addCallback(got_result)
 
-    #     def got_result(r):
-    #         self.assertEqual(len(r), 1)
-    #         self.assertEqual(r[0].program, "landscape-broker")
-    #     return result.addCallback(got_result)
+    def test_check_running_limited_daemons(self):
+        """
+        When the user has explicitly asked not to run some daemons, those
+        daemons which are not being run should not checked.
+        """
+        self.setup_daemons_mocks()
+        self.broker.is_running.return_value = succeed(True)
+        result = WatchDog(enabled_daemons=[self.broker_factory],
+                          config=self.config).check_running()
+
+        def got_result(r):
+            self.assertEqual(len(r), 1)
+            self.assertEqual(r[0].program, "landscape-broker")
+
+        return result.addCallback(got_result)
 
     # def expect_request_exit(self):
     #     self.expect(self.broker.prepare_for_shutdown())
