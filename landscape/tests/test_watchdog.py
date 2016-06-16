@@ -171,20 +171,19 @@ class WatchDogTest(LandscapeTest):
         result.addCallback(lambda _: self.assert_request_exit())
         return result
 
-    # def test_start_limited_daemons(self):
-    #     """
-    #     start only starts the daemons which are actually enabled.
-    #     """
-    #     self.broker = self.broker_factory(ANY, verbose=False, config=None)
-    #     self.expect(self.broker.program).result("landscape-broker")
-    #     self.mocker.count(0, None)
-    #     self.broker.start()
+    def test_start_limited_daemons(self):
+        """
+        start only starts the daemons which are actually enabled.
+        """
+        self.setup_daemons_mocks()
+                
+        clock = Clock()
+        dog = WatchDog(clock, enabled_daemons=[self.broker_factory], config=self.config)
+        dog.start()
 
-    #     self.mocker.replay()
-
-    #     clock = Clock()
-    #     dog = WatchDog(clock, enabled_daemons=[Broker], config=self.config)
-    #     dog.start()
+        self.broker.start.assert_called_once()
+        self.monitor.start.assert_not_called()
+        self.manager.start.assert_not_called()
 
     # def test_request_exit(self):
     #     """request_exit() asks the broker to exit.
