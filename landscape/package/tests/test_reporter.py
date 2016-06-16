@@ -964,12 +964,10 @@ class PackageReporterAptTest(LandscapeTest):
         """
         The L{PackageReporter.detect_changes} method package changes.
         """
-        reporter_mock = self.mocker.patch(self.reporter)
-        reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(True))
-
-        self.mocker.replay()
-        return self.reporter.detect_changes()
+        with mock.patch.object(self.reporter, "detect_packages_changes") as reporter_mock:
+            reporter_mock.return_value = succeed(True)
+            self.successResultOf(self.reporter.detect_changes())
+        reporter_mock.assert_called_once_with()
 
     def test_detect_changes_fires_package_data_changed(self):
         """
