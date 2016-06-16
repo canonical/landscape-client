@@ -1,8 +1,7 @@
-from twisted.internet.defer import succeed
+from mock import ANY, Mock, patch
 
 from landscape.monitor.plugin import MonitorPlugin, DataWatcher
 from landscape.schema import Message, Int
-from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeTest, MonitorHelper, LogKeeperHelper)
 
@@ -48,11 +47,10 @@ class MonitorPluginTest(LandscapeTest):
         """
         plugin = MonitorPlugin()
         plugin.register(self.monitor)
-        callback = self.mocker.mock()
-        callback("foo", kwarg="bar")
-        self.mocker.replay()
+        callback = Mock()
         plugin.call_on_accepted("type", callback, "foo", kwarg="bar")
         self.reactor.fire(("message-type-acceptance-changed", "type"), True)
+        callback.assert_called_once_with("foo", kwarg="bar")
 
     def test_call_on_accepted_when_unaccepted(self):
         """
@@ -163,13 +161,11 @@ class DataWatcherTest(LandscapeTest):
         When exchange is called with an urgent argument set to True
         make sure it sends the message urgently.
         """
-        remote_broker_mock = self.mocker.replace(self.remote)
-        remote_broker_mock.send_message(ANY, ANY, urgent=True)
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
-
-        self.mstore.set_accepted_types(["wubble"])
-        self.plugin.exchange(True)
+        with patch.object(self.remote, "send_message"):
+            self.mstore.set_accepted_types(["wubble"])
+            self.plugin.exchange(True)
+            self.remote.send_message.assert_called_once_with(
+                ANY, ANY, urgent=True)
 
     def test_no_message_if_not_accepted(self):
         """
