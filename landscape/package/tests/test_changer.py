@@ -440,19 +440,19 @@ class AptPackageChangerTest(LandscapeTest):
         self.mocker.order()
         package1 = self.facade.get_package_by_hash(installed_hash)
         [package2] = self.facade.get_packages_by_name("name2")
-        self.facade.perform_changes = self.mocker.mock()
-        self.facade.perform_changes()
-        self.mocker.throw(DependencyError([package1, package2]))
-        self.facade.mark_install = self.mocker.mock()
-        self.facade.mark_remove = self.mocker.mock()
-        self.facade.mark_install(package2)
-        self.facade.mark_remove(package1)
-        self.facade.perform_changes()
-        self.mocker.result("success")
-        self.mocker.replay()
 
+        self.facade.perform_changes = Mock(
+            side_effect=[DependencyError([package1, package2]),
+                         "success"])
+        self.facade.mark_install = Mock()
+        self.facade.mark_remove = Mock()
+        
         result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
 
+        self.facade.perform_changes.has_calls([call(), call()])
+        self.facade.mark_install.assert_called_once_with(package2)
+        self.facade.mark_remove.assert_called_once_with(package1)
+        
         self.assertEqual(result.code, SUCCESS_RESULT)
         self.assertEqual(result.text, "success")
         self.assertEqual(result.installs, [2])
