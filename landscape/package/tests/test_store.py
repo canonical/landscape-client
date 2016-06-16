@@ -225,24 +225,10 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_available([1])
         self.assertEqual(self.store2.get_available(), [1])
 
-    def test_add_available_timing(self):
-        """Adding 20k ids must take less than 5 seconds."""
-        started = time.time()
-        self.store1.add_available(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Adding 20k available ids took more than 5 seconds.")
-
     def test_remove_available(self):
         self.store1.add_available([1, 2, 3, 4])
         self.store1.remove_available([2, 3])
         self.assertEqual(self.store2.get_available(), [1, 4])
-
-    def test_remove_available_timing(self):
-        self.store1.add_available(range(20000))
-        started = time.time()
-        self.store1.remove_available(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Removing 20k available ids took more than 5 seconds.")
 
     def test_clear_available(self):
         self.store1.add_available([1, 2, 3, 4])
