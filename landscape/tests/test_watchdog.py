@@ -818,6 +818,8 @@ time.sleep(999)
         # has passed and it's fine to restart more times again.
         self.log_helper.ignore_errors("Can't keep landscape-broker running. "
                                       "Exiting.")
+        stop = []
+        stopped = []
 
         output_filename = self.makeFile("NOT RUN")
 
@@ -832,27 +834,36 @@ time.sleep(999)
 
             self.assertTrue("Can't keep landscape-broker running." in
                             self.logfile.getvalue())
+            self.assertItemsEqual([True], stopped)
+            reactor.stop = stop[0]
 
         result = Deferred()
         result.addCallback(lambda x: self.daemon.stop())
         result.addCallback(got_result)
-
-        reactor_mock = self.mocker.proxy(reactor, passthrough=True)
-        reactor_mock.stop()
+        original_time = time.time
 
         # Make the *first* call to time return 0, so that it will try one
         # more time, and exercise the burst protection system.
-        time_mock = self.mocker.replace("time.time")
-        self.expect(time_mock()).result(time.time() - RESTART_BURST_DELAY)
-        self.expect(time_mock()).passthrough().count(0, None)
-
-        self.mocker.replay()
+        def time_sideeffect(before=[]):
+            if not before:
+                before.append(True)
+                return original_time() - RESTART_BURST_DELAY
+            return original_time()
+        time_patcher = mock.patch.object(
+            time, "time", side_effect=time_sideeffect)
+        time_patcher.start()
+        self.addCleanup(time_patcher.stop)
 
         # It's important to call start() shortly after the mocking above,
         # as we don't want anyone else getting the fake time.
-        daemon = self.get_daemon(reactor=reactor_mock)
+        daemon = self.get_daemon(reactor=reactor)
         daemon.start()
 
+        def mock_reactor_stop():
+            stop.append(reactor.stop)
+            reactor.stop = lambda: stopped.append(True)
+
+        reactor.callLater(0, mock_reactor_stop)
         reactor.callLater(1, result.callback, None)
 
         return result
