@@ -24,7 +24,7 @@ from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
-from landscape.tests.mocker import ANY, CONTAINS, expect
+from landscape.tests.mocker import ANY, CONTAINS
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -761,20 +761,11 @@ def noop_print(*args, **kws):
     pass
 
 
+@mock.patch("landscape.configuration.bootstrap_tree")
+@mock.patch("os.getuid", return_value=0)
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     helpers = [EnvironSaverHelper]
-
-    def setUp(self):
-        super(ConfigurationFunctionsTest, self).setUp()
-        self.mocker.replace("os.getuid")()
-        self.mocker.count(0, None)
-        self.mocker.result(0)
-
-        # Make bootstrap_tree a no-op as a a non-root user can't change
-        # ownership.
-        self.mocker.replace("landscape.configuration.bootstrap_tree")(ANY)
-        self.mocker.count(0, None)
 
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
@@ -787,7 +778,11 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         finally:
             config.config = original_config
 
-    def test_setup(self):
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.getpass.getpass")
+    @mock.patch("__builtin__.raw_input")
+    def test_setup(self, mock_raw_input, mock_getpass, mock_print_text,
+                   mock_getuid, mock_bootstrap_tree):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
                                  "account_name = Old Name\n"
@@ -799,32 +794,32 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                                  "access_group = webservers\n"
                                  "tags = london, server")
 
-        raw_input = self.mocker.replace("__builtin__.raw_input",
-                                        name="raw_input")
-        getpass = self.mocker.replace("getpass.getpass")
+        def side_effect_raw_input(prompt):
+            fixtures = {
+                "[Old Title]": "New Title",
+                "[Old Name]": "New Name",
+                "[http://old.proxy]": "http://new.proxy",
+                "[https://old.proxy]": "https://new.proxy",
+                "Enable script execution? [Y/n]": "n",
+                "Access group [webservers]: ": u"databases",
+                "Tags [london, server]: ": u"glasgow, laptop",
+            }
+            for key, value in fixtures.iteritems():
+                if key in prompt:
+                    return value
+            raise KeyError("Couldn't find answer for {}".format(prompt))
 
-        C = CONTAINS
+        def side_effect_getpass(prompt):
+            fixtures = {"Account registration key:": "New Password",
+                        "Please confirm:": "New Password"}
+            for key, value in fixtures.iteritems():
+                if key in prompt:
+                    return value
+            raise KeyError("Couldn't find answer for {}".format(prompt))
 
-        expect(raw_input(C("[Old Title]"))).result("New Title")
-        expect(raw_input(C("[Old Name]"))).result("New Name")
-        expect(getpass(C("Account registration key:"))).result("New Password")
-        expect(getpass(C("Please confirm:"))).result("New Password")
-        expect(raw_input(C("[http://old.proxy]"))).result("http://new.proxy")
-        expect(raw_input(C("[https://old.proxy]"))).result("https://new.proxy")
-        expect(raw_input(C("Enable script execution? [Y/n]"))).result("n")
-        expect(raw_input(C("Access group [webservers]: "))).result(
-            u"databases")
-        expect(raw_input(C("Tags [london, server]: "))).result(
-            u"glasgow, laptop")
+        mock_raw_input.side_effect = side_effect_raw_input
+        mock_getpass.side_effect = side_effect_getpass
 
-        # Negative assertion.  We don't want it called in any other way.
-        expect(raw_input(ANY)).count(0)
-
-        # We don't care about these here, but don't show any output please.
-        print_text_mock = self.mocker.replace(print_text)
-        expect(print_text_mock(ANY)).count(0, None)
-
-        self.mocker.replay()
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
         self.assertEqual(type(config), LandscapeSetupConfiguration)
@@ -841,18 +836,17 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.assertEqual(config.access_group, u"databases")
         self.assertEqual(config.tags, u"glasgow, laptop")
 
-    def test_silent_setup(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_setup(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """
         Only command-line options are used in silent mode and registration is
         attempted.
         """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.replay()
-
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
         self.assertConfigEqual(self.get_content(config), """\
 [client]
 computer_title = rex
@@ -861,15 +855,13 @@ account_name = account
 url = https://landscape.canonical.com/message-system
 """ % config.data_path)
 
-    def test_silent_setup_no_register(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_setup_no_register(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """
         Called with command line options to write a config file but no
         registration or validation of parameters is attempted.
         """
-        # Make sure no sysvconfig modifications are attempted
-        self.mocker.patch(SysVConfig)
-        self.mocker.replay()
-
         config = self.get_config(["--silent", "--no-start"])
         setup(config)
         self.assertConfigEqual(self.get_content(config), """\
@@ -878,15 +870,13 @@ data_path = %s
 url = https://landscape.canonical.com/message-system
 """ % config.data_path)
 
-    def test_silent_setup_no_register_with_default_preseed_params(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_setup_no_register_with_default_preseed_params(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """
         Make sure that the configuration can be used to write the
         configuration file after a fresh install.
         """
-        # Make sure no sysvconfig modifications are attempted
-        self.mocker.patch(SysVConfig)
-        self.mocker.replay()
-
         args = ["--silent", "--no-start",
                 "--computer-title", "",
                 "--account-name", "",
@@ -917,38 +907,31 @@ url = https://landscape.canonical.com/message-system
             "ping_url = http://landscape.canonical.com/ping\n"
             "urgent_exchange_interval = 60\n" % config.data_path)
 
-    def test_silent_setup_without_computer_title(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_setup_without_computer_title(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """A computer title is required."""
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        self.mocker.replay()
-
         config = self.get_config(["--silent", "-a", "account"])
         self.assertRaises(ConfigurationError, setup, config)
 
-    def test_silent_setup_without_account_name(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_setup_without_account_name(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """An account name is required."""
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        self.mocker.replay()
-
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(
+            True)
 
-    def test_silent_script_users_imply_script_execution_plugin(self):
+    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_script_users_imply_script_execution_plugin(
+            self, mock_sysvconfig, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         """
         If C{--script-users} is specified, without C{ScriptExecution} in the
         list of manager plugins, it will be automatically added.
         """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
-        self.mocker.replay()
-
         filename = self.makeFile("""
 [client]
 url = https://localhost:8080/message-system
@@ -958,7 +941,12 @@ bus = session
         config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex",
                                   "--script-users", "root, nobody"])
+        mock_sysvconfig().restart_landscape.return_value = True
         setup(config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(
+            True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_raw_input.assert_not_called()
         parser = ConfigParser()
         parser.read(filename)
         self.assertEqual(
@@ -970,15 +958,13 @@ bus = session
              "account_name": "account"},
             dict(parser.items("client")))
 
-    def test_silent_script_users_with_all_user(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_script_users_with_all_user(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """
         In silent mode, we shouldn't accept invalid users, it should raise a
         configuration error.
         """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        self.mocker.replay()
-
         config = self.get_config(
             ["--script-users", "all",
              "--include-manager-plugins", "ScriptPlugin",
@@ -986,14 +972,13 @@ bus = session
              "-t", "rex",
              "--silent"])
         self.assertRaises(ConfigurationError, setup, config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(
+            True)
 
-    def test_silent_setup_with_ping_url(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.result(True)
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_setup_with_ping_url(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+        mock_sysvconfig().restart_landscape.return_value = True
         filename = self.makeFile("""
 [client]
 ping_url = http://landscape.canonical.com/ping
@@ -1001,10 +986,15 @@ registration_key = shared-secret
 log_level = debug
 random_key = random_value
 """)
+
         config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex",
                                   "--ping-url", "http://localhost/ping"])
         setup(config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(
+            True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
+
         parser = ConfigParser()
         parser.read(filename)
         self.assertEqual(
@@ -1016,17 +1006,14 @@ random_key = random_value
              "account_name": "account"},
             dict(parser.items("client")))
 
-    def test_setup_with_proxies_from_environment(self):
+    @mock.patch("landscape.configuration.LandscapeSetupScript")
+    def test_setup_with_proxies_from_environment(
+            self, mock_setup_script, mock_getuid, mock_bootstrap_tree):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
-        script_mock = self.mocker.patch(LandscapeSetupScript)
-        script_mock.run()
-
         filename = self.makeFile("[client]\n"
                                  "url = http://url\n")
-
-        self.mocker.replay()
 
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
@@ -1034,20 +1021,20 @@ random_key = random_value
         # Reload it to ensure it was written down.
         config.reload()
 
+        mock_setup_script().run.assert_called_once_with()
+
         self.assertEqual(config.http_proxy, "http://environ")
         self.assertEqual(config.https_proxy, "https://environ")
 
-    def test_silent_setup_with_proxies_from_environment(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_silent_setup_with_proxies_from_environment(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         """
         Only command-line options are used in silent mode and registration is
         attempted.
         """
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.replay()
 
         filename = self.makeFile("""
 [client]
@@ -1056,6 +1043,8 @@ registration_key = shared-secret
         config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex"])
         setup(config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
         parser = ConfigParser()
         parser.read(filename)
         self.assertEqual(
@@ -1066,12 +1055,11 @@ registration_key = shared-secret
              "account_name": "account"},
             dict(parser.items("client")))
 
-    def test_setup_prefers_proxies_from_config_over_environment(self):
+    @mock.patch("landscape.configuration.LandscapeSetupScript")
+    def test_setup_prefers_proxies_from_config_over_environment(
+            self, mock_setup_script, mock_getuid, mock_bootstrap_tree):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
-
-        script_mock = self.mocker.patch(LandscapeSetupScript)
-        script_mock.run()
 
         filename = self.makeFile("[client]\n"
                                  "http_proxy = http://config\n"
@@ -1082,6 +1070,7 @@ registration_key = shared-secret
 
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
+        mock_setup_script().run.assert_called_once_with()
 
         # Reload it to enusre it was written down.
         config.reload()
@@ -1089,39 +1078,25 @@ registration_key = shared-secret
         self.assertEqual(config.http_proxy, "http://config")
         self.assertEqual(config.https_proxy, "https://config")
 
-    def test_main_no_registration(self):
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock("\nRequest a new registration for "
-                       "this computer now? (Y/n): ")
-        self.mocker.result("n")
-
-        # This must not be called.
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input", return_value="n")
+    @mock.patch("landscape.configuration.register")
+    @mock.patch("landscape.configuration.setup")
+    def test_main_no_registration(
+            self, mock_setup, mock_register, mock_raw_input, mock_getuid,
+            mock_bootstrap_tree):
         main(["-c", self.make_working_config()], print=noop_print)
+        mock_register.assert_not_called()
+        mock_raw_input.assert_called_once_with(
+            "\nRequest a new registration for this computer now? (Y/n): ")
 
-    def test_main_silent(self):
+    @mock.patch("landscape.configuration.register", return_value="success")
+    @mock.patch("landscape.configuration.setup")
+    def test_main_silent(
+            self, mock_setup, mock_register, mock_getuid, mock_bootstrap_tree):
         """
         In silent mode, the client should register when the registration
         details are changed/set.
         """
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-        self.mocker.result("success")
-        self.mocker.count(1)
-
-        self.mocker.replay()
-
         config_filename = self.makeFile(
             "[client]\n"
             "computer_title = Old Title\n"
@@ -1133,24 +1108,16 @@ registration_key = shared-secret
             SystemExit, main, ["-c", config_filename, "--silent"],
             print=noop_print)
         self.assertEqual(0, exception.code)
+        mock_setup.assert_called_once_with(mock.ANY)
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
 
-    def test_main_user_interaction_success(self):
+    @mock.patch("__builtin__.raw_input", return_value="y")
+    @mock.patch("landscape.configuration.register", return_value="success")
+    @mock.patch("landscape.configuration.setup")
+    def test_main_user_interaction_success(
+            self, mock_setup, mock_register, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         """The successful result of register() is communicated to the user."""
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock("\nRequest a new registration for "
-                       "this computer now? (Y/n): ")
-        self.mocker.result("y")
-
-        # The register() function will be called.
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-        self.mocker.result("success")
-
-        self.mocker.replay()
-
         printed = []
 
         def faux_print(string, file=sys.stdout):
@@ -1160,28 +1127,22 @@ registration_key = shared-secret
             SystemExit, main, ["-c", self.make_working_config()],
             print=faux_print)
         self.assertEqual(0, exception.code)
+        mock_setup.assert_called_once_with(mock.ANY)
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_raw_input.assert_called_once_with(
+            "\nRequest a new registration for this computer now? (Y/n): ")
         self.assertEqual(
             [("Please wait...", sys.stdout),
              ("System successfully registered.", sys.stdout)],
             printed)
 
-    def test_main_user_interaction_failure(self):
+    @mock.patch("__builtin__.raw_input", return_value="y")
+    @mock.patch("landscape.configuration.register", return_value="failure")
+    @mock.patch("landscape.configuration.setup")
+    def test_main_user_interaction_failure(
+            self, mock_setup, mock_register, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         """The failed result of register() is communicated to the user."""
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock("\nRequest a new registration for "
-                       "this computer now? (Y/n): ")
-        self.mocker.result("y")
-
-        # The register() function will be called.
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-        self.mocker.result("failure")
-
-        self.mocker.replay()
-
         printed = []
 
         def faux_print(string, file=sys.stdout):
@@ -1191,6 +1152,10 @@ registration_key = shared-secret
             SystemExit, main, ["-c", self.make_working_config()],
             print=faux_print)
         self.assertEqual(2, exception.code)
+        mock_setup.assert_called_once_with(mock.ANY)
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_raw_input.assert_called_once_with(
+            "\nRequest a new registration for this computer now? (Y/n): ")
 
         # Note that the error is output via sys.stderr.
         self.assertEqual(
@@ -1198,23 +1163,14 @@ registration_key = shared-secret
              ("Invalid account name or registration key.", sys.stderr)],
             printed)
 
-    def test_main_user_interaction_success_silent(self):
+    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.register", return_value="success")
+    @mock.patch("landscape.configuration.setup")
+    def test_main_user_interaction_success_silent(
+            self, mock_setup, mock_register, mock_raw_input, mock_getuid,
+            mock_bootstrap_tree):
         """A successful result is communicated to the user even with --silent.
         """
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock(ANY)
-        self.mocker.count(0)
-
-        # The register() function will be called.
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-        self.mocker.result("success")
-
-        self.mocker.replay()
-
         printed = []
 
         def faux_print(string, file=sys.stdout):
@@ -1224,29 +1180,23 @@ registration_key = shared-secret
             SystemExit, main, ["--silent", "-c", self.make_working_config()],
             print=faux_print)
         self.assertEqual(0, exception.code)
+        mock_setup.assert_called_once_with(mock.ANY)
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_raw_input.assert_not_called()
 
         self.assertEqual(
             [("Please wait...", sys.stdout),
              ("System successfully registered.", sys.stdout)],
             printed)
 
-    def test_main_user_interaction_failure_silent(self):
+    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.register", return_value="failure")
+    @mock.patch("landscape.configuration.setup")
+    def test_main_user_interaction_failure_silent(
+            self, mock_setup, mock_register, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         """A failure result is communicated to the user even with --silent.
         """
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock(ANY)
-        self.mocker.count(0)
-
-        # The register() function will be called.
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-        self.mocker.result("failure")
-
-        self.mocker.replay()
-
         printed = []
 
         def faux_print(string, file=sys.stdout):
@@ -1256,6 +1206,9 @@ registration_key = shared-secret
             SystemExit, main, ["--silent", "-c", self.make_working_config()],
             print=faux_print)
         self.assertEqual(2, exception.code)
+        mock_setup.assert_called_once_with(mock.ANY)
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_raw_input.assert_not_called()
         # Note that the error is output via sys.stderr.
         self.assertEqual(
             [("Please wait...", sys.stdout),
@@ -1271,180 +1224,158 @@ registration_key = shared-secret
                              "https_proxy = https://old.proxy\n"
                              "url = http://url\n")
 
-    def test_register(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-
-        script_mock = self.mocker.patch(LandscapeSetupScript)
-        script_mock.run()
-
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock("\nRequest a new registration for "
-                       "this computer now? (Y/n): ")
-        self.mocker.result("")
-
-        raw_input_mock("\nThe Landscape client must be started "
-                       "on boot to operate correctly.\n\n"
-                       "Start Landscape client on boot? (Y/n): ")
-        self.mocker.result("")
-
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-
-        self.mocker.replay()
+    @mock.patch("__builtin__.raw_input", return_value="")
+    @mock.patch("landscape.configuration.register")
+    @mock.patch("landscape.configuration.LandscapeSetupScript")
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_register(
+            self, mock_sysvconfig, mock_setup_script, mock_register,
+            mock_raw_input, mock_getuid, mock_bootstrap_tree):
+        mock_sysvconfig().is_configured_to_run.return_value = False
         self.assertRaises(
             SystemExit, main, ["--config", self.make_working_config()],
             print=noop_print)
+        mock_sysvconfig().is_configured_to_run.assert_called_once_with()
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_setup_script().run.assert_called_once_with()
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_raw_input.assert_any_call(
+            "\nThe Landscape client must be started "
+            "on boot to operate correctly.\n\n"
+            "Start Landscape client on boot? (Y/n): ")
+        mock_raw_input.assert_called_with(
+            "\nRequest a new registration for this computer now? (Y/n): ")
 
-    def test_errors_from_restart_landscape(self):
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_errors_from_restart_landscape(
+            self, mock_sysvconfig, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
         """
         If a ProcessError exception is raised from restart_landscape (because
         the client failed to be restarted), an informative message is printed
         and the script exits.
         """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        print_text_mock = self.mocker.replace(print_text)
-
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.throw(ProcessError)
-
-        print_text_mock("Couldn't restart the Landscape client.", error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        self.mocker.replay()
+        mock_sysvconfig().restart_landscape.side_effect = ProcessError()
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         system_exit = self.assertRaises(SystemExit, setup, config)
         self.assertEqual(system_exit.code, 2)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscapeassert_called_once_with()
+        mock_print_text.assert_any_call(
+            "Couldn't restart the Landscape client.", error=True)
+        mock_print_text.assert_called_with(
+            "This machine will be registered with the provided details when "
+            "the client runs.", error=True)
 
-    def test_errors_from_restart_landscape_ok_no_register(self):
+    @mock.patch("landscape.configuration.print_text")
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_errors_from_restart_landscape_ok_no_register(
+            self, mock_sysvconfig, mock_print_text,
+            mock_getuid, mock_bootstrap_tree):
         """
         Exit code 0 will be returned if the client fails to be restarted and
         --ok-no-register was passed.
         """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        print_text_mock = self.mocker.replace(print_text)
-
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        self.mocker.throw(ProcessError)
-
-        print_text_mock("Couldn't restart the Landscape client.", error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        self.mocker.replay()
+        mock_sysvconfig().restart_landscape.side_effect = ProcessError()
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex",
                                   "--ok-no-register"])
         system_exit = self.assertRaises(SystemExit, setup, config)
         self.assertEqual(system_exit.code, 0)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscapeassert_called_once_with()
+        mock_print_text.assert_any_call(
+            "Couldn't restart the Landscape client.", error=True)
+        mock_print_text.assert_called_with(
+            "This machine will be registered with the provided details when "
+            "the client runs.", error=True)
 
-    def test_main_with_register(self):
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock("\nRequest a new registration for "
-                       "this computer now? (Y/n): ")
-        self.mocker.result("")
-
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-
-        self.mocker.replay()
+    @mock.patch("__builtin__.raw_input", return_value="")
+    @mock.patch("landscape.configuration.register")
+    @mock.patch("landscape.configuration.setup")
+    def test_main_with_register(
+            self, mock_setup, mock_register, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         self.assertRaises(SystemExit, main, ["-c", self.make_working_config()],
-            print=noop_print)
+                          print=noop_print)
+        mock_setup.assert_called_once_with(mock.ANY)
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_raw_input.assert_called_once_with(
+            "\nRequest a new registration for this computer now? (Y/n): ")
 
-    def test_setup_init_script_and_start_client(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-        self.mocker.replay()
-
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_setup_init_script_and_start_client(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         setup_init_script_and_start_client()
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
 
-    def test_setup_init_script_and_start_client_silent(self):
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.set_start_on_boot(True)
-
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        raw_input_mock(ANY)
-        self.mocker.count(0)
-        self.mocker.replay()
+    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_setup_init_script_and_start_client_silent(
+            self, mock_sysvconfig, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         setup_init_script_and_start_client()
+        mock_raw_input.assert_not_called()
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
 
-    def test_register_silent(self):
+    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.register")
+    @mock.patch("landscape.configuration.setup")
+    def test_register_silent(
+            self, mock_setup, mock_register, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         """
         Silent registration uses specified configuration to attempt a
         registration with the server.
         """
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY)
-        # No interaction should be requested.
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock(ANY)
-        self.mocker.count(0)
-
-        # The registration logic should be called and passed the configuration
-        # file.
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY)
-
-        self.mocker.replay()
-
         self.assertRaises(
             SystemExit, main, ["--silent", "-c", self.make_working_config()],
             print=noop_print)
+        mock_setup.assert_called_once_with(mock.ANY)
+        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_raw_input.assert_not_called()
 
-    def test_disable(self):
-        stop_client_and_disable_init_script_mock = self.mocker.replace(
-            stop_client_and_disable_init_script)
-        stop_client_and_disable_init_script_mock()
-
-        # No interaction should be requested.
-        raw_input_mock = self.mocker.replace(raw_input)
-        raw_input_mock(ANY)
-        self.mocker.count(0)
-
-        # Registration logic should not be invoked.
-        register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY, ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
+    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.register")
+    @mock.patch("landscape.configuration.stop_client_and_disable_init_script")
+    def test_disable(
+            self, mock_stop_client, mock_register, mock_raw_input,
+            mock_getuid, mock_bootstrap_tree):
         main(["--disable", "-c", self.make_working_config()])
+        mock_stop_client.assert_called_once_with()
+        mock_register.assert_not_called()
+        mock_raw_input.assert_not_called()
 
-    def test_stop_client_and_disable_init_scripts(self):
+    @mock.patch("landscape.configuration.SysVConfig")
+    def test_stop_client_and_disable_init_scripts(
+            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(False)
         sysvconfig_mock.stop_landscape()
         self.mocker.replay()
 
         main(["--disable", "-c", self.make_working_config()])
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().stop_landscape.assert_called_once_with()
 
-    def test_non_root(self):
-        self.mocker.reset()  # Forget the thing done in setUp
-        self.mocker.replace("os.getuid")()
-        self.mocker.result(1000)
-        self.mocker.replay()
+    def test_non_root(self, mock_getuid, mock_bootstrap_tree):
+        mock_getuid.return_value = 1000
         sys_exit = self.assertRaises(SystemExit,
                                      main, ["-c", self.make_working_config()])
+        mock_getuid.assert_called_once_with()
         self.assertIn("landscape-config must be run as root", str(sys_exit))
 
-    def test_main_with_help_and_non_root(self):
+    @mock.patch("sys.stdout.write")
+    def test_main_with_help_and_non_root(
+            self, mock_write, mock_getuid, mock_bootstrap_tree):
         """It's possible to call 'landscape-config --help' as normal user."""
-        self.mocker.reset()  # Forget the thing done in setUp
-        output = StringIO()
-        self.mocker.replace("sys.stdout").write(ANY)
-        self.mocker.call(output.write)
-        self.mocker.replay()
+        mock_getuid.return_value = 1000
         self.assertRaises(SystemExit, main, ["--help"])
-        self.assertIn("show this help message and exit", output.getvalue())
+        mock_write.assert_called_with(
+            "show this help message and exit")
 
     def test_main_with_help_and_non_root_short(self):
         """It's possible to call 'landscape-config -h' as normal user."""
