@@ -85,8 +85,10 @@ class PackageMonitorTest(LandscapeTest):
             self.assertEqual(mocked.mock_calls, [])
 
     def test_spawn_reporter_on_registration_when_already_accepted(self):
-        package_monitor_mock = self.mocker.patch(self.package_monitor)
-        package_monitor_mock.spawn_reporter()
+        #package_monitor_mock = self.mocker.patch(self.package_monitor)
+        #package_monitor_mock.spawn_reporter()
+
+        real_run = self.package_monitor.run
 
         # Slightly tricky as we have to wait for the result of run(),
         # but we don't have its deferred yet.  To handle it, we create
@@ -94,18 +96,27 @@ class PackageMonitorTest(LandscapeTest):
         # returns, chaining both deferreds at that point.
         deferred = Deferred()
 
-        def run_is_finished(run_result_deferred):
+        def run_has_run():
+            run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        package_monitor_mock.run()
-        self.mocker.passthrough(run_is_finished)
+        #package_monitor_mock.run()
+        #self.mocker.passthrough(run_has_run)
 
         self.mocker.replay()
+    
+        spawn_reporter_patcher = mock.patch.object(
+            self.package_monitor, 'spawn_reporter')
+        run_patcher = mock.patch.object(
+            self.package_monitor, 'run', side_effect=run_has_run)
+
+        spawn_reporter_patcher.start()
+        run_patcher.start()
 
         self.broker_service.message_store.set_accepted_types(["packages"])
         self.monitor.add(self.package_monitor)
 
-        return deferred
+        self.successResultOf(deferred)
 
     def test_spawn_reporter_on_run_if_message_accepted(self):
         self.broker_service.message_store.set_accepted_types(["packages"])
