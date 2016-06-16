@@ -3,14 +3,12 @@ import time
 import sys
 import os
 import signal
-import logging
 
 import mock
 
 from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
-from twisted.internet.task import deferLater
 from twisted.python.fakepwd import UserDatabase
 
 from landscape.tests.mocker import ARGS, KWARGS
@@ -237,6 +235,17 @@ class WatchDogTest(LandscapeTest):
             self.assert_request_exit()
 
         return result.addCallback(check)
+
+    def test_wb_log_notification(self):
+        """
+        SIGUSR1 should cause logs to be reopened.
+        """
+        mock_reactor = mock.Mock()
+        watchdog = WatchDog(reactor=mock_reactor, config=self.config)
+        os.kill(os.getpid(), signal.SIGUSR1)
+
+        mock_reactor.callFromThread.assert_called_once_with(
+            watchdog._notify_rotate_logs)
 
 
 START = "start"
@@ -1018,105 +1027,70 @@ class WatchDogServiceTest(LandscapeTest):
                                  "--data-path", self.data_path,
                                  "--log-dir", self.log_dir])
 
-    def test_daemonize(self):
-        self.mocker.order()
-        watchdog = self.mocker.patch(WatchDog)
-        watchdog.check_running()
-        self.mocker.result(succeed([]))
-        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
-                                        passthrough=False)
-        daemonize()
-        watchdog.start()
-        self.mocker.result(succeed(None))
-
-        self.mocker.replay()
+    @mock.patch("landscape.watchdog.daemonize")
+    @mock.patch("landscape.watchdog.WatchDog")
+    def test_daemonize(self, mock_watchdog, mock_daemonize):
+        mock_watchdog().check_running.return_value = succeed([])
         self.configuration.daemon = True
 
         service = WatchDogService(self.configuration)
         service.startService()
+        mock_watchdog().check_running.assert_called_once_with()
+        mock_watchdog().start.assert_called_once_with()
+        mock_daemonize.assert_called_once_with()
 
-    def test_pid_file(self):
+    @mock.patch("landscape.watchdog.daemonize")
+    @mock.patch("landscape.watchdog.WatchDog")
+    def test_pid_file(self, mock_watchdog, mock_daemonize):
+        mock_watchdog().check_running.return_value = succeed([])
         pid_file = self.makeFile()
 
-        watchdog = self.mocker.patch(WatchDog)
-        watchdog.check_running()
-        self.mocker.result(succeed([]))
-        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
-                                        passthrough=False)
-        daemonize()
-        watchdog.start()
-        self.mocker.result(succeed(None))
-
-        self.mocker.replay()
         self.configuration.daemon = True
         self.configuration.pid_file = pid_file
 
         service = WatchDogService(self.configuration)
         service.startService()
         self.assertEqual(int(open(pid_file, "r").read()), os.getpid())
+        mock_watchdog().check_running.assert_called_once_with()
+        mock_watchdog().start.assert_called_once_with()
+        mock_daemonize.assert_called_once_with()
 
-    def test_dont_write_pid_file_until_we_really_start(self):
+    @mock.patch("landscape.watchdog.reactor")
+    @mock.patch("landscape.watchdog.daemonize")
+    @mock.patch("landscape.watchdog.WatchDog")
+    def test_dont_write_pid_file_until_we_really_start(
+            self, mock_watchdog, mock_daemonize, mock_reactor):
         """
         If the client can't be started because another client is still running,
         the client shouldn't be daemonized and the pid file shouldn't be
         written.
         """
+        mock_watchdog().check_running.return_value = succeed([StubDaemon()])
+        mock_reactor.crash.return_value = None
         self.log_helper.ignore_errors(
             "ERROR: The following daemons are already running: program-name")
         pid_file = self.makeFile()
-
-        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
-                                        passthrough=False)
-        daemonize()
-        # daemonize should *not* be called
-        self.mocker.count(0)
-
-        watchdog = self.mocker.patch(WatchDog)
-        watchdog.check_running()
-        self.mocker.result(succeed([StubDaemon()]))
-        watchdog.start()
-        self.mocker.count(0)
-
-        reactor = self.mocker.replace("twisted.internet.reactor",
-                                      passthrough=True)
-        reactor.crash()
-        self.mocker.result(None)
-
-        self.mocker.replay()
 
         self.configuration.daemon = True
         self.configuration.pid_file = pid_file
         service = WatchDogService(self.configuration)
 
-        try:
-            service.startService()
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        service.startService()
         self.assertFalse(os.path.exists(pid_file))
+        mock_daemonize.assert_not_called()
+        mock_watchdog().check_running.assert_called_once_with()
+        mock_watchdog().start.assert_not_called()
+        mock_reactor.crash.assert_called_once_with()
 
-    def test_remove_pid_file(self):
+    @mock.patch("landscape.watchdog.daemonize")
+    @mock.patch("landscape.watchdog.WatchDog")
+    def test_remove_pid_file(self, mock_watchdog, mock_daemonize):
         """
         When the service is stopped, the pid file is removed.
         """
-        #don't really daemonize or request an exit
-        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
-                                        passthrough=False)
-        watchdog_factory = self.mocker.replace("landscape.watchdog.WatchDog",
-                                               passthrough=False)
-        watchdog = watchdog_factory(ARGS, KWARGS)
-        watchdog.start()
-        self.mocker.result(succeed(None))
-
-        watchdog.check_running()
-        self.mocker.result(succeed([]))
-
-        daemonize()
-
-        watchdog.request_exit()
-        self.mocker.result(succeed(None))
-
-        self.mocker.replay()
+        mock_watchdog().start.return_value = succeed(None)
+        mock_watchdog().check_running.return_value = succeed([])
+        mock_watchdog().request_exit.return_value = succeed(None)
 
         pid_file = self.makeFile()
         self.configuration.daemon = True
@@ -1126,143 +1100,109 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertEqual(int(open(pid_file).read()), os.getpid())
         service.stopService()
         self.assertFalse(os.path.exists(pid_file))
+        self.assertTrue(mock_watchdog.called)
+        mock_watchdog().start.assert_called_once_with()
+        mock_watchdog().check_running.assert_called_once_with()
+        self.assertTrue(mock_daemonize.called)
+        self.assertTrue(mock_watchdog().request_exit.called)
 
-    def test_remove_pid_file_only_when_ours(self):
-        #don't really request an exit
-        watchdog = self.mocker.patch(WatchDog)
-        watchdog.request_exit()
-        self.mocker.result(succeed(None))
-
-        self.mocker.replay()
-
+    @mock.patch("landscape.watchdog.WatchDog")
+    def test_remove_pid_file_only_when_ours(self, mock_watchdog):
+        mock_watchdog().request_exit.return_value = succeed(None)
         pid_file = self.makeFile()
         self.configuration.pid_file = pid_file
         service = WatchDogService(self.configuration)
         open(pid_file, "w").write("abc")
         service.stopService()
         self.assertTrue(os.path.exists(pid_file))
+        self.assertTrue(mock_watchdog().request_exit.called)
 
-    def test_remove_pid_file_doesnt_explode_on_inaccessibility(self):
+    # Make os.access say that the file isn't writable
+    @mock.patch("landscape.watchdog.os.access", return_value=False)
+    @mock.patch("landscape.watchdog.WatchDog")
+    def test_remove_pid_file_doesnt_explode_on_inaccessibility(
+            self, mock_watchdog, mock_access):
+        mock_watchdog().request_exit.return_value = succeed(None)
         pid_file = self.makeFile()
-        # Make os.access say that the file isn't writable
-        mock_os = self.mocker.replace("os")
-        mock_os.access(pid_file, os.W_OK)
-        self.mocker.result(False)
-
-        watchdog = self.mocker.patch(WatchDog)
-        watchdog.request_exit()
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
 
         self.configuration.pid_file = pid_file
         service = WatchDogService(self.configuration)
         open(pid_file, "w").write(str(os.getpid()))
         service.stopService()
+        self.assertTrue(mock_watchdog().request_exit.called)
         self.assertTrue(os.path.exists(pid_file))
+        mock_access.assert_called_once_with(
+            pid_file, os.W_OK)
 
-    def test_start_service_exits_when_already_running(self):
+    @mock.patch("landscape.watchdog.reactor")
+    @mock.patch("landscape.watchdog.bootstrap_list")
+    def test_start_service_exits_when_already_running(
+            self, mock_bootstrap_list, mock_reactor):
         self.log_helper.ignore_errors(
             "ERROR: The following daemons are already running: program-name")
-
-        bootstrap_list_mock = self.mocker.patch(bootstrap_list)
-        bootstrap_list_mock.bootstrap(data_path=self.data_path,
-                                      log_dir=self.log_dir)
-
         service = WatchDogService(self.configuration)
 
-        self.mocker.order()
-
-        watchdog_mock = self.mocker.replace(service.watchdog)
-        watchdog_mock.check_running()
-        self.mocker.result(succeed([StubDaemon()]))
-
-        reactor = self.mocker.replace("twisted.internet.reactor",
-                                      passthrough=False)
-        reactor.crash()
-
-        self.mocker.replay()
-        try:
-            result = service.startService()
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        service.watchdog = mock.Mock()
+        service.watchdog.check_running.return_value = succeed([StubDaemon()])
+        result = service.startService()
         self.assertEqual(service.exit_code, 1)
+        mock_bootstrap_list.bootstrap.assert_called_once_with(
+            data_path=self.data_path, log_dir=self.log_dir)
+        service.watchdog.check_running.assert_called_once_with()
+        self.assertTrue(mock_reactor.crash.called)
         return result
 
-    def test_start_service_exits_when_unknown_errors_occur(self):
+    @mock.patch("landscape.watchdog.reactor")
+    @mock.patch("landscape.watchdog.bootstrap_list")
+    def test_start_service_exits_when_unknown_errors_occur(
+            self, mock_bootstrap_list, mock_reactor):
         self.log_helper.ignore_errors(ZeroDivisionError)
         service = WatchDogService(self.configuration)
 
-        bootstrap_list_mock = self.mocker.patch(bootstrap_list)
-        bootstrap_list_mock.bootstrap(data_path=self.data_path,
-                                      log_dir=self.log_dir)
-
-        self.mocker.order()
-
-        watchdog_mock = self.mocker.replace(service.watchdog)
-        watchdog_mock.check_running()
-        self.mocker.result(succeed([]))
-        watchdog_mock.start()
+        service.watchdog = mock.Mock()
+        service.watchdog.check_running.return_value = succeed([])
         deferred = fail(ZeroDivisionError("I'm an unknown error!"))
-        self.mocker.result(deferred)
+        service.watchdog.start.return_value = deferred
 
-        reactor = self.mocker.replace("twisted.internet.reactor",
-                                      passthrough=False)
-        reactor.crash()
-
-        self.mocker.replay()
-        try:
-            result = service.startService()
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
+        result = service.startService()
         self.assertEqual(service.exit_code, 2)
+        mock_bootstrap_list.bootstrap.assert_called_once_with(
+            data_path=self.data_path, log_dir=self.log_dir)
+        service.watchdog.check_running.assert_called_once_with()
+        service.watchdog.start.assert_called_once_with()
+        mock_reactor.crash.assert_called_once_with()
         return result
 
-    def test_bootstrap(self):
-
+    @mock.patch("landscape.watchdog.os.chown")
+    @mock.patch("landscape.lib.bootstrap.grp.getgrnam")
+    @mock.patch("landscape.lib.bootstrap.os.getuid", return_value=0)
+    def test_bootstrap(self, mock_getuid, mock_getgrnam, mock_chown):
         data_path = self.makeDir()
         log_dir = self.makeDir()
+        fake_pwd = UserDatabase()
+        fake_pwd.addUser("landscape", None, 1234, None, None, None, None)
+
+        mock_getgrnam("root").gr_gid = 5678
+
+        with mock.patch("landscape.lib.bootstrap.pwd", new=fake_pwd):
+            bootstrap_list.bootstrap(data_path=data_path,
+                                     log_dir=log_dir)
 
         def path(*suffix):
             return os.path.join(data_path, *suffix)
 
-        getuid = self.mocker.replace("os.getuid")
-        getuid()
-        self.mocker.result(0)
-        self.mocker.count(1, None)
-
-        getpwnam = self.mocker.replace("pwd.getpwnam")
-        value = getpwnam("landscape")
-        self.mocker.count(1, None)
-        value.pw_uid
-        self.mocker.result(1234)
-        self.mocker.count(1, None)
-
-        getgrnam = self.mocker.replace("grp.getgrnam")
-        value = getgrnam("root")
-        self.mocker.count(1, None)
-        value.gr_gid
-        self.mocker.result(5678)
-        self.mocker.count(1, None)
-
-        chown = self.mocker.replace("os.chown")
-        chown(path(), 1234, 5678)
-        chown(path("messages"), 1234, 5678)
-        chown(path("sockets"), 1234, 5678)
-        chown(path("package"), 1234, 5678)
-        chown(path("package/hash-id"), 1234, 5678)
-        chown(path("package/binaries"), 1234, 5678)
-        chown(path("package/upgrade-tool"), 1234, 5678)
-        chown(path("custom-graph-scripts"), 1234, 5678)
-        chown(path("package/database"), 1234, 5678)
-        chown(log_dir, 1234, 5678)
-
-        self.mocker.replay()
-
-        bootstrap_list.bootstrap(data_path=data_path,
-                                 log_dir=log_dir)
-
+        paths = ["package",
+                 "package/hash-id",
+                 "package/binaries",
+                 "package/upgrade-tool",
+                 "messages",
+                 "sockets",
+                 "custom-graph-scripts",
+                 log_dir,
+                 "package/database"]
+        calls = [mock.call(path(path_comps), 1234, 5678)
+                 for path_comps in paths]
+        mock_chown.assert_has_calls([mock.call(path(), 1234, 5678)] + calls)
         self.assertTrue(os.path.isdir(path()))
         self.assertTrue(os.path.isdir(path("package")))
         self.assertTrue(os.path.isdir(path("messages")))
@@ -1281,39 +1221,6 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertEqual(mode("sockets"), 0750)
         self.assertEqual(mode("custom-graph-scripts"), 0755)
         self.assertEqual(mode("package/database"), 0644)
-
-    def test_log_notification(self):
-        """
-        SIGUSR1 should cause logs to be reopened.
-        """
-        logging.getLogger().addHandler(logging.FileHandler(self.makeFile()))
-        WatchDogService(self.configuration)
-        # We expect the Watchdog to delegate to each of the sub-processes
-        daemon_mock = self.mocker.patch(Daemon)
-        daemon_mock.rotate_logs()
-        self.mocker.count(3)
-        self.mocker.replay()
-
-        # Store the initial set of handlers
-        original_streams = [handler.stream for handler in
-                            logging.getLogger().handlers if
-                            isinstance(handler, logging.FileHandler)]
-
-        # We fire the signal
-        os.kill(os.getpid(), signal.SIGUSR1)
-
-        def check(ign):
-            new_streams = [handler.stream for handler in
-                           logging.getLogger().handlers if
-                           isinstance(handler, logging.FileHandler)]
-
-            for stream in new_streams:
-                self.assertTrue(stream not in original_streams)
-
-        # We need to give some room for the callFromThread to run
-        d = deferLater(reactor, 0, lambda: None)
-        return d.addCallback(check)
-
 
 STUB_BROKER = """\
 #!%(executable)s
