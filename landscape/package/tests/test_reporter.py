@@ -217,7 +217,7 @@ class PackageReporterAptTest(LandscapeTest):
             relations = []
 
             def get_hash(self):
-                return HASH1  # Need to match the hash of the initial request 
+                return HASH1  # Need to match the hash of the initial request
 
         with mock.patch.object(self.Facade, "get_package_skeleton",
                                return_value=FakePackage()) as mocked:
@@ -234,7 +234,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-
         request_id = self.store.add_hash_id_request(["foo", HASH1, "bar"]).id
 
         self.store.add_task("reporter", {"type": "package-ids",
@@ -248,7 +247,8 @@ class PackageReporterAptTest(LandscapeTest):
                 [request.id for request in self.store.iter_hash_id_requests()],
                 [request_id])
 
-        with mock.patch.object(self.reporter._broker, "send_message") as send_mock:
+        with mock.patch.object(
+                self.reporter._broker, "send_message") as send_mock:
             send_mock.return_value = deferred
             result = self.reporter.handle_tasks()
             self.assertFailure(result, Boom)
@@ -693,7 +693,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(), [])
             self.assertEqual(list(self.store.iter_hash_id_requests()), [])
 
-        with mock.patch.object(self.reporter._broker, "send_message") as send_mock:
+        with mock.patch.object(
+                self.reporter._broker, "send_message") as send_mock:
             send_mock.return_value = deferred
             result = self.reporter.request_unknown_hashes()
             self.assertFailure(result, Boom)
@@ -1097,8 +1098,9 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
                 self.assertFalse(warning_mock.called)
-                debug_mock.assert_called_once_with("'%s' exited with status 0 (out='output', err='error')" %
-                           self.reporter.apt_update_filename)
+                debug_mock.assert_called_once_with(
+                    "'%s' exited with status 0 (out='output', err='error')" %
+                    self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
