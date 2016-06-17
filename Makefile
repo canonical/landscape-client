@@ -39,7 +39,7 @@ lint:
 	bzr ls-lint
 
 pyflakes:
-	-pyflakes `find landscape -name \*py|grep -v twisted_amp\.py|grep -v configobj\.py|grep -v mocker\.py`
+	-pyflakes `find landscape -name \*py`
 
 clean:
 	-find landscape -name \*.pyc -exec rm -f {} \;
