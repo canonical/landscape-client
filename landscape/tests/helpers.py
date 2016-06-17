@@ -6,6 +6,7 @@ import pprint
 import re
 import os
 import sys
+import tempfile
 import unittest
 
 
@@ -15,7 +16,6 @@ from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 
 from landscape.tests.subunit import run_isolated
-from landscape.tests.mocker import MockerTestCase
 from landscape.watchdog import bootstrap_list
 
 from landscape.lib.persist import Persist
@@ -94,13 +94,11 @@ class MessageTestCase(unittest.TestCase):
                                         "%s" % (diff, extra))
 
 
-class LandscapeTest(MessageTestCase, MockerTestCase,
-                    HelperTestCase, TestCase):
+class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
 
     def setUp(self):
         self._old_config_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = [self.makeFile("")]
-        MockerTestCase.setUp(self)
         TestCase.setUp(self)
         return HelperTestCase.setUp(self)
 
@@ -108,7 +106,6 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         BaseConfiguration.default_config_filenames = self._old_config_filenames
         TestCase.tearDown(self)
         HelperTestCase.tearDown(self)
-        MockerTestCase.tearDown(self)
 
     def successResultOf(self, deferred):
         """See C{twisted.trial._synctest._Assertions.successResultOf}.
@@ -207,8 +204,6 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         """Return a temporary filename to be used by a L{Persist} object.
 
         The possible .old persist file is cleaned up after the test.
-
-        @see: L{MockerTestCase.makeFile}
         """
         persist_filename = self.makeFile(*args, **kwargs)
 
@@ -219,6 +214,53 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
                 pass
         self.addCleanup(remove_saved_persist)
         return persist_filename
+
+    def makeFile(self, content=None, suffix="", prefix="tmp", basename=None,
+                 dirname=None, path=None):
+        """Create a temporary file and return the path to it.
+
+        @param content: Initial content for the file.
+        @param suffix: Suffix to be given to the file's basename.
+        @param prefix: Prefix to be given to the file's basename.
+        @param basename: Full basename for the file.
+        @param dirname: Put file inside this directory.
+
+        The file is removed after the test runs.
+        """
+        if path is not None:
+            self.addCleanup(shutil.rmtree, path, ignore_errors=True)
+        elif basename is not None:
+            if dirname is None:
+                dirname = tempfile.mkdtemp()
+                self.addCleanup(shutil.rmtree, dirname, ignore_errors=True)
+            path = os.path.join(dirname, basename)
+        else:
+            fd, path = tempfile.mkstemp(suffix, prefix, dirname)
+            self.addCleanup(shutil.rmtree, path, ignore_errors=True)
+            os.close(fd)
+            if content is None:
+                os.unlink(path)
+        if content is not None:
+            file = open(path, "w")
+            file.write(content)
+            file.close()
+        return path
+
+    def makeDir(self, suffix="", prefix="tmp", dirname=None, path=None):
+        """Create a temporary directory and return the path to it.
+
+        @param suffix: Suffix to be given to the file's basename.
+        @param prefix: Prefix to be given to the file's basename.
+        @param dirname: Put directory inside this parent directory.
+
+        The directory is removed after the test runs.
+        """
+        if path is not None:
+            os.makedirs(path)
+        else:
+            path = tempfile.mkdtemp(suffix, prefix, dirname)
+        self.addCleanup(shutil.rmtree, path, ignore_errors=True)
+        return path
 
 
 class LandscapeIsolatedTest(LandscapeTest):
@@ -232,7 +274,7 @@ class LandscapeIsolatedTest(LandscapeTest):
                 try:
                     return run_method(oself, *args, **kwargs)
                 finally:
-                    MockerTestCase._MockerTestCase__cleanup(oself)
+                    self.doCleanups()
             LandscapeTest.run = run_wrapper
             LandscapeTest._cleanup_patch = True
         run_isolated(LandscapeTest, self, result)
