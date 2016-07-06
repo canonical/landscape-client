@@ -87,6 +87,11 @@ ifneq (,$(filter $(dist_release),lucid precise))
 	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
 endif
 
+# In xenial the client needs to depend on libpam-systemd (#1590838)
+ifeq ($(dist_release),xenial))
+	echo "extra:Depends=libpam-systemd" >> $(landscape_client_substvars)
+endif
+
 ifeq ($(use_dhpython2),yes)
 	dh_python2 --no-guessing-versions
 else
