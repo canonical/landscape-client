@@ -320,3 +320,15 @@ class SwiftUsageTest(LandscapeTest):
         self.plugin._handle_usage(recon_response)
         self.assertEqual(
             [u"vdb"], sorted(self.plugin._persist.get("devices")))
+
+    def test_wb_handle_usage_with_invalid_data(self):
+        """Checks that _handle_usage does not raise with invalid recon data.
+
+        This should cover the case where the monitor is started while the
+        swift unit is not yet active. The plugin should stay active, and not
+        raise uncaught errors as it would stop the run loop from running
+        again.
+        """
+        # Expects a list, but can get None if there is an error.
+        self.plugin._handle_usage(None)
+        self.assertTrue(self.plugin.active)
