@@ -109,14 +109,10 @@ class CoverageMonitor(Monitor):
 
     @property
     def percent(self):
-        if not self.count and not self.expected_count:
+        try:
+            return self.count / float(self.expected_count)
+        except ZeroDivisionError:
             return 1.0
-
-        elapsed_time = self.since_reset()
-        if not elapsed_time:
-            return 1.0
-
-        return self.count / float(self.expected_count)
 
     @property
     def expected_count(self):
