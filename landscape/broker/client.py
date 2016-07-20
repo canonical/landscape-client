@@ -104,8 +104,17 @@ class BrokerClientPlugin(object):
             if self.run_immediately:
                 self.run()
             if self.run_interval is not None:
-                self._loop = self.client.reactor.call_every(self.run_interval,
-                                                            self.run)
+                self._loop = self.client.reactor.call_every(
+                    self.run_interval,
+                    self._run_log_errors)
+
+    def _run_log_errors(self):
+        try:
+            self.run()
+        except:
+            exception(
+                "{} raised an uncaught exception".format(type(self).__name__))
+            raise
 
 
 class BrokerClient(object):
