@@ -78,7 +78,7 @@ class BurstMonitor(Monitor):
         now = self.time()
         self._last_times.append(now)
         if (self._last_times[0] - now > self.repeat_interval
-            or len(self._last_times) > self.maximum_count+1):
+            or len(self._last_times) > self.maximum_count + 1):
             self._last_times.pop(0)
 
     def warn(self):
@@ -86,7 +86,7 @@ class BurstMonitor(Monitor):
             return False
         delta = self.time() - self._last_times[0]
         return (delta < self.repeat_interval
-                and len(self._last_times) >= self.maximum_count+1)
+                and len(self._last_times) >= self.maximum_count + 1)
 
 
 class CoverageMonitor(Monitor):
