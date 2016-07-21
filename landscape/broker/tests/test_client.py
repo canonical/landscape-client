@@ -128,15 +128,18 @@ class BrokerClientTest(LandscapeTest):
         If a plugin has a run method, the reactor will call it every
         run_interval, but will stop and log if it raises unhandled exceptions.
         """
-        self.log_helper.ignore_errors(".*")
+        class RunFailure(Exception):
+            pass
+        # log helper should not complain on the error we're testing
+        self.log_helper.ignore_errors("BrokerClientPlugin.*")
         plugin = BrokerClientPlugin()
-        plugin.run = mock.Mock(side_effect=Exception("oh noes!"))
+        plugin.run = mock.Mock(side_effect=RunFailure("oh noes!"))
         self.client.add(plugin)
         self.client_reactor.advance(plugin.run_interval)
-        self.client_reactor.advance(plugin.run_interval)
-        # should be called only once, as the the first run will except and
-        # stop the schedule loop.
-        plugin.run.assert_called_once_with()
+
+        # We expect this exception to stay uncaught, so flush it to continue.
+        self.assertEqual(1, len(self._observer.flushErrors(RunFailure)))
+        plugin.run.assert_called_with()
         # The fake reactor also logs errors in test, so check for this specific
         # message entry that would be present on a live client.
         self.assertIn(
