@@ -138,7 +138,7 @@ class BrokerClientTest(LandscapeTest):
         self.client_reactor.advance(plugin.run_interval)
 
         # We expect this exception to stay uncaught, so flush it to continue.
-        self.assertEqual(1, len(self._observer.flushErrors(RunFailure)))
+        self.assertEqual(1, len(self.flushLoggedErrors(RunFailure)))
         plugin.run.assert_called_with()
         # The fake reactor also logs errors in test, so check for this specific
         # message entry that would be present on a live client.
