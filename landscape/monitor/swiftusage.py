@@ -125,6 +125,9 @@ class SwiftUsage(MonitorPlugin):
             return disk_usage
 
     def _handle_usage(self, disk_usage):
+        if disk_usage is None:
+            # The recon failed, most likely because swift is not responding.
+            return
         timestamp = int(self._create_time())
 
         devices = set()

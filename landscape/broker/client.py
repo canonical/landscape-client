@@ -102,10 +102,22 @@ class BrokerClientPlugin(object):
         self._session_id = session_id
         if getattr(self, "run", None) is not None:
             if self.run_immediately:
-                self.run()
+                self._run_with_error_log()
             if self.run_interval is not None:
-                self._loop = self.client.reactor.call_every(self.run_interval,
-                                                            self.run)
+                self._loop = self.client.reactor.call_every(
+                    self.run_interval,
+                    self._run_with_error_log)
+
+    def _run_with_error_log(self):
+        """Wrap self.run in a Deferred with a logging error handler."""
+        deferred = maybeDeferred(self.run)
+        return deferred.addErrback(self._error_log)
+
+    def _error_log(self, failure):
+        """Errback to log and reraise uncaught run errors."""
+        exception(
+            "{} raised an uncaught exception".format(type(self).__name__))
+        return failure
 
 
 class BrokerClient(object):

@@ -171,6 +171,18 @@ class CoverageMonitorTest(ReactorHavingTest):
         """
         self.assertEqual(self.monitor.percent, 1.0)
 
+    def test_percent_no_expected_data(self):
+        """
+        If time < interval has passed and the monitor has received some pings,
+        it should still return 100%.
+        """
+        monitor = CoverageMonitor(10, 1.0, "test",
+                                  create_time=self.reactor.time)
+        monitor.reset()
+        self.reactor.advance(1)
+        monitor.ping()
+        self.assertEqual(monitor.percent, 1.0)
+
     def test_percent(self):
         self.reactor.advance(1)
         self.assertEqual(self.monitor.percent, 0.0)
