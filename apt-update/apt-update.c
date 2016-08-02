@@ -19,7 +19,7 @@
 int main(int argc, char *argv[], char *envp[])
 {
   char *apt_argv[] = {"/usr/bin/apt-get", "-q", "update", NULL};
-  char *apt_envp[] = {"PATH=/bin:/usr/bin", NULL, NULL};
+  char *apt_envp[] = {"PATH=/bin:/usr/bin", NULL, NULL, NULL, NULL};
 
   // Set the HOME environment variable
   struct passwd *pwd = getpwuid(geteuid());
@@ -31,6 +31,24 @@ int main(int argc, char *argv[], char *envp[])
   if (asprintf(&apt_envp[1], "HOME=%s", pwd->pw_dir) == -1) {
     perror("error: Unable to create HOME environment variable");
     exit(1);
+  }
+
+  // Pass proxy environment variables
+  int proxy_arg = 2;
+  char *http_proxy = getenv("http_proxy");
+  if (http_proxy) {
+      if (asprintf(&apt_envp[proxy_arg], "http_proxy=%s", http_proxy) == -1) {
+        perror("error: Unable to set http_proxy environment variable");
+        exit(1);
+      }
+      proxy_arg++;
+  }
+  char *https_proxy = getenv("https_proxy");
+  if (https_proxy) {
+      if (asprintf(&apt_envp[proxy_arg], "https_proxy=%s", https_proxy) == -1) {
+        perror("error: Unable to set https_proxy environment variable");
+        exit(1);
+      }
   }
 
   // Drop any supplementary group

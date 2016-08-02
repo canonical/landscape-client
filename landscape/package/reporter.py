@@ -37,6 +37,10 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
         parser.add_option("--force-apt-update", default=False,
                           action="store_true",
                           help="Force running apt-update.")
+        parser.add_option("--http-proxy", metavar="URL",
+                          help="The URL of the HTTP proxy, if one is needed.")
+        parser.add_option("--https-proxy", metavar="URL",
+                          help="The URL of the HTTPS proxy, if one is needed.")
         return parser
 
 
@@ -261,7 +265,12 @@ class PackageReporter(PackageTaskHandler):
         Run apt-update using the passed in deferred, which allows for callers
         to inspect the result code.
         """
-        result = spawn_process(self.apt_update_filename)
+        env = {}
+        if self._config.http_proxy:
+            env["http_proxy"] = self._config.http_proxy
+        if self._config.https_proxy:
+            env["https_proxy"] = self._config.https_proxy
+        result = spawn_process(self.apt_update_filename, env=env)
 
         def callback((out, err, code), deferred):
             return deferred.callback((out, err, code))

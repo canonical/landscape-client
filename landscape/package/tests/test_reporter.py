@@ -1473,6 +1473,58 @@ class PackageReporterAptTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
+    def test_run_apt_update_honors_http_proxy(self):
+        """
+        The PackageReporter.run_apt_update method honors the http_proxy
+        config when calling the apt-update wrapper.
+        """
+        self.config.http_proxy = "proxy_server:8080"
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+        deferred = Deferred()
+
+        @mock.patch("landscape.package.reporter.spawn_process",
+                    return_value=succeed(("", "", 0)))
+        def do_test(mock_spawn_process):
+            result = self.reporter.run_apt_update()
+
+            def callback(_):
+                env = {"http_proxy": "proxy_server:8080"}
+                mock_spawn_process.assert_called_once_with(
+                    self.reporter.apt_update_filename,
+                    env=env)
+            result.addCallback(callback)
+            self.reactor.advance(0)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_honors_https_proxy(self):
+        """
+        The PackageReporter.run_apt_update method honors the https_proxy
+        config when calling the apt-update wrapper.
+        """
+        self.config.https_proxy = "proxy_server:8443"
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+        deferred = Deferred()
+
+        @mock.patch("landscape.package.reporter.spawn_process",
+                    return_value=succeed(("", "", 0)))
+        def do_test(mock_spawn_process):
+            result = self.reporter.run_apt_update()
+
+            def callback(_):
+                env = {"https_proxy": "proxy_server:8443"}
+                mock_spawn_process.assert_called_once_with(
+                    self.reporter.apt_update_filename,
+                    env=env)
+            result.addCallback(callback)
+            self.reactor.advance(0)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
     def test_run_apt_update_error_on_cache_file(self):
         """
         L{PackageReporter.run_apt_update} succeeds if the command fails because
