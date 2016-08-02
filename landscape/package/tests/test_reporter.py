@@ -300,7 +300,36 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Downloaded hash=>id database from %s" % hash_id_db_url)
-        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy=None)
+        return result
+
+    @mock.patch("landscape.package.reporter.fetch_async",
+                return_value=succeed("hash-ids"))
+    @mock.patch("logging.info", return_value=None)
+    def test_fetch_hash_id_db_with_proxy(self, logging_mock, mock_fetch_async):
+        """fetching hash-id-db uses proxy settings"""
+        # Assume package_hash_id_url is set
+        self.config.data_path = self.makeDir()
+        self.config.package_hash_id_url = "http://fake.url/path/"
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
+
+        # Let's say fetch_async is successful
+        hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
+
+        # set proxy settings
+        proxy = "https://helloproxy:8000"
+        self.config.https_proxy = proxy
+
+        result = self.reporter.fetch_hash_id_db()
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy=proxy)
         return result
 
     @mock.patch("landscape.package.reporter.fetch_async")
@@ -409,7 +438,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertTrue(os.path.exists(hash_id_db_filename))
             self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
         result.addCallback(callback)
-        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy=None)
         return result
 
     @mock.patch("landscape.package.reporter.fetch_async",
@@ -443,7 +473,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Couldn't download hash=>id database: fetch error")
-        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy=None)
         return result
 
     @mock.patch("logging.warning", return_value=None)
@@ -497,7 +528,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Now go!
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
-            hash_id_db_url, cainfo=self.config.ssl_public_key)
+            hash_id_db_url, cainfo=self.config.ssl_public_key, proxy=None)
 
         return result
 

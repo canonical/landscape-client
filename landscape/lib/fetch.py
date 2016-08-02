@@ -45,7 +45,7 @@ class PyCurlError(FetchError):
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
           connect_timeout=30, total_timeout=600, insecure=False, follow=True,
-          user_agent=None):
+          user_agent=None, proxy=None):
     """Retrieve a URL and return the content.
 
     @param url: The url to be fetched.
@@ -61,6 +61,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
         during autodiscovery)
     @param follow: If True, follow HTTP redirects (default True).
     @param user_agent: The user-agent to set in the request.
+    @param proxy: The proxy url to use for the request.
     """
     import pycurl
     output = StringIO(data)
@@ -93,6 +94,9 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
 
     if user_agent is not None:
         curl.setopt(pycurl.USERAGENT, user_agent)
+
+    if proxy is not None:
+        curl.setopt(pycurl.PROXY, proxy)
 
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)
