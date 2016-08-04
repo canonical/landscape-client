@@ -291,7 +291,7 @@ class FetchTest(LandscapeTest):
         curl = CurlStub("result")
         proxy = "http://my.little.proxy"
         result = fetch("http://example.com", curl=curl, proxy=proxy)
-        self.assertEqual(result, "result")
+        self.assertEqual("result", result)
         self.assertEqual(proxy, curl.options[pycurl.PROXY])
 
     def test_create_curl(self):

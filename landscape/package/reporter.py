@@ -136,8 +136,9 @@ class PackageReporter(PackageTaskHandler):
                 logging.warning("Couldn't download hash=>id database: %s" %
                                 str(exception))
 
-            proxy = self._config.get("https_proxy")
-            if not proxy:
+            if url.startswith("https"):
+                proxy = self._config.get("https_proxy")
+            else:
                 proxy = self._config.get("http_proxy")
 
             result = fetch_async(url,
