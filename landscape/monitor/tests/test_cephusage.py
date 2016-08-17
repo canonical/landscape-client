@@ -1,5 +1,4 @@
 import mock
-import tempfile
 from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.cephusage import CephUsage
@@ -131,7 +130,7 @@ class CephUsagePluginTest(LandscapeTest):
         """
         plugin = CephUsage()
         plugin._has_rados = True
-        plugin._ceph_config = tempfile.mktemp()
+        plugin._ceph_config = self.makeFile()
         touch_file(plugin._ceph_config)
         self.assertTrue(plugin._should_run())
 

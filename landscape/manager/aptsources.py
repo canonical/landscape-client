@@ -103,7 +103,12 @@ class AptSources(ManagerPlugin):
         fd, path = tempfile.mkstemp()
         os.close(fd)
         new_sources = file(path, "w")
-        for line in file(self.SOURCES_LIST):
+        try:
+            source_file = file(self.SOURCES_LIST)
+        except:
+            os.unlink(path)
+            raise
+        for line in source_file:
             stripped_line = line.strip()
             if not stripped_line or stripped_line.startswith("#"):
                 new_sources.write(line)

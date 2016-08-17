@@ -1305,7 +1305,7 @@ class WatchDogRunTests(LandscapeTest):
             "landscape", None, os.getuid(), None, None, None, None)
         reactor = FakeReactor()
         with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
-            run(["--log-dir", self.makeFile()], reactor=reactor)
+            run(["--log-dir", self.makeDir()], reactor=reactor)
         self.assertTrue(reactor.running)
 
     def test_no_landscape_user(self):
@@ -1328,7 +1328,7 @@ class WatchDogRunTests(LandscapeTest):
 
         reactor = FakeReactor()
         with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
-            run(["--log-dir", self.makeFile()], reactor=reactor)
+            run(["--log-dir", self.makeDir()], reactor=reactor)
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)
         self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)

@@ -1,5 +1,3 @@
-import tempfile
-import shutil
 import os
 import mock
 
@@ -14,8 +12,8 @@ class MessageStoreTest(LandscapeTest):
 
     def setUp(self):
         super(MessageStoreTest, self).setUp()
-        self.temp_dir = tempfile.mkdtemp()
-        self.persist_filename = tempfile.mktemp()
+        self.temp_dir = self.makeDir()
+        self.persist_filename = self.makeFile()
         self.store = self.create_store()
 
     def create_store(self):
@@ -28,12 +26,6 @@ class MessageStoreTest(LandscapeTest):
         store.add_schema(Message("unaccepted", {"data": Bytes()}))
         store.add_schema(Message("resynchronize", {}))
         return store
-
-    def tearDown(self):
-        super(MessageStoreTest, self).tearDown()
-        shutil.rmtree(self.temp_dir)
-        if os.path.isfile(self.persist_filename):
-            os.unlink(self.persist_filename)
 
     def test_get_set_sequence(self):
         self.assertEqual(self.store.get_sequence(), 0)

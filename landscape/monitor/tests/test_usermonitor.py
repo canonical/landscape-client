@@ -1,5 +1,4 @@
 import os
-import tempfile
 
 from mock import Mock, ANY
 from twisted.internet.defer import fail
@@ -359,7 +358,7 @@ class UserMonitorTest(LandscapeTest):
 
         # Create the (temporary, test) user update flag file.
         landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
-            update_flag_file = tempfile.mkstemp()[1]
+            update_flag_file = self.makeFile("")
         self.addCleanup(lambda: os.remove(update_flag_file))
 
         # Trigger a detect changes.
@@ -381,7 +380,7 @@ class UserMonitorTest(LandscapeTest):
 
         # Create the (temporary, test) user update flag file.
         landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
-            update_flag_file = tempfile.mkstemp()[1]
+            update_flag_file = self.makeFile("")
 
         self.broker_service.message_store.set_accepted_types(["users"])
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",

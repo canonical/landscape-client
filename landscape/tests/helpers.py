@@ -94,7 +94,7 @@ class MessageTestCase(unittest.TestCase):
                                         "%s" % (diff, extra))
 
 
-class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
+class LandscapeTest(MessageTestCase, HelperTestCase, TestCase, ):
 
     def setUp(self):
         self._old_config_filenames = BaseConfiguration.default_config_filenames
@@ -227,16 +227,12 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
 
         The file is removed after the test runs.
         """
-        if path is not None:
-            self.addCleanup(shutil.rmtree, path, ignore_errors=True)
-        elif basename is not None:
+        if basename is not None:
             if dirname is None:
                 dirname = tempfile.mkdtemp()
-                self.addCleanup(shutil.rmtree, dirname, ignore_errors=True)
             path = os.path.join(dirname, basename)
-        else:
+        elif path is None:
             fd, path = tempfile.mkstemp(suffix, prefix, dirname)
-            self.addCleanup(shutil.rmtree, path, ignore_errors=True)
             os.close(fd)
             if content is None:
                 os.unlink(path)
@@ -244,7 +240,21 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
             file = open(path, "w")
             file.write(content)
             file.close()
+        self.addCleanup(self._clean_file, path)
         return path
+
+    def _clean_file(self, path):
+        """Try to remove a filesystem path, whether it's a directory or file.
+
+        @param path: the path to remove
+        """
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.unlink(path)
+        except OSError:
+            pass
 
     def makeDir(self, suffix="", prefix="tmp", dirname=None, path=None):
         """Create a temporary directory and return the path to it.
@@ -259,7 +269,7 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
             os.makedirs(path)
         else:
             path = tempfile.mkdtemp(suffix, prefix, dirname)
-        self.addCleanup(shutil.rmtree, path, ignore_errors=True)
+        self.addCleanup(self._clean_file, path)
         return path
 
 
