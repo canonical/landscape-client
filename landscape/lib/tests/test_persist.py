@@ -1,5 +1,4 @@
 import pprint
-import shutil
 import os
 
 from landscape.lib.persist import (
