@@ -962,8 +962,10 @@ time.sleep(999)
         process_result = getProcessOutput(broker_filename, env=os.environ,
                                           errortoo=True)
 
-        # Wait until the process starts up, trying the call a few times.
+        # Wait until the process starts up. This can take a few seconds
+        # depending on io, so keep trying the call a few times.
         self.daemon.factor = 2.8
+        self.daemon.max_retries = 10
         self.daemon.request_exit()
 
         def got_result(result):
