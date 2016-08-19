@@ -104,7 +104,7 @@ class AptSources(ManagerPlugin):
         os.close(fd)
         new_sources = file(path, "w")
         try:
-            source_file = file(self.SOURCES_LIST)
+            source_file = open(self.SOURCES_LIST)
         except:
             os.unlink(path)
             raise
