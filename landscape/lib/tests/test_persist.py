@@ -324,7 +324,7 @@ class SaveLoadPersistTest(BasePersistTest):
         for path in self.set_result:
             self.persist.set(path, self.set_result[path])
 
-        filename = self.makeFile()
+        filename = self.makePersistFile()
         self.persist.save(filename)
 
         persist = self.build_persist()
@@ -335,7 +335,7 @@ class SaveLoadPersistTest(BasePersistTest):
                          self.format(result, self.set_result))
 
     def test_save_on_unexistent_dir(self):
-        dirname = self.makeFile()
+        dirname = self.makePersistFile()
         filename = os.path.join(dirname, "foobar")
 
         self.assertFalse(os.path.exists(dirname))
@@ -355,7 +355,7 @@ class SaveLoadPersistTest(BasePersistTest):
         Persist can be constructed with a filename, and Persist.save with no
         arguments will write to that filename.
         """
-        filename = self.makeFile()
+        filename = self.makePersistFile()
         persist = self.build_persist(filename=filename)
         self.assertFalse(os.path.exists(filename))
         persist.save()
@@ -373,7 +373,7 @@ class SaveLoadPersistTest(BasePersistTest):
         If a Persist is created with a default filename, and the filename
         exists, it will be loaded.
         """
-        filename = self.makeFile()
+        filename = self.makePersistFile()
         persist = self.build_persist(filename=filename)
         persist.set("foo", "bar")
         persist.save()
@@ -394,7 +394,7 @@ class SaveLoadPersistTest(BasePersistTest):
         self.assertEqual(persist.get("a"), 1)
 
     def test_load_empty_files_wont_break(self):
-        filename = self.makeFile("")
+        filename = self.makePersistFile("")
         self.persist.load(filename)
 
     def test_load_empty_files_restore_backup(self):
@@ -402,7 +402,7 @@ class SaveLoadPersistTest(BasePersistTest):
         If the current file is empty, it tries to load the old one if it
         exists.
         """
-        filename = self.makeFile("")
+        filename = self.makePersistFile("")
         filename_old = filename + ".old"
 
         self.persist.set("a", 1)
@@ -425,7 +425,7 @@ class SaveLoadPersistTest(BasePersistTest):
         If the file doesn't exist, it tries to load the old one if present and
         valid.
         """
-        filename = self.makeFile("")
+        filename = self.makePersistFile("")
         filename_old = filename + ".old"
         os.unlink(filename)
 

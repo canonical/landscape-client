@@ -40,7 +40,7 @@ class LandscapeServiceTest(LandscapeTest):
         """
 
         class PersistService(TestService):
-            persist_filename = self.makeFile(content="")
+            persist_filename = self.makePersistFile(content="")
 
         service = PersistService(self.config)
         self.assertEqual(service.persist.filename, service.persist_filename)

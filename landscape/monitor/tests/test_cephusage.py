@@ -1,5 +1,4 @@
 import mock
-import tempfile
 from landscape.lib.fs import touch_file
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.cephusage import CephUsage
@@ -110,8 +109,7 @@ class CephUsagePluginTest(LandscapeTest):
         plugin._ceph_config = None
         self.assertFalse(plugin._should_run())
 
-   
-    @mock.patch("logging.info") 
+    @mock.patch("logging.info")
     def test_wb_should_run_no_rados(self, logging):
         """
         If the Rados library cannot be imported (CephUsage._has_rados is False)
@@ -131,7 +129,7 @@ class CephUsagePluginTest(LandscapeTest):
         """
         plugin = CephUsage()
         plugin._has_rados = True
-        plugin._ceph_config = tempfile.mktemp()
+        plugin._ceph_config = self.makeFile()
         touch_file(plugin._ceph_config)
         self.assertTrue(plugin._should_run())
 

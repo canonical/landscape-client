@@ -205,9 +205,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             return self._respond(FAILED, str(failure), opid)
 
     @inlineCallbacks
-    def _save_attachments(self, attachments, uid, gid, computer_id):
+    def _save_attachments(self, attachments, uid, gid, computer_id, env):
         root_path = self.registry.config.url.rsplit("/", 1)[0] + "/attachment/"
-        attachment_dir = tempfile.mkdtemp()
+        env["LANDSCAPE_ATTACHMENTS"] = attachment_dir = tempfile.mkdtemp()
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": computer_id}
@@ -277,14 +277,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                                       "broker.bpickle"))
             persist = persist.root_at("registration")
             computer_id = persist.get("secure-id")
-            d = self._save_attachments(attachments, uid, gid, computer_id)
+            d = self._save_attachments(attachments, uid, gid, computer_id, env)
         else:
             d = succeed(None)
 
         def prepare_script(attachment_dir):
-
-            if attachment_dir is not None:
-                env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
 
             return self._run_script(
                 filename, uid, gid, path, env, time_limit)

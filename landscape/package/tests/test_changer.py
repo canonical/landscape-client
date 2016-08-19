@@ -881,7 +881,7 @@ class AptPackageChangerTest(LandscapeTest):
         from previous runs.
         """
         existing_deb_path = os.path.join(self.config.binaries_path, "123.deb")
-        self.makeFile(basename=existing_deb_path, content="foo")
+        self.makeFile(path=existing_deb_path, content="foo")
         self.changer.init_channels([])
         self.assertFalse(os.path.exists(existing_deb_path))
 
