@@ -300,7 +300,35 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Downloaded hash=>id database from %s" % hash_id_db_url)
-        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy=None)
+        return result
+
+    @mock.patch("landscape.package.reporter.fetch_async",
+                return_value=succeed("hash-ids"))
+    @mock.patch("logging.info", return_value=None)
+    def test_fetch_hash_id_db_with_proxy(self, logging_mock, mock_fetch_async):
+        """fetching hash-id-db uses proxy settings"""
+        # Assume package_hash_id_url is set
+        self.config.data_path = self.makeDir()
+        self.config.package_hash_id_url = "https://fake.url/path/"
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
+
+        # Let's say fetch_async is successful
+        hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
+
+        # set proxy settings
+        self.config.https_proxy = "http://helloproxy:8000"
+
+        result = self.reporter.fetch_hash_id_db()
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy="http://helloproxy:8000")
         return result
 
     @mock.patch("landscape.package.reporter.fetch_async")
@@ -409,7 +437,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertTrue(os.path.exists(hash_id_db_filename))
             self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
         result.addCallback(callback)
-        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy=None)
         return result
 
     @mock.patch("landscape.package.reporter.fetch_async",
@@ -443,7 +472,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Couldn't download hash=>id database: fetch error")
-        mock_fetch_async.assert_called_once_with(hash_id_db_url, cainfo=None)
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url, cainfo=None, proxy=None)
         return result
 
     @mock.patch("logging.warning", return_value=None)
@@ -497,7 +527,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Now go!
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
-            hash_id_db_url, cainfo=self.config.ssl_public_key)
+            hash_id_db_url, cainfo=self.config.ssl_public_key, proxy=None)
 
         return result
 
@@ -1472,6 +1502,44 @@ class PackageReporterAptTest(LandscapeTest):
 
         reactor.callWhenRunning(do_test)
         return deferred
+
+    @mock.patch("landscape.package.reporter.spawn_process",
+                return_value=succeed(("", "", 0)))
+    def test_run_apt_update_honors_http_proxy(self, mock_spawn_process):
+        """
+        The PackageReporter.run_apt_update method honors the http_proxy
+        config when calling the apt-update wrapper.
+        """
+        self.config.http_proxy = "http://proxy_server:8080"
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+
+        update_result = self.reporter.run_apt_update()
+        # run_apt_update uses reactor.call_later so advance a bit
+        self.reactor.advance(0)
+        self.successResultOf(update_result)
+
+        mock_spawn_process.assert_called_once_with(
+            self.reporter.apt_update_filename,
+            env={"http_proxy": "http://proxy_server:8080"})
+
+    @mock.patch("landscape.package.reporter.spawn_process",
+                return_value=succeed(("", "", 0)))
+    def test_run_apt_update_honors_https_proxy(self, mock_spawn_process):
+        """
+        The PackageReporter.run_apt_update method honors the https_proxy
+        config when calling the apt-update wrapper.
+        """
+        self.config.https_proxy = "http://proxy_server:8443"
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+
+        update_result = self.reporter.run_apt_update()
+        # run_apt_update uses reactor.call_later, so advance a bit
+        self.reactor.advance(0)
+        self.successResultOf(update_result)
+
+        mock_spawn_process.assert_called_once_with(
+            self.reporter.apt_update_filename,
+            env={"https_proxy": "http://proxy_server:8443"})
 
     def test_run_apt_update_error_on_cache_file(self):
         """

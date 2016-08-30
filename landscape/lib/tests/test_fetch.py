@@ -286,6 +286,14 @@ class FetchTest(LandscapeTest):
         self.assertEqual(result, "result")
         self.assertEqual("user-agent", curl.options[pycurl.USERAGENT])
 
+    def test_pycurl_proxy(self):
+        """If provided, the proxy is set in the request."""
+        curl = CurlStub("result")
+        proxy = "http://my.little.proxy"
+        result = fetch("http://example.com", curl=curl, proxy=proxy)
+        self.assertEqual("result", result)
+        self.assertEqual(proxy, curl.options[pycurl.PROXY])
+
     def test_create_curl(self):
         curls = []
 
