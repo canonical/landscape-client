@@ -98,16 +98,6 @@ END
             dpkg-statoverride --update --add root landscape 4754 $apt_update
         fi
 
-        # Remove old cron jobs
-        old_cron_job=/etc/cron.hourly/landscape-client
-        if [ -e $old_cron_job ]; then
-            rm $old_cron_job
-        fi
-        very_old_cron_job=/etc/cron.hourly/smartpm-core
-        if [ -e $very_old_cron_job ]; then
-            rm $very_old_cron_job
-        fi
-
         # Check if we're upgrading from a D-Bus version like the client in the
         # lucid archives.
         if ! [ -z $2 ]; then
