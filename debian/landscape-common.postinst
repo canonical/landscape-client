@@ -49,6 +49,9 @@ case "$1" in
            rm -f $PROFILE_LOCATION || true
        fi
 
+       # Since motd shows a different number of security updates, suppress the message
+       dpkg-divert --rename /etc/update-motd.d/90-updates-available
+
         # 0.9.1 introduces non-backwards compatible changes.  This detects
         # whether or not the data is in the current format.  If not, all
         # existing data is removed.
