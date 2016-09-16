@@ -26,6 +26,9 @@ PYTHON=/usr/bin/python
 case "$1" in
     configure)
 
+       # Since motd shows a different number of security updates, suppress the message
+       dpkg-divert --package landscape-common --rename /etc/update-motd.d/90-updates-available
+
        db_get $PACKAGE/sysinfo
        # Choices:
        #  * Do not display sysinfo on login
@@ -48,9 +51,6 @@ case "$1" in
            /usr/sbin/update-motd 2>/dev/null || true
            rm -f $PROFILE_LOCATION || true
        fi
-
-       # Since motd shows a different number of security updates, suppress the message
-       dpkg-divert --rename /etc/update-motd.d/90-updates-available
 
         # 0.9.1 introduces non-backwards compatible changes.  This detects
         # whether or not the data is in the current format.  If not, all
