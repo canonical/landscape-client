@@ -19,6 +19,7 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
+       dpkg-divert --remove --package landscape-common --rename /etc/update-motd.d/90-updates-available
        rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null || true
        /usr/sbin/update-motd 2>/dev/null || true
        rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true

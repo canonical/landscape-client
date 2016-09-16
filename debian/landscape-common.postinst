@@ -26,6 +26,9 @@ PYTHON=/usr/bin/python
 case "$1" in
     configure)
 
+       # Since motd shows a different number of security updates, suppress the message
+       dpkg-divert --package landscape-common --rename /etc/update-motd.d/90-updates-available
+
        db_get $PACKAGE/sysinfo
        # Choices:
        #  * Do not display sysinfo on login
