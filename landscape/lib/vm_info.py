@@ -41,7 +41,7 @@ def get_container_info(run_path="/run"):
 def _is_vm_xen(root_path):
     """Check if the host is virtualized with Xen."""
     sys_xen_path = os.path.join(root_path, "sys/bus/xen/devices")
-    # Paravirtualized machines have devices under the path
+    # Paravirtualized and HVM instances have device links under the directory
     return os.path.isdir(sys_xen_path) and os.listdir(sys_xen_path)
 
 
