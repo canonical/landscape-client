@@ -14,9 +14,6 @@ def get_vm_info(root_path="/"):
     It loops through some possible configurations and return a string with
     the name of the technology being used or None if there's no match
     """
-    def join_root_path(path):
-        return os.path.join(root_path, path)
-
     if _is_vm_openvz(root_path):
         return "openvz"
     if _is_vm_xen(root_path):
@@ -43,16 +40,8 @@ def get_container_info(run_path="/run"):
 
 def _is_vm_xen(root_path):
     """Check if the host is virtualized with Xen."""
-    xen_paths = [
-        os.path.join(root_path, path)
-        for path in ("proc/sys/xen", "proc/xen")]
-
-    if filter(os.path.exists, xen_paths):
-        return True
-
-    # /sys/bus/xen exists on most machines, but only virtual machines have
-    # devices
     sys_xen_path = os.path.join(root_path, "sys/bus/xen/devices")
+    # Paravirtualized machines have devices under the path
     return os.path.isdir(sys_xen_path) and os.listdir(sys_xen_path)
 
 
