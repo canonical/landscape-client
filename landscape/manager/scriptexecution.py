@@ -124,7 +124,7 @@ class ScriptRunnerMixin(object):
             gid = None
 
         pp = ProcessAccumulationProtocol(
-            self.registry.reactor, self.size_limit)
+            self.registry.reactor, self.size_limit, self.truncation_indicator)
         self.process_factory.spawnProcess(
             pp, filename, uid=uid, gid=gid, path=path, env=env)
         if time_limit is not None:
@@ -139,6 +139,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """
 
     size_limit = 500000
+    truncation_indicator = "\n**OUTPUT TRUNCATED**"
 
     def register(self, registry):
         super(ScriptExecutionPlugin, self).register(registry)
@@ -309,11 +310,13 @@ class ProcessAccumulationProtocol(ProcessProtocol):
     @ivar size_limit: The number of bytes at which to truncate output.
     """
 
-    def __init__(self, reactor, size_limit):
+    def __init__(self, reactor, size_limit, truncation_indicator=""):
         self.data = []
         self.result_deferred = Deferred()
         self._cancelled = False
         self.size_limit = size_limit
+        self._truncation_indicator = truncation_indicator
+        self._real_size_limit = self.size_limit - len(self._truncation_indicator)
         self.reactor = reactor
         self._scheduled_cancel = None
 
@@ -328,7 +331,11 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         bytes.
         """
         current_size = reduce(operator.add, map(len, self.data), 0)
-        self.data.append(data[:self.size_limit - current_size])
+        extent = self._real_size_limit - current_size
+        if extent < len(data):
+            self.data.append(data[:extent] + self._truncation_indicator)
+        else:
+            self.data.append(data)
 
     def processEnded(self, reason):
         """Fire back the deferred.
