@@ -95,6 +95,8 @@ class ScriptRunnerMixin(object):
         process with.
     """
 
+    truncation_indicator = ""
+    
     def __init__(self, process_factory=None):
         if process_factory is None:
             from twisted.internet import reactor as process_factory
