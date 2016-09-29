@@ -316,7 +316,8 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         self._cancelled = False
         self.size_limit = size_limit
         self._truncation_indicator = truncation_indicator
-        self._real_size_limit = self.size_limit - len(self._truncation_indicator)
+        self._real_size_limit = self.size_limit - len(
+            self._truncation_indicator)
         self.reactor = reactor
         self._scheduled_cancel = None
 

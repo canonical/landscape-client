@@ -439,7 +439,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script("/bin/sh", "")
 
         # Ultimately we assert that the resulting output is limited to
-        # 100 bytes.
+        # 100 bytes and indicates its truncation.
         result.addCallback(self.assertEqual,
                            ("x" * 79) + "\n**OUTPUT TRUNCATED**")
 
@@ -447,7 +447,7 @@ class RunScriptTests(LandscapeTest):
 
         # Push 200 bytes of output, so we trigger truncation.
         protocol.childDataReceived(1, "x" * 200)
-        
+
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
