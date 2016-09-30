@@ -36,15 +36,6 @@ class GetVMInfoTest(LandscapeTest):
 
         self.assertEqual("openvz", get_vm_info(root_path=self.root_path))
 
-    def test_get_vm_info_is_xen_when_proc_sys_xen_exists(self):
-        """
-        L{get_vm_info} should return 'xen' when /proc/sys/xen exists.
-        """
-        proc_sys_xen_path = os.path.join(self.proc_sys_path, "xen")
-        self.makeFile(path=proc_sys_xen_path, content="foo")
-
-        self.assertEqual("xen", get_vm_info(root_path=self.root_path))
-
     def test_get_vm_info_is_xen_when_sys_bus_xen_is_non_empty(self):
         """
         L{get_vm_info} should return 'xen' when /sys/bus/xen exists and has
@@ -54,15 +45,6 @@ class GetVMInfoTest(LandscapeTest):
         self.makeDir(path=devices_xen_path)
         foo_devices_path = os.path.join(devices_xen_path, "foo")
         self.makeFile(path=foo_devices_path, content="bar")
-
-        self.assertEqual("xen", get_vm_info(root_path=self.root_path))
-
-    def test_get_vm_info_is_xen_when_proc_xen_exists(self):
-        """
-        L{get_vm_info} should return 'xen' when /proc/xen exists.
-        """
-        proc_xen_path = os.path.join(self.proc_path, "xen")
-        self.makeFile(path=proc_xen_path, content="foo")
 
         self.assertEqual("xen", get_vm_info(root_path=self.root_path))
 
