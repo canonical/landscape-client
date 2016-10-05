@@ -95,8 +95,8 @@ class ScriptRunnerMixin(object):
         process with.
     """
 
-    truncation_indicator = ""
-    
+    truncation_indicator = "\n**OUTPUT TRUNCATED**"
+
     def __init__(self, process_factory=None):
         if process_factory is None:
             from twisted.internet import reactor as process_factory
@@ -141,7 +141,6 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """
 
     size_limit = 500000
-    truncation_indicator = "\n**OUTPUT TRUNCATED**"
 
     def register(self, registry):
         super(ScriptExecutionPlugin, self).register(registry)
