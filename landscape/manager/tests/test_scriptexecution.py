@@ -454,6 +454,30 @@ class RunScriptTests(LandscapeTest):
 
         return result
 
+    def test_command_output_ends_with_truncation(self):
+        """After truncation, no further output is recorded."""
+        factory = StubProcessFactory()
+        self.plugin.process_factory = factory
+        self.plugin.size_limit = 100
+        result = self.plugin.run_script("/bin/sh", "")
+
+        # Ultimately we assert that the resulting output is limited to
+        # 100 bytes and indicates its truncation.
+        result.addCallback(self.assertEqual,
+                           ("x" * 79) + "\n**OUTPUT TRUNCATED**")
+        protocol = factory.spawns[0][0]
+
+        # Push 200 bytes of output, so we trigger truncation.
+        protocol.childDataReceived(1, "x" * 200)
+        # Push 200 bytes more
+        protocol.childDataReceived(1, "x" * 200)
+
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        return result
+
     def test_limit_time(self):
         """
         The process only lasts for a certain number of seconds.
