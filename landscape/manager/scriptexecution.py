@@ -6,7 +6,6 @@ Functionality for running arbitrary shell scripts.
 import os
 import pwd
 import tempfile
-import operator
 import shutil
 
 from twisted.internet.protocol import ProcessProtocol
@@ -95,6 +94,8 @@ class ScriptRunnerMixin(object):
         process with.
     """
 
+    truncation_indicator = "\n**OUTPUT TRUNCATED**"
+
     def __init__(self, process_factory=None):
         if process_factory is None:
             from twisted.internet import reactor as process_factory
@@ -124,7 +125,7 @@ class ScriptRunnerMixin(object):
             gid = None
 
         pp = ProcessAccumulationProtocol(
-            self.registry.reactor, self.size_limit)
+            self.registry.reactor, self.size_limit, self.truncation_indicator)
         self.process_factory.spawnProcess(
             pp, filename, uid=uid, gid=gid, path=path, env=env)
         if time_limit is not None:
@@ -309,11 +310,15 @@ class ProcessAccumulationProtocol(ProcessProtocol):
     @ivar size_limit: The number of bytes at which to truncate output.
     """
 
-    def __init__(self, reactor, size_limit):
+    def __init__(self, reactor, size_limit, truncation_indicator=""):
         self.data = []
+        self._size = 0
         self.result_deferred = Deferred()
         self._cancelled = False
         self.size_limit = size_limit
+        self._truncation_indicator = truncation_indicator
+        self._truncation_offset = len(self._truncation_indicator)
+        self._truncated_size_limit = self.size_limit - self._truncation_offset
         self.reactor = reactor
         self._scheduled_cancel = None
 
@@ -327,8 +332,15 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         Add it to our buffer, as long as it doesn't go over L{size_limit}
         bytes.
         """
-        current_size = reduce(operator.add, map(len, self.data), 0)
-        self.data.append(data[:self.size_limit - current_size])
+        if self._size < self.size_limit:
+            data_length = len(data)
+            if (self._size + data_length) >= self._truncated_size_limit:
+                extent = (self._truncated_size_limit - self._size)
+                self.data.append(data[:extent] + self._truncation_indicator)
+                self._size = self.size_limit
+            else:
+                self.data.append(data)
+                self._size += data_length
 
     def processEnded(self, reason):
         """Fire back the deferred.
@@ -351,8 +363,8 @@ class ProcessAccumulationProtocol(ProcessProtocol):
             if reason.check(ProcessDone):
                 self.result_deferred.callback(data)
             else:
-                self.result_deferred.errback(ProcessFailedError(data,
-                                                                exit_code))
+                self.result_deferred.errback(
+                    ProcessFailedError(data, exit_code))
 
     def _cancel(self):
         """
