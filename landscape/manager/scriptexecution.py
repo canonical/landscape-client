@@ -6,7 +6,6 @@ Functionality for running arbitrary shell scripts.
 import os
 import pwd
 import tempfile
-import operator
 import shutil
 
 from twisted.internet.protocol import ProcessProtocol
