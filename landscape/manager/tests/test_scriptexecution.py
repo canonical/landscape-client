@@ -52,11 +52,8 @@ class RunScriptTests(LandscapeTest):
     def test_snap_path(self):
         """The bin path for snaps is included in the PATH."""
         deferred = self.plugin.run_script("/bin/sh", "echo $PATH")
-
-        def check(result):
-            self.assertIn("/snap/bin", result)
-
-        return deferred.addCallback(check)
+        return deferred.addCallback(
+            lambda result: self.assertIn("/snap/bin", result))
 
     def test_other_interpreter(self):
         """Non-shell interpreters can be specified."""
