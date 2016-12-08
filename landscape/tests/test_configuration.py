@@ -751,11 +751,22 @@ def noop_print(*args, **kws):
     pass
 
 
-@mock.patch("landscape.configuration.bootstrap_tree")
-@mock.patch("os.getuid", return_value=0)
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     helpers = [EnvironSaverHelper]
+
+    def setUp(self):
+        super(ConfigurationFunctionsTest, self).setUp()
+        getuid_patcher = mock.patch("os.getuid", return_value=0)
+        bootstrap_tree_patcher = mock.patch(
+            "landscape.configuration.bootstrap_tree")
+        self.mock_getuid = getuid_patcher.start()
+        self.mock_bootstrap_tree = bootstrap_tree_patcher.start()
+
+        def cleanup():
+            getuid_patcher.stop()
+            bootstrap_tree_patcher.stop()
+        self.addCleanup(cleanup)
 
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
@@ -771,8 +782,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.getpass.getpass")
     @mock.patch("__builtin__.raw_input")
-    def test_setup(self, mock_raw_input, mock_getpass, mock_print_text,
-                   mock_getuid, mock_bootstrap_tree):
+    def test_setup(self, mock_raw_input, mock_getpass, mock_print_text):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
                                  "account_name = Old Name\n"
@@ -827,8 +837,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.assertEqual(config.tags, u"glasgow, laptop")
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_silent_setup(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_silent_setup(self, mock_sysvconfig):
         """
         Only command-line options are used in silent mode and registration is
         attempted.
@@ -846,8 +855,7 @@ url = https://landscape.canonical.com/message-system
 """ % config.data_path)
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_silent_setup_no_register(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_silent_setup_no_register(self, mock_sysvconfig):
         """
         Called with command line options to write a config file but no
         registration or validation of parameters is attempted.
@@ -862,7 +870,7 @@ url = https://landscape.canonical.com/message-system
 
     @mock.patch("landscape.configuration.SysVConfig")
     def test_silent_setup_no_register_with_default_preseed_params(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig):
         """
         Make sure that the configuration can be used to write the
         configuration file after a fresh install.
@@ -899,14 +907,14 @@ url = https://landscape.canonical.com/message-system
 
     @mock.patch("landscape.configuration.SysVConfig")
     def test_silent_setup_without_computer_title(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig):
         """A computer title is required."""
         config = self.get_config(["--silent", "-a", "account"])
         self.assertRaises(ConfigurationError, setup, config)
 
     @mock.patch("landscape.configuration.SysVConfig")
     def test_silent_setup_without_account_name(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig):
         """An account name is required."""
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
@@ -916,8 +924,7 @@ url = https://landscape.canonical.com/message-system
     @mock.patch("__builtin__.raw_input")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_silent_script_users_imply_script_execution_plugin(
-            self, mock_sysvconfig, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig, mock_raw_input):
         """
         If C{--script-users} is specified, without C{ScriptExecution} in the
         list of manager plugins, it will be automatically added.
@@ -949,8 +956,7 @@ bus = session
             dict(parser.items("client")))
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_silent_script_users_with_all_user(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_silent_script_users_with_all_user(self, mock_sysvconfig):
         """
         In silent mode, we shouldn't accept invalid users, it should raise a
         configuration error.
@@ -966,8 +972,7 @@ bus = session
             True)
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_silent_setup_with_ping_url(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_silent_setup_with_ping_url(self, mock_sysvconfig):
         mock_sysvconfig().restart_landscape.return_value = True
         filename = self.makeFile("""
 [client]
@@ -997,8 +1002,7 @@ random_key = random_value
             dict(parser.items("client")))
 
     @mock.patch("landscape.configuration.LandscapeSetupScript")
-    def test_setup_with_proxies_from_environment(
-            self, mock_setup_script, mock_getuid, mock_bootstrap_tree):
+    def test_setup_with_proxies_from_environment(self, mock_setup_script):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
@@ -1018,7 +1022,7 @@ random_key = random_value
 
     @mock.patch("landscape.configuration.SysVConfig")
     def test_silent_setup_with_proxies_from_environment(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig):
         """
         Only command-line options are used in silent mode and registration is
         attempted.
@@ -1047,7 +1051,7 @@ registration_key = shared-secret
 
     @mock.patch("landscape.configuration.LandscapeSetupScript")
     def test_setup_prefers_proxies_from_config_over_environment(
-            self, mock_setup_script, mock_getuid, mock_bootstrap_tree):
+            self, mock_setup_script):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
@@ -1070,8 +1074,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.setup")
     def test_main_no_registration(
-            self, mock_setup, mock_register, mock_raw_input, mock_getuid,
-            mock_bootstrap_tree):
+            self, mock_setup, mock_register, mock_raw_input):
         main(["-c", self.make_working_config()], print=noop_print)
         mock_register.assert_not_called()
         mock_raw_input.assert_called_once_with(
@@ -1079,8 +1082,7 @@ registration_key = shared-secret
 
     @mock.patch("landscape.configuration.register", return_value="success")
     @mock.patch("landscape.configuration.setup")
-    def test_main_silent(
-            self, mock_setup, mock_register, mock_getuid, mock_bootstrap_tree):
+    def test_main_silent(self, mock_setup, mock_register):
         """
         In silent mode, the client should register when the registration
         details are changed/set.
@@ -1103,8 +1105,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register", return_value="success")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_success(
-            self, mock_setup, mock_register, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_setup, mock_register, mock_raw_input):
         """The successful result of register() is communicated to the user."""
         printed = []
 
@@ -1128,8 +1129,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register", return_value="failure")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_failure(
-            self, mock_setup, mock_register, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_setup, mock_register, mock_raw_input):
         """The failed result of register() is communicated to the user."""
         printed = []
 
@@ -1155,8 +1155,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register", return_value="success")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_success_silent(
-            self, mock_setup, mock_register, mock_raw_input, mock_getuid,
-            mock_bootstrap_tree):
+            self, mock_setup, mock_register, mock_raw_input):
         """A successful result is communicated to the user even with --silent.
         """
         printed = []
@@ -1181,8 +1180,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register", return_value="failure")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_failure_silent(
-            self, mock_setup, mock_register, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_setup, mock_register, mock_raw_input):
         """A failure result is communicated to the user even with --silent.
         """
         printed = []
@@ -1218,7 +1216,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.SysVConfig")
     def test_register(
             self, mock_sysvconfig, mock_setup_script, mock_register,
-            mock_raw_input, mock_getuid, mock_bootstrap_tree):
+            mock_raw_input):
         mock_sysvconfig().is_configured_to_run.return_value = False
         self.assertRaises(
             SystemExit, main, ["--config", self.make_working_config()],
@@ -1238,8 +1236,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_errors_from_restart_landscape(
-            self, mock_sysvconfig, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig, mock_print_text):
         """
         If a ProcessError exception is raised from restart_landscape (because
         the client failed to be restarted), an informative message is printed
@@ -1261,8 +1258,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_errors_from_restart_landscape_ok_no_register(
-            self, mock_sysvconfig, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig, mock_print_text):
         """
         Exit code 0 will be returned if the client fails to be restarted and
         --ok-no-register was passed.
@@ -1285,8 +1281,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.setup")
     def test_main_with_register(
-            self, mock_setup, mock_register, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_setup, mock_register, mock_raw_input):
         self.assertRaises(SystemExit, main, ["-c", self.make_working_config()],
                           print=noop_print)
         mock_setup.assert_called_once_with(mock.ANY)
@@ -1296,15 +1291,14 @@ registration_key = shared-secret
 
     @mock.patch("landscape.configuration.SysVConfig")
     def test_setup_init_script_and_start_client(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig):
         setup_init_script_and_start_client()
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
 
     @mock.patch("__builtin__.raw_input")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_setup_init_script_and_start_client_silent(
-            self, mock_sysvconfig, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig, mock_raw_input):
         setup_init_script_and_start_client()
         mock_raw_input.assert_not_called()
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
@@ -1313,8 +1307,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.setup")
     def test_register_silent(
-            self, mock_setup, mock_register, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_setup, mock_register, mock_raw_input):
         """
         Silent registration uses specified configuration to attempt a
         registration with the server.
@@ -1330,48 +1323,43 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.stop_client_and_disable_init_script")
     def test_disable(
-            self, mock_stop_client, mock_register, mock_raw_input,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_stop_client, mock_register, mock_raw_input):
         main(["--disable", "-c", self.make_working_config()])
         mock_stop_client.assert_called_once_with()
         mock_register.assert_not_called()
         mock_raw_input.assert_not_called()
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_stop_client_and_disable_init_scripts(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_stop_client_and_disable_init_scripts(self, mock_sysvconfig):
         main(["--disable", "-c", self.make_working_config()])
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(False)
         mock_sysvconfig().stop_landscape.assert_called_once_with()
 
-    def test_non_root(self, mock_getuid, mock_bootstrap_tree):
-        mock_getuid.return_value = 1000
+    def test_non_root(self):
+        self.mock_getuid.return_value = 1000
         sys_exit = self.assertRaises(SystemExit,
                                      main, ["-c", self.make_working_config()])
-        mock_getuid.assert_called_once_with()
+        self.mock_getuid.assert_called_once_with()
         self.assertIn("landscape-config must be run as root", str(sys_exit))
 
     @mock.patch("sys.stdout", new_callable=StringIO)
-    def test_main_with_help_and_non_root(
-            self, mock_stdout, mock_getuid, mock_bootstrap_tree):
+    def test_main_with_help_and_non_root(self, mock_stdout):
         """It's possible to call 'landscape-config --help' as normal user."""
-        mock_getuid.return_value = 1000
+        self.mock_getuid.return_value = 1000
         self.assertRaises(SystemExit, main, ["--help"])
         self.assertIn(
             "show this help message and exit", mock_stdout.getvalue())
 
     @mock.patch("sys.stdout", new_callable=StringIO)
-    def test_main_with_help_and_non_root_short(
-            self, mock_stdout, mock_getuid, mock_bootstrap_tree):
+    def test_main_with_help_and_non_root_short(self, mock_stdout):
         """It's possible to call 'landscape-config -h' as normal user."""
-        mock_getuid.return_value = 1000
+        self.mock_getuid.return_value = 1000
         self.assertRaises(SystemExit, main, ["-h"])
         self.assertIn(
             "show this help message and exit", mock_stdout.getvalue())
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_import_from_file(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_file(self, mock_sysvconfig):
         configuration = (
             "[client]\n"
             "computer_title = New Title\n"
@@ -1403,7 +1391,7 @@ registration_key = shared-secret
                           "https_proxy": "https://new.proxy",
                           "url": "http://new.url"})
 
-    def test_import_from_empty_file(self, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_empty_file(self):
         config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile("", basename="import_config")
 
@@ -1417,8 +1405,7 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_non_existent_file(
-            self, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_non_existent_file(self):
         config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile(basename="import_config")
 
@@ -1432,8 +1419,7 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_file_with_empty_client_section(
-            self, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_file_with_empty_client_section(self):
         old_configuration = "[client]\n"
 
         config_filename = self.makeFile("", old_configuration,
@@ -1450,7 +1436,7 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_bogus_file(self, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_bogus_file(self):
         config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile("<strong>BOGUS!</strong>",
                                         basename="import_config")
@@ -1465,8 +1451,7 @@ registration_key = shared-secret
         else:
             self.fail("ImportOptionError not raised")
 
-    def test_import_from_unreadable_file(
-            self, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_unreadable_file(self):
         """
         An error is raised when unable to read configuration from the
         specified file.
@@ -1482,8 +1467,7 @@ registration_key = shared-secret
         self.assertEqual(str(error), expected_message)
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_import_from_file_preserves_old_options(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_file_preserves_old_options(self, mock_sysvconfig):
         old_configuration = (
             "[client]\n"
             "computer_title = Old Title\n"
@@ -1524,8 +1508,7 @@ registration_key = shared-secret
                           "url": "http://new.url"})
 
     @mock.patch("landscape.configuration.SysVConfig")
-    def test_import_from_file_may_reset_old_options(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+    def test_import_from_file_may_reset_old_options(self, mock_sysvconfig):
         """
         This test ensures that setting an empty option in an imported
         configuration file will actually set the local value to empty
@@ -1566,8 +1549,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.fetch")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_import_from_url(
-            self, mock_sysvconfig, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig, mock_fetch, mock_print_text):
         mock_sysvconfig().restart_landscape.return_value = True
         configuration = (
             "[client]\n"
@@ -1605,8 +1587,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.fetch")
     def test_import_from_url_with_http_code_fetch_error(
-            self, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_fetch, mock_print_text):
         mock_fetch.side_effect = HTTPCodeError(501, "")
         config_filename = self.makeFile("", basename="final_config")
 
@@ -1627,8 +1608,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.fetch")
     def test_import_from_url_with_pycurl_error(
-            self, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_fetch, mock_print_text):
         mock_fetch.side_effect = PyCurlError(60, "pycurl message")
 
         config_filename = self.makeFile("", basename="final_config")
@@ -1649,8 +1629,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.fetch", return_value="")
     def test_import_from_url_with_empty_content(
-            self, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_fetch, mock_print_text):
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
@@ -1667,8 +1646,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.fetch",
                 return_value="<strong>BOGUS!</strong>")
     def test_import_from_url_with_bogus_content(
-            self, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_fetch, mock_print_text):
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
@@ -1685,8 +1663,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.fetch",
                 side_effect=HTTPCodeError(404, ""))
     def test_import_error_is_handled_nicely_by_main(
-            self, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_fetch, mock_print_text):
         system_exit = self.assertRaises(
             SystemExit, main, ["--import", "https://config.url"])
         self.assertEqual(system_exit.code, 1)
@@ -1700,8 +1677,7 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_base64_ssl_public_key_is_exported_to_file(
-            self, mock_sysvconfig, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig, mock_print_text):
         mock_sysvconfig().restart_landscape.return_value = True
         data_path = self.makeDir()
         config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
@@ -1727,7 +1703,7 @@ registration_key = shared-secret
 
     @mock.patch("landscape.configuration.SysVConfig")
     def test_normal_ssl_public_key_is_not_exported_to_file(
-            self, mock_sysvconfig, mock_getuid, mock_bootstrap_tree):
+            self, mock_sysvconfig):
         mock_sysvconfig().restart_landscape.return_value = True
         config_filename = self.makeFile("")
 
@@ -1750,16 +1726,14 @@ registration_key = shared-secret
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.fetch")
     def test_import_from_url_honors_http_proxy(
-            self, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_fetch, mock_print_text):
         self.ensure_import_from_url_honors_proxy_options(
             "http_proxy", mock_fetch, mock_print_text)
 
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.fetch")
     def test_import_from_url_honors_https_proxy(
-            self, mock_fetch, mock_print_text,
-            mock_getuid, mock_bootstrap_tree):
+            self, mock_fetch, mock_print_text):
         self.ensure_import_from_url_honors_proxy_options(
             "https_proxy", mock_fetch, mock_print_text)
 
