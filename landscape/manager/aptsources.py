@@ -100,26 +100,36 @@ class AptSources(ManagerPlugin):
 
     def _handle_sources(self, ignored, sources):
         """Handle sources repositories."""
-        fd, path = tempfile.mkstemp()
-        os.close(fd)
-        new_sources = file(path, "w")
-        try:
-            source_file = open(self.SOURCES_LIST)
-        except:
-            os.unlink(path)
-            raise
-        for line in source_file:
-            stripped_line = line.strip()
-            if not stripped_line or stripped_line.startswith("#"):
-                new_sources.write(line)
-            else:
-                new_sources.write("#%s" % line)
-        new_sources.close()
+        saved_sources = "%s.save".format(self.SOURCES_LIST)
+        if sources:
+            fd, path = tempfile.mkstemp()
+            os.close(fd)
+            new_sources = file(path, "w")
+            try:
+                source_file = open(self.SOURCES_LIST)
+            except:
+                os.unlink(path)
+                raise
+            for line in source_file:
+                stripped_line = line.strip()
+                if not stripped_line or stripped_line.startswith("#"):
+                    new_sources.write(line)
+                else:
+                    new_sources.write("#%s" % line)
+            new_sources.close()
 
-        original_stat = os.stat(self.SOURCES_LIST)
-        shutil.move(path, self.SOURCES_LIST)
-        os.chmod(self.SOURCES_LIST, original_stat.st_mode)
-        os.chown(self.SOURCES_LIST, original_stat.st_uid, original_stat.st_gid)
+            original_stat = os.stat(self.SOURCES_LIST)
+            if not os.path.isfile(saved_sources):
+                shutil.move(self.SOURCES_LIST, saved_sources)
+            shutil.move(path, self.SOURCES_LIST)
+            os.chmod(self.SOURCES_LIST, original_stat.st_mode)
+            os.chown(self.SOURCES_LIST, original_stat.st_uid,
+                     original_stat.st_gid)
+        else:
+            # Re-instate original sources
+            saved_sources = "%s.save".format(self.SOURCES_LIST)
+            if os.path.isfile(saved_sources):
+                shutil.move(saved_sources, self.SOURCES_LIST)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
             shutil.move(filename, "%s.save" % filename)

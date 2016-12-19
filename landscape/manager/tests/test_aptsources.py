@@ -54,12 +54,99 @@ class AptSourcesTests(LandscapeTest):
         sources.close()
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
              "operation-id": 1})
 
         self.assertEqual(
             "#oki\n\n#doki\n#comment\n # other comment\n",
             file(self.sourceslist.SOURCES_LIST).read())
+
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "status": SUCCEEDED, "operation-id": 1}])
+
+    def test_save_sources_list(self):
+        """
+        When getting a repository message, AptSources saves a copy of the
+        sources.list file.
+        """
+        sources = file(self.sourceslist.SOURCES_LIST, "w")
+        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+        sources.close()
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
+             "operation-id": 1})
+
+        self.assertTrue(os.path.exists(
+            "%s.save".format(self.sourceslist.SOURCES_LIST)))
+        self.assertEqual(
+            "oki\n\ndoki\n#comment\n # other comment\n",
+            file("%s.save".format(self.sourceslist.SOURCES_LIST)).read())
+
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "status": SUCCEEDED, "operation-id": 1}])
+
+    def test_existing_saved_sources_list(self):
+        """
+        When getting a repository message, AptSources saves a copy of the
+        sources.list file, only if a previously saved copy doesn't exist
+        """
+        sources = file(self.sourceslist.SOURCES_LIST, "w")
+        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+        sources.close()
+
+        saved_sources = file("%s.save".format(
+            self.sourceslist.SOURCES_LIST), "w")
+        saved_sources.write("original content\n")
+        saved_sources.close()
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
+             "operation-id": 1})
+
+        self.assertTrue(os.path.exists(
+            "%s.save".format(self.sourceslist.SOURCES_LIST)))
+        self.assertEqual(
+            "original content\n",
+            file("%s.save".format(self.sourceslist.SOURCES_LIST)).read())
+
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "status": SUCCEEDED, "operation-id": 1}])
+
+    def test_restore_sources_list(self):
+        """
+        When getting a repository message without sources, AptSources
+        restores the previous contents of the sources.list file.
+        """
+        old_sources = file("%s.save".format(
+            self.sourceslist.SOURCES_LIST), "w")
+        old_sources.write("original content\n")
+        old_sources.close()
+
+        sources = file(self.sourceslist.SOURCES_LIST, "w")
+        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+        sources.close()
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace",
+             "sources": [],
+             "gpg-keys": [],
+             "operation-id": 1})
+
+        self.assertEqual("original content\n",
+                         file(self.sourceslist.SOURCES_LIST).read())
 
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
@@ -92,7 +179,9 @@ class AptSourcesTests(LandscapeTest):
              mock.patch("os.chown") as mock_chown:
 
             self.manager.dispatch_message(
-                {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+                {"type": "apt-sources-replace",
+                 "sources": [{"name": "bla", "content": ""}],
+                 "gpg-keys": [],
                  "operation-id": 1})
 
             service = self.broker_service
@@ -117,7 +206,9 @@ class AptSourcesTests(LandscapeTest):
         self.sourceslist.SOURCES_LIST = "/doesntexist"
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
              "operation-id": 1})
 
         msg = "IOError: [Errno 2] No such file or directory: '/doesntexist'"
