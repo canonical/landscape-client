@@ -100,7 +100,7 @@ class AptSources(ManagerPlugin):
 
     def _handle_sources(self, ignored, sources):
         """Handle sources repositories."""
-        saved_sources = "%s.save".format(self.SOURCES_LIST)
+        saved_sources = "{}.save".format(self.SOURCES_LIST)
         if sources:
             fd, path = tempfile.mkstemp()
             os.close(fd)
@@ -127,7 +127,7 @@ class AptSources(ManagerPlugin):
                      original_stat.st_gid)
         else:
             # Re-instate original sources
-            saved_sources = "%s.save".format(self.SOURCES_LIST)
+            saved_sources = "{}.save".format(self.SOURCES_LIST)
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
