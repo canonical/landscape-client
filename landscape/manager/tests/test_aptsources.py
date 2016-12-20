@@ -84,10 +84,10 @@ class AptSourcesTests(LandscapeTest):
              "operation-id": 1})
 
         self.assertTrue(os.path.exists(
-            "{}.save".format(self.sourceslist.SOURCES_LIST)))
+            "%s.save".format(self.sourceslist.SOURCES_LIST)))
         self.assertEqual(
             "oki\n\ndoki\n#comment\n # other comment\n",
-            file("{}.save".format(self.sourceslist.SOURCES_LIST)).read())
+            file("%s.save".format(self.sourceslist.SOURCES_LIST)).read())
 
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
@@ -103,7 +103,7 @@ class AptSourcesTests(LandscapeTest):
         sources.write("oki\n\ndoki\n#comment\n # other comment\n")
         sources.close()
 
-        saved_sources = file("{}.save".format(
+        saved_sources = file("%s.save".format(
             self.sourceslist.SOURCES_LIST), "w")
         saved_sources.write("original content\n")
         saved_sources.close()
@@ -115,10 +115,10 @@ class AptSourcesTests(LandscapeTest):
              "operation-id": 1})
 
         self.assertTrue(os.path.exists(
-            "{}.save".format(self.sourceslist.SOURCES_LIST)))
+            "%s.save".format(self.sourceslist.SOURCES_LIST)))
         self.assertEqual(
             "original content\n",
-            file("{}.save".format(self.sourceslist.SOURCES_LIST)).read())
+            file("%s.save".format(self.sourceslist.SOURCES_LIST)).read())
 
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
@@ -130,7 +130,7 @@ class AptSourcesTests(LandscapeTest):
         When getting a repository message without sources, AptSources
         restores the previous contents of the sources.list file.
         """
-        old_sources = file("{}.save".format(
+        old_sources = file("%s.save".format(
             self.sourceslist.SOURCES_LIST), "w")
         old_sources.write("original content\n")
         old_sources.close()
