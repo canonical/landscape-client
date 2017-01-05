@@ -2,7 +2,7 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man 
 PYTHON ?= python3
 TRIAL_ARGS ?= 
-TEST_COMMAND = trial --unclean-warnings $(TRIAL_ARGS) landscape
+TEST_COMMAND = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION

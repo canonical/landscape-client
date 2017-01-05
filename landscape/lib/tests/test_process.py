@@ -70,7 +70,7 @@ class ProcessInfoTest(LandscapeTest):
         list_dir_mock.return_value = ["12345"]
         fakefile1 = FakeFile("test-binary")
         fakefile2 = FakeFile(None)
-
+        import pdb; pdb.set_trace()
         with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
             # This means "return fakefile1, then fakefile2"
             open_mock.side_effect = [fakefile1, fakefile2]
