@@ -111,7 +111,7 @@ class ScriptRunnerMixin(object):
         # It would be nice to use fchown(2) and fchmod(2), but they're not
         # available in python and using it with ctypes is pretty tedious, not
         # to mention we can't get errno.
-        os.chmod(filename, 0700)
+        os.chmod(filename, 0o700)
         if uid is not None:
             os.chown(filename, uid, gid)
         script_file.write(build_script(shell, code))
@@ -178,7 +178,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
-        except Exception, e:
+        except Exception as e:
             self._respond(FAILED, self._format_exception(e), opid)
             raise
 
@@ -224,12 +224,12 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                     headers=headers)
             full_filename = os.path.join(attachment_dir, filename)
             attachment = file(full_filename, "wb")
-            os.chmod(full_filename, 0600)
+            os.chmod(full_filename, 0o600)
             if uid is not None:
                 os.chown(full_filename, uid, gid)
             attachment.write(data)
             attachment.close()
-        os.chmod(attachment_dir, 0700)
+        os.chmod(attachment_dir, 0o700)
         if uid is not None:
             os.chown(attachment_dir, uid, gid)
         returnValue(attachment_dir)
@@ -270,7 +270,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         env = {"PATH": UBUNTU_PATH, "USER": user or "", "HOME": path or ""}
         if server_supplied_env:
             env.update(server_supplied_env)
-        old_umask = os.umask(0022)
+        old_umask = os.umask(0o022)
 
         if attachments:
             persist = Persist(

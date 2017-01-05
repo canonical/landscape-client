@@ -47,8 +47,8 @@ def to64 (v, n):
     ret = ''
     while (n - 1 >= 0):
         n = n - 1
-	ret = ret + ITOA64[v & 0x3f]
-	v = v >> 6
+        ret = ret + ITOA64[v & 0x3f]
+        v = v >> 6
     return ret
 
 
@@ -156,4 +156,4 @@ def unix_md5_crypt(pw, salt, magic=None):
 md5crypt = unix_md5_crypt
 
 if __name__ == "__main__":
-    print unix_md5_crypt("cat", "hat")
+    print(unix_md5_crypt("cat", "hat"))

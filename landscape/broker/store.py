@@ -261,7 +261,7 @@ class MessageStore(object):
             data = self._get_content(self._message_dir(filename))
             try:
                 message = bpickle.loads(data)
-            except ValueError, e:
+            except ValueError as e:
                 logging.exception(e)
                 self._add_flags(filename, BROKEN)
             else:
@@ -453,7 +453,7 @@ class MessageStore(object):
             flags = self._get_flags(old_filename)
             try:
                 message = bpickle.loads(self._get_content(old_filename))
-            except ValueError, e:
+            except ValueError as e:
                 logging.exception(e)
                 if HELD not in flags:
                     offset += 1

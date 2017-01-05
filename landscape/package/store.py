@@ -127,7 +127,7 @@ class PackageStore(HashIdStore):
 
         try:
             hash_id_store.check_sanity()
-        except InvalidHashIdDb, e:
+        except InvalidHashIdDb as e:
             # propagate the error
             raise e
 

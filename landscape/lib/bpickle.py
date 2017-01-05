@@ -27,6 +27,7 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+import sys
 
 
 dumps_table = {}
@@ -36,19 +37,19 @@ loads_table = {}
 def dumps(obj, _dt=dumps_table):
     try:
         return _dt[type(obj)](obj)
-    except KeyError, e:
-        raise ValueError, "Unsupported type: %s" % e
+    except KeyError as e:
+        raise ValueError("Unsupported type: %s" % e)
 
 
 def loads(str, _lt=loads_table):
     if not str:
-        raise ValueError, "Can't load empty string"
+        raise ValueError("Can't load empty string")
     try:
         return _lt[str[0]](str, 0)[0]
-    except KeyError, e:
-        raise ValueError, "Unknown type character: %s" % e
+    except KeyError as e:
+        raise ValueError("Unknown type character: %s" % e)
     except IndexError:
-        raise ValueError, "Corrupted data"
+        raise ValueError("Corrupted data")
 
 def dumps_bool(obj):
     return "b%d" % int(obj)
@@ -73,7 +74,7 @@ def dumps_tuple(obj, _dt=dumps_table):
     return "t%s;" % "".join([_dt[type(val)](val) for val in obj])
 
 def dumps_dict(obj, _dt=dumps_table):
-    keys = obj.keys()
+    keys = list(obj.keys())
     keys.sort()
     res = []
     append = res.append
@@ -137,17 +138,20 @@ def loads_dict(str, pos, _lt=loads_table):
 def loads_none(str, pos):
     return None, pos+1
 
-
 dumps_table.update({       bool: dumps_bool,
                             int: dumps_int,
-                           long: dumps_int,
                           float: dumps_float,
                             str: dumps_str,
-                        unicode: dumps_unicode,
                            list: dumps_list,
                           tuple: dumps_tuple,
                            dict: dumps_dict,
-                     type(None): dumps_none     })
+                     type(None): dumps_none })
+
+
+if sys.version_info < (3,):
+    dumps_table.update({   long: dumps_int,
+                        unicode: dumps_unicode })
+
 
 loads_table.update({ "b": loads_bool,
                      "i": loads_int,

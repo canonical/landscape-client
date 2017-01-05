@@ -222,7 +222,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         result = spawn_process(upgrade_tool_filename, args=args, env=env,
                                path=upgrade_tool_directory, wait_pipes=False)
 
-        def send_operation_result((out, err, code)):
+        def send_operation_result(args):
+            out, err, code = args
             if code == 0:
                 status = SUCCEEDED
             else:

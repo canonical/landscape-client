@@ -12,7 +12,8 @@ def get_uptime(uptime_file=u"/proc/uptime"):
     This parses a file in /proc/uptime format and returns a floating point
     version of the first value (the actual uptime).
     """
-    data = file(uptime_file, "r").readline()
+    with open(uptime_file, 'r') as ufile:
+        data = ufile.readline()
     up, idle = data.split()
     return float(up)
 

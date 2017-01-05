@@ -94,7 +94,7 @@ def run(args, reactor=None, sysinfo=None):
     """
     try:
         setup_logging()
-    except IOError, e:
+    except IOError as e:
         sys.exit("Unable to setup logging. %s" % e)
 
     if sysinfo is None:
@@ -107,8 +107,8 @@ def run(args, reactor=None, sysinfo=None):
         sysinfo.add(plugin)
 
     def show_output(result):
-        print format_sysinfo(sysinfo.get_headers(), sysinfo.get_notes(),
-                             sysinfo.get_footnotes(), indent="  ")
+        print(format_sysinfo(sysinfo.get_headers(), sysinfo.get_notes(),
+                             sysinfo.get_footnotes(), indent="  "))
 
     def run_sysinfo():
         return sysinfo.run().addCallback(show_output)

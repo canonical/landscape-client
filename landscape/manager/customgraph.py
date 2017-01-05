@@ -235,7 +235,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 self._data[graph_id]["script-hash"] = script_hash
             try:
                 uid, gid, path = get_user_info(user)
-            except UnknownUserError, e:
+            except UnknownUserError as e:
                 d = fail(e)
                 d.addErrback(self._handle_error, graph_id)
                 deferred_list.append(d)

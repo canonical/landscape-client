@@ -95,13 +95,13 @@ class MethodCall(Command):
       and C{kwargs} the keyword ones.
     """
 
-    arguments = [("sequence", Integer()),
-                 ("method", String()),
-                 ("arguments", String())]
+    arguments = [(b"sequence", Integer()),
+                 (b"method", String()),
+                 (b"arguments", String())]
 
-    response = [("result", MethodCallArgument())]
+    response = [(b"result", MethodCallArgument())]
 
-    errors = {MethodCallError: "METHOD_CALL_ERROR"}
+    errors = {MethodCallError: b"METHOD_CALL_ERROR"}
 
 
 class MethodCallChunk(Command):
@@ -119,12 +119,12 @@ class MethodCallChunk(Command):
       being split and buffered.
     """
 
-    arguments = [("sequence", Integer()),
-                 ("chunk", String())]
+    arguments = [(b"sequence", Integer()),
+                 (b"chunk", String())]
 
-    response = [("result", Integer())]
+    response = [(b"result", Integer())]
 
-    errors = {MethodCallError: "METHOD_CALL_ERROR"}
+    errors = {MethodCallError: b"METHOD_CALL_ERROR"}
 
 
 class MethodCallReceiver(CommandLocator):

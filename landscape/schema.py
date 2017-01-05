@@ -86,7 +86,7 @@ class Unicode(object):
         if isinstance(value, str):
             try:
                 value = value.decode(self.encoding)
-            except UnicodeDecodeError, e:
+            except UnicodeDecodeError as e:
                 raise InvalidError("%r can't be decoded: %s" % (value, str(e)))
         if not isinstance(value, unicode):
             raise InvalidError("%r isn't a unicode" % (value,))
@@ -108,7 +108,7 @@ class List(object):
         for i, subvalue in enumerate(value):
             try:
                 new_list[i] = self.schema.coerce(subvalue)
-            except InvalidError, e:
+            except InvalidError as e:
                 raise InvalidError(
                     "%r could not coerce with %s: %s"
                     % (subvalue, self.schema, e))
@@ -161,7 +161,7 @@ class KeyDict(object):
                                    % (k, self.schema))
             try:
                 new_dict[k] = self.schema[k].coerce(v)
-            except InvalidError, e:
+            except InvalidError as e:
                 raise InvalidError(
                     "Value of %r key of dict %r could not coerce with %s: %s"
                     % (k, value, self.schema[k], e))

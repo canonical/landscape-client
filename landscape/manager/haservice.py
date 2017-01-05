@@ -99,7 +99,8 @@ class HAService(ManagerPlugin):
             logging.info(message)
             return succeed(message)
 
-        def parse_output((stdout_data, stderr_data, status)):
+        def parse_output(args):
+            stdout_data, stderr_data, status = args
             if status != 0:
                 raise RunPartsError(stderr_data)
             else:

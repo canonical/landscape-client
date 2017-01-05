@@ -43,7 +43,7 @@ def send_message(text, broker):
 
 
 def got_result(result):
-    print u"Message sent."
+    print(u"Message sent.")
 
 
 def get_message(args):

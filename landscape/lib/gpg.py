@@ -22,7 +22,8 @@ def gpg_verify(filename, signature, gpg="/usr/bin/gpg"):
         shutil.rmtree(gpg_home)
         return ignored
 
-    def check_gpg_exit_code((out, err, code)):
+    def check_gpg_exit_code(args):
+        out, err, code = args
         if code != 0:
             raise InvalidGPGSignature("%s failed (out='%s', err='%s', "
                                       "code='%d')" % (gpg, out, err, code))

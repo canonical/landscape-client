@@ -232,10 +232,10 @@ class PackageChanger(PackageTaskHandler):
             count += 1
             try:
                 result.text = self._facade.perform_changes()
-            except TransactionError, exception:
+            except TransactionError as exception:
                 result.code = ERROR_RESULT
                 result.text = exception.args[0]
-            except DependencyError, exception:
+            except DependencyError as exception:
                 for package in exception.packages:
                     hash = self._facade.get_package_hash(package)
                     id = self._store.get_hash_id(hash)

@@ -662,7 +662,7 @@ class AptFacade(object):
                         install_progress=install_progress)
                     if not install_progress.dpkg_exited:
                         raise SystemError("dpkg didn't exit cleanly.")
-                except (apt.cache.LockFailedException, SystemError), exception:
+                except (apt.cache.LockFailedException, SystemError) as exception:
                     result_text = (fetch_output.getvalue()
                                    + read_file(install_output_path))
                     error = TransactionError(exception.args[0] +
@@ -745,7 +745,7 @@ class AptFacade(object):
         if now_broken_packages != already_broken_packages:
             try:
                 fixer.resolve(True)
-            except SystemError, error:
+            except SystemError as error:
                 raise TransactionError(error.args[0] + "\n" +
                                        self._get_unmet_dependency_info())
             else:

@@ -2,7 +2,10 @@ import os
 import sys
 
 from optparse import OptionParser
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from twisted.internet.threads import deferToThread
 from twisted.internet.defer import DeferredList
@@ -109,7 +112,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
 
     try:
         curl.perform()
-    except pycurl.error, e:
+    except pycurl.error as e:
         raise PyCurlError(e.args[0], e.args[1])
 
     body = input.getvalue()
@@ -197,8 +200,8 @@ def test(args):
     parser.add_option("--data", default="")
     parser.add_option("--cainfo")
     options, (url,) = parser.parse_args(args)
-    print fetch(url, post=options.post, data=options.data,
-                cainfo=options.cainfo)
+    print(fetch(url, post=options.post, data=options.data,
+                cainfo=options.cainfo))
 
 
 if __name__ == "__main__":

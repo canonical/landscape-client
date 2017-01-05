@@ -13,6 +13,10 @@ from landscape.lib.persist import Persist
 
 from landscape.upgraders import UPGRADE_MANAGERS
 
+try:
+  basestring
+except NameError:
+  basestring = str
 
 def init_logging(configuration, program_name):
     """Given a basic configuration, set up logging."""
@@ -40,8 +44,8 @@ class ConfigSpecOptionParser(OptionParser):
 
     def add_option(self, *args, **kwargs):
         option = OptionParser.add_option(self, *args, **kwargs)
-        print dir(option)
-        print option.get_opt_string()
+        print(dir(option))
+        print(option.get_opt_string())
         return option
 
 
@@ -235,7 +239,7 @@ class BaseConfiguration(object):
         try:
             config_obj = ConfigObj(config_source, list_values=False,
                                    raise_errors=False, write_empty_values=True)
-        except ConfigObjError, e:
+        except ConfigObjError as e:
             logger = getLogger()
             logger.warn(str(e))
             # Good configuration values are recovered here

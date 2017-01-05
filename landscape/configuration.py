@@ -104,7 +104,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         raise ImportOptionError(
                             "Couldn't read configuration from %s." %
                             self.import_from)
-            except Exception, error:
+            except Exception as error:
                 raise ImportOptionError(str(error))
 
             # But real command line options have precedence.
@@ -124,7 +124,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         error_message = None
         try:
             content = fetch(url)
-        except FetchError, error:
+        except FetchError as error:
             error_message = str(error)
         if error_message is not None:
             raise ImportOptionError(
@@ -560,9 +560,9 @@ def setup(config):
 def bootstrap_tree(config):
     """Create the client directories tree."""
     bootstrap_list = [
-        BootstrapDirectory("$data_path", "landscape", "root", 0755),
+        BootstrapDirectory("$data_path", "landscape", "root", 0o755),
         BootstrapDirectory("$annotations_path", "landscape", "landscape",
-                           0755)]
+                           0o755)]
     BootstrapList(bootstrap_list).bootstrap(
         data_path=config.data_path, annotations_path=config.annotations_path)
 
@@ -730,7 +730,7 @@ def main(args, print=print):
     config = LandscapeSetupConfiguration()
     try:
         config.load(args)
-    except ImportOptionError, error:
+    except ImportOptionError as error:
         print_text(str(error), error=True)
         sys.exit(1)
 
@@ -749,7 +749,7 @@ def main(args, print=print):
     # Setup client configuration.
     try:
         setup(config)
-    except Exception, e:
+    except Exception as e:
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 

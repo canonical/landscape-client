@@ -130,7 +130,7 @@ class AptSources(ManagerPlugin):
             sources_file = file(filename, "w")
             sources_file.write(source["content"])
             sources_file.close()
-            os.chmod(filename, 0644)
+            os.chmod(filename, 0o644)
         return self._run_reporter().addCallback(lambda ignored: None)
 
     def _run_reporter(self):

@@ -3,8 +3,10 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
 
-import cStringIO
-
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 def gather_results(deferreds, consume_errors=False):
     d = DeferredList(deferreds, fireOnOneErrback=1,
@@ -19,8 +21,8 @@ class AllOutputProcessProtocol(ProcessProtocol):
 
     def __init__(self, deferred, stdin=None, line_received=None):
         self.deferred = deferred
-        self.outBuf = cStringIO.StringIO()
-        self.errBuf = cStringIO.StringIO()
+        self.outBuf = StringIO()
+        self.errBuf = StringIO()
         self.errReceived = self.errBuf.write
         self.stdin = stdin
         self.line_received = line_received
