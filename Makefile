@@ -1,6 +1,6 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man 
-PYTHON ?= python
+PYTHON ?= python3
 TRIAL_ARGS ?= 
 TEST_COMMAND = trial --unclean-warnings $(TRIAL_ARGS) landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
