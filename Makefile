@@ -2,7 +2,8 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man 
 PYTHON ?= python3
 TRIAL_ARGS ?= 
-TEST_COMMAND = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
+TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
+TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
@@ -22,6 +23,9 @@ all: build
 build:
 	$(PYTHON) setup.py build_ext -i
 
+build2:
+	python setup.py build_ext -i
+
 check: build
 	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
 		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
@@ -30,9 +34,22 @@ check: build
 		trap "kill $$DBUS_PID" EXIT; \
 	fi; \
 	if [ -z "$$DISPLAY" ]; then \
-		xvfb-run $(TEST_COMMAND); \
+		xvfb-run $(TEST_COMMAND_PY3); \
 	else \
-	    $(TEST_COMMAND); \
+	    $(TEST_COMMAND_PY3); \
+	fi
+
+check2: build2
+	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
+		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
+		export DBUS_SESSION_BUS_ADDRESS=`echo $$OUTPUT | cut -f1 -d ' '`; \
+		DBUS_PID=`echo $$OUTPUT | cut -f2 -d ' '`; \
+		trap "kill $$DBUS_PID" EXIT; \
+	fi; \
+	if [ -z "$$DISPLAY" ]; then \
+		xvfb-run $(TEST_COMMAND_PY2); \
+	else \
+	    $(TEST_COMMAND_PY2); \
 	fi
 
 lint:
