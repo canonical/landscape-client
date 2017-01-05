@@ -5,7 +5,11 @@ import os
 import subprocess
 import sys
 import tempfile
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 from operator import attrgetter
 
 # Importing apt throws a FutureWarning on hardy, that we don't want to
