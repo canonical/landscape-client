@@ -44,7 +44,7 @@ class ManagerPlugin(BrokerClientPlugin):
             return FAILED, text
 
         def send(args):
-            args = status, text
+            status, text = args
             result = {"type": "operation-result",
                       "status": status,
                       "operation-id": message["operation-id"]}
