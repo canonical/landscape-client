@@ -42,7 +42,8 @@ class ProcessInfoTest(LandscapeTest):
 
     @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
     @mock.patch("os.listdir")
-    def test_missing_process_race(self, list_dir_mock, jiffies_mock):
+    @mock.patch("landscape.monitor.computeruptime.get_uptime")
+    def test_missing_process_race(self, get_uptime_mock, list_dir_mock, jiffies_mock):
         """
         We use os.listdir("/proc") to get the list of active processes, if a
         process ends before we attempt to read the process' information, then
@@ -68,6 +69,7 @@ class ProcessInfoTest(LandscapeTest):
                 self.closed = True
 
         list_dir_mock.return_value = ["12345"]
+        get_uptime_mock.return_value = 1.0
         fakefile1 = FakeFile("test-binary")
         fakefile2 = FakeFile(None)
         with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
