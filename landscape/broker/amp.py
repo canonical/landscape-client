@@ -30,7 +30,7 @@ class RemoteBroker(RemoteObject):
         """
         result = self.listen_events(handlers.keys())
         return result.addCallback(
-            lambda event_type, kwargs: handlers[event_type](**kwargs))
+            lambda args: handlers[args[0]](**args[1]))
 
 
 class FakeRemoteBroker(object):
@@ -75,7 +75,7 @@ class FakeRemoteBroker(object):
         """
         result = self.broker_server.listen_events(handlers.keys())
         return result.addCallback(
-            lambda event_type, kwargs: handlers[event_type](**kwargs))
+            lambda args: handlers[args[0]](**args[1]))
 
     def register(self):
         return succeed(None)
