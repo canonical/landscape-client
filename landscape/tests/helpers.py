@@ -1,7 +1,12 @@
 try:
-    from cStringIO import StringIO
+    import StringIO
+    import cStringIO
+    stringio = StringIO.StringIO
+    cstringio = cStringIO.StringIO
 except ImportError:
     from io import StringIO
+    stringio = cstringio = StringIO
+
 try:
     from ConfigParser import ConfigParser
 except ImportError:
@@ -193,11 +198,11 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase, ):
         and comments may be different but the actual parameters and sections
         must be the same.
         """
-        first_fp = StringIO(first)
+        first_fp = cstringio(first)
         first_parser = ConfigParser()
         first_parser.readfp(first_fp)
 
-        second_fp = StringIO(second)
+        second_fp = cstringio(second)
         second_parser = ConfigParser()
         second_parser.readfp(second_fp)
 
@@ -331,7 +336,7 @@ class LogKeeperHelper(object):
         self.error_handler = ErrorHandler()
         test_case.log_helper = self
         test_case.logger = logger = logging.getLogger()
-        test_case.logfile = StringIO()
+        test_case.logfile = cstringio()
         handler = logging.StreamHandler(test_case.logfile)
         format = ("%(levelname)8s: %(message)s")
         handler.setFormatter(logging.Formatter(format))
@@ -487,7 +492,7 @@ class MockPopen(object):
 
     def __init__(self, output, return_codes=None):
         self.output = output
-        self.stdout = StringIO(output)
+        self.stdout = cstringio(output)
         self.popen_inputs = []
         self.return_codes = return_codes
 
@@ -507,12 +512,10 @@ class MockPopen(object):
 class StandardIOHelper(object):
 
     def set_up(self, test_case):
-        from StringIO import StringIO
-
         test_case.old_stdout = sys.stdout
         test_case.old_stdin = sys.stdin
-        test_case.stdout = sys.stdout = StringIO()
-        test_case.stdin = sys.stdin = StringIO()
+        test_case.stdout = sys.stdout = stringio()
+        test_case.stdin = sys.stdin = stringio()
         test_case.stdin.encoding = "UTF-8"
 
     def tear_down(self, test_case):
