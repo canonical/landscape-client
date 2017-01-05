@@ -1,8 +1,16 @@
 from __future__ import division
 
 import os
-import statvfs
 import re
+import sys
+
+
+def statvfsinfo(stat, attrib):
+    if sys.version_info > (3,):
+        return getattr(stat, attrib)
+    else:
+        import statvfs
+        return stat[getattr(statvfs, attrib.upper())]
 
 
 # List of filesystem types authorized when generating disk use statistics.
@@ -43,9 +51,9 @@ def get_mount_info(mounts_file, statvfs_,
             stats = statvfs_(mount_point)
         except OSError:
             continue
-        block_size = stats[statvfs.F_BSIZE]
-        total_space = (stats[statvfs.F_BLOCKS] * block_size) // megabytes
-        free_space = (stats[statvfs.F_BFREE] * block_size) // megabytes
+        block_size = statvfsinfo(stats, 'f_bsize')
+        total_space = (statvfsinfo(stats, 'f_blocks') * block_size) // megabytes
+        free_space = (statvfsinfo(stats, 'f_bfree') * block_size) // megabytes
         yield {"device": device, "mount-point": mount_point,
                "filesystem": filesystem, "total-space": total_space,
                "free-space": free_space}
