@@ -1,5 +1,12 @@
-from cStringIO import StringIO
-from ConfigParser import ConfigParser
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+try:
+    from ConfigParser import ConfigParser
+except ImportError:
+    from configparser import ConfigParser
+
 import logging
 import shutil
 import pprint
