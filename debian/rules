@@ -1,9 +1,6 @@
 #!/usr/bin/make -f
 
 dist_release := $(shell lsb_release -cs)
-ifneq ($(dist_release),dapper)
-	use_pycentral = yes
-endif
 ifeq (,$(filter $(dist_release), hardy lucid))
 	use_dhpython2 = yes
 endif
@@ -92,19 +89,7 @@ ifeq ($(dist_release),xenial))
 	echo "extra:Depends=libpam-systemd" >> $(landscape_client_substvars)
 endif
 
-ifeq ($(use_dhpython2),yes)
 	dh_python2 --no-guessing-versions
-else
-    ifeq ($(use_pycentral),yes)
-        ifneq (,$(py_setup_install_args))
-			DH_PYCENTRAL=include-links dh_pycentral
-        else
-			DH_PYCENTRAL=nomove dh_pycentral
-        endif
-    else
-		dh_python
-    endif
-endif
 	dh_installdeb $(dh_extra_flags)
 	dh_gencontrol $(dh_extra_flags)
 	dh_md5sums $(dh_extra_flags)

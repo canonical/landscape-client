@@ -23,12 +23,6 @@ build:
 	$(PYTHON) setup.py build_ext -i
 
 check: build
-	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
-		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
-		export DBUS_SESSION_BUS_ADDRESS=`echo $$OUTPUT | cut -f1 -d ' '`; \
-		DBUS_PID=`echo $$OUTPUT | cut -f2 -d ' '`; \
-		trap "kill $$DBUS_PID" EXIT; \
-	fi; \
 	if [ -z "$$DISPLAY" ]; then \
 		xvfb-run $(TEST_COMMAND); \
 	else \
@@ -60,7 +54,6 @@ docs/api/twisted/pickle:
 manpages:
 	LC_ALL=C ${TXT2MAN} -P Landscape -s 1 -t landscape-client < man/landscape-client.txt > man/landscape-client.1
 	LC_ALL=C ${TXT2MAN} -P Landscape -s 1 -t landscape-config < man/landscape-config.txt > man/landscape-config.1
-	LC_ALL=C ${TXT2MAN} -P Landscape -s 1 -t landscape-message < man/landscape-message.txt > man/landscape-message.1
 	LC_ALL=C ${TXT2MAN} -P Landscape -s 1 -t landscape-sysinfo < man/landscape-sysinfo.txt > man/landscape-sysinfo.1
 
 origtarball: sdist
