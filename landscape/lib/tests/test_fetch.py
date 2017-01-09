@@ -233,7 +233,7 @@ class FetchTest(LandscapeTest):
         curl = CurlStub(error=pycurl.error(60, "pycurl error"))
         try:
             fetch("http://example.com", curl=curl)
-        except PyCurlError, error:
+        except PyCurlError as error:
             self.assertEqual(error.error_code, 60)
             self.assertEqual(error.message, "pycurl error")
         else:

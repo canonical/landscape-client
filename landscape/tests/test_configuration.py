@@ -1400,7 +1400,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Nothing to import at %s." % import_filename)
         else:
@@ -1414,7 +1414,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "File %s doesn't exist." % import_filename)
         else:
@@ -1431,7 +1431,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Nothing to import at %s." % import_filename)
         else:
@@ -1446,7 +1446,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertIn("Nothing to import at %s" % import_filename,
                           str(error))
         else:
@@ -1595,7 +1595,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Couldn't download configuration from "
                              "https://config.url: Server "
@@ -1617,7 +1617,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Couldn't download configuration from "
                              "https://config.url: Error 60: pycurl message")
@@ -1634,7 +1634,7 @@ registration_key = shared-secret
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Nothing to import at https://config.url.")
         else:
@@ -1651,7 +1651,7 @@ registration_key = shared-secret
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual("Nothing to import at https://config.url.",
                              str(error))
         else:
