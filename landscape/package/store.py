@@ -7,6 +7,7 @@ except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
 from twisted.python.compat import iteritems
+from twisted.python.compat import StringType as basestring
 
 from landscape.lib import bpickle
 from landscape.lib.store import with_cursor
