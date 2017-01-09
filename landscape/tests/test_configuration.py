@@ -8,6 +8,7 @@ import unittest
 
 import mock
 from twisted.internet.defer import succeed, fail, Deferred
+from twisted.python.compat import iteritems
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.tests.helpers import RemoteBrokerHelper
@@ -804,7 +805,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "Access group [webservers]: ": u"databases",
                 "Tags [london, server]: ": u"glasgow, laptop",
             }
-            for key, value in fixtures.iteritems():
+            for key, value in iteritems(fixtures):
                 if key in prompt:
                     return value
             raise KeyError("Couldn't find answer for {}".format(prompt))
@@ -812,7 +813,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         def side_effect_getpass(prompt):
             fixtures = {"Account registration key:": "New Password",
                         "Please confirm:": "New Password"}
-            for key, value in fixtures.iteritems():
+            for key, value in iteritems(fixtures):
                 if key in prompt:
                     return value
             raise KeyError("Couldn't find answer for {}".format(prompt))

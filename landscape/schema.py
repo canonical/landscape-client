@@ -1,4 +1,5 @@
 """A schema system. Yes. Another one!"""
+from twisted.python.compat import iteritems
 
 
 class InvalidError(Exception):
@@ -155,7 +156,7 @@ class KeyDict(object):
         new_dict = {}
         if not isinstance(value, dict):
             raise InvalidError("%r is not a dict." % (value,))
-        for k, v in value.iteritems():
+        for k, v in iteritems(value):
             if k not in self.schema:
                 raise InvalidError("%r is not a valid key as per %r"
                                    % (k, self.schema))

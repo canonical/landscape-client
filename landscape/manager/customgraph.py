@@ -3,6 +3,7 @@ import time
 import logging
 
 from twisted.internet.defer import fail, DeferredList, succeed
+from twisted.python.compat import iteritems
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
@@ -158,7 +159,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         message = {"type": self.message_type, "data": self._data}
 
         new_data = {}
-        for graph_id, item in self._data.iteritems():
+        for graph_id, item in iteritems(self._data):
             script_hash = item["script-hash"]
             new_data[graph_id] = {
                 "values": [], "error": u"", "script-hash": script_hash}

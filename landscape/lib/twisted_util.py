@@ -2,11 +2,13 @@ from twisted.internet.defer import DeferredList, Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
+from twisted.python.compat import itervalues
 
 try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
+
 
 def gather_results(deferreds, consume_errors=False):
     d = DeferredList(deferreds, fireOnOneErrback=1,
@@ -105,7 +107,7 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
                 be used in place of this workaround.
             """
             if process.pipes and not process.pid:
-                for pipe in process.pipes.itervalues():
+                for pipe in itervalues(process.pipes):
                     if isinstance(pipe, ProcessReader):
                         # Read whatever is left
                         pipe.doRead()
