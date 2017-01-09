@@ -52,10 +52,10 @@ class BootstrapPathTest(LandscapeTest):
 
     @patch("os.chmod")
     def test_mode(self, chmod):
-        file = self.bootstrap_class(self.path, mode=0644)
+        file = self.bootstrap_class(self.path, mode=0o644)
         file.bootstrap(my_var="my_var_value")
 
-        chmod.assert_called_with(self.real_path, 0644)
+        chmod.assert_called_with(self.real_path, 0o644)
 
     @patch("os.chmod")
     @patch("os.chown")

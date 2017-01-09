@@ -30,11 +30,11 @@ class HAServiceTests(LandscapeTest):
         cluster_online = self.makeFile(
             content="#!/bin/bash\nexit 0",
             basename="add_to_cluster", dirname=self.scripts_dir)
-        os.chmod(cluster_online, 0755)
+        os.chmod(cluster_online, 0o755)
         cluster_standby = self.makeFile(
             content="#!/bin/bash\nexit 0",
             basename="remove_from_cluster", dirname=self.scripts_dir)
-        os.chmod(cluster_standby, 0755)
+        os.chmod(cluster_standby, 0o755)
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
@@ -177,7 +177,7 @@ class HAServiceTests(LandscapeTest):
             else:
                 health_script.write("#!/bin/bash\nexit 0")
             health_script.close()
-            os.chmod(script_path, 0755)
+            os.chmod(script_path, 0o755)
 
         result = self.ha_service._run_health_checks(self.scripts_dir)
         result.addCallbacks(check_success_result, expected_failure)

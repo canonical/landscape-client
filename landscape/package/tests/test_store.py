@@ -152,7 +152,7 @@ class PackageStoreTest(LandscapeTest):
             store_filename = junk_db_factory()
             try:
                 self.store1.add_hash_id_db(store_filename)
-            except InvalidHashIdDb, e:
+            except InvalidHashIdDb as e:
                 self.assertEqual(str(e), store_filename)
             else:
                 self.fail()
@@ -547,7 +547,7 @@ class PackageStoreTest(LandscapeTest):
             func2.store2 = PackageStore(self.filename)
             try:
                 func2.store2.add_task("reporter", "data")
-            except Exception, e:
+            except Exception as e:
                 error.append(str(e))
 
         for func in [func1, func2]:

@@ -300,7 +300,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                  "echo PWD=$PWD\n"
                  "echo out\n")
         fd.close()
-        os.chmod(upgrade_tool_filename, 0755)
+        os.chmod(upgrade_tool_filename, 0o755)
         env_backup = os.environ.copy()
         os.environ.clear()
         os.environ.update({"FOO": "bar"})
@@ -350,7 +350,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                  "echo RELEASE_UPRADER_ALLOW_THIRD_PARTY="
                  "$RELEASE_UPRADER_ALLOW_THIRD_PARTY\n")
         fd.close()
-        os.chmod(upgrade_tool_filename, 0755)
+        os.chmod(upgrade_tool_filename, 0o755)
         env_backup = os.environ.copy()
         os.environ.clear()
         deferred = Deferred()
@@ -397,7 +397,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                  "echo err >&2\n"
                  "exit 3")
         fd.close()
-        os.chmod(upgrade_tool_filename, 0755)
+        os.chmod(upgrade_tool_filename, 0o755)
 
         deferred = Deferred()
 
@@ -452,7 +452,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                  "    while True:\n"
                  "        time.sleep(2)\n" % child_pid_filename)
         fd.close()
-        os.chmod(upgrade_tool_filename, 0755)
+        os.chmod(upgrade_tool_filename, 0o755)
         os.environ.clear()
         os.environ.update({"FOO": "bar"})
         deferred = Deferred()
@@ -508,7 +508,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         reporter_filename = self.makeFile("#!/bin/sh\n"
                                           "echo $@\n"
                                           "echo $(pwd)\n")
-        os.chmod(reporter_filename, 0755)
+        os.chmod(reporter_filename, 0o755)
 
         deferred = Deferred()
 
@@ -582,7 +582,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         configuration file the release-upgrader was called with.
         """
         reporter_filename = self.makeFile("#!/bin/sh\necho $@\n")
-        os.chmod(reporter_filename, 0755)
+        os.chmod(reporter_filename, 0o755)
         self.config.config = "/some/config"
 
         deferred = Deferred()

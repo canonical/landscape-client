@@ -163,7 +163,7 @@ class RunScriptTests(LandscapeTest):
 
     def test_set_umask_appropriately(self):
         """
-        We should be setting the umask to 0022 before executing a script, and
+        We should be setting the umask to 0o022 before executing a script, and
         restoring it to the previous value when finishing.
         """
         # Get original umask.
@@ -416,9 +416,9 @@ class RunScriptTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3])
         attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
-        self.assertEqual(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
+        self.assertEqual(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0o700)
         filename = os.path.join(attachment_dir, "file 1")
-        self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0600)
+        self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0o600)
 
         protocol = spawn[0]
         protocol.childDataReceived(1, "foobar")

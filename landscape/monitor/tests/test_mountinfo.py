@@ -61,9 +61,9 @@ class MountInfoTest(LandscapeTest):
         """
         def statvfs(path):
             if path == "/":
-                return (4096, 0, mb(1000L), mb(100L), 0L, 0L, 0L, 0, 0)
+                return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
             else:
-                return (4096, 0, mb(10000L), mb(1000L), 0L, 0L, 0L, 0, 0)
+                return (4096, 0, mb(10000), mb(1000), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 rootfs / rootfs rw 0 0
@@ -465,11 +465,11 @@ addr=ennui 0 0
         message = plugin.create_mount_info_message()
         self.assertEqual(message.get("mount-info"),
                          [(0, {"device": "/dev/devices/by-uuid/12345567",
-                               "mount-point": "/", "total-space": 4096000L,
+                               "mount-point": "/", "total-space": 4096000,
                                "filesystem": "ext3"}),
                           (0, {"device": "/dev/hda2",
                                "mount-point": "/usr",
-                               "total-space": 4096000L,
+                               "total-space": 4096000,
                                "filesystem": "ext3"}),
                           ])
 
@@ -499,15 +499,15 @@ addr=ennui 0 0
         message = plugin.create_mount_info_message()
         self.assertEqual(message.get("mount-info"),
                          [(0, {"device": "/dev/devices/by-uuid/12345567",
-                               "mount-point": "/", "total-space": 4096000L,
+                               "mount-point": "/", "total-space": 4096000,
                                "filesystem": "ext3"}),
                           (0, {"device": "/dev/hda2",
                                "mount-point": "/usr",
-                               "total-space": 4096000L,
+                               "total-space": 4096000,
                                "filesystem": "ext3"}),
                           (0, {"device": "/dev/devices/by-uuid/12345567",
                                "mount-point": "/mnt",
-                               "total-space": 4096000L,
+                               "total-space": 4096000,
                                "filesystem": "ext3"})])
 
     def test_no_message_if_not_accepted(self):
@@ -581,7 +581,7 @@ addr=ennui 0 0
             [(0, {"device": "/dev/hda1",
                   "filesystem": "ext3",
                   "mount-point": "/",
-                  "total-space": 4096000L})])
+                  "total-space": 4096000})])
         plugin.run()
         message2 = plugin.create_mount_info_message()
         self.assertEqual(
@@ -589,7 +589,7 @@ addr=ennui 0 0
             [(0, {"device": "/dev/hda1",
                   "filesystem": "ext3",
                   "mount-point": "/",
-                  "total-space": 4096000L})])
+                  "total-space": 4096000})])
         # Run again, calling create_mount_info_message purge the information
         plugin.run()
         plugin.exchange()

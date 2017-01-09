@@ -186,7 +186,7 @@ class PackageManagerTest(LandscapeTest):
         when passed the L{PackageChanger} class as argument.
         """
         command = self.makeFile("#!/bin/sh\necho 'I am the changer!' >&2\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         find_command_mock.return_value = command
 
         self.package_store.add_task("changer", "Do something!")
@@ -210,7 +210,7 @@ class PackageManagerTest(LandscapeTest):
         when passed the L{ReleaseUpgrader} class as argument.
         """
         command = self.makeFile("#!/bin/sh\necho 'I am the upgrader!' >&2\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         find_command_mock.return_value = command
 
         self.package_store.add_task("release-upgrader", "Do something!")
@@ -244,7 +244,7 @@ class PackageManagerTest(LandscapeTest):
     @mock.patch("landscape.package.changer.find_changer_command")
     def test_spawn_handler_copies_environment(self, find_command_mock):
         command = self.makeFile("#!/bin/sh\necho VAR: $VAR\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         find_command_mock.return_value = command
 
         self.manager.add(self.package_manager)
@@ -264,7 +264,7 @@ class PackageManagerTest(LandscapeTest):
     @mock.patch("landscape.package.changer.find_changer_command")
     def test_spawn_handler_passes_quiet_option(self, find_command_mock):
         command = self.makeFile("#!/bin/sh\necho OPTIONS: $@\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         find_command_mock.return_value = command
 
         self.manager.add(self.package_manager)
@@ -281,7 +281,7 @@ class PackageManagerTest(LandscapeTest):
 
     def test_spawn_handler_wont_run_without_tasks(self):
         command = self.makeFile("#!/bin/sh\necho RUN!\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
 
         self.manager.add(self.package_manager)
         result = self.package_manager.spawn_handler(PackageChanger)
@@ -295,7 +295,7 @@ class PackageManagerTest(LandscapeTest):
     @mock.patch("landscape.package.changer.find_changer_command")
     def test_spawn_handler_doesnt_chdir(self, find_command_mock):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         cwd = os.getcwd()
         self.addCleanup(os.chdir, cwd)
         dir = self.makeDir()
@@ -313,7 +313,7 @@ class PackageManagerTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("RUN", log)
             # restore permissions to the dir so tearDown can clean it up
-            os.chmod(dir, 0766)
+            os.chmod(dir, 0o766)
 
         return result.addCallback(got_result)
 

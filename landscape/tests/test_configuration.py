@@ -740,8 +740,8 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
 
         config = self.get_config([], data_path=client_path)
         bootstrap_tree(config)
-        mock_chmod.assert_any_call(client_path, 0755)
-        mock_chmod.assert_called_with(annotations_path, 0755)
+        mock_chmod.assert_any_call(client_path, 0o755)
+        mock_chmod.assert_called_with(annotations_path, 0o755)
         self.assertTrue(os.path.isdir(client_path))
         self.assertTrue(os.path.isdir(annotations_path))
 
@@ -1459,7 +1459,7 @@ registration_key = shared-secret
         import_filename = self.makeFile(
             "[client]\nfoo=bar", basename="import_config")
         # Remove read permissions
-        os.chmod(import_filename, os.stat(import_filename).st_mode - 0444)
+        os.chmod(import_filename, os.stat(import_filename).st_mode - 0o444)
         error = self.assertRaises(
             ImportOptionError, self.get_config, ["--import", import_filename])
         expected_message = ("Couldn't read configuration from %s." %

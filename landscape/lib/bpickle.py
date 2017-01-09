@@ -28,7 +28,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import sys
-
+from twisted.python.compat import networkString
 
 dumps_table = {}
 loads_table = {}
@@ -36,7 +36,7 @@ loads_table = {}
 
 def dumps(obj, _dt=dumps_table):
     try:
-        return _dt[type(obj)](obj)
+        return networkString(_dt[type(obj)](obj))
     except KeyError as e:
         raise ValueError("Unsupported type: %s" % e)
 
@@ -151,6 +151,9 @@ dumps_table.update({       bool: dumps_bool,
 if sys.version_info < (3,):
     dumps_table.update({   long: dumps_int,
                         unicode: dumps_unicode })
+if sys.version_info > (3,):
+    dumps_table.update({ type(dict().keys()): dumps_list })
+
 
 
 loads_table.update({ "b": loads_bool,

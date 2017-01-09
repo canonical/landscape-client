@@ -89,7 +89,7 @@ class PackageReporterAptTest(LandscapeTest):
             "echo -n '%s'\n"
             "echo -n '%s' >&2\n"
             "exit %d" % (out, err, code))
-        os.chmod(self.reporter.apt_update_filename, 0755)
+        os.chmod(self.reporter.apt_update_filename, 0o755)
 
     def test_set_package_ids_with_all_known(self):
         self.store.add_hash_id_request(["hash1", "hash2"])
@@ -1123,7 +1123,8 @@ class PackageReporterAptTest(LandscapeTest):
         def do_test():
             result = self.reporter.run_apt_update()
 
-            def callback((out, err, code)):
+            def callback(args):
+                out, err, code = args
                 self.assertEqual("output", out)
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
@@ -1728,7 +1729,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
         message_store.set_accepted_types(["package-reporter-result"])
         self.reporter.apt_update_filename = self.makeFile(
             "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
-        os.chmod(self.reporter.apt_update_filename, 0755)
+        os.chmod(self.reporter.apt_update_filename, 0o755)
         deferred = Deferred()
 
         def do_test():

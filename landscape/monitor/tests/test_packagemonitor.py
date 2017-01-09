@@ -130,7 +130,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter(self):
         command = self.makeFile("#!/bin/sh\necho 'I am the reporter!' >&2\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         find_command_mock_patcher = mock.patch(
             "landscape.monitor.packagemonitor.find_reporter_command",
             return_value=command)
@@ -167,7 +167,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_copies_environment(self):
         command = self.makeFile("#!/bin/sh\necho VAR: $VAR\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         find_command_mock_patcher = mock.patch(
             "landscape.monitor.packagemonitor.find_reporter_command",
             return_value=command)
@@ -190,7 +190,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_passes_quiet_option(self):
         command = self.makeFile("#!/bin/sh\necho OPTIONS: $@\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         find_command_mock_patcher = mock.patch(
             "landscape.monitor.packagemonitor.find_reporter_command",
             return_value=command)
@@ -277,7 +277,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
-        os.chmod(command, 0755)
+        os.chmod(command, 0o755)
         cwd = os.getcwd()
         self.addCleanup(os.chdir, cwd)
         dir = self.makeDir()
@@ -298,7 +298,7 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("RUN", log)
             # restore permissions to the dir so tearDown can clean it up
-            os.chmod(dir, 0766)
+            os.chmod(dir, 0o766)
             find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)

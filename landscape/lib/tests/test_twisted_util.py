@@ -10,7 +10,7 @@ class SpawnProcessTest(LandscapeTest):
     def setUp(self):
         super(SpawnProcessTest, self).setUp()
         self.command = self.makeFile("#!/bin/sh\necho -n $@")
-        os.chmod(self.command, 0755)
+        os.chmod(self.command, 0o755)
 
     def test_spawn_process_return_value(self):
         """

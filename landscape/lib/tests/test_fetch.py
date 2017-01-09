@@ -214,7 +214,7 @@ class FetchTest(LandscapeTest):
         curl = CurlStub("result", {pycurl.HTTP_CODE: 404})
         try:
             fetch("http://example.com", curl=curl)
-        except HTTPCodeError, error:
+        except HTTPCodeError as error:
             self.assertEqual(error.http_code, 404)
             self.assertEqual(error.body, "result")
         else:

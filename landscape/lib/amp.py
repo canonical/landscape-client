@@ -49,6 +49,7 @@ from uuid import uuid4
 from twisted.internet.defer import Deferred, maybeDeferred, succeed
 from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
 from twisted.python.failure import Failure
+from twisted.python.compat import xrange
 
 from twisted.protocols.amp import (
     Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)

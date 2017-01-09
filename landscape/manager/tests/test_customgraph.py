@@ -105,7 +105,7 @@ class CustomGraphManagerTests(LandscapeTest):
                    "bar")])
 
         mock_chown.assert_called_with(mock.ANY, 1234, 5678)
-        mock_chmod.assert_called_with(mock.ANY, 0700)
+        mock_chmod.assert_called_with(mock.ANY, 0o700)
         mock_getpwnam.assert_called_with("bar")
 
     def test_remove_unknown_graph(self):
@@ -129,7 +129,7 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile = file(filename, "w")
         tempfile.write("#!/bin/sh\necho 1")
         tempfile.close()
-        os.chmod(filename, 0777)
+        os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
         def check(ignore):
@@ -148,14 +148,14 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile = file(filename, "w")
         tempfile.write("#!/bin/sh\necho 1")
         tempfile.close()
-        os.chmod(filename, 0777)
+        os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
         filename = self.makeFile()
         tempfile = file(filename, "w")
         tempfile.write("#!/bin/sh\necho 2")
         tempfile.close()
-        os.chmod(filename, 0777)
+        os.chmod(filename, 0o777)
         self.store.add_graph(124, filename, None)
 
         def check(ignore):
@@ -180,7 +180,7 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile = file(filename, "w")
         tempfile.write("#!/bin/sh\nexit 1")
         tempfile.close()
-        os.chmod(filename, 0777)
+        os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
         def check(ignore):

@@ -19,7 +19,7 @@ class GPGTest(LandscapeTest):
         gpg = self.makeFile("#!/bin/sh\n"
                             "touch $3/trustdb.gpg\n"
                             "echo -n $@ > %s\n" % gpg_options)
-        os.chmod(gpg, 0755)
+        os.chmod(gpg, 0o755)
         gpg_home = self.makeDir()
         deferred = Deferred()
 

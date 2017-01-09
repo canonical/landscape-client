@@ -580,7 +580,7 @@ class DaemonTest(DaemonTestBase):
         output_filename = self.makeFile("NOT RUN")
         self.makeFile('#!/bin/sh\necho "RUN $@" > %s' % output_filename,
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         waiter = FileChangeWaiter(output_filename)
 
@@ -597,7 +597,7 @@ class DaemonTest(DaemonTestBase):
         output_filename = self.makeFile("NOT RUN")
         self.makeFile('#!/bin/sh\necho "RUN $@" > %s' % output_filename,
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         waiter = FileChangeWaiter(output_filename)
 
@@ -622,7 +622,7 @@ class DaemonTest(DaemonTestBase):
                       "time.sleep(1000)\n"
                       % (sys.executable, output_filename),
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         waiter = FileChangeWaiter(output_filename)
         self.daemon.start()
@@ -646,7 +646,7 @@ class DaemonTest(DaemonTestBase):
                       "os.kill(os.getpid(), signal.SIGSTOP)\n"
                       % (sys.executable, output_filename),
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         self.addCleanup(setattr, landscape.watchdog, "SIGKILL_DELAY",
                         landscape.watchdog.SIGKILL_DELAY)
@@ -666,7 +666,7 @@ class DaemonTest(DaemonTestBase):
         output_filename = self.makeFile("NOT RUN")
         self.makeFile('#!/bin/sh\necho "RUN" > %s' % output_filename,
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         self.daemon.start()
 
@@ -682,7 +682,7 @@ class DaemonTest(DaemonTestBase):
         output_filename = self.makeFile("NOT RUN")
         self.makeFile('#!/bin/sh\necho "RUN" > %s' % output_filename,
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         self.daemon.start()
 
@@ -709,7 +709,7 @@ time.sleep(999)
         """
                       % {"exe": sys.executable, "out": output_filename},
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         self.addCleanup(setattr, landscape.watchdog, "GRACEFUL_WAIT_PERIOD",
                         landscape.watchdog.GRACEFUL_WAIT_PERIOD)
@@ -735,7 +735,7 @@ time.sleep(999)
                       "os.kill(os.getpid(), signal.SIGSTOP)\n"
                       % (sys.executable, output_filename),
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         self.addCleanup(setattr, landscape.watchdog, "SIGKILL_DELAY",
                         landscape.watchdog.SIGKILL_DELAY)
@@ -789,7 +789,7 @@ time.sleep(999)
 
         self.makeFile("#!/bin/sh\necho RUN >> %s" % output_filename,
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         def got_result(result):
             self.assertEqual(len(list(open(output_filename))),
@@ -832,7 +832,7 @@ time.sleep(999)
 
         self.makeFile("#!/bin/sh\necho RUN >> %s" % output_filename,
                       path=self.exec_name)
-        os.chmod(self.exec_name, 0755)
+        os.chmod(self.exec_name, 0o755)
 
         def got_result(result):
             # Pay attention to the +1 bellow. It's the reason for this test.
@@ -958,7 +958,7 @@ time.sleep(999)
                                          "output_filename": output_filename,
                                          "socket": socket_filename})
 
-        os.chmod(broker_filename, 0755)
+        os.chmod(broker_filename, 0o755)
         process_result = getProcessOutput(broker_filename, env=os.environ,
                                           errortoo=True)
 
@@ -1230,14 +1230,14 @@ class WatchDogServiceTest(LandscapeTest):
         def mode(*suffix):
             return stat.S_IMODE(os.stat(path(*suffix)).st_mode)
 
-        self.assertEqual(mode(), 0755)
-        self.assertEqual(mode("messages"), 0755)
-        self.assertEqual(mode("package"), 0755)
-        self.assertEqual(mode("package/hash-id"), 0755)
-        self.assertEqual(mode("package/binaries"), 0755)
-        self.assertEqual(mode("sockets"), 0750)
-        self.assertEqual(mode("custom-graph-scripts"), 0755)
-        self.assertEqual(mode("package/database"), 0644)
+        self.assertEqual(mode(), 0o755)
+        self.assertEqual(mode("messages"), 0o755)
+        self.assertEqual(mode("package"), 0o755)
+        self.assertEqual(mode("package/hash-id"), 0o755)
+        self.assertEqual(mode("package/binaries"), 0o755)
+        self.assertEqual(mode("sockets"), 0o750)
+        self.assertEqual(mode("custom-graph-scripts"), 0o755)
+        self.assertEqual(mode("package/database"), 0o644)
 
 STUB_BROKER = """\
 #!%(executable)s

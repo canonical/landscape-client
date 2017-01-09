@@ -41,9 +41,6 @@ class BasicTypesTest(LandscapeTest):
     def test_int(self):
         self.assertEqual(Int().coerce(3), 3)
 
-    def test_int_accepts_long(self):
-        self.assertEqual(Int().coerce(3L), 3)
-
     def test_int_bad_str(self):
         self.assertRaises(InvalidError, Int().coerce, "3")
 
@@ -55,9 +52,6 @@ class BasicTypesTest(LandscapeTest):
 
     def test_float_accepts_int(self):
         self.assertEqual(Float().coerce(3), 3.0)
-
-    def test_float_accepts_long(self):
-        self.assertEqual(Float().coerce(3L), 3.0)
 
     def test_float_bad_str(self):
         self.assertRaises(InvalidError, Float().coerce, "3.0")
