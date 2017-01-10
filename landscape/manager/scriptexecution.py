@@ -21,6 +21,7 @@ from landscape.lib.persist import Persist
 from landscape.lib.encoding import encode_if_needed
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
+from twisted.python.compat import unicode
 from landscape.compat import coerce_unicode
 
 

@@ -1,4 +1,4 @@
-from twisted.python.compat import iteritems
+from twisted.python.compat import iteritems, unicode
 
 
 def encode_if_needed(value):

@@ -2,6 +2,7 @@ from landscape.lib.hashlib import sha1
 
 import apt_pkg
 
+from twisted.python.compat import unicode
 from landscape.compat import coerce_unicode
 
 

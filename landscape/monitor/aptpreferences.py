@@ -1,6 +1,6 @@
 import os
 
-from twisted.python.compat import iteritems
+from twisted.python.compat import iteritems, unicode
 
 from landscape.lib.fs import read_file
 from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
