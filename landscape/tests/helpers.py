@@ -7,11 +7,6 @@ except ImportError:
     from io import StringIO
     stringio = cstringio = StringIO
 
-try:
-    from ConfigParser import ConfigParser
-except ImportError:
-    from configparser import ConfigParser
-
 import logging
 import shutil
 import pprint
@@ -27,6 +22,8 @@ from twisted.trial.unittest import TestCase
 from twisted.python.compat import StringType as basestring
 from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
+
+from landscape.compat import ConfigParser
 
 from landscape.tests.subunit import run_isolated
 from landscape.watchdog import bootstrap_list

@@ -1,5 +1,12 @@
 from twisted.python.compat import _PY3
 
+if _PY3:
+    from configparser import ConfigParser, NoOptionError
+    SafeConfigParser = ConfigParser
+else:
+    from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
+    from ConfigParser import SafeConfigParser
+
 
 def coerce_unicode(s, encoding='ascii', errors='strict'):
     """
