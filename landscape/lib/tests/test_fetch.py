@@ -4,6 +4,7 @@ from threading import local
 import pycurl
 
 from twisted.internet.defer import FirstError
+from twisted.python.compat import itervalues
 
 from landscape.lib.fetch import (
     fetch, fetch_async, fetch_many_async, fetch_to_files,
@@ -232,7 +233,7 @@ class FetchTest(LandscapeTest):
         curl = CurlStub(error=pycurl.error(60, "pycurl error"))
         try:
             fetch("http://example.com", curl=curl)
-        except PyCurlError, error:
+        except PyCurlError as error:
             self.assertEqual(error.error_code, 60)
             self.assertEqual(error.message, "pycurl error")
         else:
@@ -418,7 +419,7 @@ class FetchTest(LandscapeTest):
         result = fetch_to_files(url_results.keys(), directory, curl=curl)
 
         def check_files(ignored):
-            for result in url_results.itervalues():
+            for result in itervalues(url_results):
                 fd = open(os.path.join(directory, result))
                 self.assertEqual(fd.read(), result)
                 fd.close()

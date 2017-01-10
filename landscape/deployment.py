@@ -13,10 +13,8 @@ from landscape.lib.persist import Persist
 
 from landscape.upgraders import UPGRADE_MANAGERS
 
-try:
-  basestring
-except NameError:
-  basestring = str
+from twisted.python.compat import StringType as basestring
+
 
 def init_logging(configuration, program_name):
     """Given a basic configuration, set up logging."""

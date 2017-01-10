@@ -26,6 +26,8 @@ from aptsources.sourceslist import SourcesList
 from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
 
+from twisted.python.compat import itervalues
+
 from landscape.lib.fs import append_file, create_file, read_file, touch_file
 from landscape.package.skeleton import build_skeleton_apt
 
@@ -172,7 +174,7 @@ class AptFacade(object):
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return self._hash2pkg.itervalues()
+        return itervalues(self._hash2pkg)
 
     def get_locked_packages(self):
         """Get all packages in the channels that are locked.

@@ -1,5 +1,7 @@
 import os
 
+from twisted.python.compat import iteritems
+
 from landscape.lib.fs import read_file
 from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
 
@@ -46,7 +48,7 @@ class AptPreferences(DataWatcher):
             return None
 
         item_size_limit = self.size_limit / len(data.keys())
-        for filename, contents in data.iteritems():
+        for filename, contents in iteritems(data):
             if len(filename) + len(contents) > item_size_limit:
                 truncated_contents_size = item_size_limit - len(filename)
                 data[filename] = data[filename][0:truncated_contents_size]

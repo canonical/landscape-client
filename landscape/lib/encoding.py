@@ -1,3 +1,4 @@
+from twisted.python.compat import iteritems
 
 
 def encode_if_needed(value):
@@ -13,6 +14,6 @@ def encode_dict_if_needed(values):
     """
     A wrapper taking a dict and passing each of the values to encode_if_needed.
     """
-    for key, value in values.iteritems():
+    for key, value in iteritems(values):
         values[key] = encode_if_needed(value)
     return values

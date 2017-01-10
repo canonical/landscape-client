@@ -7,6 +7,8 @@ try:
 except ImportError:
     from io import StringIO
 
+from twisted.python.compat import iteritems
+
 from twisted.internet.threads import deferToThread
 from twisted.internet.defer import DeferredList
 
@@ -87,7 +89,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
 
     if headers:
         curl.setopt(pycurl.HTTPHEADER,
-                    ["%s: %s" % pair for pair in sorted(headers.iteritems())])
+                    ["%s: %s" % pair for pair in sorted(iteritems(headers))])
 
     if insecure:
         curl.setopt(pycurl.SSL_VERIFYPEER, False)

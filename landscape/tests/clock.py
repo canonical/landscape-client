@@ -35,6 +35,8 @@ Currently:
 from twisted.internet import error
 from twisted.python.runtime import seconds as runtimeSeconds
 from twisted.python import reflect
+from twisted.python.compat import iteritems
+
 import traceback
 
 
@@ -246,7 +248,9 @@ class DelayedCall:
                 if self.kw:
                     L.append(", ")
             if self.kw:
-                L.append(", ".join(['%s=%s' % (k, reflect.safe_repr(v)) for (k, v) in self.kw.iteritems()]))
+                L.append(", ".join([
+                    '%s=%s' % (k, reflect.safe_repr(v))
+                    for (k, v) in iteritems(self.kw)]))
             L.append(")")
 
         if self.debug:
