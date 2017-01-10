@@ -31,6 +31,7 @@ Currently:
    C{seconds} argument until after Twisted 2.2.
 """
 
+import functools
 
 from twisted.internet import error
 from twisted.python.runtime import seconds as runtimeSeconds
@@ -73,7 +74,7 @@ class Clock:
                              self.calls.remove,
                              lambda c: None,
                              self.seconds))
-        self.calls.sort(lambda a, b: cmp(a.getTime(), b.getTime()))
+        self.calls.sort(key=lambda a: a.getTime())
         return self.calls[-1]
 
 
