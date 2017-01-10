@@ -3,9 +3,13 @@ from twisted.python.compat import _PY3
 if _PY3:
     from configparser import ConfigParser, NoOptionError
     SafeConfigParser = ConfigParser
+
+    import _thread as thread
 else:
     from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
     from ConfigParser import SafeConfigParser
+
+    import thread
 
 
 def coerce_unicode(s, encoding='ascii', errors='strict'):

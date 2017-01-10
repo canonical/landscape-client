@@ -1,9 +1,10 @@
-import thread
 import types
 import time
 
 from landscape.reactor import FakeReactor, LandscapeReactor
 from landscape.tests.helpers import LandscapeTest
+
+from landscape.compat import thread
 
 
 class ReactorTestMixin(object):
