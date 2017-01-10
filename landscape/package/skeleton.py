@@ -67,7 +67,6 @@ class PackageSkeleton(object):
         self._hash = package_hash
 
 
-
 def relation_to_string(relation_tuple):
     """Convert an apt relation to a string representation.
 
@@ -150,5 +149,6 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         if with_unicode:
             skeleton.section = skeleton.section.decode("utf-8")
             skeleton.summary = skeleton.summary.decode("utf-8")
-            skeleton.description = skeleton.description.decode("utf-8")
+            if not isinstance(skeleton.description, unicode):
+                skeleton.description = skeleton.description.decode("utf-8")
     return skeleton
