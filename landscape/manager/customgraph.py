@@ -131,7 +131,8 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             logging.error(u"Attempt to add graph with unknown user %s" %
                           user)
         else:
-            script_file = file(filename, "w")
+            script_file = open(filename, "w")
+            # file is closed in write_script_file
             self.write_script_file(
                 script_file, filename, shell, code, uid, gid)
             if graph_id in self._data:
@@ -201,9 +202,8 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 failure.value)
 
     def _get_script_hash(self, filename):
-        file_object = file(filename)
-        script_content = file_object.read()
-        file_object.close()
+        with open(filename) as file_object:
+            script_content = file_object.read()
         return generate_script_hash(script_content)
 
     def run(self):

@@ -226,12 +226,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                     cainfo=self.registry.config.ssl_public_key,
                     headers=headers)
             full_filename = os.path.join(attachment_dir, filename)
-            attachment = file(full_filename, "wb")
-            os.chmod(full_filename, 0o600)
-            if uid is not None:
-                os.chown(full_filename, uid, gid)
-            attachment.write(data)
-            attachment.close()
+            with open(full_filename, "wb") as attachment:
+                os.chmod(full_filename, 0o600)
+                if uid is not None:
+                    os.chown(full_filename, uid, gid)
+                attachment.write(data)
         os.chmod(attachment_dir, 0o700)
         if uid is not None:
             os.chown(attachment_dir, uid, gid)

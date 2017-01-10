@@ -87,21 +87,22 @@ class BootTimes(object):
     def get_times(self):
         reboot_times = []
         shutdown_times = []
-        reader = LoginInfoReader(file(self._filename))
-        self._last_boot = self._boots_newer_than
-        self._last_shutdown = self._shutdowns_newer_than
+        with open(self._filename) as file_to_read:
+            reader = LoginInfoReader(file_to_read)
+            self._last_boot = self._boots_newer_than
+            self._last_shutdown = self._shutdowns_newer_than
 
-        for info in reader.login_info():
-            if info.tty_device.startswith("~"):
-                timestamp = to_timestamp(info.entry_time)
-                if (info.username == "reboot"
-                    and timestamp > self._last_boot):
-                    reboot_times.append(timestamp)
-                    self._last_boot = timestamp
-                elif (info.username == "shutdown"
-                      and timestamp > self._last_shutdown):
-                    shutdown_times.append(timestamp)
-                    self._last_shutdown = timestamp
+            for info in reader.login_info():
+                if info.tty_device.startswith("~"):
+                    timestamp = to_timestamp(info.entry_time)
+                    if (info.username == "reboot"
+                        and timestamp > self._last_boot):
+                        reboot_times.append(timestamp)
+                        self._last_boot = timestamp
+                    elif (info.username == "shutdown"
+                          and timestamp > self._last_shutdown):
+                        shutdown_times.append(timestamp)
+                        self._last_shutdown = timestamp
         return reboot_times, shutdown_times
 
     def get_last_boot_time(self):

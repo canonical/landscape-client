@@ -86,9 +86,8 @@ class AptSources(ManagerPlugin):
         for key in message["gpg-keys"]:
             fd, path = tempfile.mkstemp()
             os.close(fd)
-            key_file = file(path, "w")
-            key_file.write(key)
-            key_file.close()
+            with open(path, "w") as key_file:
+                key_file.write(key)
             deferred.addCallback(
                 lambda ignore, path=path:
                     self._run_process("/usr/bin/apt-key", ["add", path]))
@@ -102,19 +101,18 @@ class AptSources(ManagerPlugin):
         """Handle sources repositories."""
         fd, path = tempfile.mkstemp()
         os.close(fd)
-        new_sources = file(path, "w")
-        try:
-            source_file = open(self.SOURCES_LIST)
-        except:
-            os.unlink(path)
-            raise
-        for line in source_file:
-            stripped_line = line.strip()
-            if not stripped_line or stripped_line.startswith("#"):
-                new_sources.write(line)
-            else:
-                new_sources.write("#%s" % line)
-        new_sources.close()
+        with open(path, "w") as new_sources:
+            try:
+                source_file = open(self.SOURCES_LIST)
+            except:
+                os.unlink(path)
+                raise
+            for line in source_file:
+                stripped_line = line.strip()
+                if not stripped_line or stripped_line.startswith("#"):
+                    new_sources.write(line)
+                else:
+                    new_sources.write("#%s" % line)
 
         original_stat = os.stat(self.SOURCES_LIST)
         shutil.move(path, self.SOURCES_LIST)
@@ -127,9 +125,8 @@ class AptSources(ManagerPlugin):
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
                                     "landscape-%s.list" % source["name"])
-            sources_file = file(filename, "w")
-            sources_file.write(source["content"])
-            sources_file.close()
+            with open(filename, "w") as sources_file:
+                sources_file.write(source["content"])
             os.chmod(filename, 0o644)
         return self._run_reporter().addCallback(lambda ignored: None)
 

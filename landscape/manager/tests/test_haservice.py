@@ -171,12 +171,11 @@ class HAServiceTests(LandscapeTest):
         for number in [1, 2, 3]:
             script_path = (
                 "%s/my-health-script-%d" % (self.health_check_d, number))
-            health_script = file(script_path, "w")
-            if number == 2:
-                health_script.write("#!/bin/bash\nexit 1")
-            else:
-                health_script.write("#!/bin/bash\nexit 0")
-            health_script.close()
+            with open(script_path, "w") as health_script:
+                if number == 2:
+                    health_script.write("#!/bin/bash\nexit 1")
+                else:
+                    health_script.write("#!/bin/bash\nexit 0")
             os.chmod(script_path, 0o755)
 
         result = self.ha_service._run_health_checks(self.scripts_dir)
@@ -229,10 +228,9 @@ class HAServiceTests(LandscapeTest):
         for script_name in [
             self.ha_service.CLUSTER_ONLINE, self.ha_service.CLUSTER_STANDBY]:
 
-            cluster_online = file(
-                "%s/%s" % (self.scripts_dir, script_name), "w")
-            cluster_online.write("#!/bin/bash\nexit 2")
-            cluster_online.close()
+            with open("%s/%s" % (self.scripts_dir, script_name),
+                      "w") as cluster_online:
+                cluster_online.write("#!/bin/bash\nexit 2")
 
         result = self.ha_service._change_cluster_participation(
             None, self.scripts_dir, self.ha_service.STATE_ONLINE)
