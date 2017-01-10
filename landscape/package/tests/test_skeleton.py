@@ -140,6 +140,18 @@ class SkeletonAptTest(LandscapeTest):
         self.assertTrue(isinstance(skeleton.description, unicode))
         self.assertEqual(HASH1, skeleton.get_hash())
 
+    def test_build_skeleton_with_unicode_and_non_ascii(self):
+        """
+        If with_unicode and with_info are passed to build_skeleton_apt,
+        the description is decoded and non-ascii chars replaced.
+        """
+        self._add_package_to_deb_dir(
+            self.skeleton_repository_dir, "pkg", description=u"T\xe9st")
+        self.facade._cache.update(None)
+        self.facade._cache.open(None)
+        pkg = self.get_package("pkg")
+        self.assertEqual(u"T?st", pkg.description)
+
     def test_build_skeleton_minimal(self):
         """
         A package that has only the required fields will still have some
