@@ -5,11 +5,16 @@ if _PY3:
     SafeConfigParser = ConfigParser
 
     import _thread as thread
+
+    from io import StringIO
+
 else:
     from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
     from ConfigParser import SafeConfigParser
 
     import thread
+
+    from cStringIO import StringIO
 
 
 def coerce_unicode(s, encoding='ascii', errors='strict'):

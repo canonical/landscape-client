@@ -17,10 +17,7 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from landscape.compat import StringIO
 
 import os
 import subprocess

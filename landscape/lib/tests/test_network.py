@@ -3,10 +3,7 @@ import socket
 
 from mock import patch, ANY
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from landscape.compat import StringIO
 
 from subprocess import Popen, PIPE
 from landscape.tests.helpers import LandscapeTest

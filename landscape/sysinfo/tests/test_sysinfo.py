@@ -1,4 +1,3 @@
-from cStringIO import StringIO
 from logging import getLogger, StreamHandler
 import mock
 import os
@@ -8,6 +7,8 @@ from twisted.internet.defer import Deferred, succeed, fail
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 from landscape.plugin import PluginRegistry
 from landscape.tests.helpers import LandscapeTest
+
+from landscape.compat import StringIO
 
 
 class SysInfoPluginRegistryTest(LandscapeTest):
