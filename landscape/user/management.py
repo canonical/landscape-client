@@ -4,6 +4,7 @@
 # subprocesses. liboobs (i.e. System Tools) is a possibility, and has
 # documentation now in the 2.17 series, but is not wrapped to Python.
 
+import base64
 import os
 import logging
 import subprocess
