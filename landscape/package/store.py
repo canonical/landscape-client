@@ -6,7 +6,7 @@ try:
 except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
-from twisted.python.compat import iteritems
+from twisted.python.compat import iteritems, long
 from twisted.python.compat import StringType as basestring
 from twisted.python.compat import networkString
 
@@ -284,7 +284,7 @@ class PackageStore(HashIdStore):
         cursor.execute("INSERT INTO task (queue, timestamp, data) "
                        "VALUES (?,?,?)",
                        (queue, time.time(),
-                        sqlite3.Binary(networkString(data))))
+                        sqlite3.Binary(data)))
         return PackageTask(self._db, cursor.lastrowid)
 
     @with_cursor
