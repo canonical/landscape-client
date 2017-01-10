@@ -1,5 +1,6 @@
 from pwd import struct_passwd
 from grp import struct_group
+from landscape.compat import coerce_unicode
 import csv
 import subprocess
 import logging
@@ -31,7 +32,7 @@ class UserProviderBase(object):
 
         Each user is represented as a dict with the keys: C{username},
         C{name}, C{uid}, C{enabled}, C{location}, C{work-phone} and
-        C{home-phone}.  
+        C{home-phone}.
         """
         users = []
         found_usernames = set()
@@ -40,7 +41,7 @@ class UserProviderBase(object):
                 user = struct_passwd(user)
             if user.pw_name in found_usernames:
                 continue
-            gecos_data = [x.decode("utf-8", "replace") or None
+            gecos_data = [coerce_unicode(x, "utf-8", "replace") or None
                           for x in user.pw_gecos.split(",")[:4]]
             while len(gecos_data) < 4:
                 gecos_data.append(None)
@@ -157,11 +158,10 @@ class UserProvider(UserProviderBase):
                 row["name"].startswith("-")):
                 continue
             try:
-                group_data.append((row["name"], row["passwd"], int(row["gid"]), 
+                group_data.append((row["name"], row["passwd"], int(row["gid"]),
                                    row["members"].split(",")))
             except (AttributeError, ValueError):
                 logging.warn("group file %s is incorrectly formatted: "
                              "line %d." % (self._group_file, current_line))
         group_file.close()
         return group_data
- 

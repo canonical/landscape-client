@@ -4,6 +4,8 @@ import os
 import re
 import sys
 
+from landscape.compat import coerce_unicode
+
 
 def statvfsinfo(stat, attrib):
     if sys.version_info > (3,):
@@ -40,7 +42,7 @@ def get_mount_info(mounts_file, statvfs_,
     for line in open(mounts_file):
         try:
             device, mount_point, filesystem = line.split()[:3]
-            mount_point = mount_point.decode("string-escape")
+            mount_point = coerce_unicode(mount_point, errors="string-escape")
         except ValueError:
             continue
         if (filesystems_whitelist is not None and

@@ -8,6 +8,8 @@ from twisted.internet.defer import succeed
 from landscape.lib.log import log_failure
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
+from landscape.compat import coerce_unicode
+
 
 class CharmScriptError(Exception):
     """
@@ -67,7 +69,7 @@ class HAService(ManagerPlugin):
                    "status": status,
                    "operation-id": operation_id}
         if data:
-            message["result-text"] = data.decode("utf-8", "replace")
+            message["result-text"] = coerce_unicode(data, "utf-8", "replace")
         return self.registry.broker.send_message(
             message, self._session_id, True)
 

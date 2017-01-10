@@ -4,6 +4,7 @@ import logging
 
 from twisted.internet.defer import fail, DeferredList, succeed
 from twisted.python.compat import iteritems
+from landscape.compat import coerce_unicode
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
@@ -187,7 +188,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         if graph_id not in self._data:
             return
         if failure.check(ProcessFailedError):
-            failure_value = failure.value.data.decode("utf-8")
+            failure_value = coerce_unicode(failure.value.data, "utf-8")
             if failure.value.exit_code:
                 failure_value = ("%s (process exited with code %d)" %
                                  (failure_value, failure.value.exit_code))

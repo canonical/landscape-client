@@ -29,6 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import sys
 from twisted.python.compat import networkString
+from landscape.compat import coerce_unicode
+
 
 dumps_table = {}
 loads_table = {}
@@ -106,7 +108,7 @@ def loads_str(str, pos):
 def loads_unicode(str, pos):
     startpos = str.index(":", pos)+1
     endpos = startpos+int(str[pos+1:startpos-1])
-    return str[startpos:endpos].decode("utf-8"), endpos
+    return coerce_unicode(str[startpos:endpos], "utf-8"), endpos
 
 def loads_list(str, pos, _lt=loads_table):
     pos += 1

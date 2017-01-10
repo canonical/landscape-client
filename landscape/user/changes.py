@@ -1,4 +1,5 @@
-from twisted.python.compat import iteritems, iterkeys, itervalues
+from twisted.python.compat import iteritems, itervalues
+from landscape.compat import iterkeys
 
 from landscape.diff import diff
 

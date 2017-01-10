@@ -21,6 +21,8 @@ from landscape.lib.persist import Persist
 from landscape.lib.encoding import encode_if_needed
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
+from landscape.compat import coerce_unicode
+
 
 ALL_USERS = object()
 TIMEOUT_RESULT = 102
@@ -150,7 +152,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         if not isinstance(data, unicode):
             # Let's decode result-text, replacing non-printable
             # characters
-            data = data.decode("utf-8", "replace")
+            data = coerce_unicode(data, "utf-8", "replace")
         message = {"type": "operation-result",
                    "status": status,
                    "result-text": data,

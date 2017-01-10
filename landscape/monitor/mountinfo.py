@@ -6,6 +6,8 @@ from landscape.lib.monitor import CoverageMonitor
 from landscape.accumulate import Accumulator
 from landscape.monitor.plugin import MonitorPlugin
 
+from landscape.compat import coerce_unicode
+
 
 class MountInfo(MonitorPlugin):
 
@@ -134,7 +136,7 @@ class MountInfo(MonitorPlugin):
         for line in file:
             try:
                 device, mount_point, filesystem, options = line.split()[:4]
-                mount_point = mount_point.decode("string-escape")
+                mount_point = coerce_unicode(mount_point, "string-escape")
             except ValueError:
                 continue
             if "bind" in options.split(","):
