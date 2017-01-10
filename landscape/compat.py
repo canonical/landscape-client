@@ -30,4 +30,4 @@ if _PY3:
         return d.keys()
 else:
     def iterkeys(d):
-        return d.iteritems()
+        return d.iterkeys()
