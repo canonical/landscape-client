@@ -9,6 +9,7 @@ except ImportError:
 from twisted.python.compat import iteritems, long
 from twisted.python.compat import StringType as basestring
 from twisted.python.compat import networkString
+from landscape.compat import convert_buffer_to_string
 
 from landscape.lib import bpickle
 from landscape.lib.store import with_cursor
@@ -347,7 +348,7 @@ class HashIDRequest(object):
     def hashes(self, cursor):
         cursor.execute("SELECT hashes FROM hash_id_request WHERE id=?",
                        (self.id,))
-        return bpickle.loads(str(cursor.fetchone()[0]))
+        return bpickle.loads(convert_buffer_to_string(cursor.fetchone()[0]))
 
     @with_cursor
     def _get_timestamp(self, cursor):
@@ -396,7 +397,7 @@ class PackageTask(object):
 
         self.queue = row[0]
         self.timestamp = row[1]
-        self.data = bpickle.loads(str(row[2]))
+        self.data = bpickle.loads(convert_buffer_to_string(row[2]))
 
     @with_cursor
     def remove(self, cursor):

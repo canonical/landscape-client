@@ -621,14 +621,14 @@ class BPickleBackend(Backend):
         return {}
 
     def load(self, filepath):
-        file = open(filepath)
+        file = open(filepath, "r")
         try:
             return self._bpickle.loads(file.read())
         finally:
             file.close()
 
     def save(self, filepath, map):
-        file = open(filepath, "w")
+        file = open(filepath, "wb")
         try:
             file.write(self._bpickle.dumps(map))
         finally:

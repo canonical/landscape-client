@@ -38,3 +38,15 @@ if _PY3:
 else:
     def iterkeys(d):
         return d.iterkeys()
+
+
+def convert_buffer_to_string(mem_view):
+    """
+    Converts a buffer in Python 2 or a memoryview in Python 3 to str.
+    @param mem_view: The view to convert.
+    """
+    if _PY3:
+        result = mem_view.decode('ascii')
+    else:
+        result = str(mem_view)
+    return result
