@@ -8,6 +8,7 @@ except ImportError:
 
 from twisted.python.compat import iteritems
 from twisted.python.compat import StringType as basestring
+from twisted.python.compat import networkString
 
 from landscape.lib import bpickle
 from landscape.lib.store import with_cursor
@@ -45,12 +46,13 @@ class HashIdStore(object):
         """
         for hash, id in iteritems(hash_ids):
             cursor.execute("REPLACE INTO hash VALUES (?, ?)",
-                           (id, buffer(hash)))
+                           (id, sqlite3.Binary(networkString(hash))))
 
     @with_cursor
     def get_hash_id(self, cursor, hash):
         """Return the id associated to C{hash}, or C{None} if not available."""
-        cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
+        cursor.execute("SELECT id FROM hash WHERE hash=?",
+                       (sqlite3.Binary(networkString(hash)),))
         value = cursor.fetchone()
         if value:
             return value[0]
@@ -256,7 +258,7 @@ class PackageStore(HashIdStore):
         hashes = list(hashes)
         cursor.execute("INSERT INTO hash_id_request (hashes, timestamp)"
                        " VALUES (?,?)",
-                       (buffer(bpickle.dumps(hashes)), time.time()))
+                       (sqlite3.Binary(bpickle.dumps(hashes)), time.time()))
         return HashIDRequest(self._db, cursor.lastrowid)
 
     @with_cursor
@@ -280,7 +282,9 @@ class PackageStore(HashIdStore):
     def add_task(self, cursor, queue, data):
         data = bpickle.dumps(data)
         cursor.execute("INSERT INTO task (queue, timestamp, data) "
-                       "VALUES (?,?,?)", (queue, time.time(), buffer(data)))
+                       "VALUES (?,?,?)",
+                       (queue, time.time(),
+                        sqlite3.Binary(networkString(data))))
         return PackageTask(self._db, cursor.lastrowid)
 
     @with_cursor
@@ -310,7 +314,7 @@ class FakePackageStore(PackageStore):
     @with_cursor
     def save_message(self, cursor, message):
         cursor.execute("INSERT INTO message (data) VALUES (?)",
-                       (buffer(bpickle.dumps(message)),))
+                       (sqlite3.Binary(bpickle.dumps(message)),))
 
     @with_cursor
     def get_message_ids(self, cursor):
