@@ -2,6 +2,9 @@ from landscape.lib.hashlib import sha1
 
 import apt_pkg
 
+from twisted.python.compat import unicode
+from landscape.compat import coerce_unicode
+
 
 PACKAGE   = 1 << 0
 PROVIDES  = 1 << 1
@@ -148,7 +151,8 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         if version.installed_size > 0:
             skeleton.installed_size = version.installed_size
         if with_unicode:
-            skeleton.section = skeleton.section.decode("utf-8")
-            skeleton.summary = skeleton.summary.decode("utf-8")
-            skeleton.description = skeleton.description.decode("utf-8")
+            skeleton.section = coerce_unicode(skeleton.section, "utf-8")
+            skeleton.summary = coerce_unicode(skeleton.summary, "utf-8")
+            skeleton.description = coerce_unicode(
+                skeleton.description, "utf-8")
     return skeleton

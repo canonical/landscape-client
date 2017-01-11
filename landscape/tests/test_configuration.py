@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-from ConfigParser import ConfigParser
-from cStringIO import StringIO
 import os
 import sys
 import unittest
@@ -9,6 +7,8 @@ import unittest
 import mock
 from twisted.internet.defer import succeed, fail, Deferred
 from twisted.python.compat import iteritems
+from landscape.compat import ConfigParser
+from landscape.compat import StringIO
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.tests.helpers import RemoteBrokerHelper

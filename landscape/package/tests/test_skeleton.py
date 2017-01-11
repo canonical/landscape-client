@@ -13,6 +13,8 @@ from landscape.package.tests.helpers import (
     HASH_OR_RELATIONS)
 from landscape.tests.helpers import LandscapeTest
 
+from twisted.python.compat import unicode
+
 
 class SkeletonTestHelper(object):
     """A helper to set up a repository for the skeleton tests."""

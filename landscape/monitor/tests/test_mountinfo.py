@@ -2,6 +2,7 @@ import mock
 import tempfile
 
 from twisted.python.compat import StringType as basestring
+from twisted.python.compat import long
 
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper

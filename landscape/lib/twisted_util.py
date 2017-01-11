@@ -4,10 +4,7 @@ from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
 from twisted.python.compat import itervalues
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from landscape.compat import StringIO
 
 
 def gather_results(deferreds, consume_errors=False):

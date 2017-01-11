@@ -25,6 +25,9 @@ from landscape.reactor import LandscapeReactor
 
 import landscape.watchdog
 
+from unittest import skipIf
+from twisted.python.compat import _PY3
+
 
 class StubDaemon(object):
     program = "program-name"
@@ -947,6 +950,7 @@ time.sleep(999)
             mock.ANY, mock.ANY, args=mock.ANY, env=mock.ANY, uid=None,
             gid=None)
 
+    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_request_exit(self):
         """The request_exit() method calls exit() on the broker process."""
 

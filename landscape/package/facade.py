@@ -5,10 +5,6 @@ import os
 import subprocess
 import sys
 import tempfile
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 from operator import attrgetter
 
@@ -27,6 +23,7 @@ from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
 
 from twisted.python.compat import itervalues
+from landscape.compat import StringIO
 
 from landscape.lib.fs import append_file, create_file, read_file, touch_file
 from landscape.package.skeleton import build_skeleton_apt

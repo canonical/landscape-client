@@ -1,6 +1,6 @@
 import os
 from optparse import OptionParser
-from StringIO import StringIO
+from landscape.compat import StringIO
 from textwrap import dedent
 
 from landscape.lib.fs import read_file, create_file

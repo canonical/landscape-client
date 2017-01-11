@@ -5,6 +5,14 @@ from landscape.sysinfo.disk import Disk, format_megabytes
 from landscape.tests.helpers import LandscapeTest
 
 
+class DummyStatfvsResult(object):
+
+    def __init__(self, f_bsize, f_blocks, f_bfree):
+        self.f_bsize = f_bsize
+        self.f_blocks = f_blocks
+        self.f_bfree = f_bfree
+
+
 class DiskTest(LandscapeTest):
 
     def setUp(self):
@@ -21,8 +29,8 @@ class DiskTest(LandscapeTest):
                   fs="ext3", device=None):
         if device is None:
             device = "/dev/" + point.replace("/", "_")
-        self.stat_results[point] = (block_size, 0, capacity, unused,
-                                    0, 0, 0, 0, 0)
+        self.stat_results[point] = DummyStatfvsResult(
+            block_size, capacity, unused)
         f = open(self.mount_file, "a")
         f.write("/dev/%s %s %s rw 0 0\n" % (device, point, fs))
         f.close()

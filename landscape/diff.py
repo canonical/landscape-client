@@ -1,4 +1,4 @@
-from twisted.python.compat import iterkeys
+from landscape.compat import iterkeys
 
 
 def diff(old, new):

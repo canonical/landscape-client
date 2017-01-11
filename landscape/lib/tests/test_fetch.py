@@ -4,7 +4,7 @@ from threading import local
 import pycurl
 
 from twisted.internet.defer import FirstError
-from twisted.python.compat import itervalues
+from twisted.python.compat import itervalues, unicode
 
 from landscape.lib.fetch import (
     fetch, fetch_async, fetch_many_async, fetch_to_files,

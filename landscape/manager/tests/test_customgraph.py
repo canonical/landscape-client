@@ -114,10 +114,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "graph-id": 123})
 
     def test_remove_graph(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("foo")
-        tempfile.close()
+        filename = self.makeFile(content='foo')
         self.store.add_graph(123, filename, u"user")
         self.manager.dispatch_message(
             {"type": "custom-graph-remove",
@@ -125,10 +122,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertFalse(os.path.exists(filename))
 
     def test_run(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\necho 1")
-        tempfile.close()
+        filename = self.makeFile(content="#!/bin/sh\necho 1")
         os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
@@ -144,17 +138,11 @@ class CustomGraphManagerTests(LandscapeTest):
         return self.graph_manager.run().addCallback(check)
 
     def test_run_multiple(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\necho 1")
-        tempfile.close()
+        filename = self.makeFile(content="#!/bin/sh\necho 1")
         os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\necho 2")
-        tempfile.close()
+        filename = self.makeFile(content="#!/bin/sh\necho 2")
         os.chmod(filename, 0o777)
         self.store.add_graph(124, filename, None)
 
@@ -176,10 +164,7 @@ class CustomGraphManagerTests(LandscapeTest):
         return self.graph_manager.run().addCallback(check)
 
     def test_run_with_nonzero_exit_code(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\nexit 1")
-        tempfile.close()
+        filename = self.makeFile(content="#!/bin/sh\nexit 1")
         os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 

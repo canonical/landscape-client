@@ -21,6 +21,9 @@ from landscape.lib.persist import Persist
 from landscape.lib.encoding import encode_if_needed
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
+from twisted.python.compat import unicode
+from landscape.compat import coerce_unicode
+
 
 ALL_USERS = object()
 TIMEOUT_RESULT = 102
@@ -150,7 +153,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         if not isinstance(data, unicode):
             # Let's decode result-text, replacing non-printable
             # characters
-            data = data.decode("utf-8", "replace")
+            data = coerce_unicode(data, "utf-8", "replace")
         message = {"type": "operation-result",
                    "status": status,
                    "result-text": data,
@@ -223,12 +226,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                     cainfo=self.registry.config.ssl_public_key,
                     headers=headers)
             full_filename = os.path.join(attachment_dir, filename)
-            attachment = file(full_filename, "wb")
-            os.chmod(full_filename, 0o600)
-            if uid is not None:
-                os.chown(full_filename, uid, gid)
-            attachment.write(data)
-            attachment.close()
+            with open(full_filename, "wb") as attachment:
+                os.chmod(full_filename, 0o600)
+                if uid is not None:
+                    os.chown(full_filename, uid, gid)
+                attachment.write(data)
         os.chmod(attachment_dir, 0o700)
         if uid is not None:
             os.chown(attachment_dir, uid, gid)

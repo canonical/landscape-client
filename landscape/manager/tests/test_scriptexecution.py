@@ -6,6 +6,8 @@ import stat
 
 import mock
 
+from unittest import skipIf
+
 from twisted.internet.defer import gatherResults, succeed, fail
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
@@ -134,6 +136,7 @@ class RunScriptTests(LandscapeTest):
         d2.addCallback(self.assertEqual, "")
         return gatherResults([d1, d2])
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_accented_run_in_code(self):
         """
         Scripts can contain accented data both in the code and in the

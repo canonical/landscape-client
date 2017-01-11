@@ -34,9 +34,8 @@ class AptSourcesTests(LandscapeTest):
         self.sourceslist.SOURCES_LIST_D = sources_d
         self.manager.add(self.sourceslist)
 
-        sources = file(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("\n")
-        sources.close()
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("\n")
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
@@ -49,17 +48,18 @@ class AptSourcesTests(LandscapeTest):
         When getting a repository message, L{AptSources} comments the whole
         sources.list file.
         """
-        sources = file(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
-        sources.close()
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n # other comment\n")
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
              "operation-id": 1})
 
+        with open(self.sourceslist.SOURCES_LIST) as sources_list:
+            result = sources_list.read()
+
         self.assertEqual(
-            "#oki\n\n#doki\n#comment\n # other comment\n",
-            file(self.sourceslist.SOURCES_LIST).read())
+            "#oki\n\n#doki\n#comment\n # other comment\n", result)
 
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
@@ -132,16 +132,16 @@ class AptSourcesTests(LandscapeTest):
         The sources files in sources.list.d are renamed to .save when a message
         is received.
         """
-        sources1 = file(
-            os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"), "w")
-        sources1.write("ok\n")
-        sources1.close()
+        with open(
+                os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
+                "w") as sources1:
+            sources1.write("ok\n")
 
-        sources2 = file(
-            os.path.join(self.sourceslist.SOURCES_LIST_D,
-                         "file2.list.save"), "w")
-        sources2.write("ok\n")
-        sources2.close()
+        with open(
+                os.path.join(
+                    self.sourceslist.SOURCES_LIST_D, "file2.list.save"),
+                "w") as sources2:
+            sources2.write("ok\n")
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
@@ -175,12 +175,16 @@ class AptSourcesTests(LandscapeTest):
         dev_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
                                 "landscape-dev.list")
         self.assertTrue(os.path.exists(dev_file))
-        self.assertEqual("oki\n", file(dev_file).read())
+        with open(dev_file) as file:
+            result = file.read()
+        self.assertEqual("oki\n", result)
 
         lucid_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
                                   "landscape-lucid.list")
         self.assertTrue(os.path.exists(lucid_file))
-        self.assertEqual("doki\n", file(lucid_file).read())
+        with open(lucid_file) as file:
+            result = file.read()
+        self.assertEqual("doki\n", result)
 
     def test_import_gpg_keys(self):
         """
@@ -193,7 +197,9 @@ class AptSourcesTests(LandscapeTest):
             self.assertEqual("/usr/bin/apt-key", command)
             self.assertEqual("add", args[0])
             filename = args[1]
-            self.assertEqual("Some key content", file(filename).read())
+            with open(filename) as file:
+                result = file.read()
+            self.assertEqual("Some key content", result)
             deferred.callback(("ok", "", 0))
             return deferred
 
@@ -315,17 +321,17 @@ class AptSourcesTests(LandscapeTest):
 
         self.sourceslist._run_process = _run_process
 
-        sources = file(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("oki\n\ndoki\n#comment\n")
-        sources.close()
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n")
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
              "operation-id": 1})
 
-        self.assertEqual(
-            "oki\n\ndoki\n#comment\n",
-            file(self.sourceslist.SOURCES_LIST).read())
+        with open(self.sourceslist.SOURCES_LIST) as sources_list:
+            result = sources_list.read()
+
+        self.assertEqual("oki\n\ndoki\n#comment\n", result)
 
         return deferred
 

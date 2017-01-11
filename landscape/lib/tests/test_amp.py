@@ -10,6 +10,9 @@ from landscape.lib.amp import (
     MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
 
+from unittest import skipIf
+from twisted.python.compat import _PY3
+
 
 class FakeTransport(object):
     """Accumulate written data into a list."""
@@ -619,6 +622,7 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
+    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_retry(self):
         """
@@ -640,6 +644,7 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
+    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_retry_with_method_call_error(self):
         """
@@ -661,6 +666,7 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
+    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_wb_retry_with_while_still_disconnected(self):
         """
@@ -704,6 +710,7 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
+    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_retry_with_many_method_calls(self):
         """

@@ -9,6 +9,8 @@ from apt.package import Package
 from aptsources.sourceslist import SourcesList
 from apt.cache import LockFailedException
 
+from twisted.python.compat import unicode
+
 from landscape.lib.fs import read_file, create_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,

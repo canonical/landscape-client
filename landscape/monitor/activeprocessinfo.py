@@ -1,6 +1,7 @@
 import subprocess
 
-from twisted.python.compat import iterkeys, itervalues
+from twisted.python.compat import itervalues
+from landscape.compat import iterkeys
 
 from landscape.diff import diff
 from landscape.lib.process import ProcessInformation

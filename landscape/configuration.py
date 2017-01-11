@@ -13,7 +13,7 @@ import os
 import pwd
 import sys
 
-from StringIO import StringIO
+from landscape.compat import StringIO
 
 from landscape.lib.tag import is_valid_tag
 

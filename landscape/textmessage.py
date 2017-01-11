@@ -11,6 +11,8 @@ from landscape.reactor import LandscapeReactor
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.deployment import Configuration
 
+from landscape.compat import coerce_unicode
+
 
 class AcceptedTypeError(Exception):
     """
@@ -51,9 +53,9 @@ def get_message(args):
     if len(args) < 2:
         print ("Please enter your message, and send EOF (Control + D after "
                "newline) when done.")
-        message = sys.stdin.read().decode(encoding)
+        message = coerce_unicode(sys.stdin.read(), encoding)
     else:
-        message = u" ".join([x.decode(encoding) for x in args[1:]])
+        message = u" ".join([coerce_unicode(x, encoding) for x in args[1:]])
     if not message:
         raise EmptyMessageError("Text messages may not be empty.")
     return message

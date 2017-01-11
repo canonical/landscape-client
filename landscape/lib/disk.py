@@ -2,15 +2,8 @@ from __future__ import division
 
 import os
 import re
-import sys
 
-
-def statvfsinfo(stat, attrib):
-    if sys.version_info > (3,):
-        return getattr(stat, attrib)
-    else:
-        import statvfs
-        return stat[getattr(statvfs, attrib.upper())]
+from landscape.compat import coerce_unicode
 
 
 # List of filesystem types authorized when generating disk use statistics.
@@ -40,7 +33,7 @@ def get_mount_info(mounts_file, statvfs_,
     for line in open(mounts_file):
         try:
             device, mount_point, filesystem = line.split()[:3]
-            mount_point = mount_point.decode("string-escape")
+            mount_point = coerce_unicode(mount_point, errors="string-escape")
         except ValueError:
             continue
         if (filesystems_whitelist is not None and
@@ -51,9 +44,9 @@ def get_mount_info(mounts_file, statvfs_,
             stats = statvfs_(mount_point)
         except OSError:
             continue
-        block_size = statvfsinfo(stats, 'f_bsize')
-        total_space = (statvfsinfo(stats, 'f_blocks') * block_size) // megabytes
-        free_space = (statvfsinfo(stats, 'f_bfree') * block_size) // megabytes
+        block_size = stats.f_bsize
+        total_space = (stats.f_blocks * block_size) // megabytes
+        free_space = (stats.f_bfree * block_size) // megabytes
         yield {"device": device, "mount-point": mount_point,
                "filesystem": filesystem, "total-space": total_space,
                "free-space": free_space}

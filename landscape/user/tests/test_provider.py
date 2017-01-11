@@ -7,6 +7,7 @@ from landscape.user.provider import (UserProvider, UserNotFoundError,
 from landscape.user.tests.helpers import FakeUserProvider
 
 from landscape.tests.helpers import LandscapeTest
+from landscape.compat import coerce_unicode
 
 
 class ProviderTest(LandscapeTest):
@@ -180,8 +181,8 @@ kevin:x:1000:
         for user in users:
             if user["username"] == user_0.pw_name:
                 self.assertEqual(user["uid"], 0)
-                user_0_name = user_0.pw_gecos.split(",")[0].decode(
-                    "utf-8", "replace")
+                user_0_name = coerce_unicode(
+                    user_0.pw_gecos.split(",")[0], "utf-8", "replace")
                 self.assertEqual(user["name"], user_0_name)
                 break
         else:

@@ -5,7 +5,6 @@ import pwd
 import shutil
 import logging
 import tarfile
-import cStringIO
 
 from twisted.internet.defer import succeed
 
@@ -18,6 +17,8 @@ from landscape.package.taskhandler import (
 from landscape.lib.twisted_util import spawn_process
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.package.reporter import find_reporter_command
+
+from landscape.compat import StringIO
 
 
 class ReleaseUpgraderConfiguration(PackageTaskHandlerConfiguration):
@@ -186,7 +187,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         @param err: The standard error of the upgrade-tool process.
         @return: A text aggregating the process output, error and log files.
         """
-        buf = cStringIO.StringIO()
+        buf = StringIO()
 
         for label, content in [("output", out), ("error", err)]:
             if content:

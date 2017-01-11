@@ -1,9 +1,10 @@
-import thread
 import types
 import time
 
 from landscape.reactor import FakeReactor, LandscapeReactor
 from landscape.tests.helpers import LandscapeTest
+
+from landscape.compat import thread
 
 
 class ReactorTestMixin(object):
@@ -153,7 +154,10 @@ class ReactorTestMixin(object):
     def test_events_result(self):
         reactor = self.get_reactor()
 
-        generator = iter([1, 2, 3]).next
+        iterable = iter([1, 2, 3])
+
+        def generator():
+            return next(iterable)
 
         reactor.call_on("foobar", generator)
         reactor.call_on("foobar", generator)

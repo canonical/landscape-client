@@ -4,6 +4,8 @@ import logging
 from landscape.lib.fs import read_file
 from landscape.monitor.plugin import MonitorPlugin
 
+from landscape.compat import coerce_unicode
+
 
 REBOOT_REQUIRED_FILENAME = "/var/run/reboot-required"
 
@@ -35,7 +37,8 @@ class RebootRequired(MonitorPlugin):
             return []
 
         lines = read_file(self._packages_filename).splitlines()
-        packages = set(line.strip().decode("utf-8") for line in lines if line)
+        packages = set(coerce_unicode(line.strip(), "utf-8")
+                       for line in lines if line)
         return sorted(packages)
 
     def _create_message(self):

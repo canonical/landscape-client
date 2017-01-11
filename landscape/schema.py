@@ -1,5 +1,6 @@
 """A schema system. Yes. Another one!"""
-from twisted.python.compat import iteritems
+from twisted.python.compat import iteritems, unicode, long
+from landscape.compat import coerce_unicode
 
 
 class InvalidError(Exception):
@@ -86,7 +87,7 @@ class Unicode(object):
     def coerce(self, value):
         if isinstance(value, str):
             try:
-                value = value.decode(self.encoding)
+                value = coerce_unicode(value, self.encoding)
             except UnicodeDecodeError as e:
                 raise InvalidError("%r can't be decoded: %s" % (value, str(e)))
         if not isinstance(value, unicode):

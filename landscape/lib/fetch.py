@@ -2,11 +2,8 @@ import os
 import sys
 
 from optparse import OptionParser
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
+from landscape.compat import StringIO
 from twisted.python.compat import iteritems
 
 from twisted.internet.threads import deferToThread
