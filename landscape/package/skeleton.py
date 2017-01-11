@@ -149,6 +149,8 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         if with_unicode:
             skeleton.section = skeleton.section.decode("utf-8")
             skeleton.summary = skeleton.summary.decode("utf-8")
+            # Avoid double-decoding package descriptions in build_skeleton_apt,
+            # which causes an error with newer python-apt (Xenial onwards)
             if not isinstance(skeleton.description, unicode):
                 skeleton.description = skeleton.description.decode("utf-8")
     return skeleton
