@@ -6,6 +6,7 @@ from twisted.python.compat import long
 
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
+from landscape.tests.helpers import FakeStatvfsResult
 
 
 mb = lambda x: x * 1024 * 1024
@@ -23,7 +24,8 @@ class MountInfoTest(LandscapeTest):
 
     def get_mount_info(self, *args, **kwargs):
         if "statvfs" not in kwargs:
-            kwargs["statvfs"] = lambda path: (0,) * 1000
+            kwargs["statvfs"] = lambda path: FakeStatvfsResult(
+                0, 0, 0, 0, 0, 0, 0, 0, 0)
         plugin = MountInfo(*args, **kwargs)
         # To make sure tests are isolated from the real system by default.
         plugin.is_device_removable = lambda x: False
@@ -64,9 +66,11 @@ class MountInfoTest(LandscapeTest):
         """
         def statvfs(path):
             if path == "/":
-                return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+                return FakeStatvfsResult(
+                    4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
             else:
-                return (4096, 0, mb(10000), mb(1000), 0, 0, 0, 0, 0)
+                return FakeStatvfsResult(
+                    4096, 0, mb(10000), mb(1000), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 rootfs / rootfs rw 0 0
@@ -137,7 +141,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         function which should cause it to queue new messages.
         """
         def statvfs(path, multiplier=mock_counter(1).next):
-            return (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(
+                4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
@@ -173,8 +178,10 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         """
         def statvfs(path, multiplier=mock_counter(1).next):
             if path == "/":
-                return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-            return (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
+                return FakeStatvfsResult(
+                    4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(
+                4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
@@ -217,7 +224,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         delivered in a single message.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
@@ -252,7 +259,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         available, None will be returned when messages are created.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
@@ -278,7 +285,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         any mount point for which the device doesn't start with /dev.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hdc4 /mm xfs rw 0 0
@@ -340,7 +347,8 @@ addr=ennui 0 0
     def test_sample_free_space(self):
         """Test collecting information about free space."""
         def statvfs(path, multiplier=mock_counter(1).next):
-            return (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(
+                4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
@@ -380,7 +388,7 @@ addr=ennui 0 0
         right datatypes.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
@@ -411,7 +419,7 @@ addr=ennui 0 0
         should be sent.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 """)
@@ -442,7 +450,7 @@ addr=ennui 0 0
         device they're bound to.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         # From this test data, we expect only two mount points to be returned,
         # and the other two to be ignored (the rebound /dev/hda2 -> /mnt
@@ -483,7 +491,7 @@ addr=ennui 0 0
         reported.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         # In this test, we expect all mount points to be returned, as we can't
         # identify any as bind mounts.
@@ -521,7 +529,7 @@ addr=ennui 0 0
         self.mstore.set_accepted_types([])
 
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         # From this test data, we expect only two mount points to be returned,
         # and the third to be ignored (the rebound /dev/hda2 -> /mnt mounting)
@@ -569,7 +577,7 @@ addr=ennui 0 0
         only saved when exchange happens.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
@@ -606,7 +614,7 @@ addr=ennui 0 0
         exchange of free-space messages.
         """
         def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+            return FakeStatvfsResult(4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
