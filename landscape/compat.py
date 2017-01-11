@@ -7,6 +7,7 @@ if _PY3:
     import _thread as thread
 
     from io import StringIO
+    stringio = cstringio = StringIO
 
 else:
     from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
@@ -14,7 +15,9 @@ else:
 
     import thread
 
-    from cStringIO import StringIO
+    from StringIO import StringIO
+    stringio = StringIO
+    from cStringIO import StringIO as cstringio
 
 
 def coerce_unicode(s, encoding='ascii', errors='strict'):

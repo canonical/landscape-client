@@ -15,7 +15,7 @@ from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 
 from landscape.compat import ConfigParser
-from landscape.compat import StringIO
+from landscape.compat import stringio, cstringio
 
 from landscape.tests.subunit import run_isolated
 from landscape.watchdog import bootstrap_list
@@ -188,11 +188,11 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase, ):
         and comments may be different but the actual parameters and sections
         must be the same.
         """
-        first_fp = StringIO(first)
+        first_fp = cstringio(first)
         first_parser = ConfigParser()
         first_parser.readfp(first_fp)
 
-        second_fp = StringIO(second)
+        second_fp = cstringio(second)
         second_parser = ConfigParser()
         second_parser.readfp(second_fp)
 
@@ -326,7 +326,7 @@ class LogKeeperHelper(object):
         self.error_handler = ErrorHandler()
         test_case.log_helper = self
         test_case.logger = logger = logging.getLogger()
-        test_case.logfile = StringIO()
+        test_case.logfile = cstringio()
         handler = logging.StreamHandler(test_case.logfile)
         format = ("%(levelname)8s: %(message)s")
         handler.setFormatter(logging.Formatter(format))
@@ -482,7 +482,7 @@ class MockPopen(object):
 
     def __init__(self, output, return_codes=None):
         self.output = output
-        self.stdout = StringIO(output)
+        self.stdout = cstringio(output)
         self.popen_inputs = []
         self.return_codes = return_codes
 
@@ -504,8 +504,8 @@ class StandardIOHelper(object):
     def set_up(self, test_case):
         test_case.old_stdout = sys.stdout
         test_case.old_stdin = sys.stdin
-        test_case.stdout = sys.stdout = StringIO()
-        test_case.stdin = sys.stdin = StringIO()
+        test_case.stdout = sys.stdout = stringio()
+        test_case.stdin = sys.stdin = stringio()
         test_case.stdin.encoding = "UTF-8"
 
     def tear_down(self, test_case):
