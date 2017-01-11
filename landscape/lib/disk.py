@@ -3,6 +3,7 @@ from __future__ import division
 import os
 import re
 
+from twisted.python.compat import _PY3
 from landscape.compat import coerce_unicode
 
 
@@ -33,7 +34,9 @@ def get_mount_info(mounts_file, statvfs_,
     for line in open(mounts_file):
         try:
             device, mount_point, filesystem = line.split()[:3]
-            mount_point = coerce_unicode(mount_point, errors="string-escape")
+            if not _PY3:
+                mount_point = mount_point.decode("string-escape")
+            mount_point = coerce_unicode(mount_point, errors="unicode-escape")
         except ValueError:
             continue
         if (filesystems_whitelist is not None and
