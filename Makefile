@@ -26,7 +26,12 @@ build:
 build2:
 	python setup.py build_ext -i
 
-check: build
+check23:
+	-trial --unclean-warnings --reporter=summary landscape > _last_py2_res
+	-trial3 --unclean-warnings landscape
+	./display_py2_testresults
+
+check:  build 
 	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
 		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
 		export DBUS_SESSION_BUS_ADDRESS=`echo $$OUTPUT | cut -f1 -d ' '`; \
