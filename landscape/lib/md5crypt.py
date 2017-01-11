@@ -23,35 +23,11 @@ SYNOPSIS
 
 DESCRIPTION
 
-unix_md5_crypt() provides a crypt()-compatible interface to the
-rather new MD5-based crypt() function found in modern operating systems.
-It's based on the implementation found on FreeBSD 2.2.[56]-RELEASE and
-contains the following license in it:
-
- "THE BEER-WARE LICENSE" (Revision 42):
- <phk@login.dknet.dk> wrote this file.  As long as you retain this notice you
- can do whatever you want with this stuff. If we meet some day, and you think
- this stuff is worth it, you can buy me a beer in return.   Poul-Henning Kamp
-
-apache_md5_crypt() provides a function compatible with Apache's
-.htpasswd files. This was contributed by Bryan Hart <bryan@eai.com>.
-
+Compatibility wrapper for passlib.hash.md5_crypt.
 """
-
-MAGIC = '$1$'			# Magic string
-ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
 from landscape.lib.hashlib import md5
 from passlib.hash import md5_crypt
-
-
-def to64 (v, n):
-    ret = ''
-    while (n - 1 >= 0):
-        n = n - 1
-        ret = ret + ITOA64[v & 0x3f]
-        v = v >> 6
-    return ret
+from twisted.python.compat import _PY3
 
 
 def apache_md5_crypt (pw, salt):
@@ -60,6 +36,8 @@ def apache_md5_crypt (pw, salt):
 
 
 def unix_md5_crypt(pw, salt, magic=None):
+    if _PY3 and isinstance(salt, bytes):
+        salt = salt.decode('utf8') 
     return md5_crypt.encrypt(pw, salt=salt)
 
 
