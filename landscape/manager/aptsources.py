@@ -104,19 +104,12 @@ class AptSources(ManagerPlugin):
         if sources:
             fd, path = tempfile.mkstemp()
             os.close(fd)
-            new_sources = file(path, "w")
-            try:
-                source_file = open(self.SOURCES_LIST)
-            except:
-                os.unlink(path)
-                raise
-            for line in source_file:
-                stripped_line = line.strip()
-                if not stripped_line or stripped_line.startswith("#"):
-                    new_sources.write(line)
-                else:
-                    new_sources.write("#%s" % line)
-            new_sources.close()
+
+            with open(path, "w") as new_sources:
+                new_sources.write(
+                    "# Landscape manages repositories for this computer\n"
+                    "# Original content of sources.list can be found in "
+                    "sources.list.save\n")
 
             original_stat = os.stat(self.SOURCES_LIST)
             if not os.path.isfile(saved_sources):
@@ -127,7 +120,6 @@ class AptSources(ManagerPlugin):
                      original_stat.st_gid)
         else:
             # Re-instate original sources
-            saved_sources = "{}.save".format(self.SOURCES_LIST)
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
@@ -137,9 +129,8 @@ class AptSources(ManagerPlugin):
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
                                     "landscape-%s.list" % source["name"])
-            sources_file = file(filename, "w")
-            sources_file.write(source["content"])
-            sources_file.close()
+            with open(filename, "w") as sources_file:
+                sources_file.write(source["content"])
             os.chmod(filename, 0644)
         return self._run_reporter().addCallback(lambda ignored: None)
 
