@@ -295,9 +295,9 @@ PKGDEB_OR_RELATIONS = (
     "GadWR2ltRC651hGpxw4et/u8phTny3Vdfvy2dgAAAAAAAAAAANjRE6Lr2rEAKAAACg==")
 
 
-HASH1 = base64.decodestring("/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
-HASH2 = base64.decodestring("glP4DwWOfMULm0AkRXYsH/exehc=")
-HASH3 = base64.decodestring("NJM05mj86veaSInYxxqL1wahods=")
+HASH1 = base64.decodestring(b"/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
+HASH2 = base64.decodestring(b"glP4DwWOfMULm0AkRXYsH/exehc=")
+HASH3 = base64.decodestring(b"NJM05mj86veaSInYxxqL1wahods=")
 HASH_MINIMAL = "6\xce\x8f\x1bM\x82MWZ\x1a\xffjAc(\xdb(\xa1\x0eG"
 HASH_SIMPLE_RELATIONS = (
     "'#\xab&k\xe6\xf5E\xcfB\x9b\xceO7\xe6\xec\xa9\xddY\xaa")

@@ -1152,7 +1152,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
 
         result.addCallback(callback)
@@ -1172,7 +1173,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
 
         result.addCallback(callback)
@@ -1191,7 +1193,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(2, code)
@@ -1222,7 +1225,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("", out)
             self.assertEqual("", err)
             self.assertEqual(100, code)
@@ -1258,7 +1262,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(0, code)
@@ -1393,7 +1398,8 @@ class PackageReporterAptTest(LandscapeTest):
         def do_test():
             result = self.reporter.run_apt_update()
 
-            def callback((out, err, code)):
+            def callback(args):
+                out, err, code = args
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
@@ -1433,7 +1439,8 @@ class PackageReporterAptTest(LandscapeTest):
         def do_test():
             result = self.reporter.run_apt_update()
 
-            def callback((out, err, code)):
+            def callback(args):
+                out, err, code = args
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
