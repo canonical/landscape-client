@@ -28,7 +28,6 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import sys
-from twisted.python.compat import networkString
 from landscape.compat import coerce_unicode
 
 
@@ -38,7 +37,7 @@ loads_table = {}
 
 def dumps(obj, _dt=dumps_table):
     try:
-        return networkString(_dt[type(obj)](obj))
+        return _dt[type(obj)](obj)
     except KeyError as e:
         raise ValueError("Unsupported type: %s" % e)
 

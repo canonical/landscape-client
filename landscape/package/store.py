@@ -8,7 +8,6 @@ except ImportError:
 
 from twisted.python.compat import iteritems, long
 from twisted.python.compat import StringType as basestring
-from twisted.python.compat import networkString
 from landscape.compat import convert_buffer_to_string
 
 from landscape.lib import bpickle
@@ -47,13 +46,13 @@ class HashIdStore(object):
         """
         for hash, id in iteritems(hash_ids):
             cursor.execute("REPLACE INTO hash VALUES (?, ?)",
-                           (id, sqlite3.Binary(networkString(hash))))
+                           (id, sqlite3.Binary(hash)))
 
     @with_cursor
     def get_hash_id(self, cursor, hash):
         """Return the id associated to C{hash}, or C{None} if not available."""
         cursor.execute("SELECT id FROM hash WHERE hash=?",
-                       (sqlite3.Binary(networkString(hash)),))
+                       (sqlite3.Binary(hash),))
         value = cursor.fetchone()
         if value:
             return value[0]
