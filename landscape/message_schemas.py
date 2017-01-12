@@ -138,12 +138,6 @@ KEYSTONE_TOKEN = Message("keystone-token", {
     "data": Any(Bytes(), Constant(None))
 })
 
-CHANGE_HA_SERVICE = Message(
-    "change-ha-service",
-    {"service-name": Bytes(),  # keystone
-     "unit-name": Bytes(),     # keystone-9
-     "state": Bytes()})        # online or standby
-
 MEMORY_INFO = Message("memory-info", {
     "memory-info": List(Tuple(Float(), Int(), Int())),
     })
@@ -495,4 +489,4 @@ message_schemas = (
     NETWORK_DEVICE, NETWORK_ACTIVITY,
     REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
     CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-    CHANGE_HA_SERVICE, JUJU_UNITS_INFO, CLOUD_METADATA)
+    JUJU_UNITS_INFO, CLOUD_METADATA)
