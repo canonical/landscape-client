@@ -30,7 +30,8 @@ class AptFacadeHelper(object):
         test_case._hash_packages_by_name = self._hash_packages_by_name
 
     def _add_package(self, packages_file, name, architecture="all",
-                     version="1.0", control_fields=None):
+                     version="1.0", description="description",
+                     control_fields=None):
         if control_fields is None:
             control_fields = {}
         package_stanza = textwrap.dedent("""
@@ -42,9 +43,12 @@ class AptFacadeHelper(object):
                 Architecture: %(architecture)s
                 Source: source
                 Version: %(version)s
-                Description: description
-                """ % {"name": name, "version": version,
-                       "architecture": architecture})
+                Description: short description
+                 %(description)s
+                """ % {
+                    "name": name, "version": version,
+                    "architecture": architecture,
+                    "description": description.encode("utf-8")})
         package_stanza = apt_pkg.rewrite_section(
             apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
             control_fields.items())
@@ -72,7 +76,8 @@ class AptFacadeHelper(object):
         append_file(self.dpkg_status, status + "\n\n")
 
     def _add_package_to_deb_dir(self, path, name, architecture="all",
-                                version="1.0", control_fields=None):
+                                version="1.0", description="description",
+                                control_fields=None):
         """Add fake package information to a directory.
 
         There will only be basic information about the package
@@ -83,7 +88,8 @@ class AptFacadeHelper(object):
             control_fields = {}
         self._add_package(
             os.path.join(path, "Packages"), name, architecture=architecture,
-            version=version, control_fields=control_fields)
+            version=version, description=description,
+            control_fields=control_fields)
 
     def _touch_packages_file(self, deb_dir):
         """Make sure the Packages file gets a newer mtime value.
