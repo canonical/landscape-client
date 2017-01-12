@@ -59,18 +59,14 @@ class SkeletonAptTest(LandscapeTest):
         package = self.facade._cache[name]
         return package.candidate
 
-    def build_skeleton(self, *args, **kwargs):
-        """Build the skeleton to be tested."""
-        return build_skeleton_apt(*args, **kwargs)
-
     def test_build_skeleton(self):
         """
-        C{build_skeleton} builds a C{PackageSkeleton} from a package. If
+        build_skeleton_apt builds a C{PackageSkeleton} from a package. If
         with_info isn't passed, C{section}, C{summary}, C{description},
         C{size} and C{installed_size} will be C{None}.
         """
         pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1)
+        skeleton = build_skeleton_apt(pkg1)
         self.assertEqual("name1", skeleton.name)
         self.assertEqual("version1-release1", skeleton.version)
         self.assertEqual(None, skeleton.section)
@@ -90,35 +86,35 @@ class SkeletonAptTest(LandscapeTest):
 
     def test_build_skeleton_without_unicode(self):
         """
-        If C{with_unicode} isn't passed to C{build_skeleton}, the name
+        If C{with_unicode} isn't passed to build_skeleton_apt, the name
         and version of the skeleton are byte strings. The hash doesn't
         change, though.
         """
         pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1)
+        skeleton = build_skeleton_apt(pkg1)
         self.assertTrue(isinstance(skeleton.name, str))
         self.assertTrue(isinstance(skeleton.version, str))
         self.assertEqual(HASH1, skeleton.get_hash())
 
     def test_build_skeleton_with_unicode(self):
         """
-        If C{with_unicode} is passed to C{build_skeleton}, the name
+        If C{with_unicode} is passed to build_skeleton_apt, the name
         and version of the skeleton are unicode strings.
         """
         pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1, with_unicode=True)
+        skeleton = build_skeleton_apt(pkg1, with_unicode=True)
         self.assertTrue(isinstance(skeleton.name, unicode))
         self.assertTrue(isinstance(skeleton.version, unicode))
         self.assertEqual(HASH1, skeleton.get_hash())
 
     def test_build_skeleton_with_info(self):
         """
-        If C{with_info} is passed to C{build_skeleton}, C{section},
+        If C{with_info} is passed to build_skeleton_apt, C{section},
         C{summary}, C{description} and the size fields will be extracted
         from the package.
         """
         pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1, with_info=True)
+        skeleton = build_skeleton_apt(pkg1, with_info=True)
         self.assertEqual("Group1", skeleton.section)
         self.assertEqual("Summary1", skeleton.summary)
         self.assertEqual("Description1", skeleton.description)
@@ -128,11 +124,11 @@ class SkeletonAptTest(LandscapeTest):
     def test_build_skeleton_with_unicode_and_extra_info(self):
         """
         If C{with_unicode} and C{with_info} are passed to
-        C{build_skeleton}, the name, version and the extra info of the
+        build_skeleton_apt, the name, version and the extra info of the
         skeleton are unicode strings.
         """
         pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1, with_unicode=True, with_info=True)
+        skeleton = build_skeleton_apt(pkg1, with_unicode=True, with_info=True)
         self.assertTrue(isinstance(skeleton.name, unicode))
         self.assertTrue(isinstance(skeleton.version, unicode))
         self.assertTrue(isinstance(skeleton.section, unicode))
@@ -150,7 +146,8 @@ class SkeletonAptTest(LandscapeTest):
         self.facade._cache.update(None)
         self.facade._cache.open(None)
         pkg = self.get_package("pkg")
-        self.assertEqual(u"T?st", pkg.description)
+        skeleton = build_skeleton_apt(pkg, with_unicode=True, with_info=True)
+        self.assertEqual(u"T?st", skeleton.description)
 
     def test_build_skeleton_minimal(self):
         """
@@ -158,7 +155,7 @@ class SkeletonAptTest(LandscapeTest):
         relations defined.
         """
         minimal_package = self.get_package("minimal")
-        skeleton = self.build_skeleton(minimal_package)
+        skeleton = build_skeleton_apt(minimal_package)
         self.assertEqual("minimal", skeleton.name)
         self.assertEqual("1.0", skeleton.version)
         self.assertEqual(None, skeleton.section)
@@ -178,7 +175,7 @@ class SkeletonAptTest(LandscapeTest):
         be either an empty string or None, depending on which field.
         """
         package = self.get_package("minimal")
-        skeleton = self.build_skeleton(package, True)
+        skeleton = build_skeleton_apt(package, True)
         self.assertEqual("", skeleton.section)
         self.assertEqual(
             "A minimal package with no dependencies or other relations.",
@@ -193,7 +190,7 @@ class SkeletonAptTest(LandscapeTest):
         simple, i.e. not specifying a version.
         """
         package = self.get_package("simple-relations")
-        skeleton = self.build_skeleton(package)
+        skeleton = build_skeleton_apt(package)
         self.assertEqual("simple-relations", skeleton.name)
         self.assertEqual("1.0", skeleton.version)
         relations = [
@@ -213,7 +210,7 @@ class SkeletonAptTest(LandscapeTest):
         version dependent.
         """
         package = self.get_package("version-relations")
-        skeleton = self.build_skeleton(package)
+        skeleton = build_skeleton_apt(package)
         self.assertEqual("version-relations", skeleton.name)
         self.assertEqual("1.0", skeleton.version)
         relations = [
@@ -234,7 +231,7 @@ class SkeletonAptTest(LandscapeTest):
         skeleton.
         """
         package = self.get_package("multiple-relations")
-        skeleton = self.build_skeleton(package)
+        skeleton = build_skeleton_apt(package)
         self.assertEqual("multiple-relations", skeleton.name)
         self.assertEqual("1.0", skeleton.version)
         relations = [
@@ -260,7 +257,7 @@ class SkeletonAptTest(LandscapeTest):
         is considered to be a single relation, with a special type.
         """
         package = self.get_package("or-relations")
-        skeleton = self.build_skeleton(package)
+        skeleton = build_skeleton_apt(package)
         self.assertEqual("or-relations", skeleton.name)
         self.assertEqual("1.0", skeleton.version)
         relations = [
