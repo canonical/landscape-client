@@ -45,7 +45,7 @@ class AptSourcesTests(LandscapeTest):
 
     def test_replace_sources_list(self):
         """
-        When getting a repository message, L{AptSources} replaces the
+        When getting a repository message, AptSources replaces the
         sources.list file.
         """
         with open(self.sourceslist.SOURCES_LIST, "w") as sources:
@@ -63,11 +63,6 @@ class AptSourcesTests(LandscapeTest):
                 "# Original content of sources.list can be found in "
                 "sources.list.save\n", sources.read())
 
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "status": SUCCEEDED, "operation-id": 1}])
-
     def test_save_sources_list(self):
         """
         When getting a repository message, AptSources saves a copy of the
@@ -82,16 +77,11 @@ class AptSourcesTests(LandscapeTest):
              "gpg-keys": [],
              "operation-id": 1})
 
-        saved_sources_path =  "{}.save".format(self.sourceslist.SOURCES_LIST)
+        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
         self.assertTrue(os.path.exists(saved_sources_path))
         with file(saved_sources_path) as saved_sources:
             self.assertEqual("oki\n\ndoki\n#comment\n # other comment\n",
                              saved_sources.read())
-
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "status": SUCCEEDED, "operation-id": 1}])
 
     def test_existing_saved_sources_list(self):
         """
@@ -115,11 +105,6 @@ class AptSourcesTests(LandscapeTest):
         with file(saved_sources_path) as saved_sources:
             self.assertEqual("original content\n", saved_sources.read())
 
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "status": SUCCEEDED, "operation-id": 1}])
-
     def test_restore_sources_list(self):
         """
         When getting a repository message without sources, AptSources
@@ -140,11 +125,6 @@ class AptSourcesTests(LandscapeTest):
 
         with file(self.sourceslist.SOURCES_LIST) as sources:
             self.assertEqual("original content\n", sources.read())
-
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "status": SUCCEEDED, "operation-id": 1}])
 
     def test_sources_list_permissions(self):
         """
