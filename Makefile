@@ -1,6 +1,6 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man 
-PYTHON ?= python3
+PYTHON ?= python
 TRIAL_ARGS ?= 
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
@@ -20,18 +20,18 @@ endif
 
 all: build
 
+build3:
+	python3 setup.py build_ext -i
+
 build:
 	$(PYTHON) setup.py build_ext -i
 
-build2:
-	python setup.py build_ext -i
-
-check23:
+check5:
 	-trial --unclean-warnings --reporter=summary landscape > _last_py2_res
 	-trial3 --unclean-warnings landscape
 	./display_py2_testresults
 
-check:  build 
+check3: build3 
 	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
 		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
 		export DBUS_SESSION_BUS_ADDRESS=`echo $$OUTPUT | cut -f1 -d ' '`; \
@@ -44,7 +44,7 @@ check:  build
 	    $(TEST_COMMAND_PY3); \
 	fi
 
-check2: build2
+check: build
 	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
 		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
 		export DBUS_SESSION_BUS_ADDRESS=`echo $$OUTPUT | cut -f1 -d ' '`; \
