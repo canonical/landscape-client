@@ -11,11 +11,12 @@ import unittest
 from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
 from twisted.python.compat import StringType as basestring
+from twisted.python.compat import _PY3
 from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 
 from landscape.compat import ConfigParser
-from landscape.compat import StringIO
+from landscape.compat import stringio, cstringio
 
 from landscape.tests.subunit import run_isolated
 from landscape.watchdog import bootstrap_list
@@ -188,11 +189,11 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase, ):
         and comments may be different but the actual parameters and sections
         must be the same.
         """
-        first_fp = StringIO(first)
+        first_fp = cstringio(first)
         first_parser = ConfigParser()
         first_parser.readfp(first_fp)
 
-        second_fp = StringIO(second)
+        second_fp = cstringio(second)
         second_parser = ConfigParser()
         second_parser.readfp(second_fp)
 
@@ -326,7 +327,7 @@ class LogKeeperHelper(object):
         self.error_handler = ErrorHandler()
         test_case.log_helper = self
         test_case.logger = logger = logging.getLogger()
-        test_case.logfile = StringIO()
+        test_case.logfile = cstringio()
         handler = logging.StreamHandler(test_case.logfile)
         format = ("%(levelname)8s: %(message)s")
         handler.setFormatter(logging.Formatter(format))
@@ -482,7 +483,7 @@ class MockPopen(object):
 
     def __init__(self, output, return_codes=None):
         self.output = output
-        self.stdout = StringIO(output)
+        self.stdout = cstringio(output)
         self.popen_inputs = []
         self.return_codes = return_codes
 
@@ -504,9 +505,10 @@ class StandardIOHelper(object):
     def set_up(self, test_case):
         test_case.old_stdout = sys.stdout
         test_case.old_stdin = sys.stdin
-        test_case.stdout = sys.stdout = StringIO()
-        test_case.stdin = sys.stdin = StringIO()
-        test_case.stdin.encoding = "UTF-8"
+        test_case.stdout = sys.stdout = stringio()
+        test_case.stdin = sys.stdin = stringio()
+        if not _PY3:
+            test_case.stdin.encoding = "UTF-8"
 
     def tear_down(self, test_case):
         sys.stdout = test_case.old_stdout
@@ -704,3 +706,17 @@ class FakePersist(object):
 
     def remove(self, key):
         self.called = True
+
+
+class FakeStatvfsResult(object):
+    """
+    With Python 3, os.statvfs returns an object and the tuple interface of
+    Python 2 is not usable anymore. This incomplete fake should work with the
+    typical tuple used in tests.
+    """
+
+    def __init__(self, f_bsize, f_frsize, f_blocks, f_bfree, f_bavail, f_files,
+                 f_ffree, f_favail, f_flag):
+        self.f_bsize = f_bsize
+        self.f_blocks = f_blocks
+        self.f_bfree = f_bfree

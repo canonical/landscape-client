@@ -48,7 +48,7 @@ class GPGTest(LandscapeTest):
         provided signature is not valid.
         """
         gpg = self.makeFile("#!/bin/sh\necho out; echo err >&2; exit 1\n")
-        os.chmod(gpg, 0755)
+        os.chmod(gpg, 0o755)
         gpg_home = self.makeDir()
         deferred = Deferred()
 

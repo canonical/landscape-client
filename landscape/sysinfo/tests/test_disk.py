@@ -3,14 +3,7 @@ from twisted.internet.defer import Deferred
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.disk import Disk, format_megabytes
 from landscape.tests.helpers import LandscapeTest
-
-
-class DummyStatfvsResult(object):
-
-    def __init__(self, f_bsize, f_blocks, f_bfree):
-        self.f_bsize = f_bsize
-        self.f_blocks = f_blocks
-        self.f_bfree = f_bfree
+from landscape.tests.helpers import FakeStatvfsResult
 
 
 class DiskTest(LandscapeTest):
@@ -29,8 +22,8 @@ class DiskTest(LandscapeTest):
                   fs="ext3", device=None):
         if device is None:
             device = "/dev/" + point.replace("/", "_")
-        self.stat_results[point] = DummyStatfvsResult(
-            block_size, capacity, unused)
+        self.stat_results[point] = FakeStatvfsResult(
+            block_size, 0, capacity, unused, 0, 0, 0, 0, 0)
         f = open(self.mount_file, "a")
         f.write("/dev/%s %s %s rw 0 0\n" % (device, point, fs))
         f.close()

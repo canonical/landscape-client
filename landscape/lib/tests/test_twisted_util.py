@@ -18,7 +18,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\nexit 2")
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(out, "")
             self.assertEqual(err, "")
             self.assertEqual(code, 2)
@@ -31,7 +32,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         The process returns the expected standard output.
         """
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(out, "a b")
             self.assertEqual(err, "")
             self.assertEqual(code, 0)
@@ -46,7 +48,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\necho -n $@ >&2")
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(out, "")
             self.assertEqual(err, "a b")
             self.assertEqual(code, 0)
@@ -68,7 +71,8 @@ class SpawnProcessTest(LandscapeTest):
         def line_received(line):
             lines.append(line)
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(expected, lines)
 
         result = spawn_process(self.command, args=(param,),
@@ -88,7 +92,8 @@ class SpawnProcessTest(LandscapeTest):
         def line_received(line):
             lines.append(line)
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(expected, lines)
 
         result = spawn_process(self.command, args=(param,),
@@ -109,7 +114,8 @@ class SpawnProcessTest(LandscapeTest):
         def line_received(line):
             lines.append(line)
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(expected, lines)
 
         result = spawn_process(self.command, args=(param,),
@@ -123,7 +129,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\n/bin/cat")
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("hello", out)
 
         result = spawn_process(self.command, stdin="hello")
