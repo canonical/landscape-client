@@ -11,6 +11,7 @@ import unittest
 from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
 from twisted.python.compat import StringType as basestring
+from twisted.python.compat import _PY3
 from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 
@@ -506,7 +507,8 @@ class StandardIOHelper(object):
         test_case.old_stdin = sys.stdin
         test_case.stdout = sys.stdout = stringio()
         test_case.stdin = sys.stdin = stringio()
-        test_case.stdin.encoding = "UTF-8"
+        if not _PY3:
+            test_case.stdin.encoding = "UTF-8"
 
     def tear_down(self, test_case):
         sys.stdout = test_case.old_stdout

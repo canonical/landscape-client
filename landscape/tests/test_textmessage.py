@@ -1,10 +1,20 @@
-import sys
-
 from landscape.textmessage import (
     AcceptedTypeError, EmptyMessageError, got_accepted_types, get_message,
     send_message)
 from landscape.tests.helpers import (
     LandscapeTest, FakeBrokerServiceHelper, StandardIOHelper)
+from twisted.python.compat import _PY3
+
+
+def get_message_text(unicode_str):
+    """
+    A helper to differentiate between Python 2 and 3 encoding for StringIO.
+    """
+    if _PY3:
+        message_text = unicode_str
+    else:
+        message_text = unicode_str.encode("UTF-8")
+    return message_text
 
 
 class SendMessageTest(LandscapeTest):
@@ -45,8 +55,8 @@ class SendMessageTest(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["text-message"])
 
-        input = u"Foobl\N{HIRAGANA LETTER A}"
-        self.stdin.write(input.encode("UTF-8"))
+        message_text = get_message_text(u"Foobl\N{HIRAGANA LETTER A}")
+        self.stdin.write(message_text)
         self.stdin.seek(0, 0)
 
         def got_result(result):
@@ -69,9 +79,10 @@ class ScriptTest(LandscapeTest):
         """
         A message should be properly decoded from the command line arguments.
         """
+        message_text = get_message_text(u"\N{HIRAGANA LETTER A}")
         message = get_message(
             ["landscape-message",
-             u"\N{HIRAGANA LETTER A}".encode(sys.stdin.encoding), "a!"])
+             message_text, "a!"])
         self.assertEqual(message, u"\N{HIRAGANA LETTER A} a!")
 
     def test_get_message_stdin(self):
@@ -79,14 +90,14 @@ class ScriptTest(LandscapeTest):
         If no arguments are specified then the message should be read
         from stdin.
         """
-        input = u"Foobl\N{HIRAGANA LETTER A}"
-        self.stdin.write(input.encode("UTF-8"))
+        message_text = get_message_text(u"Foobl\N{HIRAGANA LETTER A}")
+        self.stdin.write(message_text)
         self.stdin.seek(0, 0)
         message = get_message(["landscape-message"])
         self.assertEqual(self.stdout.getvalue(),
                          "Please enter your message, and send EOF "
                          "(Control + D after newline) when done.\n")
-        self.assertEqual(message, input)
+        self.assertEqual(message, u"Foobl\N{HIRAGANA LETTER A}")
 
     def test_get_empty_message_stdin(self):
         """
@@ -101,12 +112,8 @@ class ScriptTest(LandscapeTest):
         If sys.stdin.encoding is None, it's likely a pipe, so try to
         decode it as UTF-8 by default.
         """
-        encoding = sys.stdin.encoding
-        sys.stdin.encoding = None
-        try:
-            message = get_message(
-                ["landscape-message",
-                 u"\N{HIRAGANA LETTER A}".encode("UTF-8"), "a!"])
-        finally:
-            sys.stdin.encoding = encoding
+        message_text = get_message_text(u"\N{HIRAGANA LETTER A}")
+        message = get_message(
+            ["landscape-message",
+             message_text, "a!"])
         self.assertEqual(message, u"\N{HIRAGANA LETTER A} a!")
