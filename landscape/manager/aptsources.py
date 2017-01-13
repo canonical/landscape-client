@@ -100,26 +100,28 @@ class AptSources(ManagerPlugin):
 
     def _handle_sources(self, ignored, sources):
         """Handle sources repositories."""
-        fd, path = tempfile.mkstemp()
-        os.close(fd)
-        new_sources = file(path, "w")
-        try:
-            source_file = open(self.SOURCES_LIST)
-        except:
-            os.unlink(path)
-            raise
-        for line in source_file:
-            stripped_line = line.strip()
-            if not stripped_line or stripped_line.startswith("#"):
-                new_sources.write(line)
-            else:
-                new_sources.write("#%s" % line)
-        new_sources.close()
+        saved_sources = "{}.save".format(self.SOURCES_LIST)
+        if sources:
+            fd, path = tempfile.mkstemp()
+            os.close(fd)
 
-        original_stat = os.stat(self.SOURCES_LIST)
-        shutil.move(path, self.SOURCES_LIST)
-        os.chmod(self.SOURCES_LIST, original_stat.st_mode)
-        os.chown(self.SOURCES_LIST, original_stat.st_uid, original_stat.st_gid)
+            with open(path, "w") as new_sources:
+                new_sources.write(
+                    "# Landscape manages repositories for this computer\n"
+                    "# Original content of sources.list can be found in "
+                    "sources.list.save\n")
+
+            original_stat = os.stat(self.SOURCES_LIST)
+            if not os.path.isfile(saved_sources):
+                shutil.move(self.SOURCES_LIST, saved_sources)
+            shutil.move(path, self.SOURCES_LIST)
+            os.chmod(self.SOURCES_LIST, original_stat.st_mode)
+            os.chown(self.SOURCES_LIST, original_stat.st_uid,
+                     original_stat.st_gid)
+        else:
+            # Re-instate original sources
+            if os.path.isfile(saved_sources):
+                shutil.move(saved_sources, self.SOURCES_LIST)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
             shutil.move(filename, "%s.save" % filename)
@@ -127,9 +129,8 @@ class AptSources(ManagerPlugin):
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
                                     "landscape-%s.list" % source["name"])
-            sources_file = file(filename, "w")
-            sources_file.write(source["content"])
-            sources_file.close()
+            with open(filename, "w") as sources_file:
+                sources_file.write(source["content"])
             os.chmod(filename, 0644)
         return self._run_reporter().addCallback(lambda ignored: None)
 
