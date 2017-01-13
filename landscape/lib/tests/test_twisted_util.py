@@ -3,7 +3,8 @@ import os
 from landscape.tests.helpers import LandscapeTest
 from landscape.lib.twisted_util import spawn_process
 from landscape.lib.fs import create_file
-
+from twisted.python.compat import _PY3
+from unittest import skipIf
 
 class SpawnProcessTest(LandscapeTest):
 
@@ -123,6 +124,7 @@ class SpawnProcessTest(LandscapeTest):
         result.addCallback(callback)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_spawn_process_with_stdin(self):
         """
         Optionally C{spawn_process} accepts a C{stdin} argument.
