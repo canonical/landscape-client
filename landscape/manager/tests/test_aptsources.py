@@ -200,8 +200,8 @@ class AptSourcesTests(LandscapeTest):
                   "w") as sources1:
             sources1.write("ok\n")
 
-        with open(os.path.join(self.sourceslist.SOURCES_LIST_D,"file2.list.save"),
-                  "w") as sources2:
+        with open(os.path.join(self.sourceslist.SOURCES_LIST_D,
+                               "file2.list.save"), "w") as sources2:
             sources2.write("ok\n")
 
         self.manager.dispatch_message(
