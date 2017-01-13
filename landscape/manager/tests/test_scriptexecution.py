@@ -43,6 +43,7 @@ class RunScriptTests(LandscapeTest):
         self.plugin = ScriptExecutionPlugin()
         self.manager.add(self.plugin)
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_basic_run(self):
         """
         The plugin returns a Deferred resulting in the output of basic
@@ -52,18 +53,21 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(self.assertEqual, "hi\n")
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_snap_path(self):
         """The bin path for snaps is included in the PATH."""
         deferred = self.plugin.run_script("/bin/sh", "echo $PATH")
         return deferred.addCallback(
             lambda result: self.assertIn("/snap/bin", result))
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_other_interpreter(self):
         """Non-shell interpreters can be specified."""
         result = self.plugin.run_script("/usr/bin/python", "print 'hi'")
         result.addCallback(self.assertEqual, "hi\n")
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_other_interpreter_env(self):
         """
         Non-shell interpreters don't have their paths set by the shell, so we
@@ -80,6 +84,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_server_supplied_env(self):
         """
         Server-supplied environment variables are merged with default
@@ -101,6 +106,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_server_supplied_env_overrides_client(self):
         """
         Server-supplied environment variables override client default
@@ -121,6 +127,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_concurrent(self):
         """
         Scripts run with the ScriptExecutionPlugin plugin are run concurrently.
@@ -150,6 +157,7 @@ class RunScriptTests(LandscapeTest):
             self.assertEqual, "%s\n" % (accented_content.encode("utf-8"),))
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_accented_run_in_interpreter(self):
         """
         Scripts can also contain accents in the interpreter.
@@ -165,6 +173,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_set_umask_appropriately(self):
         """
         We should be setting the umask to 0o022 before executing a script, and
@@ -302,6 +311,7 @@ class RunScriptTests(LandscapeTest):
 
         return result.addCallback(check).addBoth(cleanup)
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_self_remove_script(self):
         """
         If a script removes itself, it doesn't create an error when the script
