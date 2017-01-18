@@ -34,9 +34,8 @@ class AptSourcesTests(LandscapeTest):
         self.sourceslist.SOURCES_LIST_D = sources_d
         self.manager.add(self.sourceslist)
 
-        sources = file(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("\n")
-        sources.close()
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("\n")
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
@@ -44,36 +43,97 @@ class AptSourcesTests(LandscapeTest):
         self.sourceslist._run_process = lambda *args, **kwargs: succeed(None)
         self.log_helper.ignore_errors(".*")
 
-    def test_comment_sources_list(self):
+    def test_replace_sources_list(self):
         """
-        When getting a repository message, L{AptSources} comments the whole
+        When getting a repository message, AptSources replaces the
         sources.list file.
         """
-        sources = file(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
-        sources.close()
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n # other comment\n")
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
              "operation-id": 1})
 
-        self.assertEqual(
-            "#oki\n\n#doki\n#comment\n # other comment\n",
-            file(self.sourceslist.SOURCES_LIST).read())
+        with file(self.sourceslist.SOURCES_LIST) as sources:
+            self.assertEqual(
+                "# Landscape manages repositories for this computer\n"
+                "# Original content of sources.list can be found in "
+                "sources.list.save\n", sources.read())
 
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "status": SUCCEEDED, "operation-id": 1}])
+    def test_save_sources_list(self):
+        """
+        When getting a repository message, AptSources saves a copy of the
+        sources.list file.
+        """
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
+             "operation-id": 1})
+
+        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        self.assertTrue(os.path.exists(saved_sources_path))
+        with file(saved_sources_path) as saved_sources:
+            self.assertEqual("oki\n\ndoki\n#comment\n # other comment\n",
+                             saved_sources.read())
+
+    def test_existing_saved_sources_list(self):
+        """
+        When getting a repository message, AptSources saves a copy of the
+        sources.list file, only if a previously saved copy doesn't exist
+        """
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+
+        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        with open(saved_sources_path, "w") as saved_sources:
+            saved_sources.write("original content\n")
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
+             "operation-id": 1})
+
+        self.assertTrue(os.path.exists(saved_sources_path))
+        with file(saved_sources_path) as saved_sources:
+            self.assertEqual("original content\n", saved_sources.read())
+
+    def test_restore_sources_list(self):
+        """
+        When getting a repository message without sources, AptSources
+        restores the previous contents of the sources.list file.
+        """
+        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        with open(saved_sources_path, "w") as old_sources:
+            old_sources.write("original content\n")
+
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace",
+             "sources": [],
+             "gpg-keys": [],
+             "operation-id": 1})
+
+        with file(self.sourceslist.SOURCES_LIST) as sources:
+            self.assertEqual("original content\n", sources.read())
 
     def test_sources_list_permissions(self):
         """
         When getting a repository message, L{AptSources} keeps sources.list
         permissions.
         """
-        sources = open(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
-        sources.close()
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+
         # change file mode from default to check it's restored
         os.chmod(self.sourceslist.SOURCES_LIST, 0o400)
         sources_stat_orig = os.stat(self.sourceslist.SOURCES_LIST)
@@ -92,7 +152,9 @@ class AptSourcesTests(LandscapeTest):
              mock.patch("os.chown") as mock_chown:
 
             self.manager.dispatch_message(
-                {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+                {"type": "apt-sources-replace",
+                 "sources": [{"name": "bla", "content": ""}],
+                 "gpg-keys": [],
                  "operation-id": 1})
 
             service = self.broker_service
@@ -117,10 +179,12 @@ class AptSourcesTests(LandscapeTest):
         self.sourceslist.SOURCES_LIST = "/doesntexist"
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": ""}],
+             "gpg-keys": [],
              "operation-id": 1})
 
-        msg = "IOError: [Errno 2] No such file or directory: '/doesntexist'"
+        msg = "OSError: [Errno 2] No such file or directory: '/doesntexist'"
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
                             [{"type": "operation-result",
@@ -132,16 +196,13 @@ class AptSourcesTests(LandscapeTest):
         The sources files in sources.list.d are renamed to .save when a message
         is received.
         """
-        sources1 = file(
-            os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"), "w")
-        sources1.write("ok\n")
-        sources1.close()
+        with open(os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
+                  "w") as sources1:
+            sources1.write("ok\n")
 
-        sources2 = file(
-            os.path.join(self.sourceslist.SOURCES_LIST_D,
-                         "file2.list.save"), "w")
-        sources2.write("ok\n")
-        sources2.close()
+        with open(os.path.join(self.sourceslist.SOURCES_LIST_D,
+                               "file2.list.save"), "w") as sources2:
+            sources2.write("ok\n")
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
