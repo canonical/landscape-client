@@ -25,7 +25,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
 Suggests: ${extra:Suggests}
 Breaks: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
 Replaces: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
-Description: The Landscape administration system client - Common files
+Description: Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
@@ -41,7 +41,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-pycurl,
          landscape-common (= ${binary:Version})
 Suggests: ${extra:Suggests}
-Description: The Landscape administration system client
+Description: Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.

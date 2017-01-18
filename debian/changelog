@@ -2,7 +2,7 @@ landscape-client (16.08+bzr925-0ubuntu0) xenial; urgency=medium
 
   * New local test build
 
- -- Adam Collard <adam.collard@canonical.com>  Thu, 05 Jan 2017 11:16:51 +0000
+ -- Adam Collard <adam.collard@canonical.com>  Wed, 18 Jan 2017 09:11:33 +0000
 
 landscape-client (16.08-0ubuntu1) UNRELEASED; urgency=medium
 

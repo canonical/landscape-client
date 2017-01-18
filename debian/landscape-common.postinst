@@ -41,14 +41,14 @@ case "$1" in
        if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
            rm -f $PROFILE_LOCATION 2>/dev/null || true
            ln -sf $WRAPPER $UPDATE_MOTD_LOCATION
-           /usr/sbin/update-motd 2>/dev/null || true
+           update-motd 2>/dev/null || true
        elif [ "$RET" = "Run sysinfo on every login" ]; then
            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
-           /usr/sbin/update-motd 2>/dev/null || true
+           update-motd 2>/dev/null || true
            ln -sf $WRAPPER $PROFILE_LOCATION
        else
            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
-           /usr/sbin/update-motd 2>/dev/null || true
+           update-motd 2>/dev/null || true
            rm -f $PROFILE_LOCATION || true
        fi
 
