@@ -1,9 +1,6 @@
 #!/usr/bin/make -f
 
 dist_release := $(shell lsb_release -cs)
-ifeq (,$(filter $(dist_release), hardy lucid))
-	use_dhpython2 = yes
-endif
 
 dh_extra_flags = -plandscape-common -plandscape-client
 
