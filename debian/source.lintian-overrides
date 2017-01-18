@@ -2,14 +2,3 @@
 # the package is being built on, this is detected dynamically
 # in the rules file
 landscape-client source: dh_python-is-obsolete
-
-# the package has to build on lucid, where the standards version
-# is 3.8.2
-landscape-client source: ancient-standards-version
-
-# it's a bug that should be fixed in quantal
-landscape-client source: unknown-field-in-dsc original-maintainer
-
-# this is only used in a very specific client upgrade from
-# the dbus to the amp version
-landscape-client: start-stop-daemon-in-maintainer-script postinst:130
