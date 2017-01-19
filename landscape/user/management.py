@@ -53,8 +53,7 @@ class UserManagement(object):
         # XXX temporary workaround? We're getting unicode here.
         username = username.encode("ascii")
         password = password.encode("ascii")
-        salt = base64.b64encode(os.urandom(6))[:-1]
-        crypted = md5crypt.md5crypt(password, salt)
+        crypted = md5crypt.md5crypt(password)
         result, output = self.call_popen(["usermod", "-p", crypted, username])
         if result != 0:
             raise UserManagementError("Error setting password for user "

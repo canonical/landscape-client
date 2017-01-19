@@ -19,26 +19,23 @@ SYNOPSIS
 
 	import md5crypt.py
 
-	cryptedpassword = md5crypt.md5crypt(password, salt);
+	cryptedpassword = md5crypt.md5crypt(password);
 
 DESCRIPTION
 
 Compatibility wrapper for passlib.hash.md5_crypt.
 """
 from landscape.lib.hashlib import md5
-from passlib.hash import md5_crypt
-from twisted.python.compat import _PY3
+from passlib.hash import md5_crypt, apr_md5_crypt
 
 
-def apache_md5_crypt (pw, salt):
+def apache_md5_crypt (pw):
     # change the Magic string to match the one used by Apache
-    return unix_md5_crypt(pw, salt, '$apr1$')
+    return apr_md5_crypt.encrypt(pw, salt_size=7)
 
 
-def unix_md5_crypt(pw, salt, magic=None):
-    if _PY3 and isinstance(salt, bytes):
-        salt = salt.decode('utf8') 
-    return md5_crypt.encrypt(pw, salt=salt)
+def unix_md5_crypt(pw):
+    return md5_crypt.encrypt(pw, salt_size=7)
 
 
 ## assign a wrapper function:
