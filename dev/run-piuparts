@@ -24,17 +24,6 @@ EOF
 }
 
 #
-# Check if X is running, if not abort because we would make X crash (D-Bus!)
-#
-if pidof X > /dev/null; then
-    cat <<EOF
-It appears you're running an X session. This script would kill your session
-due to landscape-client reloading dbus in its postinst script. Quitting now.
-EOF
-    exit 1
-fi
-
-#
 # Check we have piuparts >= 0.36
 #
 PIUPARTS_VERSION=$(sudo piuparts --version 2>/dev/null| cut -f 2 -d " ")
@@ -140,10 +129,7 @@ sudo piuparts \
     -I "/var/lib/.*" \
     -I "/usr/lib/python2.6/dist-packages/twisted.*" \
     -i /etc/X11 \
-    -i /etc/dbus-1 \
-    -i /etc/dbus-1/system.d \
     -I "/usr/lib/python2.4/site-packages/apt.*" \
-    -I "/usr/lib/python2.4/site-packages/dbus.*" \
     -I "/usr/lib/python2.5/site-packages/twisted.*" \
     -b ${BASETGZ} \
     ${SOURCE}_${VERSION}_${ARCH}.changes

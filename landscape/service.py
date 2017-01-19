@@ -27,12 +27,6 @@ class LandscapeService(Service, object):
 
     def __init__(self, config):
         self.config = config
-        try:
-            from landscape.lib import bpickle_dbus
-        except ImportError:
-            pass
-        else:
-            bpickle_dbus.install()
         self.reactor = self.reactor_factory()
         if self.persist_filename:
             self.persist = get_versioned_persist(self)

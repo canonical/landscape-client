@@ -97,7 +97,7 @@ class MessageTestCase(unittest.TestCase):
                                         "%s" % (diff, extra))
 
 
-class LandscapeTest(MessageTestCase, HelperTestCase, TestCase, ):
+class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
 
     def setUp(self):
         self._old_config_filenames = BaseConfiguration.default_config_filenames

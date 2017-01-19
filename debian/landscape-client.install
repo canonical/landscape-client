@@ -2,11 +2,8 @@ usr/bin/landscape-broker
 usr/bin/landscape-client
 usr/bin/landscape-config
 usr/bin/landscape-manager
-usr/bin/landscape-message
 usr/bin/landscape-monitor
 usr/bin/landscape-package-changer
 usr/bin/landscape-package-reporter
 usr/bin/landscape-release-upgrader
-usr/bin/landscape-dbus-proxy
 usr/lib/landscape
-etc/dbus-1/system.d/landscape.conf

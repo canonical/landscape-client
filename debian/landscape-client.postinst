@@ -98,17 +98,6 @@ END
             dpkg-statoverride --update --add root landscape 4754 $apt_update
         fi
 
-        # Check if we're upgrading from a D-Bus version like the client in the
-        # lucid archives.
-        if ! [ -z $2 ]; then
-            if dpkg --compare-versions $2 lt 1.5.1; then
-                # Launch a proxy service that will forward requests over DBus
-                # from the old package-changer to the new AMP-based broker. This
-                # is a one-off only needed for the DBus->AMP upgrade
-                start-stop-daemon -x /usr/bin/landscape-dbus-proxy -b -c landscape -u landscape -S
-            fi
-         fi
-
         # In response to bug 1508110 we need to trigger a complete update of
         # user information.  The flag file will be removed by the client when
         # the update completes.

@@ -70,7 +70,6 @@ class PackageSkeleton(object):
         self._hash = package_hash
 
 
-
 def relation_to_string(relation_tuple):
     """Convert an apt relation to a string representation.
 
@@ -153,6 +152,9 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         if with_unicode:
             skeleton.section = coerce_unicode(skeleton.section, "utf-8")
             skeleton.summary = coerce_unicode(skeleton.summary, "utf-8")
-            skeleton.description = coerce_unicode(
-                skeleton.description, "utf-8")
+            # Avoid double-decoding package descriptions in build_skeleton_apt,
+            # which causes an error with newer python-apt (Xenial onwards)
+            if not isinstance(skeleton.description, unicode):
+                skeleton.description = coerce_unicode(
+                    skeleton.description, "utf-8")
     return skeleton
