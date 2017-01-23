@@ -1,5 +1,4 @@
 from twisted.python.compat import iteritems, itervalues
-from landscape.compat import iterkeys
 
 from landscape.diff import diff
 
@@ -81,7 +80,7 @@ class UserChanges(object):
         if updates:
             changes["update-users"] = list(itervalues(updates))
         if deletes:
-            changes["delete-users"] = list(iterkeys(deletes))
+            changes["delete-users"] = list(deletes)
         return changes
 
     def _detect_group_changes(self):
