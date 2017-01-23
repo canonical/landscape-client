@@ -1,7 +1,7 @@
 PYDOCTOR ?= pydoctor
-TXT2MAN ?= txt2man 
+TXT2MAN ?= txt2man
 PYTHON ?= python
-TRIAL_ARGS ?= 
+TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
@@ -31,13 +31,7 @@ check5:
 	-trial3 --unclean-warnings landscape
 	./display_py2_testresults
 
-check3: build3 
-	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
-		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
-		export DBUS_SESSION_BUS_ADDRESS=`echo $$OUTPUT | cut -f1 -d ' '`; \
-		DBUS_PID=`echo $$OUTPUT | cut -f2 -d ' '`; \
-		trap "kill $$DBUS_PID" EXIT; \
-	fi; \
+check3: build3
 	if [ -z "$$DISPLAY" ]; then \
 		xvfb-run $(TEST_COMMAND_PY3); \
 	else \
