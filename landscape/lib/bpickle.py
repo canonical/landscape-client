@@ -28,7 +28,9 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import sys
+
 from twisted.python.compat import _PY3
+
 from landscape.compat import coerce_unicode
 
 
@@ -40,7 +42,7 @@ def dumps(obj, _dt=dumps_table):
     try:
         dumped = _dt[type(obj)](obj)
         if _PY3:
-          dumped = dumped.encode('unicode-escape')
+            dumped = dumped.encode('unicode-escape')
         return dumped
     except KeyError as e:
         raise ValueError("Unsupported type: %s" % e)
@@ -157,7 +159,7 @@ if sys.version_info < (3,):
     dumps_table.update({   long: dumps_int,
                         unicode: dumps_unicode })
 if sys.version_info > (3,):
-    dumps_table.update({ type(dict().keys()): dumps_list })
+    dumps_table[type(dict().keys())] = dumps_list
 
 
 
@@ -170,4 +172,3 @@ loads_table.update({ "b": loads_bool,
                      "t": loads_tuple,
                      "d": loads_dict,
                      "n": loads_none     })
-
