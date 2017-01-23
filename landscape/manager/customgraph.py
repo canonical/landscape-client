@@ -4,8 +4,8 @@ import logging
 
 from twisted.internet.defer import fail, DeferredList, succeed
 from twisted.python.compat import iteritems
-from landscape.compat import coerce_unicode
 
+from landscape.compat import coerce_unicode
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
 from landscape.manager.plugin import ManagerPlugin

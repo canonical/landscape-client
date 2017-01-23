@@ -21,10 +21,10 @@ import apt_pkg
 from aptsources.sourceslist import SourcesList
 from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
-
 from twisted.python.compat import itervalues
-from landscape.compat import StringIO
 
+
+from landscape.compat import StringIO
 from landscape.lib.fs import append_file, create_file, read_file, touch_file
 from landscape.package.skeleton import build_skeleton_apt
 

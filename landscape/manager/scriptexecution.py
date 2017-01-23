@@ -12,17 +12,16 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import (
     Deferred, fail, inlineCallbacks, returnValue, succeed)
 from twisted.internet.error import ProcessDone
+from twisted.python.compat import unicode
 
 from landscape import VERSION
+from landscape.compat import coerce_unicode
 from landscape.constants import UBUNTU_PATH
-from landscape.lib.scriptcontent import build_script
+from landscape.lib.encoding import encode_if_needed
 from landscape.lib.fetch import fetch_async, HTTPCodeError
 from landscape.lib.persist import Persist
-from landscape.lib.encoding import encode_if_needed
+from landscape.lib.scriptcontent import build_script
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
-
-from twisted.python.compat import unicode
-from landscape.compat import coerce_unicode
 
 
 ALL_USERS = object()

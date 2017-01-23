@@ -1,8 +1,9 @@
-import os
 from optparse import OptionParser
-from landscape.compat import StringIO
 from textwrap import dedent
+import mock
+import os
 
+from landscape.compat import StringIO
 from landscape.lib.fs import read_file, create_file
 
 from landscape.deployment import (
@@ -10,7 +11,6 @@ from landscape.deployment import (
 from landscape.manager.config import ManagerConfiguration
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
-import mock
 
 
 class BabbleConfiguration(Configuration):

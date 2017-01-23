@@ -4,10 +4,9 @@ import grp
 from landscape.user.provider import (UserProvider, UserNotFoundError,
     GroupNotFoundError)
 
-from landscape.user.tests.helpers import FakeUserProvider
-
-from landscape.tests.helpers import LandscapeTest
 from landscape.compat import coerce_unicode
+from landscape.tests.helpers import LandscapeTest
+from landscape.user.tests.helpers import FakeUserProvider
 
 
 class ProviderTest(LandscapeTest):

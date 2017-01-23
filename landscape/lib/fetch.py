@@ -3,11 +3,11 @@ import sys
 
 from optparse import OptionParser
 
-from landscape.compat import StringIO
+from twisted.internet.defer import DeferredList
+from twisted.internet.threads import deferToThread
 from twisted.python.compat import iteritems
 
-from twisted.internet.threads import deferToThread
-from twisted.internet.defer import DeferredList
+from landscape.compat import StringIO
 
 
 class FetchError(Exception):

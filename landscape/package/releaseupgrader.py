@@ -8,6 +8,7 @@ import tarfile
 
 from twisted.internet.defer import succeed
 
+from landscape.compat import StringIO
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
@@ -17,8 +18,6 @@ from landscape.package.taskhandler import (
 from landscape.lib.twisted_util import spawn_process
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.package.reporter import find_reporter_command
-
-from landscape.compat import StringIO
 
 
 class ReleaseUpgraderConfiguration(PackageTaskHandlerConfiguration):
