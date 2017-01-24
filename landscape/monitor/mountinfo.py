@@ -1,12 +1,11 @@
 import time
 import os
 
+from landscape.accumulate import Accumulator
+from landscape.compat import coerce_unicode
 from landscape.lib.disk import get_mount_info, is_device_removable
 from landscape.lib.monitor import CoverageMonitor
-from landscape.accumulate import Accumulator
 from landscape.monitor.plugin import MonitorPlugin
-
-from landscape.compat import coerce_unicode
 
 
 class MountInfo(MonitorPlugin):

@@ -1,10 +1,12 @@
 import os
 
-from landscape.tests.helpers import LandscapeTest
-from landscape.lib.twisted_util import spawn_process
-from landscape.lib.fs import create_file
 from twisted.python.compat import _PY3
 from unittest import skipIf
+
+from landscape.lib.fs import create_file
+from landscape.lib.twisted_util import spawn_process
+from landscape.tests.helpers import LandscapeTest
+
 
 class SpawnProcessTest(LandscapeTest):
 

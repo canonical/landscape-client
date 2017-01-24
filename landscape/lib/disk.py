@@ -4,6 +4,7 @@ import os
 import re
 
 from twisted.python.compat import _PY3
+
 from landscape.compat import coerce_unicode
 
 

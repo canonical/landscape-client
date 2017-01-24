@@ -19,11 +19,11 @@ from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
 from landscape.lib import bpickle
 
+from landscape.compat import convert_buffer_to_string
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.store import UnknownHashIDRequest, FakePackageStore
 
-from landscape.compat import convert_buffer_to_string
 
 HASH_ID_REQUEST_TIMEOUT = 7200
 MAX_UNKNOWN_HASHES_PER_REQUEST = 500

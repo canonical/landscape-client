@@ -1,10 +1,9 @@
 import os
 import logging
 
+from landscape.compat import coerce_unicode
 from landscape.lib.fs import read_file
 from landscape.monitor.plugin import MonitorPlugin
-
-from landscape.compat import coerce_unicode
 
 
 REBOOT_REQUIRED_FILENAME = "/var/run/reboot-required"

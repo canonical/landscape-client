@@ -1,9 +1,10 @@
-from pwd import struct_passwd
 from grp import struct_group
-from landscape.compat import coerce_unicode
+from pwd import struct_passwd
 import csv
-import subprocess
 import logging
+import subprocess
+
+from landscape.compat import coerce_unicode
 
 
 class UserManagementError(Exception):

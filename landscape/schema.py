@@ -1,5 +1,6 @@
 """A schema system. Yes. Another one!"""
 from twisted.python.compat import iteritems, unicode, long
+
 from landscape.compat import coerce_unicode
 
 

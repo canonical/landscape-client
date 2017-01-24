@@ -1,9 +1,8 @@
 import os
 import logging
 
-from landscape.monitor.plugin import MonitorPlugin
-
 from landscape.compat import SafeConfigParser
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class UpdateManager(MonitorPlugin):

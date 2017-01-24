@@ -1,7 +1,6 @@
 import subprocess
 
 from twisted.python.compat import itervalues
-from landscape.compat import iterkeys
 
 from landscape.diff import diff
 from landscape.lib.process import ProcessInformation
@@ -74,7 +73,7 @@ class ActiveProcessInfo(DataWatcher):
         if updates:
             changes["update-processes"] = list(itervalues(updates))
         if deletes:
-            changes["kill-processes"] = list(iterkeys(deletes))
+            changes["kill-processes"] = list(deletes)
 
         # Update cached values for use on the next run.
         self._previous_processes = processes
