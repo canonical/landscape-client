@@ -9,7 +9,7 @@ import unittest
 import mock
 from twisted.internet.defer import succeed, fail, Deferred
 
-from landscape.broker.registration import InvalidCredentialsError
+from landscape.broker.registration import RegistrationError
 from landscape.broker.tests.helpers import RemoteBrokerHelper
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
@@ -84,7 +84,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
 
     def test_handle_registration_errors_traps(self):
         """
-        The handle_registration_errors() function traps InvalidCredentialsError
+        The handle_registration_errors() function traps RegistrationError
         and MethodCallError errors.
         """
         class FauxFailure(object):
@@ -97,7 +97,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         self.assertNotEqual(
             0, handle_registration_errors(faux_failure, faux_connector))
         self.assertTrue(
-            [InvalidCredentialsError, MethodCallError],
+            [RegistrationError, MethodCallError],
             faux_failure.trapped_exceptions)
 
     def test_handle_registration_errors_disconnects_cleanly(self):
@@ -128,7 +128,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
 
         def i_raise(result):
             calls.append(True)
-            return InvalidCredentialsError("Bad mojo")
+            return RegistrationError("Bad mojo")
 
         deferred = Deferred()
         deferred.addCallback(i_raise)
@@ -1803,7 +1803,7 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         self.reactor.call_later(0, self.reactor.fire, "registration-failed")
 
         def fail_register():
-            return fail(InvalidCredentialsError("Nope."))
+            return fail(RegistrationError("Nope."))
 
         self.remote.register = fail_register
 

@@ -23,7 +23,7 @@ from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.reactor import LandscapeReactor
-from landscape.broker.registration import InvalidCredentialsError
+from landscape.broker.registration import RegistrationError
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.amp import RemoteBrokerConnector
 
@@ -611,7 +611,7 @@ def handle_registration_errors(failure, connector):
 
     Note: "results" contains a failure indication already (or will shortly)
     since the registration-failed signal will fire."""
-    failure.trap(InvalidCredentialsError, MethodCallError)
+    failure.trap(RegistrationError, MethodCallError)
     connector.disconnect()
 
 
