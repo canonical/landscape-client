@@ -723,9 +723,10 @@ def report_registration_outcome(what_happened, print=print):
             "The landscape client will continue to try and contact "
             "the server periodically.")
     }
-    message = messages[what_happened]
+    message = messages.get(what_happened)
     if message:
-        print(message, file=sys.stderr)
+        fd = sys.stdout if what_happened == "success" else sys.stderr
+        print(message, file=fd)
 
 
 def determine_exit_code(what_happened):
