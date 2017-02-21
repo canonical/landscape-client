@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+from functools import partial
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
 import os
@@ -94,8 +95,13 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
+        results = []
+        add_result = results.append
+
         self.assertNotEqual(
-            0, handle_registration_errors(faux_failure, faux_connector))
+            0,
+            handle_registration_errors(
+                add_result, faux_failure, faux_connector))
         self.assertTrue(
             [RegistrationError, MethodCallError],
             faux_failure.trapped_exceptions)
@@ -112,8 +118,13 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
+        results = []
+        add_result = results.append
+
         self.assertNotEqual(
-            0, handle_registration_errors(faux_failure, faux_connector))
+            0,
+            handle_registration_errors(
+                add_result, faux_failure, faux_connector))
         self.assertTrue(faux_connector.was_disconnected)
 
     def test_handle_registration_errors_as_errback(self):
@@ -130,9 +141,13 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
             calls.append(True)
             return RegistrationError("Bad mojo")
 
+        results = []
+        add_result = results.append
+
         deferred = Deferred()
         deferred.addCallback(i_raise)
-        deferred.addErrback(handle_registration_errors, faux_connector)
+        deferred.addErrback(
+            partial(handle_registration_errors, add_result), faux_connector)
         deferred.callback("")  # This kicks off the callback chain.
 
         self.assertEqual([True], calls)
@@ -1797,13 +1812,13 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
 
     def test_register_registration_error(self):
         """
-        If we get a registration error, the register() function returns
-        "failure".
+        If we get a registration error, the register() function returns the
+        error from the registration response message.
         """
         self.reactor.call_later(0, self.reactor.fire, "registration-failed")
 
         def fail_register():
-            return fail(RegistrationError("Nope."))
+            return fail(RegistrationError("max-pending-computers"))
 
         self.remote.register = fail_register
 
@@ -1811,7 +1826,7 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         result = register(
             config=self.config, reactor=self.reactor,
             connector_factory=connector_factory, max_retries=99)
-        self.assertEqual("failure", result)
+        self.assertEqual("max-pending-computers", result)
 
 
 class FauxConnection(object):
@@ -1981,9 +1996,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 for handler in faux_remote.handlers.values()])
         # We include a single error handler to react to exchange errors.
         self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
+        # the handle_registration_errors is wrapped in a partial()
         self.assertEqual(
             'handle_registration_errors',
-            faux_remote.register_deferred.errbacks[0].__name__)
+            faux_remote.register_deferred.errbacks[0].func.__name__)
 
     def test_register_with_on_error_and_an_error(self):
         """A caller-provided on_error callable will be called if errors occur.

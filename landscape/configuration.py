@@ -601,17 +601,19 @@ def exchange_failure(add_result, ssl_error=False):
         add_result("non-ssl-error")
 
 
-def handle_registration_errors(failure, connector):
-    """Handle invalid credentials.
+def handle_registration_errors(add_result, failure, connector):
+    """Handle registration errors.
 
     The connection to the broker succeeded but the registration itself
-    failed, because of invalid credentials. We need to trap the exceptions
-    so they don't stacktrace (we know what is going on), and try to cleanly
-    disconnect from the broker.
+    failed, because of invalid credentials or excessive pending computers.
+    We need to trap the exceptions so they don't stacktrace (we know what is
+    going on), and try to cleanly disconnect from the broker.
 
     Note: "results" contains a failure indication already (or will shortly)
     since the registration-failed signal will fire."""
-    failure.trap(RegistrationError, MethodCallError)
+    error = failure.trap(RegistrationError, MethodCallError)
+    if error is RegistrationError:
+        add_result(str(failure.value))
     connector.disconnect()
 
 
@@ -633,7 +635,8 @@ def got_connection(add_result, connector, reactor, remote):
                 "exchange-failed": partial(exchange_failure, add_result)}
     deferreds = [
         remote.call_on_event(handlers),
-        remote.register().addErrback(handle_registration_errors, connector)]
+        remote.register().addErrback(
+            partial(handle_registration_errors, add_result), connector)]
     results = gather_results(deferreds)
     results.addCallback(done, connector, reactor)
     return results
@@ -681,6 +684,11 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
         partial(got_connection, add_result, connector, reactor))
     connection.addErrback(got_error)
     reactor.run()
+
+    if len(results) > 1 and "failure" in results:
+        # In case of a failed registration, we have a more detailed error on
+        # what failed.
+        results.remove("failure")
 
     assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
