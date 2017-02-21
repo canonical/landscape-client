@@ -343,16 +343,29 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertMessages(self.mstore.get_pending_messages(), [])
         handler_mock.assert_called_once_with()
 
-    def test_registration_failed_event(self):
+    def test_registration_failed_event_unknown_account(self):
         """
         The deferred returned by a registration request should fail
-        with L{InvalidCredentialsError} if the server responds with a
-        failure message.
+        if the server responds with a failure message because credentials are
+        wrong.
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
-        reactor_fire_mock.assert_called_with("registration-failed")
+        reactor_fire_mock.assert_called_with(
+            "registration-failed", "unknown-account")
+
+    def test_registration_failed_event_max_pending_computers(self):
+        """
+        The deferred returned by a registration request should fail
+        if the server responds with a failure message because the max number of
+        pending computers have been reached.
+        """
+        reactor_fire_mock = self.reactor.fire = mock.Mock()
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "max-pending-computers"})
+        reactor_fire_mock.assert_called_with(
+            "registration-failed", "max-pending-computers")
 
     def test_registration_failed_event_not_fired_when_uncertain(self):
         """

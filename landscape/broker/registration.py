@@ -233,8 +233,8 @@ class RegistrationHandler(object):
         self._reactor.fire("resynchronize-clients")
 
     def _handle_registration(self, message):
-        if message["info"] == "unknown-account":
-            self._reactor.fire("registration-failed")
+        if message["info"] in ("unknown-account", "max-pending-computers"):
+            self._reactor.fire("registration-failed", message["info"])
 
     def _handle_unknown_id(self, message):
         id = self._identity
@@ -279,6 +279,7 @@ class RegistrationResponse(object):
         self.deferred.callback(None)
         self._cancel_calls()
 
-    def _failed(self):
+    def _failed(self, reason):
+        print("XXX", reason)
         self.deferred.errback(InvalidCredentialsError())
         self._cancel_calls()
