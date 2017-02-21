@@ -707,8 +707,13 @@ def report_registration_outcome(what_happened, print=print):
     """
     if what_happened == "success":
         print("System successfully registered.")
-    elif what_happened == "failure":
+    elif what_happened == "unknown-account":
         print("Invalid account name or registration key.", file=sys.stderr)
+    elif what_happened == "max-pending-computers":
+        print("Maximum number of computers pending approval reached.",
+              file=sys.stderr)
+    elif what_happened == "failure":
+        print("Registration failed.", file=sys.stderr)
     elif what_happened == "ssl-error":
         print("\nThe server's SSL information is incorrect, or fails "
               "signature verification!\n"

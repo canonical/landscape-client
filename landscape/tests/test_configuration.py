@@ -45,6 +45,7 @@ url = https://landscape.canonical.com/message-system
 
 
 class SuccessTests(unittest.TestCase):
+
     def test_success(self):
         """The success handler records the success."""
         results = []
@@ -53,6 +54,7 @@ class SuccessTests(unittest.TestCase):
 
 
 class FailureTests(unittest.TestCase):
+
     def test_failure(self):
         """The failure handler records the failure and returns non-zero."""
         results = []
@@ -1141,7 +1143,8 @@ registration_key = shared-secret
             printed)
 
     @mock.patch("__builtin__.raw_input", return_value="y")
-    @mock.patch("landscape.configuration.register", return_value="failure")
+    @mock.patch(
+        "landscape.configuration.register", return_value="unknown-account")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_failure(
             self, mock_setup, mock_register, mock_raw_input):
@@ -1192,11 +1195,13 @@ registration_key = shared-secret
             printed)
 
     @mock.patch("__builtin__.raw_input")
-    @mock.patch("landscape.configuration.register", return_value="failure")
+    @mock.patch(
+        "landscape.configuration.register", return_value="unknown-account")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_failure_silent(
             self, mock_setup, mock_register, mock_raw_input):
-        """A failure result is communicated to the user even with --silent.
+        """
+        A failure result is communicated to the user even with --silent.
         """
         printed = []
 
@@ -2088,7 +2093,29 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
 
     def test_failure_case(self):
         report_registration_outcome("failure", print=self.record_result)
+        self.assertIn("Registration failed.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
+
+    def test_unknown_account_case(self):
+        """
+        If the unknown-account error is found, an appropriate message is
+        returned.
+        """
+        report_registration_outcome(
+            "unknown-account", print=self.record_result)
         self.assertIn("Invalid account name or registration key.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
+
+    def test_max_pending_computers_case(self):
+        """
+        If the max-pending-computers error is found, an appropriate message is
+        returned.
+        """
+        report_registration_outcome(
+            "max-pending-computers", print=self.record_result)
+        self.assertIn(
+            "Maximum number of computers pending approval reached.",
+            self.result)
         self.assertIn(sys.stderr.name, self.output)
 
     def test_ssl_error_case(self):
