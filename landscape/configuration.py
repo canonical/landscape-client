@@ -104,7 +104,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         raise ImportOptionError(
                             "Couldn't read configuration from %s." %
                             self.import_from)
-            except Exception, error:
+            except Exception as error:
                 raise ImportOptionError(str(error))
 
             # But real command line options have precedence.
@@ -124,7 +124,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         error_message = None
         try:
             content = fetch(url)
-        except FetchError, error:
+        except FetchError as error:
             error_message = str(error)
         if error_message is not None:
             raise ImportOptionError(
@@ -324,9 +324,9 @@ class LandscapeSetupScript(object):
             proxies now.  If you don't use a proxy, leave these fields empty.
             """)
 
-        if not "http_proxy" in options:
+        if "http_proxy" not in options:
             self.prompt("http_proxy", "HTTP proxy URL")
-        if not "https_proxy" in options:
+        if "https_proxy" not in options:
             self.prompt("https_proxy", "HTTPS proxy URL")
 
     def query_script_plugin(self):
@@ -413,7 +413,7 @@ class LandscapeSetupScript(object):
             self.prompt("tags", "Tags", False)
             if self._get_invalid_tags(self.config.tags):
                 self.show_help("Tag names may only contain alphanumeric "
-                              "characters.")
+                               "characters.")
                 self.config.tags = None  # Reset for the next prompt
             else:
                 break
@@ -646,8 +646,8 @@ def got_error(failure, print=print):
 
 
 def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
-        got_connection=got_connection, max_retries=14, on_error=None,
-        results=None):
+             got_connection=got_connection, max_retries=14, on_error=None,
+             results=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
