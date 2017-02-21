@@ -705,26 +705,27 @@ def report_registration_outcome(what_happened, print=print):
     """Report the registrtion interaction outcome to the user in human-readable
     form.
     """
-    if what_happened == "success":
-        print("System successfully registered.")
-    elif what_happened == "unknown-account":
-        print("Invalid account name or registration key.", file=sys.stderr)
-    elif what_happened == "max-pending-computers":
-        print("Maximum number of computers pending approval reached.",
-              file=sys.stderr)
-    elif what_happened == "failure":
-        print("Registration failed.", file=sys.stderr)
-    elif what_happened == "ssl-error":
-        print("\nThe server's SSL information is incorrect, or fails "
-              "signature verification!\n"
-              "If the server is using a self-signed certificate, "
-              "please ensure you supply it with the --ssl-public-key "
-              "parameter.", file=sys.stderr)
-    elif what_happened == "non-ssl-error":
-        print("\nWe were unable to contact the server.\n"
-              "Your internet connection may be down. "
-              "The landscape client will continue to try and contact "
-              "the server periodically.", file=sys.stderr)
+    messages = {
+        "success": "System successfully registered.",
+        "unknown-account": "Invalid account name or registration key.",
+        "max-pending-computers": (
+            "Maximum number of computers pending approval reached."),
+        "failure": "Registration failed.",
+        "ssl-error": (
+            "\nThe server's SSL information is incorrect, or fails "
+            "signature verification!\n"
+            "If the server is using a self-signed certificate, "
+            "please ensure you supply it with the --ssl-public-key "
+            "parameter."),
+        "non-ssl-error": (
+            "\nWe were unable to contact the server.\n"
+            "Your internet connection may be down. "
+            "The landscape client will continue to try and contact "
+            "the server periodically.")
+    }
+    message = messages[what_happened]
+    if message:
+        print(message, file=sys.stderr)
 
 
 def determine_exit_code(what_happened):
