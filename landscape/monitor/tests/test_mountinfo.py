@@ -35,7 +35,15 @@ class MountInfoTest(LandscapeTest):
         /proc/mounts is readable, and that messages with the expected
         datatypes are generated.
         """
-        plugin = self.get_mount_info(create_time=self.reactor.time)
+        mounts_file = self.makeFile("""\
+/dev/hda1 / ext3 rw 0 0
+""")
+        mtab_file = self.makeFile("""\
+/dev/hda1 / ext3 rw 0 0
+""")
+        plugin = self.get_mount_info(
+            mounts_file=mounts_file, mtab_file=mtab_file,
+            create_time=self.reactor.time)
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -544,7 +552,15 @@ addr=ennui 0 0
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
     def test_call_on_accepted(self):
-        plugin = self.get_mount_info(create_time=self.reactor.time)
+        mounts_file = self.makeFile("""\
+/dev/hda1 / ext3 rw 0 0
+""")
+        mtab_file = self.makeFile("""\
+/dev/hda1 / ext3 rw 0 0
+""")
+        plugin = self.get_mount_info(
+            mounts_file=mounts_file, mtab_file=mtab_file,
+            create_time=self.reactor.time)
         self.monitor.add(plugin)
 
         self.reactor.advance(plugin.run_interval)
