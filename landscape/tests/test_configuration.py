@@ -58,8 +58,8 @@ class FailureTests(unittest.TestCase):
     def test_failure(self):
         """The failure handler records the failure and returns non-zero."""
         results = []
-        self.assertNotEqual(0, failure(results.append))
-        self.assertEqual(["failure"], results)
+        self.assertNotEqual(0, failure(results.append, "an-error"))
+        self.assertEqual(["an-error"], results)
 
 
 class ExchangeFailureTests(unittest.TestCase):
@@ -1820,7 +1820,8 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         If we get a registration error, the register() function returns the
         error from the registration response message.
         """
-        self.reactor.call_later(0, self.reactor.fire, "registration-failed")
+        self.reactor.call_later(
+            0, self.reactor.fire, "registration-failed", "an-error")
 
         def fail_register():
             return fail(RegistrationError("max-pending-computers"))

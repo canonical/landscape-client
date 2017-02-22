@@ -588,9 +588,9 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def failure(add_result):
+def failure(add_result, reason):
     """Handle a failed communication by recording the kind of failure."""
-    add_result("failure")
+    add_result(reason)
 
 
 def exchange_failure(add_result, ssl_error=False):
