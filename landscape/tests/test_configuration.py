@@ -1821,7 +1821,7 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         error from the registration response message.
         """
         self.reactor.call_later(
-            0, self.reactor.fire, "registration-failed", "an-error")
+            0, self.reactor.fire, "registration-failed", reason="an-error")
 
         def fail_register():
             return fail(RegistrationError("max-pending-computers"))

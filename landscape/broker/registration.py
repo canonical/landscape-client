@@ -164,7 +164,7 @@ class RegistrationHandler(object):
         account_name = identity.account_name
 
         if not account_name:
-            self._reactor.fire("registration-failed", "unknown-account")
+            self._reactor.fire("registration-failed", reason="unknown-account")
             return
 
         tags = identity.tags
@@ -235,7 +235,7 @@ class RegistrationHandler(object):
 
     def _handle_registration(self, message):
         if message["info"] in ("unknown-account", "max-pending-computers"):
-            self._reactor.fire("registration-failed", message["info"])
+            self._reactor.fire("registration-failed", reason=message["info"])
 
     def _handle_unknown_id(self, message):
         id = self._identity
@@ -280,6 +280,6 @@ class RegistrationResponse(object):
         self.deferred.callback(None)
         self._cancel_calls()
 
-    def _failed(self, reason):
+    def _failed(self, reason=None):
         self.deferred.errback(RegistrationError(reason))
         self._cancel_calls()

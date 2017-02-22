@@ -352,7 +352,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
         reactor_fire_mock.assert_called_with(
-            "registration-failed", "unknown-account")
+            "registration-failed", reason="unknown-account")
 
     def test_registration_failed_event_max_pending_computers(self):
         """
@@ -364,7 +364,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "registration", "info": "max-pending-computers"})
         reactor_fire_mock.assert_called_with(
-            "registration-failed", "max-pending-computers")
+            "registration-failed", reason="max-pending-computers")
 
     def test_registration_failed_event_not_fired_when_uncertain(self):
         """
