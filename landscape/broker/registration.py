@@ -164,7 +164,7 @@ class RegistrationHandler(object):
         account_name = identity.account_name
 
         if not account_name:
-            self._reactor.fire("registration-failed")
+            self._reactor.fire("registration-failed", "unknown-account")
             return
 
         tags = identity.tags
