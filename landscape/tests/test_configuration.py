@@ -1820,8 +1820,7 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         If we get a registration error, the register() function returns the
         error from the registration response message.
         """
-        self.reactor.call_later(
-            0, self.reactor.fire, "registration-failed", reason="an-error")
+        self.reactor.call_later(0, self.reactor.fire, "registration-failed")
 
         def fail_register():
             return fail(RegistrationError("max-pending-computers"))
@@ -2092,11 +2091,6 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         self.assertIn("System successfully registered.", self.result)
         self.assertIn(sys.stdout.name, self.output)
 
-    def test_failure_case(self):
-        report_registration_outcome("failure", print=self.record_result)
-        self.assertIn("Registration failed.", self.result)
-        self.assertIn(sys.stderr.name, self.output)
-
     def test_unknown_account_case(self):
         """
         If the unknown-account error is found, an appropriate message is
@@ -2151,7 +2145,8 @@ class DetermineExitCodeTest(unittest.TestCase):
         When passed a failure result, the determine_exit_code function returns
         2.
         """
-        failure_codes = ["failure", "ssl-error", "non-ssl-error"]
+        failure_codes = [
+            "unknown-account", "max-computers-count", "ssl-error", "non-ssl-error"]
         for code in failure_codes:
             result = determine_exit_code(code)
             self.assertEqual(2, result)

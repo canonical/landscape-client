@@ -686,11 +686,6 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
     connection.addErrback(got_error)
     reactor.run()
 
-    if len(results) > 1 and "failure" in results:
-        # In case of a failed registration, we have a more detailed error on
-        # what failed.
-        results.remove("failure")
-
     assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
     result = results[0]
@@ -711,7 +706,6 @@ def report_registration_outcome(what_happened, print=print):
         "unknown-account": "Invalid account name or registration key.",
         "max-pending-computers": (
             "Maximum number of computers pending approval reached."),
-        "failure": "Registration failed.",
         "ssl-error": (
             "\nThe server's SSL information is incorrect, or fails "
             "signature verification!\n"
