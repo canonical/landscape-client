@@ -698,14 +698,16 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
 
 
 def report_registration_outcome(what_happened, print=print):
-    """Report the registrtion interaction outcome to the user in human-readable
+    """Report the registration interaction outcome to the user in human-readable
     form.
     """
     messages = {
         "success": "System successfully registered.",
         "unknown-account": "Invalid account name or registration key.",
         "max-pending-computers": (
-            "Maximum number of computers pending approval reached."),
+            "Maximum number of computers pending approval reached. ",
+            "Login to your Landscape server account page to manage "
+            "pending computer approvals."),
         "ssl-error": (
             "\nThe server's SSL information is incorrect, or fails "
             "signature verification!\n"

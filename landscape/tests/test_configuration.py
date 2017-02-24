@@ -2109,7 +2109,9 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         report_registration_outcome(
             "max-pending-computers", print=self.record_result)
         self.assertIn(
-            "Maximum number of computers pending approval reached.",
+            "Maximum number of computers pending approval reached. "
+            "Login to your Landscape server account page to manage "
+            "pending computer approvals.",
             self.result)
         self.assertIn(sys.stderr.name, self.output)
 
@@ -2146,7 +2148,8 @@ class DetermineExitCodeTest(unittest.TestCase):
         2.
         """
         failure_codes = [
-            "unknown-account", "max-computers-count", "ssl-error", "non-ssl-error"]
+            "unknown-account", "max-computers-count", "ssl-error",
+            "non-ssl-error"]
         for code in failure_codes:
             result = determine_exit_code(code)
             self.assertEqual(2, result)

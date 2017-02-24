@@ -21,7 +21,7 @@ from landscape.lib.versioning import is_version_higher
 
 class RegistrationError(Exception):
     """
-    Raised when the registration failed because  an invalid account title
+    Raised when the registration failed because an invalid account title
     and/or registration key are used with RegistrationManager.register,
     or the server has too many pending computers already.
     """

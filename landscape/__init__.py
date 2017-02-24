@@ -1,5 +1,5 @@
-DEBIAN_REVISION = ""
-UPSTREAM_VERSION = "17.01"
+DEBIAN_REVISION = "-0ubuntu0"
+UPSTREAM_VERSION = "17.01+bzr946"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
 # The minimum server API version that all Landscape servers are known to speak
@@ -50,7 +50,8 @@ SERVER_API = "3.3"
 #  * Server returns 402 Payment Required if the computer has no valid license.
 #
 # 3.8:
-#  * Return "max-pending-computers" as "info" message if registration fails
-#    because of too many pending computers.
+#  * Handle the new "max-pending-computers" key returned by the server in the
+#    "info" field of the response payload for a fail registration, in case the
+#    account has too many pending computers.
 #
 CLIENT_API = "3.8"

@@ -472,7 +472,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
     def test_register_deferred_called_on_failed_max_pending_computers(self):
         """
         The registration errback is called on failures when max number of
-        pending computers have been reached.
+        pending computers has been reached.
         """
         # We don't want informational messages.
         self.logger.setLevel(logging.WARNING)
