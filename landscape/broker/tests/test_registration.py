@@ -3,8 +3,7 @@ import logging
 import socket
 import mock
 
-from landscape.broker.registration import (
-    InvalidCredentialsError, Identity)
+from landscape.broker.registration import RegistrationError, Identity
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
     BrokerConfigurationHelper, RegistrationHelper)
@@ -343,16 +342,29 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertMessages(self.mstore.get_pending_messages(), [])
         handler_mock.assert_called_once_with()
 
-    def test_registration_failed_event(self):
+    def test_registration_failed_event_unknown_account(self):
         """
         The deferred returned by a registration request should fail
-        with L{InvalidCredentialsError} if the server responds with a
-        failure message.
+        if the server responds with a failure message because credentials are
+        wrong.
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
-        reactor_fire_mock.assert_called_with("registration-failed")
+        reactor_fire_mock.assert_called_with(
+            "registration-failed", reason="unknown-account")
+
+    def test_registration_failed_event_max_pending_computers(self):
+        """
+        The deferred returned by a registration request should fail
+        if the server responds with a failure message because the max number of
+        pending computers have been reached.
+        """
+        reactor_fire_mock = self.reactor.fire = mock.Mock()
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "max-pending-computers"})
+        reactor_fire_mock.assert_called_with(
+            "registration-failed", reason="max-pending-computers")
 
     def test_registration_failed_event_not_fired_when_uncertain(self):
         """
@@ -424,17 +436,22 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         self.assertEqual(results, [None])
 
-    def test_register_deferred_called_on_failed(self):
+    def test_register_deferred_called_on_failed_unknown_account(self):
+        """
+        The registration errback is called on failures when credentials are
+        invalid.
+        """
         # We don't want informational messages.
         self.logger.setLevel(logging.WARNING)
 
-        calls = [0]
+        calls = []
         d = self.handler.register()
 
         def add_call(failure):
             exception = failure.value
-            self.assertTrue(isinstance(exception, InvalidCredentialsError))
-            calls[0] += 1
+            self.assertTrue(isinstance(exception, RegistrationError))
+            self.assertEqual("unknown-account", str(exception))
+            calls.append(True)
 
         d.addErrback(add_call)
 
@@ -442,13 +459,45 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
 
-        self.assertEqual(calls, [1])
+        self.assertEqual(calls, [True])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
 
-        self.assertEqual(calls, [1])
+        self.assertEqual(calls, [True])
+
+        self.assertEqual(self.logfile.getvalue(), "")
+
+    def test_register_deferred_called_on_failed_max_pending_computers(self):
+        """
+        The registration errback is called on failures when max number of
+        pending computers has been reached.
+        """
+        # We don't want informational messages.
+        self.logger.setLevel(logging.WARNING)
+
+        calls = []
+        d = self.handler.register()
+
+        def add_call(failure):
+            exception = failure.value
+            self.assertTrue(isinstance(exception, RegistrationError))
+            self.assertEqual("max-pending-computers", str(exception))
+            calls.append(True)
+
+        d.addErrback(add_call)
+
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "max-pending-computers"})
+
+        self.assertEqual(calls, [True])
+
+        # Doing it again to ensure that the deferred isn't called twice.
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "max-pending-computers"})
+
+        self.assertEqual(calls, [True])
 
         self.assertEqual(self.logfile.getvalue(), "")
 

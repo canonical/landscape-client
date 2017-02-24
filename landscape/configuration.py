@@ -23,7 +23,7 @@ from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.reactor import LandscapeReactor
-from landscape.broker.registration import InvalidCredentialsError
+from landscape.broker.registration import RegistrationError
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.amp import RemoteBrokerConnector
 
@@ -104,7 +104,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         raise ImportOptionError(
                             "Couldn't read configuration from %s." %
                             self.import_from)
-            except Exception, error:
+            except Exception as error:
                 raise ImportOptionError(str(error))
 
             # But real command line options have precedence.
@@ -124,7 +124,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         error_message = None
         try:
             content = fetch(url)
-        except FetchError, error:
+        except FetchError as error:
             error_message = str(error)
         if error_message is not None:
             raise ImportOptionError(
@@ -324,9 +324,9 @@ class LandscapeSetupScript(object):
             proxies now.  If you don't use a proxy, leave these fields empty.
             """)
 
-        if not "http_proxy" in options:
+        if "http_proxy" not in options:
             self.prompt("http_proxy", "HTTP proxy URL")
-        if not "https_proxy" in options:
+        if "https_proxy" not in options:
             self.prompt("https_proxy", "HTTPS proxy URL")
 
     def query_script_plugin(self):
@@ -413,7 +413,7 @@ class LandscapeSetupScript(object):
             self.prompt("tags", "Tags", False)
             if self._get_invalid_tags(self.config.tags):
                 self.show_help("Tag names may only contain alphanumeric "
-                              "characters.")
+                               "characters.")
                 self.config.tags = None  # Reset for the next prompt
             else:
                 break
@@ -588,9 +588,10 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def failure(add_result):
+def failure(add_result, reason=None):
     """Handle a failed communication by recording the kind of failure."""
-    add_result("failure")
+    if reason:
+        add_result(reason)
 
 
 def exchange_failure(add_result, ssl_error=False):
@@ -601,17 +602,19 @@ def exchange_failure(add_result, ssl_error=False):
         add_result("non-ssl-error")
 
 
-def handle_registration_errors(failure, connector):
-    """Handle invalid credentials.
+def handle_registration_errors(add_result, failure, connector):
+    """Handle registration errors.
 
     The connection to the broker succeeded but the registration itself
-    failed, because of invalid credentials. We need to trap the exceptions
-    so they don't stacktrace (we know what is going on), and try to cleanly
-    disconnect from the broker.
+    failed, because of invalid credentials or excessive pending computers.
+    We need to trap the exceptions so they don't stacktrace (we know what is
+    going on), and try to cleanly disconnect from the broker.
 
     Note: "results" contains a failure indication already (or will shortly)
     since the registration-failed signal will fire."""
-    failure.trap(InvalidCredentialsError, MethodCallError)
+    error = failure.trap(RegistrationError, MethodCallError)
+    if error is RegistrationError:
+        add_result(str(failure.value))
     connector.disconnect()
 
 
@@ -633,7 +636,8 @@ def got_connection(add_result, connector, reactor, remote):
                 "exchange-failed": partial(exchange_failure, add_result)}
     deferreds = [
         remote.call_on_event(handlers),
-        remote.register().addErrback(handle_registration_errors, connector)]
+        remote.register().addErrback(
+            partial(handle_registration_errors, add_result), connector)]
     results = gather_results(deferreds)
     results.addCallback(done, connector, reactor)
     return results
@@ -646,8 +650,8 @@ def got_error(failure, print=print):
 
 
 def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
-        got_connection=got_connection, max_retries=14, on_error=None,
-        results=None):
+             got_connection=got_connection, max_retries=14, on_error=None,
+             results=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -694,24 +698,32 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
 
 
 def report_registration_outcome(what_happened, print=print):
-    """Report the registrtion interaction outcome to the user in human-readable
+    """Report the registration interaction outcome to the user in human-readable
     form.
     """
-    if what_happened == "success":
-        print("System successfully registered.")
-    elif what_happened == "failure":
-        print("Invalid account name or registration key.", file=sys.stderr)
-    elif what_happened == "ssl-error":
-        print("\nThe server's SSL information is incorrect, or fails "
-              "signature verification!\n"
-              "If the server is using a self-signed certificate, "
-              "please ensure you supply it with the --ssl-public-key "
-              "parameter.", file=sys.stderr)
-    elif what_happened == "non-ssl-error":
-        print("\nWe were unable to contact the server.\n"
-              "Your internet connection may be down. "
-              "The landscape client will continue to try and contact "
-              "the server periodically.", file=sys.stderr)
+    messages = {
+        "success": "System successfully registered.",
+        "unknown-account": "Invalid account name or registration key.",
+        "max-pending-computers": (
+            "Maximum number of computers pending approval reached. ",
+            "Login to your Landscape server account page to manage "
+            "pending computer approvals."),
+        "ssl-error": (
+            "\nThe server's SSL information is incorrect, or fails "
+            "signature verification!\n"
+            "If the server is using a self-signed certificate, "
+            "please ensure you supply it with the --ssl-public-key "
+            "parameter."),
+        "non-ssl-error": (
+            "\nWe were unable to contact the server.\n"
+            "Your internet connection may be down. "
+            "The landscape client will continue to try and contact "
+            "the server periodically.")
+    }
+    message = messages.get(what_happened)
+    if message:
+        fd = sys.stdout if what_happened == "success" else sys.stderr
+        print(message, file=fd)
 
 
 def determine_exit_code(what_happened):

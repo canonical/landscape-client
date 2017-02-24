@@ -1,5 +1,5 @@
-DEBIAN_REVISION = ""
-UPSTREAM_VERSION = "17.01"
+DEBIAN_REVISION = "-0ubuntu0"
+UPSTREAM_VERSION = "17.01+bzr946"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
 # The minimum server API version that all Landscape servers are known to speak
@@ -17,16 +17,12 @@ DEFAULT_SERVER_API = "3.2"
 #
 # Changelog:
 #
-# 3.3:
-#  * Add new schema for the "registration" message, providing Juju information
 # 3.2:
 #  * Add new "eucalyptus-info" and "eucalyptus-info-error" messages.
+# 3.3:
+#  * Add new schema for the "registration" message, providing Juju information
 #
 SERVER_API = "3.3"
-
-# XXX This is needed for backward compatibility in the server code importing
-# the API variable. We should eventually replace it in the server code.
-API = SERVER_API
 
 # The "client-api" field of outgoing messages will be set to this value, and
 # used by the server to know which schema do the message types accepted by the
@@ -53,4 +49,9 @@ API = SERVER_API
 # 3.7:
 #  * Server returns 402 Payment Required if the computer has no valid license.
 #
-CLIENT_API = "3.7"
+# 3.8:
+#  * Handle the new "max-pending-computers" key returned by the server in the
+#    "info" field of the response payload for a fail registration, in case the
+#    account has too many pending computers.
+#
+CLIENT_API = "3.8"
