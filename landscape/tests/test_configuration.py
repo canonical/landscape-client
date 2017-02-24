@@ -2108,11 +2108,11 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         """
         report_registration_outcome(
             "max-pending-computers", print=self.record_result)
-        self.assertIn(
-            "Maximum number of computers pending approval reached. "
-            "Login to your Landscape server account page to manage "
-            "pending computer approvals.",
-            self.result)
+        messages = (
+            "Maximum number of computers pending approval reached. ",
+            "Login to your Landscape server account page to manage pending "
+            "computer approvals.")
+        self.assertIn(messages, self.result)
         self.assertIn(sys.stderr.name, self.output)
 
     def test_ssl_error_case(self):
