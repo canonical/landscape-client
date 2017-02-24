@@ -19,6 +19,10 @@ class MountInfoTest(LandscapeTest):
         self.log_helper.ignore_errors("Typelib file for namespace")
 
     def get_mount_info(self, *args, **kwargs):
+        if "mounts_file" not in kwargs:
+            kwargs["mounts_file"] = self.makeFile("/dev/hda1 / ext3 rw 0 0\n")
+        if "mtab_file" not in kwargs:
+            kwargs["mtab_file"] = self.makeFile("/dev/hda1 / ext3 rw 0 0\n")
         if "statvfs" not in kwargs:
             kwargs["statvfs"] = lambda path: (0,) * 1000
         plugin = MountInfo(*args, **kwargs)
@@ -136,13 +140,9 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path, multiplier=mock_counter(1).next):
             return (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.makeFile("""\
-/dev/hda1 / ext3 rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
-                                     create_time=self.reactor.time,
-                                     interval=self.monitor.step_size,
-                                     mtab_file=filename)
+        plugin = self.get_mount_info(
+            statvfs=statvfs, create_time=self.reactor.time,
+            interval=self.monitor.step_size)
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 2)
@@ -216,12 +216,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.makeFile("""\
-/dev/hda1 / ext3 rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
-                                     create_time=self.reactor.time,
-                                     mtab_file=filename)
+        plugin = self.get_mount_info(
+            statvfs=statvfs, create_time=self.reactor.time)
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
@@ -251,12 +247,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.makeFile("""\
-/dev/hda1 / ext3 rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
-                                     create_time=self.reactor.time,
-                                     mtab_file=filename)
+        plugin = self.get_mount_info(
+            statvfs=statvfs, create_time=self.reactor.time)
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -323,9 +315,7 @@ addr=ennui 0 0
         """
         "Removable" partitions are not reported to the server.
         """
-        filename = self.makeFile("""\
-/dev/hdc4 /mm xfs rw 0 0""")
-        plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
+        plugin = self.get_mount_info()
 
         plugin.is_device_removable = lambda x: True  # They are all removable
 
@@ -339,12 +329,8 @@ addr=ennui 0 0
         def statvfs(path, multiplier=mock_counter(1).next):
             return (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0)
 
-        filename = self.makeFile("""\
-/dev/hda2 / xfs rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
-                                     create_time=self.reactor.time,
-                                     mtab_file=filename)
+        plugin = self.get_mount_info(
+            statvfs=statvfs, create_time=self.reactor.time)
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
@@ -409,12 +395,8 @@ addr=ennui 0 0
         """
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-        filename = self.makeFile("""\
-/dev/hda1 / ext3 rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename,
-                                     create_time=self.reactor.time,
-                                     statvfs=statvfs, mtab_file=filename)
+        plugin = self.get_mount_info(
+            create_time=self.reactor.time, statvfs=statvfs)
         self.monitor.add(plugin)
 
         plugin.run()
@@ -605,12 +587,8 @@ addr=ennui 0 0
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.makeFile("""\
-/dev/hda1 / ext3 rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
-                                     create_time=self.reactor.time,
-                                     mtab_file=filename)
+        plugin = self.get_mount_info(
+            statvfs=statvfs, create_time=self.reactor.time)
         # Limit the test exchange to 5 items.
         plugin.max_free_space_items_to_exchange = 5
         step_size = self.monitor.step_size
