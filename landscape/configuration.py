@@ -788,7 +788,7 @@ def main(args, print=print):
         report_registration_outcome(result, print=print)
         sys.exit(determine_exit_code(result))
     else:
-        default_answer = is_registered(config)
+        default_answer = not is_registered(config)
         answer = prompt_yes_no(
             "\nRequest a new registration for this computer now?",
             default=default_answer)
