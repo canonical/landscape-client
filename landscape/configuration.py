@@ -22,10 +22,13 @@ from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
+from landscape.lib.persist import Persist
 from landscape.reactor import LandscapeReactor
 from landscape.broker.registration import RegistrationError
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.amp import RemoteBrokerConnector
+from landscape.broker.registration import Identity
+from landscape.broker.service import BrokerService
 
 
 class ConfigurationError(Exception):
@@ -736,6 +739,15 @@ def determine_exit_code(what_happened):
         return 2  # An error happened
 
 
+def is_registered(config):
+    """Return whether the client is already registered."""
+    persist_filename = os.path.join(
+        config.data_path, "{}.bpickle".format(BrokerService.service_name))
+    persist = Persist(filename=persist_filename)
+    identity = Identity(config, persist)
+    return bool(identity.secure_id)
+
+
 def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
 
@@ -745,15 +757,6 @@ def main(args, print=print):
     except ImportOptionError, error:
         print_text(str(error), error=True)
         sys.exit(1)
-
-    from landscape.broker.registration import Identity
-    from landscape.broker.service import BrokerService
-    from landscape.lib.persist import Persist
-    persist_filename = os.path.join(
-        config.data_path, "{}.bpickle".format(BrokerService.service_name))
-    persist = Persist(filename=persist_filename)
-    identity = Identity(config, persist)
-    print("XXXXXXXX", identity.secure_id)
 
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
