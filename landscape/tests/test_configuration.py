@@ -436,10 +436,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("landscape.configuration.show_help")
-    @mock.patch("landscape.configuration.prompt_yes_no")
+    @mock.patch("landscape.configuration.prompt_yes_no", return_value=False)
     def test_query_script_plugin_no(self, mock_prompt_yes_no, mock_show_help):
         help_snippet = "Landscape has a feature which enables administrators"
-        mock_prompt_yes_no.return_value = False
 
         self.script.query_script_plugin()
         self.assertEqual(self.config.include_manager_plugins, "")
@@ -449,14 +448,13 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("landscape.configuration.show_help")
-    @mock.patch("landscape.configuration.prompt_yes_no")
+    @mock.patch("landscape.configuration.prompt_yes_no", return_value=True)
     def test_query_script_plugin_yes(self, mock_prompt_yes_no, mock_show_help):
         """
         If the user *does* want script execution, then the script asks which
         users to enable it for.
         """
         help_snippet = "Landscape has a feature which enables administrators"
-        mock_prompt_yes_no.return_value = True
         self.script.prompt = mock.Mock()
 
         self.script.query_script_plugin()
@@ -473,7 +471,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
                          "ScriptExecution")
 
     @mock.patch("landscape.configuration.show_help")
-    @mock.patch("landscape.configuration.prompt_yes_no")
+    @mock.patch("landscape.configuration.prompt_yes_no", return_value=False)
     def test_disable_script_plugin(self, mock_prompt_yes_no, mock_show_help):
         """
         Answering NO to enabling the script plugin while it's already enabled
@@ -481,8 +479,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         self.config.include_manager_plugins = "ScriptExecution"
         help_snippet = "Landscape has a feature which enables administrators"
-
-        mock_prompt_yes_no.return_value = False
 
         self.script.query_script_plugin()
         mock_prompt_yes_no.assert_called_once_with(
@@ -492,7 +488,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("landscape.configuration.show_help")
-    @mock.patch("landscape.configuration.prompt_yes_no")
+    @mock.patch("landscape.configuration.prompt_yes_no", return_value=False)
     def test_disabling_script_plugin_leaves_existing_inclusions(
             self, mock_prompt_yes_no, mock_show_help):
         """
@@ -500,7 +496,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         plugins.
         """
         self.config.include_manager_plugins = "FooPlugin, ScriptExecution"
-        mock_prompt_yes_no.return_value = False
 
         self.script.query_script_plugin()
         mock_prompt_yes_no.assert_called_once_with(
@@ -509,7 +504,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         mock_show_help.assert_called_once_with(mock.ANY)
 
     @mock.patch("landscape.configuration.show_help")
-    @mock.patch("landscape.configuration.prompt_yes_no")
+    @mock.patch("landscape.configuration.prompt_yes_no", return_value=True)
     def test_enabling_script_plugin_leaves_existing_inclusions(
             self, mock_prompt_yes_no, mock_show_help):
         """
@@ -518,7 +513,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         self.config.include_manager_plugins = "FooPlugin"
 
-        mock_prompt_yes_no.return_value = True
         self.script.prompt = mock.Mock()
 
         self.script.query_script_plugin()
@@ -543,10 +537,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEqual(self.config.script_users, "root, nobody")
 
     @mock.patch("landscape.configuration.show_help")
-    @mock.patch("landscape.configuration.prompt_yes_no")
+    @mock.patch("landscape.configuration.prompt_yes_no", return_value=True)
     def test_query_script_manager_plugins_defined_on_command_line(
             self, mock_prompt_yes_no, mock_show_help):
-        mock_prompt_yes_no.return_value = True
         self.script.prompt = mock.Mock()
 
         self.config.load_command_line(
@@ -630,7 +623,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
     @mock.patch("landscape.configuration.show_help")
-    @mock.patch("landscape.configuration.prompt_yes_no")
+    @mock.patch("landscape.configuration.prompt_yes_no", return_value=True)
     def test_invalid_user_entered_by_user(self, mock_prompt_yes_no,
                                           mock_show_help):
         """
@@ -638,7 +631,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         informed and prompted again.
         """
         help_snippet = "Landscape has a feature which enables administrators"
-        mock_prompt_yes_no.return_value = True
         self.script.prompt_get_input = mock.Mock(
             side_effect=(u"nonexistent", u"root"))
 
