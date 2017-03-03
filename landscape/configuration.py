@@ -746,6 +746,15 @@ def main(args, print=print):
         print_text(str(error), error=True)
         sys.exit(1)
 
+    from landscape.broker.registration import Identity
+    from landscape.broker.service import BrokerService
+    from landscape.lib.persist import Persist
+    persist_filename = os.path.join(
+        config.data_path, "{}.bpickle".format(BrokerService.service_name))
+    persist = Persist(filename=persist_filename)
+    identity = Identity(config, persist)
+    print("XXXXXXXX", identity.secure_id)
+
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
 
