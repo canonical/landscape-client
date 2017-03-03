@@ -15,7 +15,7 @@ from landscape.broker.tests.helpers import RemoteBrokerHelper
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
-    ConfigurationError,
+    ConfigurationError, prompt_yes_no, show_help,
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
     handle_registration_errors, done, got_error, report_registration_outcome,
@@ -217,6 +217,50 @@ class PrintTextTest(LandscapeTest):
         self.assertEqual("Hi!END", stdout.getvalue())
 
 
+class PromptYesNoTest(unittest.TestCase):
+
+    def test_prompt_yes_no(self):
+        """
+        prompt_yes_no prompts a question and returns a boolean with the answer.
+        """
+        comparisons = [("Y", True),
+                       ("y", True),
+                       ("yEs", True),
+                       ("YES", True),
+                       ("n", False),
+                       ("N", False),
+                       ("No", False),
+                       ("no", False),
+                       ("", True)]
+
+        for input_string, result in comparisons:
+            with mock.patch("__builtin__.raw_input",
+                            return_value=input_string) as mock_raw_input:
+                prompt_yes_no("Foo")
+            mock_raw_input.assert_called_once_with("Foo [Y/n]: ")
+
+    @mock.patch("__builtin__.raw_input", return_value="")
+    def test_prompt_yes_no_default(self, mock_raw_input):
+        self.assertFalse(prompt_yes_no("Foo", default=False))
+        mock_raw_input.assert_called_once_with("Foo [y/N]: ")
+
+    @mock.patch("__builtin__.raw_input", side_effect=("x", "n"))
+    @mock.patch("landscape.configuration.show_help")
+    def test_prompt_yes_no_invalid(self, mock_show_help, mock_raw_input):
+        self.assertFalse(prompt_yes_no("Foo"))
+        mock_show_help.assert_called_once_with("Invalid input.")
+        calls = [mock.call("Foo [Y/n]: "), mock.call("Foo [Y/n]: ")]
+        mock_raw_input.assert_has_calls(calls)
+
+
+class ShowHelpTest(unittest.TestCase):
+
+    @mock.patch("landscape.configuration.print_text")
+    def test_show_help(self, mock_print_text):
+        show_help("\n\n \n  Hello  \n  \n  world!  \n \n\n")
+        mock_print_text.assert_called_once_with("\nHello\n\nworld!\n")
+
+
 class LandscapeSetupScriptTest(LandscapeTest):
 
     def setUp(self):
@@ -227,11 +271,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSetupConfiguration()
         self.script = LandscapeSetupScript(self.config)
-
-    # @mock.patch("landscape.configuration.print_text")
-    # def test_show_help(self, mock_print_text):
-    #     self.script.show_help("\n\n \n  Hello  \n  \n  world!  \n \n\n")
-    #     mock_print_text.assert_called_once_with("\nHello\n\nworld!\n")
 
     @mock.patch("__builtin__.raw_input", return_value="Desktop")
     def test_prompt_simple(self, mock_raw_input):
@@ -312,36 +351,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         mock_show_help.assert_called_once_with(
             "This option is required to configure Landscape.")
         self.assertEqual(self.config.registration_key, "password")
-
-    # def test_prompt_yes_no(self):
-    #     comparisons = [("Y", True),
-    #                    ("y", True),
-    #                    ("yEs", True),
-    #                    ("YES", True),
-    #                    ("n", False),
-    #                    ("N", False),
-    #                    ("No", False),
-    #                    ("no", False),
-    #                    ("", True)]
-
-    #     for input_string, result in comparisons:
-    #         with mock.patch("__builtin__.raw_input",
-    #                         return_value=input_string) as mock_raw_input:
-    #             self.script.prompt_yes_no("Foo")
-    #         mock_raw_input.assert_called_once_with("Foo [Y/n]")
-
-    # @mock.patch("__builtin__.raw_input", return_value="")
-    # def test_prompt_yes_no_default(self, mock_raw_input):
-    #     self.assertFalse(self.script.prompt_yes_no("Foo", default=False))
-    #     mock_raw_input.assert_called_once_with("Foo [y/N]")
-
-    # @mock.patch("__builtin__.raw_input", side_effect=("x", "n"))
-    # def test_prompt_yes_no_invalid(self, mock_raw_input):
-    #     self.script.show_help = mock.Mock()
-    #     self.assertFalse(self.script.prompt_yes_no("Foo"))
-    #     self.script.show_help.assert_called_once_with("Invalid input.")
-    #     calls = [mock.call("Foo [Y/n]"), mock.call("Foo [Y/n]")]
-    #     mock_raw_input.assert_has_calls(calls)
 
     @mock.patch("landscape.configuration.show_help")
     def test_query_computer_title(self, mock_show_help):
