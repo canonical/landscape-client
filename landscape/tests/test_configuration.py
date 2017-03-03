@@ -11,7 +11,8 @@ import mock
 from twisted.internet.defer import succeed, fail, Deferred
 
 from landscape.broker.registration import RegistrationError
-from landscape.broker.tests.helpers import RemoteBrokerHelper
+from landscape.broker.tests.helpers import (
+    RemoteBrokerHelper, BrokerConfigurationHelper)
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
@@ -19,9 +20,10 @@ from landscape.configuration import (
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
     handle_registration_errors, done, got_error, report_registration_outcome,
-    determine_exit_code)
+    determine_exit_code, is_registered)
 from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.persist import Persist
 from landscape.sysvconfig import ProcessError
 from landscape.tests.helpers import FakeBrokerServiceHelper
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
@@ -2170,3 +2172,27 @@ class DetermineExitCodeTest(unittest.TestCase):
         for code in failure_codes:
             result = determine_exit_code(code)
             self.assertEqual(2, result)
+
+
+class IsRegisteredTest(LandscapeTest):
+
+    helpers = [BrokerConfigurationHelper]
+
+    def setUp(self):
+        super(IsRegisteredTest, self).setUp()
+        persist_file = os.path.join(self.config.data_path, "broker.bpickle")
+        self.persist = Persist(filename=persist_file)
+
+    def test_is_registered_false(self):
+        """
+        If the client hasn't previouly registered, is_registered returns False.
+        """
+        self.assertFalse(is_registered(self.config))
+
+    def test_is_registered_true(self):
+        """
+        If the client has previouly registered, is_registered returns True.
+        """
+        self.persist.set("registration.secure-id", "super-secure")
+        self.persist.save()
+        self.assertTrue(is_registered(self.config))
