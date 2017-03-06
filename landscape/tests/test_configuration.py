@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import mock
+from functools import partial
 import os
 import sys
 import unittest
@@ -10,7 +11,7 @@ from twisted.python.compat import iteritems
 
 from landscape.compat import ConfigParser
 from landscape.compat import StringIO
-from landscape.broker.registration import InvalidCredentialsError
+from landscape.broker.registration import RegistrationError
 from landscape.broker.tests.helpers import RemoteBrokerHelper
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
@@ -45,6 +46,7 @@ url = https://landscape.canonical.com/message-system
 
 
 class SuccessTests(unittest.TestCase):
+
     def test_success(self):
         """The success handler records the success."""
         results = []
@@ -53,11 +55,12 @@ class SuccessTests(unittest.TestCase):
 
 
 class FailureTests(unittest.TestCase):
+
     def test_failure(self):
         """The failure handler records the failure and returns non-zero."""
         results = []
-        self.assertNotEqual(0, failure(results.append))
-        self.assertEqual(["failure"], results)
+        self.assertNotEqual(0, failure(results.append, "an-error"))
+        self.assertEqual(["an-error"], results)
 
 
 class ExchangeFailureTests(unittest.TestCase):
@@ -85,7 +88,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
 
     def test_handle_registration_errors_traps(self):
         """
-        The handle_registration_errors() function traps InvalidCredentialsError
+        The handle_registration_errors() function traps RegistrationError
         and MethodCallError errors.
         """
         class FauxFailure(object):
@@ -95,10 +98,15 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
+        results = []
+        add_result = results.append
+
         self.assertNotEqual(
-            0, handle_registration_errors(faux_failure, faux_connector))
+            0,
+            handle_registration_errors(
+                add_result, faux_failure, faux_connector))
         self.assertTrue(
-            [InvalidCredentialsError, MethodCallError],
+            [RegistrationError, MethodCallError],
             faux_failure.trapped_exceptions)
 
     def test_handle_registration_errors_disconnects_cleanly(self):
@@ -113,8 +121,13 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         faux_connector = FauxConnector()
         faux_failure = FauxFailure()
 
+        results = []
+        add_result = results.append
+
         self.assertNotEqual(
-            0, handle_registration_errors(faux_failure, faux_connector))
+            0,
+            handle_registration_errors(
+                add_result, faux_failure, faux_connector))
         self.assertTrue(faux_connector.was_disconnected)
 
     def test_handle_registration_errors_as_errback(self):
@@ -129,11 +142,15 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
 
         def i_raise(result):
             calls.append(True)
-            return InvalidCredentialsError("Bad mojo")
+            return RegistrationError("Bad mojo")
+
+        results = []
+        add_result = results.append
 
         deferred = Deferred()
         deferred.addCallback(i_raise)
-        deferred.addErrback(handle_registration_errors, faux_connector)
+        deferred.addErrback(
+            partial(handle_registration_errors, add_result), faux_connector)
         deferred.callback("")  # This kicks off the callback chain.
 
         self.assertEqual([True], calls)
@@ -1127,7 +1144,8 @@ registration_key = shared-secret
             printed)
 
     @mock.patch("__builtin__.raw_input", return_value="y")
-    @mock.patch("landscape.configuration.register", return_value="failure")
+    @mock.patch(
+        "landscape.configuration.register", return_value="unknown-account")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_failure(
             self, mock_setup, mock_register, mock_raw_input):
@@ -1178,11 +1196,13 @@ registration_key = shared-secret
             printed)
 
     @mock.patch("__builtin__.raw_input")
-    @mock.patch("landscape.configuration.register", return_value="failure")
+    @mock.patch(
+        "landscape.configuration.register", return_value="unknown-account")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_failure_silent(
             self, mock_setup, mock_register, mock_raw_input):
-        """A failure result is communicated to the user even with --silent.
+        """
+        A failure result is communicated to the user even with --silent.
         """
         printed = []
 
@@ -1798,13 +1818,13 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
 
     def test_register_registration_error(self):
         """
-        If we get a registration error, the register() function returns
-        "failure".
+        If we get a registration error, the register() function returns the
+        error from the registration response message.
         """
         self.reactor.call_later(0, self.reactor.fire, "registration-failed")
 
         def fail_register():
-            return fail(InvalidCredentialsError("Nope."))
+            return fail(RegistrationError("max-pending-computers"))
 
         self.remote.register = fail_register
 
@@ -1812,7 +1832,7 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         result = register(
             config=self.config, reactor=self.reactor,
             connector_factory=connector_factory, max_retries=99)
-        self.assertEqual("failure", result)
+        self.assertEqual("max-pending-computers", result)
 
 
 class FauxConnection(object):
@@ -1982,9 +2002,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 for handler in faux_remote.handlers.values()])
         # We include a single error handler to react to exchange errors.
         self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
+        # the handle_registration_errors is wrapped in a partial()
         self.assertEqual(
             'handle_registration_errors',
-            faux_remote.register_deferred.errbacks[0].__name__)
+            faux_remote.register_deferred.errbacks[0].func.__name__)
 
     def test_register_with_on_error_and_an_error(self):
         """A caller-provided on_error callable will be called if errors occur.
@@ -2071,9 +2092,28 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         self.assertIn("System successfully registered.", self.result)
         self.assertIn(sys.stdout.name, self.output)
 
-    def test_failure_case(self):
-        report_registration_outcome("failure", print=self.record_result)
+    def test_unknown_account_case(self):
+        """
+        If the unknown-account error is found, an appropriate message is
+        returned.
+        """
+        report_registration_outcome(
+            "unknown-account", print=self.record_result)
         self.assertIn("Invalid account name or registration key.", self.result)
+        self.assertIn(sys.stderr.name, self.output)
+
+    def test_max_pending_computers_case(self):
+        """
+        If the max-pending-computers error is found, an appropriate message is
+        returned.
+        """
+        report_registration_outcome(
+            "max-pending-computers", print=self.record_result)
+        messages = (
+            "Maximum number of computers pending approval reached. ",
+            "Login to your Landscape server account page to manage pending "
+            "computer approvals.")
+        self.assertIn(messages, self.result)
         self.assertIn(sys.stderr.name, self.output)
 
     def test_ssl_error_case(self):
@@ -2108,7 +2148,9 @@ class DetermineExitCodeTest(unittest.TestCase):
         When passed a failure result, the determine_exit_code function returns
         2.
         """
-        failure_codes = ["failure", "ssl-error", "non-ssl-error"]
+        failure_codes = [
+            "unknown-account", "max-computers-count", "ssl-error",
+            "non-ssl-error"]
         for code in failure_codes:
             result = determine_exit_code(code)
             self.assertEqual(2, result)

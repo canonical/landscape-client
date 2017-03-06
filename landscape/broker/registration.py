@@ -19,10 +19,11 @@ from landscape.lib.vm_info import get_vm_info, get_container_info
 from landscape.lib.versioning import is_version_higher
 
 
-class InvalidCredentialsError(Exception):
+class RegistrationError(Exception):
     """
-    Raised when an invalid account title and/or registration key
-    is used with L{RegistrationManager.register}.
+    Raised when the registration failed because an invalid account title
+    and/or registration key are used with RegistrationManager.register,
+    or the server has too many pending computers already.
     """
 
 
@@ -116,7 +117,7 @@ class RegistrationHandler(object):
 
         @return: A L{Deferred} which will either be fired with None if
             registration was successful or will fail with an
-            L{InvalidCredentialsError} if not.
+            RegistrationError if not.
         """
         self._identity.secure_id = None
         self._identity.insecure_id = None
@@ -163,7 +164,7 @@ class RegistrationHandler(object):
         account_name = identity.account_name
 
         if not account_name:
-            self._reactor.fire("registration-failed")
+            self._reactor.fire("registration-failed", reason="unknown-account")
             return
 
         tags = identity.tags
@@ -233,8 +234,8 @@ class RegistrationHandler(object):
         self._reactor.fire("resynchronize-clients")
 
     def _handle_registration(self, message):
-        if message["info"] == "unknown-account":
-            self._reactor.fire("registration-failed")
+        if message["info"] in ("unknown-account", "max-pending-computers"):
+            self._reactor.fire("registration-failed", reason=message["info"])
 
     def _handle_unknown_id(self, message):
         id = self._identity
@@ -279,6 +280,6 @@ class RegistrationResponse(object):
         self.deferred.callback(None)
         self._cancel_calls()
 
-    def _failed(self):
-        self.deferred.errback(InvalidCredentialsError())
+    def _failed(self, reason=None):
+        self.deferred.errback(RegistrationError(reason))
         self._cancel_calls()
