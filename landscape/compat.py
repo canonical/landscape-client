@@ -1,6 +1,7 @@
 from twisted.python.compat import _PY3
-
 if _PY3:
+    import _pickle as cPickle
+    from landscape.lib import bpickle3 as bpickle
     from configparser import ConfigParser, NoOptionError
     SafeConfigParser = ConfigParser
 
@@ -10,6 +11,8 @@ if _PY3:
     stringio = cstringio = StringIO
 
 else:
+    import cPickle
+    from landscape.lib import bpickle
     from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
     from ConfigParser import SafeConfigParser
 

@@ -39,7 +39,7 @@ from logging import info
 from twisted.python.failure import Failure
 from twisted.internet import defer
 
-from landscape.lib.bpickle import loads
+from landscape.compat import bpickle
 from landscape.lib.fetch import fetch
 from landscape.lib.log import log_failure
 
@@ -84,7 +84,7 @@ class PingClient(object):
         the response indicates that their are messages waiting for
         this computer, False otherwise.
         """
-        if loads(webtext) == {"messages": True}:
+        if bpickle.loads(webtext) == {"messages": True}:
             return True
 
 

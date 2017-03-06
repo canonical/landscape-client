@@ -8,8 +8,8 @@ import pycurl
 
 from twisted.python.compat import unicode
 
+from landscape.compat import bpickle
 from landscape.lib.fetch import fetch
-from landscape.lib import bpickle
 from landscape.log import format_delta
 from landscape import SERVER_API, VERSION
 

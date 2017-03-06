@@ -10,7 +10,6 @@ from twisted.internet import reactor
 
 from landscape.lib.fs import create_file, touch_file
 from landscape.lib.fetch import FetchError
-from landscape.lib import bpickle
 from landscape.package.store import (
     PackageStore, UnknownHashIDRequest, FakePackageStore)
 from landscape.package.reporter import (
@@ -25,7 +24,7 @@ from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.reactor import FakeReactor
 
-from landscape.compat import convert_buffer_to_string
+from landscape.compat import convert_buffer_to_string, bpickle
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 

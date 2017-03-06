@@ -1,5 +1,5 @@
-"""
-Copyright (c) 2006, Gustavo Niemeyer <gustavo@niemeyer.net>
+"""Copyright (c) 2006, Gustavo Niemeyer <gustavo@niemeyer.net>
+Port to python 3 was done by Chris Glass <chris.glass@canonical.com>
 
 All rights reserved.
 
@@ -26,6 +26,9 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+This file is modified from the original to work with python3, but should be
+wire compatible and behave the same way (bugs notwithstanding).
 """
 
 
@@ -35,45 +38,50 @@ loads_table = {}
 
 def dumps(obj, _dt=dumps_table):
     try:
-        return _dt[type(obj)](obj)
-    except KeyError, e:
-        raise ValueError, "Unsupported type: %s" % e
+        return _dt[type(obj)](obj).encode("UTF-8")
+    except KeyError as e:
+        raise ValueError("Unsupported type: %s" % e)
 
 
-def loads(str, _lt=loads_table):
-    if not str:
-        raise ValueError, "Can't load empty string"
+def loads(byte_string, _lt=loads_table):
+    if not byte_string:
+        raise ValueError("Can't load empty string")
+    unicode_string = byte_string.decode()
     try:
-        return _lt[str[0]](str, 0)[0]
-    except KeyError, e:
-        raise ValueError, "Unknown type character: %s" % e
-    except IndexError:
-        raise ValueError, "Corrupted data"
+        return _lt[unicode_string[0]](unicode_string, 0)[0]
+    except KeyError as e:
+        raise ValueError("Unknown type character: %s" % e)
+    except IndexError:  #pragma: nocover
+        # NOTE: Not sure if reachable (chrisglass during py3 conversion)
+        raise ValueError("Corrupted data")
+
 
 def dumps_bool(obj):
     return "b%d" % int(obj)
 
+
 def dumps_int(obj):
     return "i%s;" % obj
+
 
 def dumps_float(obj):
     return "f%r;" % obj
 
+
 def dumps_str(obj):
     return "s%s:%s" % (len(obj), obj)
 
-def dumps_unicode(obj):
-    obj = obj.encode("utf-8")
-    return "u%s:%s" % (len(obj), obj)
 
 def dumps_list(obj, _dt=dumps_table):
     return "l%s;" % "".join([_dt[type(val)](val) for val in obj])
 
+
 def dumps_tuple(obj, _dt=dumps_table):
     return "t%s;" % "".join([_dt[type(val)](val) for val in obj])
 
+
 def dumps_dict(obj, _dt=dumps_table):
-    keys = obj.keys()
+    keys = list(obj.keys())
     keys.sort()
     res = []
     append = res.append
@@ -83,29 +91,30 @@ def dumps_dict(obj, _dt=dumps_table):
         append(_dt[type(val)](val))
     return "d%s;" % "".join(res)
 
+
 def dumps_none(obj):
     return "n"
 
+
 def loads_bool(str, pos):
     return bool(int(str[pos+1])), pos+2
+
 
 def loads_int(str, pos):
     endpos = str.index(";", pos)
     return int(str[pos+1:endpos]), endpos+1
 
+
 def loads_float(str, pos):
     endpos = str.index(";", pos)
     return float(str[pos+1:endpos]), endpos+1
+
 
 def loads_str(str, pos):
     startpos = str.index(":", pos)+1
     endpos = startpos+int(str[pos+1:startpos-1])
     return str[startpos:endpos], endpos
 
-def loads_unicode(str, pos):
-    startpos = str.index(":", pos)+1
-    endpos = startpos+int(str[pos+1:startpos-1])
-    return str[startpos:endpos].decode("utf-8"), endpos
 
 def loads_list(str, pos, _lt=loads_table):
     pos += 1
@@ -116,6 +125,7 @@ def loads_list(str, pos, _lt=loads_table):
         append(obj)
     return res, pos+1
 
+
 def loads_tuple(str, pos, _lt=loads_table):
     pos += 1
     res = []
@@ -124,6 +134,7 @@ def loads_tuple(str, pos, _lt=loads_table):
         obj, pos = _lt[str[pos]](str, pos)
         append(obj)
     return tuple(res), pos+1
+
 
 def loads_dict(str, pos, _lt=loads_table):
     pos += 1
@@ -134,16 +145,15 @@ def loads_dict(str, pos, _lt=loads_table):
         res[key] = val
     return res, pos+1
 
+
 def loads_none(str, pos):
     return None, pos+1
 
 
 dumps_table.update({       bool: dumps_bool,
                             int: dumps_int,
-                           long: dumps_int,
                           float: dumps_float,
                             str: dumps_str,
-                        unicode: dumps_unicode,
                            list: dumps_list,
                           tuple: dumps_tuple,
                            dict: dumps_dict,
@@ -153,8 +163,9 @@ loads_table.update({ "b": loads_bool,
                      "i": loads_int,
                      "f": loads_float,
                      "s": loads_str,
-                     "u": loads_unicode,
+                     "u": loads_str,
                      "l": loads_list,
                      "t": loads_tuple,
                      "d": loads_dict,
                      "n": loads_none     })
+

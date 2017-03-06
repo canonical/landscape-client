@@ -2,7 +2,7 @@ from landscape.tests.helpers import LandscapeTest
 
 from twisted.internet.defer import fail
 
-from landscape.lib.bpickle import dumps
+from landscape.compat import bpickle
 from landscape.lib.fetch import fetch
 from landscape.reactor import FakeReactor
 from landscape.broker.ping import PingClient, Pinger
@@ -25,7 +25,7 @@ class FakePageGetter(object):
         data.
         """
         self.fetches.append((url, post, headers, data))
-        return dumps(self.response)
+        return bpickle.dumps(self.response)
 
     def failing_get_page(self, url, post, headers, data):
         """

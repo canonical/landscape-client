@@ -196,6 +196,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result.addCallback(lambda _: patch_umask.stop())
 
+    @skipIf(_PY3, "mock does not get cleaned up, poisoning all other tests.")
     def test_restore_umask_in_event_of_error(self):
         """
         We set the umask before executing the script, in the event that there's

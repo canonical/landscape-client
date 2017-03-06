@@ -590,7 +590,7 @@ class Backend(object):
 class PickleBackend(Backend):
 
     def __init__(self):
-        import cPickle
+        from landscape.compat import cPickle
         self._pickle = cPickle
 
     def new(self):
@@ -614,7 +614,7 @@ class PickleBackend(Backend):
 class BPickleBackend(Backend):
 
     def __init__(self):
-        from landscape.lib import bpickle
+        from landscape.compat import bpickle
         self._bpickle = bpickle
 
     def new(self):
