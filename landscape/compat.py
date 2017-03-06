@@ -44,14 +44,6 @@ def coerce_unicode(s, encoding='ascii', errors='strict'):
         return s
 
 
-if _PY3:
-    def iterkeys(d):
-        return d.keys()
-else:
-    def iterkeys(d):
-        return d.iterkeys()
-
-
 def convert_buffer_to_string(mem_view):
     """
     Converts a buffer in Python 2 or a memoryview in Python 3 to str.
