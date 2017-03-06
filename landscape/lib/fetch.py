@@ -1,13 +1,12 @@
 import os
 import sys
+import io
 
 from optparse import OptionParser
 
 from twisted.internet.defer import DeferredList
 from twisted.internet.threads import deferToThread
-from twisted.python.compat import iteritems
-
-from landscape.compat import StringIO
+from twisted.python.compat import iteritems, networkString
 
 
 class FetchError(Exception):
@@ -66,13 +65,15 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     @param proxy: The proxy url to use for the request.
     """
     import pycurl
-    output = StringIO(data)
-    input = StringIO()
+    output = io.BytesIO(networkString(data))
+    input = io.BytesIO()
 
     if curl is None:
         curl = pycurl.Curl()
 
-    curl.setopt(pycurl.URL, str(url))
+    # The conversion with `str()` ensures the acceptance of unicode under
+    # Python 2 and `networkString()` will ensure bytes for Python 3.
+    curl.setopt(pycurl.URL, networkString(str(url)))
 
     if post:
         curl.setopt(pycurl.POST, True)
@@ -82,7 +83,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
             curl.setopt(pycurl.READFUNCTION, output.read)
 
     if cainfo and url.startswith("https:"):
-        curl.setopt(pycurl.CAINFO, cainfo)
+        curl.setopt(pycurl.CAINFO, networkString(cainfo))
 
     if headers:
         curl.setopt(pycurl.HTTPHEADER,
@@ -95,10 +96,10 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
         curl.setopt(pycurl.FOLLOWLOCATION, 1)
 
     if user_agent is not None:
-        curl.setopt(pycurl.USERAGENT, user_agent)
+        curl.setopt(pycurl.USERAGENT, networkString(user_agent))
 
     if proxy is not None:
-        curl.setopt(pycurl.PROXY, proxy)
+        curl.setopt(pycurl.PROXY, networkString(proxy))
 
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)
@@ -107,7 +108,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     curl.setopt(pycurl.NOSIGNAL, 1)
     curl.setopt(pycurl.WRITEFUNCTION, input.write)
     curl.setopt(pycurl.DNS_CACHE_TIMEOUT, 0)
-    curl.setopt(pycurl.ENCODING, "gzip,deflate")
+    curl.setopt(pycurl.ENCODING, b"gzip,deflate")
 
     try:
         curl.perform()
@@ -180,7 +181,7 @@ def fetch_to_files(urls, directory, logger=None, **kwargs):
 
     def write(data, url):
         filename = url_to_filename(url, directory=directory)
-        fd = open(filename, "w")
+        fd = open(filename, "wb")
         fd.write(data)
         fd.close()
 

@@ -50,7 +50,7 @@ class CurlManyStub(object):
         self.curls = {}
         for url in url_results:
             result = url_results[url]
-            if isinstance(result, str):
+            if not isinstance(result, tuple):
                 body = result
                 http_code = 200
             else:
@@ -74,7 +74,11 @@ class CurlManyStub(object):
 
     def setopt(self, option, value):
         if option == pycurl.URL:
-            self._local.current = self.curls[value]
+            # This seems a bit weird, but the curls have a str as key and we
+            # want to keep it like this. But when we set the value for pycurl
+            # option we already have the encoded bytes object, why we have to
+            # decode again.
+            self._local.current = self.curls[value.decode('ascii')]
         self._local.current.setopt(option, value)
 
     def perform(self):
@@ -90,11 +94,11 @@ class Any(object):
 class FetchTest(LandscapeTest):
 
     def test_basic(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com", curl=curl)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertEqual(curl.options,
-                         {pycurl.URL: "http://example.com",
+                         {pycurl.URL: b"http://example.com",
                           pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
@@ -103,14 +107,14 @@ class FetchTest(LandscapeTest):
                           pycurl.NOSIGNAL: 1,
                           pycurl.WRITEFUNCTION: Any(),
                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                          pycurl.ENCODING: "gzip,deflate"})
+                          pycurl.ENCODING: b"gzip,deflate"})
 
     def test_post(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com", post=True, curl=curl)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertEqual(curl.options,
-                         {pycurl.URL: "http://example.com",
+                         {pycurl.URL: b"http://example.com",
                           pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
@@ -120,15 +124,15 @@ class FetchTest(LandscapeTest):
                           pycurl.WRITEFUNCTION: Any(),
                           pycurl.POST: True,
                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                          pycurl.ENCODING: "gzip,deflate"})
+                          pycurl.ENCODING: b"gzip,deflate"})
 
     def test_post_data(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com", post=True, data="data", curl=curl)
-        self.assertEqual(result, "result")
-        self.assertEqual(curl.options[pycurl.READFUNCTION](), "data")
+        self.assertEqual(result, b"result")
+        self.assertEqual(curl.options[pycurl.READFUNCTION](), b"data")
         self.assertEqual(curl.options,
-                         {pycurl.URL: "http://example.com",
+                         {pycurl.URL: b"http://example.com",
                           pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
@@ -140,14 +144,14 @@ class FetchTest(LandscapeTest):
                           pycurl.POSTFIELDSIZE: 4,
                           pycurl.READFUNCTION: Any(),
                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                          pycurl.ENCODING: "gzip,deflate"})
+                          pycurl.ENCODING: b"gzip,deflate"})
 
     def test_cainfo(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("https://example.com", cainfo="cainfo", curl=curl)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertEqual(curl.options,
-                         {pycurl.URL: "https://example.com",
+                         {pycurl.URL: b"https://example.com",
                           pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
@@ -155,23 +159,23 @@ class FetchTest(LandscapeTest):
                           pycurl.LOW_SPEED_TIME: 600,
                           pycurl.NOSIGNAL: 1,
                           pycurl.WRITEFUNCTION: Any(),
-                          pycurl.CAINFO: "cainfo",
+                          pycurl.CAINFO: b"cainfo",
                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                          pycurl.ENCODING: "gzip,deflate"})
+                          pycurl.ENCODING: b"gzip,deflate"})
 
     def test_cainfo_on_http(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com", cainfo="cainfo", curl=curl)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertTrue(pycurl.CAINFO not in curl.options)
 
     def test_headers(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com",
                        headers={"a": "1", "b": "2"}, curl=curl)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertEqual(curl.options,
-                         {pycurl.URL: "http://example.com",
+                         {pycurl.URL: b"http://example.com",
                           pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
@@ -181,15 +185,15 @@ class FetchTest(LandscapeTest):
                           pycurl.WRITEFUNCTION: Any(),
                           pycurl.HTTPHEADER: ["a: 1", "b: 2"],
                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                          pycurl.ENCODING: "gzip,deflate"})
+                          pycurl.ENCODING: b"gzip,deflate"})
 
     def test_timeouts(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com", connect_timeout=5,
                        total_timeout=30, curl=curl)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertEqual(curl.options,
-                         {pycurl.URL: "http://example.com",
+                         {pycurl.URL: b"http://example.com",
                           pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 5,
@@ -198,26 +202,26 @@ class FetchTest(LandscapeTest):
                           pycurl.NOSIGNAL: 1,
                           pycurl.WRITEFUNCTION: Any(),
                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                          pycurl.ENCODING: "gzip,deflate"})
+                          pycurl.ENCODING: b"gzip,deflate"})
 
     def test_unicode(self):
         """
-        The L{fetch} function converts the C{url} parameter to C{str} before
+        The L{fetch} function converts the C{url} parameter to C{bytes} before
         passing it to curl.
         """
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch(u"http://example.com", curl=curl)
-        self.assertEqual(result, "result")
-        self.assertEqual(curl.options[pycurl.URL], "http://example.com")
-        self.assertTrue(isinstance(curl.options[pycurl.URL], str))
+        self.assertEqual(result, b"result")
+        self.assertEqual(curl.options[pycurl.URL], b"http://example.com")
+        self.assertTrue(isinstance(curl.options[pycurl.URL], bytes))
 
     def test_non_200_result(self):
-        curl = CurlStub("result", {pycurl.HTTP_CODE: 404})
+        curl = CurlStub(b"result", {pycurl.HTTP_CODE: 404})
         try:
             fetch("http://example.com", curl=curl)
         except HTTPCodeError as error:
             self.assertEqual(error.http_code, 404)
-            self.assertEqual(error.body, "result")
+            self.assertEqual(error.body, b"result")
         else:
             self.fail("HTTPCodeError not raised")
 
@@ -240,12 +244,12 @@ class FetchTest(LandscapeTest):
             self.fail("PyCurlError not raised")
 
     def test_pycurl_insecure(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com/get-ca-cert", curl=curl,
                        insecure=True)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertEqual(curl.options,
-                         {pycurl.URL: "http://example.com/get-ca-cert",
+                         {pycurl.URL: b"http://example.com/get-ca-cert",
                           pycurl.FOLLOWLOCATION: 1,
                           pycurl.MAXREDIRS: 5,
                           pycurl.CONNECTTIMEOUT: 30,
@@ -255,7 +259,7 @@ class FetchTest(LandscapeTest):
                           pycurl.WRITEFUNCTION: Any(),
                           pycurl.SSL_VERIFYPEER: False,
                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                          pycurl.ENCODING: "gzip,deflate"})
+                          pycurl.ENCODING: b"gzip,deflate"})
 
     def test_pycurl_error_str(self):
         self.assertEqual(str(PyCurlError(60, "pycurl error")),
@@ -266,40 +270,40 @@ class FetchTest(LandscapeTest):
                          "<PyCurlError args=(60, 'pycurl error')>")
 
     def test_pycurl_follow_true(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com", curl=curl,
                        follow=True)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertEqual(1, curl.options[pycurl.FOLLOWLOCATION])
 
     def test_pycurl_follow_false(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch("http://example.com", curl=curl,
                        follow=False)
-        self.assertEqual(result, "result")
+        self.assertEqual(result, b"result")
         self.assertNotIn(pycurl.FOLLOWLOCATION, curl.options.keys())
 
     def test_pycurl_user_agent(self):
         """If provided, the user-agent is set in the request."""
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         result = fetch(
             "http://example.com", curl=curl, user_agent="user-agent")
-        self.assertEqual(result, "result")
-        self.assertEqual("user-agent", curl.options[pycurl.USERAGENT])
+        self.assertEqual(result, b"result")
+        self.assertEqual(b"user-agent", curl.options[pycurl.USERAGENT])
 
     def test_pycurl_proxy(self):
         """If provided, the proxy is set in the request."""
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         proxy = "http://my.little.proxy"
         result = fetch("http://example.com", curl=curl, proxy=proxy)
-        self.assertEqual("result", result)
-        self.assertEqual(proxy, curl.options[pycurl.PROXY])
+        self.assertEqual(b"result", result)
+        self.assertEqual(proxy.encode('ascii'), curl.options[pycurl.PROXY])
 
     def test_create_curl(self):
         curls = []
 
         def pycurl_Curl():
-            curl = CurlStub("result")
+            curl = CurlStub(b"result")
             curls.append(curl)
             return curl
         Curl = pycurl.Curl
@@ -307,9 +311,9 @@ class FetchTest(LandscapeTest):
             pycurl.Curl = pycurl_Curl
             result = fetch("http://example.com")
             curl = curls[0]
-            self.assertEqual(result, "result")
+            self.assertEqual(result, b"result")
             self.assertEqual(curl.options,
-                             {pycurl.URL: "http://example.com",
+                             {pycurl.URL: b"http://example.com",
                               pycurl.FOLLOWLOCATION: 1,
                               pycurl.MAXREDIRS: 5,
                               pycurl.CONNECTTIMEOUT: 30,
@@ -318,25 +322,25 @@ class FetchTest(LandscapeTest):
                               pycurl.NOSIGNAL: 1,
                               pycurl.WRITEFUNCTION: Any(),
                               pycurl.DNS_CACHE_TIMEOUT: 0,
-                              pycurl.ENCODING: "gzip,deflate"})
+                              pycurl.ENCODING: b"gzip,deflate"})
         finally:
             pycurl.Curl = Curl
 
     def test_async_fetch(self):
-        curl = CurlStub("result")
+        curl = CurlStub(b"result")
         d = fetch_async("http://example.com/", curl=curl)
 
         def got_result(result):
-            self.assertEqual(result, "result")
+            self.assertEqual(result, b"result")
         return d.addCallback(got_result)
 
     def test_async_fetch_with_error(self):
-        curl = CurlStub("result", {pycurl.HTTP_CODE: 501})
+        curl = CurlStub(b"result", {pycurl.HTTP_CODE: 501})
         d = fetch_async("http://example.com/", curl=curl)
 
         def got_error(failure):
             self.assertEqual(failure.value.http_code, 501)
-            self.assertEqual(failure.value.body, "result")
+            self.assertEqual(failure.value.body, b"result")
             return failure
         d.addErrback(got_error)
         self.assertFailure(d, HTTPCodeError)
@@ -348,8 +352,8 @@ class FetchTest(LandscapeTest):
         C{DeferredList} firing its callback when all the URLs have
         successfully completed.
         """
-        url_results = {"http://good/": "good",
-                       "http://better/": "better"}
+        url_results = {"http://good/": b"good",
+                       "http://better/": b"better"}
 
         def callback(result, url):
             self.assertIn(result, url_results.values())
@@ -372,14 +376,14 @@ class FetchTest(LandscapeTest):
         """
         L{fetch_many_async} aborts as soon as one URL fails.
         """
-        url_results = {"http://right/": "right",
-                       "http://wrong/": ("wrong", 501),
-                       "http://impossible/": "impossible"}
+        url_results = {"http://right/": b"right",
+                       "http://wrong/": (b"wrong", 501),
+                       "http://impossible/": b"impossible"}
         failed_urls = []
 
         def errback(failure, url):
             failed_urls.append(url)
-            self.assertEqual(failure.value.body, "wrong")
+            self.assertEqual(failure.value.body, b"wrong")
             self.assertEqual(failure.value.http_code, 501)
             return failure
 
@@ -411,16 +415,17 @@ class FetchTest(LandscapeTest):
         L{fetch_to_files} fetches a list of URLs and save their content
         in the given directory.
         """
-        url_results = {"http://good/file": "file",
-                       "http://even/better-file": "better-file"}
+        url_results = {"http://good/file": b"file",
+                       "http://even/better-file": b"better-file"}
         directory = self.makeDir()
         curl = CurlManyStub(url_results)
 
         result = fetch_to_files(url_results.keys(), directory, curl=curl)
 
         def check_files(ignored):
-            for result in itervalues(url_results):
-                fd = open(os.path.join(directory, result))
+            for url, result in url_results.items():
+                filename = url.rstrip("/").split("/")[-1]
+                fd = open(os.path.join(directory, filename), 'rb')
                 self.assertEqual(fd.read(), result)
                 fd.close()
 
@@ -433,7 +438,7 @@ class FetchTest(LandscapeTest):
         of the given URLs when saving them as files.
         """
         directory = self.makeDir()
-        curl = CurlStub("data")
+        curl = CurlStub(b"data")
 
         result = fetch_to_files(["http:///with/slash/"], directory, curl=curl)
 
@@ -448,9 +453,9 @@ class FetchTest(LandscapeTest):
         L{fetch_to_files} optionally logs an error message as soon as one URL
         fails, and aborts.
         """
-        url_results = {"http://im/right": "right",
-                       "http://im/wrong": ("wrong", 404),
-                       "http://im/not": "not"}
+        url_results = {"http://im/right": b"right",
+                       "http://im/wrong": (b"wrong", 404),
+                       "http://im/not": b"not"}
         directory = self.makeDir()
         messages = []
         logger = lambda message: messages.append(message)
@@ -479,7 +484,7 @@ class FetchTest(LandscapeTest):
         The deferred list returned by L{fetch_to_files} results in a failure
         if the destination directory doesn't exist.
         """
-        url_results = {"http://im/right": "right"}
+        url_results = {"http://im/right": b"right"}
         directory = "i/dont/exist/"
         curl = CurlManyStub(url_results)
 
