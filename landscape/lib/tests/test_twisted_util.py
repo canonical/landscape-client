@@ -1,8 +1,5 @@
 import os
 
-from twisted.python.compat import _PY3
-from unittest import skipIf
-
 from landscape.lib.fs import create_file
 from landscape.lib.twisted_util import spawn_process
 from landscape.tests.helpers import LandscapeTest
@@ -23,8 +20,8 @@ class SpawnProcessTest(LandscapeTest):
 
         def callback(args):
             out, err, code = args
-            self.assertEqual(out, "")
-            self.assertEqual(err, "")
+            self.assertEqual(out, b"")
+            self.assertEqual(err, b"")
             self.assertEqual(code, 2)
 
         result = spawn_process(self.command)
@@ -37,8 +34,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         def callback(args):
             out, err, code = args
-            self.assertEqual(out, "a b")
-            self.assertEqual(err, "")
+            self.assertEqual(out, b"a b")
+            self.assertEqual(err, b"")
             self.assertEqual(code, 0)
 
         result = spawn_process(self.command, args=("a", "b"))
@@ -53,8 +50,8 @@ class SpawnProcessTest(LandscapeTest):
 
         def callback(args):
             out, err, code = args
-            self.assertEqual(out, "")
-            self.assertEqual(err, "a b")
+            self.assertEqual(out, b"")
+            self.assertEqual(err, b"a b")
             self.assertEqual(code, 0)
 
         result = spawn_process(self.command, args=("a", "b"))
@@ -68,7 +65,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\nok, last one\n"
-        expected = ["some text", "another line", "ok, last one"]
+        expected = [b"some text", b"another line", b"ok, last one"]
         lines = []
 
         def line_received(line):
@@ -89,7 +86,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\n\n\n"
-        expected = ["some text", "another line", "", ""]
+        expected = [b"some text", b"another line", b"", b""]
         lines = []
 
         def line_received(line):
@@ -111,7 +108,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\nok, last one"
-        expected = ["some text", "another line", "ok, last one"]
+        expected = [b"some text", b"another line", b"ok, last one"]
         lines = []
 
         def line_received(line):
@@ -126,7 +123,6 @@ class SpawnProcessTest(LandscapeTest):
         result.addCallback(callback)
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_spawn_process_with_stdin(self):
         """
         Optionally C{spawn_process} accepts a C{stdin} argument.
@@ -135,7 +131,7 @@ class SpawnProcessTest(LandscapeTest):
 
         def callback(args):
             out, err, code = args
-            self.assertEqual("hello", out)
+            self.assertEqual(b"hello", out)
 
         result = spawn_process(self.command, stdin="hello")
         result.addCallback(callback)
