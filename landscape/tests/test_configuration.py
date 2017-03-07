@@ -1241,13 +1241,15 @@ registration_key = shared-secret
             printed)
 
     def make_working_config(self):
+        data_path = self.makeFile()
         return self.makeFile("[client]\n"
                              "computer_title = Old Title\n"
                              "account_name = Old Name\n"
                              "registration_key = Old Password\n"
                              "http_proxy = http://old.proxy\n"
                              "https_proxy = https://old.proxy\n"
-                             "url = http://url\n")
+                             "data_path = {}\n"
+                             "url = http://url\n".format(data_path))
 
     @mock.patch("__builtin__.raw_input", return_value="")
     @mock.patch("landscape.configuration.register")
