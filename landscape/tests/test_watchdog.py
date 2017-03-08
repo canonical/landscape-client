@@ -27,6 +27,8 @@ import landscape.watchdog
 
 from unittest import skipIf
 from twisted.python.compat import _PY3
+import platform
+_1204 = platform.linux_distribution()[1] == '12.04'
 
 
 class StubDaemon(object):
@@ -693,6 +695,7 @@ class DaemonTest(DaemonTestBase):
             self.assertEqual(open(output_filename).read(), "RUN\n")
         return self.daemon.wait_or_die().addCallback(got_result)
 
+    @skipIf(_1204, "Doesn't run on Ubuntu 12.04. precise but on newer ones.")
     def test_wait_or_die_terminates(self):
         """wait_or_die eventually terminates the process."""
         output_filename = self.makeFile("NOT RUN")
