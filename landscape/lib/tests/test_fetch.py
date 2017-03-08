@@ -76,8 +76,8 @@ class CurlManyStub(object):
         if option == pycurl.URL:
             # This seems a bit weird, but the curls have a str as key and we
             # want to keep it like this. But when we set the value for pycurl
-            # option we already have the encoded bytes object, why we have to
-            # decode again.
+            # option we already have the encoded bytes object, that's why we
+            # have to decode again.
             self._local.current = self.curls[value.decode('ascii')]
         self._local.current.setopt(option, value)
 
