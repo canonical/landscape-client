@@ -1,14 +1,13 @@
 import array
 import socket
 
-from mock import patch, ANY
+from mock import patch, ANY, mock_open
 from subprocess import Popen, PIPE
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
     get_fqdn, get_network_interface_speed)
-from landscape.compat import StringIO
 
 
 class NetworkInfoTest(LandscapeTest):
@@ -24,6 +23,7 @@ class NetworkInfoTest(LandscapeTest):
 
         device_info = get_active_device_info()
         result = Popen(["/sbin/ifconfig"], stdout=PIPE).communicate()[0]
+        result = result.decode('ascii')
         interface_blocks = dict(
             [(block.split()[0], block.upper()) for block in
              filter(None, result.split("\n\n"))])
@@ -62,7 +62,7 @@ class NetworkInfoTest(LandscapeTest):
     def test_skip_vlan(self, mock_get_active_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
         mock_get_active_interfaces.side_effect = lambda sock: (
-            list(get_active_interfaces(sock)) + ["eth0.1"])
+            list(get_active_interfaces(sock)) + [b"eth0.1"])
         device_info = get_active_device_info()
         mock_get_active_interfaces.assert_called_with(ANY)
         interfaces = [i["interface"] for i in device_info]
@@ -72,7 +72,7 @@ class NetworkInfoTest(LandscapeTest):
     def test_skip_alias(self, mock_get_active_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
         mock_get_active_interfaces.side_effect = lambda sock: (
-            list(get_active_interfaces(sock)) + ["eth0:foo"])
+            list(get_active_interfaces(sock)) + [b"eth0:foo"])
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0:foo", interfaces)
@@ -94,23 +94,25 @@ class NetworkInfoTest(LandscapeTest):
         # This is a fake response observed to return the same interface several
         # times (here, br1:priv)
         response = (
-            "lo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02"
-            "\x00\x00\x00\x7f\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            "\x00\x00\x00\x00\x00\x00\x00eth1:pub\x00\x00\x00\x00\x00\x00\x00"
-            "\x00\x02\x00\x00\x00\xc8\xb4\xc4.\x00\x00\x00\x00\x00\x00\x00\x00"
-            "\x00\x00\x00\x00\x00\x00\x00\x00br1:metadata\x00\x00\x00\x00\x02"
-            "\x00\x00\x00\xa9\xfe\xa9\xfe\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            "\x00\x00\x00\x00\x00\x00\x00br1:0\x00\x00\x00\x00\x00\x00\x00\x00"
-            "\x00\x00\x00\x02\x00\x00\x00\xc9\x19\x1f\x1d\x00\x00\x00\x00\x00"
-            "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00br1\x00\x00\x00\x00"
-            "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\xc0\xa8d"
-            "\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            "\x00br1:priv\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\xac"
-            "\x13\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            "\x00\x00\x00br1:priv\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00"
-            "\x00\xac\x13\x02A")
+            b"lo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02"
+            b"\x00\x00\x00\x7f\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00eth1:pub\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x02\x00\x00\x00\xc8\xb4\xc4.\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00br1:metadata\x00\x00\x00\x00\x02"
+            b"\x00\x00\x00\xa9\xfe\xa9\xfe\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00br1:0\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00"
+            b"\x00\x00\x00\x02\x00\x00\x00\xc9\x19\x1f\x1d\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00br1\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\xc0\xa8d"
+            b"\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00br1:priv\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\xac"
+            b"\x13\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00br1:priv\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00"
+            b"\x00\xac\x13\x02A")
 
-        fake_array = array.array("B", response + "\0" * 4855)
+        fake_array = array.array("B", response + b"\0" * 4855)
 
         with patch("array.array") as mock_array:
             mock_array.return_value = fake_array
@@ -126,18 +128,19 @@ class NetworkInfoTest(LandscapeTest):
         mock_unpack.assert_called_with("iL", ANY)
 
         self.assertEqual(
-            ["lo", "eth1:pub", "br1:metadata", "br1:0", "br1", "br1:priv"],
+            [b"lo", b"eth1:pub", b"br1:metadata",
+             b"br1:0", b"br1", b"br1:priv"],
             interfaces)
 
-    @patch("__builtin__.open")
-    def test_get_network_traffic(self, mock_open):
+    def test_get_network_traffic(self):
         """
         Network traffic is assessed via reading /proc/net/dev, verify
         the parsed output against a known sample.
         """
-        mock_open.return_value = StringIO(test_proc_net_dev_output)
-        traffic = get_network_traffic()
-        mock_open.assert_called_with("/proc/net/dev", "r")
+        m = mock_open(read_data=test_proc_net_dev_output)
+        with patch('landscape.lib.network.open', m):
+            traffic = get_network_traffic()
+        m.assert_called_with("/proc/net/dev", "r")
         self.assertEqual(traffic, test_proc_net_dev_parsed)
 
 

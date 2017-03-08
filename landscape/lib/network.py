@@ -8,7 +8,7 @@ import struct
 import errno
 import logging
 
-from twisted.python.compat import long
+from twisted.python.compat import long, _PY3
 
 __all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
 
@@ -55,7 +55,7 @@ def get_active_interfaces(sock):
     max_interfaces = 128
 
     # Setup an array to hold our response, and initialized to null strings.
-    interfaces = array.array("B", "\0" * max_interfaces * IF_STRUCT_SIZE)
+    interfaces = array.array("B", b"\0" * max_interfaces * IF_STRUCT_SIZE)
     buffer_size = interfaces.buffer_info()[0]
     packed_bytes = struct.pack(
         "iL", max_interfaces * IF_STRUCT_SIZE, buffer_size)
@@ -69,7 +69,7 @@ def get_active_interfaces(sock):
     already_found = set()
     for index in range(0, byte_length, IF_STRUCT_SIZE):
         ifreq_struct = result[index:index + IF_STRUCT_SIZE]
-        interface_name = ifreq_struct[:ifreq_struct.index("\0")]
+        interface_name = ifreq_struct[:ifreq_struct.index(b"\0")]
         if interface_name not in already_found:
             already_found.add(interface_name)
             yield interface_name
@@ -121,7 +121,16 @@ def get_mac_address(sock, interface):
     """
     mac_address = fcntl.ioctl(
         sock.fileno(), SIOCGIFHWADDR, struct.pack("256s", interface[:15]))
-    return "".join(["%02x:" % ord(char) for char in mac_address[18:24]])[:-1]
+    if _PY3:
+        def to_int(char):
+            # We have already bytes, so we do nothing
+            return char
+    else:
+        def to_int(char):
+            # We have a string in python 2 and need the int here.
+            return ord(char)
+    return "".join(["%02x:" % to_int(char)
+                    for char in mac_address[18:24]])[:-1]
 
 
 def get_flags(sock, interface):
@@ -136,7 +145,7 @@ def get_flags(sock, interface):
     return struct.unpack("H", data[16:18])[0]
 
 
-def get_active_device_info(skipped_interfaces=("lo",),
+def get_active_device_info(skipped_interfaces=(b"lo",),
                            skip_vlan=True, skip_alias=True):
     """
     Returns a dictionary containing information on each active network
@@ -149,11 +158,15 @@ def get_active_device_info(skipped_interfaces=("lo",),
         for interface in get_active_interfaces(sock):
             if interface in skipped_interfaces:
                 continue
-            if skip_vlan and "." in interface:
+            if skip_vlan and b"." in interface:
                 continue
-            if skip_alias and ":" in interface:
+            if skip_alias and b":" in interface:
                 continue
-            interface_info = {"interface": interface}
+            # It seems reasonable to keep the values in the device_info all as
+            # strings. On the other hand we need the interface to be bytes for
+            # the `struct.pack()` in the different getter methods. So we only
+            # do a decoding for the device_info here.
+            interface_info = {"interface": interface.decode('ascii')}
             interface_info["ip_address"] = get_ip_address(sock, interface)
             interface_info["mac_address"] = get_mac_address(sock, interface)
             interface_info["broadcast_address"] = get_broadcast_address(
@@ -175,9 +188,8 @@ def get_network_traffic(source_file="/proc/net/dev"):
     Retrieves an array of information regarding the network activity per
     network interface.
     """
-    netdev = open(source_file, "r")
-    lines = netdev.readlines()
-    netdev.close()
+    with open(source_file, "r") as netdev:
+        lines = netdev.readlines()
 
     # Parse out the column headers as keys.
     _, receive_columns, transmit_columns = lines[1].split("|")
@@ -227,7 +239,7 @@ def get_network_interface_speed(sock, interface_name):
         * 0: The cable is not connected to the interface. We cannot measure
           interface speed, but could if it was plugged in.
     """
-    cmd_struct = struct.pack('I39s', ETHTOOL_GSET, '\x00' * 39)
+    cmd_struct = struct.pack('I39s', ETHTOOL_GSET, b'\x00' * 39)
     status_cmd = array.array('B', cmd_struct)
     packed = struct.pack('16sP', interface_name, status_cmd.buffer_info()[0])
 
