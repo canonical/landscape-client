@@ -741,6 +741,15 @@ def determine_exit_code(what_happened):
         return 2  # An error happened
 
 
+def is_registered(config):
+    """Return whether the client is already registered."""
+    persist_filename = os.path.join(
+        config.data_path, "{}.bpickle".format(BrokerService.service_name))
+    persist = Persist(filename=persist_filename)
+    identity = Identity(config, persist)
+    return bool(identity.secure_id)
+
+
 def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
 
@@ -779,8 +788,10 @@ def main(args, print=print):
         report_registration_outcome(result, print=print)
         sys.exit(determine_exit_code(result))
     else:
+        default_answer = not is_registered(config)
         answer = prompt_yes_no(
-            "\nRequest a new registration for this computer now?")
+            "\nRequest a new registration for this computer now?",
+            default=default_answer)
         if answer:
             result = register(config, reactor)
             report_registration_outcome(result, print=print)
