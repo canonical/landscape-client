@@ -23,11 +23,7 @@ build:
 	$(PYTHON) setup.py build_ext -i
 
 check: build
-	if [ -z "$$DISPLAY" ]; then \
-		xvfb-run $(TEST_COMMAND); \
-	else \
-	    $(TEST_COMMAND); \
-	fi
+	$(TEST_COMMAND)
 
 lint:
 	bzr ls-lint
