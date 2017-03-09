@@ -12,9 +12,8 @@ def create_file(path, content):
     @param path: The path to the file.
     @param content: The content to be written in the file.
     """
-    fd = open(path, "w")
-    fd.write(content)
-    fd.close()
+    with open(path, "w") as fd:
+        fd.write(content)
 
 
 def append_file(path, content):
@@ -25,9 +24,8 @@ def append_file(path, content):
     @param path: The path to the file.
     @param content: The content to be written in the file at the end.
     """
-    fd = open(path, "a")
-    fd.write(content)
-    fd.close()
+    with open(path, "a") as fd:
+        fd.write(content)
 
 
 def read_file(path, limit=None):
