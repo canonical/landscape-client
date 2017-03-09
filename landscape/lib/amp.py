@@ -163,10 +163,13 @@ class MethodCallReceiver(CommandLocator):
         if chunks is not None:
             # We got some L{MethodCallChunk}s before, this is the last.
             chunks.append(arguments)
-            arguments = "".join(chunks)
+            arguments = b"".join(chunks)
 
         args, kwargs = bpickle.loads(arguments)
 
+        # We encoded the method name in `send_method_call` and have to decode
+        # it here again.
+        method = method.decode('utf-8')
         if not method in self._methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
@@ -263,6 +266,8 @@ class MethodCallSender(object):
         """
         arguments = bpickle.dumps((args, kwargs))
         sequence = uuid4().int
+        # As we send the method name to remote, we need bytes.
+        method = method.encode('utf-8')
 
         # Split the given arguments in one or more chunks
         chunks = [arguments[i:i + self._chunk_size]
