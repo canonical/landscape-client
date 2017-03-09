@@ -72,7 +72,8 @@ class ProcessInfoTest(LandscapeTest):
         get_uptime_mock.return_value = 1.0
         fakefile1 = FakeFile("test-binary")
         fakefile2 = FakeFile(None)
-        with mock.patch("__builtin__.open", mock.mock_open()) as open_mock:
+        with mock.patch(
+                "landscape.lib.process.open", mock.mock_open()) as open_mock:
             # This means "return fakefile1, then fakefile2"
             open_mock.side_effect = [fakefile1, fakefile2]
             process_info = ProcessInformation("/proc")
