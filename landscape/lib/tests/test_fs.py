@@ -2,6 +2,8 @@ import os
 from mock import patch
 import time
 
+from twisted.python.compat import long
+
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.fs import append_file, read_file, touch_file
