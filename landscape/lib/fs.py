@@ -5,27 +5,31 @@ import time
 
 
 def create_file(path, content):
-    """Create a file with the given content.
+    """Create a file with the given binary content.
 
     @param path: The path to the file.
     @param content: The content to be written in the file.
     """
-    fd = open(path, "w")
-    fd.write(content)
-    fd.close()
+    # Due to a very specific mock of `open()` in landscape.broker.tests.\
+    # test_store.MessageStoreTest.test_atomic_message_writing it is hard to
+    # write this file opening as context manager.
+    fd = open(path, "wb")
+    try:
+        fd.write(content)
+    finally:
+        fd.close()
 
 
 def append_file(path, content):
-    """Append a file with the given content.
+    """Append a file with the given binary content.
 
     The file is created, if it doesn't exist already.
 
     @param path: The path to the file.
     @param content: The content to be written in the file at the end.
     """
-    fd = open(path, "a")
-    fd.write(content)
-    fd.close()
+    with open(path, "a") as fd:
+        fd.write(content)
 
 
 def read_file(path, limit=None):
