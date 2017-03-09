@@ -60,8 +60,9 @@ def get_logged_in_users():
     def parse_output(args):
         stdout_data, stderr_data, status = args
         if status != 0:
-            raise CommandError(stderr_data)
-        first_line = stdout_data.split("\n", 1)[0]
+            raise CommandError(stderr_data.decode('ascii'))
+        first_line = stdout_data.split(b"\n", 1)[0]
+        first_line = first_line.decode('ascii')
         return sorted(set(first_line.split()))
     return result.addCallback(parse_output)
 
