@@ -224,7 +224,7 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         # ioctl always succeeds
         mock_unpack.return_value = (100, False)
 
-        result = get_network_interface_speed(sock, "eth0")
+        result = get_network_interface_speed(sock, b"eth0")
 
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
         mock_unpack.assert_called_with("12xHB28x", ANY)
@@ -243,7 +243,7 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         # ioctl always succeeds
         mock_unpack.return_value = (65535, False)
 
-        result = get_network_interface_speed(sock, "eth0")
+        result = get_network_interface_speed(sock, b"eth0")
 
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
         mock_unpack.assert_called_with("12xHB28x", ANY)
@@ -266,7 +266,7 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         # ioctl always raises
         mock_ioctl.side_effect = theerror
 
-        result = get_network_interface_speed(sock, "eth0")
+        result = get_network_interface_speed(sock, b"eth0")
 
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
@@ -288,7 +288,7 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         # ioctl always raises
         mock_ioctl.side_effect = theerror
 
-        result = get_network_interface_speed(sock, "eth0")
+        result = get_network_interface_speed(sock, b"eth0")
 
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
@@ -309,4 +309,4 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         # ioctl always raises
         mock_ioctl.side_effect = theerror
 
-        self.assertRaises(IOError, get_network_interface_speed, sock, "eth0")
+        self.assertRaises(IOError, get_network_interface_speed, sock, b"eth0")
