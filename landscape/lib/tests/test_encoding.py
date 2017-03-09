@@ -11,7 +11,8 @@ class EncodingTest(LandscapeTest):
         When passed an utf-8 str() instance the encode_if_needed function
         returns the same.
         """
-        value = "請不要刪除"
+        # "請不要刪除"
+        value = b'\xe8\xab\x8b\xe4\xb8\x8d\xe8\xa6\x81\xe5\x88\xaa\xe9\x99\xa4'
         result = encode_if_needed(value)
         self.assertEqual(value, result)
 
@@ -23,7 +24,7 @@ class EncodingTest(LandscapeTest):
         """
         value = u"Alex \U0001f603"
         result = encode_if_needed(value)
-        expected = 'Alex \xf0\x9f\x98\x83'
+        expected = b'Alex \xf0\x9f\x98\x83'
         self.assertEqual(expected, result)
 
     def test_encode_if_needed_utf_unicode(self):
@@ -32,7 +33,9 @@ class EncodingTest(LandscapeTest):
         the encode_if_needed function returns the utf-8 str() equivalent.
         """
         value = u'\u8acb\u4e0d\u8981\u522a\u9664'
-        expected = "請不要刪除"
+        # "請不要刪除"
+        expected = (
+            b'\xe8\xab\x8b\xe4\xb8\x8d\xe8\xa6\x81\xe5\x88\xaa\xe9\x99\xa4')
         result = encode_if_needed(value)
         self.assertEqual(expected, result)
 
@@ -42,7 +45,8 @@ class EncodingTest(LandscapeTest):
         function returns the utf-8 str() equivalent.
         """
         value = u"請不要刪除"
-        expected = "請不要刪除"
+        expected = (
+            b'\xe8\xab\x8b\xe4\xb8\x8d\xe8\xa6\x81\xe5\x88\xaa\xe9\x99\xa4')
         result = encode_if_needed(value)
         self.assertEqual(expected, result)
 
@@ -59,7 +63,15 @@ class EncodingTest(LandscapeTest):
         """
         value = {"a": "請不要刪除", "b": u'\u8acb\u4e0d\u8981\u522a\u9664',
                  "c": u"請不要刪除", "d": None, "e": 123}
-        expected = {"a": "請不要刪除", "b": "請不要刪除", "c": "請不要刪除",
-                    "d": None, "e": 123}
+        expected = {
+            "a":
+            b'\xe8\xab\x8b\xe4\xb8\x8d\xe8\xa6\x81\xe5\x88\xaa\xe9\x99\xa4',
+            "b":
+            b'\xe8\xab\x8b\xe4\xb8\x8d\xe8\xa6\x81\xe5\x88\xaa\xe9\x99\xa4',
+            "c":
+            b'\xe8\xab\x8b\xe4\xb8\x8d\xe8\xa6\x81\xe5\x88\xaa\xe9\x99\xa4',
+            "d": None,
+            "e": 123
+        }
         result = encode_dict_if_needed(value)
         self.assertEqual(expected, result)
