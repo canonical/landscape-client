@@ -23,7 +23,7 @@ build:
 	$(PYTHON) setup.py build_ext -i
 
 check: build
-	$(TEST_COMMAND)
+	LC_ALL=C $(TEST_COMMAND)
 
 lint:
 	bzr ls-lint
