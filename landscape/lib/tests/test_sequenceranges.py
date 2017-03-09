@@ -101,10 +101,10 @@ class SequenceToRangesTest(unittest.TestCase):
                          [1, 2, (15, 17), 19, (21, 24), 26, 27])
 
     def test_out_of_order(self):
-        self.assertRaises(SequenceError, sequence_to_ranges([2, 1]).next)
+        self.assertRaises(SequenceError, next, sequence_to_ranges([2, 1]))
 
     def test_duplicated_item(self):
-        self.assertRaises(SequenceError, sequence_to_ranges([1, 1]).next)
+        self.assertRaises(SequenceError, next, sequence_to_ranges([1, 1]))
 
 
 class RangesToSequenceTest(unittest.TestCase):
