@@ -219,7 +219,7 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
         return persist_filename
 
     def makeFile(self, content=None, suffix="", prefix="tmp", basename=None,
-                 dirname=None, path=None):
+                 dirname=None, path=None, mode="w"):
         """Create a temporary file and return the path to it.
 
         @param content: Initial content for the file.
@@ -240,9 +240,8 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
             if content is None:
                 os.unlink(path)
         if content is not None:
-            file = open(path, "w")
-            file.write(content)
-            file.close()
+            with open(path, mode) as file:
+                file.write(content)
         self.addCleanup(self._clean_file, path)
         return path
 
