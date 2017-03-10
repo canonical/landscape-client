@@ -35,13 +35,11 @@ def read_file(path, limit=None):
     @param limit: An optional read limit. If positive, read up to that number
         of bytes from the beginning of the file. If negative, read up to that
         number of bytes from the end of the file.
-    @return content: The content of the file, possibly trimmed to C{limit}.
+    @return content: The content of the file as unicode string (decoded from
+        UTF-8), possibly trimmed to C{limit}.
     """
-    # In Python 3 opening a file in text mode does not permit an non-zero
-    # offset seek from the end of the file, therefore we need binary mode. As
-    # the function is used with the expectation of a string return value, we
-    # have to decode. As a default encoding utf-8 was chosen, but this could be
-    # made configurable later on.
+    # Use binary mode since opening a file in text mode in Python 3 does not
+    # allow non-zero offset seek from the end of the file.
     with open(path, "rb") as fd:
         if limit and os.path.getsize(path) > abs(limit):
             whence = 0
