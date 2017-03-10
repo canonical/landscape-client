@@ -4,12 +4,10 @@
 # subprocesses. liboobs (i.e. System Tools) is a possibility, and has
 # documentation now in the 2.17 series, but is not wrapped to Python.
 
-import base64
-import os
 import logging
 import subprocess
+from passlib.hash import md5_crypt
 
-from landscape.lib import md5crypt
 from landscape.user.provider import UserManagementError, UserProvider
 
 
@@ -53,7 +51,7 @@ class UserManagement(object):
         # XXX temporary workaround? We're getting unicode here.
         username = username.encode("ascii")
         password = password.encode("ascii")
-        crypted = md5crypt.md5crypt(password)
+        crypted = md5_crypt.encrypt(password)
         result, output = self.call_popen(["usermod", "-p", crypted, username])
         if result != 0:
             raise UserManagementError("Error setting password for user "
