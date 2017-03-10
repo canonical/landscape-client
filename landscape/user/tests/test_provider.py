@@ -6,7 +6,6 @@ from twisted.python.compat import _PY3
 from landscape.user.provider import (
     UserProvider, UserNotFoundError, GroupNotFoundError)
 
-from landscape.compat import coerce_unicode
 from landscape.tests.helpers import LandscapeTest
 from landscape.user.tests.helpers import FakeUserProvider
 
