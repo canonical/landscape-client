@@ -2,9 +2,7 @@ from landscape.lib.hashlib import sha1
 
 import apt_pkg
 
-from twisted.python.compat import unicode
-
-from landscape.compat import coerce_unicode
+from twisted.python.compat import unicode, _PY3
 
 
 PACKAGE   = 1 << 0
@@ -150,12 +148,11 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         skeleton.size = version.size
         if version.installed_size > 0:
             skeleton.installed_size = version.installed_size
-        if with_unicode:
-            skeleton.section = coerce_unicode(skeleton.section, "utf-8")
-            skeleton.summary = coerce_unicode(skeleton.summary, "utf-8")
+        if with_unicode and not _PY3:
+            skeleton.section = skeleton.section.decode("utf-8")
+            skeleton.summary = skeleton.summary.decode("utf-8")
             # Avoid double-decoding package descriptions in build_skeleton_apt,
             # which causes an error with newer python-apt (Xenial onwards)
             if not isinstance(skeleton.description, unicode):
-                skeleton.description = coerce_unicode(
-                    skeleton.description, "utf-8")
+                skeleton.description = skeleton.description.decode("utf-8")
     return skeleton
