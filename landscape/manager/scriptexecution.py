@@ -12,10 +12,9 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import (
     Deferred, fail, inlineCallbacks, returnValue, succeed)
 from twisted.internet.error import ProcessDone
-from twisted.python.compat import unicode
+from twisted.python.compat import unicode, _PY3
 
 from landscape import VERSION
-from landscape.compat import coerce_unicode
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.encoding import encode_if_needed
 from landscape.lib.fetch import fetch_async, HTTPCodeError
@@ -116,7 +115,11 @@ class ScriptRunnerMixin(object):
         os.chmod(filename, 0o700)
         if uid is not None:
             os.chown(filename, uid, gid)
-        script_file.write(build_script(shell, code))
+
+        script = build_script(shell, code)
+        if not _PY3:
+            script = script.encode('utf-8')
+        script_file.write(script)
         script_file.close()
 
     def _run_script(self, filename, uid, gid, path, env, time_limit):
@@ -152,7 +155,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         if not isinstance(data, unicode):
             # Let's decode result-text, replacing non-printable
             # characters
-            data = coerce_unicode(data, "utf-8", "replace")
+            data = data.decode("utf-8", "replace")
         message = {"type": "operation-result",
                    "status": status,
                    "result-text": data,
