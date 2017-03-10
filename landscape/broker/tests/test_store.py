@@ -280,7 +280,7 @@ class MessageStoreTest(LandscapeTest):
         self.store.add({"type": "data", "data": 1})
         # We simulate it by creating a fake file which raises halfway through
         # writing a file.
-        with mock.patch("__builtin__.open") as mock_open:
+        with mock.patch("landscape.lib.fs.open") as mock_open:
             mocked_file = mock_open.return_value
             mocked_file.write.side_effect = IOError("Sorry, pal!")
             # This kind of ensures that raising an exception is somewhat
@@ -288,7 +288,7 @@ class MessageStoreTest(LandscapeTest):
             # on special exception-handling in the file-writing code.
             self.assertRaises(
                 IOError, self.store.add, {"type": "data", "data": 2})
-            mock_open.assert_called_with(mock.ANY, "w")
+            mock_open.assert_called_with(mock.ANY, "wb")
             mocked_file.write.assert_called_once_with(mock.ANY)
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "data", "data": 1, "api": "3.2"}])
