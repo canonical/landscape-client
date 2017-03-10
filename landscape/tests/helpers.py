@@ -705,17 +705,3 @@ class FakePersist(object):
 
     def remove(self, key):
         self.called = True
-
-
-class FakeStatvfsResult(object):
-    """
-    With Python 3, os.statvfs returns an object and the tuple interface of
-    Python 2 is not usable anymore. This incomplete fake should work with the
-    typical tuple used in tests.
-    """
-
-    def __init__(self, f_bsize, f_frsize, f_blocks, f_bfree, f_bavail, f_files,
-                 f_ffree, f_favail, f_flag):
-        self.f_bsize = f_bsize
-        self.f_blocks = f_blocks
-        self.f_bfree = f_bfree
