@@ -23,7 +23,7 @@ class NetworkInfoTest(LandscapeTest):
 
         device_info = get_active_device_info()
         result = Popen(["/sbin/ifconfig"], stdout=PIPE).communicate()[0]
-        result = result.decode('ascii')
+        result = result.decode("ascii")
         interface_blocks = dict(
             [(block.split()[0], block.upper()) for block in
              filter(None, result.split("\n\n"))])

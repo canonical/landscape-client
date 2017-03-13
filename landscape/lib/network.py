@@ -239,15 +239,15 @@ def get_network_interface_speed(sock, interface_name):
         * 0: The cable is not connected to the interface. We cannot measure
           interface speed, but could if it was plugged in.
     """
-    cmd_struct = struct.pack('I39s', ETHTOOL_GSET, b'\x00' * 39)
-    status_cmd = array.array('B', cmd_struct)
-    packed = struct.pack('16sP', interface_name, status_cmd.buffer_info()[0])
+    cmd_struct = struct.pack("I39s", ETHTOOL_GSET, b"\x00" * 39)
+    status_cmd = array.array("B", cmd_struct)
+    packed = struct.pack("16sP", interface_name, status_cmd.buffer_info()[0])
 
     speed = -1
     try:
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
         res = status_cmd.tostring()
-        speed, duplex = struct.unpack('12xHB28x', res)
+        speed, duplex = struct.unpack("12xHB28x", res)
     except IOError as e:
         if e.errno == errno.EPERM:
             logging.warn("Could not determine network interface speed, "
