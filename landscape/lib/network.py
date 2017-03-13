@@ -156,10 +156,7 @@ def get_active_device_info(skipped_interfaces=("lo",),
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
         for interface in get_active_interfaces(sock):
-            if _PY3:
-                interface_string = interface.decode("ascii")
-            else:
-                interface_string = interface
+            interface_string = interface.decode("ascii")
             if interface_string in skipped_interfaces:
                 continue
             if skip_vlan and b"." in interface:
