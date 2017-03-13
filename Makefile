@@ -1,8 +1,9 @@
 PYDOCTOR ?= pydoctor
-TXT2MAN ?= txt2man 
+TXT2MAN ?= txt2man
 PYTHON ?= python
-TRIAL_ARGS ?= 
-TEST_COMMAND = trial --unclean-warnings $(TRIAL_ARGS) landscape
+TRIAL_ARGS ?=
+TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
+TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
@@ -19,11 +20,22 @@ endif
 
 all: build
 
+build3:
+	python3 setup.py build_ext -i
+
 build:
 	$(PYTHON) setup.py build_ext -i
 
+check5:
+	-trial --unclean-warnings --reporter=summary landscape > _last_py2_res
+	-trial3 --unclean-warnings landscape
+	./display_py2_testresults
+
+check3: build3
+	LC_ALL=C $(TEST_COMMAND_PY3)
+
 check: build
-	LC_ALL=C $(TEST_COMMAND)
+	LC_ALL=C $(TEST_COMMAND_PY2)
 
 lint:
 	bzr ls-lint

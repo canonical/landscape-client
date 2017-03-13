@@ -1,8 +1,11 @@
 import os
 
-from landscape.tests.helpers import LandscapeTest
-from landscape.lib.twisted_util import spawn_process
+from twisted.python.compat import _PY3
+from unittest import skipIf
+
 from landscape.lib.fs import create_file
+from landscape.lib.twisted_util import spawn_process
+from landscape.tests.helpers import LandscapeTest
 
 
 class SpawnProcessTest(LandscapeTest):
@@ -10,7 +13,7 @@ class SpawnProcessTest(LandscapeTest):
     def setUp(self):
         super(SpawnProcessTest, self).setUp()
         self.command = self.makeFile("#!/bin/sh\necho -n $@")
-        os.chmod(self.command, 0755)
+        os.chmod(self.command, 0o755)
 
     def test_spawn_process_return_value(self):
         """
@@ -18,7 +21,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\nexit 2")
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(out, "")
             self.assertEqual(err, "")
             self.assertEqual(code, 2)
@@ -31,7 +35,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         The process returns the expected standard output.
         """
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(out, "a b")
             self.assertEqual(err, "")
             self.assertEqual(code, 0)
@@ -46,7 +51,8 @@ class SpawnProcessTest(LandscapeTest):
         """
         create_file(self.command, "#!/bin/sh\necho -n $@ >&2")
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(out, "")
             self.assertEqual(err, "a b")
             self.assertEqual(code, 0)
@@ -68,7 +74,8 @@ class SpawnProcessTest(LandscapeTest):
         def line_received(line):
             lines.append(line)
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(expected, lines)
 
         result = spawn_process(self.command, args=(param,),
@@ -88,7 +95,8 @@ class SpawnProcessTest(LandscapeTest):
         def line_received(line):
             lines.append(line)
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(expected, lines)
 
         result = spawn_process(self.command, args=(param,),
@@ -109,7 +117,8 @@ class SpawnProcessTest(LandscapeTest):
         def line_received(line):
             lines.append(line)
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual(expected, lines)
 
         result = spawn_process(self.command, args=(param,),
@@ -117,13 +126,15 @@ class SpawnProcessTest(LandscapeTest):
         result.addCallback(callback)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_spawn_process_with_stdin(self):
         """
         Optionally C{spawn_process} accepts a C{stdin} argument.
         """
         create_file(self.command, "#!/bin/sh\n/bin/cat")
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("hello", out)
 
         result = spawn_process(self.command, stdin="hello")

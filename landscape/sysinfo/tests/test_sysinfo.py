@@ -1,12 +1,12 @@
-from cStringIO import StringIO
 from logging import getLogger, StreamHandler
 import mock
 import os
 
 from twisted.internet.defer import Deferred, succeed, fail
 
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
+from landscape.compat import StringIO
 from landscape.plugin import PluginRegistry
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 from landscape.tests.helpers import LandscapeTest
 
 

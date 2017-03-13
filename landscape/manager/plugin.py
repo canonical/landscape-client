@@ -43,7 +43,8 @@ class ManagerPlugin(BrokerClientPlugin):
             log_failure(failure, msg=msg)
             return FAILED, text
 
-        def send((status, text)):
+        def send(args):
+            status, text = args
             result = {"type": "operation-result",
                       "status": status,
                       "operation-id": message["operation-id"]}

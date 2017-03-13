@@ -1,12 +1,13 @@
 import pwd
 import grp
 
-from landscape.user.provider import (UserProvider, UserNotFoundError,
-    GroupNotFoundError)
+from twisted.python.compat import _PY3
 
-from landscape.user.tests.helpers import FakeUserProvider
+from landscape.user.provider import (
+    UserProvider, UserNotFoundError, GroupNotFoundError)
 
 from landscape.tests.helpers import LandscapeTest
+from landscape.user.tests.helpers import FakeUserProvider
 
 
 class ProviderTest(LandscapeTest):
@@ -131,12 +132,19 @@ kevin:x:1000:
         name = u"Jos\N{LATIN SMALL LETTER E WITH ACUTE}"
         location = "F\N{LATIN SMALL LETTER I WITH DIAERESIS}nland"
         number = "N\N{LATIN SMALL LETTER AE}ver"
-        gecos = "%s,%s,%s,%s," % (name.encode("utf-8"),
-                                  location.encode("utf-8"),
-                                  number.encode("utf-8"),
-                                  number.encode("utf-8"))
-        data = [("jdoe", "x", 1000, 1000, gecos, "/home/jdoe", "/bin/zsh")]
-        provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
+        if _PY3:
+            gecos = "{},{},{},{},".format(name, location, number, number)
+        else:
+            gecos = "{},{},{},{},".format(name.encode("utf-8"),
+                                          location.encode("utf-8"),
+                                          number.encode("utf-8"),
+                                          number.encode("utf-8"))
+        passwd_file = self.makeFile("""\
+jdoe:x:1000:1000:{}:/home/jdoe:/bin/zsh
+root:x:0:0:root:/root:/bin/bash
+""".format(gecos))
+        provider = UserProvider(passwd_file=passwd_file,
+                                group_file=self.group_file)
         users = provider.get_users()
         self.assertEqual(users[0]["name"], name)
         self.assertEqual(users[0]["location"], location)
@@ -148,10 +156,14 @@ kevin:x:1000:
         If a GECOS field contains non-UTF8 data, it should be replaced
         with question marks.
         """
+        passwd_file = self.makeFile(b"""\
+jdoe:x:1000:1000:\255,\255,\255,\255:/home/jdoe:/bin/zsh
+root:x:0:0:root:/root:/bin/bash
+""", mode="wb")
+        provider = UserProvider(passwd_file=passwd_file,
+                                group_file=self.group_file)
         unicode_unknown = u'\N{REPLACEMENT CHARACTER}'
-        data = [("jdoe", "x", 1000, 1000, "\255,\255,\255,\255", "/home/jdoe",
-                 "/bin/zsh")]
-        provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
+        provider = UserProvider(passwd_file=passwd_file, group_file=None)
         users = provider.get_users()
         self.assertEqual(users[0]["name"], unicode_unknown)
         self.assertEqual(users[0]["location"], unicode_unknown)
@@ -180,8 +192,7 @@ kevin:x:1000:
         for user in users:
             if user["username"] == user_0.pw_name:
                 self.assertEqual(user["uid"], 0)
-                user_0_name = user_0.pw_gecos.split(",")[0].decode(
-                    "utf-8", "replace")
+                user_0_name = user_0.pw_gecos.split(",")[0]
                 self.assertEqual(user["name"], user_0_name)
                 break
         else:
@@ -390,7 +401,7 @@ kevin:x:1000:
                                      "members": []})
         self.assertEqual(groups[1], {"name": u"cdrom",
                                      "gid": 24,
-                                     "members": [u"kevin", u"haldaemon"]})
+                                     "members": [u"haldaemon", u"kevin"]})
         self.assertEqual(groups[2], {"name": u"kevin",
                                      "gid": 1000,
                                      "members": []})

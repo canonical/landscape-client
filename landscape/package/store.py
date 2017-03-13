@@ -6,7 +6,10 @@ try:
 except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
-from landscape.lib import bpickle
+from twisted.python.compat import iteritems, long
+from twisted.python.compat import StringType as basestring
+
+from landscape.compat import convert_buffer_to_string, bpickle
 from landscape.lib.store import with_cursor
 
 
@@ -40,14 +43,15 @@ class HashIdStore(object):
 
         @param hash_ids: a C{dict} of hash=>id mappings.
         """
-        for hash, id in hash_ids.iteritems():
+        for hash, id in iteritems(hash_ids):
             cursor.execute("REPLACE INTO hash VALUES (?, ?)",
-                           (id, buffer(hash)))
+                           (id, sqlite3.Binary(hash)))
 
     @with_cursor
     def get_hash_id(self, cursor, hash):
         """Return the id associated to C{hash}, or C{None} if not available."""
-        cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
+        cursor.execute("SELECT id FROM hash WHERE hash=?",
+                       (sqlite3.Binary(hash),))
         value = cursor.fetchone()
         if value:
             return value[0]
@@ -127,7 +131,7 @@ class PackageStore(HashIdStore):
 
         try:
             hash_id_store.check_sanity()
-        except InvalidHashIdDb, e:
+        except InvalidHashIdDb as e:
             # propagate the error
             raise e
 
@@ -253,7 +257,7 @@ class PackageStore(HashIdStore):
         hashes = list(hashes)
         cursor.execute("INSERT INTO hash_id_request (hashes, timestamp)"
                        " VALUES (?,?)",
-                       (buffer(bpickle.dumps(hashes)), time.time()))
+                       (sqlite3.Binary(bpickle.dumps(hashes)), time.time()))
         return HashIDRequest(self._db, cursor.lastrowid)
 
     @with_cursor
@@ -276,8 +280,9 @@ class PackageStore(HashIdStore):
     @with_cursor
     def add_task(self, cursor, queue, data):
         data = bpickle.dumps(data)
-        cursor.execute("INSERT INTO task (queue, timestamp, data) "
-                       "VALUES (?,?,?)", (queue, time.time(), buffer(data)))
+        cursor.execute(
+            "INSERT INTO task (queue, timestamp, data) VALUES (?,?,?)",
+            (queue, time.time(), sqlite3.Binary(data)))
         return PackageTask(self._db, cursor.lastrowid)
 
     @with_cursor
@@ -307,7 +312,7 @@ class FakePackageStore(PackageStore):
     @with_cursor
     def save_message(self, cursor, message):
         cursor.execute("INSERT INTO message (data) VALUES (?)",
-                       (buffer(bpickle.dumps(message)),))
+                       (sqlite3.Binary(bpickle.dumps(message)),))
 
     @with_cursor
     def get_message_ids(self, cursor):
@@ -340,7 +345,7 @@ class HashIDRequest(object):
     def hashes(self, cursor):
         cursor.execute("SELECT hashes FROM hash_id_request WHERE id=?",
                        (self.id,))
-        return bpickle.loads(str(cursor.fetchone()[0]))
+        return bpickle.loads(convert_buffer_to_string(cursor.fetchone()[0]))
 
     @with_cursor
     def _get_timestamp(self, cursor):
@@ -389,7 +394,7 @@ class PackageTask(object):
 
         self.queue = row[0]
         self.timestamp = row[1]
-        self.data = bpickle.loads(str(row[2]))
+        self.data = bpickle.loads(convert_buffer_to_string(row[2]))
 
     @with_cursor
     def remove(self, cursor):

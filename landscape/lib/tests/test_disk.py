@@ -42,7 +42,8 @@ class DiskUtilitiesTest(LandscapeTest):
         f.write(content)
         f.close()
         for point in points:
-            self.stat_results[point] = (4096, 0, 1000, 500, 0, 0, 0, 0, 0)
+            self.stat_results[point] = os.statvfs_result(
+                (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0))
 
     def test_get_filesystem_for_path(self):
         self.set_mount_points(["/"])
@@ -51,7 +52,8 @@ class DiskUtilitiesTest(LandscapeTest):
 
     def test_get_filesystem_subpath(self):
         self.set_mount_points(["/"])
-        self.stat_results["/"] = (4096, 0, 1000, 500, 0, 0, 0, 0, 0)
+        self.stat_results["/"] = os.statvfs_result(
+            (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0))
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
         self.assertEqual(info["mount-point"], "/")
 
@@ -99,7 +101,8 @@ class DiskUtilitiesTest(LandscapeTest):
         f.write(content)
         f.close()
 
-        self.stat_results["/home"] = (4096, 0, 1000, 500, 0, 0, 0, 0, 0)
+        self.stat_results["/home"] = os.statvfs_result(
+            (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0))
 
         result = [x for x in get_mount_info(self.mount_file, self.statvfs)]
         expected = {"device": "/dev/sda1", "mount-point": "/home",

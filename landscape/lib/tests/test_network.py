@@ -2,14 +2,13 @@ import array
 import socket
 
 from mock import patch, ANY
-
-from cStringIO import StringIO
 from subprocess import Popen, PIPE
-from landscape.tests.helpers import LandscapeTest
 
+from landscape.tests.helpers import LandscapeTest
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
     get_fqdn, get_network_interface_speed)
+from landscape.compat import StringIO
 
 
 class NetworkInfoTest(LandscapeTest):

@@ -10,7 +10,6 @@ from twisted.internet import reactor
 
 from landscape.lib.fs import create_file, touch_file
 from landscape.lib.fetch import FetchError
-from landscape.lib import bpickle
 from landscape.package.store import (
     PackageStore, UnknownHashIDRequest, FakePackageStore)
 from landscape.package.reporter import (
@@ -24,6 +23,8 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.reactor import FakeReactor
+
+from landscape.compat import convert_buffer_to_string, bpickle
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
@@ -89,7 +90,7 @@ class PackageReporterAptTest(LandscapeTest):
             "echo -n '%s'\n"
             "echo -n '%s' >&2\n"
             "exit %d" % (out, err, code))
-        os.chmod(self.reporter.apt_update_filename, 0755)
+        os.chmod(self.reporter.apt_update_filename, 0o755)
 
     def test_set_package_ids_with_all_known(self):
         self.store.add_hash_id_request(["hash1", "hash2"])
@@ -1123,7 +1124,8 @@ class PackageReporterAptTest(LandscapeTest):
         def do_test():
             result = self.reporter.run_apt_update()
 
-            def callback((out, err, code)):
+            def callback(args):
+                out, err, code = args
                 self.assertEqual("output", out)
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
@@ -1149,7 +1151,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
 
         result.addCallback(callback)
@@ -1169,7 +1172,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
 
         result.addCallback(callback)
@@ -1188,7 +1192,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(2, code)
@@ -1219,7 +1224,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("", out)
             self.assertEqual("", err)
             self.assertEqual(100, code)
@@ -1255,7 +1261,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.run_apt_update()
 
-        def callback((out, err, code)):
+        def callback(args):
+            out, err, code = args
             self.assertEqual("output", out)
             self.assertEqual("error", err)
             self.assertEqual(0, code)
@@ -1390,7 +1397,8 @@ class PackageReporterAptTest(LandscapeTest):
         def do_test():
             result = self.reporter.run_apt_update()
 
-            def callback((out, err, code)):
+            def callback(args):
+                out, err, code = args
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
@@ -1430,7 +1438,8 @@ class PackageReporterAptTest(LandscapeTest):
         def do_test():
             result = self.reporter.run_apt_update()
 
-            def callback((out, err, code)):
+            def callback(args):
+                out, err, code = args
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
@@ -1728,7 +1737,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
         message_store.set_accepted_types(["package-reporter-result"])
         self.reporter.apt_update_filename = self.makeFile(
             "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
-        os.chmod(self.reporter.apt_update_filename, 0755)
+        os.chmod(self.reporter.apt_update_filename, 0o755)
         deferred = Deferred()
 
         def do_test():
@@ -1745,7 +1754,8 @@ class GlobalPackageReporterAptTest(LandscapeTest):
                     "SELECT id, data FROM message").fetchall())
                 self.assertEqual(1, len(stored))
                 self.assertEqual(1, stored[0][0])
-                self.assertEqual(message, bpickle.loads(str(stored[0][1])))
+                self.assertEqual(message,
+                    bpickle.loads(convert_buffer_to_string(stored[0][1])))
             result.addCallback(callback)
             result.chainDeferred(deferred)
 

@@ -1,15 +1,16 @@
 from __future__ import print_function
 
+import mock
 from functools import partial
-from ConfigParser import ConfigParser
-from cStringIO import StringIO
 import os
 import sys
 import unittest
 
-import mock
 from twisted.internet.defer import succeed, fail, Deferred
+from twisted.python.compat import iteritems
 
+from landscape.compat import ConfigParser
+from landscape.compat import StringIO
 from landscape.broker.registration import RegistrationError
 from landscape.broker.tests.helpers import (
     RemoteBrokerHelper, BrokerConfigurationHelper)
@@ -776,8 +777,8 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
 
         config = self.get_config([], data_path=client_path)
         bootstrap_tree(config)
-        mock_chmod.assert_any_call(client_path, 0755)
-        mock_chmod.assert_called_with(annotations_path, 0755)
+        mock_chmod.assert_any_call(client_path, 0o755)
+        mock_chmod.assert_called_with(annotations_path, 0o755)
         self.assertTrue(os.path.isdir(client_path))
         self.assertTrue(os.path.isdir(annotations_path))
 
@@ -840,7 +841,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "Access group [webservers]: ": u"databases",
                 "Tags [london, server]: ": u"glasgow, laptop",
             }
-            for key, value in fixtures.iteritems():
+            for key, value in iteritems(fixtures):
                 if key in prompt:
                     return value
             raise KeyError("Couldn't find answer for {}".format(prompt))
@@ -848,7 +849,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         def side_effect_getpass(prompt):
             fixtures = {"Account registration key:": "New Password",
                         "Please confirm:": "New Password"}
-            for key, value in fixtures.iteritems():
+            for key, value in iteritems(fixtures):
                 if key in prompt:
                     return value
             raise KeyError("Couldn't find answer for {}".format(prompt))
@@ -1440,7 +1441,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Nothing to import at %s." % import_filename)
         else:
@@ -1454,7 +1455,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "File %s doesn't exist." % import_filename)
         else:
@@ -1471,7 +1472,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Nothing to import at %s." % import_filename)
         else:
@@ -1486,7 +1487,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertIn("Nothing to import at %s" % import_filename,
                           str(error))
         else:
@@ -1500,7 +1501,7 @@ registration_key = shared-secret
         import_filename = self.makeFile(
             "[client]\nfoo=bar", basename="import_config")
         # Remove read permissions
-        os.chmod(import_filename, os.stat(import_filename).st_mode - 0444)
+        os.chmod(import_filename, os.stat(import_filename).st_mode - 0o444)
         error = self.assertRaises(
             ImportOptionError, self.get_config, ["--import", import_filename])
         expected_message = ("Couldn't read configuration from %s." %
@@ -1635,7 +1636,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Couldn't download configuration from "
                              "https://config.url: Server "
@@ -1657,7 +1658,7 @@ registration_key = shared-secret
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Couldn't download configuration from "
                              "https://config.url: Error 60: pycurl message")
@@ -1674,7 +1675,7 @@ registration_key = shared-secret
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual(str(error),
                              "Nothing to import at https://config.url.")
         else:
@@ -1691,7 +1692,7 @@ registration_key = shared-secret
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
-        except ImportOptionError, error:
+        except ImportOptionError as error:
             self.assertEqual("Nothing to import at https://config.url.",
                              str(error))
         else:

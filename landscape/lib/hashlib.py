@@ -1,6 +1,5 @@
 """Provide backward compatible access to hashlib functions."""
 
-
 try:
     _hashlib = __import__("hashlib")
 except ImportError:

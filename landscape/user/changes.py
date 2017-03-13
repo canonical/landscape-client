@@ -1,3 +1,5 @@
+from twisted.python.compat import iteritems, itervalues
+
 from landscape.diff import diff
 
 
@@ -54,7 +56,7 @@ class UserChanges(object):
 
     def create_diff(self):
         """Returns the changes since the last snapshot.
-        
+
         See landscape.message_schemas.USERS schema for a description of the
         dictionary returned by this method.
         """
@@ -74,11 +76,11 @@ class UserChanges(object):
         changes = {}
         creates, updates, deletes = diff(self._old_users, self._new_users)
         if creates:
-            changes["create-users"] = list(creates.itervalues())
+            changes["create-users"] = list(itervalues(creates))
         if updates:
-            changes["update-users"] = list(updates.itervalues())
+            changes["update-users"] = list(itervalues(updates))
         if deletes:
-            changes["delete-users"] = list(deletes.iterkeys())
+            changes["delete-users"] = list(deletes)
         return changes
 
     def _detect_group_changes(self):
@@ -94,7 +96,7 @@ class UserChanges(object):
         if creates:
             groups = []
             create_members = {}
-            for value in creates.itervalues():
+            for value in itervalues(creates):
                 # Use a copy to avoid removing the 'members' element
                 # from stored data.
                 value = value.copy()
@@ -110,7 +112,7 @@ class UserChanges(object):
             remove_members = {}
             create_members = {}
             update_groups = []
-            for groupname, new_data in updates.iteritems():
+            for groupname, new_data in iteritems(updates):
                 old_data = self._old_groups[groupname]
                 old_members = set(old_data["members"])
                 new_members = set(new_data["members"])

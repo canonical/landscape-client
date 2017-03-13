@@ -141,7 +141,7 @@ class CephUsagePluginTest(LandscapeTest):
         reached.
         """
         interval = 300
-        stats = {"kb": 10240L, "kb_avail": 8192L, "kb_used": 2048L}
+        stats = {"kb": 10240, "kb_avail": 8192, "kb_used": 2048}
 
         plugin = CephUsage(
             create_time=self.reactor.time, interval=interval,

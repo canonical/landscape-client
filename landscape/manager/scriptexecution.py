@@ -12,13 +12,14 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import (
     Deferred, fail, inlineCallbacks, returnValue, succeed)
 from twisted.internet.error import ProcessDone
+from twisted.python.compat import unicode, _PY3
 
 from landscape import VERSION
 from landscape.constants import UBUNTU_PATH
-from landscape.lib.scriptcontent import build_script
+from landscape.lib.encoding import encode_if_needed
 from landscape.lib.fetch import fetch_async, HTTPCodeError
 from landscape.lib.persist import Persist
-from landscape.lib.encoding import encode_if_needed
+from landscape.lib.scriptcontent import build_script
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
@@ -111,10 +112,14 @@ class ScriptRunnerMixin(object):
         # It would be nice to use fchown(2) and fchmod(2), but they're not
         # available in python and using it with ctypes is pretty tedious, not
         # to mention we can't get errno.
-        os.chmod(filename, 0700)
+        os.chmod(filename, 0o700)
         if uid is not None:
             os.chown(filename, uid, gid)
-        script_file.write(build_script(shell, code))
+
+        script = build_script(shell, code)
+        if not _PY3:
+            script = script.encode('utf-8')
+        script_file.write(script)
         script_file.close()
 
     def _run_script(self, filename, uid, gid, path, env, time_limit):
@@ -178,7 +183,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
-        except Exception, e:
+        except Exception as e:
             self._respond(FAILED, self._format_exception(e), opid)
             raise
 
@@ -223,13 +228,12 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                     cainfo=self.registry.config.ssl_public_key,
                     headers=headers)
             full_filename = os.path.join(attachment_dir, filename)
-            attachment = file(full_filename, "wb")
-            os.chmod(full_filename, 0600)
-            if uid is not None:
-                os.chown(full_filename, uid, gid)
-            attachment.write(data)
-            attachment.close()
-        os.chmod(attachment_dir, 0700)
+            with open(full_filename, "wb") as attachment:
+                os.chmod(full_filename, 0o600)
+                if uid is not None:
+                    os.chown(full_filename, uid, gid)
+                attachment.write(data)
+        os.chmod(attachment_dir, 0o700)
         if uid is not None:
             os.chown(attachment_dir, uid, gid)
         returnValue(attachment_dir)
@@ -270,7 +274,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         env = {"PATH": UBUNTU_PATH, "USER": user or "", "HOME": path or ""}
         if server_supplied_env:
             env.update(server_supplied_env)
-        old_umask = os.umask(0022)
+        old_umask = os.umask(0o022)
 
         if attachments:
             persist = Persist(

@@ -8,6 +8,8 @@ import struct
 import errno
 import logging
 
+from twisted.python.compat import long
+
 __all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
 
 # from header /usr/include/bits/ioctls.h

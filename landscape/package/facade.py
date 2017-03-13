@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from cStringIO import StringIO
+
 from operator import attrgetter
 
 # Importing apt throws a FutureWarning on hardy, that we don't want to
@@ -21,7 +21,10 @@ import apt_pkg
 from aptsources.sourceslist import SourcesList
 from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
+from twisted.python.compat import itervalues
 
+
+from landscape.compat import StringIO
 from landscape.lib.fs import append_file, create_file, read_file, touch_file
 from landscape.package.skeleton import build_skeleton_apt
 
@@ -168,7 +171,7 @@ class AptFacade(object):
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return self._hash2pkg.itervalues()
+        return itervalues(self._hash2pkg)
 
     def get_locked_packages(self):
         """Get all packages in the channels that are locked.
@@ -662,7 +665,7 @@ class AptFacade(object):
                         install_progress=install_progress)
                     if not install_progress.dpkg_exited:
                         raise SystemError("dpkg didn't exit cleanly.")
-                except (apt.cache.LockFailedException, SystemError), exception:
+                except (apt.cache.LockFailedException, SystemError) as exception:
                     result_text = (fetch_output.getvalue()
                                    + read_file(install_output_path))
                     error = TransactionError(exception.args[0] +
@@ -745,7 +748,7 @@ class AptFacade(object):
         if now_broken_packages != already_broken_packages:
             try:
                 fixer.resolve(True)
-            except SystemError, error:
+            except SystemError as error:
                 raise TransactionError(error.args[0] + "\n" +
                                        self._get_unmet_dependency_info())
             else:

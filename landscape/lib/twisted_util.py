@@ -2,8 +2,9 @@ from twisted.internet.defer import DeferredList, Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
+from twisted.python.compat import itervalues
 
-import cStringIO
+from landscape.compat import StringIO
 
 
 def gather_results(deferreds, consume_errors=False):
@@ -19,8 +20,8 @@ class AllOutputProcessProtocol(ProcessProtocol):
 
     def __init__(self, deferred, stdin=None, line_received=None):
         self.deferred = deferred
-        self.outBuf = cStringIO.StringIO()
-        self.errBuf = cStringIO.StringIO()
+        self.outBuf = StringIO()
+        self.errBuf = StringIO()
         self.errReceived = self.errBuf.write
         self.stdin = stdin
         self.line_received = line_received
@@ -103,7 +104,7 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
                 be used in place of this workaround.
             """
             if process.pipes and not process.pid:
-                for pipe in process.pipes.itervalues():
+                for pipe in itervalues(process.pipes):
                     if isinstance(pipe, ProcessReader):
                         # Read whatever is left
                         pipe.doRead()

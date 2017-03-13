@@ -1,4 +1,5 @@
 from twisted.internet.defer import maybeDeferred, execute, succeed
+from twisted.python.compat import iteritems
 
 from landscape.lib.amp import RemoteObject, MethodCallArgument
 from landscape.amp import ComponentConnector, get_remote_methods
@@ -30,7 +31,7 @@ class RemoteBroker(RemoteObject):
         """
         result = self.listen_events(handlers.keys())
         return result.addCallback(
-            lambda (event_type, kwargs): handlers[event_type](**kwargs))
+            lambda args: handlers[args[0]](**args[1]))
 
 
 class FakeRemoteBroker(object):
@@ -53,7 +54,7 @@ class FakeRemoteBroker(object):
             def method(*args, **kwargs):
                 for arg in args:
                     assert MethodCallArgument.check(arg)
-                for k, v in kwargs.iteritems():
+                for k, v in iteritems(kwargs):
                     assert MethodCallArgument.check(v)
                 return execute(original, *args, **kwargs)
             return method
@@ -75,7 +76,7 @@ class FakeRemoteBroker(object):
         """
         result = self.broker_server.listen_events(handlers.keys())
         return result.addCallback(
-            lambda (event_type, kwargs): handlers[event_type](**kwargs))
+            lambda args: handlers[args[0]](**args[1]))
 
     def register(self):
         return succeed(None)

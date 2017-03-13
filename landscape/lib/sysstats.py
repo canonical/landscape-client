@@ -57,7 +57,8 @@ class MemoryStats(object):
 def get_logged_in_users():
     result = getProcessOutputAndValue("who", ["-q"], env=os.environ)
 
-    def parse_output((stdout_data, stderr_data, status)):
+    def parse_output(args):
+        stdout_data, stderr_data, status = args
         if status != 0:
             raise CommandError(stderr_data)
         first_line = stdout_data.split("\n", 1)[0]

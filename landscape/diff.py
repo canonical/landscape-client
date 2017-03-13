@@ -4,8 +4,8 @@ def diff(old, new):
     @return: A 3-tuple of dicts with the changes that would need to be
         made to convert C{old} into C{new}: C{(creates, updates, deletes)}
     """
-    new_keys = set(new.iterkeys())
-    old_keys = set(old.iterkeys())
+    new_keys = set(new)
+    old_keys = set(old)
 
     creates = {}
     for key in new_keys - old_keys:

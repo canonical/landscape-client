@@ -480,12 +480,12 @@ def daemonize():
     if os.fork():  # launch child and...
         os._exit(0)  # kill off parent again.
     # some argue that this umask should be 0, but that's annoying.
-    os.umask(077)
+    os.umask(0o077)
     null = os.open('/dev/null', os.O_RDWR)
     for i in range(3):
         try:
             os.dup2(null, i)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EBADF:
                 raise
     os.close(null)
@@ -576,20 +576,20 @@ class WatchDogService(Service):
 
 
 bootstrap_list = BootstrapList([
-    BootstrapDirectory("$data_path", "landscape", "root", 0755),
-    BootstrapDirectory("$data_path/package", "landscape", "root", 0755),
+    BootstrapDirectory("$data_path", "landscape", "root", 0o755),
+    BootstrapDirectory("$data_path/package", "landscape", "root", 0o755),
     BootstrapDirectory(
-        "$data_path/package/hash-id", "landscape", "root", 0755),
+        "$data_path/package/hash-id", "landscape", "root", 0o755),
     BootstrapDirectory(
-        "$data_path/package/binaries", "landscape", "root", 0755),
+        "$data_path/package/binaries", "landscape", "root", 0o755),
     BootstrapDirectory(
-        "$data_path/package/upgrade-tool", "landscape", "root", 0755),
-    BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
-    BootstrapDirectory("$data_path/sockets", "landscape", "root", 0750),
+        "$data_path/package/upgrade-tool", "landscape", "root", 0o755),
+    BootstrapDirectory("$data_path/messages", "landscape", "root", 0o755),
+    BootstrapDirectory("$data_path/sockets", "landscape", "root", 0o750),
     BootstrapDirectory(
-        "$data_path/custom-graph-scripts", "landscape", "root", 0755),
-    BootstrapDirectory("$log_dir", "landscape", "root", 0755),
-    BootstrapFile("$data_path/package/database", "landscape", "root", 0644)])
+        "$data_path/custom-graph-scripts", "landscape", "root", 0o755),
+    BootstrapDirectory("$log_dir", "landscape", "root", 0o755),
+    BootstrapFile("$data_path/package/database", "landscape", "root", 0o644)])
 
 
 def clean_environment():
@@ -600,7 +600,7 @@ def clean_environment():
     postinst script.  Some environment variables may be set which would affect
     *other* maintainer scripts which landscape-client invokes.
     """
-    for key in os.environ.keys():
+    for key in list(os.environ.keys()):
         if (key.startswith(("DEBIAN_", "DEBCONF_")) or
                 key in ["LANDSCAPE_ATTACHMENTS", "MAIL"]):
             del os.environ[key]

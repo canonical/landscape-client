@@ -86,9 +86,8 @@ class AptSources(ManagerPlugin):
         for key in message["gpg-keys"]:
             fd, path = tempfile.mkstemp()
             os.close(fd)
-            key_file = file(path, "w")
-            key_file.write(key)
-            key_file.close()
+            with open(path, "w") as key_file:
+                key_file.write(key)
             deferred.addCallback(
                 lambda ignore, path=path:
                     self._run_process("/usr/bin/apt-key", ["add", path]))
@@ -131,7 +130,7 @@ class AptSources(ManagerPlugin):
                                     "landscape-%s.list" % source["name"])
             with open(filename, "w") as sources_file:
                 sources_file.write(source["content"])
-            os.chmod(filename, 0644)
+            os.chmod(filename, 0o644)
         return self._run_reporter().addCallback(lambda ignored: None)
 
     def _run_reporter(self):

@@ -4,6 +4,8 @@ from landscape.schema import (
     InvalidError, Constant, Bool, Int, Float, Bytes, Unicode, List, KeyDict,
     Dict, Tuple, Any, Message)
 
+from twisted.python.compat import long
+
 
 class DummySchema(object):
     def coerce(self, value):
@@ -42,7 +44,8 @@ class BasicTypesTest(LandscapeTest):
         self.assertEqual(Int().coerce(3), 3)
 
     def test_int_accepts_long(self):
-        self.assertEqual(Int().coerce(3L), 3)
+        # This test can be removed after dropping Python 2 support
+        self.assertEqual(Int().coerce(long(3)), 3)
 
     def test_int_bad_str(self):
         self.assertRaises(InvalidError, Int().coerce, "3")
@@ -57,7 +60,8 @@ class BasicTypesTest(LandscapeTest):
         self.assertEqual(Float().coerce(3), 3.0)
 
     def test_float_accepts_long(self):
-        self.assertEqual(Float().coerce(3L), 3.0)
+        # This test can be removed after dropping Python 2 support
+        self.assertEqual(Float().coerce(long(3)), 3.0)
 
     def test_float_bad_str(self):
         self.assertRaises(InvalidError, Float().coerce, "3.0")

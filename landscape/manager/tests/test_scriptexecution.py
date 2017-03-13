@@ -6,9 +6,12 @@ import stat
 
 import mock
 
+from unittest import skipIf
+
 from twisted.internet.defer import gatherResults, succeed, fail
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
+from twisted.python.compat import _PY3
 
 from landscape import VERSION
 from landscape.lib.fetch import HTTPCodeError
@@ -40,6 +43,7 @@ class RunScriptTests(LandscapeTest):
         self.plugin = ScriptExecutionPlugin()
         self.manager.add(self.plugin)
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_basic_run(self):
         """
         The plugin returns a Deferred resulting in the output of basic
@@ -49,18 +53,21 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(self.assertEqual, "hi\n")
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_snap_path(self):
         """The bin path for snaps is included in the PATH."""
         deferred = self.plugin.run_script("/bin/sh", "echo $PATH")
         return deferred.addCallback(
             lambda result: self.assertIn("/snap/bin", result))
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_other_interpreter(self):
         """Non-shell interpreters can be specified."""
         result = self.plugin.run_script("/usr/bin/python", "print 'hi'")
         result.addCallback(self.assertEqual, "hi\n")
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_other_interpreter_env(self):
         """
         Non-shell interpreters don't have their paths set by the shell, so we
@@ -77,6 +84,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_server_supplied_env(self):
         """
         Server-supplied environment variables are merged with default
@@ -98,6 +106,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_server_supplied_env_overrides_client(self):
         """
         Server-supplied environment variables override client default
@@ -118,6 +127,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_concurrent(self):
         """
         Scripts run with the ScriptExecutionPlugin plugin are run concurrently.
@@ -134,6 +144,7 @@ class RunScriptTests(LandscapeTest):
         d2.addCallback(self.assertEqual, "")
         return gatherResults([d1, d2])
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_accented_run_in_code(self):
         """
         Scripts can contain accented data both in the code and in the
@@ -146,6 +157,7 @@ class RunScriptTests(LandscapeTest):
             self.assertEqual, "%s\n" % (accented_content.encode("utf-8"),))
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_accented_run_in_interpreter(self):
         """
         Scripts can also contain accents in the interpreter.
@@ -161,9 +173,10 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_set_umask_appropriately(self):
         """
-        We should be setting the umask to 0022 before executing a script, and
+        We should be setting the umask to 0o022 before executing a script, and
         restoring it to the previous value when finishing.
         """
         # Get original umask.
@@ -183,6 +196,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result.addCallback(lambda _: patch_umask.stop())
 
+    @skipIf(_PY3, "mock does not get cleaned up, poisoning all other tests.")
     def test_restore_umask_in_event_of_error(self):
         """
         We set the umask before executing the script, in the event that there's
@@ -298,6 +312,7 @@ class RunScriptTests(LandscapeTest):
 
         return result.addCallback(check).addBoth(cleanup)
 
+    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_self_remove_script(self):
         """
         If a script removes itself, it doesn't create an error when the script
@@ -416,9 +431,9 @@ class RunScriptTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3])
         attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
-        self.assertEqual(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
+        self.assertEqual(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0o700)
         filename = os.path.join(attachment_dir, "file 1")
-        self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0600)
+        self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0o600)
 
         protocol = spawn[0]
         protocol.childDataReceived(1, "foobar")

@@ -1,13 +1,13 @@
-from landscape.lib import md5crypt
 from landscape.user.management import UserManagement, UserManagementError
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.user.provider import UserNotFoundError, GroupNotFoundError
 from landscape.tests.helpers import LandscapeTest, MockPopen
+from passlib.hash import md5_crypt
 
 
 def guess_password(generated_password, plaintext_password):
     salt = generated_password[len("$1$"):generated_password.rfind("$")]
-    crypted = md5crypt.md5crypt(plaintext_password, salt)
+    crypted = md5_crypt.encrypt(plaintext_password, salt=salt)
     return crypted
 
 

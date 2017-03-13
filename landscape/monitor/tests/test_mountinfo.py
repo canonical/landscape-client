@@ -1,11 +1,20 @@
 import mock
+import os
 import tempfile
+
+from twisted.python.compat import StringType as basestring
+from twisted.python.compat import long
 
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
 
 
 mb = lambda x: x * 1024 * 1024
+
+
+def statvfs_result_fixture(path):
+    """Fixture for a dummy statvfs_result."""
+    return os.statvfs_result((4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0))
 
 
 class MountInfoTest(LandscapeTest):
@@ -24,7 +33,8 @@ class MountInfoTest(LandscapeTest):
         if "mtab_file" not in kwargs:
             kwargs["mtab_file"] = self.makeFile("/dev/hda1 / ext3 rw 0 0\n")
         if "statvfs" not in kwargs:
-            kwargs["statvfs"] = lambda path: (0,) * 1000
+            kwargs["statvfs"] = lambda path: os.statvfs_result(
+                (0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
         plugin = MountInfo(*args, **kwargs)
         # To make sure tests are isolated from the real system by default.
         plugin.is_device_removable = lambda x: False
@@ -65,9 +75,11 @@ class MountInfoTest(LandscapeTest):
         """
         def statvfs(path):
             if path == "/":
-                return (4096, 0, mb(1000L), mb(100L), 0L, 0L, 0L, 0, 0)
+                return os.statvfs_result(
+                    (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0))
             else:
-                return (4096, 0, mb(10000L), mb(1000L), 0L, 0L, 0L, 0, 0)
+                return os.statvfs_result(
+                    (4096, 0, mb(10000), mb(1000), 0, 0, 0, 0, 0, 0))
 
         filename = self.makeFile("""\
 rootfs / rootfs rw 0 0
@@ -138,7 +150,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         function which should cause it to queue new messages.
         """
         def statvfs(path, multiplier=mock_counter(1).next):
-            return (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
+            return os.statvfs_result(
+                (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0, 0))
 
         plugin = self.get_mount_info(
             statvfs=statvfs, create_time=self.reactor.time,
@@ -170,8 +183,10 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         """
         def statvfs(path, multiplier=mock_counter(1).next):
             if path == "/":
-                return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-            return (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
+                return os.statvfs_result(
+                    (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0))
+            return os.statvfs_result(
+                (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0, 0))
 
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
@@ -213,11 +228,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         messages collected bewteen exchange periods should be
         delivered in a single message.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         plugin = self.get_mount_info(
-            statvfs=statvfs, create_time=self.reactor.time)
+            statvfs=statvfs_result_fixture, create_time=self.reactor.time)
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
@@ -244,11 +256,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         Duplicate message should never be created.  If no data is
         available, None will be returned when messages are created.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         plugin = self.get_mount_info(
-            statvfs=statvfs, create_time=self.reactor.time)
+            statvfs=statvfs_result_fixture, create_time=self.reactor.time)
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -266,16 +275,14 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         really test anything since the current behaviour is to ignore
         any mount point for which the device doesn't start with /dev.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         filename = self.makeFile("""\
 /dev/hdc4 /mm xfs rw 0 0
 /mm/ubuntu-mirror /home/dchroot/warty/mirror none bind 0 0
 /mm/ubuntu-mirror /home/dchroot/hoary/mirror none bind 0 0
 /mm/ubuntu-mirror /home/dchroot/breezy/mirror none bind 0 0
 """)
-        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
+        plugin = self.get_mount_info(mounts_file=filename,
+                                     statvfs=statvfs_result_fixture,
                                      create_time=self.reactor.time,
                                      mtab_file=filename)
         step_size = self.monitor.step_size
@@ -327,7 +334,8 @@ addr=ennui 0 0
     def test_sample_free_space(self):
         """Test collecting information about free space."""
         def statvfs(path, multiplier=mock_counter(1).next):
-            return (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0)
+            return os.statvfs_result(
+                (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0, 0))
 
         plugin = self.get_mount_info(
             statvfs=statvfs, create_time=self.reactor.time)
@@ -362,13 +370,11 @@ addr=ennui 0 0
         Test ensures all expected messages are created and contain the
         right datatypes.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
 """)
-        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
+        plugin = self.get_mount_info(mounts_file=filename,
+                                     statvfs=statvfs_result_fixture,
                                      create_time=self.reactor.time,
                                      mtab_file=filename)
         step_size = self.monitor.step_size
@@ -393,10 +399,8 @@ addr=ennui 0 0
         On the reactor "resynchronize" event, new mount-info messages
         should be sent.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
         plugin = self.get_mount_info(
-            create_time=self.reactor.time, statvfs=statvfs)
+            create_time=self.reactor.time, statvfs=statvfs_result_fixture)
         self.monitor.add(plugin)
 
         plugin.run()
@@ -420,9 +424,6 @@ addr=ennui 0 0
         shouldn't be listed, as they have the same free space/used space as the
         device they're bound to.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         # From this test data, we expect only two mount points to be returned,
         # and the other two to be ignored (the rebound /dev/hda2 -> /mnt
         # mounting)
@@ -439,19 +440,20 @@ addr=ennui 0 0
 /opt /mnt none rw,bind 0 0
 /opt /media/Boot\\040OSX none rw,bind 0 0
 """)
-        plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
-                           statvfs=statvfs, mtab_file=mtab_filename)
+        plugin = MountInfo(
+            mounts_file=filename, create_time=self.reactor.time,
+            statvfs=statvfs_result_fixture, mtab_file=mtab_filename)
 
         self.monitor.add(plugin)
         plugin.run()
         message = plugin.create_mount_info_message()
         self.assertEqual(message.get("mount-info"),
                          [(0, {"device": "/dev/devices/by-uuid/12345567",
-                               "mount-point": "/", "total-space": 4096000L,
+                               "mount-point": "/", "total-space": 4096000,
                                "filesystem": "ext3"}),
                           (0, {"device": "/dev/hda2",
                                "mount-point": "/usr",
-                               "total-space": 4096000L,
+                               "total-space": 4096000,
                                "filesystem": "ext3"}),
                           ])
 
@@ -461,9 +463,6 @@ addr=ennui 0 0
         bind mounted directories, so any filesystems in /proc/mounts will be
         reported.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         # In this test, we expect all mount points to be returned, as we can't
         # identify any as bind mounts.
         filename = self.makeFile("""\
@@ -474,22 +473,23 @@ addr=ennui 0 0
         # mktemp isn't normally secure, due to race conditions, but in this
         # case, we don't actually create the file at all.
         mtab_filename = tempfile.mktemp()
-        plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
-                           statvfs=statvfs, mtab_file=mtab_filename)
+        plugin = MountInfo(
+            mounts_file=filename, create_time=self.reactor.time,
+            statvfs=statvfs_result_fixture, mtab_file=mtab_filename)
         self.monitor.add(plugin)
         plugin.run()
         message = plugin.create_mount_info_message()
         self.assertEqual(message.get("mount-info"),
                          [(0, {"device": "/dev/devices/by-uuid/12345567",
-                               "mount-point": "/", "total-space": 4096000L,
+                               "mount-point": "/", "total-space": 4096000,
                                "filesystem": "ext3"}),
                           (0, {"device": "/dev/hda2",
                                "mount-point": "/usr",
-                               "total-space": 4096000L,
+                               "total-space": 4096000,
                                "filesystem": "ext3"}),
                           (0, {"device": "/dev/devices/by-uuid/12345567",
                                "mount-point": "/mnt",
-                               "total-space": 4096000L,
+                               "total-space": 4096000,
                                "filesystem": "ext3"})])
 
     def test_no_message_if_not_accepted(self):
@@ -498,10 +498,6 @@ addr=ennui 0 0
         accepting their type.
         """
         self.mstore.set_accepted_types([])
-
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         # From this test data, we expect only two mount points to be returned,
         # and the third to be ignored (the rebound /dev/hda2 -> /mnt mounting)
         filename = self.makeFile("""\
@@ -516,8 +512,9 @@ addr=ennui 0 0
 /opt /mnt none rw,bind 0 0
 """)
 
-        plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
-                           statvfs=statvfs, mtab_file=mtab_filename)
+        plugin = MountInfo(
+            mounts_file=filename, create_time=self.reactor.time,
+            statvfs=statvfs_result_fixture, mtab_file=mtab_filename)
         self.monitor.add(plugin)
         self.reactor.advance(self.monitor.step_size * 2)
         self.monitor.exchange()
@@ -547,14 +544,12 @@ addr=ennui 0 0
         didn't get the mount info at all. This test ensures that mount info are
         only saved when exchange happens.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 """)
-        plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
-                           statvfs=statvfs, mtab_file=filename)
+        plugin = MountInfo(
+            mounts_file=filename, create_time=self.reactor.time,
+            statvfs=statvfs_result_fixture, mtab_file=filename)
         self.monitor.add(plugin)
         plugin.run()
         message1 = plugin.create_mount_info_message()
@@ -563,7 +558,7 @@ addr=ennui 0 0
             [(0, {"device": "/dev/hda1",
                   "filesystem": "ext3",
                   "mount-point": "/",
-                  "total-space": 4096000L})])
+                  "total-space": 4096000})])
         plugin.run()
         message2 = plugin.create_mount_info_message()
         self.assertEqual(
@@ -571,7 +566,7 @@ addr=ennui 0 0
             [(0, {"device": "/dev/hda1",
                   "filesystem": "ext3",
                   "mount-point": "/",
-                  "total-space": 4096000L})])
+                  "total-space": 4096000})])
         # Run again, calling create_mount_info_message purge the information
         plugin.run()
         plugin.exchange()
@@ -584,11 +579,8 @@ addr=ennui 0 0
         In order not to overload the server, the client should stagger the
         exchange of free-space messages.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-
         plugin = self.get_mount_info(
-            statvfs=statvfs, create_time=self.reactor.time)
+            statvfs=statvfs_result_fixture, create_time=self.reactor.time)
         # Limit the test exchange to 5 items.
         plugin.max_free_space_items_to_exchange = 5
         step_size = self.monitor.step_size

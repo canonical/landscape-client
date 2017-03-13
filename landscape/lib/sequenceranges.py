@@ -1,3 +1,4 @@
+from twisted.python.compat import xrange
 
 
 class SequenceError(Exception):

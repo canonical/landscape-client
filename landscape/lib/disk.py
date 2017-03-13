@@ -1,8 +1,10 @@
 from __future__ import division
 
 import os
-import statvfs
 import re
+import codecs
+
+from twisted.python.compat import _PY3
 
 
 # List of filesystem types authorized when generating disk use statistics.
@@ -32,7 +34,10 @@ def get_mount_info(mounts_file, statvfs_,
     for line in open(mounts_file):
         try:
             device, mount_point, filesystem = line.split()[:3]
-            mount_point = mount_point.decode("string-escape")
+            if _PY3:
+                mount_point = codecs.decode(mount_point, "unicode_escape")
+            else:
+                mount_point = codecs.decode(mount_point, "string_escape")
         except ValueError:
             continue
         if (filesystems_whitelist is not None and
@@ -43,9 +48,9 @@ def get_mount_info(mounts_file, statvfs_,
             stats = statvfs_(mount_point)
         except OSError:
             continue
-        block_size = stats[statvfs.F_BSIZE]
-        total_space = (stats[statvfs.F_BLOCKS] * block_size) // megabytes
-        free_space = (stats[statvfs.F_BFREE] * block_size) // megabytes
+        block_size = stats.f_bsize
+        total_space = (stats.f_blocks * block_size) // megabytes
+        free_space = (stats.f_bfree * block_size) // megabytes
         yield {"device": device, "mount-point": mount_point,
                "filesystem": filesystem, "total-space": total_space,
                "free-space": free_space}

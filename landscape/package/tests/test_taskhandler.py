@@ -379,7 +379,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         # We also expect the umask to be set appropriately before running the
         # commands
-        umask.assert_called_once_with(022)
+        umask.assert_called_once_with(0o22)
 
         return result.addCallback(assert_task_handler)
 
@@ -389,7 +389,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         try:
             run_task_handler(PackageTaskHandler, ["-c", self.config_filename])
-        except SystemExit, e:
+        except SystemExit as e:
             self.assertIn("default is already running", str(e))
         else:
             self.fail("SystemExit not raised")
@@ -400,7 +400,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         try:
             run_task_handler(PackageTaskHandler,
                              ["-c", self.config_filename, "--quiet"])
-        except SystemExit, e:
+        except SystemExit as e:
             self.assertEqual(str(e), "")
         else:
             self.fail("SystemExit not raised")

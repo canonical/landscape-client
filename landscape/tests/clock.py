@@ -31,10 +31,13 @@ Currently:
    C{seconds} argument until after Twisted 2.2.
 """
 
+import functools
 
 from twisted.internet import error
 from twisted.python.runtime import seconds as runtimeSeconds
 from twisted.python import reflect
+from twisted.python.compat import iteritems
+
 import traceback
 
 
@@ -71,7 +74,7 @@ class Clock:
                              self.calls.remove,
                              lambda c: None,
                              self.seconds))
-        self.calls.sort(lambda a, b: cmp(a.getTime(), b.getTime()))
+        self.calls.sort(key=lambda a: a.getTime())
         return self.calls[-1]
 
 
@@ -246,7 +249,9 @@ class DelayedCall:
                 if self.kw:
                     L.append(", ")
             if self.kw:
-                L.append(", ".join(['%s=%s' % (k, reflect.safe_repr(v)) for (k, v) in self.kw.iteritems()]))
+                L.append(", ".join([
+                    '%s=%s' % (k, reflect.safe_repr(v))
+                    for (k, v) in iteritems(self.kw)]))
             L.append(")")
 
         if self.debug:

@@ -1,4 +1,5 @@
 """A schema system. Yes. Another one!"""
+from twisted.python.compat import iteritems, unicode, long
 
 
 class InvalidError(Exception):
@@ -83,10 +84,10 @@ class Unicode(object):
         self.encoding = encoding
 
     def coerce(self, value):
-        if isinstance(value, str):
+        if isinstance(value, bytes):
             try:
                 value = value.decode(self.encoding)
-            except UnicodeDecodeError, e:
+            except UnicodeDecodeError as e:
                 raise InvalidError("%r can't be decoded: %s" % (value, str(e)))
         if not isinstance(value, unicode):
             raise InvalidError("%r isn't a unicode" % (value,))
@@ -108,7 +109,7 @@ class List(object):
         for i, subvalue in enumerate(value):
             try:
                 new_list[i] = self.schema.coerce(subvalue)
-            except InvalidError, e:
+            except InvalidError as e:
                 raise InvalidError(
                     "%r could not coerce with %s: %s"
                     % (subvalue, self.schema, e))
@@ -155,13 +156,13 @@ class KeyDict(object):
         new_dict = {}
         if not isinstance(value, dict):
             raise InvalidError("%r is not a dict." % (value,))
-        for k, v in value.iteritems():
+        for k, v in iteritems(value):
             if k not in self.schema:
                 raise InvalidError("%r is not a valid key as per %r"
                                    % (k, self.schema))
             try:
                 new_dict[k] = self.schema[k].coerce(v)
-            except InvalidError, e:
+            except InvalidError as e:
                 raise InvalidError(
                     "Value of %r key of dict %r could not coerce with %s: %s"
                     % (k, value, self.schema[k], e))

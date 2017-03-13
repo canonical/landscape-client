@@ -57,7 +57,7 @@ class AptSourcesTests(LandscapeTest):
              "gpg-keys": [],
              "operation-id": 1})
 
-        with file(self.sourceslist.SOURCES_LIST) as sources:
+        with open(self.sourceslist.SOURCES_LIST) as sources:
             self.assertEqual(
                 "# Landscape manages repositories for this computer\n"
                 "# Original content of sources.list can be found in "
@@ -79,7 +79,7 @@ class AptSourcesTests(LandscapeTest):
 
         saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
         self.assertTrue(os.path.exists(saved_sources_path))
-        with file(saved_sources_path) as saved_sources:
+        with open(saved_sources_path) as saved_sources:
             self.assertEqual("oki\n\ndoki\n#comment\n # other comment\n",
                              saved_sources.read())
 
@@ -102,7 +102,7 @@ class AptSourcesTests(LandscapeTest):
              "operation-id": 1})
 
         self.assertTrue(os.path.exists(saved_sources_path))
-        with file(saved_sources_path) as saved_sources:
+        with open(saved_sources_path) as saved_sources:
             self.assertEqual("original content\n", saved_sources.read())
 
     def test_restore_sources_list(self):
@@ -123,7 +123,7 @@ class AptSourcesTests(LandscapeTest):
              "gpg-keys": [],
              "operation-id": 1})
 
-        with file(self.sourceslist.SOURCES_LIST) as sources:
+        with open(self.sourceslist.SOURCES_LIST) as sources:
             self.assertEqual("original content\n", sources.read())
 
     def test_sources_list_permissions(self):
@@ -236,12 +236,16 @@ class AptSourcesTests(LandscapeTest):
         dev_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
                                 "landscape-dev.list")
         self.assertTrue(os.path.exists(dev_file))
-        self.assertEqual("oki\n", file(dev_file).read())
+        with open(dev_file) as file:
+            result = file.read()
+        self.assertEqual("oki\n", result)
 
         lucid_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
                                   "landscape-lucid.list")
         self.assertTrue(os.path.exists(lucid_file))
-        self.assertEqual("doki\n", file(lucid_file).read())
+        with open(lucid_file) as file:
+            result = file.read()
+        self.assertEqual("doki\n", result)
 
     def test_import_gpg_keys(self):
         """
@@ -254,7 +258,9 @@ class AptSourcesTests(LandscapeTest):
             self.assertEqual("/usr/bin/apt-key", command)
             self.assertEqual("add", args[0])
             filename = args[1]
-            self.assertEqual("Some key content", file(filename).read())
+            with open(filename) as file:
+                result = file.read()
+            self.assertEqual("Some key content", result)
             deferred.callback(("ok", "", 0))
             return deferred
 
@@ -376,17 +382,17 @@ class AptSourcesTests(LandscapeTest):
 
         self.sourceslist._run_process = _run_process
 
-        sources = file(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("oki\n\ndoki\n#comment\n")
-        sources.close()
+        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
+            sources.write("oki\n\ndoki\n#comment\n")
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
              "operation-id": 1})
 
-        self.assertEqual(
-            "oki\n\ndoki\n#comment\n",
-            file(self.sourceslist.SOURCES_LIST).read())
+        with open(self.sourceslist.SOURCES_LIST) as sources_list:
+            result = sources_list.read()
+
+        self.assertEqual("oki\n\ndoki\n#comment\n", result)
 
         return deferred
 

@@ -62,7 +62,7 @@ class UserManager(ManagerPlugin):
                     if len(parts) > 1:
                         if parts[1].startswith("!"):
                             locked_users.append(parts[0].strip())
-            except IOError, e:
+            except IOError as e:
                 logging.error("Error reading shadow file. %s" % e)
         return locked_users
 

@@ -5,10 +5,10 @@ import pwd
 import shutil
 import logging
 import tarfile
-import cStringIO
 
 from twisted.internet.defer import succeed
 
+from landscape.compat import StringIO
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
@@ -186,7 +186,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         @param err: The standard error of the upgrade-tool process.
         @return: A text aggregating the process output, error and log files.
         """
-        buf = cStringIO.StringIO()
+        buf = StringIO()
 
         for label, content in [("output", out), ("error", err)]:
             if content:
@@ -222,7 +222,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         result = spawn_process(upgrade_tool_filename, args=args, env=env,
                                path=upgrade_tool_directory, wait_pipes=False)
 
-        def send_operation_result((out, err, code)):
+        def send_operation_result(args):
+            out, err, code = args
             if code == 0:
                 status = SUCCEEDED
             else:

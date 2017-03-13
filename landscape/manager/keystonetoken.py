@@ -1,7 +1,7 @@
 import os
 import logging
-from ConfigParser import ConfigParser, NoOptionError
 
+from landscape.compat import ConfigParser, NoOptionError
 from landscape.monitor.plugin import DataWatcher
 from landscape.lib.persist import Persist
 

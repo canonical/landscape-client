@@ -1,6 +1,6 @@
 import unittest
 
-from landscape.lib import bpickle
+from landscape.compat import bpickle
 
 
 class BPickleTest(unittest.TestCase):

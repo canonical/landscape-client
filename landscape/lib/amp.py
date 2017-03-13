@@ -49,11 +49,12 @@ from uuid import uuid4
 from twisted.internet.defer import Deferred, maybeDeferred, succeed
 from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
 from twisted.python.failure import Failure
+from twisted.python.compat import xrange
 
 from twisted.protocols.amp import (
     Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
 
-from landscape.lib.bpickle import loads, dumps, dumps_table
+from landscape.compat import bpickle
 
 
 class MethodCallArgument(Argument):
@@ -61,16 +62,16 @@ class MethodCallArgument(Argument):
 
     def toString(self, inObject):
         """Serialize an argument."""
-        return dumps(inObject)
+        return bpickle.dumps(inObject)
 
     def fromString(self, inString):
         """Unserialize an argument."""
-        return loads(inString)
+        return bpickle.loads(inString)
 
     @classmethod
     def check(cls, inObject):
         """Check if an argument is serializable."""
-        return type(inObject) in dumps_table
+        return type(inObject) in bpickle.dumps_table
 
 
 class MethodCallError(Exception):
@@ -95,13 +96,13 @@ class MethodCall(Command):
       and C{kwargs} the keyword ones.
     """
 
-    arguments = [("sequence", Integer()),
-                 ("method", String()),
-                 ("arguments", String())]
+    arguments = [(b"sequence", Integer()),
+                 (b"method", String()),
+                 (b"arguments", String())]
 
-    response = [("result", MethodCallArgument())]
+    response = [(b"result", MethodCallArgument())]
 
-    errors = {MethodCallError: "METHOD_CALL_ERROR"}
+    errors = {MethodCallError: b"METHOD_CALL_ERROR"}
 
 
 class MethodCallChunk(Command):
@@ -119,12 +120,12 @@ class MethodCallChunk(Command):
       being split and buffered.
     """
 
-    arguments = [("sequence", Integer()),
-                 ("chunk", String())]
+    arguments = [(b"sequence", Integer()),
+                 (b"chunk", String())]
 
-    response = [("result", Integer())]
+    response = [(b"result", Integer())]
 
-    errors = {MethodCallError: "METHOD_CALL_ERROR"}
+    errors = {MethodCallError: b"METHOD_CALL_ERROR"}
 
 
 class MethodCallReceiver(CommandLocator):
@@ -164,7 +165,7 @@ class MethodCallReceiver(CommandLocator):
             chunks.append(arguments)
             arguments = "".join(chunks)
 
-        args, kwargs = loads(arguments)
+        args, kwargs = bpickle.loads(arguments)
 
         if not method in self._methods:
             raise MethodCallError("Forbidden method '%s'" % method)
@@ -260,7 +261,7 @@ class MethodCallSender(object):
             invoked on the remote object. If the remote method itself returns
             a deferred, we fire with the callback value of such deferred.
         """
-        arguments = dumps((args, kwargs))
+        arguments = bpickle.dumps((args, kwargs))
         sequence = uuid4().int
 
         # Split the given arguments in one or more chunks

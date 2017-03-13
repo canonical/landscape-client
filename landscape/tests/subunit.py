@@ -16,12 +16,13 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-
 import os
-from StringIO import StringIO
 import subprocess
 import sys
 import unittest
+
+from landscape.compat import StringIO
+
 
 def test_suite():
     import subunit.tests

@@ -79,7 +79,7 @@ class FakeWhoQTest(LandscapeTest):
         who.write("echo '# users=%d'\n" % len(users.split()))
         who.close()
 
-        os.chmod(self.who_path, 0770)
+        os.chmod(self.who_path, 0o770)
 
 
 class LoggedInUsersTest(FakeWhoQTest):

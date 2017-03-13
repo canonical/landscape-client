@@ -214,7 +214,7 @@ class PackageTaskHandler(object):
 
             try:
                 lsb_release_info = parse_lsb_release(self.lsb_release_filename)
-            except IOError, error:
+            except IOError as error:
                 logging.warning(warning % str(error))
                 return None
             try:
@@ -276,8 +276,8 @@ def run_task_handler(cls, args, reactor=None):
     init_logging(config, "-".join(word.lower() for word in words))
 
     # Setup our umask for Apt to use, this needs to setup file permissions to
-    # 0644 so...
-    os.umask(022)
+    # 0o644 so...
+    os.umask(0o022)
 
     package_store = cls.package_store_class(config.store_filename)
     # Delay importing of the facades so that we don't

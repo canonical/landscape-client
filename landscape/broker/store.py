@@ -97,8 +97,10 @@ import logging
 import os
 import uuid
 
+from twisted.python.compat import iteritems
+
 from landscape import DEFAULT_SERVER_API
-from landscape.lib import bpickle
+from landscape.compat import bpickle
 from landscape.lib.fs import create_file
 from landscape.lib.versioning import sort_versions, is_version_higher
 
@@ -261,7 +263,7 @@ class MessageStore(object):
             data = self._get_content(self._message_dir(filename))
             try:
                 message = bpickle.loads(data)
-            except ValueError, e:
+            except ValueError as e:
                 logging.exception(e)
                 self._add_flags(filename, BROKEN)
             else:
@@ -453,7 +455,7 @@ class MessageStore(object):
             flags = self._get_flags(old_filename)
             try:
                 message = bpickle.loads(self._get_content(old_filename))
-            except ValueError, e:
+            except ValueError as e:
                 logging.exception(e)
                 if HELD not in flags:
                     offset += 1
@@ -500,7 +502,7 @@ class MessageStore(object):
             information, limited by scope.
         """
         session_ids = self._persist.get("session-ids", {})
-        for session_id, stored_scope in session_ids.iteritems():
+        for session_id, stored_scope in iteritems(session_ids):
             # This loop should be relatively short as it's intent is to limit
             # session-ids to one per scope.  The or condition here is not
             # strictly necessary, but we *should* do "is" comparisons when we
@@ -524,7 +526,7 @@ class MessageStore(object):
         new_session_ids = {}
         if scopes:
             session_ids = self._persist.get("session-ids", {})
-            for session_id, session_scope in session_ids.iteritems():
+            for session_id, session_scope in iteritems(session_ids):
                 if session_scope not in scopes:
                     new_session_ids[session_id] = session_scope
         self._persist.set("session-ids", new_session_ids)

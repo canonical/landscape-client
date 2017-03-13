@@ -105,7 +105,7 @@ class CustomGraphManagerTests(LandscapeTest):
                    "bar")])
 
         mock_chown.assert_called_with(mock.ANY, 1234, 5678)
-        mock_chmod.assert_called_with(mock.ANY, 0700)
+        mock_chmod.assert_called_with(mock.ANY, 0o700)
         mock_getpwnam.assert_called_with("bar")
 
     def test_remove_unknown_graph(self):
@@ -114,10 +114,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "graph-id": 123})
 
     def test_remove_graph(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("foo")
-        tempfile.close()
+        filename = self.makeFile(content='foo')
         self.store.add_graph(123, filename, u"user")
         self.manager.dispatch_message(
             {"type": "custom-graph-remove",
@@ -125,11 +122,8 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertFalse(os.path.exists(filename))
 
     def test_run(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\necho 1")
-        tempfile.close()
-        os.chmod(filename, 0777)
+        filename = self.makeFile(content="#!/bin/sh\necho 1")
+        os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
         def check(ignore):
@@ -144,18 +138,12 @@ class CustomGraphManagerTests(LandscapeTest):
         return self.graph_manager.run().addCallback(check)
 
     def test_run_multiple(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\necho 1")
-        tempfile.close()
-        os.chmod(filename, 0777)
+        filename = self.makeFile(content="#!/bin/sh\necho 1")
+        os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\necho 2")
-        tempfile.close()
-        os.chmod(filename, 0777)
+        filename = self.makeFile(content="#!/bin/sh\necho 2")
+        os.chmod(filename, 0o777)
         self.store.add_graph(124, filename, None)
 
         def check(ignore):
@@ -176,11 +164,8 @@ class CustomGraphManagerTests(LandscapeTest):
         return self.graph_manager.run().addCallback(check)
 
     def test_run_with_nonzero_exit_code(self):
-        filename = self.makeFile()
-        tempfile = file(filename, "w")
-        tempfile.write("#!/bin/sh\nexit 1")
-        tempfile.close()
-        os.chmod(filename, 0777)
+        filename = self.makeFile(content="#!/bin/sh\nexit 1")
+        os.chmod(filename, 0o777)
         self.store.add_graph(123, filename, None)
 
         def check(ignore):

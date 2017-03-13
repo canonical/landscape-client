@@ -399,14 +399,14 @@ class FakeReactor(EventHandlingReactorMixin):
             self._current_time = call[0]
             try:
                 call[1](*call[2], **call[3])
-            except Exception, e:
+            except Exception as e:
                 logging.exception(e)
         self._current_time += seconds
 
     def _in_thread(self, callback, errback, f, args, kwargs):
         try:
             result = f(*args, **kwargs)
-        except Exception, e:
+        except Exception as e:
             exc_info = sys.exc_info()
             if errback is None:
                 self.call_in_main(logging.error, e, exc_info=exc_info)
@@ -420,7 +420,7 @@ class FakeReactor(EventHandlingReactorMixin):
         while self._threaded_callbacks:
             try:
                 self._threaded_callbacks.pop(0)()
-            except Exception, e:
+            except Exception as e:
                 logging.exception(e)
 
     def _hook_threaded_callbacks(self):

@@ -2,10 +2,12 @@ import os
 import sys
 
 from optparse import OptionParser
-from StringIO import StringIO
 
-from twisted.internet.threads import deferToThread
 from twisted.internet.defer import DeferredList
+from twisted.internet.threads import deferToThread
+from twisted.python.compat import iteritems
+
+from landscape.compat import StringIO
 
 
 class FetchError(Exception):
@@ -84,7 +86,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
 
     if headers:
         curl.setopt(pycurl.HTTPHEADER,
-                    ["%s: %s" % pair for pair in sorted(headers.iteritems())])
+                    ["%s: %s" % pair for pair in sorted(iteritems(headers))])
 
     if insecure:
         curl.setopt(pycurl.SSL_VERIFYPEER, False)
@@ -109,7 +111,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
 
     try:
         curl.perform()
-    except pycurl.error, e:
+    except pycurl.error as e:
         raise PyCurlError(e.args[0], e.args[1])
 
     body = input.getvalue()
@@ -197,8 +199,8 @@ def test(args):
     parser.add_option("--data", default="")
     parser.add_option("--cainfo")
     options, (url,) = parser.parse_args(args)
-    print fetch(url, post=options.post, data=options.data,
-                cainfo=options.cainfo)
+    print(fetch(url, post=options.post, data=options.data,
+                cainfo=options.cainfo))
 
 
 if __name__ == "__main__":

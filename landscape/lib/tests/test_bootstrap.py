@@ -52,10 +52,10 @@ class BootstrapPathTest(LandscapeTest):
 
     @patch("os.chmod")
     def test_mode(self, chmod):
-        file = self.bootstrap_class(self.path, mode=0644)
+        file = self.bootstrap_class(self.path, mode=0o644)
         file.bootstrap(my_var="my_var_value")
 
-        chmod.assert_called_with(self.real_path, 0644)
+        chmod.assert_called_with(self.real_path, 0o644)
 
     @patch("os.chmod")
     @patch("os.chown")
@@ -71,25 +71,25 @@ class BootstrapPathTest(LandscapeTest):
         getgrnam.return_value = Mock()
         getgrnam.return_value.gr_gid = 5678
 
-        file = self.bootstrap_class(self.path, "username", "group", 0644)
+        file = self.bootstrap_class(self.path, "username", "group", 0o644)
         file.bootstrap(my_var="my_var_value")
 
         getuid.assert_called_with()
         getpwnam.assert_called_with("username")
         getgrnam.assert_called_with("group")
         chown.assert_called_with(self.real_path, 1234, 5678)
-        chmod.assert_called_with(self.real_path, 0644)
+        chmod.assert_called_with(self.real_path, 0o644)
 
     @patch("os.chmod")
     @patch("os.getuid")
     def test_all_details_with_non_root(self, getuid, chmod):
         getuid.return_value = 1000
 
-        file = self.bootstrap_class(self.path, "username", "group", 0644)
+        file = self.bootstrap_class(self.path, "username", "group", 0o644)
         file.bootstrap(my_var="my_var_value")
 
         getuid.assert_called_with()
-        chmod.assert_called_with(self.real_path, 0644)
+        chmod.assert_called_with(self.real_path, 0o644)
 
 
 class BootstrapCreationTest(BootstrapPathTest):

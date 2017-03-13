@@ -3,6 +3,7 @@ import time
 import os
 
 from twisted.internet import threads
+from twisted.python.compat import unicode
 
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
