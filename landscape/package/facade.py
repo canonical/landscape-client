@@ -25,7 +25,8 @@ from twisted.python.compat import itervalues
 
 
 from landscape.compat import StringIO
-from landscape.lib.fs import append_file, create_file, read_file, touch_file
+from landscape.lib.fs import append_text_file
+from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.skeleton import build_skeleton_apt
 
 
@@ -283,7 +284,7 @@ class AptFacade(object):
             if sources_line in current_content:
                 return
         sources_line += "\n"
-        append_file(sources_file_path, sources_line)
+        append_text_file(sources_file_path, sources_line)
 
     def add_channel_deb_dir(self, path):
         """Add a directory with packages as a channel.

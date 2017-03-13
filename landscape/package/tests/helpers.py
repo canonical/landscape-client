@@ -6,7 +6,7 @@ import time
 import apt_inst
 import apt_pkg
 
-from landscape.lib.fs import append_file, create_file
+from landscape.lib.fs import append_binary_file, append_text_file, create_file
 from landscape.package.facade import AptFacade
 
 
@@ -52,7 +52,7 @@ class AptFacadeHelper(object):
         package_stanza = apt_pkg.rewrite_section(
             apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
             control_fields.items())
-        append_file(packages_file, "\n" + package_stanza + "\n")
+        append_binary_file(packages_file, "\n" + package_stanza + "\n")
 
     def _add_system_package(self, name, architecture="all", version="1.0",
                             control_fields=None):
@@ -73,7 +73,7 @@ class AptFacadeHelper(object):
         lines = control.splitlines()
         lines.insert(1, "Status: install ok installed")
         status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
+        append_text_file(self.dpkg_status, status + "\n\n")
 
     def _add_package_to_deb_dir(self, path, name, architecture="all",
                                 version="1.0", description="description",

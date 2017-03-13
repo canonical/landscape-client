@@ -28,15 +28,30 @@ def create_file(path, content, encoding=None):
         fd.close()
 
 
-def append_file(path, content):
+def append_text_file(path, content):
     """Append a file with the given content.
 
     The file is created, if it doesn't exist already.
 
+    The content is utf-8 encoded before it is written.
+
     @param path: The path to the file.
     @param content: The content to be written in the file at the end.
     """
-    with open(path, "a") as fd:
+    content = codecs.encode(content, "utf-8")
+    append_binary_file(path, content)
+
+
+def append_binary_file(path, content):
+    """Append a file with the given binary content.
+
+    The file is created, if it doesn't exist already.
+
+
+    @param path: The path to the file.
+    @param content: The content to be written in the file at the end.
+    """
+    with open(path, "ab") as fd:
         fd.write(content)
 
 

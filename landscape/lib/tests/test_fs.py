@@ -8,7 +8,7 @@ from twisted.python.compat import long
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.lib.fs import append_file, read_file, touch_file
+from landscape.lib.fs import append_text_file, read_file, touch_file
 
 
 class ReadFileTest(LandscapeTest):
@@ -108,19 +108,36 @@ class TouchFileTest(LandscapeTest):
 
 class AppendFileTest(LandscapeTest):
 
-    def test_append_existing_file(self):
+    def test_append_existing_text_file(self):
         """
-        The L{append_file} function appends contents to an existing file.
+        The L{append_text_file} function appends contents to an existing file.
         """
         existing_file = self.makeFile("foo bar")
-        append_file(existing_file, " baz")
+        append_text_file(existing_file, " baz")
         self.assertFileContent(existing_file, "foo bar baz")
 
-    def test_append_no_file(self):
+    def test_append_text_no_file(self):
         """
-        The L{append_file} function creates a new file if one doesn't
+        The L{append_text_file} function creates a new file if one doesn't
         exist already.
         """
         new_file = os.path.join(self.makeDir(), "new_file")
-        append_file(new_file, "contents")
+        append_text_file(new_file, "contents")
+        self.assertFileContent(new_file, "contents")
+
+    def test_append_existing_binary_file(self):
+        """
+        The L{append_text_file} function appends contents to an existing file.
+        """
+        existing_file = self.makeFile("foo bar")
+        append_text_file(existing_file, " baz")
+        self.assertFileContent(existing_file, "foo bar baz")
+
+    def test_append_binary_no_file(self):
+        """
+        The L{append_text_file} function creates a new file if one doesn't
+        exist already.
+        """
+        new_file = os.path.join(self.makeDir(), "new_file")
+        append_text_file(new_file, "contents")
         self.assertFileContent(new_file, "contents")
