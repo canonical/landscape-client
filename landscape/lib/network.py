@@ -166,10 +166,9 @@ def get_active_device_info(skipped_interfaces=("lo",),
                 continue
             if skip_alias and b":" in interface:
                 continue
-            # It seems reasonable to keep the values in the device_info all as
-            # strings. On the other hand we need the interface to be bytes for
-            # the `struct.pack()` in the different getter methods. So we only
-            # do a decoding for the device_info here.
+            # We keep values as byte strings for use in struct.pack() in
+            # different getter methods, and only use the decoded value of the
+            # interface name here.
             interface_info = {"interface": interface_string}
             interface_info["ip_address"] = get_ip_address(sock, interface)
             interface_info["mac_address"] = get_mac_address(sock, interface)
