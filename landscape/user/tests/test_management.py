@@ -1,4 +1,3 @@
-from landscape.lib import md5crypt
 from landscape.user.management import UserManagement, UserManagementError
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.user.provider import UserNotFoundError, GroupNotFoundError

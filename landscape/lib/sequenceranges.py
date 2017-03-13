@@ -66,12 +66,12 @@ def sequence_to_ranges(sequence):
 
     iterator = iter(sequence)
     try:
-        range_start = range_stop = iterator.next()
+        range_start = range_stop = next(iterator)
     except StopIteration:
         return
     while range_start is not None:
         try:
-            item = iterator.next()
+            item = next(iterator)
         except StopIteration:
             item = None
         if item == range_stop + 1:

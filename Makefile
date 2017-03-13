@@ -32,18 +32,10 @@ check5:
 	./display_py2_testresults
 
 check3: build3
-	if [ -z "$$DISPLAY" ]; then \
-		xvfb-run $(TEST_COMMAND_PY3); \
-	else \
-	    $(TEST_COMMAND_PY3); \
-	fi
+	LC_ALL=C $(TEST_COMMAND_PY3)
 
 check: build
-	if [ -z "$$DISPLAY" ]; then \
-		xvfb-run $(TEST_COMMAND_PY2); \
-	else \
-	    $(TEST_COMMAND_PY2); \
-	fi
+	LC_ALL=C $(TEST_COMMAND_PY2)
 
 lint:
 	bzr ls-lint
