@@ -4,7 +4,7 @@ import csv
 import logging
 import subprocess
 
-from landscape.compat import coerce_unicode
+from twisted.python.compat import _PY3
 
 
 class UserManagementError(Exception):
@@ -42,8 +42,7 @@ class UserProviderBase(object):
                 user = struct_passwd(user)
             if user.pw_name in found_usernames:
                 continue
-            gecos_data = [coerce_unicode(x, "utf-8", "replace") or None
-                          for x in user.pw_gecos.split(",")[:4]]
+            gecos_data = [x or None for x in user.pw_gecos.split(",")[:4]]
             while len(gecos_data) < 4:
                 gecos_data.append(None)
             name, location, work_phone, home_phone = tuple(gecos_data)
@@ -72,7 +71,7 @@ class UserProviderBase(object):
                 continue
             member_names = user_names.intersection(group.gr_mem)
             groups.append({"name": group.gr_name, "gid": group.gr_gid,
-                           "members": list(member_names)})
+                           "members": sorted(list(member_names))})
             found_groupnames.add(group.gr_name)
         return groups
 
@@ -98,6 +97,7 @@ class UserProviderBase(object):
                 return data["gid"]
         raise GroupNotFoundError("Group not found for group %s." % groupname)
 
+
 class UserProvider(UserProviderBase):
 
     popen = subprocess.Popen
@@ -119,26 +119,32 @@ class UserProvider(UserProviderBase):
         directory, path to the user's shell)
         """
         user_data = []
-        passwd_file = open(self._passwd_file, "r")
-        reader = csv.DictReader(passwd_file, fieldnames=self.passwd_fields,
-                                delimiter=":", quoting=csv.QUOTE_NONE)
-        current_line = 0
-        for row in reader:
-            current_line += 1
-            # This skips the NIS user marker in the passwd file.
-            if (row["username"].startswith("+") or
-                row["username"].startswith("-")):
-                continue
-            try:
-                user_data.append((row["username"], row["passwd"],
-                                  int(row["uid"]), int(row["primary-gid"]),
-                                  row["gecos"], row["home"], row["shell"]))
-            except (ValueError, TypeError):
-
-                logging.warn("passwd file %s is incorrectly formatted: "
-                             "line %d." % (self._passwd_file, current_line))
-
-        passwd_file.close()
+        if _PY3:
+            open_params = dict(errors='replace')
+        else:
+            open_params = dict()
+        with open(self._passwd_file, "r", **open_params) as passwd_file:
+            reader = csv.DictReader(
+                passwd_file, fieldnames=self.passwd_fields, delimiter=":",
+                quoting=csv.QUOTE_NONE)
+            current_line = 0
+            for row in reader:
+                current_line += 1
+                # This skips the NIS user marker in the passwd file.
+                if (row["username"].startswith("+") or
+                        row["username"].startswith("-")):
+                    continue
+                gecos = row["gecos"]
+                if not _PY3 and gecos is not None:
+                    gecos = gecos.decode("utf-8", "replace")
+                try:
+                    user_data.append((row["username"], row["passwd"],
+                                      int(row["uid"]), int(row["primary-gid"]),
+                                      gecos, row["home"], row["shell"]))
+                except (ValueError, TypeError):
+                    logging.warn(
+                        "passwd file %s is incorrectly formatted: line %d."
+                        % (self._passwd_file, current_line))
         return user_data
 
     def get_group_data(self):

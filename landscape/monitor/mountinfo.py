@@ -1,8 +1,8 @@
+import codecs
 import time
 import os
 
 from landscape.accumulate import Accumulator
-from landscape.compat import coerce_unicode
 from landscape.lib.disk import get_mount_info, is_device_removable
 from landscape.lib.monitor import CoverageMonitor
 from landscape.monitor.plugin import MonitorPlugin
@@ -135,7 +135,7 @@ class MountInfo(MonitorPlugin):
         for line in file:
             try:
                 device, mount_point, filesystem, options = line.split()[:4]
-                mount_point = coerce_unicode(mount_point, "string-escape")
+                mount_point = codecs.decode(mount_point, "unicode_escape")
             except ValueError:
                 continue
             if "bind" in options.split(","):
