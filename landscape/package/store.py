@@ -280,10 +280,9 @@ class PackageStore(HashIdStore):
     @with_cursor
     def add_task(self, cursor, queue, data):
         data = bpickle.dumps(data)
-        cursor.execute("INSERT INTO task (queue, timestamp, data) "
-                       "VALUES (?,?,?)",
-                       (queue, time.time(),
-                        sqlite3.Binary(data)))
+        cursor.execute(
+            "INSERT INTO task (queue, timestamp, data) VALUES (?,?,?)",
+            (queue, time.time(), sqlite3.Binary(data)))
         return PackageTask(self._db, cursor.lastrowid)
 
     @with_cursor

@@ -1,8 +1,6 @@
 """A schema system. Yes. Another one!"""
 from twisted.python.compat import iteritems, unicode, long
 
-from landscape.compat import coerce_unicode
-
 
 class InvalidError(Exception):
     """Raised when invalid input is received."""
@@ -86,9 +84,9 @@ class Unicode(object):
         self.encoding = encoding
 
     def coerce(self, value):
-        if isinstance(value, str):
+        if isinstance(value, bytes):
             try:
-                value = coerce_unicode(value, self.encoding)
+                value = value.decode(self.encoding)
             except UnicodeDecodeError as e:
                 raise InvalidError("%r can't be decoded: %s" % (value, str(e)))
         if not isinstance(value, unicode):

@@ -40,7 +40,7 @@ class CleanFDsTests(LandscapeTest):
 
         getrlimit_mock.assert_called_once_with(resource.RLIMIT_NOFILE)
 
-        expected_fds = range(3, 4096)
+        expected_fds = list(range(3, 4096))
         calls = [call(i) for i in expected_fds]
         close_mock.assert_has_calls(calls, any_order=True)
 
@@ -62,7 +62,7 @@ class CleanFDsTests(LandscapeTest):
                 clean_fds()
 
         getrlimit_mock.assert_called_once_with(resource.RLIMIT_NOFILE)
-        expected_fds = range(3, 10)
+        expected_fds = list(range(3, 10))
         calls = [call(i) for i in expected_fds]
         close_mock.assert_has_calls(calls, any_order=True)
         self.assertEqual(closed_fds, expected_fds)

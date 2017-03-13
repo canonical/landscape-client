@@ -2,10 +2,9 @@ from __future__ import division
 
 import os
 import re
+import codecs
 
 from twisted.python.compat import _PY3
-
-from landscape.compat import coerce_unicode
 
 
 # List of filesystem types authorized when generating disk use statistics.
@@ -35,9 +34,10 @@ def get_mount_info(mounts_file, statvfs_,
     for line in open(mounts_file):
         try:
             device, mount_point, filesystem = line.split()[:3]
-            if not _PY3:
-                mount_point = mount_point.decode("string-escape")
-            mount_point = coerce_unicode(mount_point, errors="unicode-escape")
+            if _PY3:
+                mount_point = codecs.decode(mount_point, "unicode_escape")
+            else:
+                mount_point = codecs.decode(mount_point, "string_escape")
         except ValueError:
             continue
         if (filesystems_whitelist is not None and

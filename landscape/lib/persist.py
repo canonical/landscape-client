@@ -275,7 +275,7 @@ class Persist(object):
             current = self._traverse(map, path)
             if type(current) is list and value in current:
                 return
-        path = path + (sys.maxint,)
+        path = path + (sys.maxsize,)
         self._traverse(map, path, setvalue=value)
 
     def remove(self, path, value=NOTHING, soft=False, weak=False):
@@ -597,18 +597,12 @@ class PickleBackend(Backend):
         return {}
 
     def load(self, filepath):
-        file = open(filepath)
-        try:
-            return self._pickle.load(file)
-        finally:
-            file.close()
+        with open(filepath, 'rb') as fd:
+            return self._pickle.load(fd)
 
     def save(self, filepath, map):
-        file = open(filepath, "w")
-        try:
-            self._pickle.dump(map, file, 2)
-        finally:
-            file.close()
+        with open(filepath, "wb") as fd:
+            self._pickle.dump(map, fd, 2)
 
 
 class BPickleBackend(Backend):
@@ -621,17 +615,11 @@ class BPickleBackend(Backend):
         return {}
 
     def load(self, filepath):
-        file = open(filepath, "r")
-        try:
-            return self._bpickle.loads(file.read())
-        finally:
-            file.close()
+        with open(filepath, "rb") as fd:
+            return self._bpickle.loads(fd.read())
 
     def save(self, filepath, map):
-        file = open(filepath, "wb")
-        try:
-            file.write(self._bpickle.dumps(map))
-        finally:
-            file.close()
+        with open(filepath, "wb") as fd:
+            fd.write(self._bpickle.dumps(map))
 
 # vim:ts=4:sw=4:et
