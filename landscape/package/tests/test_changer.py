@@ -10,7 +10,7 @@ from twisted.internet.error import ProcessTerminated, ProcessDone
 
 from mock import patch, Mock, call
 
-from landscape.lib.fs import create_text_file, read_file, touch_file
+from landscape.lib.fs import create_text_file, read_text_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -101,7 +101,7 @@ class AptPackageChangerTest(LandscapeTest):
     def remove_pkg2(self):
         """Remove package name2 from its repository."""
         packages_file = os.path.join(self.repository_dir, "Packages")
-        packages_contents = read_file(packages_file)
+        packages_contents = read_text_file(packages_file)
         packages_contents = "\n\n".join(
             [stanza for stanza in packages_contents.split("\n\n")
              if "Package: name2" not in stanza])

@@ -25,8 +25,8 @@ from twisted.python.compat import itervalues
 
 
 from landscape.compat import StringIO
-from landscape.lib.fs import append_text_file
-from landscape.lib.fs import create_text_file, read_file, touch_file
+from landscape.lib.fs import append_text_file, create_text_file
+from landscape.lib.fs import read_text_file, read_binary_file, touch_file
 from landscape.package.skeleton import build_skeleton_apt
 
 
@@ -280,7 +280,7 @@ class AptFacade(object):
         if components:
             sources_line += " %s" % " ".join(components)
         if os.path.exists(sources_file_path):
-            current_content = read_file(sources_file_path).split("\n")
+            current_content = read_text_file(sources_file_path).split("\n")
             if sources_line in current_content:
                 return
         sources_line += "\n"
@@ -345,7 +345,7 @@ class AptFacade(object):
         deb_file.close()
         filename = os.path.basename(deb_path)
         size = os.path.getsize(deb_path)
-        contents = read_file(deb_path)
+        contents = read_binary_file(deb_path)
         md5 = hashlib.md5(contents).hexdigest()
         sha1 = hashlib.sha1(contents).hexdigest()
         sha256 = hashlib.sha256(contents).hexdigest()
@@ -668,7 +668,7 @@ class AptFacade(object):
                         raise SystemError("dpkg didn't exit cleanly.")
                 except (apt.cache.LockFailedException, SystemError) as exception:
                     result_text = (fetch_output.getvalue()
-                                   + read_file(install_output_path))
+                                   + read_text_file(install_output_path))
                     error = TransactionError(exception.args[0] +
                                              "\n\nPackage operation log:\n" +
                                              result_text)
@@ -678,7 +678,7 @@ class AptFacade(object):
                         break
                 else:
                     result_text = (fetch_output.getvalue()
-                                   + read_file(install_output_path))
+                                   + read_text_file(install_output_path))
                     break
             if error is not None:
                 raise error

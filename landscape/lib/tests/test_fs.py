@@ -8,59 +8,83 @@ from twisted.python.compat import long
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.lib.fs import append_text_file, read_file, touch_file
+from landscape.lib.fs import append_text_file, touch_file
+from landscape.lib.fs import read_text_file, read_binary_file
 
 
 class ReadFileTest(LandscapeTest):
 
-    def test_read_file(self):
+    def test_read_binary_file(self):
         """
-        With no options L{read_file} reads the whole file passed as argument.
+        With no options L{read_binary_file} reads the whole file passed as
+        argument.
         """
         path = self.makeFile("foo")
-        self.assertEqual(read_file(path), b"foo")
+        self.assertEqual(read_binary_file(path), b"foo")
 
-    def test_read_file_encoding(self):
+    def test_read_binary_file_with_limit(self):
         """
-        With encoding L{read_file} reads the whole file passed as argument and
-        decodes it.
-        """
-        utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
-        path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_file(path, encoding="utf-8"), u"foo ☃")
-
-    def test_read_file_with_limit(self):
-        """
-        With a positive limit L{read_file} reads only the bytes after the
-        given limit.
+        With a positive limit L{read_binary_file} reads only the bytes after
+        the given limit.
         """
         path = self.makeFile("foo bar")
-        self.assertEqual(read_file(path, limit=3), b" bar")
+        self.assertEqual(read_binary_file(path, limit=3), b" bar")
 
-    def test_read_file_with_limit_encoding(self):
+    def test_read_binary_file_with_negative_limit(self):
         """
-        With a positive limit L{read_file} reads only the bytes after the
-        given limit.
-        """
-        utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
-        path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_file(path, limit=3, encoding="utf-8"), u" ☃")
-
-    def test_read_file_with_negative_limit(self):
-        """
-        With a negative limit L{read_file} reads only the tail of the file.
-        """
-        path = self.makeFile("foo bar from end")
-        self.assertEqual(read_file(path, limit=-3), b"end")
-
-    def test_read_file_with_limit_bigger_than_file(self):
-        """
-        If the limit is bigger than the file L{read_file} reads the entire
+        With a negative limit L{read_binary_file} reads only the tail of the
         file.
         """
         path = self.makeFile("foo bar from end")
-        self.assertEqual(read_file(path, limit=100), b"foo bar from end")
-        self.assertEqual(read_file(path, limit=-100), b"foo bar from end")
+        self.assertEqual(read_binary_file(path, limit=-3), b"end")
+
+    def test_read_binary_file_with_limit_bigger_than_file(self):
+        """
+        If the limit is bigger than the file L{read_binary_file} reads the
+        entire file.
+        """
+        path = self.makeFile("foo bar from end")
+        self.assertEqual(
+            read_binary_file(path, limit=100), b"foo bar from end")
+        self.assertEqual(
+            read_binary_file(path, limit=-100), b"foo bar from end")
+
+    def test_read_text_file(self):
+        """
+        With no options L{read_text_file} reads the whole file passed as
+        argument as string decoded with utf-8.
+        """
+        utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
+        path = self.makeFile(utf8_content, mode="wb")
+        self.assertEqual(read_text_file(path), u"foo ☃")
+
+    def test_read_text_file_with_limit(self):
+        """
+        With a positive limit L{read_text_file} reads only the bytes after the
+        given limit as string.
+        """
+        utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
+        path = self.makeFile(utf8_content, mode="wb")
+        self.assertEqual(read_text_file(path, limit=3), u" ☃")
+
+    def test_read_text_file_with_negative_limit(self):
+        """
+        With a negative limit L{read_text_file} reads only the tail of the
+        file.
+        """
+        utf8_content = codecs.encode(u"foo \N{SNOWMAN} bar", "utf-8")
+        path = self.makeFile(utf8_content, mode="wb")
+        self.assertEqual(read_text_file(path, limit=-7), u"☃ bar")
+
+    def test_read_text_file_with_limit_bigger_than_file(self):
+        """
+        If the limit is bigger than the file L{read_text_file} reads the entire
+        file.
+        """
+        utf8_content = codecs.encode(u"foo \N{SNOWMAN} bar", "utf-8")
+        path = self.makeFile(utf8_content, mode="wb")
+        self.assertEqual(read_text_file(path, limit=100), u"foo ☃ bar")
+        self.assertEqual(read_text_file(path, limit=-100), u"foo ☃ bar")
 
 
 class TouchFileTest(LandscapeTest):

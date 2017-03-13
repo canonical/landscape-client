@@ -11,7 +11,7 @@ from apt.cache import LockFailedException
 
 from twisted.python.compat import unicode
 
-from landscape.lib.fs import read_file, create_text_file
+from landscape.lib.fs import read_text_file, create_text_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,
     LandscapeInstallProgress)
@@ -183,7 +183,7 @@ class AptFacadeTest(LandscapeTest):
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/_landscape-internal-facade.list")
-        sources_contents = read_file(list_filename)
+        sources_contents = read_text_file(list_filename)
         self.assertEqual(
             "deb http://example.com/ubuntu lucid\n",
             sources_contents)
@@ -199,7 +199,7 @@ class AptFacadeTest(LandscapeTest):
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/_landscape-internal-facade.list")
-        sources_contents = read_file(list_filename)
+        sources_contents = read_text_file(list_filename)
         self.assertEqual(
             "deb http://example.com/ubuntu lucid\n",
             sources_contents)
@@ -216,7 +216,7 @@ class AptFacadeTest(LandscapeTest):
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/_landscape-internal-facade.list")
-        sources_contents = read_file(list_filename)
+        sources_contents = read_text_file(list_filename)
         self.assertEqual(
             "deb http://example.com/ubuntu lucid main restricted\n",
             sources_contents)
@@ -321,7 +321,7 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
-        packages_contents = read_file(os.path.join(deb_dir, "Packages"))
+        packages_contents = read_text_file(os.path.join(deb_dir, "Packages"))
         expected_contents = "\n".join(
             self.facade.get_package_stanza(os.path.join(deb_dir, pkg_name))
             for pkg_name in [PKGNAME1, PKGNAME2, PKGNAME3])

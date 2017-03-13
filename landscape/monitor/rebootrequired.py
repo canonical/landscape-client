@@ -1,7 +1,7 @@
 import os
 import logging
 
-from landscape.lib.fs import read_file
+from landscape.lib.fs import read_text_file
 from landscape.monitor.plugin import MonitorPlugin
 
 
@@ -34,7 +34,7 @@ class RebootRequired(MonitorPlugin):
         if not os.path.exists(self._packages_filename):
             return []
 
-        lines = read_file(self._packages_filename).splitlines()
+        lines = read_text_file(self._packages_filename).splitlines()
         packages = set(line.strip() for line in lines if line)
         return sorted(packages)
 

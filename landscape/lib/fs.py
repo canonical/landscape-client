@@ -63,20 +63,32 @@ def append_binary_file(path, content):
         fd.write(content)
 
 
-def read_file(path, limit=None, encoding=None):
-    """Return the content of the given file.
+def read_text_file(path, limit=None):
+    """Return the content of the given file as string.
 
     @param path: The path to the file.
     @param limit: An optional read limit. If positive, read up to that number
         of bytes from the beginning of the file. If negative, read up to that
         number of bytes from the end of the file.
-    @param encoding: An optional encoding. If set, the content will be returned
-        decoded with C{encoding}.
-    @return content: The content of the file as bytes or unicode string
-        (depending on C{encoding}), possibly trimmed to C{limit}.
+    @return content: The content of the file string, possibly trimmed to
+        C{limit}.
     """
     # Use binary mode since opening a file in text mode in Python 3 does not
     # allow non-zero offset seek from the end of the file.
+    content = read_binary_file(path, limit)
+    return codecs.decode(content, "utf-8")
+
+
+def read_binary_file(path, limit=None):
+    """Return the content of the given file as bytes.
+
+    @param path: The path to the file.
+    @param limit: An optional read limit. If positive, read up to that number
+        of bytes from the beginning of the file. If negative, read up to that
+        number of bytes from the end of the file.
+    @return content: The content of the file as bytes, possibly trimmed to
+        C{limit}.
+    """
     with open(path, "rb") as fd:
         if limit and os.path.getsize(path) > abs(limit):
             whence = 0
@@ -84,8 +96,6 @@ def read_file(path, limit=None, encoding=None):
                 whence = 2
             fd.seek(limit, whence)
         content = fd.read()
-    if encoding:
-        content = codecs.decode(content, encoding)
     return content
 
 
