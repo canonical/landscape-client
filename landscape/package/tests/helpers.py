@@ -6,7 +6,8 @@ import time
 import apt_inst
 import apt_pkg
 
-from landscape.lib.fs import append_binary_file, append_text_file, create_file
+from landscape.lib.fs import append_binary_file, append_text_file
+from landscape.lib.fs import create_binary_file
 from landscape.package.facade import AptFacade
 
 
@@ -319,7 +320,7 @@ def create_deb(target_dir, pkg_name, pkg_data):
     """Create a Debian package in the specified C{target_dir}."""
     path = os.path.join(target_dir, pkg_name)
     data = base64.decodestring(pkg_data)
-    create_file(path, data)
+    create_binary_file(path, data)
 
 
 def create_simple_repository(target_dir):

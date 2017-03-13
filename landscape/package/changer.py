@@ -14,7 +14,7 @@ from landscape.constants import (
     POLICY_STRICT, POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_binary_file
 from landscape.lib.log import log_failure
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
@@ -172,8 +172,8 @@ class PackageChanger(PackageTaskHandler):
         if binaries:
             hash_ids = {}
             for hash, id, deb in binaries:
-                create_file(os.path.join(binaries_path, "%d.deb" % id),
-                            base64.decodestring(deb))
+                create_binary_file(os.path.join(binaries_path, "%d.deb" % id),
+                                   base64.decodestring(deb))
                 hash_ids[hash] = id
             self._store.set_hash_ids(hash_ids)
             self._facade.add_channel_deb_dir(binaries_path)

@@ -3,7 +3,7 @@ import os
 from twisted.python.compat import _PY3
 from unittest import skipIf
 
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_text_file
 from landscape.lib.twisted_util import spawn_process
 from landscape.tests.helpers import LandscapeTest
 
@@ -19,7 +19,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         The process is executed and returns the expected exit code.
         """
-        create_file(self.command, "#!/bin/sh\nexit 2")
+        create_text_file(self.command, "#!/bin/sh\nexit 2")
 
         def callback(args):
             out, err, code = args
@@ -49,7 +49,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         The process returns the expected standard error.
         """
-        create_file(self.command, "#!/bin/sh\necho -n $@ >&2")
+        create_text_file(self.command, "#!/bin/sh\necho -n $@ >&2")
 
         def callback(args):
             out, err, code = args
@@ -66,7 +66,7 @@ class SpawnProcessTest(LandscapeTest):
         If a callback for process output is provieded, it is called for every
         line of output.
         """
-        create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
+        create_text_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\nok, last one\n"
         expected = ["some text", "another line", "ok, last one"]
         lines = []
@@ -87,7 +87,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         If output ends with more than one newline, empty lines are preserved.
         """
-        create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
+        create_text_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\n\n\n"
         expected = ["some text", "another line", "", ""]
         lines = []
@@ -109,7 +109,7 @@ class SpawnProcessTest(LandscapeTest):
         If output ends without a newline, the line is still passed to the
         callback.
         """
-        create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
+        create_text_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\nok, last one"
         expected = ["some text", "another line", "ok, last one"]
         lines = []
@@ -131,7 +131,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         Optionally C{spawn_process} accepts a C{stdin} argument.
         """
-        create_file(self.command, "#!/bin/sh\n/bin/cat")
+        create_text_file(self.command, "#!/bin/sh\n/bin/cat")
 
         def callback(args):
             out, err, code = args

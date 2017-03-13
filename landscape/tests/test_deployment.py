@@ -4,7 +4,7 @@ import mock
 import os
 
 from landscape.compat import StringIO
-from landscape.lib.fs import read_file, create_file
+from landscape.lib.fs import read_file, create_text_file
 
 from landscape.deployment import (
     BaseConfiguration, Configuration, get_versioned_persist)
@@ -412,7 +412,7 @@ class ConfigurationTest(LandscapeTest):
         """
         filename = self.makeFile("[client]\nhello = world1\n")
         self.config.load(["--config", filename])
-        create_file(filename, "[client]\nhello = world2\n")
+        create_text_file(filename, "[client]\nhello = world2\n")
         self.config.reload()
         self.assertEqual(self.config.hello, "world2")
 

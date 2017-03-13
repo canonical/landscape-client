@@ -26,7 +26,7 @@ from twisted.python.compat import itervalues
 
 from landscape.compat import StringIO
 from landscape.lib.fs import append_text_file
-from landscape.lib.fs import create_file, read_file, touch_file
+from landscape.lib.fs import create_text_file, read_file, touch_file
 from landscape.package.skeleton import build_skeleton_apt
 
 
@@ -155,10 +155,10 @@ class AptFacade(object):
         self._ensure_sub_dir("var/lib/dpkg/info")
         self._ensure_sub_dir("var/lib/dpkg/updates")
         self._ensure_sub_dir("var/lib/dpkg/triggers")
-        create_file(os.path.join(dpkg_dir, "available"), "")
+        create_text_file(os.path.join(dpkg_dir, "available"), "")
         self._dpkg_status = os.path.join(dpkg_dir, "status")
         if not os.path.exists(self._dpkg_status):
-            create_file(self._dpkg_status, "")
+            create_text_file(self._dpkg_status, "")
         # Apt will fail if it does not have a keyring.  It does not care if
         # the keyring is empty.
         touch_file(os.path.join(apt_dir, "trusted.gpg"))
@@ -313,7 +313,7 @@ class AptFacade(object):
         packages_contents = "\n".join(
             self.get_package_stanza(os.path.join(deb_dir, filename))
             for filename in sorted(os.listdir(deb_dir)))
-        create_file(os.path.join(deb_dir, "Packages"), packages_contents)
+        create_text_file(os.path.join(deb_dir, "Packages"), packages_contents)
 
     def get_channels(self):
         """Return a list of channels configured.

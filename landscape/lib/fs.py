@@ -8,16 +8,24 @@ import time
 from twisted.python.compat import long
 
 
-def create_file(path, content, encoding=None):
+def create_text_file(path, content):
     """Create a file with the given content.
+
+    The content is encoded with utf-8 before writing.
 
     @param path: The path to the file.
     @param content: The content to be written in the file.
-    @param encoding: An optional encoding. If set, the content will be encoded
-        with C{encoding} before writing to the file.
     """
-    if encoding:
-        content = codecs.encode(content, encoding)
+    content = codecs.encode(content, "utf-8")
+    create_binary_file(path, content)
+
+
+def create_binary_file(path, content):
+    """Create a file with the given binary content.
+
+    @param path: The path to the file.
+    @param content: The content to be written in the file.
+    """
     # XXX: Due to a very specific mock of `open()` in landscape.broker.tests.\
     # test_store.MessageStoreTest.test_atomic_message_writing it is hard to
     # write this file opening as context manager.

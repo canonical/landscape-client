@@ -11,7 +11,7 @@ from apt.cache import LockFailedException
 
 from twisted.python.compat import unicode
 
-from landscape.lib.fs import read_file, create_file
+from landscape.lib.fs import read_file, create_text_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,
     LandscapeInstallProgress)
@@ -265,9 +265,9 @@ class AptFacadeTest(LandscapeTest):
         sources_list_file = apt_pkg.config.find_file("Dir::Etc::sourcelist")
         sources_list_d_file = os.path.join(
             apt_pkg.config.find_dir("Dir::Etc::sourceparts"), "example.list")
-        create_file(
+        create_text_file(
             sources_list_file, "deb http://example1.com/ubuntu lucid main")
-        create_file(
+        create_text_file(
             sources_list_d_file, "deb http://example2.com/ubuntu lucid main")
 
         self.facade.clear_channels()
