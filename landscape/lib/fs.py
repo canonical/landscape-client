@@ -1,17 +1,23 @@
 """File-system utils"""
 
+import codecs
 import os
 import time
+
 
 from twisted.python.compat import long
 
 
-def create_file(path, content):
+def create_file(path, content, encoding=None):
     """Create a file with the given content.
 
     @param path: The path to the file.
     @param content: The content to be written in the file.
+    @param encoding: An optional encoding. If set, the content will be encoded
+        with C{encoding} before writing to the file.
     """
+    if encoding:
+        content = codecs.encode(content, encoding)
     # XXX: Due to a very specific mock of `open()` in landscape.broker.tests.\
     # test_store.MessageStoreTest.test_atomic_message_writing it is hard to
     # write this file opening as context manager.
@@ -34,15 +40,17 @@ def append_file(path, content):
         fd.write(content)
 
 
-def read_file(path, limit=None):
+def read_file(path, limit=None, encoding=None):
     """Return the content of the given file.
 
     @param path: The path to the file.
     @param limit: An optional read limit. If positive, read up to that number
         of bytes from the beginning of the file. If negative, read up to that
         number of bytes from the end of the file.
-    @return content: The content of the file as unicode string (decoded from
-        UTF-8), possibly trimmed to C{limit}.
+    @param encoding: An optional encoding. If set, the content will be returned
+        decoded with C{encoding}.
+    @return content: The content of the file as bytes or unicode string
+        (depending on C{encoding}), possibly trimmed to C{limit}.
     """
     # Use binary mode since opening a file in text mode in Python 3 does not
     # allow non-zero offset seek from the end of the file.
@@ -53,7 +61,9 @@ def read_file(path, limit=None):
                 whence = 2
             fd.seek(limit, whence)
         content = fd.read()
-    return content.decode('utf-8')
+    if encoding:
+        content = codecs.decode(content, encoding)
+    return content
 
 
 def touch_file(path, offset_seconds=None):
