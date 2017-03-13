@@ -12,4 +12,5 @@ def generate_script_hash(script):
     """
     Return a hash for a given script.
     """
-    return md5(script).hexdigest()
+    encoded_script = script.encode('utf-8')
+    return md5(encoded_script).hexdigest()
