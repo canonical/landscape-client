@@ -10,9 +10,6 @@ from landscape.lib.amp import (
     MethodCallSender)
 from landscape.tests.helpers import LandscapeTest
 
-from unittest import skipIf
-from twisted.python.compat import _PY3
-
 
 class FakeTransport(object):
     """Accumulate written data into a list."""
@@ -207,12 +204,14 @@ class MethodCallTest(LandscapeTest):
         """
         Method arguments passed to a L{MethodCall} can be dictionaries.
         """
-        self.object.method = lambda d: "".join(d.keys()) * sum(d.values())
+        # Sort the keys to ensure stable test outcome.
+        self.object.method = lambda d: "".join(
+            sorted(d.keys()) * sum(d.values()))
         deferred = self.sender.send_method_call(method="method",
                                                 args=[{"foo": 1, "bar": 2}],
                                                 kwargs={})
         self.connection.flush()
-        self.assertEqual("foobarfoobarfoobar", self.successResultOf(deferred))
+        self.assertEqual("barfoobarfoobarfoo", self.successResultOf(deferred))
 
     def test_with_non_serializable_return_value(self):
         """
@@ -622,7 +621,6 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_retry(self):
         """
@@ -644,7 +642,6 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_retry_with_method_call_error(self):
         """
@@ -666,7 +663,6 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_wb_retry_with_while_still_disconnected(self):
         """
@@ -710,7 +706,6 @@ class MethodCallFunctionalTest(LandscapeTest):
         self.client.stopTrying()
         connector.disconnect()
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     @inlineCallbacks
     def test_retry_with_many_method_calls(self):
         """

@@ -6,8 +6,8 @@ lastline = lines[-1]
 
 time, total, total, err, fail, skip = lastline.split()
 
-if err+fail+skip != "000":
-    print "Python 2: \033[91mFAILED\033[0m (skips={}, failures={}, "\
-		"errors={}, total={})".format(skip, fail, err, total)
+if "".join((err, fail, skip)) != "000":
+    print("Python 2: \033[91mFAILED\033[0m (skips={}, failures={}, "
+          "errors={}, total={})".format(skip, fail, err, total))
 else:
-    print "Python 2: \033[92mOK\033[0m"
+    print("Python 2: \033[92mOK\033[0m (total={})".format(total))

@@ -22,10 +22,13 @@ from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
+from landscape.lib.persist import Persist
 from landscape.reactor import LandscapeReactor
 from landscape.broker.registration import RegistrationError
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.amp import RemoteBrokerConnector
+from landscape.broker.registration import Identity
+from landscape.broker.service import BrokerService
 
 
 class ConfigurationError(Exception):
@@ -45,6 +48,27 @@ def print_text(text, end="\n", error=False):
         stream = sys.stdout
     stream.write(text + end)
     stream.flush()
+
+
+def show_help(text):
+    """Display help text."""
+    lines = text.strip().splitlines()
+    print_text("\n" + "".join([line.strip() + "\n" for line in lines]))
+
+
+def prompt_yes_no(message, default=True):
+    """Prompt for a yes/no question and return the answer as bool."""
+    default_msg = "[Y/n]" if default else "[y/N]"
+    while True:
+        value = raw_input("{} {}: ".format(message, default_msg)).lower()
+        if value:
+            if value.startswith("n"):
+                return False
+            if value.startswith("y"):
+                return True
+            show_help("Invalid input.")
+        else:
+            return default
 
 
 def get_invalid_users(users):
@@ -183,10 +207,6 @@ class LandscapeSetupScript(object):
     def __init__(self, config):
         self.config = config
 
-    def show_help(self, text):
-        lines = text.strip().splitlines()
-        print_text("\n" + "".join([line.strip() + "\n" for line in lines]))
-
     def prompt_get_input(self, msg, required):
         """Prompt the user on the terminal for a value
 
@@ -199,7 +219,7 @@ class LandscapeSetupScript(object):
                 return value
             elif not required:
                 break
-            self.show_help("This option is required to configure Landscape.")
+            show_help("This option is required to configure Landscape.")
 
     def prompt(self, option, msg, required=False):
         """Prompt the user on the terminal for a value.
@@ -239,37 +259,20 @@ class LandscapeSetupScript(object):
                 value2 = getpass.getpass("Please confirm: ")
             if value:
                 if value != value2:
-                    self.show_help("Keys must match.")
+                    show_help("Keys must match.")
                 else:
                     setattr(self.config, option, value)
                     break
             elif default or not required:
                 break
             else:
-                self.show_help("This option is required to configure "
-                               "Landscape.")
-
-    def prompt_yes_no(self, message, default=True):
-        if default:
-            default_msg = " [Y/n]"
-        else:
-            default_msg = " [y/N]"
-        while True:
-            value = raw_input(message + default_msg).lower()
-            if value:
-                if value.startswith("n"):
-                    return False
-                if value.startswith("y"):
-                    return True
-                self.show_help("Invalid input.")
-            else:
-                return default
+                show_help("This option is required to configure Landscape.")
 
     def query_computer_title(self):
         if "computer_title" in self.config.get_command_line_options():
             return
 
-        self.show_help(
+        show_help(
             """
             The computer title you provide will be used to represent this
             computer in the Landscape user interface. It's important to use
@@ -283,7 +286,7 @@ class LandscapeSetupScript(object):
         if "account_name" in self.config.get_command_line_options():
             return
 
-        self.show_help(
+        show_help(
             """
             You must now specify the name of the Landscape account you
             want to register this computer with. Your account name is shown
@@ -297,7 +300,7 @@ class LandscapeSetupScript(object):
         if "registration_key" in command_line_options:
             return
 
-        self.show_help(
+        show_help(
             """
             A registration key may be associated with your Landscape
             account to prevent unauthorized registration attempts.  This
@@ -316,7 +319,7 @@ class LandscapeSetupScript(object):
         if "http_proxy" in options and "https_proxy" in options:
             return
 
-        self.show_help(
+        show_help(
             """
             The Landscape client communicates with the server over HTTP and
             HTTPS.  If your network requires you to use a proxy to access HTTP
@@ -337,7 +340,7 @@ class LandscapeSetupScript(object):
                 raise ConfigurationError("Unknown system users: %s" %
                                          ", ".join(invalid_users))
             return
-        self.show_help(
+        show_help(
             """
             Landscape has a feature which enables administrators to run
             arbitrary scripts on machines under their control. By default this
@@ -351,10 +354,10 @@ class LandscapeSetupScript(object):
         if included_plugins == [""]:
             included_plugins = []
         default = "ScriptExecution" in included_plugins
-        if self.prompt_yes_no(msg, default=default):
+        if prompt_yes_no(msg, default=default):
             if "ScriptExecution" not in included_plugins:
                 included_plugins.append("ScriptExecution")
-            self.show_help(
+            show_help(
                 """
                 By default, scripts are restricted to the 'landscape' and
                 'nobody' users. Please enter a comma-delimited list of users
@@ -368,8 +371,8 @@ class LandscapeSetupScript(object):
                 if not invalid_users:
                     break
                 else:
-                    self.show_help("Unknown system users: %s" %
-                                   ",".join(invalid_users))
+                    show_help("Unknown system users: {}".format(
+                        ",".join(invalid_users)))
                     self.config.script_users = None
         else:
             if "ScriptExecution" in included_plugins:
@@ -382,8 +385,9 @@ class LandscapeSetupScript(object):
         if "access_group" in options:
             return  # an access group is already provided, don't ask for one
 
-        self.show_help("You may provide an access group for this computer "
-                       "e.g. webservers.")
+        show_help(
+            "You may provide an access group for this computer "
+            "e.g. webservers.")
         self.prompt("access_group", "Access group", False)
 
     def _get_invalid_tags(self, tagnames):
@@ -407,19 +411,19 @@ class LandscapeSetupScript(object):
                                          ", ".join(invalid_tags))
             return
 
-        self.show_help("You may provide tags for this computer e.g. "
-                       "server,precise.")
+        show_help(
+            "You may provide tags for this computer e.g. server,precise.")
         while True:
             self.prompt("tags", "Tags", False)
             if self._get_invalid_tags(self.config.tags):
-                self.show_help("Tag names may only contain alphanumeric "
-                               "characters.")
+                show_help(
+                    "Tag names may only contain alphanumeric characters.")
                 self.config.tags = None  # Reset for the next prompt
             else:
                 break
 
     def show_header(self):
-        self.show_help(
+        show_help(
             """
             This script will interactively set up the Landscape client. It will
             ask you a few questions about this computer and your Landscape
@@ -526,10 +530,11 @@ def setup(config):
         if config.silent:
             setup_init_script_and_start_client()
         elif not sysvconfig.is_configured_to_run():
-            answer = raw_input("\nThe Landscape client must be started "
-                               "on boot to operate correctly.\n\n"
-                               "Start Landscape client on boot? (Y/n): ")
-            if not answer.upper().startswith("N"):
+            answer = prompt_yes_no(
+                "\nThe Landscape client must be started "
+                "on boot to operate correctly.\n\n"
+                "Start Landscape client on boot?")
+            if answer:
                 setup_init_script_and_start_client()
             else:
                 sys.exit("Aborting Landscape configuration")
@@ -736,6 +741,15 @@ def determine_exit_code(what_happened):
         return 2  # An error happened
 
 
+def is_registered(config):
+    """Return whether the client is already registered."""
+    persist_filename = os.path.join(
+        config.data_path, "{}.bpickle".format(BrokerService.service_name))
+    persist = Persist(filename=persist_filename)
+    identity = Identity(config, persist)
+    return bool(identity.secure_id)
+
+
 def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
 
@@ -774,9 +788,11 @@ def main(args, print=print):
         report_registration_outcome(result, print=print)
         sys.exit(determine_exit_code(result))
     else:
-        answer = raw_input("\nRequest a new registration for "
-                           "this computer now? (Y/n): ")
-        if not answer.upper().startswith("N"):
+        default_answer = not is_registered(config)
+        answer = prompt_yes_no(
+            "\nRequest a new registration for this computer now?",
+            default=default_answer)
+        if answer:
             result = register(config, reactor)
             report_registration_outcome(result, print=print)
             sys.exit(determine_exit_code(result))
