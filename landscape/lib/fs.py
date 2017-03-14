@@ -1,50 +1,98 @@
 """File-system utils"""
-
 import os
 import time
 
 
-def create_file(path, content):
+from twisted.python.compat import long
+
+
+def create_text_file(path, content):
     """Create a file with the given content.
+
+    The content is encoded with utf-8 before writing.
 
     @param path: The path to the file.
     @param content: The content to be written in the file.
     """
-    fd = open(path, "w")
-    fd.write(content)
-    fd.close()
+    create_binary_file(path, content.encode("utf-8"))
 
 
-def append_file(path, content):
+def create_binary_file(path, content):
+    """Create a file with the given binary content.
+
+    @param path: The path to the file.
+    @param content: The content to be written in the file.
+    """
+    # XXX: Due to a very specific mock of `open()` in landscape.broker.tests.\
+    # test_store.MessageStoreTest.test_atomic_message_writing it is hard to
+    # write this file opening as context manager.
+    fd = open(path, "wb")
+    try:
+        fd.write(content)
+    finally:
+        fd.close()
+
+
+def append_text_file(path, content):
     """Append a file with the given content.
+
+    The file is created, if it doesn't exist already.
+
+    The content is utf-8 encoded before it is written.
+
+    @param path: The path to the file.
+    @param content: The content to be written in the file at the end.
+    """
+    append_binary_file(path, content.encode("utf-8"))
+
+
+def append_binary_file(path, content):
+    """Append a file with the given binary content.
 
     The file is created, if it doesn't exist already.
 
     @param path: The path to the file.
     @param content: The content to be written in the file at the end.
     """
-    fd = open(path, "a")
-    fd.write(content)
-    fd.close()
+    with open(path, "ab") as fd:
+        fd.write(content)
 
 
-def read_file(path, limit=None):
-    """Return the content of the given file.
+def read_text_file(path, limit=None):
+    """Return the content of the given file as string.
 
     @param path: The path to the file.
     @param limit: An optional read limit. If positive, read up to that number
         of bytes from the beginning of the file. If negative, read up to that
         number of bytes from the end of the file.
-    @return content: The content of the file, possibly trimmed to C{limit}.
+    @return content: The content of the file string, possibly trimmed to
+        C{limit}.
     """
-    fd = open(path, "r")
-    if limit and os.path.getsize(path) > abs(limit):
-        whence = 0
-        if limit < 0:
-            whence = 2
-        fd.seek(limit, whence)
-    content = fd.read()
-    fd.close()
+    # Use binary mode since opening a file in text mode in Python 3 does not
+    # allow non-zero offset seek from the end of the file.
+    content = read_binary_file(path).decode("utf-8")
+    if limit and len(content) > abs(limit):
+        content = content[limit:]
+    return content
+
+
+def read_binary_file(path, limit=None):
+    """Return the content of the given file as bytes.
+
+    @param path: The path to the file.
+    @param limit: An optional read limit. If positive, read up to that number
+        of bytes from the beginning of the file. If negative, read up to that
+        number of bytes from the end of the file.
+    @return content: The content of the file as bytes, possibly trimmed to
+        C{limit}.
+    """
+    with open(path, "rb") as fd:
+        if limit and os.path.getsize(path) > abs(limit):
+            whence = 0
+            if limit < 0:
+                whence = 2
+            fd.seek(limit, whence)
+        content = fd.read()
     return content
 
 

@@ -1,8 +1,8 @@
 import os
 
-from twisted.python.compat import iteritems, unicode
+from twisted.python.compat import iteritems
 
-from landscape.lib.fs import read_file
+from landscape.lib.fs import read_text_file
 from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
 
 from landscape.monitor.plugin import DataWatcher
@@ -30,11 +30,10 @@ class AptPreferences(DataWatcher):
         simply return C{None}
         """
         data = {}
-        read_unicode = lambda filename: unicode(read_file(filename))
         preferences_filename = os.path.join(self._etc_apt_directory,
                                             u"preferences")
         if os.path.exists(preferences_filename):
-            data[preferences_filename] = read_unicode(preferences_filename)
+            data[preferences_filename] = read_text_file(preferences_filename)
 
         preferences_directory = os.path.join(self._etc_apt_directory,
                                              u"preferences.d")
@@ -42,7 +41,7 @@ class AptPreferences(DataWatcher):
             for entry in os.listdir(preferences_directory):
                 filename = os.path.join(preferences_directory, entry)
                 if os.path.isfile(filename):
-                    data[filename] = read_unicode(filename)
+                    data[filename] = read_text_file(filename)
 
         if data == {}:
             return None

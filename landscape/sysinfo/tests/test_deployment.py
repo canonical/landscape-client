@@ -6,7 +6,7 @@ from logging import getLogger
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_text_file
 
 from landscape.sysinfo.deployment import (
     SysInfoConfiguration, ALL_PLUGINS, run, setup_logging,
@@ -51,7 +51,7 @@ class DeploymentTest(LandscapeTest):
 
     def test_config_file(self):
         filename = self.makeFile()
-        create_file(filename, "[sysinfo]\nsysinfo_plugins = TestPlugin\n")
+        create_text_file(filename, "[sysinfo]\nsysinfo_plugins = TestPlugin\n")
         self.configuration.load(["--config", filename, "-d", self.makeDir()])
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 1)

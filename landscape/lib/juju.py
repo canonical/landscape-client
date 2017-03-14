@@ -2,7 +2,7 @@ import os
 import json
 import logging
 
-from landscape.lib.fs import read_file
+from landscape.lib.fs import read_text_file
 
 
 def get_juju_info(config):
@@ -13,7 +13,7 @@ def get_juju_info(config):
     if not os.path.exists(config.juju_filename):
         return
 
-    json_contents = read_file(config.juju_filename)
+    json_contents = read_text_file(config.juju_filename)
     try:
         juju_info = json.loads(json_contents)
     # Catch any error the json lib could throw, because we don't know or

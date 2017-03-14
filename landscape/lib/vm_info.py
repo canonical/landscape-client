@@ -3,7 +3,7 @@ Network introspection utilities using ioctl and the /proc filesystem.
 """
 import os
 
-from landscape.lib.fs import read_file
+from landscape.lib.fs import read_text_file
 
 
 def get_vm_info(root_path="/"):
@@ -34,7 +34,7 @@ def get_container_info(run_path="/run"):
     for filename in ("container_type", "systemd/container"):
         path = os.path.join(run_path, filename)
         if os.path.exists(path):
-            return read_file(path).strip()
+            return read_text_file(path).strip()
     return ""
 
 
@@ -52,7 +52,7 @@ def _is_vm_openvz(root_path):
 
 def _get_vm_by_vendor(sys_vendor_path):
     """Return the VM type string (possibly empty) based on the vendor."""
-    vendor = read_file(sys_vendor_path).lower()
+    vendor = read_text_file(sys_vendor_path).lower()
     # Use lower-key string for vendors, since we do case-insentive match.
     content_vendors_map = (
         ("bochs", "kvm"),
@@ -72,7 +72,7 @@ def _get_vm_by_vendor(sys_vendor_path):
 def _get_vm_legacy(root_path):
     """Check if the host is virtualized looking at /proc/cpuinfo content."""
     try:
-        cpuinfo = read_file(os.path.join(root_path, "proc/cpuinfo"))
+        cpuinfo = read_text_file(os.path.join(root_path, "proc/cpuinfo"))
     except (IOError, OSError):
         return ""
 

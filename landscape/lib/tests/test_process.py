@@ -5,7 +5,7 @@ import os
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.process import calculate_pcpu, ProcessInformation
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_text_file
 
 
 class ProcessInfoTest(LandscapeTest):
@@ -25,7 +25,7 @@ class ProcessInfoTest(LandscapeTest):
         os.mkdir(process_dir)
 
         cmd_line = "/usr/bin/foo"
-        create_file(os.path.join(process_dir, "cmdline"), cmd_line)
+        create_text_file(os.path.join(process_dir, "cmdline"), cmd_line)
 
         status = "\n".join([
             "Name: foo",
@@ -34,11 +34,11 @@ class ProcessInfoTest(LandscapeTest):
             "Gid: 2000",
             "VmSize: 3000",
             "Ignored: value"])
-        create_file(os.path.join(process_dir, "status"), status)
+        create_text_file(os.path.join(process_dir, "status"), status)
 
         stat_array = [str(index) for index in range(44)]
         stat = " ".join(stat_array)
-        create_file(os.path.join(process_dir, "stat"), stat)
+        create_text_file(os.path.join(process_dir, "stat"), stat)
 
     @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
     @mock.patch("os.listdir")

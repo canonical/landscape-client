@@ -12,7 +12,7 @@ from landscape.compat import StringIO
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
-from landscape.lib.fs import read_file
+from landscape.lib.fs import read_text_file
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.lib.twisted_util import spawn_process
@@ -196,7 +196,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             if not basename.endswith(".log"):
                 continue
             filename = os.path.join(self.logs_directory, basename)
-            content = read_file(filename, - self.logs_limit)
+            content = read_text_file(filename, - self.logs_limit)
             buf.write("=== %s ===\n\n%s\n\n" % (basename, content))
 
         return buf.getvalue()
