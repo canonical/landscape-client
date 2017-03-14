@@ -62,6 +62,7 @@ class FakeReactor(object):
     """
     Something that's simpler and more reusable than a bunch of mocked objects.
     """
+
     def __init__(self):
         self.queued_calls = []
         self.scheduled_calls = []
@@ -135,6 +136,7 @@ class RunTest(LandscapeTest):
         # thus firing the callback and writing sysinfo out to stdout.
         sysinfo = SysInfoPluginRegistry()
         original_sysinfo_run = sysinfo.run
+
         def wrapped_sysinfo_run(*args, **kwargs):
             original_sysinfo_run(*args, **kwargs)
             return deferred
@@ -252,10 +254,10 @@ class RunTest(LandscapeTest):
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
         with mock.patch.object(os, "getuid", return_value=0) as mock_getuid, \
-             mock.patch.object(
-                 os.path, "isdir", return_value=False) as mock_isdir, \
-             mock.patch.object(os, "mkdir") as mock_mkdir, \
-             mock.patch("__builtin__.open") as mock_open:
+                mock.patch.object(
+                    os.path, "isdir", return_value=False) as mock_isdir, \
+                mock.patch.object(os, "mkdir") as mock_mkdir, \
+                mock.patch("__builtin__.open") as mock_open:
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
 
@@ -287,7 +289,7 @@ class RunTest(LandscapeTest):
         io_error = IOError("Read-only filesystem.")
         with mock.patch(
                 "landscape.sysinfo.deployment.setup_logging",
-                side_effect=io_error) as setup_logging_mock:
+                side_effect=io_error):
             error = self.assertRaises(
                 SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
         self.assertEqual(
