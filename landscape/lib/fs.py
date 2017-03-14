@@ -1,6 +1,4 @@
 """File-system utils"""
-
-import codecs
 import os
 import time
 
@@ -16,8 +14,7 @@ def create_text_file(path, content):
     @param path: The path to the file.
     @param content: The content to be written in the file.
     """
-    content = codecs.encode(content, "utf-8")
-    create_binary_file(path, content)
+    create_binary_file(path, content.encode("utf-8"))
 
 
 def create_binary_file(path, content):
@@ -46,15 +43,13 @@ def append_text_file(path, content):
     @param path: The path to the file.
     @param content: The content to be written in the file at the end.
     """
-    content = codecs.encode(content, "utf-8")
-    append_binary_file(path, content)
+    append_binary_file(path, content.encode("utf-8"))
 
 
 def append_binary_file(path, content):
     """Append a file with the given binary content.
 
     The file is created, if it doesn't exist already.
-
 
     @param path: The path to the file.
     @param content: The content to be written in the file at the end.
@@ -76,7 +71,7 @@ def read_text_file(path, limit=None):
     # Use binary mode since opening a file in text mode in Python 3 does not
     # allow non-zero offset seek from the end of the file.
     content = read_binary_file(path, limit)
-    return codecs.decode(content, "utf-8")
+    return content.decode("utf-8")
 
 
 def read_binary_file(path, limit=None):
