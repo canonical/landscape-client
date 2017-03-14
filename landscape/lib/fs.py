@@ -96,6 +96,11 @@ def read_binary_file(path, limit=None):
     return content
 
 
+# Aliases for backwards compatibility
+read_file = read_binary_file
+create_file = create_binary_file
+
+
 def touch_file(path, offset_seconds=None):
     """Touch a file, creating it if it doesn't exist.
 
