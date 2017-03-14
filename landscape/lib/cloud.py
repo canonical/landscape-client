@@ -25,7 +25,7 @@ def fetch_ec2_meta_data(fetch=None):
         def _process_result(value):
             if value is not None:
                 if isinstance(value, bytes):
-                    value = value.decode('utf-8')
+                    value = value.decode("utf-8")
                 return value[:MAX_LENGTH]
 
         (instance_id, instance_type, ami_id) = cloud_data
