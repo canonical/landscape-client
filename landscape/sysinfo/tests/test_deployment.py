@@ -257,20 +257,23 @@ class RunTest(LandscapeTest):
                 mock.patch.object(
                     os.path, "isdir", return_value=False) as mock_isdir, \
                 mock.patch.object(os, "mkdir") as mock_mkdir, \
-                mock.patch("__builtin__.open") as mock_open:
+                mock.patch("logging.open") as mock_open:
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
 
             setup_logging()
-            mock_getuid.assert_called_with()
-            mock_isdir.assert_called_with("/var/log/landscape")
-            mock_mkdir.assert_called_with("/var/log/landscape")
-            mock_open.assert_called_with("/var/log/landscape/sysinfo.log", "a")
 
-            handler = logger.handlers[0]
-            self.assertTrue(isinstance(handler, RotatingFileHandler))
-            self.assertEqual(handler.baseFilename,
-                             "/var/log/landscape/sysinfo.log")
+        mock_getuid.assert_called_with()
+        mock_isdir.assert_called_with("/var/log/landscape")
+        mock_mkdir.assert_called_with("/var/log/landscape")
+        self.assertEqual(
+            mock_open.call_args_list[0][0],
+            ("/var/log/landscape/sysinfo.log", "a")
+        )
+        handler = logger.handlers[0]
+        self.assertTrue(isinstance(handler, RotatingFileHandler))
+        self.assertEqual(handler.baseFilename,
+                         "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
         log_dir = self.makeFile()
