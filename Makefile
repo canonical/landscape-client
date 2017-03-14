@@ -37,9 +37,9 @@ check5:
 check3: build3
 	LC_ALL=C $(TEST_COMMAND_PY3)
 
-check: build check2	check3-ready
+check: check2	check3-ready
 
-check2:
+check2: build
 	LC_ALL=C $(TEST_COMMAND_PY2)
 
 check3-ready: depends3 build3
