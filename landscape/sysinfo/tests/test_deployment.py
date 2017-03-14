@@ -296,4 +296,4 @@ class RunTest(LandscapeTest):
             error = self.assertRaises(
                 SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
         self.assertEqual(
-            error.message, "Unable to setup logging. Read-only filesystem.")
+            error.code, "Unable to setup logging. Read-only filesystem.")
