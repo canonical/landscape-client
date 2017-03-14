@@ -6,7 +6,7 @@ TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
 READY_FILE := py3_ready_tests
 PY3_READY := `cat $(READY_FILE)`
-TEST_COMMAND_PY3_READY = TRIAL_ARGS= trial3 --unclean-warnings $(TRIAL_ARGS) $(PY3_READY)
+TEST_COMMAND_PY3_READY = TRIAL_ARGS= trial3 --unclean-warnings $(PY3_READY)
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
