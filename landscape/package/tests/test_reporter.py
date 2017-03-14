@@ -8,7 +8,7 @@ from twisted.internet.defer import Deferred, succeed, fail, inlineCallbacks
 from twisted.internet import reactor
 
 
-from landscape.lib.fs import create_file, touch_file
+from landscape.lib.fs import create_text_file, touch_file
 from landscape.lib.fetch import FetchError
 from landscape.package.store import (
     PackageStore, UnknownHashIDRequest, FakePackageStore)
@@ -66,7 +66,7 @@ class PackageReporterAptTest(LandscapeTest):
 
     def _clear_repository(self):
         """Remove all packages from self.repository."""
-        create_file(self.repository_dir + "/Packages", "")
+        create_text_file(self.repository_dir + "/Packages", "")
 
     def set_pkg1_upgradable(self):
         """Make it so that package "name1" is considered to be upgradable.

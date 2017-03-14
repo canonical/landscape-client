@@ -101,7 +101,7 @@ from twisted.python.compat import iteritems
 
 from landscape import DEFAULT_SERVER_API
 from landscape.compat import bpickle
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_binary_file
 from landscape.lib.versioning import sort_versions, is_version_higher
 
 
@@ -372,7 +372,7 @@ class MessageStore(object):
 
         filename = self._get_next_message_filename()
         temp_path = filename + ".tmp"
-        create_file(temp_path, message_data)
+        create_binary_file(temp_path, message_data)
         os.rename(temp_path, filename)
 
         if not self.accepts(message["type"]):

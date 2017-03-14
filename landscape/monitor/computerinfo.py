@@ -3,7 +3,7 @@ import logging
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from landscape.lib.fetch import fetch_async
-from landscape.lib.fs import read_file
+from landscape.lib.fs import read_text_file
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.network import get_fqdn
@@ -89,7 +89,7 @@ class ComputerInfo(MonitorPlugin):
         annotations = {}
         if os.path.exists(self._annotations_path):
             for key in os.listdir(self._annotations_path):
-                annotations[key] = read_file(
+                annotations[key] = read_text_file(
                     os.path.join(self._annotations_path, key))
 
         if annotations:

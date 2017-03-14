@@ -5,7 +5,7 @@ import re
 from twisted.internet.defer import succeed, fail, inlineCallbacks
 
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_text_file
 from landscape.monitor.computerinfo import ComputerInfo, METADATA_RETRY_MAX
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
@@ -367,8 +367,10 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         """
         annotations_dir = self.monitor.config.annotations_path
         os.mkdir(annotations_dir)
-        create_file(os.path.join(annotations_dir, "annotation1"), "value1")
-        create_file(os.path.join(annotations_dir, "annotation2"), "value2")
+        create_text_file(
+            os.path.join(annotations_dir, "annotation1"), "value1")
+        create_text_file(
+            os.path.join(annotations_dir, "annotation2"), "value2")
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
