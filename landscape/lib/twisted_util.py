@@ -1,10 +1,10 @@
+import io
+
 from twisted.internet.defer import DeferredList, Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
-from twisted.python.compat import itervalues
-
-from landscape.compat import StringIO
+from twisted.python.compat import itervalues, networkString
 
 
 def gather_results(deferreds, consume_errors=False):
@@ -20,16 +20,16 @@ class AllOutputProcessProtocol(ProcessProtocol):
 
     def __init__(self, deferred, stdin=None, line_received=None):
         self.deferred = deferred
-        self.outBuf = StringIO()
-        self.errBuf = StringIO()
+        self.outBuf = io.BytesIO()
+        self.errBuf = io.BytesIO()
         self.errReceived = self.errBuf.write
         self.stdin = stdin
         self.line_received = line_received
-        self._partial_line = ""
+        self._partial_line = b""
 
     def connectionMade(self):
         if self.stdin is not None:
-            self.transport.write(self.stdin)
+            self.transport.write(networkString(self.stdin))
             self.transport.closeStdin()
 
     def outReceived(self, data):
@@ -41,7 +41,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
         # data may contain more than one line, so we split the output and save
         # the last line. If it's an empty string nothing happens, otherwise it
         # will be returned once complete
-        lines = data.split("\n")
+        lines = data.split(b"\n")
         lines[0] = self._partial_line + lines[0]
         self._partial_line = lines.pop()
 
@@ -51,7 +51,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
     def processEnded(self, reason):
         if self._partial_line:
             self.line_received(self._partial_line)
-            self._partial_line = ""
+            self._partial_line = b""
         out = self.outBuf.getvalue()
         err = self.errBuf.getvalue()
         e = reason.value

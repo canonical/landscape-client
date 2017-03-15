@@ -4,6 +4,9 @@ PYTHON ?= python
 TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
+READY_FILE := py3_ready_tests
+PY3_READY := `cat $(READY_FILE)`
+TEST_COMMAND_PY3_READY = TRIAL_ARGS= trial3 --unclean-warnings $(PY3_READY)
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
@@ -34,8 +37,16 @@ check5:
 check3: build3
 	LC_ALL=C $(TEST_COMMAND_PY3)
 
-check: build
+check: check2	check3-ready
+
+check2: build
 	LC_ALL=C $(TEST_COMMAND_PY2)
+
+check3-ready: depends3 build3
+	LC_ALL=C $(TEST_COMMAND_PY3_READY)
+
+depends3:
+	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj
 
 lint:
 	bzr ls-lint
@@ -129,4 +140,4 @@ sdist: clean
 	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
 
-.PHONY: tags etags freshdata run freshrun package sourcepackage updateversion origtarball prepchangelog lint build check releasetarball
+.PHONY: tags etags freshdata run freshrun package sourcepackage updateversion origtarball prepchangelog lint build build3 check check2 check3 check3-ready check5 depends3 releasetarball

@@ -71,10 +71,10 @@ class CloudTest(LandscapeTest):
 
     def test_fetch_ec2_meta_data_utf8(self):
         """
-        L{_fetch_ec2_meta_data} decodes utf-8 strings returned from the
+        L{_fetch_ec2_meta_data} decodes utf-8 byte strings returned from the
         external service.
         """
-        self.add_query_result("ami-id", "asdf\xe1\x88\xb4")
+        self.add_query_result("ami-id", b"asdf\xe1\x88\xb4")
         deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
         result = self.successResultOf(deferred)
         self.assertEqual({"instance-id": u"i00001",

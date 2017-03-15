@@ -60,8 +60,8 @@ class ReadFileTest(LandscapeTest):
 
     def test_read_text_file_with_limit(self):
         """
-        With a positive limit L{read_text_file} reads only the bytes after the
-        given limit as string.
+        With a positive limit L{read_text_file} returns only the characters
+        after the first L{limit} characters as string.
         """
         utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
         path = self.makeFile(utf8_content, mode="wb")
@@ -69,12 +69,12 @@ class ReadFileTest(LandscapeTest):
 
     def test_read_text_file_with_negative_limit(self):
         """
-        With a negative limit L{read_text_file} reads only the tail of the
-        file.
+        With a negative limit L{read_text_file} reads only the tail characters
+        of the string.
         """
         utf8_content = codecs.encode(u"foo \N{SNOWMAN} bar", "utf-8")
         path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_text_file(path, limit=-7), u"☃ bar")
+        self.assertEqual(read_text_file(path, limit=-5), u"☃ bar")
 
     def test_read_text_file_with_limit_bigger_than_file(self):
         """
