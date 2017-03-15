@@ -70,8 +70,10 @@ def read_text_file(path, limit=None):
     """
     # Use binary mode since opening a file in text mode in Python 3 does not
     # allow non-zero offset seek from the end of the file.
-    content = read_binary_file(path, limit)
-    return content.decode("utf-8")
+    content = read_binary_file(path).decode("utf-8")
+    if limit and len(content) > abs(limit):
+        content = content[limit:]
+    return content
 
 
 def read_binary_file(path, limit=None):
@@ -92,6 +94,11 @@ def read_binary_file(path, limit=None):
             fd.seek(limit, whence)
         content = fd.read()
     return content
+
+
+# Aliases for backwards compatibility
+read_file = read_binary_file
+create_file = create_binary_file
 
 
 def touch_file(path, offset_seconds=None):

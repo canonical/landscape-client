@@ -437,7 +437,7 @@ class MessageStore(object):
         return os.path.join(self._directory, *args)
 
     def _get_content(self, filename):
-        file = open(filename)
+        file = open(filename, 'rb')
         try:
             return file.read()
         finally:

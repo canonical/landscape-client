@@ -1,8 +1,5 @@
 from landscape.lib.fetch import fetch_async
 
-from landscape.compat import coerce_unicode
-
-
 EC2_HOST = "169.254.169.254"
 EC2_API = "http://%s/latest" % (EC2_HOST,)
 MAX_LENGTH = 64
@@ -27,7 +24,9 @@ def fetch_ec2_meta_data(fetch=None):
 
         def _process_result(value):
             if value is not None:
-                return coerce_unicode(value, "utf-8")[:MAX_LENGTH]
+                if isinstance(value, bytes):
+                    value = value.decode("utf-8")
+                return value[:MAX_LENGTH]
 
         (instance_id, instance_type, ami_id) = cloud_data
         return {
