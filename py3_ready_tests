@@ -20,3 +20,5 @@ landscape/lib/tests/test_vm_info.py
 landscape/lib/tests/test_fetch.py
 landscape/lib/tests/test_process.py
 landscape/lib/tests/test_warning.py
+
+landscape.package.tests.test_store

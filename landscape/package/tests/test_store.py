@@ -19,12 +19,12 @@ class HashIdStoreTest(LandscapeTest):
         self.store2 = HashIdStore(self.filename)
 
     def test_set_and_get_hash_id(self):
-        self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
-        self.assertEqual(self.store1.get_hash_id("ha\x00sh1"), 123)
-        self.assertEqual(self.store1.get_hash_id("ha\x00sh2"), 456)
+        self.store1.set_hash_ids({b"ha\x00sh1": 123, b"ha\x00sh2": 456})
+        self.assertEqual(self.store1.get_hash_id(b"ha\x00sh1"), 123)
+        self.assertEqual(self.store1.get_hash_id(b"ha\x00sh2"), 456)
 
     def test_get_hash_ids(self):
-        hash_ids = {"hash1": 123, "hash2": 456}
+        hash_ids = {b"hash1": 123, b"hash2": 456}
         self.store1.set_hash_ids(hash_ids)
         self.assertEqual(self.store1.get_hash_ids(), hash_ids)
 
@@ -80,33 +80,33 @@ class HashIdStoreTest(LandscapeTest):
         self.assertEqual([None], rollbacks)
 
     def test_get_id_hash(self):
-        self.store1.set_hash_ids({"hash1": 123, "hash2": 456})
-        self.assertEqual(self.store2.get_id_hash(123), "hash1")
-        self.assertEqual(self.store2.get_id_hash(456), "hash2")
+        self.store1.set_hash_ids({b"hash1": 123, b"hash2": 456})
+        self.assertEqual(self.store2.get_id_hash(123), b"hash1")
+        self.assertEqual(self.store2.get_id_hash(456), b"hash2")
 
     def test_clear_hash_ids(self):
-        self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
+        self.store1.set_hash_ids({b"ha\x00sh1": 123, b"ha\x00sh2": 456})
         self.store1.clear_hash_ids()
-        self.assertEqual(self.store2.get_hash_id("ha\x00sh1"), None)
-        self.assertEqual(self.store2.get_hash_id("ha\x00sh2"), None)
+        self.assertEqual(self.store2.get_hash_id(b"ha\x00sh1"), None)
+        self.assertEqual(self.store2.get_hash_id(b"ha\x00sh2"), None)
 
     def test_get_unexistent_hash(self):
-        self.assertEqual(self.store1.get_hash_id("hash1"), None)
+        self.assertEqual(self.store1.get_hash_id(b"hash1"), None)
 
     def test_get_unexistent_id(self):
         self.assertEqual(self.store1.get_id_hash(123), None)
 
     def test_overwrite_id_hash(self):
-        self.store1.set_hash_ids({"hash1": 123})
-        self.store2.set_hash_ids({"hash2": 123})
-        self.assertEqual(self.store1.get_hash_id("hash1"), None)
-        self.assertEqual(self.store1.get_hash_id("hash2"), 123)
+        self.store1.set_hash_ids({b"hash1": 123})
+        self.store2.set_hash_ids({b"hash2": 123})
+        self.assertEqual(self.store1.get_hash_id(b"hash1"), None)
+        self.assertEqual(self.store1.get_hash_id(b"hash2"), 123)
 
     def test_overwrite_hash_id(self):
-        self.store1.set_hash_ids({"hash1": 123})
-        self.store2.set_hash_ids({"hash1": 456})
+        self.store1.set_hash_ids({b"hash1": 123})
+        self.store2.set_hash_ids({b"hash1": 456})
         self.assertEqual(self.store1.get_id_hash(123), None)
-        self.assertEqual(self.store1.get_id_hash(456), "hash1")
+        self.assertEqual(self.store1.get_id_hash(456), b"hash1")
 
     def test_check_sanity(self):
 
@@ -184,22 +184,22 @@ class PackageStoreTest(LandscapeTest):
 
     def test_get_hash_id_using_hash_id_dbs(self):
         # Without hash=>id dbs
-        self.assertEqual(self.store1.get_hash_id("hash1"), None)
-        self.assertEqual(self.store1.get_hash_id("hash2"), None)
+        self.assertEqual(self.store1.get_hash_id(b"hash1"), None)
+        self.assertEqual(self.store1.get_hash_id(b"hash2"), None)
 
         # This hash=>id will be overriden
-        self.store1.set_hash_ids({"hash1": 1})
+        self.store1.set_hash_ids({b"hash1": 1})
 
         # Add a couple of hash=>id dbs
-        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash1": 2,
-                                                            "hash2": 3}))
-        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash2": 4,
-                                                            "ha\x00sh1": 5}))
+        self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash1": 2,
+                                                            b"hash2": 3}))
+        self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash2": 4,
+                                                            b"ha\x00sh1": 5}))
 
         # Check look-up priorities and binary hashes
-        self.assertEqual(self.store1.get_hash_id("hash1"), 2)
-        self.assertEqual(self.store1.get_hash_id("hash2"), 3)
-        self.assertEqual(self.store1.get_hash_id("ha\x00sh1"), 5)
+        self.assertEqual(self.store1.get_hash_id(b"hash1"), 2)
+        self.assertEqual(self.store1.get_hash_id(b"hash2"), 3)
+        self.assertEqual(self.store1.get_hash_id(b"ha\x00sh1"), 5)
 
     def test_get_id_hash_using_hash_id_db(self):
         """
@@ -207,13 +207,13 @@ class PackageStoreTest(LandscapeTest):
         to query them first, falling back to the regular db in case
         the desired mapping is not found.
         """
-        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash1": 123}))
-        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash1": 999,
-                                                            "hash2": 456}))
-        self.store1.set_hash_ids({"hash3": 789})
-        self.assertEqual(self.store1.get_id_hash(123), "hash1")
-        self.assertEqual(self.store1.get_id_hash(456), "hash2")
-        self.assertEqual(self.store1.get_id_hash(789), "hash3")
+        self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash1": 123}))
+        self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash1": 999,
+                                                            b"hash2": 456}))
+        self.store1.set_hash_ids({b"hash3": 789})
+        self.assertEqual(self.store1.get_id_hash(123), b"hash1")
+        self.assertEqual(self.store1.get_id_hash(456), b"hash2")
+        self.assertEqual(self.store1.get_id_hash(789), b"hash3")
 
     def test_add_and_get_available_packages(self):
         self.store1.add_available([1, 2])

@@ -7,9 +7,8 @@ except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
 from twisted.python.compat import iteritems, long
-from twisted.python.compat import StringType as basestring
 
-from landscape.compat import convert_buffer_to_string, bpickle
+from landscape.compat import bpickle
 from landscape.lib.store import with_cursor
 
 
@@ -49,7 +48,10 @@ class HashIdStore(object):
 
     @with_cursor
     def get_hash_id(self, cursor, hash):
-        """Return the id associated to C{hash}, or C{None} if not available."""
+        """Return the id associated to C{hash}, or C{None} if not available.
+
+        @param hash: a C{bytes} representing a hash.
+        """
         cursor.execute("SELECT id FROM hash WHERE hash=?",
                        (sqlite3.Binary(hash),))
         value = cursor.fetchone()
@@ -61,7 +63,7 @@ class HashIdStore(object):
     def get_hash_ids(self, cursor):
         """Return a C{dict} holding all the available hash=>id mappings."""
         cursor.execute("SELECT hash, id FROM hash")
-        return dict([(str(row[0]), row[1]) for row in cursor.fetchall()])
+        return {bytes(row[0]): row[1] for row in cursor.fetchall()}
 
     @with_cursor
     def get_id_hash(self, cursor, id):
@@ -70,7 +72,7 @@ class HashIdStore(object):
         cursor.execute("SELECT hash FROM hash WHERE id=?", (id,))
         value = cursor.fetchone()
         if value:
-            return str(value[0])
+            return bytes(value[0])
         return None
 
     @with_cursor
@@ -148,7 +150,7 @@ class PackageStore(HashIdStore):
         the attached lookaside databases, falling back to the main one, as
         described in L{add_hash_id_db}.
         """
-        assert isinstance(hash, basestring)
+        assert isinstance(hash, bytes)
 
         # Check if we can find the hash=>id mapping in the lookaside stores
         for store in self._hash_id_stores:
@@ -345,7 +347,7 @@ class HashIDRequest(object):
     def hashes(self, cursor):
         cursor.execute("SELECT hashes FROM hash_id_request WHERE id=?",
                        (self.id,))
-        return bpickle.loads(convert_buffer_to_string(cursor.fetchone()[0]))
+        return bpickle.loads(bytes(cursor.fetchone()[0]))
 
     @with_cursor
     def _get_timestamp(self, cursor):
@@ -394,7 +396,7 @@ class PackageTask(object):
 
         self.queue = row[0]
         self.timestamp = row[1]
-        self.data = bpickle.loads(convert_buffer_to_string(row[2]))
+        self.data = bpickle.loads(bytes(row[2]))
 
     @with_cursor
     def remove(self, cursor):
