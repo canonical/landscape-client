@@ -62,6 +62,7 @@ class FakeReactor(object):
     """
     Something that's simpler and more reusable than a bunch of mocked objects.
     """
+
     def __init__(self):
         self.queued_calls = []
         self.scheduled_calls = []
@@ -135,6 +136,7 @@ class RunTest(LandscapeTest):
         # thus firing the callback and writing sysinfo out to stdout.
         sysinfo = SysInfoPluginRegistry()
         original_sysinfo_run = sysinfo.run
+
         def wrapped_sysinfo_run(*args, **kwargs):
             original_sysinfo_run(*args, **kwargs)
             return deferred
@@ -252,23 +254,26 @@ class RunTest(LandscapeTest):
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
         with mock.patch.object(os, "getuid", return_value=0) as mock_getuid, \
-             mock.patch.object(
-                 os.path, "isdir", return_value=False) as mock_isdir, \
-             mock.patch.object(os, "mkdir") as mock_mkdir, \
-             mock.patch("__builtin__.open") as mock_open:
+                mock.patch.object(
+                    os.path, "isdir", return_value=False) as mock_isdir, \
+                mock.patch.object(os, "mkdir") as mock_mkdir, \
+                mock.patch("logging.open") as mock_open:
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
 
             setup_logging()
-            mock_getuid.assert_called_with()
-            mock_isdir.assert_called_with("/var/log/landscape")
-            mock_mkdir.assert_called_with("/var/log/landscape")
-            mock_open.assert_called_with("/var/log/landscape/sysinfo.log", "a")
 
-            handler = logger.handlers[0]
-            self.assertTrue(isinstance(handler, RotatingFileHandler))
-            self.assertEqual(handler.baseFilename,
-                             "/var/log/landscape/sysinfo.log")
+        mock_getuid.assert_called_with()
+        mock_isdir.assert_called_with("/var/log/landscape")
+        mock_mkdir.assert_called_with("/var/log/landscape")
+        self.assertEqual(
+            mock_open.call_args_list[0][0],
+            ("/var/log/landscape/sysinfo.log", "a")
+        )
+        handler = logger.handlers[0]
+        self.assertTrue(isinstance(handler, RotatingFileHandler))
+        self.assertEqual(handler.baseFilename,
+                         "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
         log_dir = self.makeFile()
@@ -287,8 +292,8 @@ class RunTest(LandscapeTest):
         io_error = IOError("Read-only filesystem.")
         with mock.patch(
                 "landscape.sysinfo.deployment.setup_logging",
-                side_effect=io_error) as setup_logging_mock:
+                side_effect=io_error):
             error = self.assertRaises(
                 SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
         self.assertEqual(
-            error.message, "Unable to setup logging. Read-only filesystem.")
+            error.code, "Unable to setup logging. Read-only filesystem.")
