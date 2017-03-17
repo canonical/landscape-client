@@ -35,7 +35,7 @@ check5:
 	./display_py2_testresults
 
 check3: build3
-	LC_ALL=C $(TEST_COMMAND_PY3)
+	$(TEST_COMMAND_PY3)
 
 check: check2	check3-ready
 
