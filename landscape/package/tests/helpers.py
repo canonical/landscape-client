@@ -6,7 +6,9 @@ import time
 import apt_inst
 import apt_pkg
 
-from landscape.lib.fs import append_binary_file, append_text_file
+from twisted.python.compat import _PY3
+
+from landscape.lib.fs import append_binary_file
 from landscape.lib.fs import create_binary_file
 from landscape.package.facade import AptFacade
 
@@ -49,11 +51,13 @@ class AptFacadeHelper(object):
                 """ % {
                     "name": name, "version": version,
                     "architecture": architecture,
-                    "description": description.encode("utf-8")})
+                    "description": description}).encode("utf-8")
         package_stanza = apt_pkg.rewrite_section(
             apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
             list(control_fields.items()))
-        append_binary_file(packages_file, "\n" + package_stanza + "\n")
+        if _PY3:
+            package_stanza = package_stanza.encode("utf-8")
+        append_binary_file(packages_file, b"\n" + package_stanza + b"\n")
 
     def _add_system_package(self, name, architecture="all", version="1.0",
                             control_fields=None):
@@ -72,9 +76,9 @@ class AptFacadeHelper(object):
         control = deb.control.extractdata("control")
         deb_file.close()
         lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_text_file(self.dpkg_status, status + "\n\n")
+        lines.insert(1, b"Status: install ok installed")
+        status = b"\n".join(lines)
+        append_binary_file(self.dpkg_status, status + b"\n\n")
 
     def _add_package_to_deb_dir(self, path, name, architecture="all",
                                 version="1.0", description="description",
