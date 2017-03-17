@@ -229,7 +229,8 @@ class PackageReporter(PackageTaskHandler):
                 self._reactor.call_later(
                     LOCK_RETRY_DELAYS[retry], self._apt_update, deferred)
                 out, err, code = yield deferred
-
+                out = out.decode("utf-8")
+                err = err.decode("utf-8")
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
                     "'%s' exited with status %d (out='%s', err='%s')" % (
