@@ -13,12 +13,13 @@ import apt_pkg
 from twisted.internet.defer import (
     Deferred, succeed, inlineCallbacks, returnValue)
 
+from landscape.lib import bpickle
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
 
-from landscape.compat import convert_buffer_to_string, bpickle
+from landscape.compat import convert_buffer_to_string
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.store import UnknownHashIDRequest, FakePackageStore

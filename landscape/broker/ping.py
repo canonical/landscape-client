@@ -39,7 +39,7 @@ from logging import info
 from twisted.python.failure import Failure
 from twisted.internet import defer
 
-from landscape.compat import bpickle
+from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
 from landscape.lib.log import log_failure
 

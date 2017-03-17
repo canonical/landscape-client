@@ -9,7 +9,8 @@ except ImportError:
 from twisted.python.compat import iteritems, long
 from twisted.python.compat import StringType as basestring
 
-from landscape.compat import convert_buffer_to_string, bpickle
+from landscape.compat import convert_buffer_to_string
+from landscape.lib import bpickle
 from landscape.lib.store import with_cursor
 
 
