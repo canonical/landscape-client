@@ -101,7 +101,7 @@ from twisted.python.compat import iteritems
 
 from landscape import DEFAULT_SERVER_API
 from landscape.compat import bpickle
-from landscape.lib.fs import create_binary_file
+from landscape.lib.fs import create_binary_file, read_binary_file
 from landscape.lib.versioning import sort_versions, is_version_higher
 
 
@@ -437,11 +437,7 @@ class MessageStore(object):
         return os.path.join(self._directory, *args)
 
     def _get_content(self, filename):
-        file = open(filename, 'rb')
-        try:
-            return file.read()
-        finally:
-            file.close()
+        return read_binary_file(filename)
 
     def _reprocess_holding(self):
         """
