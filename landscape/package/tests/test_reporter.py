@@ -3,6 +3,7 @@ import os
 import time
 import apt_pkg
 import mock
+import shutil
 
 from twisted.internet.defer import Deferred, succeed, fail, inlineCallbacks
 from twisted.internet import reactor
@@ -11,6 +12,7 @@ from twisted.internet import reactor
 from landscape.lib import bpickle
 from landscape.lib.fs import create_text_file, touch_file
 from landscape.lib.fetch import FetchError
+from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.package.store import (
     PackageStore, UnknownHashIDRequest, FakePackageStore)
 from landscape.package.reporter import (
@@ -921,6 +923,92 @@ class PackageReporterAptTest(LandscapeTest):
                                   "not-available-upgrades": [2]}])
 
             self.assertEqual(self.store.get_available_upgrades(), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_packages_changes_with_backports(self):
+        """
+        Package versions coming from backports aren't considered to be
+        available.
+
+        This is because we don't support pinning, and the backports
+        archive is enabled by default since xenial.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        release_path = os.path.join(self.repository_dir, "Release")
+        with open(release_path, "w") as release:
+            release.write("Suite: {}-backports".format(lsb["code-name"]))
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(), [])
+
+            self.assertEqual(sorted(self.store.get_available()), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_packages_changes_with_backports_others(self):
+        """
+        Packages coming from backport archives that aren't named like
+        the official backports archive are considered to be available.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        release_path = os.path.join(self.repository_dir, "Release")
+        with open(release_path, "w") as release:
+            release.write("Suite: my-personal-backports")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "available": [(1, 3)]}])
+
+            self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_packages_changes_with_backports_both(self):
+        """
+        If a package is both in the official backports archive and in
+        some other archive (e.g. a PPA), the package is considered to be
+        available.
+
+        The reason for this is that if you have enabled a PPA, you most
+        likely want to get updates from it.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        temp_dir = self.makeDir()
+        other_backport_dir = os.path.join(temp_dir, "my-personal-backports")
+        shutil.copytree(self.repository_dir, other_backport_dir)
+        os.remove(os.path.join(other_backport_dir, "Packages"))
+        self.facade.add_channel_deb_dir(other_backport_dir)
+
+        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        official_release_path = os.path.join(self.repository_dir, "Release")
+        with open(official_release_path, "w") as release:
+            release.write("Suite: {}-backports".format(lsb["code-name"]))
+        unofficial_release_path = os.path.join(other_backport_dir, "Release")
+        with open(unofficial_release_path, "w") as release:
+            release.write("Suite: my-personal-backports")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "available": [(1, 3)]}])
+
+            self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
