@@ -166,7 +166,7 @@ PKGDEB1 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDQ5MyAgMCAgICAgMCAgICAgMT"
            "ffXIlN8aYepsu3x2u0202VX+QFC10st6vvMfDdacgtdzKtpe5G5tuFYx5elcpXm27O"
            "d8LH7Oj3mqP7VgD8P6dTmJ33dsPnpuBnPO3SvLDNlu6ay9It6yZon0BIZRMApGwSgY"
            "BaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGAUkAADhX8vgAKAAA "
-           ).encode('ascii')
+           ).encode("ascii")
 
 PKGDEB2 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDUyMiAgMCAgICAgMCAgICAgMT"
            "AwNjQ0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDExNjYxMTQ1MjIg"
@@ -189,7 +189,7 @@ PKGDEB2 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDUyMiAgMCAgICAgMCAgICAgMT"
            "JGPj3lqR1cLMdz12u04rLHp/gM2y0mv3HOc/GqxvCl7PqWh7kbux6VrFk69zlefZsu"
            "v5WPycH/NUv7VgF8N6vfeBcgXp3NlnBFNDw5eZsd1as/aK+JzyvZ0TGEbBKBgFo2AU"
            "jIJRMApGwSgYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFJAEAu4OlKQAoAAAK"
-           ).encode('ascii')
+           ).encode("ascii")
 
 PKGDEB3 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2OTE0ODIwMyAgMCAgICAgMCAgICAgMT"
            "AwNjQ0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDExNjkxNDgyMDMg"
@@ -213,7 +213,7 @@ PKGDEB3 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2OTE0ODIwMyAgMCAgICAgMCAgICAgMT"
            "pXaZ4t+zkfi5/zY57qTy3Yw7B+XU7g+8L07rmG7Fe2bVxmyHZLZ+0V8Sl2Xj8mMIyC"
            "UTAKRsEoGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUTAKSAIAY/FOKA"
            "AoAAAK"
-           ).encode('ascii')
+           ).encode("ascii")
 
 PKGDEB4 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTI3NjUxMTU3OC41MCAgICAgMCAgICAgNj"
            "Q0ICAgICA0\nICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEyNzY1MTE1Nz"
@@ -229,7 +229,7 @@ PKGDEB4 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTI3NjUxMTU3OC41MCAgICAgMCAgICAgNj"
            "C4H/NiPqQvnTLMNpc3XfZ9PPfW2W1JOae9s3i5okuPzBc6t5bU9Z\nS6nf7v067z93"
            "ENO8lcd9fP/LZ/d3f4td/6h+lqD0H+7W6ocl13wSAAAAAAAAAAAAAAAAAAfzAqr5\n"
            "GFYAKAAACg==\n"
-           ).encode('ascii')
+           ).encode("ascii")
 
 PKGDEB_MINIMAL = (
     "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzg5MDQ3OSAgMCAgICAgMCAgICAgMTAwNj"
@@ -243,7 +243,7 @@ PKGDEB_MINIMAL = (
     "zkgIDAgICAgIDAgICAgIDEwMDY0NCAgMTA3ICAgICAgIGAKH4sIAAAA AAACA+3KsQ3CQB"
     "AEwCvlK4D/N4frMSGBkQz0jwmQiHCEo5lkpd09HOPv6mrMfGcbs37nR7R2Pg01"
     "ew5r32rvNUrGDp73x7SUEpfrbZl//LZ2AAAAAAAAAAAA2NELx33R7wAoAAAK"
-    ).encode('ascii')
+).encode("ascii")
 
 PKGDEB_SIMPLE_RELATIONS = (
     "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxODUxNjMyMiAgMCAgICAgMCAgICAgMTAwNj"
@@ -259,7 +259,7 @@ PKGDEB_SIMPLE_RELATIONS = (
     "wNjQ0ICAxMDcgICAgICAgYAofiwgAAAAAAAID7cqxDcJQEETBK8UVwH2b+64HQgIjGegf "
     "CJCIIMLRTPKC3d0+/i6f5qpX21z52bdorR+m7Fl9imw5jhVDxQbu19txHYY4nS/r8uX3aw"
     "cAAAAA AAAAAIANPQALnD6FACgAAAo="
-    ).encode('ascii')
+).encode("ascii")
 
 
 PKGDEB_VERSION_RELATIONS = (
@@ -276,7 +276,7 @@ PKGDEB_VERSION_RELATIONS = (
     "gICAgMTAwNjQ0ICAxMDcgICAgICAgYAofiwgAAAAAAAID7cqxEcIwEETRK0UVgCT7UD0Q "
     "EpgZA/0DATNEEOHoveQHu7t9/F19GpmvtpH1s2/R2mGeemYfc9RW+9SjZGzgfr0d11LidL"
     "6sy5ff rx0AAAAAAAAAAAA29AD/ixlwACgAAAo="
-    ).encode('ascii')
+).encode("ascii")
 
 
 PKGDEB_MULTIPLE_RELATIONS = (
@@ -294,7 +294,7 @@ PKGDEB_MULTIPLE_RELATIONS = (
     "ICAgIGAKH4sIAAAAAAACA+3KsRHCMBBE0StFFYBkfFY9EBKYGWP3DwTMEEGEo/eSH+wejv"
     "F39aln vtp61s++RWvTeBpy6tmjtjqMLUrGDrb7el5Kicv1tsxffr92AAAAAAAAAAAA2NE"
     "Db6L1AQAoAAAK"
-    ).encode('ascii')
+).encode("ascii")
 
 
 PKGDEB_OR_RELATIONS = (
@@ -312,7 +312,7 @@ PKGDEB_OR_RELATIONS = (
     "CAAAAAAAAgPtyrsRwjAURNFXiioAfZBcjwkJzIyB/oGAGSIc4eic5Aa7h2P8XX6Zen+3TD"
     "1/9yNK"
     "GadWR2ltRC651hGpxw4et/u8phTny3Vdfvy2dgAAAAAAAAAAANjRE6Lr2rEAKAAACg=="
-    ).encode('ascii')
+).encode("ascii")
 
 
 HASH1 = base64.decodestring(b"/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
