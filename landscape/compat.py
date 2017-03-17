@@ -1,7 +1,5 @@
 from twisted.python.compat import _PY3
 
-from landscape.lib import bpickle3 as bpickle
-
 
 if _PY3:
     import _pickle as cPickle

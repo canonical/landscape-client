@@ -8,7 +8,7 @@ except ImportError:
 
 from twisted.python.compat import iteritems, long
 
-from landscape.compat import bpickle
+from landscape.lib import bpickle
 from landscape.lib.store import with_cursor
 
 

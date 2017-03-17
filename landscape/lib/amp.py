@@ -54,7 +54,7 @@ from twisted.python.compat import xrange
 from twisted.protocols.amp import (
     Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
 
-from landscape.compat import bpickle
+from landscape.lib import bpickle
 
 
 class MethodCallArgument(Argument):

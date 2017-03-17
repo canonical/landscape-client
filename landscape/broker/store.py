@@ -100,7 +100,7 @@ import uuid
 from twisted.python.compat import iteritems
 
 from landscape import DEFAULT_SERVER_API
-from landscape.compat import bpickle
+from landscape.lib import bpickle
 from landscape.lib.fs import create_binary_file, read_binary_file
 from landscape.lib.versioning import sort_versions, is_version_higher
 

@@ -8,6 +8,7 @@ from twisted.internet.defer import Deferred, succeed, fail, inlineCallbacks
 from twisted.internet import reactor
 
 
+from landscape.lib import bpickle
 from landscape.lib.fs import create_text_file, touch_file
 from landscape.lib.fetch import FetchError
 from landscape.package.store import (
@@ -23,8 +24,6 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.reactor import FakeReactor
-
-from landscape.compat import bpickle
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
