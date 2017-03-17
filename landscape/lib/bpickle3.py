@@ -169,7 +169,8 @@ dumps_table.update({
     list: dumps_list,
     tuple: dumps_tuple,
     dict: dumps_dict,
-    type(None): dumps_none
+    type(None): dumps_none,
+    bytes: dumps_bytes,
 })
 
 
@@ -186,19 +187,16 @@ loads_table.update({
 })
 
 
-if bytes == str:
-    # Python 2.x: We need to map internal strings to bytestrings,
-    # and internal unicode strings to UTF-8 encoded strings.
+if bytes is str:
+    # Python 2.x: We need to map internal unicode strings to UTF-8
+    # encoded strings, and longs to ints.
     dumps_table.update({
-        str: dumps_bytes,
         unicode: dumps_unicode,
         long: dumps_int,
     })
 else:
-    # Python 3.x: We need to map internal strings to bytestrings,
-    # and internal unicode strings to UTF-8 encoded strings.
+    # Python 3.x: We need to map internal strings to UTF-8 encoded strings.
     dumps_table.update({
         str: dumps_unicode,
-        bytes: dumps_bytes,
     })
 
