@@ -333,7 +333,7 @@ class FakePackageStore(PackageStore):
         result = cursor.execute(
                 "SELECT id, data FROM message WHERE id IN (%s) "
                 "ORDER BY id" % params, tuple(message_ids)).fetchall()
-        return [(row[0], row[1]) for row in result]
+        return [(row[0], bytes(row[1])) for row in result]
 
 
 class HashIDRequest(object):
