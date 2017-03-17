@@ -65,7 +65,9 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     @param proxy: The proxy url to use for the request.
     """
     import pycurl
-    output = io.BytesIO(networkString(data))
+    if not isinstance(data, bytes):
+        data = data.encode("utf-8")
+    output = io.BytesIO(data)
     input = io.BytesIO()
 
     if curl is None:
