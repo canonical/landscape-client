@@ -17,6 +17,7 @@ from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
+from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 
 from landscape.compat import convert_buffer_to_string, bpickle
 from landscape.package.taskhandler import (
@@ -550,8 +551,26 @@ class PackageReporter(PackageTaskHandler):
         current_available = set()
         current_upgrades = set()
         current_locked = set()
+        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        backports_archive = "{}-backports".format(lsb["code-name"])
 
         for package in self._facade.get_packages():
+            # Don't include package versions from the official backports
+            # archive. The backports archive is enabled by default since
+            # xenial with a pinning policy of 100. Ideally we would
+            # support pinning, but we don't yet. In the mean time, we
+            # ignore backports, so that packages don't get automatically
+            # upgraded to the backports version.
+            backport_origins = [
+                origin for origin in package.origins
+                if origin.archive == backports_archive]
+            if backport_origins and (
+                    len(backport_origins) == len(package.origins)):
+                # Ignore the version if it's only in the official
+                # backports archive. If it's somewhere else as well,
+                # e.g. a PPA, we assume it was added manually and the
+                # user wants to get updates from it.
+                continue
             hash = self._facade.get_package_hash(package)
             id = self._store.get_hash_id(hash)
             if id is not None:
