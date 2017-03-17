@@ -18,6 +18,14 @@ def is_version_higher(version1, version2):
     @return: C{True} if the first version is greater than or equal to
         the second.
     """
+    def ensure_ascii_unicode(string):
+        if isinstance(string, bytes):
+            return string.decode("ascii")
+        return string
+
+    # StrictVersion uses regex to extract the version number and needs strings.
+    version1 = ensure_ascii_unicode(version1)
+    version2 = ensure_ascii_unicode(version2)
     return StrictVersion(version1) >= StrictVersion(version2)
 
 
