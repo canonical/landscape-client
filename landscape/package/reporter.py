@@ -229,6 +229,7 @@ class PackageReporter(PackageTaskHandler):
                 self._reactor.call_later(
                     LOCK_RETRY_DELAYS[retry], self._apt_update, deferred)
                 out, err, code = yield deferred
+                timestamp = self._reactor.time()
 
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
@@ -263,7 +264,8 @@ class PackageReporter(PackageTaskHandler):
                             self.sources_list_directory))
 
                 yield self._broker.call_if_accepted(
-                    "package-reporter-result", self.send_result, code, err)
+                    "package-reporter-result", self.send_result, timestamp,
+                    code, err)
                 yield returnValue((out, err, code))
         else:
             logging.debug("'%s' didn't run, update interval has not passed" %
@@ -287,12 +289,13 @@ class PackageReporter(PackageTaskHandler):
 
         return result.addCallback(callback, deferred)
 
-    def send_result(self, code, err):
+    def send_result(self, timestamp, code, err):
         """
         Report the package reporter result to the server in a message.
         """
         message = {
             "type": "package-reporter-result",
+            "report-timestamp": timestamp,
             "code": code,
             "err": err}
         return self.send_message(message)

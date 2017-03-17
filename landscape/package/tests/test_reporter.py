@@ -1273,6 +1273,32 @@ class PackageReporterAptTest(LandscapeTest):
         self.reactor.advance(20)
         return result
 
+    def test_run_apt_update_report_timestamp(self):
+        """
+        The package-report-result message includes a timestamp of the apt
+        update run.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update(err="")
+        deferred = Deferred()
+
+        def do_test():
+            self.reactor.advance(10)
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(
+                    message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "report-timestamp": 10.0, "code": 0, "err": u""}])
+            result.addCallback(callback)
+            self.reactor.advance(0)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
     def test_run_apt_update_report_apt_failure(self):
         """
         If L{PackageReporter.run_apt_update} fails, a message is sent to the
@@ -1290,7 +1316,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 2, "err": u"error"}])
+                      "report-timestamp": 0.0, "code": 2, "err": u"error"}])
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1321,7 +1347,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 1, "err": error}])
+                      "report-timestamp": 0.0, "code": 1, "err": error}])
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1347,7 +1373,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 2, "err": u"error"}])
+                      "report-timestamp": 0.0, "code": 2, "err": u"error"}])
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1372,7 +1398,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 0, "err": u"message"}])
+                      "report-timestamp": 0.0, "code": 0, "err": u"message"}])
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1482,7 +1508,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 0, "err": u"message"}])
+                      "report-timestamp": 0.0, "code": 0, "err": u"message"}])
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1576,7 +1602,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 0, "err": u""}])
+                      "report-timestamp": 0.0, "code": 0, "err": u""}])
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1613,7 +1639,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 0, "err": u""}])
+                      "report-timestamp": 0.0, "code": 0, "err": u""}])
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1747,7 +1773,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
 
             def callback(ignore):
                 message = {"type": "package-reporter-result",
-                           "code": 0, "err": u"error"}
+                           "report-timestamp": 0.0, "code": 0, "err": u"error"}
                 self.assertMessages(
                     message_store.get_pending_messages(), [message])
                 stored = list(self.store._db.execute(
