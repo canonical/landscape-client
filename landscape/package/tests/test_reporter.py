@@ -24,7 +24,8 @@ from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.reactor import FakeReactor
 
-from landscape.compat import convert_buffer_to_string, bpickle
+from landscape.compat import bpickle
+
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
@@ -1754,8 +1755,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
                     "SELECT id, data FROM message").fetchall())
                 self.assertEqual(1, len(stored))
                 self.assertEqual(1, stored[0][0])
-                self.assertEqual(message,
-                    bpickle.loads(convert_buffer_to_string(stored[0][1])))
+                self.assertEqual(message, bpickle.loads(bytes(stored[0][1])))
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
