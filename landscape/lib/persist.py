@@ -608,7 +608,7 @@ class PickleBackend(Backend):
 class BPickleBackend(Backend):
 
     def __init__(self):
-        from landscape.compat import bpickle
+        from landscape.lib import bpickle
         self._bpickle = bpickle
 
     def new(self):
