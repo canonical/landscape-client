@@ -186,7 +186,8 @@ class AptFacade(object):
 
     def get_package_holds(self):
         """Return the name of all the packages that are on hold."""
-        return [version.package.name for version in self.get_locked_packages()]
+        return sorted([version.package.name
+                       for version in self.get_locked_packages()])
 
     def _set_dpkg_selections(self, selection):
         """Set the dpkg selection.

@@ -972,7 +972,7 @@ class AptPackageChangerTest(LandscapeTest):
 
         def assert_result(result):
             self.facade.reload_channels()
-            self.assertEqual(["foo", "bar"], self.facade.get_package_holds())
+            self.assertEqual(["bar", "foo"], self.facade.get_package_holds())
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
