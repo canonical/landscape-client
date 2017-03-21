@@ -196,27 +196,27 @@ class AptPackageChangerTest(LandscapeTest):
         self.assertTrue(self.store.get_next_task("changer"))
 
     def test_install_unknown_package(self):
-        self.store.set_hash_ids({"hash": 456})
+        self.store.set_hash_ids({b"hash": 456})
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [456],
                              "operation-id": 123})
 
         self.changer.handle_tasks()
 
-        self.assertIn("Package data not yet synchronized with server ('hash')",
-                      self.logfile.getvalue())
+        self.assertIn("Package data not yet synchronized with server (%r)" %
+                      b"hash", self.logfile.getvalue())
         self.assertTrue(self.store.get_next_task("changer"))
 
     def test_remove_unknown_package(self):
-        self.store.set_hash_ids({"hash": 456})
+        self.store.set_hash_ids({b"hash": 456})
         self.store.add_task("changer",
                             {"type": "change-packages", "remove": [456],
                              "operation-id": 123})
 
         self.changer.handle_tasks()
 
-        self.assertIn("Package data not yet synchronized with server ('hash')",
-                      self.logfile.getvalue())
+        self.assertIn("Package data not yet synchronized with server (%r)" %
+                      b"hash", self.logfile.getvalue())
         self.assertTrue(self.store.get_next_task("changer"))
 
     def test_unknown_data_timeout(self):
