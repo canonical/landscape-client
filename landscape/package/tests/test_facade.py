@@ -1029,9 +1029,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
 
         def print_output(fetch_progress, install_progress):
-            os.write(1, "Stdout output\n")
-            os.write(2, "Stderr output\n")
-            os.write(1, "Stdout output again\n")
+            os.write(1, b"Stdout output\n")
+            os.write(2, b"Stderr output\n")
+            os.write(1, b"Stdout output again\n")
 
         self.patch_cache_commit(print_output)
         output = [
@@ -1054,9 +1054,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
 
         def commit(fetch_progress, install_progress):
-            os.write(1, "Stdout output\n")
-            os.write(2, "Stderr output\n")
-            os.write(1, "Stdout output again\n")
+            os.write(1, b"Stdout output\n")
+            os.write(2, b"Stderr output\n")
+            os.write(1, b"Stdout output again\n")
             raise SystemError("Oops")
 
         self.facade._cache.commit = commit
