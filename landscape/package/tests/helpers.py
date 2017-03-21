@@ -6,8 +6,6 @@ import time
 import apt_inst
 import apt_pkg
 
-from twisted.python.compat import _PY3
-
 from landscape.lib.fs import append_binary_file
 from landscape.lib.fs import create_binary_file
 from landscape.package.facade import AptFacade
@@ -52,11 +50,15 @@ class AptFacadeHelper(object):
                     "name": name, "version": version,
                     "architecture": architecture,
                     "description": description}).encode("utf-8")
+        # We want to re-order the TagSection, but it requires bytes as input.
+        # As we also want to write a binary file, we have to explicitly pass
+        # the hardly documented `bytes=True` to TagSection as it would be
+        # returned as unicode in Python 3 otherwise. In future versions of
+        # apt_pkg there should be a TagSection.write() which is recommended.
         package_stanza = apt_pkg.rewrite_section(
-            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
+            apt_pkg.TagSection(package_stanza, bytes=True),
+            apt_pkg.REWRITE_PACKAGE_ORDER,
             list(control_fields.items()))
-        if _PY3:
-            package_stanza = package_stanza.encode("utf-8")
         append_binary_file(packages_file, b"\n" + package_stanza + b"\n")
 
     def _add_system_package(self, name, architecture="all", version="1.0",
