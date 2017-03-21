@@ -9,7 +9,7 @@ from apt.package import Package
 from aptsources.sourceslist import SourcesList
 from apt.cache import LockFailedException
 
-from twisted.python.compat import unicode
+from twisted.python.compat import unicode, _PY3
 
 from landscape.lib.fs import read_text_file, create_text_file
 from landscape.package.facade import (
@@ -289,7 +289,11 @@ class AptFacadeTest(LandscapeTest):
         stanza = self.facade.get_package_stanza(deb_file).split("\n")
         SHA256 = (
             "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
-        self.assertItemsEqual(textwrap.dedent("""\
+        if _PY3:
+            assertion = self.assertCountEqual
+        else:
+            assertion = self.assertItemsEqual
+        assertion(textwrap.dedent("""\
             Package: name1
             Priority: optional
             Section: Group1
@@ -1084,12 +1088,12 @@ class AptFacadeTest(LandscapeTest):
 
         def commit1(fetch_progress, install_progress):
             self.facade._cache.commit = commit2
-            os.write(2, "bad stuff!\n")
+            os.write(2, b"bad stuff!\n")
             raise LockFailedException("Oops")
 
         def commit2(fetch_progress, install_progress):
             install_progress.dpkg_exited = True
-            os.write(1, "good stuff!")
+            os.write(1, b"good stuff!")
 
         self.facade._cache.commit = commit1
         output = [
@@ -1113,12 +1117,12 @@ class AptFacadeTest(LandscapeTest):
 
         def commit1(fetch_progress, install_progress):
             self.facade._cache.commit = commit2
-            os.write(2, "bad stuff!\n")
+            os.write(2, b"bad stuff!\n")
             raise SystemError("Oops")
 
         def commit2(fetch_progress, install_progress):
             install_progress.dpkg_exited = True
-            os.write(1, "good stuff!")
+            os.write(1, b"good stuff!")
 
         self.facade._cache.commit = commit1
         self.assertRaises(TransactionError, self.facade.perform_changes)
@@ -1216,7 +1220,7 @@ class AptFacadeTest(LandscapeTest):
 
         def commit(fetch_progress, install_progress):
             install_progress.dpkg_exited = False
-            os.write(1, "Stdout output\n")
+            os.write(1, b"Stdout output\n")
 
         self.facade._cache.commit = commit
         exception = self.assertRaises(
