@@ -4,7 +4,7 @@ VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
 # The minimum server API version that all Landscape servers are known to speak
 # and support. It can serve as fallback in case higher versions are not there.
-DEFAULT_SERVER_API = "3.2"
+DEFAULT_SERVER_API = b"3.2"
 
 # The highest server API version that the client is capable of speaking. The
 # client will use it, unless the server declares to support only a lower
@@ -22,7 +22,7 @@ DEFAULT_SERVER_API = "3.2"
 # 3.3:
 #  * Add new schema for the "registration" message, providing Juju information
 #
-SERVER_API = "3.3"
+SERVER_API = b"3.3"
 
 # The "client-api" field of outgoing messages will be set to this value, and
 # used by the server to know which schema do the message types accepted by the
@@ -54,4 +54,4 @@ SERVER_API = "3.3"
 #    "info" field of the response payload for a fail registration, in case the
 #    account has too many pending computers.
 #
-CLIENT_API = "3.8"
+CLIENT_API = b"3.8"

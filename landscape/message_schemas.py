@@ -379,9 +379,12 @@ UNKNOWN_PACKAGE_HASHES = Message("unknown-package-hashes", {
     "request-id": Int(),
     })
 
-PACKAGE_REPORTER_RESULT = Message("package-reporter-result", {
-    "code": Int(),
-    "err": Unicode()})
+PACKAGE_REPORTER_RESULT = Message(
+    "package-reporter-result", {
+        "report-timestamp": Float(),
+        "code": Int(),
+        "err": Unicode()},
+    optional=["report-timestamp"])
 
 ADD_PACKAGES = Message("add-packages", {
     "packages": List(KeyDict({"name": Unicode(),

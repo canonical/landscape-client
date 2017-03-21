@@ -771,7 +771,7 @@ class MessageExchange(object):
 
         # Extract the server API from the payload. If it's not there it must
         # be 3.2, because it's the one that didn't have this field.
-        server_api = result.get("server-api", "3.2")
+        server_api = result.get("server-api", b"3.2")
 
         if is_version_higher(server_api, message_store.get_server_api()):
             # The server can handle a message API that is higher than the one

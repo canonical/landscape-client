@@ -18,6 +18,7 @@ from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
+from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
@@ -231,6 +232,9 @@ class PackageReporter(PackageTaskHandler):
                 out, err, code = yield deferred
                 out = out.decode("utf-8")
                 err = err.decode("utf-8")
+
+                timestamp = self._reactor.time()
+
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
                     "'%s' exited with status %d (out='%s', err='%s')" % (
@@ -264,7 +268,8 @@ class PackageReporter(PackageTaskHandler):
                             self.sources_list_directory))
 
                 yield self._broker.call_if_accepted(
-                    "package-reporter-result", self.send_result, code, err)
+                    "package-reporter-result", self.send_result, timestamp,
+                    code, err)
                 yield returnValue((out, err, code))
         else:
             logging.debug("'%s' didn't run, update interval has not passed" %
@@ -288,12 +293,13 @@ class PackageReporter(PackageTaskHandler):
 
         return result.addCallback(callback, deferred)
 
-    def send_result(self, code, err):
+    def send_result(self, timestamp, code, err):
         """
         Report the package reporter result to the server in a message.
         """
         message = {
             "type": "package-reporter-result",
+            "report-timestamp": timestamp,
             "code": code,
             "err": err}
         return self.send_message(message)
@@ -551,8 +557,26 @@ class PackageReporter(PackageTaskHandler):
         current_available = set()
         current_upgrades = set()
         current_locked = set()
+        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        backports_archive = "{}-backports".format(lsb["code-name"])
 
         for package in self._facade.get_packages():
+            # Don't include package versions from the official backports
+            # archive. The backports archive is enabled by default since
+            # xenial with a pinning policy of 100. Ideally we would
+            # support pinning, but we don't yet. In the mean time, we
+            # ignore backports, so that packages don't get automatically
+            # upgraded to the backports version.
+            backport_origins = [
+                origin for origin in package.origins
+                if origin.archive == backports_archive]
+            if backport_origins and (
+                    len(backport_origins) == len(package.origins)):
+                # Ignore the version if it's only in the official
+                # backports archive. If it's somewhere else as well,
+                # e.g. a PPA, we assume it was added manually and the
+                # user wants to get updates from it.
+                continue
             hash = self._facade.get_package_hash(package)
             id = self._store.get_hash_id(hash)
             if id is not None:

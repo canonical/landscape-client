@@ -357,8 +357,7 @@ class MessageStore(object):
         server_api = self.get_server_api()
 
         if "api" not in message:
-            # The message schema requires bytes as value for the api.
-            message["api"] = server_api.encode("ascii")
+            message["api"] = server_api
 
         # We apply the schema with the highest API version that is greater
         # or equal to the API version the message is tagged with.

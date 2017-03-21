@@ -6,31 +6,30 @@ from distutils.version import StrictVersion
 def is_version_higher(version1, version2):
     """Check if a version is higher than another.
 
-    This takes two software versions in the usual "x.y" form
+    This takes two software versions in the usual b"x.y" form
     and split them on the decimal character, converting both parts
-    to ints, e.g. "3.2" becomes (3, 2).
+    to ints, e.g. b"3.2" becomes (3, 2).
 
     It then does a comparison of the two tuples, and returns C{True} if
     C{version1} is greater than or equal to C{version2}.
 
-    @param version1: The first version to compare.
-    @param version2: The second version to compare.
+    @param version1: The first version to compare as C{bytes}.
+    @param version2: The second version to compare as C{bytes}.
     @return: C{True} if the first version is greater than or equal to
         the second.
     """
-    def ensure_ascii_unicode(string):
-        if isinstance(string, bytes):
-            return string.decode("ascii")
-        return string
-
-    # StrictVersion uses regex to extract the version number and needs strings.
-    version1 = ensure_ascii_unicode(version1)
-    version2 = ensure_ascii_unicode(version2)
+    version1 = version1.decode("ascii")
+    version2 = version2.decode("ascii")
     return StrictVersion(version1) >= StrictVersion(version2)
 
 
 def sort_versions(versions):
-    """Sort a list of software versions from the highest to the lowest."""
+    """Sort a list of software versions in from the highest to the lowest.
+
+    @param version: a C{list} of C{bytes} describing a version.
+    """
     strict_versions = sorted(
-        [StrictVersion(version) for version in versions], reverse=True)
-    return [str(strict_version) for strict_version in strict_versions]
+        [StrictVersion(version.decode("ascii")) for version in versions],
+        reverse=True)
+    return [str(strict_version).encode("ascii")
+            for strict_version in strict_versions]
