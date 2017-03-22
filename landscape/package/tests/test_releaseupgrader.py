@@ -527,9 +527,10 @@ class ReleaseUpgraderTest(LandscapeTest):
             def check_result(args):
                 out, err, code = args
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
-                self.assertEqual(out, "--force-apt-update\n%s\n"
-                                  % os.getcwd())
-                self.assertEqual(err, "")
+                self.assertEqual(
+                    out,
+                    b"--force-apt-update\n%s\n" % os.getcwd().encode("utf-8"))
+                self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
                 find_reporter_mock.assert_called_once_with()
 
@@ -602,9 +603,9 @@ class ReleaseUpgraderTest(LandscapeTest):
 
             def check_result(args):
                 out, err, code = args
-                self.assertEqual(out, "--force-apt-update "
-                                       "--config=/some/config\n")
-                self.assertEqual(err, "")
+                self.assertEqual(out, b"--force-apt-update "
+                                      b"--config=/some/config\n")
+                self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
                 find_reporter_mock.assert_called_once_with()
 
