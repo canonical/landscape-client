@@ -3,11 +3,9 @@ import os
 import signal
 import tarfile
 import unittest
-from unittest import skipIf
 
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail, Deferred
-from twisted.python.compat import _PY3
 
 from landscape.lib.gpg import InvalidGPGSignature
 from landscape.lib.fetch import HTTPCodeError
@@ -286,8 +284,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                          "stderr\n\n"
                          "=== main.log ===\n\n"
                          "long log\n\n")
-    
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
+
     def test_upgrade(self):
         """
         The L{ReleaseUpgrader.upgrade} method spawns the appropropriate
@@ -339,7 +336,6 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         return deferred.addBoth(cleanup)
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_upgrade_with_env_variables(self):
         """
         The L{ReleaseUpgrader.upgrade} method optionally sets environment
@@ -499,8 +495,6 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         return deferred.addBoth(cleanup)
 
-
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_finish(self):
         """
         The L{ReleaseUpgrader.finish} method wipes the upgrade-tool directory
