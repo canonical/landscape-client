@@ -48,14 +48,14 @@ class PackageTaskHandlerTest(LandscapeTest):
     def test_use_hash_id_db(self):
 
         # We don't have this hash=>id mapping
-        self.assertEqual(self.store.get_hash_id("hash"), None)
+        self.assertEqual(self.store.get_hash_id(b"hash"), None)
 
         # An appropriate hash=>id database is available
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
         hash_id_db_filename = os.path.join(self.config.data_path, "package",
                                            "hash-id", "uuid_codename_arch")
-        HashIdStore(hash_id_db_filename).set_hash_ids({"hash": 123})
+        HashIdStore(hash_id_db_filename).set_hash_ids({b"hash": 123})
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
@@ -68,7 +68,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         # Now we do have the hash=>id mapping
         def callback(ignored):
-            self.assertEqual(self.store.get_hash_id("hash"), 123)
+            self.assertEqual(self.store.get_hash_id(b"hash"), 123)
         result.addCallback(callback)
 
         return result
