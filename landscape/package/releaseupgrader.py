@@ -224,6 +224,9 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         def send_operation_result(args):
             out, err, code = args
+            out = out.decode("utf-8")
+            err = err.decode("utf-8")
+
             if code == 0:
                 status = SUCCEEDED
             else:
