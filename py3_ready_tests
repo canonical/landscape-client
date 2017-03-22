@@ -7,7 +7,7 @@ landscape.package.tests.test_reporter
 
 
 landscape.user.tests.test_management
-
+landscape.user.tests.test_provider
 
 
 
