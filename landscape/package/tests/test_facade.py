@@ -286,20 +286,20 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
-        stanza = self.facade.get_package_stanza(deb_file).split("\n")
+        stanza = self.facade.get_package_stanza(deb_file)
         SHA256 = (
             "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
-        self.assertItemsEqual(textwrap.dedent("""\
+        self.assertEqual(textwrap.dedent("""\
             Package: name1
-            Priority: optional
-            Section: Group1
-            Installed-Size: 28
-            Maintainer: Gustavo Niemeyer <gustavo@niemeyer.net>
             Architecture: all
             Version: version1-release1
+            Priority: optional
+            Section: Group1
+            Maintainer: Gustavo Niemeyer <gustavo@niemeyer.net>
+            Installed-Size: 28
             Provides: providesname1
-            Depends: requirename1 (= requireversion1)
             Pre-Depends: prerequirename1 (= prerequireversion1)
+            Depends: requirename1 (= requireversion1)
             Recommends: recommendsname1 (= recommendsversion1)
             Suggests: suggestsname1 (= suggestsversion1)
             Conflicts: conflictsname1 (= conflictsversion1)
@@ -310,7 +310,7 @@ class AptFacadeTest(LandscapeTest):
             SHA256: %(sha256)s
             Description: Summary1
              Description1
-            """ % {"filename": PKGNAME1, "sha256": SHA256}).split("\n"),
+            """ % {"filename": PKGNAME1, "sha256": SHA256}),
             stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
@@ -1029,9 +1029,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
 
         def print_output(fetch_progress, install_progress):
-            os.write(1, "Stdout output\n")
-            os.write(2, "Stderr output\n")
-            os.write(1, "Stdout output again\n")
+            os.write(1, b"Stdout output\n")
+            os.write(2, b"Stderr output\n")
+            os.write(1, b"Stdout output again\n")
 
         self.patch_cache_commit(print_output)
         output = [
@@ -1054,9 +1054,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
 
         def commit(fetch_progress, install_progress):
-            os.write(1, "Stdout output\n")
-            os.write(2, "Stderr output\n")
-            os.write(1, "Stdout output again\n")
+            os.write(1, b"Stdout output\n")
+            os.write(2, b"Stderr output\n")
+            os.write(1, b"Stdout output again\n")
             raise SystemError("Oops")
 
         self.facade._cache.commit = commit
@@ -1084,12 +1084,12 @@ class AptFacadeTest(LandscapeTest):
 
         def commit1(fetch_progress, install_progress):
             self.facade._cache.commit = commit2
-            os.write(2, "bad stuff!\n")
+            os.write(2, b"bad stuff!\n")
             raise LockFailedException("Oops")
 
         def commit2(fetch_progress, install_progress):
             install_progress.dpkg_exited = True
-            os.write(1, "good stuff!")
+            os.write(1, b"good stuff!")
 
         self.facade._cache.commit = commit1
         output = [
@@ -1113,12 +1113,12 @@ class AptFacadeTest(LandscapeTest):
 
         def commit1(fetch_progress, install_progress):
             self.facade._cache.commit = commit2
-            os.write(2, "bad stuff!\n")
+            os.write(2, b"bad stuff!\n")
             raise SystemError("Oops")
 
         def commit2(fetch_progress, install_progress):
             install_progress.dpkg_exited = True
-            os.write(1, "good stuff!")
+            os.write(1, b"good stuff!")
 
         self.facade._cache.commit = commit1
         self.assertRaises(TransactionError, self.facade.perform_changes)
@@ -1216,7 +1216,7 @@ class AptFacadeTest(LandscapeTest):
 
         def commit(fetch_progress, install_progress):
             install_progress.dpkg_exited = False
-            os.write(1, "Stdout output\n")
+            os.write(1, b"Stdout output\n")
 
         self.facade._cache.commit = commit
         exception = self.assertRaises(
