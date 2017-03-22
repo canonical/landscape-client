@@ -9,7 +9,7 @@ from apt.package import Package
 from aptsources.sourceslist import SourcesList
 from apt.cache import LockFailedException
 
-from twisted.python.compat import unicode, _PY3
+from twisted.python.compat import unicode
 
 from landscape.lib.fs import read_text_file, create_text_file
 from landscape.package.facade import (
@@ -286,24 +286,20 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
-        stanza = self.facade.get_package_stanza(deb_file).split("\n")
+        stanza = self.facade.get_package_stanza(deb_file)
         SHA256 = (
             "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
-        if _PY3:
-            assertion = self.assertCountEqual
-        else:
-            assertion = self.assertItemsEqual
-        assertion(textwrap.dedent("""\
+        self.assertEqual(textwrap.dedent("""\
             Package: name1
-            Priority: optional
-            Section: Group1
-            Installed-Size: 28
-            Maintainer: Gustavo Niemeyer <gustavo@niemeyer.net>
             Architecture: all
             Version: version1-release1
+            Priority: optional
+            Section: Group1
+            Maintainer: Gustavo Niemeyer <gustavo@niemeyer.net>
+            Installed-Size: 28
             Provides: providesname1
-            Depends: requirename1 (= requireversion1)
             Pre-Depends: prerequirename1 (= prerequireversion1)
+            Depends: requirename1 (= requireversion1)
             Recommends: recommendsname1 (= recommendsversion1)
             Suggests: suggestsname1 (= suggestsversion1)
             Conflicts: conflictsname1 (= conflictsversion1)
@@ -314,7 +310,7 @@ class AptFacadeTest(LandscapeTest):
             SHA256: %(sha256)s
             Description: Summary1
              Description1
-            """ % {"filename": PKGNAME1, "sha256": SHA256}).split("\n"),
+            """ % {"filename": PKGNAME1, "sha256": SHA256}),
             stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
