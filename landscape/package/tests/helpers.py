@@ -6,7 +6,7 @@ import time
 import apt_inst
 import apt_pkg
 
-from landscape.lib.fs import append_binary_file, append_text_file
+from landscape.lib.fs import append_binary_file
 from landscape.lib.fs import create_binary_file
 from landscape.package.facade import AptFacade
 
@@ -49,11 +49,17 @@ class AptFacadeHelper(object):
                 """ % {
                     "name": name, "version": version,
                     "architecture": architecture,
-                    "description": description.encode("utf-8")})
+                    "description": description}).encode("utf-8")
+        # We want to re-order the TagSection, but it requires bytes as input.
+        # As we also want to write a binary file, we have to explicitly pass
+        # the hardly documented `bytes=True` to TagSection as it would be
+        # returned as unicode in Python 3 otherwise. In future versions of
+        # apt_pkg there should be a TagSection.write() which is recommended.
         package_stanza = apt_pkg.rewrite_section(
-            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
-            control_fields.items())
-        append_binary_file(packages_file, "\n" + package_stanza + "\n")
+            apt_pkg.TagSection(package_stanza, bytes=True),
+            apt_pkg.REWRITE_PACKAGE_ORDER,
+            list(control_fields.items()))
+        append_binary_file(packages_file, b"\n" + package_stanza + b"\n")
 
     def _add_system_package(self, name, architecture="all", version="1.0",
                             control_fields=None):
@@ -72,9 +78,9 @@ class AptFacadeHelper(object):
         control = deb.control.extractdata("control")
         deb_file.close()
         lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_text_file(self.dpkg_status, status + "\n\n")
+        lines.insert(1, b"Status: install ok installed")
+        status = b"\n".join(lines)
+        append_binary_file(self.dpkg_status, status + b"\n\n")
 
     def _add_package_to_deb_dir(self, path, name, architecture="all",
                                 version="1.0", description="description",
@@ -161,7 +167,8 @@ PKGDEB1 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDQ5MyAgMCAgICAgMCAgICAgMT"
            "Mzepwz6J7y5jpkIOH6sDKssF1rmUqYzBX2piZj9zyFad5RHv8dLoXsqua2spF3v+PQ"
            "ffXIlN8aYepsu3x2u0202VX+QFC10st6vvMfDdacgtdzKtpe5G5tuFYx5elcpXm27O"
            "d8LH7Oj3mqP7VgD8P6dTmJ33dsPnpuBnPO3SvLDNlu6ay9It6yZon0BIZRMApGwSgY"
-           "BaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGAUkAADhX8vgAKAAA ")
+           "BaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGAUkAADhX8vgAKAAA "
+           ).encode("ascii")
 
 PKGDEB2 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDUyMiAgMCAgICAgMCAgICAgMT"
            "AwNjQ0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDExNjYxMTQ1MjIg"
@@ -183,7 +190,8 @@ PKGDEB2 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDUyMiAgMCAgICAgMCAgICAgMT"
            "jR45xB99RGrkMGEq4Pbf0L3UWDL4XIRIk6Hjx7Urzj6SSxS/YTzKbu28sqe/64oPmF"
            "JGPj3lqR1cLMdz12u04rLHp/gM2y0mv3HOc/GqxvCl7PqWh7kbux6VrFk69zlefZsu"
            "v5WPycH/NUv7VgF8N6vfeBcgXp3NlnBFNDw5eZsd1as/aK+JzyvZ0TGEbBKBgFo2AU"
-           "jIJRMApGwSgYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFJAEAu4OlKQAoAAAK")
+           "jIJRMApGwSgYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFJAEAu4OlKQAoAAAK"
+           ).encode("ascii")
 
 PKGDEB3 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2OTE0ODIwMyAgMCAgICAgMCAgICAgMT"
            "AwNjQ0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDExNjkxNDgyMDMg"
@@ -206,7 +214,8 @@ PKGDEB3 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2OTE0ODIwMyAgMCAgICAgMCAgICAgMT"
            "bOTd7zh0Xz0y5bdGmDrbLp/dbhNtdpU/EFSt9LKe7/xHgzWn4PWcirYXuVsbrlVMeT"
            "pXaZ4t+zkfi5/zY57qTy3Yw7B+XU7g+8L07rmG7Fe2bVxmyHZLZ+0V8Sl2Xj8mMIyC"
            "UTAKRsEoGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUTAKSAIAY/FOKA"
-           "AoAAAK")
+           "AoAAAK"
+           ).encode("ascii")
 
 PKGDEB4 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTI3NjUxMTU3OC41MCAgICAgMCAgICAgNj"
            "Q0ICAgICA0\nICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEyNzY1MTE1Nz"
@@ -221,7 +230,8 @@ PKGDEB4 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTI3NjUxMTU3OC41MCAgICAgMCAgICAgNj"
            "ICAgYAofiwgAWgUWTAL/7dFBCsMgEEDRWfcUniCZ\nsU57kJ5ASJdFSOz9K9kULLQr"
            "C4H/NiPqQvnTLMNpc3XfZ9PPfW2W1JOae9s3i5okuPzBc6t5bU9Z\nS6nf7v067z93"
            "ENO8lcd9fP/LZ/d3f4td/6h+lqD0H+7W6ocl13wSAAAAAAAAAAAAAAAAAAfzAqr5\n"
-           "GFYAKAAACg==\n")
+           "GFYAKAAACg==\n"
+           ).encode("ascii")
 
 PKGDEB_MINIMAL = (
     "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzg5MDQ3OSAgMCAgICAgMCAgICAgMTAwNj"
@@ -234,7 +244,8 @@ PKGDEB_MINIMAL = (
     "AAAAAAAAAAAAAAAAAAAAAMBF70s1/foAKAAAZGF0YS50YXIu Z3ogICAgIDEzMTc4OTA0N"
     "zkgIDAgICAgIDAgICAgIDEwMDY0NCAgMTA3ICAgICAgIGAKH4sIAAAA AAACA+3KsQ3CQB"
     "AEwCvlK4D/N4frMSGBkQz0jwmQiHCEo5lkpd09HOPv6mrMfGcbs37nR7R2Pg01"
-    "ew5r32rvNUrGDp73x7SUEpfrbZl//LZ2AAAAAAAAAAAA2NELx33R7wAoAAAK")
+    "ew5r32rvNUrGDp73x7SUEpfrbZl//LZ2AAAAAAAAAAAA2NELx33R7wAoAAAK"
+).encode("ascii")
 
 PKGDEB_SIMPLE_RELATIONS = (
     "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxODUxNjMyMiAgMCAgICAgMCAgICAgMTAwNj"
@@ -249,7 +260,8 @@ PKGDEB_SIMPLE_RELATIONS = (
     "EKgcHt1gAoAABkYXRhLnRhci5neiAgICAgMTMxODUxNjMyMiAgMCAgICAgMCAg ICAgMTA"
     "wNjQ0ICAxMDcgICAgICAgYAofiwgAAAAAAAID7cqxDcJQEETBK8UVwH2b+64HQgIjGegf "
     "CJCIIMLRTPKC3d0+/i6f5qpX21z52bdorR+m7Fl9imw5jhVDxQbu19txHYY4nS/r8uX3aw"
-    "cAAAAA AAAAAIANPQALnD6FACgAAAo=")
+    "cAAAAA AAAAAIANPQALnD6FACgAAAo="
+).encode("ascii")
 
 
 PKGDEB_VERSION_RELATIONS = (
@@ -265,7 +277,8 @@ PKGDEB_VERSION_RELATIONS = (
     "AAAACAy/sAwTtOtwAoAABkYXRhLnRhci5neiAgICAgMTMxODUxNjQ5OCAgMCAg ICAgMCA"
     "gICAgMTAwNjQ0ICAxMDcgICAgICAgYAofiwgAAAAAAAID7cqxEcIwEETRK0UVgCT7UD0Q "
     "EpgZA/0DATNEEOHoveQHu7t9/F19GpmvtpH1s2/R2mGeemYfc9RW+9SjZGzgfr0d11LidL"
-    "6sy5ff rx0AAAAAAAAAAAA29AD/ixlwACgAAAo=")
+    "6sy5ff rx0AAAAAAAAAAAA29AD/ixlwACgAAAo="
+).encode("ascii")
 
 
 PKGDEB_MULTIPLE_RELATIONS = (
@@ -282,7 +295,8 @@ PKGDEB_MULTIPLE_RELATIONS = (
     "0YS50YXIuZ3ogICAgIDEzMTg1ODAwNzkgIDAgICAgIDAgICAgIDEwMDY0NCAgMTA3ICAg "
     "ICAgIGAKH4sIAAAAAAACA+3KsRHCMBBE0StFFYBkfFY9EBKYGWP3DwTMEEGEo/eSH+wejv"
     "F39aln vtp61s++RWvTeBpy6tmjtjqMLUrGDrb7el5Kicv1tsxffr92AAAAAAAAAAAA2NE"
-    "Db6L1AQAoAAAK")
+    "Db6L1AQAoAAAK"
+).encode("ascii")
 
 
 PKGDEB_OR_RELATIONS = (
@@ -299,7 +313,8 @@ PKGDEB_OR_RELATIONS = (
     "6ICAgICAxMzE3ODg4ODY5ICAwICAgICAwICAgICAxMDA2NDQgIDEwNyAgICAgICBgCh+L "
     "CAAAAAAAAgPtyrsRwjAURNFXiioAfZBcjwkJzIyB/oGAGSIc4eic5Aa7h2P8XX6Zen+3TD"
     "1/9yNK"
-    "GadWR2ltRC651hGpxw4et/u8phTny3Vdfvy2dgAAAAAAAAAAANjRE6Lr2rEAKAAACg==")
+    "GadWR2ltRC651hGpxw4et/u8phTny3Vdfvy2dgAAAAAAAAAAANjRE6Lr2rEAKAAACg=="
+).encode("ascii")
 
 
 HASH1 = base64.decodestring(b"/ezv4AefpJJ8DuYFSq4RiEHJYP4=")

@@ -1,2 +1,5 @@
 landscape.lib.tests
 landscape.sysinfo.tests
+landscape.package.tests.test_store
+landscape.package.tests.test_reporter
+

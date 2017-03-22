@@ -101,7 +101,7 @@ from twisted.python.compat import iteritems
 
 from landscape import DEFAULT_SERVER_API
 from landscape.lib import bpickle
-from landscape.lib.fs import create_binary_file
+from landscape.lib.fs import create_binary_file, read_binary_file
 from landscape.lib.versioning import sort_versions, is_version_higher
 
 
@@ -260,7 +260,7 @@ class MessageStore(object):
         for filename in self._walk_pending_messages():
             if max is not None and len(messages) >= max:
                 break
-            data = self._get_content(self._message_dir(filename))
+            data = read_binary_file(self._message_dir(filename))
             try:
                 message = bpickle.loads(data)
             except ValueError as e:
@@ -436,13 +436,6 @@ class MessageStore(object):
     def _message_dir(self, *args):
         return os.path.join(self._directory, *args)
 
-    def _get_content(self, filename):
-        file = open(filename, 'rb')
-        try:
-            return file.read()
-        finally:
-            file.close()
-
     def _reprocess_holding(self):
         """
         Unhold accepted messages left behind, and hold unaccepted
@@ -454,7 +447,7 @@ class MessageStore(object):
         for old_filename in self._walk_messages():
             flags = self._get_flags(old_filename)
             try:
-                message = bpickle.loads(self._get_content(old_filename))
+                message = bpickle.loads(read_binary_file(old_filename))
             except ValueError as e:
                 logging.exception(e)
                 if HELD not in flags:

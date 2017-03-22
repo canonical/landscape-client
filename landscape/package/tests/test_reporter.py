@@ -27,7 +27,6 @@ from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.reactor import FakeReactor
 
-from landscape.compat import convert_buffer_to_string
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
@@ -96,21 +95,21 @@ class PackageReporterAptTest(LandscapeTest):
         os.chmod(self.reporter.apt_update_filename, 0o755)
 
     def test_set_package_ids_with_all_known(self):
-        self.store.add_hash_id_request(["hash1", "hash2"])
-        request2 = self.store.add_hash_id_request(["hash3", "hash4"])
-        self.store.add_hash_id_request(["hash5", "hash6"])
+        self.store.add_hash_id_request([b"hash1", b"hash2"])
+        request2 = self.store.add_hash_id_request([b"hash3", b"hash4"])
+        self.store.add_hash_id_request([b"hash5", b"hash6"])
 
         self.store.add_task("reporter",
                             {"type": "package-ids", "ids": [123, 456],
                              "request-id": request2.id})
 
         def got_result(result):
-            self.assertEqual(self.store.get_hash_id("hash1"), None)
-            self.assertEqual(self.store.get_hash_id("hash2"), None)
-            self.assertEqual(self.store.get_hash_id("hash3"), 123)
-            self.assertEqual(self.store.get_hash_id("hash4"), 456)
-            self.assertEqual(self.store.get_hash_id("hash5"), None)
-            self.assertEqual(self.store.get_hash_id("hash6"), None)
+            self.assertEqual(self.store.get_hash_id(b"hash1"), None)
+            self.assertEqual(self.store.get_hash_id(b"hash2"), None)
+            self.assertEqual(self.store.get_hash_id(b"hash3"), 123)
+            self.assertEqual(self.store.get_hash_id(b"hash4"), 456)
+            self.assertEqual(self.store.get_hash_id(b"hash5"), None)
+            self.assertEqual(self.store.get_hash_id(b"hash6"), None)
 
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
@@ -129,7 +128,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         message_store.set_accepted_types(["add-packages"])
 
-        request1 = self.store.add_hash_id_request(["foo", HASH1, "bar"])
+        request1 = self.store.add_hash_id_request([b"foo", HASH1, b"bar"])
 
         self.store.add_task("reporter",
                             {"type": "package-ids",
@@ -184,7 +183,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         message_store.set_accepted_types(["add-packages"])
 
-        request1 = self.store.add_hash_id_request(["foo", HASH1, "bar"])
+        request1 = self.store.add_hash_id_request([b"foo", HASH1, b"bar"])
 
         self.store.add_task("reporter",
                             {"type": "package-ids",
@@ -238,7 +237,7 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-        request_id = self.store.add_hash_id_request(["foo", HASH1, "bar"]).id
+        request_id = self.store.add_hash_id_request([b"foo", HASH1, b"bar"]).id
 
         self.store.add_task("reporter", {"type": "package-ids",
                                          "ids": [123, None, 456],
@@ -259,7 +258,7 @@ class PackageReporterAptTest(LandscapeTest):
             return result.addCallback(got_result, send_mock)
 
     def test_set_package_ids_removes_request_id_when_done(self):
-        request = self.store.add_hash_id_request(["hash1"])
+        request = self.store.add_hash_id_request([b"hash1"])
         self.store.add_task("reporter", {"type": "package-ids", "ids": [123],
                                          "request-id": request.id})
 
@@ -562,7 +561,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.assertTrue(self.reporter._apt_sources_have_changed())
 
     def test_remove_expired_hash_id_request(self):
-        request = self.store.add_hash_id_request(["hash1"])
+        request = self.store.add_hash_id_request([b"hash1"])
         request.message_id = 9999
 
         request.timestamp -= HASH_ID_REQUEST_TIMEOUT
@@ -575,7 +574,7 @@ class PackageReporterAptTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_remove_expired_hash_id_request_wont_remove_before_timeout(self):
-        request1 = self.store.add_hash_id_request(["hash1"])
+        request1 = self.store.add_hash_id_request([b"hash1"])
         request1.message_id = 9999
         request1.timestamp -= HASH_ID_REQUEST_TIMEOUT / 2
 
@@ -592,7 +591,7 @@ class PackageReporterAptTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_remove_expired_hash_id_request_updates_timestamps(self):
-        request = self.store.add_hash_id_request(["hash1"])
+        request = self.store.add_hash_id_request([b"hash1"])
         message_store = self.broker_service.message_store
         message_id = message_store.add({"type": "add-packages",
                                         "packages": [],
@@ -607,7 +606,7 @@ class PackageReporterAptTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_remove_expired_hash_id_request_removes_when_no_message_id(self):
-        request = self.store.add_hash_id_request(["hash1"])
+        request = self.store.add_hash_id_request([b"hash1"])
 
         def got_result(result):
             self.assertRaises(UnknownHashIDRequest,
@@ -1305,9 +1304,9 @@ class PackageReporterAptTest(LandscapeTest):
         spawn_patcher = mock.patch.object(reporter, "spawn_process",
             side_effect=[
                 # Simulate series of failures to acquire the apt lock.
-                succeed(('', '', 100)),
-                succeed(('', '', 100)),
-                succeed(('', '', 100))])
+                succeed((b'', b'', 100)),
+                succeed((b'', b'', 100)),
+                succeed((b'', b'', 100))])
         spawn_patcher.start()
         self.addCleanup(spawn_patcher.stop)
 
@@ -1343,8 +1342,8 @@ class PackageReporterAptTest(LandscapeTest):
         spawn_patcher = mock.patch.object(reporter, "spawn_process",
             side_effect=[
                 # Simulate a failed apt lock grab then a successful one.
-                succeed(('', '', 100)),
-                succeed(('output', 'error', 0))])
+                succeed((b'', b'', 100)),
+                succeed((b'output', b'error', 0))])
         spawn_patcher.start()
         self.addCleanup(spawn_patcher.stop)
 
@@ -1628,7 +1627,7 @@ class PackageReporterAptTest(LandscapeTest):
         return deferred
 
     @mock.patch("landscape.package.reporter.spawn_process",
-                return_value=succeed(("", "", 0)))
+                return_value=succeed((b"", b"", 0)))
     def test_run_apt_update_honors_http_proxy(self, mock_spawn_process):
         """
         The PackageReporter.run_apt_update method honors the http_proxy
@@ -1647,7 +1646,7 @@ class PackageReporterAptTest(LandscapeTest):
             env={"http_proxy": "http://proxy_server:8080"})
 
     @mock.patch("landscape.package.reporter.spawn_process",
-                return_value=succeed(("", "", 0)))
+                return_value=succeed((b"", b"", 0)))
     def test_run_apt_update_honors_https_proxy(self, mock_spawn_process):
         """
         The PackageReporter.run_apt_update method honors the https_proxy
@@ -1869,8 +1868,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
                     "SELECT id, data FROM message").fetchall())
                 self.assertEqual(1, len(stored))
                 self.assertEqual(1, stored[0][0])
-                self.assertEqual(message,
-                    bpickle.loads(convert_buffer_to_string(stored[0][1])))
+                self.assertEqual(message, bpickle.loads(bytes(stored[0][1])))
             result.addCallback(callback)
             result.chainDeferred(deferred)
 

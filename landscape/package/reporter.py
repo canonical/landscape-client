@@ -20,7 +20,6 @@ from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 
-from landscape.compat import convert_buffer_to_string
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.store import UnknownHashIDRequest, FakePackageStore
@@ -231,6 +230,9 @@ class PackageReporter(PackageTaskHandler):
                 self._reactor.call_later(
                     LOCK_RETRY_DELAYS[retry], self._apt_update, deferred)
                 out, err, code = yield deferred
+                out = out.decode("utf-8")
+                err = err.decode("utf-8")
+
                 timestamp = self._reactor.time()
 
                 touch_file(self._config.update_stamp_filename)
@@ -730,7 +732,7 @@ class FakeReporter(PackageReporter):
             messages = global_store.get_messages_by_ids(not_sent)
             sent = []
             for message_id, message in messages:
-                message = bpickle.loads(convert_buffer_to_string(message))
+                message = bpickle.loads(message)
                 if message["type"] not in got_type:
                     got_type.add(message["type"])
                     sent.append(message_id)
