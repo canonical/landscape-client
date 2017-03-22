@@ -62,8 +62,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         signature_url = "http://some/where/karmic.tar.gz.gpg"
 
         method_returns = {
-            tarball_url: succeed("tarball"),
-            signature_url: succeed("signature")}
+            tarball_url: succeed(b"tarball"),
+            signature_url: succeed(b"signature")}
 
         def side_effect(param):
             return method_returns[param]
@@ -98,8 +98,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         signature_url = "http://some/where/karmic.tar.gz.gpg"
 
         method_returns = {
-            tarball_url: succeed("tarball"),
-            signature_url: fail(HTTPCodeError(404, "not found"))}
+            tarball_url: succeed(b"tarball"),
+            signature_url: fail(HTTPCodeError(404, b"not found"))}
 
         def side_effect(param):
             return method_returns[param]
