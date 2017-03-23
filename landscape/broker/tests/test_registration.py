@@ -167,13 +167,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         secure_id is set, and an exchange is about to happen,
         queue a registration message with VM information.
         """
-        get_vm_info_mock.return_value = "vmware"
+        get_vm_info_mock.return_value = b"vmware"
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
-        self.assertEqual("vmware", messages[0]["vm-info"])
+        self.assertEqual(b"vmware", messages[0]["vm-info"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
