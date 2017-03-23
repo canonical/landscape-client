@@ -1,10 +1,13 @@
 landscape.lib.tests
 landscape.sysinfo.tests
-landscape.package.tests.test_store
-landscape.package.tests.test_reporter
-landscape.package.tests.test_changer
+landscape.package.tests
 
-landscape.package.tests.test_facade
-landscape.package.tests.test_skeleton
-landscape.package.tests.test_taskhandler
+
 landscape.tests.test_schema
+
+
+
+
+
+
+
