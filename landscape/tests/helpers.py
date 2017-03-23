@@ -178,9 +178,8 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
         return deferred.addCallback(self.assertEqual, result)
 
     def assertFileContent(self, filename, expected_content):
-        fd = open(filename)
-        actual_content = fd.read()
-        fd.close()
+        with open(filename, "rb") as fd:
+            actual_content = fd.read()
         self.assertEqual(expected_content, actual_content)
 
     def assertConfigEqual(self, first, second):

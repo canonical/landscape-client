@@ -8,7 +8,7 @@ from twisted.python.compat import long
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.lib.fs import append_text_file, touch_file
+from landscape.lib.fs import append_text_file, append_binary_file, touch_file
 from landscape.lib.fs import read_text_file, read_binary_file
 
 
@@ -98,7 +98,7 @@ class TouchFileTest(LandscapeTest):
         path = self.makeFile()
         touch_file(path)
         utime_mock.assert_called_once_with(path, None)
-        self.assertFileContent(path, "")
+        self.assertFileContent(path, b"")
 
     def test_touch_file_multiple_times(self):
         """
@@ -107,7 +107,7 @@ class TouchFileTest(LandscapeTest):
         path = self.makeFile()
         touch_file(path)
         touch_file(path)
-        self.assertFileContent(path, "")
+        self.assertFileContent(path, b"")
 
     def test_touch_file_with_offset_seconds(self):
         """
@@ -127,7 +127,7 @@ class TouchFileTest(LandscapeTest):
         utime_mock.assert_called_once_with(
             path, (expected_time, expected_time))
 
-        self.assertFileContent(path, "")
+        self.assertFileContent(path, b"")
 
 
 class AppendFileTest(LandscapeTest):
@@ -137,8 +137,8 @@ class AppendFileTest(LandscapeTest):
         The L{append_text_file} function appends contents to an existing file.
         """
         existing_file = self.makeFile("foo bar")
-        append_text_file(existing_file, " baz")
-        self.assertFileContent(existing_file, "foo bar baz")
+        append_text_file(existing_file, u" baz ☃")
+        self.assertFileContent(existing_file, b"foo bar baz \xe2\x98\x83")
 
     def test_append_text_no_file(self):
         """
@@ -146,16 +146,16 @@ class AppendFileTest(LandscapeTest):
         exist already.
         """
         new_file = os.path.join(self.makeDir(), "new_file")
-        append_text_file(new_file, "contents")
-        self.assertFileContent(new_file, "contents")
+        append_text_file(new_file, u"contents ☃")
+        self.assertFileContent(new_file, b"contents \xe2\x98\x83")
 
     def test_append_existing_binary_file(self):
         """
         The L{append_text_file} function appends contents to an existing file.
         """
         existing_file = self.makeFile("foo bar")
-        append_text_file(existing_file, " baz")
-        self.assertFileContent(existing_file, "foo bar baz")
+        append_binary_file(existing_file, b" baz \xe2\x98\x83")
+        self.assertFileContent(existing_file, b"foo bar baz \xe2\x98\x83")
 
     def test_append_binary_no_file(self):
         """
@@ -163,5 +163,5 @@ class AppendFileTest(LandscapeTest):
         exist already.
         """
         new_file = os.path.join(self.makeDir(), "new_file")
-        append_text_file(new_file, "contents")
-        self.assertFileContent(new_file, "contents")
+        append_binary_file(new_file, b"contents \xe2\x98\x83")
+        self.assertFileContent(new_file, b"contents \xe2\x98\x83")
