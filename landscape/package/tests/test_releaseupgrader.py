@@ -75,9 +75,9 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             directory = self.config.upgrade_tool_directory
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz"), "tarball")
+                os.path.join(directory, "karmic.tar.gz"), b"tarball")
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz.gpg"), "signature")
+                os.path.join(directory, "karmic.tar.gz.gpg"), b"signature")
             self.assertIn("INFO: Successfully fetched upgrade-tool files",
                           self.logfile.getvalue())
             calls = [mock.call(tarball_url), mock.call(signature_url)]
@@ -179,7 +179,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             filename = os.path.join(self.config.upgrade_tool_directory, "file")
             self.assertTrue(os.path.exists(filename))
-            self.assertFileContent(filename, "data\n")
+            self.assertFileContent(filename, b"data\n")
 
         result.addCallback(check_result)
         return result
@@ -196,9 +196,9 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         def check_result(ignored):
             self.assertFileContent(mirrors_filename,
-                                   "ftp://ftp.lug.ro/ubuntu/\n"
-                                   "http://ppa.launchpad.net/landscape/"
-                                   "trunk/ubuntu/\n")
+                                   b"ftp://ftp.lug.ro/ubuntu/\n"
+                                   b"http://ppa.launchpad.net/landscape/"
+                                   b"trunk/ubuntu/\n")
 
         result = self.upgrader.tweak("hardy")
         result.addCallback(check_result)
