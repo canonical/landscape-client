@@ -221,7 +221,7 @@ class Message(KeyDict):
         super(Message, self).__init__(schema, optional=optional)
 
     def coerce(self, value):
-        for k in value.keys():
+        for k in list(value.keys()):
             if k not in self.schema:
                 # We don't know about this field, just discard it. This
                 # is useful when a client that introduced some new field
