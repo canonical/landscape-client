@@ -217,7 +217,8 @@ class MessageStoreTest(LandscapeTest):
         # messages will also be delivered.
         self.store.set_accepted_types(["data", "unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, [intToBytes(i) for i in [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]])
+        self.assertEqual(il, [intToBytes(i)
+                              for i in [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]])
 
     def test_wb_handle_broken_messages(self):
         self.log_helper.ignore_errors(ValueError)
