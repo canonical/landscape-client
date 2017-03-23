@@ -67,7 +67,7 @@ class BasicTypesTest(LandscapeTest):
         self.assertRaises(InvalidError, Float().coerce, "3.0")
 
     def test_string(self):
-        self.assertEqual(Bytes().coerce("foo"), "foo")
+        self.assertEqual(Bytes().coerce(b"foo"), b"foo")
 
     def test_string_bad_unicode(self):
         self.assertRaises(InvalidError, Bytes().coerce, u"foo")
@@ -97,7 +97,7 @@ class BasicTypesTest(LandscapeTest):
 
     def test_unicode_or_str_bad_encoding(self):
         """Decoding errors should be converted to InvalidErrors."""
-        self.assertRaises(InvalidError, Unicode().coerce, "\xff")
+        self.assertRaises(InvalidError, Unicode().coerce, b"\xff")
 
     def test_list(self):
         self.assertEqual(List(Int()).coerce([1]), [1])
@@ -188,8 +188,8 @@ class BasicTypesTest(LandscapeTest):
         self.assertEqual(schema.coerce({"foo": 32}), {"foo": 32})
 
     def test_dict(self):
-        self.assertEqual(Dict(Int(), Bytes()).coerce({32: "hello."}),
-                         {32: "hello."})
+        self.assertEqual(Dict(Int(), Bytes()).coerce({32: b"hello."}),
+                         {32: b"hello."})
 
     def test_dict_coerces(self):
         self.assertEqual(
@@ -220,8 +220,8 @@ class BasicTypesTest(LandscapeTest):
         """L{Message} schemas should accept C{api} keys."""
         schema = Message("baz", {})
         self.assertEqual(
-            schema.coerce({"type": "baz", "api": "whatever"}),
-            {"type": "baz", "api": "whatever"})
+            schema.coerce({"type": "baz", "api": b"whatever"}),
+            {"type": "baz", "api": b"whatever"})
 
     def test_message_api_None(self):
         """L{Message} schemas should accept None for C{api}."""
