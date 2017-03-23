@@ -1,14 +1,14 @@
-import os
-import sys
 import grp
+import io
+import logging
+import os
 import pwd
 import shutil
-import logging
+import sys
 import tarfile
 
 from twisted.internet.defer import succeed
 
-from landscape.compat import StringIO
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
@@ -186,18 +186,18 @@ class ReleaseUpgrader(PackageTaskHandler):
         @param err: The standard error of the upgrade-tool process.
         @return: A text aggregating the process output, error and log files.
         """
-        buf = StringIO()
+        buf = io.StringIO()
 
         for label, content in [("output", out), ("error", err)]:
             if content:
-                buf.write("=== Standard %s ===\n\n%s\n\n" % (label, content))
+                buf.write(u"=== Standard %s ===\n\n%s\n\n" % (label, content))
 
         for basename in sorted(os.listdir(self.logs_directory)):
             if not basename.endswith(".log"):
                 continue
             filename = os.path.join(self.logs_directory, basename)
             content = read_text_file(filename, - self.logs_limit)
-            buf.write("=== %s ===\n\n%s\n\n" % (basename, content))
+            buf.write(u"=== %s ===\n\n%s\n\n" % (basename, content))
 
         return buf.getvalue()
 
@@ -224,6 +224,9 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         def send_operation_result(args):
             out, err, code = args
+            out = out.decode("utf-8")
+            err = err.decode("utf-8")
+
             if code == 0:
                 status = SUCCEEDED
             else:

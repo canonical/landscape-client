@@ -3,11 +3,9 @@ import os
 import signal
 import tarfile
 import unittest
-from unittest import skipIf
 
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail, Deferred
-from twisted.python.compat import _PY3
 
 from landscape.lib.gpg import InvalidGPGSignature
 from landscape.lib.fetch import HTTPCodeError
@@ -62,8 +60,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         signature_url = "http://some/where/karmic.tar.gz.gpg"
 
         method_returns = {
-            tarball_url: succeed("tarball"),
-            signature_url: succeed("signature")}
+            tarball_url: succeed(b"tarball"),
+            signature_url: succeed(b"signature")}
 
         def side_effect(param):
             return method_returns[param]
@@ -77,9 +75,9 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             directory = self.config.upgrade_tool_directory
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz"), "tarball")
+                os.path.join(directory, "karmic.tar.gz"), b"tarball")
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz.gpg"), "signature")
+                os.path.join(directory, "karmic.tar.gz.gpg"), b"signature")
             self.assertIn("INFO: Successfully fetched upgrade-tool files",
                           self.logfile.getvalue())
             calls = [mock.call(tarball_url), mock.call(signature_url)]
@@ -98,8 +96,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         signature_url = "http://some/where/karmic.tar.gz.gpg"
 
         method_returns = {
-            tarball_url: succeed("tarball"),
-            signature_url: fail(HTTPCodeError(404, "not found"))}
+            tarball_url: succeed(b"tarball"),
+            signature_url: fail(HTTPCodeError(404, b"not found"))}
 
         def side_effect(param):
             return method_returns[param]
@@ -181,7 +179,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             filename = os.path.join(self.config.upgrade_tool_directory, "file")
             self.assertTrue(os.path.exists(filename))
-            self.assertFileContent(filename, "data\n")
+            self.assertFileContent(filename, b"data\n")
 
         result.addCallback(check_result)
         return result
@@ -198,9 +196,9 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         def check_result(ignored):
             self.assertFileContent(mirrors_filename,
-                                   "ftp://ftp.lug.ro/ubuntu/\n"
-                                   "http://ppa.launchpad.net/landscape/"
-                                   "trunk/ubuntu/\n")
+                                   b"ftp://ftp.lug.ro/ubuntu/\n"
+                                   b"http://ppa.launchpad.net/landscape/"
+                                   b"trunk/ubuntu/\n")
 
         result = self.upgrader.tweak("hardy")
         result.addCallback(check_result)
@@ -286,8 +284,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                          "stderr\n\n"
                          "=== main.log ===\n\n"
                          "long log\n\n")
-    
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
+
     def test_upgrade(self):
         """
         The L{ReleaseUpgrader.upgrade} method spawns the appropropriate
@@ -339,7 +336,6 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         return deferred.addBoth(cleanup)
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_upgrade_with_env_variables(self):
         """
         The L{ReleaseUpgrader.upgrade} method optionally sets environment
@@ -499,8 +495,6 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         return deferred.addBoth(cleanup)
 
-
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_finish(self):
         """
         The L{ReleaseUpgrader.finish} method wipes the upgrade-tool directory
@@ -527,9 +521,10 @@ class ReleaseUpgraderTest(LandscapeTest):
             def check_result(args):
                 out, err, code = args
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
-                self.assertEqual(out, "--force-apt-update\n%s\n"
-                                  % os.getcwd())
-                self.assertEqual(err, "")
+                self.assertEqual(
+                    out,
+                    b"--force-apt-update\n%s\n" % os.getcwd().encode("utf-8"))
+                self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
                 find_reporter_mock.assert_called_once_with()
 
@@ -602,9 +597,9 @@ class ReleaseUpgraderTest(LandscapeTest):
 
             def check_result(args):
                 out, err, code = args
-                self.assertEqual(out, "--force-apt-update "
-                                       "--config=/some/config\n")
-                self.assertEqual(err, "")
+                self.assertEqual(out, b"--force-apt-update "
+                                      b"--config=/some/config\n")
+                self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
                 find_reporter_mock.assert_called_once_with()
 
