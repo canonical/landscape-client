@@ -83,8 +83,8 @@ class BasicTypesTest(LandscapeTest):
         self.assertRaises(InvalidError, Unicode().coerce, 32)
 
     def test_unicode_with_str(self):
-        """Unicode accept plain strings and return a unicode."""
-        self.assertEqual(Unicode().coerce("foo"), u"foo")
+        """Unicode accept byte strings and return a unicode."""
+        self.assertEqual(Unicode().coerce(b"foo"), u"foo")
 
     def test_unicode_decodes(self):
         """Unicode should decode plain strings."""
