@@ -104,7 +104,7 @@ class MessageExchangeTest(LandscapeTest):
         messages = self.transport.payloads[0]["messages"]
         self.assertEqual(messages, [{"type": "empty",
                                      "timestamp": 0,
-                                     "api": "3.2"}])
+                                     "api": b"3.2"}])
 
     def test_send_urgent(self):
         """
@@ -523,33 +523,33 @@ class MessageExchangeTest(LandscapeTest):
         payload = self.transport.payloads[-1]
         self.assertMessages(payload["messages"], [])
         self.assertEqual(payload.get("client-api"), CLIENT_API)
-        self.assertEqual(payload.get("server-api"), "3.2")
-        self.assertEqual(self.transport.message_api, "3.2")
+        self.assertEqual(payload.get("server-api"), b"3.2")
+        self.assertEqual(self.transport.message_api, b"3.2")
 
-        self.mstore.add({"type": "a", "api": "1.0"})
-        self.mstore.add({"type": "b", "api": "1.0"})
-        self.mstore.add({"type": "c", "api": "1.1"})
-        self.mstore.add({"type": "d", "api": "1.1"})
-
-        self.exchanger.exchange()
-
-        payload = self.transport.payloads[-1]
-        self.assertMessages(payload["messages"],
-                            [{"type": "a", "api": "1.0"},
-                             {"type": "b", "api": "1.0"}])
-        self.assertEqual(payload.get("client-api"), CLIENT_API)
-        self.assertEqual(payload.get("server-api"), "1.0")
-        self.assertEqual(self.transport.message_api, "1.0")
+        self.mstore.add({"type": "a", "api": b"1.0"})
+        self.mstore.add({"type": "b", "api": b"1.0"})
+        self.mstore.add({"type": "c", "api": b"1.1"})
+        self.mstore.add({"type": "d", "api": b"1.1"})
 
         self.exchanger.exchange()
 
         payload = self.transport.payloads[-1]
         self.assertMessages(payload["messages"],
-                            [{"type": "c", "api": "1.1"},
-                             {"type": "d", "api": "1.1"}])
+                            [{"type": "a", "api": b"1.0"},
+                             {"type": "b", "api": b"1.0"}])
         self.assertEqual(payload.get("client-api"), CLIENT_API)
-        self.assertEqual(payload.get("server-api"), "1.1")
-        self.assertEqual(self.transport.message_api, "1.1")
+        self.assertEqual(payload.get("server-api"), b"1.0")
+        self.assertEqual(self.transport.message_api, b"1.0")
+
+        self.exchanger.exchange()
+
+        payload = self.transport.payloads[-1]
+        self.assertMessages(payload["messages"],
+                            [{"type": "c", "api": b"1.1"},
+                             {"type": "d", "api": b"1.1"}])
+        self.assertEqual(payload.get("client-api"), CLIENT_API)
+        self.assertEqual(payload.get("server-api"), b"1.1")
+        self.assertEqual(self.transport.message_api, b"1.1")
 
     def test_exchange_token(self):
         """
@@ -827,27 +827,27 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.transport.extra.pop("server-api", None)
         self.exchanger.exchange()
-        self.assertEqual("3.2", self.mstore.get_server_api())
+        self.assertEqual(b"3.2", self.mstore.get_server_api())
 
     def test_wb_client_with_older_api_and_server_with_newer(self):
         """
         If a server notifies us that it case use a very new API, but we
         don't know how to speak it, we keep using ours.
         """
-        self.exchanger._api = "3.3"
-        self.transport.extra["server-api"] = "3.4"
+        self.exchanger._api = b"3.3"
+        self.transport.extra["server-api"] = b"3.4"
         self.exchanger.exchange()
-        self.assertEqual("3.3", self.mstore.get_server_api())
+        self.assertEqual(b"3.3", self.mstore.get_server_api())
 
     def test_wb_client_with_newer_api_and_server_with_older(self):
         """
         If a server notifies us that it can use an API which is older
         than the one we support, we'll just use the server API.
         """
-        self.exchanger._api = "3.4"
-        self.transport.extra["server-api"] = "3.3"
+        self.exchanger._api = b"3.4"
+        self.transport.extra["server-api"] = b"3.3"
         self.exchanger.exchange()
-        self.assertEqual("3.3", self.mstore.get_server_api())
+        self.assertEqual(b"3.3", self.mstore.get_server_api())
 
     def test_server_uuid_is_stored_on_message_store(self):
         self.transport.extra["server-uuid"] = "first-uuid"
@@ -1078,10 +1078,10 @@ class MessageExchangeTest(LandscapeTest):
         """
         If we get a 404, we try to donwgrade our server API version.
         """
-        self.mstore.set_server_api("3.3")
+        self.mstore.set_server_api(b"3.3")
         self.transport.responses.append(HTTPCodeError(404, ""))
         self.exchanger.exchange()
-        self.assertEqual("3.2", self.mstore.get_server_api())
+        self.assertEqual(b"3.2", self.mstore.get_server_api())
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
