@@ -3,6 +3,7 @@ landscape.sysinfo.tests
 landscape.package.tests
 
 
+landscape.tests.test_reactor
 landscape.tests.test_schema
 
 
