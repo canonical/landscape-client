@@ -22,8 +22,9 @@ class NetworkInfoTest(LandscapeTest):
         mock_get_network_interface_speed.return_value = (100, True)
 
         device_info = get_active_device_info()
-        result = Popen(["/sbin/ifconfig"], stdout=PIPE).communicate()[0]
-        result = result.decode("ascii")
+        process = Popen(
+            ["/sbin/ifconfig"], stdout=PIPE, env={"LC_ALL": "C"})
+        result = process.communicate()[0].decode("ascii")
         interface_blocks = dict(
             [(block.split()[0], block.upper()) for block in
              filter(None, result.split("\n\n"))])

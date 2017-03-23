@@ -130,19 +130,16 @@ kevin:x:1000:
     def test_utf8_gecos_data(self):
         """Gecos fields should be decoded from utf-8 to unicode."""
         name = u"Jos\N{LATIN SMALL LETTER E WITH ACUTE}"
-        location = "F\N{LATIN SMALL LETTER I WITH DIAERESIS}nland"
-        number = "N\N{LATIN SMALL LETTER AE}ver"
-        if _PY3:
-            gecos = "{},{},{},{},".format(name, location, number, number)
-        else:
-            gecos = "{},{},{},{},".format(name.encode("utf-8"),
-                                          location.encode("utf-8"),
-                                          number.encode("utf-8"),
-                                          number.encode("utf-8"))
-        passwd_file = self.makeFile("""\
+        location = u"F\N{LATIN SMALL LETTER I WITH DIAERESIS}nland"
+        number = u"N\N{LATIN SMALL LETTER AE}ver"
+        gecos = u"{},{},{},{},".format(name, location, number, number)
+        # We explicitly want to encode this file with utf-8 so we can write in
+        # binary mode and do not rely on the default encoding.
+        utf8_content = u"""\
 jdoe:x:1000:1000:{}:/home/jdoe:/bin/zsh
 root:x:0:0:root:/root:/bin/bash
-""".format(gecos))
+""".format(gecos).encode("utf-8")
+        passwd_file = self.makeFile(utf8_content, mode="wb")
         provider = UserProvider(passwd_file=passwd_file,
                                 group_file=self.group_file)
         users = provider.get_users()

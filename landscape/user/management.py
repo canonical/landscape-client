@@ -48,9 +48,7 @@ class UserManagement(object):
         return output
 
     def _set_password(self, username, password):
-        # XXX temporary workaround? We're getting unicode here.
-        username = username.encode("ascii")
-        password = password.encode("ascii")
+        password = password.encode("utf-8")
         crypted = md5_crypt.encrypt(password)
         result, output = self.call_popen(["usermod", "-p", crypted, username])
         if result != 0:

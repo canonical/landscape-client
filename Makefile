@@ -34,7 +34,7 @@ depends2:
 
 .PHONY: depends3
 depends3:
-	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj
+	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-passlib
 
 all: build
 
