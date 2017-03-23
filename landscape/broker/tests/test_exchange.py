@@ -170,8 +170,8 @@ class MessageExchangeTest(LandscapeTest):
             {"type": "accepted-types", "types": ["a", "b"]})
         self.exchanger.handle_message(
             {"type": "accepted-types", "types": ["b", "c"]})
-        self.assertEqual(stash, [("a", True), ("b", True),
-                                 ("a", False), ("c", True)])
+        self.assertCountEqual(stash, [("a", True), ("b", True),
+                                      ("a", False), ("c", True)])
 
     def test_wb_accepted_types_roundtrip(self):
         """

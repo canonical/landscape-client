@@ -148,6 +148,11 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
         else:
             return result[0]
 
+    if not _PY3:
+        def assertCountEqual(self, *args, **kwargs):
+            """An alias for C{TestCase.assertItemsEqual} for py2/3 compat."""
+            self.assertItemsEqual(*args, **kwargs)
+
     def assertNoResult(self, deferred):
         """See C{twisted.trial._synctest._Assertions.assertNoResult}.
 
