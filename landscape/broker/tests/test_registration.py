@@ -3,6 +3,8 @@ import logging
 import socket
 import mock
 
+from twisted.python.compat import _PY3
+
 from landscape.broker.registration import RegistrationError, Identity
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
@@ -261,10 +263,19 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         expected = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.assertEqual(expected, messages[0]["tags"])
 
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "INFO: Queueing message to register with account "
-                         "'account_name' and tags prova\xc4\xb5o "
-                         "with a password.")
+        logs = self.logfile.getvalue().strip()
+        # XXX This is not nice, as it has the origin in a non-consistent way of
+        # using logging. self.logfile is a cStringIO in Python 2 and
+        # io.StringIO in Python 3. This results in reading bytes in Python 2
+        # and unicode in Python 3, but a drop-in replacement of cStringIO with
+        # io.StringIO in Python 2 is not working. However, we compare bytes
+        # here, to circumvent that problem.
+        if _PY3:
+            logs = logs.encode("utf-8")
+        self.assertEqual(logs,
+                         b"INFO: Queueing message to register with account "
+                         b"'account_name' and tags prova\xc4\xb5o "
+                         b"with a password.")
 
     def test_queue_message_on_exchange_with_access_group(self):
         """

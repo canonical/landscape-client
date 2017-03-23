@@ -7,6 +7,6 @@ landscape.package.tests
 
 
 
-
+landscape.broker.tests.test_registration
 landscape.broker.tests.test_exchange
 
