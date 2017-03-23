@@ -541,7 +541,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         the registration message.
         """
         self.mstore.set_accepted_types(["register"])
-        self.mstore.set_server_api("3.3")
+        self.mstore.set_server_api(b"3.3")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
@@ -559,7 +559,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         isn't included in the message.
         """
         self.mstore.set_accepted_types(["register"])
-        self.mstore.set_server_api("3.2")
+        self.mstore.set_server_api(b"3.2")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
