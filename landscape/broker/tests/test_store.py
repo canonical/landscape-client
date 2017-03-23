@@ -1,6 +1,9 @@
 import os
 import mock
 
+
+from twisted.python.compat import intToBytes
+
 from landscape.lib.persist import Persist
 from landscape.broker.store import MessageStore
 from landscape.schema import InvalidError, Message, Int, Bytes, Unicode
@@ -95,7 +98,7 @@ class MessageStoreTest(LandscapeTest):
         """
         Deleting old messages should avoid deleting held messages.
         """
-        self.store.add({"type": "unaccepted", "data": "blah"})
+        self.store.add({"type": "unaccepted", "data": b"blah"})
         self.store.add({"type": "empty"})
         self.store.set_pending_offset(1)
         self.store.delete_old_messages()
@@ -108,9 +111,9 @@ class MessageStoreTest(LandscapeTest):
     def test_delete_all_messages(self):
         """Resetting the message store means removing *ALL* messages."""
         self.store.set_accepted_types(["empty"])
-        self.store.add({"type": "unaccepted", "data": "blah"})
+        self.store.add({"type": "unaccepted", "data": b"blah"})
         self.store.add({"type": "empty"})
-        self.store.add({"type": "unaccepted", "data": "blah"})
+        self.store.add({"type": "unaccepted", "data": b"blah"})
         self.store.add({"type": "empty"})
         self.store.set_pending_offset(2)
         self.store.delete_all_messages()
@@ -119,37 +122,37 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(self.store.get_pending_messages(), [])
 
     def test_one_message(self):
-        self.store.add(dict(type="data", data="A thing"))
+        self.store.add(dict(type="data", data=b"A thing"))
         messages = self.store.get_pending_messages(200)
         self.assertMessages(messages,
                             [{"type": "data",
-                              "data": "A thing",
-                              "api": "3.2"}])
+                              "data": b"A thing",
+                              "api": b"3.2"}])
 
     def test_max_pending(self):
         for i in range(10):
-            self.store.add(dict(type="data", data=str(i)))
+            self.store.add(dict(type="data", data=intToBytes(i)))
         il = [m["data"] for m in self.store.get_pending_messages(5)]
-        self.assertEqual(il, map(str, [0, 1, 2, 3, 4]))
+        self.assertEqual(il, [intToBytes(i) for i in[0, 1, 2, 3, 4]])
 
     def test_offset(self):
         self.store.set_pending_offset(5)
         for i in range(15):
-            self.store.add(dict(type="data", data=str(i)))
+            self.store.add(dict(type="data", data=intToBytes(i)))
         il = [m["data"] for m in self.store.get_pending_messages(5)]
-        self.assertEqual(il, map(str, [5, 6, 7, 8, 9]))
+        self.assertEqual(il, [intToBytes(i) for i in [5, 6, 7, 8, 9]])
 
     def test_exercise_multi_dir(self):
         for i in range(35):
-            self.store.add(dict(type="data", data=str(i)))
+            self.store.add(dict(type="data", data=intToBytes(i)))
         il = [m["data"] for m in self.store.get_pending_messages(50)]
-        self.assertEqual(il, map(str, range(35)))
+        self.assertEqual(il, [intToBytes(i) for i in range(35)])
 
     def test_wb_clean_up_empty_directories(self):
         for i in range(60):
-            self.store.add(dict(type="data", data=str(i)))
+            self.store.add(dict(type="data", data=intToBytes(i)))
         il = [m["data"] for m in self.store.get_pending_messages(60)]
-        self.assertEqual(il, map(str, range(60)))
+        self.assertEqual(il, [intToBytes(i) for i in range(60)])
         self.assertEqual(set(os.listdir(self.temp_dir)), set(["0", "1", "2"]))
 
         self.store.set_pending_offset(60)
@@ -159,62 +162,62 @@ class MessageStoreTest(LandscapeTest):
     def test_unaccepted(self):
         for i in range(10):
             self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=str(i)))
+                                data=intToBytes(i)))
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [0, 2, 4, 6, 8]))
+        self.assertEqual(il, [intToBytes(i) for i in [0, 2, 4, 6, 8]])
 
     def test_unaccepted_with_offset(self):
         for i in range(10):
             self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=str(i)))
+                                data=intToBytes(i)))
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [4, 6, 8]))
+        self.assertEqual(il, [intToBytes(i) for i in [4, 6, 8]])
 
     def test_unaccepted_reaccepted(self):
         for i in range(10):
             self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=str(i)))
+                                data=intToBytes(i)))
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(2)]
         self.store.set_accepted_types(["data", "unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [4, 6, 8, 1, 3, 5, 7, 9]))
+        self.assertEqual(il, [intToBytes(i) for i in [4, 6, 8, 1, 3, 5, 7, 9]])
 
     def test_accepted_unaccepted(self):
         for i in range(10):
             self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=str(i)))
+                                data=intToBytes(i)))
         # Setting pending offset here means that the first two
         # messages, even though becoming unaccepted now, were already
         # accepted before, so they shouldn't be marked for hold.
         self.store.set_pending_offset(2)
         self.store.set_accepted_types(["unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [1, 3, 5, 7, 9]))
+        self.assertEqual(il, [intToBytes(i) for i in [1, 3, 5, 7, 9]])
         self.store.set_accepted_types(["data", "unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [1, 3, 5, 7, 9, 4, 6, 8]))
+        self.assertEqual(il, [intToBytes(i) for i in [1, 3, 5, 7, 9, 4, 6, 8]])
 
     def test_accepted_unaccepted_old(self):
         for i in range(10):
             self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=str(i)))
+                                data=intToBytes(i)))
         self.store.set_pending_offset(2)
         self.store.set_accepted_types(["unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [1, 3, 5, 7, 9]))
+        self.assertEqual(il, [intToBytes(i) for i in [1, 3, 5, 7, 9]])
         # Now, if the server asks us to go back and process
         # previously accepted messages that are now unaccepted,
         # they should be put on hold.
         self.store.set_pending_offset(0)
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [1, 3, 5, 7, 9]))
+        self.assertEqual(il, [intToBytes(i) for i in [1, 3, 5, 7, 9]])
         # When the server starts accepting them again, these old
         # messages will also be delivered.
         self.store.set_accepted_types(["data", "unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, map(str, [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]))
+        self.assertEqual(il, [intToBytes(i) for i in [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]])
 
     def test_wb_handle_broken_messages(self):
         self.log_helper.ignore_errors(ValueError)
@@ -250,8 +253,8 @@ class MessageStoreTest(LandscapeTest):
 
     def test_wb_delete_messages_with_broken(self):
         self.log_helper.ignore_errors(ValueError)
-        self.store.add({"type": "data", "data": "1"})
-        self.store.add({"type": "data", "data": "2"})
+        self.store.add({"type": "data", "data": b"1"})
+        self.store.add({"type": "data", "data": b"2"})
 
         filename = os.path.join(self.temp_dir, "0", "0")
         self.assertTrue(os.path.isfile(filename))
@@ -261,8 +264,8 @@ class MessageStoreTest(LandscapeTest):
 
         messages = self.store.get_pending_messages()
 
-        self.assertEqual(messages, [{"type": "data", "data": "2",
-                                     "api": "3.2"}])
+        self.assertEqual(messages, [{"type": "data", "data": b"2",
+                                     "api": b"3.2"}])
 
         self.store.set_pending_offset(len(messages))
 
@@ -291,20 +294,20 @@ class MessageStoreTest(LandscapeTest):
             mock_open.assert_called_with(mock.ANY, "wb")
             mocked_file.write.assert_called_once_with(mock.ANY)
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "data", "data": 1, "api": "3.2"}])
+                         [{"type": "data", "data": 1, "api": b"3.2"}])
 
     def test_get_server_api_default(self):
         """
         By default the initial server API version is 3.2.
         """
-        self.assertEqual("3.2", self.store.get_server_api())
+        self.assertEqual(b"3.2", self.store.get_server_api())
 
     def test_set_server_api(self):
         """
         It's possible to change the server API version.
         """
-        self.store.set_server_api("3.3")
-        self.assertEqual("3.3", self.store.get_server_api())
+        self.store.set_server_api(b"3.3")
+        self.assertEqual(b"3.3", self.store.get_server_api())
 
     def test_default_api_on_messages(self):
         """
@@ -312,23 +315,23 @@ class MessageStoreTest(LandscapeTest):
         """
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": "3.2"}])
+                         [{"type": "empty", "api": b"3.2"}])
 
     def test_custom_api_on_store(self):
         """
         It's possible to change the server API version attached to outgoing
         messages.
         """
-        self.store.set_server_api("3.3")
+        self.store.set_server_api(b"3.3")
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": "3.3"}])
+                         [{"type": "empty", "api": b"3.3"}])
 
     def test_custom_api_on_messages(self):
-        self.store.set_server_api("3.3")
-        self.store.add({"type": "empty", "api": "3.2"})
+        self.store.set_server_api(b"3.3")
+        self.store.add({"type": "empty", "api": b"3.2"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": "3.2"}])
+                         [{"type": "empty", "api": b"3.2"}])
 
     def test_coercion(self):
         """
@@ -344,7 +347,7 @@ class MessageStoreTest(LandscapeTest):
         If a custom 'api' key is specified in the message, it should
         not be considered during schema verification.
         """
-        self.store.add({"type": "empty", "api": "whatever"})
+        self.store.add({"type": "empty", "api": b"whatever"})
 
     def test_message_is_actually_coerced(self):
         """
@@ -354,25 +357,25 @@ class MessageStoreTest(LandscapeTest):
         self.store.add_schema(Message("data", {"data": Unicode()}))
         self.store.add({"type": "data",
                         "data": u"\N{HIRAGANA LETTER A}".encode("utf-8"),
-                        "api": "3.2"})
+                        "api": b"3.2"})
         self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "data", "api": "3.2",
+                         [{"type": "data", "api": b"3.2",
                            "data": u"\N{HIRAGANA LETTER A}"}])
 
     def test_message_is_coerced_to_its_api_schema(self):
         """
         A message gets coerced to the schema of the API its targeted to.
         """
-        self.store.set_server_api("3.3")
+        self.store.set_server_api(b"3.3")
         # Add a new schema for the 'data' message type, with a slightly
         # different definition.
-        self.store.add_schema(Message("data", {"data": Int()}, api="3.3"))
+        self.store.add_schema(Message("data", {"data": Int()}, api=b"3.3"))
 
         # The message is coerced against the new schema.
         self.store.add({"type": "data", "data": 123})
         self.assertEqual(
             self.store.get_pending_messages(),
-            [{"type": "data", "api": "3.3", "data": 123}])
+            [{"type": "data", "api": b"3.3", "data": 123}])
 
     def test_message_is_coerced_to_highest_compatible_api_schema(self):
         """
@@ -381,21 +384,21 @@ class MessageStoreTest(LandscapeTest):
         """
         # Add a new schema for the 'data' message type, with a slightly
         # different definition.
-        self.store.set_server_api("3.2")
-        self.store.add_schema(Message("data", {"data": Int()}, api="3.3"))
+        self.store.set_server_api(b"3.2")
+        self.store.add_schema(Message("data", {"data": Int()}, api=b"3.3"))
 
         # The message is coerced against the older schema.
-        self.store.add({"type": "data", "data": "foo"})
+        self.store.add({"type": "data", "data": b"foo"})
         self.assertEqual(
             self.store.get_pending_messages(),
-            [{"type": "data", "api": "3.2", "data": "foo"}])
+            [{"type": "data", "api": b"3.2", "data": b"foo"}])
 
     def test_count_pending_messages(self):
         """It is possible to get the total number of pending messages."""
         self.assertEqual(self.store.count_pending_messages(), 0)
         self.store.add({"type": "empty"})
         self.assertEqual(self.store.count_pending_messages(), 1)
-        self.store.add({"type": "data", "data": "yay"})
+        self.store.add({"type": "data", "data": b"yay"})
         self.assertEqual(self.store.count_pending_messages(), 2)
 
     def test_commit(self):
@@ -433,7 +436,7 @@ class MessageStoreTest(LandscapeTest):
             fh.write("bpickle will break reading this")
 
         # And hold the second one.
-        self.store.add({"type": "data", "data": "A thing"})
+        self.store.add({"type": "data", "data": b"A thing"})
 
         self.store.add({"type": "empty"})
         self.store.add({"type": "empty"})
@@ -452,7 +455,7 @@ class MessageStoreTest(LandscapeTest):
 
     def test_is_pending_with_held_message(self):
         self.store.set_accepted_types(["empty"])
-        id = self.store.add({"type": "data", "data": "A thing"})
+        id = self.store.add({"type": "data", "data": b"A thing"})
 
         # Add another normal message and increment the pending offset
         # to make the held message stay "behind" in the queue.
