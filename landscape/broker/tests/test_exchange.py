@@ -149,7 +149,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         payload = self.exchanger._make_payload()
         self.assertIn("accepted-types", payload)
-        self.assertEqual(payload["accepted-types"], md5("").digest())
+        self.assertEqual(payload["accepted-types"], md5(b"").digest())
 
     def test_handle_message_sets_accepted_types(self):
         """
@@ -183,7 +183,7 @@ class MessageExchangeTest(LandscapeTest):
         payload = self.exchanger._make_payload()
         self.assertIn("accepted-types", payload)
         self.assertEqual(payload["accepted-types"],
-                         md5("ack;bar").digest())
+                         md5(b"ack;bar").digest())
 
     def test_accepted_types_causes_urgent_if_held_messages_exist(self):
         """
@@ -1120,7 +1120,7 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-A")
         self.exchanger.register_client_accepted_message_type("type-B")
         types = sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES)
-        accepted_types_digest = md5(";".join(types)).digest()
+        accepted_types_digest = md5(";".join(types).encode("ascii")).digest()
         self.transport.extra["client-accepted-types-hash"] = \
             accepted_types_digest
         self.exchanger.exchange()
@@ -1146,7 +1146,7 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         client will send a new list to the server.
         """
         self.exchanger.register_client_accepted_message_type("type-A")
-        types_hash = md5("type-A").digest()
+        types_hash = md5(b"type-A").digest()
         self.transport.extra["client-accepted-types-hash"] = types_hash
         self.exchanger.exchange()
         self.exchanger.register_client_accepted_message_type("type-B")
@@ -1162,7 +1162,7 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         send a new list of types.
         """
         self.exchanger.register_client_accepted_message_type("type-A")
-        types_hash = md5("type-A").digest()
+        types_hash = md5(b"type-A").digest()
         self.transport.extra["client-accepted-types-hash"] = types_hash
         self.exchanger.exchange()
         self.transport.extra["client-accepted-types-hash"] = "lol"
