@@ -136,6 +136,6 @@ class UserChanges(object):
                 members.extend(update_groups)
 
         if deletes:
-            changes["delete-groups"] = deletes.keys()
+            changes["delete-groups"] = sorted(deletes.keys())
 
         return changes
