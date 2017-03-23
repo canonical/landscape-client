@@ -6,7 +6,7 @@ landscape.package.tests
 
 
 
-
+landscape.broker.tests.test_ping
 
 landscape.broker.tests.test_exchange
 
