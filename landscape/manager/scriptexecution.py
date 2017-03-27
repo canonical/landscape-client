@@ -38,7 +38,10 @@ def get_user_info(username=None):
     gid = None
     path = None
     if username is not None:
-        username_str = encode_if_needed(username)
+        if _PY3:
+            username_str = username
+        else:
+            username_str = encode_if_needed(username)
         try:
             info = pwd.getpwnam(username_str)
         except KeyError:
@@ -117,8 +120,7 @@ class ScriptRunnerMixin(object):
             os.chown(filename, uid, gid)
 
         script = build_script(shell, code)
-        if not _PY3:
-            script = script.encode('utf-8')
+        script = script.encode("utf-8")
         script_file.write(script)
         script_file.close()
 
@@ -220,7 +222,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         for filename, attachment_id in attachments.items():
             if isinstance(attachment_id, str):
                 # Backward compatible behavior
-                data = attachment_id
+                data = attachment_id.encode("utf-8")
                 yield succeed(None)
             else:
                 data = yield fetch_async(
@@ -267,7 +269,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         uid, gid, path = get_user_info(user)
 
         fd, filename = tempfile.mkstemp()
-        script_file = os.fdopen(fd, "w")
+        script_file = os.fdopen(fd, "wb")
         self.write_script_file(
             script_file, filename, shell, code, uid, gid)
 
@@ -320,7 +322,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         self.result_deferred = Deferred()
         self._cancelled = False
         self.size_limit = size_limit
-        self._truncation_indicator = truncation_indicator
+        self._truncation_indicator = truncation_indicator.encode("utf-8")
         self._truncation_offset = len(self._truncation_indicator)
         self._truncated_size_limit = self.size_limit - self._truncation_offset
         self.reactor = reactor
@@ -355,7 +357,10 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         far.
         """
         exit_code = reason.value.exitCode
-        data = "".join(self.data)
+        # We get bytes with self.data, but want unicode with replace
+        # characters. This is again attempted in
+        # ScriptExecutionPlugin._respond, but it is not called in all cases.
+        data = b"".join(self.data).decode("utf-8", "replace")
         if self._cancelled:
             self.result_deferred.errback(ProcessTimeLimitReachedError(data))
         else:

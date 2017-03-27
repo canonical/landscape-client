@@ -43,7 +43,6 @@ class RunScriptTests(LandscapeTest):
         self.plugin = ScriptExecutionPlugin()
         self.manager.add(self.plugin)
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_basic_run(self):
         """
         The plugin returns a Deferred resulting in the output of basic
@@ -53,21 +52,18 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(self.assertEqual, "hi\n")
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_snap_path(self):
         """The bin path for snaps is included in the PATH."""
         deferred = self.plugin.run_script("/bin/sh", "echo $PATH")
         return deferred.addCallback(
             lambda result: self.assertIn("/snap/bin", result))
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_other_interpreter(self):
         """Non-shell interpreters can be specified."""
         result = self.plugin.run_script("/usr/bin/python", "print 'hi'")
         result.addCallback(self.assertEqual, "hi\n")
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_other_interpreter_env(self):
         """
         Non-shell interpreters don't have their paths set by the shell, so we
@@ -75,7 +71,7 @@ class RunScriptTests(LandscapeTest):
         """
         result = self.plugin.run_script(
             sys.executable,
-            "import os\nprint os.environ")
+            "import os\nprint(os.environ)")
 
         def check_environment(results):
             for string in get_default_environment():
@@ -84,7 +80,6 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_server_supplied_env(self):
         """
         Server-supplied environment variables are merged with default
@@ -93,7 +88,7 @@ class RunScriptTests(LandscapeTest):
         server_supplied_env = {"DOG": "Woof", "CAT": "Meow"}
         result = self.plugin.run_script(
             sys.executable,
-            "import os\nprint os.environ",
+            "import os\nprint(os.environ)",
             server_supplied_env=server_supplied_env)
 
         def check_environment(results):
@@ -106,7 +101,6 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_server_supplied_env_overrides_client(self):
         """
         Server-supplied environment variables override client default
@@ -116,7 +110,7 @@ class RunScriptTests(LandscapeTest):
                                "HOME": "server-home"}
         result = self.plugin.run_script(
             sys.executable,
-            "import os\nprint os.environ",
+            "import os\nprint(os.environ)",
             server_supplied_env=server_supplied_env)
 
         def check_environment(results):
@@ -127,7 +121,6 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_concurrent(self):
         """
         Scripts run with the ScriptExecutionPlugin plugin are run concurrently.
@@ -144,7 +137,6 @@ class RunScriptTests(LandscapeTest):
         d2.addCallback(self.assertEqual, "")
         return gatherResults([d1, d2])
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_accented_run_in_code(self):
         """
         Scripts can contain accented data both in the code and in the
@@ -153,11 +145,12 @@ class RunScriptTests(LandscapeTest):
         accented_content = u"\N{LATIN SMALL LETTER E WITH ACUTE}"
         result = self.plugin.run_script(
             u"/bin/sh", u"echo %s" % (accented_content,))
+        # self.assertEqual gets the result as first argument and that's what we
+        # compare against.
         result.addCallback(
-            self.assertEqual, "%s\n" % (accented_content.encode("utf-8"),))
+            self.assertEqual, "%s\n" % (accented_content,))
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_accented_run_in_interpreter(self):
         """
         Scripts can also contain accents in the interpreter.
@@ -168,12 +161,11 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertTrue(
-                "%s " % (accented_content.encode("utf-8"),) in result)
+                "%s " % (accented_content,) in result)
 
         result.addCallback(check)
         return result
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_set_umask_appropriately(self):
         """
         We should be setting the umask to 0o022 before executing a script, and
@@ -196,7 +188,6 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result.addCallback(lambda _: patch_umask.stop())
 
-    @skipIf(_PY3, "mock does not get cleaned up, poisoning all other tests.")
     def test_restore_umask_in_event_of_error(self):
         """
         We set the umask before executing the script, in the event that there's
@@ -312,7 +303,6 @@ class RunScriptTests(LandscapeTest):
 
         return result.addCallback(check).addBoth(cleanup)
 
-    @skipIf(_PY3, 'Takes long with Python3, probably not an unclean Reactor')
     def test_self_remove_script(self):
         """
         If a script removes itself, it doesn't create an error when the script
@@ -358,7 +348,7 @@ class RunScriptTests(LandscapeTest):
         self.assertEqual(spawn[6], expected_gid)
 
         protocol = spawn[0]
-        protocol.childDataReceived(1, "foobar")
+        protocol.childDataReceived(1, b"foobar")
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
@@ -436,7 +426,7 @@ class RunScriptTests(LandscapeTest):
         self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0o600)
 
         protocol = spawn[0]
-        protocol.childDataReceived(1, "foobar")
+        protocol.childDataReceived(1, b"foobar")
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
@@ -467,7 +457,7 @@ class RunScriptTests(LandscapeTest):
         protocol = factory.spawns[0][0]
 
         # Push 200 bytes of output, so we trigger truncation.
-        protocol.childDataReceived(1, "x" * 200)
+        protocol.childDataReceived(1, b"x" * 200)
 
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
@@ -489,9 +479,9 @@ class RunScriptTests(LandscapeTest):
         protocol = factory.spawns[0][0]
 
         # Push 200 bytes of output, so we trigger truncation.
-        protocol.childDataReceived(1, "x" * 200)
+        protocol.childDataReceived(1, b"x" * 200)
         # Push 200 bytes more
-        protocol.childDataReceived(1, "x" * 200)
+        protocol.childDataReceived(1, b"x" * 200)
 
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
@@ -518,7 +508,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script("/bin/sh", "", time_limit=500)
         protocol = factory.spawns[0][0]
         protocol.makeConnection(DummyProcess())
-        protocol.childDataReceived(1, "hi\n")
+        protocol.childDataReceived(1, b"hi\n")
         self.manager.reactor.advance(501)
         protocol.processEnded(Failure(ProcessDone(0)))
 
@@ -539,7 +529,7 @@ class RunScriptTests(LandscapeTest):
         protocol = factory.spawns[0][0]
         transport = DummyProcess()
         protocol.makeConnection(transport)
-        protocol.childDataReceived(1, "hi\n")
+        protocol.childDataReceived(1, b"hi\n")
         protocol.processEnded(Failure(ProcessDone(0)))
         self.manager.reactor.advance(501)
         self.assertEqual(transport.signals, [])
@@ -556,7 +546,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script("/bin/sh", "", time_limit=500)
         protocol = factory.spawns[0][0]
         protocol.makeConnection(DummyProcess())
-        protocol.childDataReceived(1, "hi")
+        protocol.childDataReceived(1, b"hi")
         protocol.processEnded(Failure(ProcessDone(0)))
         self.manager.reactor.advance(501)
 
@@ -614,10 +604,10 @@ class RunScriptTests(LandscapeTest):
                                         user=pwd.getpwuid(uid)[0])
 
         def check(_):
-            mock_fdopen.assert_called_with(99, "w")
+            mock_fdopen.assert_called_with(99, "wb")
             mock_chmod.assert_called_with("tempo!", 0o700)
             mock_chown.assert_called_with("tempo!", uid, gid)
-            script_file.write.assert_called_with("#!/bin/sh\ncode")
+            script_file.write.assert_called_with(b"#!/bin/sh\ncode")
             script_file.close.assert_called_with()
             self.assertEqual(
                 [mock_mkstemp, mock_fdopen, mock_chmod, mock_chown],
@@ -706,7 +696,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             self.broker_service.message_store.get_pending_messages(), [])
 
         # Now let's simulate the completion of the process
-        factory.spawns[0][0].childDataReceived(1, "hi!\n")
+        factory.spawns[0][0].childDataReceived(1, b"hi!\n")
         factory.spawns[0][0].processEnded(Failure(ProcessDone(0)))
 
         def got_result(r):
@@ -748,7 +738,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             self.broker_service.message_store.get_pending_messages(), [])
 
         # Now let's simulate the completion of the process
-        factory.spawns[0][0].childDataReceived(1, "Woof\n")
+        factory.spawns[0][0].childDataReceived(1, b"Woof\n")
         factory.spawns[0][0].processEnded(Failure(ProcessDone(0)))
 
         def got_result(r):
@@ -821,7 +811,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
         protocol = factory.spawns[0][0]
         protocol.makeConnection(DummyProcess())
-        protocol.childDataReceived(2, "ONOEZ")
+        protocol.childDataReceived(2, b"ONOEZ")
         self.manager.reactor.advance(31)
         protocol.processEnded(Failure(ProcessDone(0)))
 
@@ -861,7 +851,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         """Responses to script execution messages are urgent."""
 
         def spawnProcess(protocol, filename, uid, gid, path, env):
-            protocol.childDataReceived(1, "hi!\n")
+            protocol.childDataReceived(1, b"hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
 
@@ -893,7 +883,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         """
         def spawnProcess(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(
-                1, "\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
+                1, b"\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
 

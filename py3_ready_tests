@@ -5,7 +5,7 @@ landscape.package.tests
 
 
 landscape.tests.test_schema
-
+landscape.manager.tests.test_scriptexecution
 
 
 
