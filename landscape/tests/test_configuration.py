@@ -2014,10 +2014,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         # handlers.
         self.assertEqual(2, len(results.resultList))
         # Handlers are registered for the events we are interested in.
-        self.assertEqual(
+        self.assertCountEqual(
             ['registration-failed', 'exchange-failed', 'registration-done'],
             faux_remote.handlers.keys())
-        self.assertEqual(
+        self.assertCountEqual(
             ['failure', 'exchange_failure', 'success'],
             [handler.func.__name__
                 for handler in faux_remote.handlers.values()])

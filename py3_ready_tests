@@ -3,7 +3,7 @@ landscape.sysinfo.tests
 landscape.user.tests
 landscape.package.tests
 
-
+landscape.tests.test_configuration
 landscape.tests.test_schema
 
 
