@@ -11,6 +11,7 @@ from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 from twisted.python.fakepwd import UserDatabase
 
+from landscape.lib.fs import read_text_file
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
     LandscapeTest, EnvironSaverHelper, FakeBrokerServiceHelper)
@@ -24,9 +25,6 @@ from landscape.broker.amp import RemoteBrokerConnector
 from landscape.reactor import LandscapeReactor
 
 import landscape.watchdog
-
-from unittest import skipIf
-from twisted.python.compat import _PY3
 
 
 class StubDaemon(object):
@@ -950,7 +948,6 @@ time.sleep(999)
             mock.ANY, mock.ANY, args=mock.ANY, env=mock.ANY, uid=None,
             gid=None)
 
-    @skipIf(_PY3, 'Takes long with Python3, probably unclean Reactor')
     def test_request_exit(self):
         """The request_exit() method calls exit() on the broker process."""
 
@@ -973,8 +970,8 @@ time.sleep(999)
         self.daemon.request_exit()
 
         def got_result(result):
-            self.assertEqual(result, "")
-            self.assertEqual(open(output_filename).read(), "CALLED")
+            self.assertEqual(result, b"")
+            self.assertEqual(read_text_file(output_filename), "CALLED")
 
         return process_result.addCallback(got_result)
 
