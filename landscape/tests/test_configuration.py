@@ -237,17 +237,17 @@ class PromptYesNoTest(unittest.TestCase):
                        ("", True)]
 
         for input_string, result in comparisons:
-            with mock.patch("__builtin__.raw_input",
+            with mock.patch("landscape.configuration.input",
                             return_value=input_string) as mock_raw_input:
                 prompt_yes_no("Foo")
             mock_raw_input.assert_called_once_with("Foo [Y/n]: ")
 
-    @mock.patch("__builtin__.raw_input", return_value="")
+    @mock.patch("landscape.configuration.input", return_value="")
     def test_prompt_yes_no_default(self, mock_raw_input):
         self.assertFalse(prompt_yes_no("Foo", default=False))
         mock_raw_input.assert_called_once_with("Foo [y/N]: ")
 
-    @mock.patch("__builtin__.raw_input", side_effect=("x", "n"))
+    @mock.patch("landscape.configuration.input", side_effect=("x", "n"))
     @mock.patch("landscape.configuration.show_help")
     def test_prompt_yes_no_invalid(self, mock_show_help, mock_raw_input):
         self.assertFalse(prompt_yes_no("Foo"))
@@ -275,13 +275,13 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config = MyLandscapeSetupConfiguration()
         self.script = LandscapeSetupScript(self.config)
 
-    @mock.patch("__builtin__.raw_input", return_value="Desktop")
+    @mock.patch("landscape.configuration.input", return_value="Desktop")
     def test_prompt_simple(self, mock_raw_input):
         self.script.prompt("computer_title", "Message")
         mock_raw_input.assert_called_once_with("Message: ")
         self.assertEqual(self.config.computer_title, "Desktop")
 
-    @mock.patch("__builtin__.raw_input", return_value="")
+    @mock.patch("landscape.configuration.input", return_value="")
     def test_prompt_with_default(self, mock_raw_input):
         self.config.computer_title = "default"
         self.script.prompt("computer_title", "Message")
@@ -289,7 +289,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         mock_raw_input.assert_called_once_with("Message [default]: ")
         self.assertEqual(self.config.computer_title, "default")
 
-    @mock.patch("__builtin__.raw_input", side_effect=("", "Desktop"))
+    @mock.patch("landscape.configuration.input", side_effect=("", "Desktop"))
     @mock.patch("landscape.configuration.show_help")
     def test_prompt_with_required(self, mock_show_help, mock_raw_input):
         self.script.prompt("computer_title", "Message", True)
@@ -301,14 +301,14 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.assertEqual(self.config.computer_title, "Desktop")
 
-    @mock.patch("__builtin__.raw_input", return_value="")
+    @mock.patch("landscape.configuration.input", return_value="")
     def test_prompt_with_required_and_default(self, mock_raw_input):
         self.config.computer_title = "Desktop"
         self.script.prompt("computer_title", "Message", True)
         mock_raw_input.assert_called_once_with("Message [Desktop]: ")
         self.assertEqual(self.config.computer_title, "Desktop")
 
-    @mock.patch("__builtin__.raw_input", return_value="Yay")
+    @mock.patch("landscape.configuration.input", return_value="Yay")
     def test_prompt_for_unknown_variable(self, mock_raw_input):
         """
         It should be possible to prompt() defining a variable that doesn't
@@ -365,7 +365,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_query_computer_title_defined_on_command_line(
             self, mock_raw_input):
         self.config.load_command_line(["-t", "Computer title"])
@@ -384,7 +384,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.script.query_account_name()
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_query_account_name_defined_on_command_line(self, mock_raw_input):
         self.config.load_command_line(["-a", "Account name"])
         self.script.query_account_name()
@@ -419,7 +419,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_query_proxies_defined_on_command_line(self, mock_raw_input):
         self.config.load_command_line(["--http-proxy", "localhost:8080",
                                        "--https-proxy", "localhost:8443"])
@@ -537,7 +537,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEqual(self.config.include_manager_plugins,
                          "FooPlugin, ScriptExecution")
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_query_script_plugin_defined_on_command_line(self, mock_raw_input):
         self.config.load_command_line(
             ["--include-manager-plugins", "ScriptExecution",
@@ -693,7 +693,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         calls = [("Tags: ", False), ("Tags: ", False)]
         self.script.prompt_get_input.has_calls(calls)
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_tags_defined_on_command_line(self, mock_raw_input):
         """
         Tags defined on the command line can be verified by the user.
@@ -703,7 +703,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEqual(self.config.tags, u"server,london")
         mock_raw_input.assert_not_called()
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_invalid_tags_defined_on_command_line_raises_error(
             self, mock_raw_input):
         """
@@ -725,7 +725,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_access_group_defined_on_command_line(self, mock_raw_input):
         """
         When an access group is provided on the command line, do not prompt
@@ -818,7 +818,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.getpass.getpass")
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     def test_setup(self, mock_raw_input, mock_getpass, mock_print_text):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
@@ -958,7 +958,7 @@ url = https://landscape.canonical.com/message-system
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(
             True)
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_silent_script_users_imply_script_execution_plugin(
             self, mock_sysvconfig, mock_raw_input):
@@ -1107,7 +1107,7 @@ registration_key = shared-secret
         self.assertEqual(config.http_proxy, "http://config")
         self.assertEqual(config.https_proxy, "https://config")
 
-    @mock.patch("__builtin__.raw_input", return_value="n")
+    @mock.patch("landscape.configuration.input", return_value="n")
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.setup")
     def test_main_no_registration(
@@ -1138,7 +1138,7 @@ registration_key = shared-secret
         mock_setup.assert_called_once_with(mock.ANY)
         mock_register.assert_called_once_with(mock.ANY, mock.ANY)
 
-    @mock.patch("__builtin__.raw_input", return_value="y")
+    @mock.patch("landscape.configuration.input", return_value="y")
     @mock.patch("landscape.configuration.register", return_value="success")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_success(
@@ -1162,7 +1162,7 @@ registration_key = shared-secret
              ("System successfully registered.", sys.stdout)],
             printed)
 
-    @mock.patch("__builtin__.raw_input", return_value="y")
+    @mock.patch("landscape.configuration.input", return_value="y")
     @mock.patch(
         "landscape.configuration.register", return_value="unknown-account")
     @mock.patch("landscape.configuration.setup")
@@ -1189,7 +1189,7 @@ registration_key = shared-secret
              ("Invalid account name or registration key.", sys.stderr)],
             printed)
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     @mock.patch("landscape.configuration.register", return_value="success")
     @mock.patch("landscape.configuration.setup")
     def test_main_user_interaction_success_silent(
@@ -1214,7 +1214,7 @@ registration_key = shared-secret
              ("System successfully registered.", sys.stdout)],
             printed)
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     @mock.patch(
         "landscape.configuration.register", return_value="unknown-account")
     @mock.patch("landscape.configuration.setup")
@@ -1252,7 +1252,7 @@ registration_key = shared-secret
                              "data_path = {}\n"
                              "url = http://url\n".format(data_path))
 
-    @mock.patch("__builtin__.raw_input", return_value="")
+    @mock.patch("landscape.configuration.input", return_value="")
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.LandscapeSetupScript")
     @mock.patch("landscape.configuration.SysVConfig")
@@ -1319,7 +1319,7 @@ registration_key = shared-secret
             "This machine will be registered with the provided details when "
             "the client runs.", error=True)
 
-    @mock.patch("__builtin__.raw_input", return_value="")
+    @mock.patch("landscape.configuration.input", return_value="")
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.setup")
     def test_main_with_register(
@@ -1337,7 +1337,7 @@ registration_key = shared-secret
         setup_init_script_and_start_client()
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     @mock.patch("landscape.configuration.SysVConfig")
     def test_setup_init_script_and_start_client_silent(
             self, mock_sysvconfig, mock_raw_input):
@@ -1345,7 +1345,7 @@ registration_key = shared-secret
         mock_raw_input.assert_not_called()
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.setup")
     def test_register_silent(
@@ -1361,7 +1361,7 @@ registration_key = shared-secret
         mock_register.assert_called_once_with(mock.ANY, mock.ANY)
         mock_raw_input.assert_not_called()
 
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("landscape.configuration.input")
     @mock.patch("landscape.configuration.register")
     @mock.patch("landscape.configuration.stop_client_and_disable_init_script")
     def test_disable(

@@ -13,7 +13,7 @@ import os
 import pwd
 import sys
 
-from landscape.compat import StringIO
+from landscape.compat import StringIO, input
 
 from landscape.lib.tag import is_valid_tag
 
@@ -60,7 +60,7 @@ def prompt_yes_no(message, default=True):
     """Prompt for a yes/no question and return the answer as bool."""
     default_msg = "[Y/n]" if default else "[y/N]"
     while True:
-        value = raw_input("{} {}: ".format(message, default_msg)).lower()
+        value = input("{} {}: ".format(message, default_msg)).lower()
         if value:
             if value.startswith("n"):
                 return False
@@ -214,7 +214,7 @@ class LandscapeSetupScript(object):
         @param required: True if value must be entered
         """
         while True:
-            value = raw_input(msg)
+            value = input(msg)
             if value:
                 return value
             elif not required:
@@ -226,7 +226,7 @@ class LandscapeSetupScript(object):
 
         @param option: The attribute of C{self.config} that contains the
             default and which the value will be assigned to.
-        @param msg: The message to prompt the user with (via C{raw_input}).
+        @param msg: The message to prompt the user with (via C{input}).
         @param required: If True, the user will be required to enter a value
             before continuing.
         """
@@ -247,7 +247,7 @@ class LandscapeSetupScript(object):
 
         @param option: The attribute of C{self.config} that contains the
             default and which the value will be assigned to.
-        @param msg: The message to prompt the user with (via C{raw_input}).
+        @param msg: The message to prompt the user with (via C{input}).
         @param required: If True, the user will be required to enter a value
             before continuing.
         """
