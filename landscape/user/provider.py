@@ -119,8 +119,13 @@ class UserProvider(UserProviderBase):
         directory, path to the user's shell)
         """
         user_data = []
+        # The DictReader takes bytes in Python 2 and unicode in Python 3 so we
+        # have to pass Python 3 specific parameters to open() and do the
+        # decoding for Python 2 later after we have parsed the rows. We have to
+        # explicitly indicate the encoding as we cannot rely on the system
+        # default encoding.
         if _PY3:
-            open_params = dict(errors='replace')
+            open_params = dict(encoding="utf-8", errors='replace')
         else:
             open_params = dict()
         with open(self._passwd_file, "r", **open_params) as passwd_file:

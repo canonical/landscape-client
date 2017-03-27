@@ -1,12 +1,13 @@
 landscape.lib.tests
 landscape.sysinfo.tests
+landscape.user.tests
 landscape.package.tests
 
 
-
+landscape.tests.test_schema
 
 
 
 
 landscape.broker.tests.test_exchange
-
+landscape.broker.tests.test_store
