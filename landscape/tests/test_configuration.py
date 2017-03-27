@@ -831,7 +831,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                                  "access_group = webservers\n"
                                  "tags = london, server")
 
-        def side_effect_raw_input(prompt):
+        def side_effect_input(prompt):
             fixtures = {
                 "[Old Title]": "New Title",
                 "[Old Name]": "New Name",
@@ -854,7 +854,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                     return value
             raise KeyError("Couldn't find answer for {}".format(prompt))
 
-        mock_input.side_effect = side_effect_raw_input
+        mock_input.side_effect = side_effect_input
         mock_getpass.side_effect = side_effect_getpass
 
         config = self.get_config(["--no-start", "--config", filename])
