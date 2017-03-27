@@ -339,7 +339,8 @@ class WatchDog(object):
         self.broker = broker
         self.monitor = monitor
         self.manager = manager
-        self.daemons = filter(None, [self.broker, self.monitor, self.manager])
+        self.daemons = [d for d in [self.broker, self.monitor, self.manager]
+                        if d]
         self.reactor = reactor
         self._checking = None
         self._stopping = False
