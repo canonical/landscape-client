@@ -800,7 +800,7 @@ time.sleep(999)
 
             self.assertTrue("Can't keep landscape-broker running." in
                             self.logfile.getvalue())
-            self.assertItemsEqual([True], stopped)
+            self.assertCountEqual([True], stopped)
             reactor.stop = stop[0]
 
         result = Deferred()
@@ -844,7 +844,7 @@ time.sleep(999)
 
             self.assertTrue("Can't keep landscape-broker running." in
                             self.logfile.getvalue())
-            self.assertItemsEqual([True], stopped)
+            self.assertCountEqual([True], stopped)
             reactor.stop = stop[0]
 
         result = Deferred()
