@@ -3,6 +3,8 @@ import logging
 import socket
 import mock
 
+from twisted.python.compat import _PY3
+
 from landscape.broker.registration import RegistrationError, Identity
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
@@ -167,13 +169,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         secure_id is set, and an exchange is about to happen,
         queue a registration message with VM information.
         """
-        get_vm_info_mock.return_value = "vmware"
+        get_vm_info_mock.return_value = b"vmware"
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
-        self.assertEqual("vmware", messages[0]["vm-info"])
+        self.assertEqual(b"vmware", messages[0]["vm-info"])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
@@ -261,10 +263,19 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         expected = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.assertEqual(expected, messages[0]["tags"])
 
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "INFO: Queueing message to register with account "
-                         "'account_name' and tags prova\xc4\xb5o "
-                         "with a password.")
+        logs = self.logfile.getvalue().strip()
+        # XXX This is not nice, as it has the origin in a non-consistent way of
+        # using logging. self.logfile is a cStringIO in Python 2 and
+        # io.StringIO in Python 3. This results in reading bytes in Python 2
+        # and unicode in Python 3, but a drop-in replacement of cStringIO with
+        # io.StringIO in Python 2 is not working. However, we compare bytes
+        # here, to circumvent that problem.
+        if _PY3:
+            logs = logs.encode("utf-8")
+        self.assertEqual(logs,
+                         b"INFO: Queueing message to register with account "
+                         b"'account_name' and tags prova\xc4\xb5o "
+                         b"with a password.")
 
     def test_queue_message_on_exchange_with_access_group(self):
         """
@@ -541,7 +552,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         the registration message.
         """
         self.mstore.set_accepted_types(["register"])
-        self.mstore.set_server_api("3.3")
+        self.mstore.set_server_api(b"3.3")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
@@ -559,7 +570,7 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
         isn't included in the message.
         """
         self.mstore.set_accepted_types(["register"])
-        self.mstore.set_server_api("3.2")
+        self.mstore.set_server_api(b"3.2")
         self.config.account_name = "account_name"
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")

@@ -199,7 +199,7 @@ REGISTER_3_3 = Message(
                            "api-addresses": List(Unicode()),
                            "machine-id": Unicode()}),
      "access_group": Unicode()},
-    api="3.3",
+    api=b"3.3",
     optional=["registration_password", "hostname", "tags", "vm-info",
               "container-info", "access_group", "juju-info"])
 

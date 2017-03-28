@@ -13,7 +13,7 @@ import os
 import pwd
 import sys
 
-from landscape.compat import StringIO
+from landscape.compat import StringIO, input
 
 from landscape.lib.tag import is_valid_tag
 
@@ -21,6 +21,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
+from landscape.lib.fs import create_binary_file
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.lib.persist import Persist
 from landscape.reactor import LandscapeReactor
@@ -60,7 +61,7 @@ def prompt_yes_no(message, default=True):
     """Prompt for a yes/no question and return the answer as bool."""
     default_msg = "[Y/n]" if default else "[y/N]"
     while True:
-        value = raw_input("{} {}: ".format(message, default_msg)).lower()
+        value = input("{} {}: ".format(message, default_msg)).lower()
         if value:
             if value.startswith("n"):
                 return False
@@ -214,7 +215,7 @@ class LandscapeSetupScript(object):
         @param required: True if value must be entered
         """
         while True:
-            value = raw_input(msg)
+            value = input(msg)
             if value:
                 return value
             elif not required:
@@ -226,7 +227,7 @@ class LandscapeSetupScript(object):
 
         @param option: The attribute of C{self.config} that contains the
             default and which the value will be assigned to.
-        @param msg: The message to prompt the user with (via C{raw_input}).
+        @param msg: The message to prompt the user with (via C{input}).
         @param required: If True, the user will be required to enter a value
             before continuing.
         """
@@ -247,7 +248,7 @@ class LandscapeSetupScript(object):
 
         @param option: The attribute of C{self.config} that contains the
             default and which the value will be assigned to.
-        @param msg: The message to prompt the user with (via C{raw_input}).
+        @param msg: The message to prompt the user with (via C{input}).
         @param required: If True, the user will be required to enter a value
             before continuing.
         """
@@ -510,7 +511,8 @@ def decode_base64_ssl_public_certificate(config):
     # WARNING: ssl_public_certificate is misnamed, it's not the key of the
     # certificate, but the actual certificate itself.
     if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
-        decoded_cert = base64.decodestring(config.ssl_public_key[7:])
+        decoded_cert = base64.decodestring(
+            config.ssl_public_key[7:].encode("ascii"))
         config.ssl_public_key = store_public_key_data(
             config, decoded_cert)
 
@@ -587,9 +589,7 @@ def store_public_key_data(config, certificate_data):
         config.data_path,
         os.path.basename(config.get_config_filename() + ".ssl_public_key"))
     print_text("Writing SSL CA certificate to %s..." % key_filename)
-    key_file = open(key_filename, "w")
-    key_file.write(certificate_data)
-    key_file.close()
+    create_binary_file(key_filename, certificate_data)
     return key_filename
 
 
