@@ -47,7 +47,7 @@ class AptSources(ManagerPlugin):
         Turn a signaled process command to a C{ProcessError}.
         """
         if not failure.check(ProcessError):
-            out, err, signal = failure.value
+            out, err, signal = failure.value.args
             raise ProcessError("%s\n%s" % (out, err))
         else:
             return failure

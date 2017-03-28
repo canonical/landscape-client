@@ -13,3 +13,5 @@ landscape.broker.tests.test_ping
 
 landscape.broker.tests.test_exchange
 landscape.broker.tests.test_store
+landscape.manager.tests.test_shutdownmanager
+landscape.manager.tests.test_aptsources

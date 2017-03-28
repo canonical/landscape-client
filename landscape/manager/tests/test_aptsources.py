@@ -3,6 +3,7 @@ import os
 import mock
 
 from twisted.internet.defer import Deferred, succeed
+from twisted.python.compat import _PY3
 
 from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
@@ -184,7 +185,11 @@ class AptSourcesTests(LandscapeTest):
              "gpg-keys": [],
              "operation-id": 1})
 
-        msg = "OSError: [Errno 2] No such file or directory: '/doesntexist'"
+        msg = "{}: [Errno 2] No such file or directory: '/doesntexist'"
+        if _PY3:
+            msg = msg.format("FileNotFoundError")
+        else:
+            msg = msg.format("OSError")
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
                             [{"type": "operation-result",
@@ -352,7 +357,7 @@ class AptSourcesTests(LandscapeTest):
         deferred = Deferred()
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            deferred.errback(("nok", "some error", 1))
+            deferred.errback(RuntimeError("nok", "some error", 1))
             return deferred
 
         self.sourceslist._run_process = _run_process
