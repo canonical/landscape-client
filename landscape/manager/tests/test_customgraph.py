@@ -29,7 +29,7 @@ class CustomGraphManagerTests(LandscapeTest):
         os.makedirs(os.path.join(self.data_path, "custom-graph-scripts"))
         self.manager.config.script_users = "ALL"
         self.graph_manager = CustomGraphPlugin(
-            create_time=range(1500, 0, -300).pop)
+            create_time=list(range(1500, 0, -300)).pop)
         self.manager.add(self.graph_manager)
 
     def _exit_process_protocol(self, protocol, stdout):
