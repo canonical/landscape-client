@@ -33,7 +33,11 @@ Diagram::
 
 """
 
-import urllib
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
+
 from logging import info
 
 from twisted.python.failure import Failure
@@ -65,7 +69,7 @@ class PingClient(object):
         """
         if insecure_id is not None:
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
-            data = urllib.urlencode({"insecure_id": insecure_id})
+            data = urlencode({"insecure_id": insecure_id})
             page_deferred = defer.Deferred()
 
             def errback(type, value, tb):

@@ -296,8 +296,16 @@ class FakeReactor(EventHandlingReactorMixin):
     def call_later(self, seconds, f, *args, **kwargs):
         scheduled_time = self._current_time + seconds
         call = (scheduled_time, f, args, kwargs)
-        bisect.insort_left(self._calls, call)
+        self._insort_call(call)
         return FakeReactorID(call)
+
+    def _insort_call(self, call):
+        # We want to insert the call in the appropriate time slot. A simple
+        # bisect.insort_left() is not sufficient as the comparison of two
+        # methods is not defined in Python 3.
+        times = [c[0] for c in self._calls]
+        index = bisect.bisect_left(times, call[0])
+        self._calls.insert(index, call)
 
     def call_every(self, seconds, f, *args, **kwargs):
 
