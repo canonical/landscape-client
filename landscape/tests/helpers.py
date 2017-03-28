@@ -148,6 +148,9 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
         else:
             return result[0]
 
+    if not _PY3:
+        assertCountEqual = TestCase.assertItemsEqual
+
     def assertNoResult(self, deferred):
         """See C{twisted.trial._synctest._Assertions.assertNoResult}.
 

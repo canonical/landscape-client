@@ -715,7 +715,7 @@ class MessageExchange(object):
         return payload
 
     def _hash_types(self, types):
-        accepted_types_str = ";".join(types)
+        accepted_types_str = ";".join(types).encode("ascii")
         return md5(accepted_types_str).digest()
 
     def _handle_result(self, payload, result):
