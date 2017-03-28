@@ -25,7 +25,7 @@ class GetVMInfoTest(LandscapeTest):
         """
         L{get_vm_info} should be empty when there's no virtualisation.
         """
-        self.assertEqual(u"", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_is_openvz_when_proc_vz_exists(self):
         """
@@ -34,7 +34,7 @@ class GetVMInfoTest(LandscapeTest):
         proc_vz_path = os.path.join(self.proc_path, "vz")
         self.makeFile(path=proc_vz_path, content="foo")
 
-        self.assertEqual("openvz", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"openvz", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_is_xen_when_sys_bus_xen_is_non_empty(self):
         """
@@ -46,7 +46,7 @@ class GetVMInfoTest(LandscapeTest):
         foo_devices_path = os.path.join(devices_xen_path, "foo")
         self.makeFile(path=foo_devices_path, content="bar")
 
-        self.assertEqual("xen", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"xen", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_is_empty_without_xen_devices(self):
         """
@@ -56,7 +56,7 @@ class GetVMInfoTest(LandscapeTest):
         devices_xen_path = os.path.join(self.sys_path, "bus/xen/devices")
         self.makeDir(path=devices_xen_path)
 
-        self.assertEqual("", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_bochs_sys_vendor(self):
         """
@@ -64,7 +64,7 @@ class GetVMInfoTest(LandscapeTest):
         Bochs.
         """
         self.make_sys_vendor("Bochs")
-        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_openstack_sys_vendor(self):
         """
@@ -72,7 +72,7 @@ class GetVMInfoTest(LandscapeTest):
         Openstack.
         """
         self.make_sys_vendor("OpenStack Foundation")
-        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_qemu_sys_vendor(self):
         """
@@ -80,7 +80,7 @@ class GetVMInfoTest(LandscapeTest):
         QEMU.
         """
         self.make_sys_vendor("QEMU")
-        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_vmware_sys_vendor(self):
         """
@@ -88,7 +88,7 @@ class GetVMInfoTest(LandscapeTest):
         VMware Inc.
         """
         self.make_sys_vendor("VMware, Inc.")
-        self.assertEqual("vmware", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"vmware", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_virtualbox_sys_vendor(self):
         """
@@ -96,28 +96,28 @@ class GetVMInfoTest(LandscapeTest):
         is innotek. GmbH.
         """
         self.make_sys_vendor("innotek GmbH")
-        self.assertEqual("virtualbox", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"virtualbox", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_microsoft_sys_vendor(self):
         """
         L{get_vm_info} returns "hyperv" if the sys_vendor is Microsoft.
         """
         self.make_sys_vendor("Microsoft Corporation")
-        self.assertEqual("hyperv", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"hyperv", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_google_sys_vendor(self):
         """
         L{get_vm_info} returns "gce" if the sys_vendor is Google.
         """
         self.make_sys_vendor("Google")
-        self.assertEqual("gce", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"gce", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_matches_insensitive(self):
         """
         L{get_vm_info} matches the vendor string in a case-insentive way.
         """
         self.make_sys_vendor("openstack foundation")
-        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_kvm_on_other_architecture(self):
         """
@@ -130,7 +130,7 @@ class GetVMInfoTest(LandscapeTest):
             "model	: Some CPU (emulated by qemu)\n"
             "machine	: Some Machine (emulated by qemu)\n")
         self.makeFile(path=cpuinfo_path, content=cpuinfo)
-        self.assertEqual("kvm", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_other_vendor(self):
         """
@@ -138,7 +138,7 @@ class GetVMInfoTest(LandscapeTest):
         unknown.
         """
         self.make_sys_vendor("Some other vendor")
-        self.assertEqual("", get_vm_info(root_path=self.root_path))
+        self.assertEqual(b"", get_vm_info(root_path=self.root_path))
 
 
 class GetContainerInfoTest(LandscapeTest):
