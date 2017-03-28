@@ -147,9 +147,9 @@ class BrokerServerTest(LandscapeTest):
         client components that need to communicate with the server. After
         the registration they can be fetched with L{BrokerServer.get_clients}.
         """
-        self.assertEqual(self.broker.get_clients(), [])
+        self.assertEqual(len(self.broker.get_clients()), 0)
         self.assertEqual(self.broker.get_client("test"), None)
-        self.assertEqual(self.broker.get_connectors(), [])
+        self.assertEqual(len(self.broker.get_connectors()), 0)
         self.assertEqual(self.broker.get_connector("test"), None)
 
         def assert_registered(ignored):
