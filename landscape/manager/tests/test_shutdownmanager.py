@@ -43,7 +43,7 @@ class ShutdownManagerTest(LandscapeTest):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             self.assertEqual(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result", "api": "3.2",
+                [{"type": "operation-result", "api": b"3.2",
                   "operation-id": 100, "timestamp": 10, "status": SUCCEEDED,
                   "result-text": u"Data may arrive in batches."}])
 
@@ -83,7 +83,7 @@ class ShutdownManagerTest(LandscapeTest):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             self.assertEqual(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result", "api": "3.2",
+                [{"type": "operation-result", "api": b"3.2",
                   "operation-id": 100, "timestamp": 0, "status": FAILED,
                   "result-text": u"Failure text is reported."}])
 
