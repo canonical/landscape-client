@@ -10,6 +10,7 @@ if _PY3:
 
     from io import StringIO
     stringio = cstringio = StringIO
+    from builtins import input
 
 else:
     import cPickle
@@ -20,6 +21,7 @@ else:
     from StringIO import StringIO
     stringio = StringIO
     from cStringIO import StringIO as cstringio
+    input = raw_input
 
 
 def coerce_unicode(s, encoding='ascii', errors='strict'):
