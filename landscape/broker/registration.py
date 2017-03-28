@@ -196,7 +196,7 @@ class RegistrationHandler(object):
         # version 14.01 has a different format for the juju-info field,
         # so this makes sure that the correct schema is used by the server
         # when validating our message.
-        if self._juju_data and is_version_higher(server_api, "3.3"):
+        if self._juju_data and is_version_higher(server_api, b"3.3"):
             message["juju-info"] = {
                 "environment-uuid": self._juju_data["environment-uuid"],
                 "api-addresses": self._juju_data["api-addresses"],
