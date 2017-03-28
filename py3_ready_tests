@@ -7,7 +7,7 @@ landscape.package.tests
 landscape.tests.test_reactor
 landscape.tests.test_schema
 landscape.manager.tests.test_scriptexecution
-
+landscape.manager.tests.test_customgraph
 
 landscape.broker.tests.test_ping
 
