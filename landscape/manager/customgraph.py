@@ -229,7 +229,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             if os.path.isfile(filename):
                 script_hash = self._get_script_hash(filename)
             else:
-                script_hash = ""
+                script_hash = b""
             if graph_id not in self._data:
                 self._data[graph_id] = {
                     "values": [], "error": u"", "script-hash": script_hash}
