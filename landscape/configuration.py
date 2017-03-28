@@ -21,6 +21,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
+from landscape.lib.fs import create_binary_file
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.lib.persist import Persist
 from landscape.reactor import LandscapeReactor
@@ -513,7 +514,7 @@ def decode_base64_ssl_public_certificate(config):
         decoded_cert = base64.decodestring(
             config.ssl_public_key[7:].encode("ascii"))
         config.ssl_public_key = store_public_key_data(
-            config, decoded_cert.decode("ascii"))
+            config, decoded_cert)
 
 
 def setup(config):
@@ -588,9 +589,7 @@ def store_public_key_data(config, certificate_data):
         config.data_path,
         os.path.basename(config.get_config_filename() + ".ssl_public_key"))
     print_text("Writing SSL CA certificate to %s..." % key_filename)
-    key_file = open(key_filename, "w")
-    key_file.write(certificate_data)
-    key_file.close()
+    create_binary_file(key_filename, certificate_data)
     return key_filename
 
 

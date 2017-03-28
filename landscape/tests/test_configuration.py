@@ -24,6 +24,7 @@ from landscape.configuration import (
     determine_exit_code, is_registered)
 from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
 from landscape.sysvconfig import ProcessError
 from landscape.tests.helpers import FakeBrokerServiceHelper
@@ -2092,8 +2093,8 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
             os.path.basename(config.get_config_filename()) + ".ssl_public_key")
 
         self.assertEqual(key_filename,
-                         store_public_key_data(config, "123456789"))
-        self.assertEqual("123456789", open(key_filename, "r").read())
+                         store_public_key_data(config, b"123456789"))
+        self.assertEqual(b"123456789", read_binary_file(key_filename))
         mock_print_text.assert_called_once_with(
             "Writing SSL CA certificate to %s..." % key_filename)
 
