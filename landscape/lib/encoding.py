@@ -1,4 +1,4 @@
-from twisted.python.compat import iteritems, unicode
+from twisted.python.compat import unicode
 
 
 def encode_if_needed(value):
@@ -8,12 +8,3 @@ def encode_if_needed(value):
     if isinstance(value, unicode):
         value = value.encode("utf-8")
     return value
-
-
-def encode_dict_if_needed(values):
-    """
-    A wrapper taking a dict and passing each of the values to encode_if_needed.
-    """
-    for key, value in iteritems(values):
-        values[key] = encode_if_needed(value)
-    return values
