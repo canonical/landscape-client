@@ -211,21 +211,19 @@ class PackageManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch(
-        "landscape.package.releaseupgrader.find_release_upgrader_command")
-    def test_spawn_release_upgrader(self, find_command_mock):
+    def test_spawn_release_upgrader(self):
         """
         The L{PackageManager.spawn_handler} method executes the correct command
         when passed the L{ReleaseUpgrader} class as argument.
         """
-        command = self.makeFile("#!/bin/sh\necho 'I am the upgrader!' >&2\n")
-        os.chmod(command, 0o755)
-        find_command_mock.return_value = command
+        command = self._write_script(
+            "landscape-release-upgrader",
+            "#!/bin/sh\necho 'I am the upgrader!' >&2\n")
+        self.manager.config = self.config
 
         self.package_store.add_task("release-upgrader", "Do something!")
         self.manager.add(self.package_manager)
         result = self.package_manager.spawn_handler(ReleaseUpgrader)
-        find_command_mock.assert_called_once_with()
 
         def got_result(result):
             log = self.logfile.getvalue()
