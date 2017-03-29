@@ -1,5 +1,3 @@
-from twisted.python.compat import _PY3
-
 from landscape.lib.persist import Persist
 from landscape.user.changes import UserChanges
 from landscape.user.tests.helpers import FakeUserInfo, FakeUserProvider
@@ -292,14 +290,12 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         groups.append(("sales", "x", 70, ["bo"]))
         # Remove user "jdoe"
         users.pop(0)
-        if _PY3:
-            assertion = self.assertCountEqual
-        else:
-            assertion = self.assertItemsEqual
-        assertion(changes.create_diff(),
-                  {"create-groups": [{"gid": 50, "name": "developers"},
-                                     {"gid": 70, "name": "sales"}],
-                   "delete-users": ["jdoe"],
-                   "delete-groups": ["webdev"],
-                   "create-group-members": {"developers": ["bo"],
-                                            "sales": ["bo"]}})
+
+        self.assertCountEqual(
+            changes.create_diff(),
+            {"create-groups": [{"gid": 50, "name": "developers"},
+                               {"gid": 70, "name": "sales"}],
+             "delete-users": ["jdoe"],
+             "delete-groups": ["webdev"],
+             "create-group-members": {"developers": ["bo"],
+                                      "sales": ["bo"]}})

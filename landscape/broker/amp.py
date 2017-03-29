@@ -29,7 +29,7 @@ class RemoteBroker(RemoteObject):
             the given event types occurs in the broker reactor, the associated
             callable will be fired.
         """
-        result = self.listen_events(handlers.keys())
+        result = self.listen_events(list(handlers.keys()))
         return result.addCallback(
             lambda args: handlers[args[0]](**args[1]))
 

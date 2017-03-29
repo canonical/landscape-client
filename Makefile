@@ -1,6 +1,7 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
 PYTHON ?= python
+PYTHON3 ?= python3
 TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
@@ -21,36 +22,63 @@ else
 TARBALL_VERSION := $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
 endif
 
+.PHONY: help
+help:  ## Print help about available targets
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: depends
+depends: depends2 depends3  ## Install py2 and py3 dependencies.
+
+.PHONY: depends2
+depends2:
+	sudo apt -y install python-twisted-core python-distutils-extra python-mock python-configobj python-passlib
+
+.PHONY: depends3
+depends3:
+	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-passlib
+
 all: build
 
-build3:
-	python3 setup.py build_ext -i
+.PHONY: build
+build: build2 build3   ## Build.
 
-build:
+.PHONY: build2
+build2:
 	$(PYTHON) setup.py build_ext -i
 
+.PHONY: build3
+build3:
+	$(PYTHON3) setup.py build_ext -i
+
+.PHONY: check5
 check5:
 	-trial --unclean-warnings --reporter=summary landscape > _last_py2_res
 	-trial3 --unclean-warnings landscape
 	./display_py2_testresults
 
-check3: build3
-	LC_ALL=C $(TEST_COMMAND_PY3)
+.PHONY: check
+check: check2 check3-ready  ## Run all the tests.
 
-check: check2	check3-ready
-
+.PHONY: check2
 check2: build
 	LC_ALL=C $(TEST_COMMAND_PY2)
 
-check3-ready: depends3 build3
+.PHONY: check3
+check3: build3
+	LC_ALL=C $(TEST_COMMAND_PY3)
+
+.PHONY: check3-ready
+check3-ready:  ## Run py3 tests for ported modules (listed in py3_ready_tests).
 	LC_ALL=C $(TEST_COMMAND_PY3_READY)
 
-depends3:
-	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-passlib
+.PHONY: ci-check
+ci-check: depends build check  ## Install dependencies and run all the tests.
 
+.PHONY: lint
 lint:
 	bzr ls-lint
 
+.PHONY: pyflakes
 pyflakes:
 	-pyflakes `find landscape -name \*py`
 
@@ -140,4 +168,5 @@ sdist: clean
 	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
 
-.PHONY: tags etags freshdata run freshrun package sourcepackage updateversion origtarball prepchangelog lint build build3 check check2 check3 check3-ready check5 depends3 releasetarball
+.PHONY: tags etags freshdata run freshrun package sourcepackage updateversion origtarball prepchangelog lint releasetarball
+.DEFAULT_GOAL := help

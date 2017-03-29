@@ -8,16 +8,16 @@ from landscape.lib.fs import read_text_file
 
 def get_vm_info(root_path="/"):
     """
-    Return a string with the virtualization type if it's known, an empty string
-    otherwise.
+    Return a bytestring with the virtualization type if it's known, an empty
+    bytestring otherwise.
 
-    It loops through some possible configurations and return a string with
+    It loops through some possible configurations and return a bytestring with
     the name of the technology being used or None if there's no match
     """
     if _is_vm_openvz(root_path):
-        return "openvz"
+        return b"openvz"
     if _is_vm_xen(root_path):
-        return "xen"
+        return b"xen"
 
     sys_vendor_path = os.path.join(root_path, "sys/class/dmi/id/sys_vendor")
     if os.path.exists(sys_vendor_path):
@@ -51,22 +51,23 @@ def _is_vm_openvz(root_path):
 
 
 def _get_vm_by_vendor(sys_vendor_path):
-    """Return the VM type string (possibly empty) based on the vendor."""
+    """Return the VM type byte string (possibly empty) based on the vendor."""
     vendor = read_text_file(sys_vendor_path).lower()
     # Use lower-key string for vendors, since we do case-insentive match.
+    # We need bytes here as required by the message schema.
     content_vendors_map = (
-        ("bochs", "kvm"),
-        ("google", "gce"),
-        ("innotek", "virtualbox"),
-        ("microsoft", "hyperv"),
-        ("openstack", "kvm"),
-        ("qemu", "kvm"),
-        ("vmware", "vmware"))
+        ("bochs", b"kvm"),
+        ("google", b"gce"),
+        ("innotek", b"virtualbox"),
+        ("microsoft", b"hyperv"),
+        ("openstack", b"kvm"),
+        ("qemu", b"kvm"),
+        ("vmware", b"vmware"))
     for name, vm_type in content_vendors_map:
         if name in vendor:
             return vm_type
 
-    return ""
+    return b""
 
 
 def _get_vm_legacy(root_path):
@@ -74,9 +75,9 @@ def _get_vm_legacy(root_path):
     try:
         cpuinfo = read_text_file(os.path.join(root_path, "proc/cpuinfo"))
     except (IOError, OSError):
-        return ""
+        return b""
 
     if "qemu" in cpuinfo:
-        return "kvm"
+        return b"kvm"
 
-    return ""
+    return b""
