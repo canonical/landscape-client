@@ -1,4 +1,5 @@
 import os
+import os.path
 import sys
 
 from configobj import ConfigObj, ConfigObjError
@@ -432,3 +433,20 @@ def get_versioned_persist(service):
         upgrade_manager.initialize(persist)
     persist.save(service.persist_filename)
     return persist
+
+
+def get_bindir(config):
+    """Return the directory path where the client binaries are.
+
+    If the config is None, it doesn't have a "bindir" attribute, or its
+    value is None, then sys.argv[0] is returned.
+    """
+    bindir = None
+    if config is not None:
+        try:
+            bindir = config.bindir
+        except AttributeError:
+            bindir = None
+    if bindir is None:
+        bindir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    return bindir
