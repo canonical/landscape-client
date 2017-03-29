@@ -70,7 +70,8 @@ class PackageManager(ManagerPlugin):
         if self._package_store.get_next_task(cls.queue_name):
             # path is set to None so that getProcessOutput does not
             # chdir to "." see bug #211373
-            result = getProcessOutput(cls.find_command(),
+            command = cls.find_command(self.config)
+            result = getProcessOutput(command,
                                       args=args, env=os.environ,
                                       errortoo=1,
                                       path=None)

@@ -274,8 +274,8 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         return self._send_message(message)
 
-    @staticmethod
-    def find_command():
+    @classmethod
+    def find_command(cls, config=None):
         return find_release_upgrader_command()
 
     def _send_message(self, message):
