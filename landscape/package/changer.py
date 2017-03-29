@@ -377,12 +377,8 @@ class PackageChanger(PackageTaskHandler):
 
     @classmethod
     def find_command(cls, config=None):
-        return find_changer_command()
-
-
-def find_changer_command():
-    dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-    return os.path.join(dirname, "landscape-package-changer")
+        bindir = get_bindir(config)
+        return os.path.join(bindir, "landscape-package-changer")
 
 
 def main(args):

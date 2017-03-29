@@ -12,7 +12,7 @@ from mock import patch, Mock, call
 
 from landscape.lib.fs import create_text_file, read_text_file, touch_file
 from landscape.package.changer import (
-    PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
+    PackageChanger, main, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
     POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
 from landscape.package.store import PackageStore
@@ -778,20 +778,19 @@ class AptPackageChangerTest(LandscapeTest):
         pgrp.assert_called_once_with()
         task.assert_called_once_with(PackageChanger, ["ARGS"])
 
-    def test_find_changer_command(self):
-        dirname = self.makeDir()
-        filename = self.makeFile("", dirname=dirname,
-                                 basename="landscape-package-changer")
+    def test_find_command_with_bindir(self):
+        self.config.bindir = "/spam/eggs"
+        command = PackageChanger.find_command(self.config)
 
-        saved_argv = sys.argv
-        try:
-            sys.argv = [os.path.join(dirname, "landscape-monitor")]
+        self.assertEqual("/spam/eggs/landscape-package-changer", command)
 
-            command = find_changer_command()
+    def test_find_command_default(self):
+        expected = os.path.join(
+            os.path.dirname(os.path.abspath(sys.argv[0])),
+            "landscape-package-changer")
+        command = PackageChanger.find_command()
 
-            self.assertEqual(command, filename)
-        finally:
-            sys.argv = saved_argv
+        self.assertEqual(expected, command)
 
     def test_transaction_error_with_unicode_data(self):
         self.store.set_hash_ids({HASH1: 1})

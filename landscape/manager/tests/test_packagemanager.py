@@ -1,5 +1,6 @@
 import mock
 import os
+import os.path
 
 from twisted.internet.defer import Deferred
 
@@ -20,17 +21,26 @@ class PackageManagerTest(LandscapeTest):
     def setUp(self):
         """Initialize test helpers and create a sample package store."""
         super(PackageManagerTest, self).setUp()
+        self.config = self.broker_service.config
         self.package_store = PackageStore(os.path.join(self.data_path,
                                                        "package/database"))
         self.package_manager = PackageManager()
+
+    def _write_script(self, name, content):
+        self.config.bindir = self.makeDir()
+        filename = self.makeFile(
+            content,
+            dirname=self.config.bindir,
+            basename=name)
+        os.chmod(filename, 0o755)
+        return filename
 
     def test_create_default_store_upon_message_handling(self):
         """
         If the package sqlite database file doesn't exist yet, it is created
         upon message handling.
         """
-        filename = os.path.join(self.broker_service.config.data_path,
-                                "package/database")
+        filename = os.path.join(self.config.data_path, "package/database")
         os.unlink(filename)
         self.assertFalse(os.path.isfile(filename))
 
@@ -179,21 +189,20 @@ class PackageManagerTest(LandscapeTest):
             self.package_manager.spawn_handler.assert_called_once_with(
                 ReleaseUpgrader)
 
-    @mock.patch("landscape.package.changer.find_changer_command")
-    def test_spawn_changer(self, find_command_mock):
+    def test_spawn_changer(self):
         """
         The L{PackageManager.spawn_handler} method executes the correct command
         when passed the L{PackageChanger} class as argument.
         """
-        command = self.makeFile("#!/bin/sh\necho 'I am the changer!' >&2\n")
-        os.chmod(command, 0o755)
-        find_command_mock.return_value = command
+        command = self._write_script(
+            "landscape-package-changer",
+            "#!/bin/sh\necho 'I am the changer!' >&2\n")
+        self.manager.config = self.config
 
         self.package_store.add_task("changer", "Do something!")
 
         self.manager.add(self.package_manager)
         result = self.package_manager.spawn_handler(PackageChanger)
-        find_command_mock.assert_called_once_with()
 
         def got_result(result):
             log = self.logfile.getvalue()
@@ -225,15 +234,16 @@ class PackageManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.package.changer.find_changer_command")
-    def test_spawn_handler_without_output(self, find_command_mock):
-        find_command_mock.return_value = "/bin/true"
+    def test_spawn_handler_without_output(self):
+        self._write_script(
+            "landscape-package-changer",
+            "#!/bin/sh\n/bin/true")
+        self.manager.config = self.config
 
         self.package_store.add_task("changer", "Do something!")
 
         self.manager.add(self.package_manager)
         result = self.package_manager.spawn_handler(PackageChanger)
-        find_command_mock.assert_called_once_with()
 
         def got_result(result):
             log = self.logfile.getvalue()
@@ -241,18 +251,17 @@ class PackageManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.package.changer.find_changer_command")
-    def test_spawn_handler_copies_environment(self, find_command_mock):
-        command = self.makeFile("#!/bin/sh\necho VAR: $VAR\n")
-        os.chmod(command, 0o755)
-        find_command_mock.return_value = command
+    def test_spawn_handler_copies_environment(self):
+        command = self._write_script(
+            "landscape-package-changer",
+            "#!/bin/sh\necho VAR: $VAR\n")
+        self.manager.config = self.config
 
         self.manager.add(self.package_manager)
         self.package_store.add_task("changer", "Do something!")
 
         os.environ["VAR"] = "HI!"
         result = self.package_manager.spawn_handler(PackageChanger)
-        find_command_mock.assert_called_once_with()
 
         def got_result(result):
             log = self.logfile.getvalue()
@@ -261,16 +270,15 @@ class PackageManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.package.changer.find_changer_command")
-    def test_spawn_handler_passes_quiet_option(self, find_command_mock):
-        command = self.makeFile("#!/bin/sh\necho OPTIONS: $@\n")
-        os.chmod(command, 0o755)
-        find_command_mock.return_value = command
+    def test_spawn_handler_passes_quiet_option(self):
+        command = self._write_script(
+            "landscape-package-changer",
+            "#!/bin/sh\necho OPTIONS: $@\n")
+        self.manager.config = self.config
 
         self.manager.add(self.package_manager)
         self.package_store.add_task("changer", "Do something!")
         result = self.package_manager.spawn_handler(PackageChanger)
-        find_command_mock.assert_called_once_with()
 
         def got_result(result):
             log = self.logfile.getvalue()
@@ -292,22 +300,21 @@ class PackageManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.package.changer.find_changer_command")
-    def test_spawn_handler_doesnt_chdir(self, find_command_mock):
-        command = self.makeFile("#!/bin/sh\necho RUN\n")
-        os.chmod(command, 0o755)
+    def test_spawn_handler_doesnt_chdir(self):
+        self._write_script(
+            "landscape-package-changer",
+            "#!/bin/sh\necho RUN\n")
+        self.manager.config = self.config
+
         cwd = os.getcwd()
         self.addCleanup(os.chdir, cwd)
         dir = self.makeDir()
         os.chdir(dir)
         os.chmod(dir, 0)
 
-        find_command_mock.return_value = command
-
         self.manager.add(self.package_manager)
         self.package_store.add_task("changer", "Do something!")
         result = self.package_manager.spawn_handler(PackageChanger)
-        find_command_mock.assert_called_once_with()
 
         def got_result(result):
             log = self.logfile.getvalue()
