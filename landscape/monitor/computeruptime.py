@@ -43,8 +43,7 @@ class LoginInfo(object):
         # FIXME Convert this to a dotted decimal string. -jk
         self.remote_ip_address = info[11]
 
-    @staticmethod
-    def _strip_and_decode(bytestring):
+    def _strip_and_decode(self, bytestring):
         """Helper method to strip b"\0" and return a utf-8 decoded string."""
         return bytestring.strip(b"\0").decode("utf-8")
 
