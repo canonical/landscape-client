@@ -17,7 +17,7 @@ class Processes(object):
         info = ProcessInformation(proc_dir=self._proc_dir)
         for process_info in info.get_all_process_info():
             num_processes += 1
-            if process_info["state"] == "Z":
+            if process_info["state"] == b"Z":
                 num_zombies += 1
         if num_zombies:
             if num_zombies == 1:

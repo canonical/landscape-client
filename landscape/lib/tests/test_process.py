@@ -95,7 +95,7 @@ class ProcessInfoTest(LandscapeTest):
         self._add_process_info(12, state="A (some state)")
         process_info = ProcessInformation(self.proc_dir)
         info = process_info.get_process_info(12)
-        self.assertEqual("A", info["state"])
+        self.assertEqual(b"A", info["state"])
 
     def test_get_process_info_state_preserves_case(self):
         """
@@ -105,7 +105,7 @@ class ProcessInfoTest(LandscapeTest):
         self._add_process_info(12, state="a (some state)")
         process_info = ProcessInformation(self.proc_dir)
         info = process_info.get_process_info(12)
-        self.assertEqual("a", info["state"])
+        self.assertEqual(b"a", info["state"])
 
     def test_get_process_info_state_tracing_stop_lucid(self):
         """
@@ -119,8 +119,8 @@ class ProcessInfoTest(LandscapeTest):
         process_info = ProcessInformation(self.proc_dir)
         info1 = process_info.get_process_info(12)
         info2 = process_info.get_process_info(12)
-        self.assertEqual("t", info1["state"])
-        self.assertEqual("t", info2["state"])
+        self.assertEqual(b"t", info1["state"])
+        self.assertEqual(b"t", info2["state"])
 
 
 class CalculatePCPUTest(unittest.TestCase):

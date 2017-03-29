@@ -7,7 +7,7 @@ landscape.manager.tests
 landscape.tests
 
 
-
+landscape.monitor.tests.test_activeprocessinfo
 
 
 
