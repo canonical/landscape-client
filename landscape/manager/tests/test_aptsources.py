@@ -465,7 +465,7 @@ class AptSourcesTests(LandscapeTest):
         deferred = Deferred()
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            self.assertEqual(find_reporter_command(), command)
+            self.assertEqual(find_reporter_command(self.manager.config), command)
             self.assertEqual(["--force-apt-update", "--config=%s" %
                               self.manager.config.config], args)
             deferred.callback(("ok", "", 0))

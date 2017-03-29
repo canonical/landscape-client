@@ -276,12 +276,14 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
         self.addCleanup(self._clean_file, path)
         return path
 
-    def write_script(self, config, name, content):
+    def write_script(self, config, name, content, bindir=None):
         """Return the path to the script after writing it to a temp dir."""
-        config.bindir = self.makeDir()
+        if bindir is None:
+            bindir = self.makeDir()
+        config.bindir = bindir
         filename = self.makeFile(
             content,
-            dirname=config.bindir,
+            dirname=bindir,
             basename=name)
         os.chmod(filename, 0o755)
         return filename

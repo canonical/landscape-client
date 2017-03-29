@@ -253,7 +253,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             uid = None
             gid = None
 
-        reporter = find_reporter_command()
+        reporter = find_reporter_command(self._config)
 
         # Force an apt-update run, because the sources.list has changed
         args = ["--force-apt-update"]

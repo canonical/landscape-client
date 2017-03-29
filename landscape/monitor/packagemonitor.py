@@ -13,13 +13,14 @@ class PackageMonitor(MonitorPlugin):
     run_interval = 1800
     scope = "package"
 
+    _reporter_command = None
+
     def __init__(self, package_store_filename=None):
         super(PackageMonitor, self).__init__()
         if package_store_filename:
             self._package_store = PackageStore(package_store_filename)
         else:
             self._package_store = None
-        self._reporter_command = find_reporter_command()
 
     def register(self, registry):
         self.config = registry.config
@@ -116,6 +117,8 @@ class PackageMonitor(MonitorPlugin):
             else:
                 env["FAKE_GLOBAL_PACKAGE_STORE"] = "1"
 
+        if self._reporter_command is None:
+            self._reporter_command = find_reporter_command(self.config)
         # path is set to None so that getProcessOutput does not
         # chdir to "." see bug #211373
         result = getProcessOutput(self._reporter_command,
