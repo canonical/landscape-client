@@ -44,8 +44,10 @@ class MountInfo(MonitorPlugin):
         self.call_on_accepted("mount-info", self.send_messages, True)
 
     def create_messages(self):
-        return filter(None, [self.create_mount_info_message(),
-                             self.create_free_space_message()])
+        return [message
+                for message in [self.create_mount_info_message(),
+                                self.create_free_space_message()]
+                if message is not None]
 
     def create_mount_info_message(self):
         if self._mount_info:
