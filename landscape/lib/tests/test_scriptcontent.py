@@ -1,7 +1,6 @@
 import unittest
 
-from landscape.lib.scriptcontent import (build_script,
-    generate_script_hash)
+from landscape.lib.scriptcontent import (build_script, generate_script_hash)
 
 
 class ScriptContentTest(unittest.TestCase):
@@ -21,4 +20,4 @@ class ScriptContentTest(unittest.TestCase):
 
         self.assertEqual(hash1, hash2)
         self.assertNotEqual(hash1, hash3)
-        self.assertTrue(isinstance(hash1, str))
+        self.assertTrue(isinstance(hash1, bytes))

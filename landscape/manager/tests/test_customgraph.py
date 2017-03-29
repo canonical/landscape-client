@@ -29,7 +29,7 @@ class CustomGraphManagerTests(LandscapeTest):
         os.makedirs(os.path.join(self.data_path, "custom-graph-scripts"))
         self.manager.config.script_users = "ALL"
         self.graph_manager = CustomGraphPlugin(
-            create_time=range(1500, 0, -300).pop)
+            create_time=list(range(1500, 0, -300)).pop)
         self.manager.add(self.graph_manager)
 
     def _exit_process_protocol(self, protocol, stdout):
@@ -128,7 +128,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
         def check(ignore):
             self.graph_manager.exchange()
-            script_hash = "483f2304b49063680c75e3c9e09cf6d0"
+            script_hash = b"483f2304b49063680c75e3c9e09cf6d0"
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123: {"error": u"",
@@ -153,11 +153,11 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data":
                       {123: {"error": u"",
                              "values": [(300, 1.0)],
-                             "script-hash": "483f2304b49063680c75e3c9e09cf6d0"
+                             "script-hash": b"483f2304b49063680c75e3c9e09cf6d0"
                             },
                        124: {"error": u"",
                              "values": [(300, 2.0)],
-                             "script-hash": "73a74b1530b2256db7edacb9b9cc385e"
+                             "script-hash": b"73a74b1530b2256db7edacb9b9cc385e"
                             }
                       },
                   "type": "custom-graph"}])
@@ -175,7 +175,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data":
                       {123: {"error": u" (process exited with code 1)",
                              "values": [],
-                             "script-hash": "eaca3ba1a3bf1948876eba320148c5e9"
+                             "script-hash": b"eaca3ba1a3bf1948876eba320148c5e9"
                             }
                       },
                   "type": "custom-graph"}])
@@ -192,7 +192,7 @@ class CustomGraphManagerTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertEqual(spawn[1], filename)
 
-        self._exit_process_protocol(spawn[0], "foobar")
+        self._exit_process_protocol(spawn[0], b"foobar")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -203,7 +203,7 @@ class CustomGraphManagerTests(LandscapeTest):
                              u"InvalidFormatError: Failed to convert to "
                               "number: 'foobar'",
                              "values": [], "script-hash":
-                                 "baab6c16d9143523b7865d46896e4596"}},
+                                 b"baab6c16d9143523b7865d46896e4596"}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
@@ -218,7 +218,7 @@ class CustomGraphManagerTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertEqual(spawn[1], filename)
 
-        self._exit_process_protocol(spawn[0], "")
+        self._exit_process_protocol(spawn[0], b"")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -228,7 +228,7 @@ class CustomGraphManagerTests(LandscapeTest):
                       {123: {"error": u"NoOutputError: Script did not output "
                                        "any value",
                              "values": [], "script-hash":
-                                 "baab6c16d9143523b7865d46896e4596"}},
+                                 b"baab6c16d9143523b7865d46896e4596"}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
@@ -243,9 +243,9 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.assertEqual(len(factory.spawns), 2)
         spawn = factory.spawns[0]
-        self._exit_process_protocol(spawn[0], "")
+        self._exit_process_protocol(spawn[0], b"")
         spawn = factory.spawns[1]
-        self._exit_process_protocol(spawn[0], "0.5")
+        self._exit_process_protocol(spawn[0], b"0.5")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -254,10 +254,12 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data":
                       {123: {"error": u"NoOutputError: Script did not output "
                                        "any value",
-                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "script-hash":
+                                 b"baab6c16d9143523b7865d46896e4596",
                              "values": []},
                        124: {"error": u"",
-                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "script-hash":
+                                 b"baab6c16d9143523b7865d46896e4596",
                              "values": [(300, 0.5)]}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
@@ -273,9 +275,9 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.assertEqual(len(factory.spawns), 2)
         spawn = factory.spawns[0]
-        self._exit_process_protocol(spawn[0], "foo")
+        self._exit_process_protocol(spawn[0], b"foo")
         spawn = factory.spawns[1]
-        self._exit_process_protocol(spawn[0], "")
+        self._exit_process_protocol(spawn[0], b"")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -284,11 +286,13 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data":
                       {123: {"error": u"InvalidFormatError: Failed to convert "
                                        "to number: 'foo'",
-                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "script-hash":
+                                 b"baab6c16d9143523b7865d46896e4596",
                              "values": []},
                        124: {"error": u"NoOutputError: Script did not output "
                                        "any value",
-                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "script-hash":
+                                 b"baab6c16d9143523b7865d46896e4596",
                              "values": []}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
@@ -319,7 +323,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEqual(spawn[6], 5678)
         mock_getpwnam.assert_called_with("bar")
 
-        self._exit_process_protocol(spawn[0], "spam")
+        self._exit_process_protocol(spawn[0], b"spam")
 
         return result
 
@@ -344,7 +348,7 @@ class CustomGraphManagerTests(LandscapeTest):
                       {"error":
                        u"ProhibitedUserError: Custom graph cannot be run as "
                         "user %s" % (username,),
-                       "script-hash": "",
+                       "script-hash": b"",
                        "values": []}},
                   "type": "custom-graph"}])
 
@@ -369,7 +373,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123:
                       {"error": u"UnknownUserError: Unknown user 'foo'",
-                       "script-hash": "",
+                       "script-hash": b"",
                        "values": []}},
                   "type": "custom-graph"}])
             mock_getpwnam.assert_called_with("foo")
@@ -399,7 +403,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data": {123: {"error":
                                     u"Process exceeded the 10 seconds limit",
                                 "script-hash":
-                                    "9893532233caff98cd083a116b013c0b",
+                                    b"9893532233caff98cd083a116b013c0b",
                                 "values": []}},
                   "type": "custom-graph"}])
 
@@ -420,7 +424,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"data": {123: {"error": u"", "script-hash": "", "values": []}},
+            [{"data": {123: {"error": u"", "script-hash": b"", "values": []}},
               "type": "custom-graph"}])
 
     def test_send_message_add_stored_graph(self):
@@ -440,9 +444,10 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.2",
+            [{"api": b"3.2",
               "data": {123: {"error": u"",
-                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "script-hash":
+                                 b"e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"}])
@@ -463,7 +468,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.2",
+            [{"api": b"3.2",
               "data": {},
               "timestamp": 0,
               "type": "custom-graph"}])
@@ -488,15 +493,17 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.2",
+            [{"api": b"3.2",
               "data": {123: {"error": u"",
-                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "script-hash":
+                                 b"e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"},
-             {"api": "3.2",
+             {"api": b"3.2",
               "data": {123: {"error": u"",
-                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "script-hash":
+                                 b"e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"}])
@@ -522,15 +529,17 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.2",
+            [{"api": b"3.2",
               "data": {123: {"error": u"",
-                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "script-hash":
+                                 b"e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"},
-             {"api": "3.2",
+             {"api": b"3.2",
               "data": {123: {"error": u"",
-                             "script-hash": "d483816dc0fbb51ede42502a709b0e2a",
+                             "script-hash":
+                                 b"d483816dc0fbb51ede42502a709b0e2a",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"}])
@@ -565,16 +574,16 @@ class CustomGraphManagerTests(LandscapeTest):
                      "username": username,
                      "graph-id": 123})
 
-        self._exit_process_protocol(spawn[0], "1.0")
+        self._exit_process_protocol(spawn[0], b"1.0")
 
         def check(ignore):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.2",
+                [{"api": b"3.2",
                   "data": {123: {"error": u"",
                                  "script-hash":
-                                    "991e15a81929c79fe1d243b2afd99c62",
+                                     b"991e15a81929c79fe1d243b2afd99c62",
                                  "values": []}},
                   "timestamp": 0,
                   "type": "custom-graph"}])
@@ -607,13 +616,13 @@ class CustomGraphManagerTests(LandscapeTest):
             {"type": "custom-graph-remove",
                      "graph-id": 123})
 
-        self._exit_process_protocol(spawn[0], "1.0")
+        self._exit_process_protocol(spawn[0], b"1.0")
 
         def check(ignore):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.2", "data": {}, "timestamp": 0, "type":
+                [{"api": b"3.2", "data": {}, "timestamp": 0, "type":
                   "custom-graph"}])
         return result.addCallback(check)
 
@@ -682,7 +691,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data": {123:
                       {"error":
                            u"UnknownUserError: Unknown user '%s'" % username,
-                       "script-hash": "9893532233caff98cd083a116b013c0b",
+                       "script-hash": b"9893532233caff98cd083a116b013c0b",
                        "values": []}},
                   "type": "custom-graph"}])
 
