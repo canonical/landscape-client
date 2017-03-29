@@ -10,6 +10,6 @@ landscape.tests.test_schema
 
 landscape.manager.tests.test_scriptexecution
 landscape.manager.tests.test_customgraph
-
+landscape.manager.tests.test_usermanager
 
 
