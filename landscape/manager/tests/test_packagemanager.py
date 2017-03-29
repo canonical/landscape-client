@@ -26,15 +26,6 @@ class PackageManagerTest(LandscapeTest):
                                                        "package/database"))
         self.package_manager = PackageManager()
 
-    def _write_script(self, name, content):
-        self.config.bindir = self.makeDir()
-        filename = self.makeFile(
-            content,
-            dirname=self.config.bindir,
-            basename=name)
-        os.chmod(filename, 0o755)
-        return filename
-
     def test_create_default_store_upon_message_handling(self):
         """
         If the package sqlite database file doesn't exist yet, it is created
@@ -194,7 +185,8 @@ class PackageManagerTest(LandscapeTest):
         The L{PackageManager.spawn_handler} method executes the correct command
         when passed the L{PackageChanger} class as argument.
         """
-        command = self._write_script(
+        command = self.write_script(
+            self.config,
             "landscape-package-changer",
             "#!/bin/sh\necho 'I am the changer!' >&2\n")
         self.manager.config = self.config
@@ -216,7 +208,8 @@ class PackageManagerTest(LandscapeTest):
         The L{PackageManager.spawn_handler} method executes the correct command
         when passed the L{ReleaseUpgrader} class as argument.
         """
-        command = self._write_script(
+        command = self.write_script(
+            self.config,
             "landscape-release-upgrader",
             "#!/bin/sh\necho 'I am the upgrader!' >&2\n")
         self.manager.config = self.config
@@ -233,7 +226,8 @@ class PackageManagerTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_spawn_handler_without_output(self):
-        self._write_script(
+        self.write_script(
+            self.config,
             "landscape-package-changer",
             "#!/bin/sh\n/bin/true")
         self.manager.config = self.config
@@ -250,7 +244,8 @@ class PackageManagerTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_spawn_handler_copies_environment(self):
-        command = self._write_script(
+        command = self.write_script(
+            self.config,
             "landscape-package-changer",
             "#!/bin/sh\necho VAR: $VAR\n")
         self.manager.config = self.config
@@ -269,7 +264,8 @@ class PackageManagerTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_spawn_handler_passes_quiet_option(self):
-        command = self._write_script(
+        command = self.write_script(
+            self.config,
             "landscape-package-changer",
             "#!/bin/sh\necho OPTIONS: $@\n")
         self.manager.config = self.config
@@ -299,7 +295,8 @@ class PackageManagerTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_spawn_handler_doesnt_chdir(self):
-        self._write_script(
+        self.write_script(
+            self.config,
             "landscape-package-changer",
             "#!/bin/sh\necho RUN\n")
         self.manager.config = self.config
