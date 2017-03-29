@@ -6,7 +6,6 @@ landscape.package.tests
 landscape.tests.test_configuration
 landscape.tests.test_watchdog
 landscape.tests.test_reactor
-landscape.tests.test_configuration
 landscape.tests.test_schema
 
 landscape.manager.tests.test_scriptexecution
