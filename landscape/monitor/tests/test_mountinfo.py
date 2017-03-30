@@ -149,7 +149,9 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         runs it gets a different value from our sample statvfs()
         function which should cause it to queue new messages.
         """
-        def statvfs(path, multiplier=mock_counter(1).next):
+        counter = mock_counter(1)
+
+        def statvfs(path, multiplier=lambda: next(counter)):
             return os.statvfs_result(
                 (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0, 0))
 
@@ -181,7 +183,9 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         messages should only be queued for / after the first message
         is created.
         """
-        def statvfs(path, multiplier=mock_counter(1).next):
+        counter = mock_counter(1)
+
+        def statvfs(path, multiplier=lambda: next(counter)):
             if path == "/":
                 return os.statvfs_result(
                     (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0))
@@ -333,7 +337,9 @@ addr=ennui 0 0
 
     def test_sample_free_space(self):
         """Test collecting information about free space."""
-        def statvfs(path, multiplier=mock_counter(1).next):
+        counter = mock_counter(1)
+
+        def statvfs(path, multiplier=lambda: next(counter)):
             return os.statvfs_result(
                 (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0, 0))
 
