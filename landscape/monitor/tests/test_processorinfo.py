@@ -21,7 +21,7 @@ class ProcessorInfoTest(LandscapeTest):
         """Ensure the plugin can parse /proc/cpuinfo."""
         message = ProcessorInfo().create_message()
         self.assertEqual(message["type"], "processor-info")
-        self.assertTrue(message["processors"] > 0)
+        self.assertTrue(len(message["processors"]) > 0)
 
         for processor in message["processors"]:
             self.assertTrue("processor-id" in processor)
