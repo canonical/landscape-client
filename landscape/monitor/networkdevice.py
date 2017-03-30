@@ -4,6 +4,7 @@ A monitor plugin that collects data on a machine's network devices.
 
 from landscape.monitor.plugin import DataWatcher
 from landscape.lib.network import get_active_device_info
+from landscape.lib.encoding import encode_if_needed
 
 
 class NetworkDevice(DataWatcher):
@@ -29,10 +30,17 @@ class NetworkDevice(DataWatcher):
             # We need to split the message in two top-level keys (see bug)
             device_speeds = []
             for device in device_data:
-                speed_entry = {"interface": device["interface"]}
+                speed_entry = {
+                    "interface": encode_if_needed(device["interface"])}
                 speed_entry["speed"] = device.pop("speed")
                 speed_entry["duplex"] = device.pop("duplex")
                 device_speeds.append(speed_entry)
+                device["interface"] = encode_if_needed(device["interface"])
+                device["ip_address"] = encode_if_needed(device["ip_address"])
+                device["mac_address"] = encode_if_needed(device["mac_address"])
+                device["broadcast_address"] = encode_if_needed(
+                    device["broadcast_address"])
+                device["netmask"] = encode_if_needed(device["netmask"])
 
             return {"type": self.message_type,
                     "devices": device_data,
