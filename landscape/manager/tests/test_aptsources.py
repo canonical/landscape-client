@@ -177,7 +177,10 @@ class AptSourcesTests(LandscapeTest):
         If a failure happens during the manipulation of sources, the activity
         is reported as FAILED with the error message.
         """
-        self.sourceslist.SOURCES_LIST = "/doesntexist"
+        def buggy_source_handler(*args):
+            raise RuntimeError("foo")
+
+        self.sourceslist._handle_sources = buggy_source_handler
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace",
@@ -185,11 +188,7 @@ class AptSourcesTests(LandscapeTest):
              "gpg-keys": [],
              "operation-id": 1})
 
-        msg = "{}: [Errno 2] No such file or directory: '/doesntexist'"
-        if _PY3:
-            msg = msg.format("FileNotFoundError")
-        else:
-            msg = msg.format("OSError")
+        msg = "RuntimeError: foo"
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
                             [{"type": "operation-result",
