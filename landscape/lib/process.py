@@ -78,7 +78,7 @@ class ProcessInformation(object):
                         # used for tracing stop.
                         if state == "T (tracing stop)":
                             state = state.lower()
-                        process_info["state"] = state[0]
+                        process_info["state"] = state[0].encode("ascii")
                     elif parts[0] == "Uid":
                         value_parts = parts[1].split()
                         process_info["uid"] = int(value_parts[0])

@@ -60,7 +60,7 @@ class ActiveProcessInfo(DataWatcher):
     def _get_processes(self):
         processes = {}
         for process_info in self._process_info.get_all_process_info():
-            if process_info["state"] != "X":
+            if process_info["state"] != b"X":
                 processes[process_info["pid"]] = process_info
         return processes
 

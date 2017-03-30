@@ -115,13 +115,13 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
-        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+        expected_process_0 = {"state": b"R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": "init", "uid": 0,
                               "start-time": 103, "percent-cpu": 0.0}
-        expected_process_1 = {"state": "T", "gid": 1000, "pid": 671,
+        expected_process_1 = {"state": b"T", "gid": 1000, "pid": 671,
                               "vm-size": 11676, "name": "blargh", "uid": 1000,
                               "start-time": 111, "percent-cpu": 0.0}
-        expected_process_2 = {"state": "t", "gid": 1000, "pid": 672,
+        expected_process_2 = {"state": b"t", "gid": 1000, "pid": 672,
                               "vm-size": 11676, "name": "blarpy", "uid": 1000,
                               "start-time": 112, "percent-cpu": 0.0}
         processes = message["add-processes"]
@@ -147,7 +147,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
 
-        expected_process = {"pid": 1, "state": "R", "name": "init",
+        expected_process = {"pid": 1, "state": b"R", "name": "init",
                             "vm-size": 11676, "uid": 0, "gid": 0,
                             "start-time": 112, "percent-cpu": 0.0}
         self.assertEqual(message["add-processes"], [expected_process])
@@ -166,7 +166,7 @@ class ActiveProcessInfoTest(LandscapeTest):
             self.mstore.get_pending_messages(),
             [{"type": "active-process-info",
               "kill-all-processes": True,
-              "add-processes": [{"pid": 1, "state": "R", "name": "init",
+              "add-processes": [{"pid": 1, "state": b"R", "name": "init",
                                  "vm-size": 11676, "uid": 0, "gid": 0,
                                  "start-time": 110, "percent-cpu": 0.0}]}])
 
@@ -204,15 +204,15 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("kill-all-processes" in message)
         self.assertEqual(message["kill-all-processes"], True)
         self.assertTrue("add-processes" in message)
-        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+        expected_process_0 = {"state": b"R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": "init",
                               "uid": 0, "start-time": 101,
                               "percent-cpu": 0.0}
-        expected_process_1 = {"state": "T", "gid": 1000, "pid": 671,
+        expected_process_1 = {"state": b"T", "gid": 1000, "pid": 671,
                               "vm-size": 11676, "name": "blargh",
                               "uid": 1000, "start-time": 102,
                               "percent-cpu": 0.0}
-        expected_process_2 = {"state": "t", "gid": 1000, "pid": 672,
+        expected_process_2 = {"state": b"t", "gid": 1000, "pid": 672,
                               "vm-size": 11676, "name": "blarpy",
                               "uid": 1000, "start-time": 104,
                               "percent-cpu": 0.0}
@@ -228,7 +228,7 @@ class ActiveProcessInfoTest(LandscapeTest):
 
         self.assertTrue("add-processes" in message)
         self.assertEqual(len(message["add-processes"]), 1)
-        expected_process = {"state": "R", "gid": 0, "pid": 12753,
+        expected_process = {"state": b"R", "gid": 0, "pid": 12753,
                             "vm-size": 11676, "name": "wubble",
                             "uid": 0, "start-time": 107,
                             "percent-cpu": 0.0}
@@ -313,7 +313,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("kill-processes" not in message)
         self.assertTrue("add-processes" in message)
         self.assertEqual(message["add-processes"][0]["pid"], 672)
-        self.assertEqual(message["add-processes"][0]["state"], u"R")
+        self.assertEqual(message["add-processes"][0]["state"], b"R")
 
         # Convert the process to a zombie and ensure it gets reported.
         self.builder.remove_data(672)
@@ -329,7 +329,7 @@ class ActiveProcessInfoTest(LandscapeTest):
 
         self.assertTrue("kill-all-processes" not in message)
         self.assertTrue("update-processes" in message)
-        self.assertEqual(message["update-processes"][0]["state"], u"Z")
+        self.assertEqual(message["update-processes"][0]["state"], b"Z")
 
     def test_call_on_accepted(self):
         """
@@ -375,7 +375,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                 "name": u"blarpy",
                                 "pid": 672,
                                 "start-time": 112,
-                                "state": "t",
+                                "state": b"t",
                                 "uid": 1000,
                                 "vm-size": 11676,
                                 "percent-cpu": 0.0},
@@ -383,7 +383,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                 "name": u"init",
                                 "pid": 1,
                                 "start-time": 103,
-                                "state": "R",
+                                "state": b"R",
                                 "uid": 0,
                                 "vm-size": 11676,
                                 "percent-cpu": 0.0},
@@ -391,7 +391,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                 "name": u"blargh",
                                 "pid": 671,
                                 "start-time": 111,
-                                "state": "T",
+                                "state": b"T",
                                 "uid": 1000,
                                 "vm-size": 11676,
                                 "percent-cpu": 0.0}],
@@ -449,7 +449,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                 "name": u"blarpy",
                                 "pid": 672,
                                 "start-time": 112,
-                                "state": "t",
+                                "state": b"t",
                                 "uid": 1000,
                                 "vm-size": 11676,
                                 "percent-cpu": 0.0}],
@@ -492,7 +492,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                 "name": u"blarpy",
                                 "pid": 672,
                                 "start-time": 112,
-                                "state": "t",
+                                "state": b"t",
                                 "uid": 1000,
                                 "vm-size": 11676,
                                 "percent-cpu": 0.0}],
@@ -575,26 +575,26 @@ class ActiveProcessInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 2)
         self.assertMessages(messages, [{"timestamp": 0,
-                                        "api": "3.2",
+                                        "api": b"3.2",
                                         "type": "active-process-info",
                                         "kill-all-processes": True,
                                         "add-processes": [{"start-time": 110,
                                                            "name": u"init",
                                                            "pid": 1,
                                                             "percent-cpu": 0.0,
-                                                            "state": "R",
+                                                            "state": b"R",
                                                             "gid": 0,
                                                             "vm-size": 11676,
                                                             "uid": 0}]},
                                        {"timestamp": 0,
-                                        "api": "3.2",
+                                        "api": b"3.2",
                                         "type": "active-process-info",
                                         "update-processes": [
                                             {"start-time": 110,
                                              "name": u"init",
                                              "pid": 1,
                                              "percent-cpu": 0.0,
-                                             "state": "R",
+                                             "state": b"R",
                                              "gid": 0,
                                              "vm-size": 20000,
                                              "uid": 0}]}])
@@ -636,7 +636,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
-        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+        expected_process_0 = {"state": b"R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": "NetworkManagerDaemon",
                               "uid": 0, "start-time": 103, "percent-cpu": 0.0}
         processes = message["add-processes"]
@@ -670,7 +670,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
-        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+        expected_process_0 = {"state": b"R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": "ProcessWithLong",
                               "uid": 0, "start-time": 103, "percent-cpu": 0.0}
         processes = message["add-processes"]
@@ -699,7 +699,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         processes = message["add-processes"]
-        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+        expected_process_0 = {"state": b"R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": u"Process",
                               "uid": 0, "start-time": 300,
                               "percent-cpu": 4.00}
@@ -730,7 +730,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         processes = message["add-processes"]
-        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+        expected_process_0 = {"state": b"R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": u"Process",
                               "uid": 0, "start-time": 300,
                               "percent-cpu": 99.00}
