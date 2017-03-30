@@ -94,7 +94,10 @@ class NetworkActivity(MonitorPlugin):
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (
                 traffic["send_bytes"], traffic["recv_bytes"])
-        for interface in self._last_activity.keys():
+
+        # We need cast the keys to a list as the size of the dictionary changes
+        # on delete and the .keys() generator throws an error.
+        for interface in list(self._last_activity.keys()):
             if interface not in new_traffic:
                 del self._last_activity[interface]
 
