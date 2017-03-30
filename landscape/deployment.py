@@ -435,7 +435,7 @@ def get_versioned_persist(service):
     return persist
 
 
-def get_bindir(config):
+def get_bindir(config=None):
     """Return the directory path where the client binaries are.
 
     If the config is None, it doesn't have a "bindir" attribute, or its

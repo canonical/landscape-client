@@ -22,7 +22,7 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
-from landscape.deployment import init_logging, Configuration
+from landscape.deployment import init_logging, Configuration, get_bindir
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
@@ -75,6 +75,8 @@ class Daemon(object):
     factor = 1.1
     options = None
 
+    BIN_DIR = None
+
     def __init__(self, connector, reactor=reactor, verbose=False,
                  config=None):
         self._connector = connector
@@ -114,7 +116,7 @@ class Daemon(object):
         If the executable can't be found, L{ExecutableNotFoundError} will be
         raised.
         """
-        dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
+        dirname = self.BIN_DIR or get_bindir()
         executable = os.path.join(dirname, self.program)
         if not os.path.exists(executable):
             raise ExecutableNotFoundError("%s doesn't exist" % (executable,))
