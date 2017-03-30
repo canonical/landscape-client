@@ -13,4 +13,4 @@ landscape.monitor.tests.test_mountinfo
 landscape.monitor.tests.test_computerinfo
 landscape.monitor.tests.test_loadaverage
 landscape.monitor.tests.test_networkdevice
-
+landscape.monitor.tests.test_networkactivity

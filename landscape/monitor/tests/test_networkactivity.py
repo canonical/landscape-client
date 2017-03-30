@@ -79,9 +79,10 @@ Inter-|   Receive                           |  Transmit
         self.assertTrue(message)
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "network-activity")
-        self.assertEqual(message["activities"]["lo"],
+        self.assertEqual(message["activities"][b"lo"],
                          [(300, 10, 99)])
-        self.assertNotIn("eth0", message["activities"])
+        # Ensure that b"eth0" is not in activities
+        self.assertEqual(len(message["activities"]), 1)
 
     def test_proc_rollover(self):
         """
@@ -98,9 +99,10 @@ Inter-|   Receive                           |  Transmit
         self.assertTrue(message)
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "network-activity")
-        self.assertEqual(message["activities"]["lo"],
+        self.assertEqual(message["activities"][b"lo"],
                          [(300, 9010, 9099)])
-        self.assertNotIn("eth0", message["activities"])
+        # Ensure that b"eth0" is not in activities
+        self.assertEqual(len(message["activities"]), 1)
 
     def test_no_message_without_traffic_delta(self):
         """
@@ -182,8 +184,8 @@ Inter-|   Receive                           |  Transmit
         self.assertMessages(self.mstore.get_pending_messages(),
                         [{"type": "network-activity",
                           "activities": {
-                              "lo": [(step_size, 0, 1000)],
-                              "eth0": [(step_size, 0, 1000)]}}])
+                              b"lo": [(step_size, 0, 1000)],
+                              b"eth0": [(step_size, 0, 1000)]}}])
 
     def test_config(self):
         """The network activity plugin is enabled by default."""
