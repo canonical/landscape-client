@@ -46,6 +46,10 @@ class NetworkActivity(MonitorPlugin):
         items = 0
         for interface, data in list(self._network_activity.items()):
             if data:
+                # The message schema requires the interface to be bytes, so we
+                # encode it here right before the message is created as it is
+                # used as string in other places.
+                interface = interface.encode("ascii")
                 network_activity[interface] = []
                 while data and items < self.max_network_items_to_exchange:
                     item = data.pop(0)
