@@ -506,7 +506,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             pass
         os.mkdir(os.path.join(upgrade_tool_directory, "somedir"))
 
-        reporter_filename = self.write_script(
+        self.write_script(
             self.config,
             "landscape-package-reporter",
             "#!/bin/sh\n"
@@ -577,7 +577,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         The L{ReleaseUpgrader.finish} method passes over to the reporter the
         configuration file the release-upgrader was called with.
         """
-        reporter_filename = self.write_script(
+        self.write_script(
             self.config,
             "landscape-package-reporter",
             "#!/bin/sh\necho $@\n")

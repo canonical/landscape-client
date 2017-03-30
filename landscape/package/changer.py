@@ -1,7 +1,6 @@
 import logging
 import base64
 import time
-import sys
 import os
 import pwd
 import grp

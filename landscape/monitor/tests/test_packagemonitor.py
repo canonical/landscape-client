@@ -146,7 +146,7 @@ class PackageMonitorTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_spawn_reporter_without_output(self):
-        command = self.write_script(
+        self.write_script(
             self.config,
             "landscape-package-reporter",
             "#!/bin/sh\n/bin/true")
@@ -266,7 +266,7 @@ class PackageMonitorTest(LandscapeTest):
         self.assertSingleReporterTask(task.data, task.id)
 
     def test_spawn_reporter_doesnt_chdir(self):
-        command = self.write_script(
+        self.write_script(
             self.config,
             "landscape-package-reporter",
             "#!/bin/sh\necho RUN\n")

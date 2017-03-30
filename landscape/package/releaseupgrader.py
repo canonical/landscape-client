@@ -4,7 +4,6 @@ import logging
 import os
 import pwd
 import shutil
-import sys
 import tarfile
 
 from twisted.internet.defer import succeed

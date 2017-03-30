@@ -584,7 +584,7 @@ class DaemonTest(DaemonTestBase):
         self.assertEqual(expected, command)
 
     def test_find_executable_cant_find_file(self):
-        self.daemon.BIN_DIR= "/fake/bin"
+        self.daemon.BIN_DIR = "/fake/bin"
 
         with self.assertRaises(ExecutableNotFoundError):
             self.daemon.find_executable()
