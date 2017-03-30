@@ -46,7 +46,7 @@ class AptPreferences(DataWatcher):
         if data == {}:
             return None
 
-        item_size_limit = self.size_limit / len(data.keys())
+        item_size_limit = self.size_limit // len(data.keys())
         for filename, contents in iteritems(data):
             if len(filename) + len(contents) > item_size_limit:
                 truncated_contents_size = item_size_limit - len(filename)
