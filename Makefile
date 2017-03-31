@@ -1,6 +1,6 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
-PYTHON ?= python
+PYTHON ?= python3
 PYTHON3 ?= python3
 TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape

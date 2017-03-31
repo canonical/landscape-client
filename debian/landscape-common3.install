@@ -1,0 +1,3 @@
+usr/lib/python*
+usr/bin/landscape-sysinfo
+usr/share/landscape/landscape-sysinfo.wrapper

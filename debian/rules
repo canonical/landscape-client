@@ -2,7 +2,7 @@
 
 dist_release := $(shell lsb_release -cs)
 
-dh_extra_flags = -plandscape-common -plandscape-client
+dh_extra_flags = -plandscape-common2 -plandscape-common3 -plandscape-client
 
 -include /usr/share/python/python.mk
 ifeq (,$(py_sitename))
@@ -17,7 +17,8 @@ root_dir = debian/tmp/
 
 revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f 2 -d "-")
 
-landscape_common_substvars = debian/landscape-common.substvars
+landscape_common2_substvars = debian/landscape-common2.substvars
+landscape_common3_substvars = debian/landscape-common3.substvars
 landscape_client_substvars = debian/landscape-client.substvars
 
 build-arch: build
@@ -28,7 +29,7 @@ build: build-stamp
 build-stamp:
 	dh_testdir
 	sed -i -e "s/^DEBIAN_REVISION = \"\"/DEBIAN_REVISION = \"-$(revision)\"/g" landscape/__init__.py
-	python setup.py build
+	python3 setup.py build
 	make -C apt-update
 	touch build-stamp
 
@@ -51,7 +52,7 @@ install: build
 		var/log/landscape \
 		usr/share/landscape
 
-	python setup.py install --root $(root_dir) $(py_setup_install_args)
+	python3 setup.py install --root $(root_dir) $(py_setup_install_args)
 
 	# Keep in mind that some installed files are defined in setup.py
 	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
@@ -78,7 +79,8 @@ binary-arch: build install
 
 # from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
 ifneq (,$(filter $(dist_release),lucid precise))
-	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
+	echo "extra:Depends=python-gnupginterface" >> $(landscape_common2_substvars)
+	echo "extra:Depends=python-gnupginterface" >> $(landscape_common3_substvars)
 endif
 
 # In xenial the client needs to depend on libpam-systemd (#1590838)
