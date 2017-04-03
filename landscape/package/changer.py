@@ -376,6 +376,12 @@ class PackageChanger(PackageTaskHandler):
 
     @classmethod
     def find_command(cls, config=None):
+        """Return the path to the package-changer script.
+
+        The script's directory is derived from the provided config.
+        If that is None or doesn't have a "bindir" then directory of
+        sys.argv[0] is returned.
+        """
         bindir = get_bindir(config)
         return os.path.join(bindir, "landscape-package-changer")
 
