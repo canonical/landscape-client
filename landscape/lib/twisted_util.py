@@ -4,7 +4,12 @@ from twisted.internet.defer import DeferredList, Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
+from twisted.python.failure import Failure
 from twisted.python.compat import itervalues, networkString
+
+
+class SignalError(Exception):
+    """An error if the process was terminated by a signal."""
 
 
 def gather_results(deferreds, consume_errors=False):
@@ -57,7 +62,8 @@ class AllOutputProcessProtocol(ProcessProtocol):
         e = reason.value
         code = e.exitCode
         if e.signal:
-            self.deferred.errback((out, err, e.signal))
+            failure = Failure(SignalError(out, err, e.signal))
+            self.deferred.errback(failure)
         else:
             self.deferred.callback((out, err, code))
 
