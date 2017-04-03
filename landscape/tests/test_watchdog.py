@@ -906,6 +906,7 @@ time.sleep(999)
         reactor = mock.Mock()
 
         daemon = self.get_daemon(reactor=reactor)
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         getuid.assert_called_with()
@@ -929,6 +930,7 @@ time.sleep(999)
 
         reactor = mock.Mock()
         daemon = self.get_daemon(reactor=reactor)
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         reactor.spawnProcess.assert_called_with(
@@ -946,6 +948,7 @@ time.sleep(999)
         reactor = mock.Mock()
 
         daemon = self.get_daemon(reactor=reactor, username="root")
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         reactor.spawnProcess.assert_called_with(
