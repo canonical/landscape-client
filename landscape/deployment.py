@@ -441,12 +441,10 @@ def get_bindir(config=None):
     If the config is None, it doesn't have a "bindir" attribute, or its
     value is None, then sys.argv[0] is returned.
     """
-    bindir = None
-    if config is not None:
-        try:
-            bindir = config.bindir
-        except AttributeError:
-            bindir = None
+    try:
+        bindir = config.bindir
+    except AttributeError:  # ...also the result if config is None.
+        bindir = None
     if bindir is None:
         bindir = os.path.dirname(os.path.abspath(sys.argv[0]))
     return bindir
