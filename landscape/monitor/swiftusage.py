@@ -135,7 +135,7 @@ class SwiftUsage(MonitorPlugin):
             if not usage["mounted"]:
                 continue
 
-            device = usage["device"].encode("utf-8")
+            device = usage["device"]
             devices.add(device)
 
             step_values = []
