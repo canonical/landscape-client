@@ -667,7 +667,7 @@ class AptPackageChangerTest(LandscapeTest):
         # answer.  The reporter is only spawned if at least one
         # task was handled.
         self.store.add_task("changer", {"type": "change-packages",
-                                            "operation-id": 123})
+                                        "operation-id": 123})
 
         self.successResultOf(self.changer.run())
 
@@ -684,7 +684,7 @@ class AptPackageChangerTest(LandscapeTest):
         # answer.  The reporter is only spawned if at least one
         # task was handled.
         self.store.add_task("changer", {"type": "change-packages",
-                                            "operation-id": 123})
+                                        "operation-id": 123})
         self.successResultOf(self.changer.run())
 
         system_mock.assert_called_once_with(
