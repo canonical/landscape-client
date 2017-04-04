@@ -1,6 +1,6 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
-PYTHON ?= python3
+PYTHON2 ?= python2
 PYTHON3 ?= python3
 TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
@@ -43,7 +43,7 @@ build: build2 build3   ## Build.
 
 .PHONY: build2
 build2:
-	$(PYTHON) setup.py build_ext -i
+	$(PYTHON2) setup.py build_ext -i
 
 .PHONY: build3
 build3:
@@ -59,7 +59,7 @@ check5:
 check: check2 check3-ready  ## Run all the tests.
 
 .PHONY: check2
-check2: build
+check2: build2
 	LC_ALL=C $(TEST_COMMAND_PY2)
 
 .PHONY: check3
