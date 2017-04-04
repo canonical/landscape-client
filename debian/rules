@@ -2,7 +2,7 @@
 
 dist_release := $(shell lsb_release -cs)
 
-dh_extra_flags = -plandscape-common2 -plandscape-common3 -plandscape-client
+dh_extra_flags = -plandscape-common -plandscape-common3 -plandscape-client
 
 -include /usr/share/python/python.mk
 ifeq (,$(py_sitename))
@@ -17,7 +17,7 @@ root_dir = debian/tmp/
 
 revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f 2 -d "-")
 
-landscape_common2_substvars = debian/landscape-common2.substvars
+landscape_common_substvars = debian/landscape-common.substvars
 landscape_common3_substvars = debian/landscape-common3.substvars
 landscape_client_substvars = debian/landscape-client.substvars
 
@@ -79,7 +79,7 @@ binary-arch: build install
 
 # from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
 ifneq (,$(filter $(dist_release),lucid precise))
-	echo "extra:Depends=python-gnupginterface" >> $(landscape_common2_substvars)
+	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
 	echo "extra:Depends=python-gnupginterface" >> $(landscape_common3_substvars)
 endif
 
