@@ -6,6 +6,8 @@ from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
 from twisted.python.compat import itervalues, networkString
 
+from landscape.lib.encoding import encode_values
+
 
 def gather_results(deferreds, consume_errors=False):
     d = DeferredList(deferreds, fireOnOneErrback=1,
@@ -86,6 +88,7 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
     result = Deferred()
     protocol = AllOutputProcessProtocol(result, stdin=stdin,
                                         line_received=line_received)
+    env = encode_values(env)
     process = reactor.spawnProcess(protocol, executable, args=list_args,
                                    env=env, path=path, uid=uid, gid=gid,
                                    usePTY=usePTY)

@@ -3,6 +3,7 @@ import os
 
 from twisted.internet.utils import getProcessOutput
 
+from landscape.lib.encoding import encode_values
 from landscape.package.store import PackageStore
 from landscape.package.reporter import find_reporter_command
 from landscape.monitor.plugin import MonitorPlugin
@@ -118,6 +119,7 @@ class PackageMonitor(MonitorPlugin):
 
         # path is set to None so that getProcessOutput does not
         # chdir to "." see bug #211373
+        env = encode_values(env)
         result = getProcessOutput(self._reporter_command,
                                   args=args, env=env,
                                   errortoo=1,
