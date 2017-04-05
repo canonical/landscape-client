@@ -295,10 +295,10 @@ class WatchedProcessProtocol(ProcessProtocol):
 
     def outReceived(self, data):
         # it's *probably* going to always be line buffered, by accident
-        sys.stdout.write(data)
+        sys.stdout.buffer.write(data)
 
     def errReceived(self, data):
-        sys.stderr.write(data)
+        sys.stderr.buffer.write(data)
 
     def processEnded(self, reason):
         """The process has ended; restart it."""
