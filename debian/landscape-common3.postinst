@@ -16,18 +16,18 @@ set -e
 . /usr/share/debconf/confmodule
 trap "db_stop || true" EXIT HUP INT QUIT TERM
 
-PACKAGE=landscape-common
+PACKAGE=landscape-common3
 
-# Use the default installed Python.  Running just "python" might run
+# Use the default installed Python 3.  Running just "python" might run
 # something from /usr/local/bin, which doesn't necessarily support
 # running the landscape client.
-PYTHON=/usr/bin/python
+PYTHON=/usr/bin/python3
 
 case "$1" in
     configure)
 
        # Since motd shows a different number of security updates, suppress the message
-       dpkg-divert --package landscape-common --rename /etc/update-motd.d/90-updates-available
+       dpkg-divert --package landscape-common3 --rename /etc/update-motd.d/90-updates-available
 
        db_get $PACKAGE/sysinfo
        # Choices:

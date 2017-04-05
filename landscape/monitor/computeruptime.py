@@ -32,16 +32,20 @@ class LoginInfo(object):
         info = struct.unpack(self.RAW_FORMAT, raw_data)
         self.login_type = info[0]
         self.pid = info[1]
-        self.tty_device = info[2].strip("\0")
-        self.id = info[3].strip("\0")
-        self.username = info[4].strip("\0")
-        self.hostname = info[5].strip("\0")
+        self.tty_device = self._strip_and_decode(info[2])
+        self.id = self._strip_and_decode(info[3])
+        self.username = self._strip_and_decode(info[4])
+        self.hostname = self._strip_and_decode(info[5])
         self.termination_status = info[6]
         self.exit_status = info[7]
         self.session_id = info[8]
         self.entry_time = datetime.utcfromtimestamp(info[9])
         # FIXME Convert this to a dotted decimal string. -jk
         self.remote_ip_address = info[11]
+
+    def _strip_and_decode(self, bytestring):
+        """Helper method to strip b"\0" and return a utf-8 decoded string."""
+        return bytestring.strip(b"\0").decode("utf-8")
 
 
 class LoginInfoReader(object):
@@ -87,7 +91,7 @@ class BootTimes(object):
     def get_times(self):
         reboot_times = []
         shutdown_times = []
-        with open(self._filename) as login_info_file:
+        with open(self._filename, "rb") as login_info_file:
             reader = LoginInfoReader(login_info_file)
             self._last_boot = self._boots_newer_than
             self._last_shutdown = self._shutdowns_newer_than

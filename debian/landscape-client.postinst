@@ -18,10 +18,10 @@ trap "db_stop || true" EXIT HUP INT QUIT TERM
 
 PACKAGE=landscape-client
 
-# Use the default installed Python.  Running just "python" might run
+# Use the default installed Python 3.  Running just "python" might run
 # something from /usr/local/bin, which doesn't necessarily support
 # running the landscape client.
-PYTHON=/usr/bin/python
+PYTHON=/usr/bin/python3
 
 case "$1" in
     configure)

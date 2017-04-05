@@ -11,6 +11,7 @@ from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 from twisted.python.fakepwd import UserDatabase
 
+from landscape.lib.encoding import encode_values
 from landscape.lib.fs import read_text_file
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
@@ -916,6 +917,10 @@ time.sleep(999)
         env["HOME"] = "/var/lib/landscape"
         env["USER"] = "landscape"
         env["LOGNAME"] = "landscape"
+        # This looks like testing implementation, but we want to assert that
+        # the environment variables are encoded before passing to
+        # spawnProcess() to cope with unicode in them.
+        env = encode_values(env)
 
         reactor.spawnProcess.assert_called_with(
             mock.ANY, mock.ANY, args=mock.ANY, env=env, uid=123, gid=456)
@@ -967,7 +972,8 @@ time.sleep(999)
                                          "socket": socket_filename})
 
         os.chmod(broker_filename, 0o755)
-        process_result = getProcessOutput(broker_filename, env=os.environ,
+        env = encode_values(os.environ)
+        process_result = getProcessOutput(broker_filename, env=env,
                                           errortoo=True)
 
         # Wait until the process starts up. This can take a few seconds

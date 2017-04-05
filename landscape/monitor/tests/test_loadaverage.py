@@ -63,8 +63,9 @@ class LoadAveragePluginTest(LandscapeTest):
         messages.  Timestamps should always be contiguous, and always
         fall on a step boundary.
         """
+        _load_averages = get_load_average()
         plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=get_load_average().next)
+                             get_load_average=lambda: next(_load_averages))
         self.monitor.add(plugin)
 
         for i in range(1, 10):
@@ -80,8 +81,9 @@ class LoadAveragePluginTest(LandscapeTest):
         available, a message with an empty C{load-averages} list is
         expected.
         """
+        load_averages = get_load_average()
         plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=get_load_average().next)
+                             get_load_average=lambda: next(load_averages))
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -100,8 +102,9 @@ class LoadAveragePluginTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["load-average"])
 
+        load_averages = get_load_average()
         plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=get_load_average().next)
+                             get_load_average=lambda: next(load_averages))
         self.monitor.add(plugin)
 
         self.monitor.exchange()
@@ -116,8 +119,9 @@ class LoadAveragePluginTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["load-average"])
 
+        load_averages = get_load_average()
         plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=get_load_average().next)
+                             get_load_average=lambda: next(load_averages))
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 2)
@@ -128,8 +132,9 @@ class LoadAveragePluginTest(LandscapeTest):
                               "load-averages": [(300, 10.5), (600, 30.5)]}])
 
     def test_call_on_accepted(self):
+        load_averages = get_load_average()
         plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=get_load_average().next)
+                             get_load_average=lambda: next(load_averages))
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 1)
@@ -145,8 +150,9 @@ class LoadAveragePluginTest(LandscapeTest):
         Don't add any messages at all if the broker isn't currently
         accepting their type.
         """
+        load_averages = get_load_average()
         plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=get_load_average().next)
+                             get_load_average=lambda: next(load_averages))
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 2)

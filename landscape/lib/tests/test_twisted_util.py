@@ -136,3 +136,27 @@ class SpawnProcessTest(LandscapeTest):
         result = spawn_process(self.command, stdin="hello")
         result.addCallback(callback)
         return result
+
+    def test_spawn_process_with_signal(self):
+        """
+        In case the process gets terminated by a signal, it raises a
+        C{SignalError}.
+        """
+        # This script will kill itself.
+        create_text_file(self.command, """\
+#!/bin/sh
+kill $$
+""")
+
+        def callback(args):
+            raise RuntimeError("Errback was not called.")
+
+        def errback(failure):
+            out, err, code = failure.value.args
+            self.assertEqual(out, b"")
+            self.assertEqual(err, b"")
+            self.assertEqual(code, 15)  # 15 for SIGTERM
+
+        result = spawn_process(self.command)
+        result.addCallbacks(callback, errback)
+        return result

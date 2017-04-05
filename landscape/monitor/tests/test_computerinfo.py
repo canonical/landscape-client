@@ -115,7 +115,8 @@ VmallocChunk:   107432 kB
                 i = i + 1
 
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_fqdn=hostname_factory().next,
+        hostname_fact = hostname_factory()
+        plugin = ComputerInfo(get_fqdn=lambda: next(hostname_fact),
                               fetch_async=self.fetch_func)
         self.monitor.add(plugin)
 

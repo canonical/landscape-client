@@ -186,7 +186,8 @@ class SwiftUsageTest(LandscapeTest):
             [(30, "vdb", 100000, 80000, 20000),
              (30, "vdd", 200000, 10000, 190000)],
             self.plugin._swift_usage_points)
-        self.assertEqual(["vdb", "vdd"], self.plugin._persist.get("devices"))
+        self.assertEqual(
+            ["vdb", "vdd"], sorted(self.plugin._persist.get("devices")))
         self.assertNotIn("vdc", self.plugin._persist.get("usage"))
 
     def test_message_remove_disappeared_devices(self):

@@ -4,6 +4,7 @@ import os
 from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import succeed
 
+from landscape.lib.encoding import encode_values
 from landscape.package.store import PackageStore
 from landscape.package.changer import PackageChanger
 from landscape.package.releaseupgrader import ReleaseUpgrader
@@ -68,13 +69,12 @@ class PackageManager(ManagerPlugin):
         if self.config.config:
             args.extend(["-c", self.config.config])
         if self._package_store.get_next_task(cls.queue_name):
+            command = cls.find_command(self.config)
+            environ = encode_values(os.environ)
             # path is set to None so that getProcessOutput does not
             # chdir to "." see bug #211373
-            command = cls.find_command(self.config)
-            result = getProcessOutput(command,
-                                      args=args, env=os.environ,
-                                      errortoo=1,
-                                      path=None)
+            result = getProcessOutput(
+                command, args=args, env=environ, errortoo=1, path=None)
             result.addCallback(self._got_output, cls)
         else:
             result = succeed(None)

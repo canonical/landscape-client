@@ -81,12 +81,12 @@ class AptPreferencesTest(LandscapeTest):
         self.makeDir(path=preferences_directory)
         limit = self.plugin.size_limit
         filename1 = self.makeFile(dirname=preferences_directory,
-                                  content="a" * (limit / 2))
+                                  content="a" * (limit // 2))
         filename2 = self.makeFile(dirname=preferences_directory,
-                                  content="b" * (limit / 2))
+                                  content="b" * (limit // 2))
         self.assertEqual(self.plugin.get_data(),
-                         {filename1: "a" * (limit / 2 - len(filename1)),
-                          filename2: "b" * (limit / 2 - len(filename2))})
+                         {filename1: "a" * (limit // 2 - len(filename1)),
+                          filename2: "b" * (limit // 2 - len(filename2))})
 
     def test_exchange_without_apt_preferences_data(self):
         """

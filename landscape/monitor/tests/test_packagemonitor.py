@@ -294,12 +294,12 @@ class PackageMonitorTest(LandscapeTest):
         The package hash=>id map is server-specific, so when we change
         servers, we should reset this map.
         """
-        self.package_store.set_hash_ids({"hash1": 1, "hash2": 2})
+        self.package_store.set_hash_ids({b"hash1": 1, b"hash2": 2})
         self.monitor.add(self.package_monitor)
         self.monitor.reactor.fire("server-uuid-changed", "old", "new")
 
-        self.assertEqual(self.package_store.get_hash_id("hash1"), None)
-        self.assertEqual(self.package_store.get_hash_id("hash2"), None)
+        self.assertEqual(self.package_store.get_hash_id(b"hash1"), None)
+        self.assertEqual(self.package_store.get_hash_id(b"hash2"), None)
 
     def test_changing_server_uuid_wont_clear_hash_ids_with_old_uuid_none(self):
         """
@@ -307,8 +307,8 @@ class PackageMonitorTest(LandscapeTest):
         talking to a server that knows how to communicate its UUID, so we
         don't want to clear the old hashes in this case.
         """
-        self.package_store.set_hash_ids({"hash1": 1, "hash2": 2})
+        self.package_store.set_hash_ids({b"hash1": 1, b"hash2": 2})
         self.monitor.add(self.package_monitor)
         self.monitor.reactor.fire("server-uuid-changed", None, "new-uuid")
-        self.assertEqual(self.package_store.get_hash_id("hash1"), 1)
-        self.assertEqual(self.package_store.get_hash_id("hash2"), 2)
+        self.assertEqual(self.package_store.get_hash_id(b"hash1"), 1)
+        self.assertEqual(self.package_store.get_hash_id(b"hash2"), 2)

@@ -17,11 +17,14 @@ def append_login_data(filename, login_type=0, pid=0, tty_device="/dev/",
     file = open(filename, "ab")
     try:
         file.write(struct.pack(LoginInfo.RAW_FORMAT, login_type, pid,
-                               tty_device, id, username, hostname,
+                               tty_device.encode("utf-8"), id.encode("utf-8"),
+                               username.encode("utf-8"),
+                               hostname.encode("utf-8"),
                                termination_status, exit_status, session_id,
                                entry_time_seconds, entry_time_milliseconds,
                                remote_ip_address[0], remote_ip_address[1],
-                               remote_ip_address[2], remote_ip_address[3], ""))
+                               remote_ip_address[2], remote_ip_address[3],
+                               b""))
     finally:
         file.close()
 

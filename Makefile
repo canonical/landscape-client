@@ -1,13 +1,12 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
-PYTHON ?= python
+PYTHON2 ?= python2
 PYTHON3 ?= python3
 TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
-READY_FILE := py3_ready_tests
-PY3_READY := `cat $(READY_FILE)`
-TEST_COMMAND_PY3_READY = TRIAL_ARGS= trial3 --unclean-warnings $(PY3_READY)
+# trial3 does not support threading via `-j` at the moment
+TEST_COMMAND_PY3_READY = TRIAL_ARGS= trial3 --unclean-warnings landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
@@ -44,7 +43,7 @@ build: build2 build3   ## Build.
 
 .PHONY: build2
 build2:
-	$(PYTHON) setup.py build_ext -i
+	$(PYTHON2) setup.py build_ext -i
 
 .PHONY: build3
 build3:
@@ -60,7 +59,7 @@ check5:
 check: check2 check3-ready  ## Run all the tests.
 
 .PHONY: check2
-check2: build
+check2: build2
 	LC_ALL=C $(TEST_COMMAND_PY2)
 
 .PHONY: check3

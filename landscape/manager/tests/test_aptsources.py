@@ -7,7 +7,7 @@ from twisted.internet.defer import Deferred, succeed
 from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
 
-from landscape.lib.twisted_util import gather_results
+from landscape.lib.twisted_util import gather_results, SignalError
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.package.reporter import find_reporter_command
 
@@ -176,7 +176,10 @@ class AptSourcesTests(LandscapeTest):
         If a failure happens during the manipulation of sources, the activity
         is reported as FAILED with the error message.
         """
-        self.sourceslist.SOURCES_LIST = "/doesntexist"
+        def buggy_source_handler(*args):
+            raise RuntimeError("foo")
+
+        self.sourceslist._handle_sources = buggy_source_handler
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace",
@@ -184,7 +187,7 @@ class AptSourcesTests(LandscapeTest):
              "gpg-keys": [],
              "operation-id": 1})
 
-        msg = "OSError: [Errno 2] No such file or directory: '/doesntexist'"
+        msg = "RuntimeError: foo"
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
                             [{"type": "operation-result",
@@ -352,7 +355,7 @@ class AptSourcesTests(LandscapeTest):
         deferred = Deferred()
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            deferred.errback(("nok", "some error", 1))
+            deferred.errback(SignalError("nok", "some error", 1))
             return deferred
 
         self.sourceslist._run_process = _run_process
