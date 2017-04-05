@@ -32,7 +32,7 @@ This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
 
-import logging
+from twisted.python.compat import _PY3
 
 dumps_table = {}
 loads_table = {}
@@ -94,11 +94,6 @@ def dumps_dict(obj, _dt=dumps_table):
     append = res.append
     for key in keys:
         val = obj[key]
-        if (bytes is not str) and isinstance(key, str):
-            try:
-                key.encode("ascii")
-            except UnicodeError as e:
-                logging.warning(e)
         append(_dt[type(key)](key))
         append(_dt[type(val)](val))
     return b"d%s;" % b"".join(res)
@@ -160,11 +155,11 @@ def loads_dict(bytestring, pos, _lt=loads_table):
     while bytestring[pos:pos+1] != b";":
         key, pos = _lt[bytestring[pos:pos+1]](bytestring, pos)
         val, pos = _lt[bytestring[pos:pos+1]](bytestring, pos)
-        if (bytes is not str) and isinstance(key, bytes):
-            try:
-                key.decode("ascii")
-            except UnicodeError as e:
-                logging.warning(e)
+        if _PY3 and isinstance(key, bytes):
+            # Although the wire format of dictionary keys is bytes, the
+            # code actually expects them to be strings, so we convert them
+            # here.
+            key = key.decode("ascii")
         res[key] = val
     return res, pos+1
 

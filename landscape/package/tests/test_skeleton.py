@@ -1,3 +1,5 @@
+from twisted.python.compat import _PY3
+
 from landscape.package.skeleton import (
     build_skeleton_apt, DEB_PROVIDES, DEB_PACKAGE,
     DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,
@@ -149,7 +151,11 @@ class SkeletonAptTest(LandscapeTest):
         self.facade._cache.open(None)
         pkg = self.get_package("pkg")
         skeleton = build_skeleton_apt(pkg, with_unicode=True, with_info=True)
-        self.assertEqual(u"T?st", skeleton.description)
+        if _PY3:
+            self.assertEqual(
+                b"T\xc3\xa9st", skeleton.description.encode("utf-8"))
+        else:
+            self.assertEqual(u"T?st", skeleton.description)
 
     def test_build_skeleton_minimal(self):
         """

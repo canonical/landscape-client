@@ -6,7 +6,7 @@ import uuid
 
 import pycurl
 
-from twisted.python.compat import unicode
+from twisted.python.compat import unicode, _PY3
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
@@ -35,12 +35,21 @@ class HTTPTransport(object):
         self._url = url
 
     def _curl(self, payload, computer_id, exchange_token, message_api):
+        # There are a few "if _PY3" checks below, because for Python 3 we
+        # want to convert a number of values from bytes to string, before
+        # assigning them to the headers.
+        if _PY3 and isinstance(message_api, bytes):
+            message_api = message_api.decode("ascii")
         headers = {"X-Message-API": message_api,
                    "User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream"}
         if computer_id:
+            if _PY3 and isinstance(computer_id, bytes):
+                computer_id = computer_id.decode("ascii")
             headers["X-Computer-ID"] = computer_id
         if exchange_token:
+            if _PY3 and isinstance(exchange_token, bytes):
+                exchange_token = exchange_token.decode("ascii")
             headers["X-Exchange-Token"] = str(exchange_token)
         curl = pycurl.Curl()
         return (curl, fetch(self._url, post=True, data=payload,

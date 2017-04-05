@@ -184,8 +184,8 @@ Inter-|   Receive                           |  Transmit
         self.assertMessages(self.mstore.get_pending_messages(),
                         [{"type": "network-activity",
                           "activities": {
-                              b"lo": [(step_size, 0, 1000)],
-                              b"eth0": [(step_size, 0, 1000)]}}])
+                              "lo": [(step_size, 0, 1000)],
+                              "eth0": [(step_size, 0, 1000)]}}])
 
     def test_config(self):
         """The network activity plugin is enabled by default."""
