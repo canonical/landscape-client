@@ -1,8 +1,6 @@
 import pwd
 import grp
 
-from twisted.python.compat import _PY3
-
 from landscape.user.provider import (
     UserProvider, UserNotFoundError, GroupNotFoundError)
 

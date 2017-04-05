@@ -1,10 +1,10 @@
-import time
-import logging
 import hashlib
+import logging
 import os
 import subprocess
 import sys
 import tempfile
+import time
 
 from operator import attrgetter
 
@@ -636,6 +636,9 @@ class AptFacade(object):
         Commit cached APT operations and give feedback on the results as a
         string.
         """
+        # XXX we cannot use io.StringIO() here with Python 2 as there is a
+        # string literal written in apt.progress.text.TextProgress._write()
+        # which is not recognized as unicode by io.StringIO() with Python 2.
         fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
         # file descriptors, rather than sys.stdout/stderr, since dpkg is
