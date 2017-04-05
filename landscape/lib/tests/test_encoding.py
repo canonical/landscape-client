@@ -2,7 +2,7 @@
 import codecs
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.lib.encoding import encode_if_needed
+from landscape.lib.encoding import encode_if_needed, encode_values
 
 
 EXPECTED_UTF8 = codecs.encode(u"請不要刪除", "utf-8")
@@ -53,3 +53,12 @@ class EncodingTest(LandscapeTest):
         When passed None, the encode_if_needed function returns None.
         """
         self.assertIs(None, encode_if_needed(None))
+
+    def test_encode_values(self):
+        """
+        When passed in a dictionary, all unicode is encoded and bytes are left.
+        """
+        original = {"a": b"Alex \xf0\x9f\x98\x83", "b": u"Alex \U0001f603"}
+        expected = {"a": b"Alex \xf0\x9f\x98\x83",
+                    "b": b"Alex \xf0\x9f\x98\x83"}
+        self.assertEqual(expected, encode_values(original))

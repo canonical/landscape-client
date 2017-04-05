@@ -23,6 +23,7 @@ from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
 from landscape.deployment import init_logging, Configuration
+from landscape.lib.encoding import encode_values
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
@@ -145,8 +146,9 @@ class Daemon(object):
             args.extend(["-c", self._config])
         if self.options is not None:
             args.extend(self.options)
+        env = encode_values(self._env)
         self._reactor.spawnProcess(self._process, exe, args=args,
-                                   env=self._env, uid=self._uid, gid=self._gid)
+                                   env=env, uid=self._uid, gid=self._gid)
 
     def stop(self):
         """Stop this daemon."""

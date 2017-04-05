@@ -1,5 +1,8 @@
-from twisted.internet.utils import getProcessOutputAndValue
 import os
+
+from twisted.internet.utils import getProcessOutputAndValue
+
+from landscape.lib.encoding import encode_values
 
 
 class CommandError(Exception):
@@ -55,7 +58,8 @@ class MemoryStats(object):
 
 
 def get_logged_in_users():
-    result = getProcessOutputAndValue("who", ["-q"], env=os.environ)
+    environ = encode_values(os.environ)
+    result = getProcessOutputAndValue("who", ["-q"], env=environ)
 
     def parse_output(args):
         stdout_data, stderr_data, status = args

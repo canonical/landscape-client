@@ -8,3 +8,14 @@ def encode_if_needed(value):
     if isinstance(value, unicode):
         value = value.encode("utf-8")
     return value
+
+
+def encode_values(dictionary):
+    """
+    Encode values of the given C{dictionary} with utf-8 and surrogateescape.
+    """
+    _dict = dictionary.copy()
+    for key, val in _dict.items():
+        if isinstance(val, unicode):
+            _dict[key] = val.encode("utf-8", "surrogateescape")
+    return _dict
