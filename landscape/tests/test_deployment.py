@@ -1,9 +1,9 @@
 from optparse import OptionParser
 from textwrap import dedent
+import io
 import mock
 import os
 
-from landscape.compat import StringIO
 from landscape.lib.fs import read_text_file, create_text_file
 
 from landscape.deployment import (
@@ -96,7 +96,7 @@ class ConfigurationTest(LandscapeTest):
         L{get_config_filename}.
         """
         config_obj = self.config._get_config_object(
-            alternative_config=StringIO("[client]\nlog_level = error\n"))
+            alternative_config=io.StringIO(u"[client]\nlog_level = error\n"))
         self.assertEqual(None, config_obj.filename)
 
     def write_config_file(self, **kwargs):
