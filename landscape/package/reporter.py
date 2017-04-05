@@ -5,7 +5,6 @@ except ImportError:
 
 import logging
 import time
-import sys
 import os
 import glob
 import apt_pkg
@@ -13,6 +12,7 @@ import apt_pkg
 from twisted.internet.defer import (
     Deferred, succeed, inlineCallbacks, returnValue)
 
+from landscape.deployment import get_bindir
 from landscape.lib import bpickle
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
@@ -751,6 +751,6 @@ def main(args):
         return run_task_handler(PackageReporter, args)
 
 
-def find_reporter_command():
-    dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-    return os.path.join(dirname, "landscape-package-reporter")
+def find_reporter_command(config=None):
+    bindir = get_bindir(config)
+    return os.path.join(bindir, "landscape-package-reporter")

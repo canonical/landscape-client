@@ -1116,20 +1116,19 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("RESULT", main(["ARGS"]))
         m.assert_called_once_with(PackageReporter, ["ARGS"])
 
-    def test_find_reporter_command(self):
-        dirname = self.makeDir()
-        filename = self.makeFile("", dirname=dirname,
-                                 basename="landscape-package-reporter")
+    def test_find_reporter_command_with_bindir(self):
+        self.config.bindir = "/spam/eggs"
+        command = find_reporter_command(self.config)
 
-        saved_argv = sys.argv
-        try:
-            sys.argv = [os.path.join(dirname, "landscape-monitor")]
+        self.assertEqual("/spam/eggs/landscape-package-reporter", command)
 
-            command = find_reporter_command()
+    def test_find_reporter_command_default(self):
+        expected = os.path.join(
+            os.path.dirname(os.path.abspath(sys.argv[0])),
+            "landscape-package-reporter")
+        command = find_reporter_command()
 
-            self.assertEqual(command, filename)
-        finally:
-            sys.argv = saved_argv
+        self.assertEqual(expected, command)
 
     def test_resynchronize(self):
         """

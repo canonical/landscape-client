@@ -517,12 +517,10 @@ class DaemonTestBase(LandscapeTest):
 
     connector_factory = RemoteStubBrokerConnector
 
+    EXEC_NAME = "landscape-broker"
+
     def setUp(self):
         super(DaemonTestBase, self).setUp()
-        self.exec_dir = self.makeDir()
-        self.exec_name = os.path.join(self.exec_dir, "landscape-broker")
-        self.saved_argv = sys.argv
-        sys.argv = [os.path.join(self.exec_dir, "arv0_execname")]
 
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
@@ -539,7 +537,6 @@ class DaemonTestBase(LandscapeTest):
         self.daemon = self.get_daemon()
 
     def tearDown(self):
-        sys.argv = self.saved_argv
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
             self.broker_service.stopService()
@@ -552,7 +549,7 @@ class DaemonTestBase(LandscapeTest):
         else:
             MyDaemon = Daemon
         daemon = MyDaemon(self.connector, **kwargs)
-        daemon.program = os.path.basename(self.exec_name)
+        daemon.program = self.EXEC_NAME
         daemon.factor = 0.01
         return daemon
 
@@ -564,25 +561,39 @@ class FileChangeWaiter(object):
         self._mtime = os.path.getmtime(filename)
         self._filename = filename
 
-    def wait(self):
+    def wait(self, timeout=60):
+        if timeout:
+            end = time.time() + timeout
         while self._mtime == os.path.getmtime(self._filename):
             time.sleep(0.1)
+            if timeout and time.time() > end:
+                raise RuntimeError(
+                    "timed out after {} seconds".format(timeout))
 
 
 class DaemonTest(DaemonTestBase):
 
+    def _write_script(self, content):
+        filename = self.write_script(self.config, self.EXEC_NAME, content)
+        self.daemon.BIN_DIR = self.config.bindir
+        return filename
+
     def test_find_executable_works(self):
-        self.makeFile("I'm the broker.", path=self.exec_name)
-        self.assertEqual(self.daemon.find_executable(), self.exec_name)
+        expected = self._write_script("I'm the broker.")
+        command = self.daemon.find_executable()
+
+        self.assertEqual(expected, command)
 
     def test_find_executable_cant_find_file(self):
-        self.assertRaises(ExecutableNotFoundError, self.daemon.find_executable)
+        self.daemon.BIN_DIR = "/fake/bin"
+
+        with self.assertRaises(ExecutableNotFoundError):
+            self.daemon.find_executable()
 
     def test_start_process(self):
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile('#!/bin/sh\necho "RUN $@" > %s' % output_filename,
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            '#!/bin/sh\necho "RUN $@" > %s' % output_filename)
 
         waiter = FileChangeWaiter(output_filename)
 
@@ -597,16 +608,16 @@ class DaemonTest(DaemonTestBase):
 
     def test_start_process_with_verbose(self):
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile('#!/bin/sh\necho "RUN $@" > %s' % output_filename,
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            '#!/bin/sh\necho "RUN $@" > %s' % output_filename)
 
         waiter = FileChangeWaiter(output_filename)
 
         daemon = self.get_daemon(verbose=True)
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
-        waiter.wait()
+        waiter.wait(timeout=10)
 
         self.assertEqual(open(output_filename).read(),
                          "RUN --ignore-sigint\n")
@@ -616,15 +627,14 @@ class DaemonTest(DaemonTestBase):
     def test_kill_process_with_sigterm(self):
         """The stop() method sends SIGTERM to the subprocess."""
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile("#!%s\n"
-                      "import time\n"
-                      "file = open(%r, 'w')\n"
-                      "file.write('RUN')\n"
-                      "file.close()\n"
-                      "time.sleep(1000)\n"
-                      % (sys.executable, output_filename),
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            ("#!%s\n"
+             "import time\n"
+             "file = open(%r, 'w')\n"
+             "file.write('RUN')\n"
+             "file.close()\n"
+             "time.sleep(1000)\n"
+             ) % (sys.executable, output_filename))
 
         waiter = FileChangeWaiter(output_filename)
         self.daemon.start()
@@ -639,16 +649,15 @@ class DaemonTest(DaemonTestBase):
         some time after the SIGTERM was issued and didn't work.
         """
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile("#!%s\n"
-                      "import signal, os\n"
-                      "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
-                      "file = open(%r, 'w')\n"
-                      "file.write('RUN')\n"
-                      "file.close()\n"
-                      "os.kill(os.getpid(), signal.SIGSTOP)\n"
-                      % (sys.executable, output_filename),
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            ("#!%s\n"
+             "import signal, os\n"
+             "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+             "file = open(%r, 'w')\n"
+             "file.write('RUN')\n"
+             "file.close()\n"
+             "os.kill(os.getpid(), signal.SIGSTOP)\n"
+             ) % (sys.executable, output_filename))
 
         self.addCleanup(setattr, landscape.watchdog, "SIGKILL_DELAY",
                         landscape.watchdog.SIGKILL_DELAY)
@@ -666,9 +675,8 @@ class DaemonTest(DaemonTestBase):
         died.
         """
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile('#!/bin/sh\necho "RUN" > %s' % output_filename,
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            '#!/bin/sh\necho "RUN" > %s' % output_filename)
 
         self.daemon.start()
 
@@ -682,9 +690,8 @@ class DaemonTest(DaemonTestBase):
         certain amount of time, just like C{wait}.
         """
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile('#!/bin/sh\necho "RUN" > %s' % output_filename,
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            '#!/bin/sh\necho "RUN" > %s' % output_filename)
 
         self.daemon.start()
 
@@ -695,7 +702,8 @@ class DaemonTest(DaemonTestBase):
     def test_wait_or_die_terminates(self):
         """wait_or_die eventually terminates the process."""
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile("""\
+        self._write_script(
+            """\
 #!%(exe)s
 import time
 import signal
@@ -708,10 +716,7 @@ def term(frame, sig):
     file.close()
 signal.signal(signal.SIGTERM, term)
 time.sleep(999)
-        """
-                      % {"exe": sys.executable, "out": output_filename},
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        """ % {"exe": sys.executable, "out": output_filename})
 
         self.addCleanup(setattr, landscape.watchdog, "GRACEFUL_WAIT_PERIOD",
                         landscape.watchdog.GRACEFUL_WAIT_PERIOD)
@@ -728,16 +733,15 @@ time.sleep(999)
         and terminating don't work.
         """
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile("#!%s\n"
-                      "import signal, os\n"
-                      "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
-                      "file = open(%r, 'w')\n"
-                      "file.write('RUN')\n"
-                      "file.close()\n"
-                      "os.kill(os.getpid(), signal.SIGSTOP)\n"
-                      % (sys.executable, output_filename),
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            ("#!%s\n"
+             "import signal, os\n"
+             "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+             "file = open(%r, 'w')\n"
+             "file.write('RUN')\n"
+             "file.close()\n"
+             "os.kill(os.getpid(), signal.SIGSTOP)\n"
+             ) % (sys.executable, output_filename))
 
         self.addCleanup(setattr, landscape.watchdog, "SIGKILL_DELAY",
                         landscape.watchdog.SIGKILL_DELAY)
@@ -789,9 +793,8 @@ time.sleep(999)
 
         output_filename = self.makeFile("NOT RUN")
 
-        self.makeFile("#!/bin/sh\necho RUN >> %s" % output_filename,
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            "#!/bin/sh\necho RUN >> %s" % output_filename)
 
         def got_result(result):
             self.assertEqual(len(list(open(output_filename))),
@@ -813,6 +816,7 @@ time.sleep(999)
         reactor.callLater(1, result.callback, None)
 
         daemon = self.get_daemon(reactor=reactor)
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         return result
@@ -832,9 +836,8 @@ time.sleep(999)
 
         output_filename = self.makeFile("NOT RUN")
 
-        self.makeFile("#!/bin/sh\necho RUN >> %s" % output_filename,
-                      path=self.exec_name)
-        os.chmod(self.exec_name, 0o755)
+        self._write_script(
+            "#!/bin/sh\necho RUN >> %s" % output_filename)
 
         def got_result(result):
             # Pay attention to the +1 bellow. It's the reason for this test.
@@ -866,6 +869,7 @@ time.sleep(999)
         # It's important to call start() shortly after the mocking above,
         # as we don't want anyone else getting the fake time.
         daemon = self.get_daemon(reactor=reactor)
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         def mock_reactor_stop():
@@ -891,7 +895,7 @@ time.sleep(999)
         the username of the daemon. It also specifies the gid as the primary
         group of that user.
         """
-        self.makeFile("", path=self.exec_name)
+        self._write_script("#!/bin/sh")
 
         class getpwnam_result:
             pw_uid = 123
@@ -903,6 +907,7 @@ time.sleep(999)
         reactor = mock.Mock()
 
         daemon = self.get_daemon(reactor=reactor)
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         getuid.assert_called_with()
@@ -926,10 +931,11 @@ time.sleep(999)
         If the watchdog is not running as root, no uid or gid switching will
         occur.
         """
-        self.makeFile("", path=self.exec_name)
+        self._write_script("#!/bin/sh")
 
         reactor = mock.Mock()
         daemon = self.get_daemon(reactor=reactor)
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         reactor.spawnProcess.assert_called_with(
@@ -943,10 +949,11 @@ time.sleep(999)
         If the daemon is specified to run as root, and the watchdog is running
         as root, no uid or gid switching will occur.
         """
-        self.makeFile("", path=self.exec_name)
+        self._write_script("#!/bin/sh")
         reactor = mock.Mock()
 
         daemon = self.get_daemon(reactor=reactor, username="root")
+        daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
         reactor.spawnProcess.assert_called_with(

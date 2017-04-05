@@ -276,6 +276,18 @@ class LandscapeTest(MessageTestCase, HelperTestCase, TestCase):
         self.addCleanup(self._clean_file, path)
         return path
 
+    def write_script(self, config, name, content, bindir=None):
+        """Return the path to the script after writing it to a temp dir."""
+        if bindir is None:
+            bindir = self.makeDir()
+        config.bindir = bindir
+        filename = self.makeFile(
+            content,
+            dirname=bindir,
+            basename=name)
+        os.chmod(filename, 0o755)
+        return filename
+
 
 class LandscapeIsolatedTest(LandscapeTest):
     """TestCase that also runs all test methods in a subprocess."""

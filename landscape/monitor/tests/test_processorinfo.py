@@ -389,7 +389,7 @@ processor 0: version = FF,  identification = 018F67,  machine = 2964
 processor 1: version = FF,  identification = 018F67,  machine = 2964
 processor 2: version = FF,  identification = 018F67,  machine = 2964
 processor 3: version = FF,  identification = 018F67,  machine = 2964
-""" # noqa
+"""  # noqa
 
     def test_read_sample_s390x_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from an IBM zSeries machine."""
@@ -455,7 +455,7 @@ cache_alignment : 64
 address sizes   : 40 bits physical, 48 bits virtual
 power management: ts fid vid ttp
 
-"""
+"""  # noqa
 
     UP_PENTIUM_M = """
 processor       : 0
@@ -477,7 +477,7 @@ wp              : yes
 flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat clflush dts acpi mmx fxsr sse sse2 ss tm pbe nx est tm2
 bogomips        : 1198.25
 
-"""
+"""  # noqa
 
     def setUp(self):
         LandscapeTest.setUp(self)

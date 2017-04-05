@@ -135,7 +135,7 @@ class AptSources(ManagerPlugin):
 
     def _run_reporter(self):
         """Once the repositories are modified, trigger a reporter run."""
-        reporter = find_reporter_command()
+        reporter = find_reporter_command(self.registry.config)
 
         # Force an apt-update run, because the sources.list has changed
         args = ["--force-apt-update"]

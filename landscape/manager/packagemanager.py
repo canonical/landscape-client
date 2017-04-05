@@ -69,13 +69,12 @@ class PackageManager(ManagerPlugin):
         if self.config.config:
             args.extend(["-c", self.config.config])
         if self._package_store.get_next_task(cls.queue_name):
+            command = cls.find_command(self.config)
+            environ = encode_values(os.environ)
             # path is set to None so that getProcessOutput does not
             # chdir to "." see bug #211373
-            environ = encode_values(os.environ)
-            result = getProcessOutput(cls.find_command(),
-                                      args=args, env=environ,
-                                      errortoo=1,
-                                      path=None)
+            result = getProcessOutput(
+                command, args=args, env=environ, errortoo=1, path=None)
             result.addCallback(self._got_output, cls)
         else:
             result = succeed(None)

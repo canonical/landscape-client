@@ -12,7 +12,7 @@ from mock import patch, Mock, call
 
 from landscape.lib.fs import create_text_file, read_text_file, touch_file
 from landscape.package.changer import (
-    PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
+    PackageChanger, main, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
     POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
 from landscape.package.store import PackageStore
@@ -662,15 +662,14 @@ class AptPackageChangerTest(LandscapeTest):
 
     @patch("os.system")
     def test_spawn_reporter_after_running(self, system_mock):
-        with patch("landscape.package.changer.find_reporter_command",
-                   return_value="/fake/bin/landscape-package-reporter"):
-            # Add a task that will do nothing besides producing an
-            # answer.  The reporter is only spawned if at least one
-            # task was handled.
-            self.store.add_task("changer", {"type": "change-packages",
-                                            "operation-id": 123})
+        self.config.bindir = "/fake/bin"
+        # Add a task that will do nothing besides producing an
+        # answer.  The reporter is only spawned if at least one
+        # task was handled.
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "operation-id": 123})
 
-            self.successResultOf(self.changer.run())
+        self.successResultOf(self.changer.run())
 
         system_mock.assert_called_once_with(
             "/fake/bin/landscape-package-reporter")
@@ -679,15 +678,14 @@ class AptPackageChangerTest(LandscapeTest):
     def test_spawn_reporter_after_running_with_config(self, system_mock):
         """The changer passes the config to the reporter when running it."""
         self.config.config = "test.conf"
+        self.config.bindir = "/fake/bin"
 
-        with patch("landscape.package.changer.find_reporter_command",
-                   return_value="/fake/bin/landscape-package-reporter"):
-            # Add a task that will do nothing besides producing an
-            # answer.  The reporter is only spawned if at least one
-            # task was handled.
-            self.store.add_task("changer", {"type": "change-packages",
-                                            "operation-id": 123})
-            self.successResultOf(self.changer.run())
+        # Add a task that will do nothing besides producing an
+        # answer.  The reporter is only spawned if at least one
+        # task was handled.
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "operation-id": 123})
+        self.successResultOf(self.changer.run())
 
         system_mock.assert_called_once_with(
             "/fake/bin/landscape-package-reporter -c test.conf")
@@ -703,6 +701,7 @@ class AptPackageChangerTest(LandscapeTest):
         to report the recent changes.  If we're running as root, we want to
         change to the "landscape" user and "landscape" group.
         """
+        self.config.bindir = "/fake/bin"
 
         class FakeGroup(object):
             gr_gid = 199
@@ -713,15 +712,12 @@ class AptPackageChangerTest(LandscapeTest):
         # We are running as root
         with patch("grp.getgrnam", return_value=FakeGroup()) as grnam_mock:
             with patch("pwd.getpwnam", return_value=FakeUser()) as pwnam_mock:
-                with patch(
-                        "landscape.package.changer.find_reporter_command",
-                        return_value="/fake/bin/landscape-package-reporter"):
-                    # Add a task that will do nothing besides producing an
-                    # answer.  The reporter is only spawned if at least
-                    # one task was handled.
-                    self.store.add_task("changer", {"type": "change-packages",
-                                                    "operation-id": 123})
-                    self.successResultOf(self.changer.run())
+                # Add a task that will do nothing besides producing an
+                # answer.  The reporter is only spawned if at least
+                # one task was handled.
+                self.store.add_task("changer", {"type": "change-packages",
+                                                "operation-id": 123})
+                self.successResultOf(self.changer.run())
 
         grnam_mock.assert_called_once_with("landscape")
         setgid_mock.assert_called_once_with(199)
@@ -778,20 +774,19 @@ class AptPackageChangerTest(LandscapeTest):
         pgrp.assert_called_once_with()
         task.assert_called_once_with(PackageChanger, ["ARGS"])
 
-    def test_find_changer_command(self):
-        dirname = self.makeDir()
-        filename = self.makeFile("", dirname=dirname,
-                                 basename="landscape-package-changer")
+    def test_find_command_with_bindir(self):
+        self.config.bindir = "/spam/eggs"
+        command = PackageChanger.find_command(self.config)
 
-        saved_argv = sys.argv
-        try:
-            sys.argv = [os.path.join(dirname, "landscape-monitor")]
+        self.assertEqual("/spam/eggs/landscape-package-changer", command)
 
-            command = find_changer_command()
+    def test_find_command_default(self):
+        expected = os.path.join(
+            os.path.dirname(os.path.abspath(sys.argv[0])),
+            "landscape-package-changer")
+        command = PackageChanger.find_command()
 
-            self.assertEqual(command, filename)
-        finally:
-            sys.argv = saved_argv
+        self.assertEqual(expected, command)
 
     def test_transaction_error_with_unicode_data(self):
         self.store.set_hash_ids({HASH1: 1})

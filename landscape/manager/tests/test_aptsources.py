@@ -3,7 +3,6 @@ import os
 import mock
 
 from twisted.internet.defer import Deferred, succeed
-from twisted.python.compat import _PY3
 
 from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
@@ -469,7 +468,8 @@ class AptSourcesTests(LandscapeTest):
         deferred = Deferred()
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            self.assertEqual(find_reporter_command(), command)
+            self.assertEqual(
+                find_reporter_command(self.manager.config), command)
             self.assertEqual(["--force-apt-update", "--config=%s" %
                               self.manager.config.config], args)
             deferred.callback(("ok", "", 0))

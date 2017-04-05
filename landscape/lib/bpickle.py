@@ -210,4 +210,3 @@ else:
     dumps_table.update({
         str: dumps_unicode,
     })
-

@@ -4,11 +4,11 @@ import logging
 import os
 import pwd
 import shutil
-import sys
 import tarfile
 
 from twisted.internet.defer import succeed
 
+from landscape.deployment import get_bindir
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
@@ -252,7 +252,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             uid = None
             gid = None
 
-        reporter = find_reporter_command()
+        reporter = find_reporter_command(self._config)
 
         # Force an apt-update run, because the sources.list has changed
         args = ["--force-apt-update"]
@@ -274,9 +274,11 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         return self._send_message(message)
 
-    @staticmethod
-    def find_command():
-        return find_release_upgrader_command()
+    @classmethod
+    def find_command(cls, config=None):
+        """Return the path to the landscape-release-upgrader script."""
+        bindir = get_bindir(config)
+        return os.path.join(bindir, "landscape-release-upgrader")
 
     def _send_message(self, message):
         """Acquire a session ID and send the given message."""
@@ -287,12 +289,6 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         deferred.addCallback(send)
         return deferred
-
-
-def find_release_upgrader_command():
-    """Return the path to the landscape-release-upgrader script."""
-    dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-    return os.path.join(dirname, "landscape-release-upgrader")
 
 
 def main(args):

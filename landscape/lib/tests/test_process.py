@@ -43,7 +43,8 @@ class ProcessInfoTest(LandscapeTest):
     @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
     @mock.patch("os.listdir")
     @mock.patch("landscape.monitor.computeruptime.get_uptime")
-    def test_missing_process_race(self, get_uptime_mock, list_dir_mock, jiffies_mock):
+    def test_missing_process_race(self, get_uptime_mock, list_dir_mock,
+                                  jiffies_mock):
         """
         We use os.listdir("/proc") to get the list of active processes, if a
         process ends before we attempt to read the process' information, then

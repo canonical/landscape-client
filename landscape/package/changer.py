@@ -1,7 +1,6 @@
 import logging
 import base64
 import time
-import sys
 import os
 import pwd
 import grp
@@ -14,6 +13,7 @@ from landscape.constants import (
     POLICY_STRICT, POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
+from landscape.deployment import get_bindir
 from landscape.lib.fs import create_binary_file
 from landscape.lib.log import log_failure
 from landscape.package.reporter import find_reporter_command
@@ -101,7 +101,7 @@ class PackageChanger(PackageTaskHandler):
         if os.getuid() == 0:
             os.setgid(grp.getgrnam("landscape").gr_gid)
             os.setuid(pwd.getpwnam("landscape").pw_uid)
-        command = find_reporter_command()
+        command = find_reporter_command(self._config)
         if self._config.config is not None:
             command += " -c %s" % self._config.config
         os.system(command)
@@ -374,14 +374,16 @@ class PackageChanger(PackageTaskHandler):
             "result-code": 1}
         return self._broker.send_message(response, self._session_id, True)
 
-    @staticmethod
-    def find_command():
-        return find_changer_command()
+    @classmethod
+    def find_command(cls, config=None):
+        """Return the path to the package-changer script.
 
-
-def find_changer_command():
-    dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-    return os.path.join(dirname, "landscape-package-changer")
+        The script's directory is derived from the provided config.
+        If that is None or doesn't have a "bindir" then directory of
+        sys.argv[0] is returned.
+        """
+        bindir = get_bindir(config)
+        return os.path.join(bindir, "landscape-package-changer")
 
 
 def main(args):

@@ -502,20 +502,20 @@ class ReleaseUpgraderTest(LandscapeTest):
         packages.
         """
         upgrade_tool_directory = self.config.upgrade_tool_directory
-        open(os.path.join(upgrade_tool_directory, "somefile"), "w").close()
+        with open(os.path.join(upgrade_tool_directory, "somefile"), "w"):
+            pass
         os.mkdir(os.path.join(upgrade_tool_directory, "somedir"))
 
-        reporter_filename = self.makeFile("#!/bin/sh\n"
-                                          "echo $@\n"
-                                          "echo $(pwd)\n")
-        os.chmod(reporter_filename, 0o755)
+        self.write_script(
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\n"
+            "echo $@\n"
+            "echo $(pwd)\n")
 
         deferred = Deferred()
 
-        @mock.patch("landscape.package.releaseupgrader.find_reporter_command")
-        def do_test(find_reporter_mock):
-
-            find_reporter_mock.return_value = reporter_filename
+        def do_test():
             result = self.upgrader.finish()
 
             def check_result(args):
@@ -526,7 +526,6 @@ class ReleaseUpgraderTest(LandscapeTest):
                     b"--force-apt-update\n%s\n" % os.getcwd().encode("utf-8"))
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
-                find_reporter_mock.assert_called_once_with()
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -537,11 +536,7 @@ class ReleaseUpgraderTest(LandscapeTest):
     @mock.patch("grp.getgrnam")
     @mock.patch("pwd.getpwnam")
     @mock.patch("os.getuid", return_value=0)
-    @mock.patch("landscape.package.releaseupgrader.find_reporter_command",
-                return_value="reporter")
-    def test_finish_as_root(
-            self, find_reporter_mock, getuid_mock, getpwnam_mock,
-            getgrnam_mock):
+    def test_finish_as_root(self, getuid_mock, getpwnam_mock, getgrnam_mock):
         """
         If the release-upgrader process is run as root, as it alwyas should,
         the L{ReleaseUpgrader.finish} method spawns the package-reporter with
@@ -573,7 +568,6 @@ class ReleaseUpgraderTest(LandscapeTest):
             reactor.spawnProcess = saved_spawn_process
         self.assertEqual(spawn_process_calls, [True])
 
-        find_reporter_mock.assert_called_once_with()
         getuid_mock.assert_called_once_with()
         getpwnam_mock.assert_called_once_with("landscape")
         getgrnam_mock.assert_called_once_with("landscape")
@@ -583,16 +577,15 @@ class ReleaseUpgraderTest(LandscapeTest):
         The L{ReleaseUpgrader.finish} method passes over to the reporter the
         configuration file the release-upgrader was called with.
         """
-        reporter_filename = self.makeFile("#!/bin/sh\necho $@\n")
-        os.chmod(reporter_filename, 0o755)
+        self.write_script(
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\necho $@\n")
         self.config.config = "/some/config"
 
         deferred = Deferred()
 
-        @mock.patch("landscape.package.releaseupgrader.find_reporter_command")
-        def do_test(find_reporter_mock):
-
-            find_reporter_mock.return_value = reporter_filename
+        def do_test():
             result = self.upgrader.finish()
 
             def check_result(args):
@@ -601,7 +594,6 @@ class ReleaseUpgraderTest(LandscapeTest):
                                       b"--config=/some/config\n")
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
-                find_reporter_mock.assert_called_once_with()
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)

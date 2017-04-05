@@ -129,12 +129,10 @@ class PackageMonitorTest(LandscapeTest):
         self.assertEqual(task.data, message)
 
     def test_spawn_reporter(self):
-        command = self.makeFile("#!/bin/sh\necho 'I am the reporter!' >&2\n")
-        os.chmod(command, 0o755)
-        find_command_mock_patcher = mock.patch(
-            "landscape.monitor.packagemonitor.find_reporter_command",
-            return_value=command)
-        find_command_mock_patcher.start()
+        command = self.write_script(
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\necho 'I am the reporter!' >&2\n")
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -144,15 +142,14 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("I am the reporter!", log)
             self.assertNotIn(command, log)
-            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
     def test_spawn_reporter_without_output(self):
-        find_command_mock_patcher = mock.patch(
-            "landscape.monitor.packagemonitor.find_reporter_command",
-            return_value="/bin/true")
-        find_command_mock_patcher.start()
+        self.write_script(
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\n/bin/true")
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -161,17 +158,14 @@ class PackageMonitorTest(LandscapeTest):
         def got_result(result):
             log = self.logfile.getvalue()
             self.assertNotIn("reporter output", log)
-            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
     def test_spawn_reporter_copies_environment(self):
-        command = self.makeFile("#!/bin/sh\necho VAR: $VAR\n")
-        os.chmod(command, 0o755)
-        find_command_mock_patcher = mock.patch(
-            "landscape.monitor.packagemonitor.find_reporter_command",
-            return_value=command)
-        find_command_mock_patcher.start()
+        command = self.write_script(
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\necho VAR: $VAR\n")
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -184,17 +178,14 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("VAR: HI!", log)
             self.assertNotIn(command, log)
-            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
     def test_spawn_reporter_passes_quiet_option(self):
-        command = self.makeFile("#!/bin/sh\necho OPTIONS: $@\n")
-        os.chmod(command, 0o755)
-        find_command_mock_patcher = mock.patch(
-            "landscape.monitor.packagemonitor.find_reporter_command",
-            return_value=command)
-        find_command_mock_patcher.start()
+        command = self.write_script(
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\necho OPTIONS: $@\n")
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -205,7 +196,6 @@ class PackageMonitorTest(LandscapeTest):
             log = self.logfile.getvalue()
             self.assertIn("OPTIONS: --quiet", log)
             self.assertNotIn(command, log)
-            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 
@@ -276,18 +266,15 @@ class PackageMonitorTest(LandscapeTest):
         self.assertSingleReporterTask(task.data, task.id)
 
     def test_spawn_reporter_doesnt_chdir(self):
-        command = self.makeFile("#!/bin/sh\necho RUN\n")
-        os.chmod(command, 0o755)
+        self.write_script(
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\necho RUN\n")
         cwd = os.getcwd()
         self.addCleanup(os.chdir, cwd)
         dir = self.makeDir()
         os.chdir(dir)
         os.chmod(dir, 0)
-
-        find_command_mock_patcher = mock.patch(
-            "landscape.monitor.packagemonitor.find_reporter_command",
-            return_value=command)
-        find_command_mock_patcher.start()
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -299,7 +286,6 @@ class PackageMonitorTest(LandscapeTest):
             self.assertIn("RUN", log)
             # restore permissions to the dir so tearDown can clean it up
             os.chmod(dir, 0o766)
-            find_command_mock_patcher.stop()
 
         return result.addCallback(got_result)
 

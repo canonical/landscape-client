@@ -2,12 +2,14 @@ from optparse import OptionParser
 from textwrap import dedent
 import mock
 import os
+import os.path
+import sys
 
 from landscape.compat import StringIO
 from landscape.lib.fs import read_text_file, create_text_file
 
 from landscape.deployment import (
-    BaseConfiguration, Configuration, get_versioned_persist)
+    BaseConfiguration, Configuration, get_versioned_persist, get_bindir)
 from landscape.manager.config import ManagerConfiguration
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
@@ -711,3 +713,37 @@ class GetVersionedPersistTest(LandscapeTest):
                              {"monitor": mock_monitor}):
             persist = get_versioned_persist(FakeService())
             mock_monitor.apply.assert_called_with(persist)
+
+
+class GetBindirTest(LandscapeTest):
+
+    BIN_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+    def test_config_has_valid_bindir(self):
+        """get_bindir() returns the directory name found in the config."""
+        cfg = Configuration()
+        cfg.bindir = "/spam/eggs"
+        bindir = get_bindir(cfg)
+
+        self.assertEqual("/spam/eggs", bindir)
+
+    def test_config_has_None_bindir(self):
+        """get_bindir() """
+        cfg = Configuration()
+        cfg.bindir = None
+        bindir = get_bindir(cfg)
+
+        self.assertEqual(self.BIN_DIR, bindir)
+
+    def test_config_has_no_bindir(self):
+        """get_bindir() """
+        cfg = object()
+        bindir = get_bindir(cfg)
+
+        self.assertEqual(self.BIN_DIR, bindir)
+
+    def test_config_is_None(self):
+        """get_bindir() """
+        bindir = get_bindir(None)
+
+        self.assertEqual(self.BIN_DIR, bindir)
