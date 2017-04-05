@@ -8,7 +8,7 @@ from twisted.python.compat import _PY3
 from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
 
-from landscape.lib.twisted_util import gather_results
+from landscape.lib.twisted_util import gather_results, SignalError
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.package.reporter import find_reporter_command
 
@@ -356,7 +356,7 @@ class AptSourcesTests(LandscapeTest):
         deferred = Deferred()
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            deferred.errback(RuntimeError("nok", "some error", 1))
+            deferred.errback(SignalError("nok", "some error", 1))
             return deferred
 
         self.sourceslist._run_process = _run_process
