@@ -1595,13 +1595,13 @@ registration_key = shared-secret
             self, mock_sysvconfig, mock_fetch, mock_print_text):
         mock_sysvconfig().restart_landscape.return_value = True
         configuration = (
-            "[client]\n"
-            "computer_title = New Title\n"
-            "account_name = New Name\n"
-            "registration_key = New Password\n"
-            "http_proxy = http://new.proxy\n"
-            "https_proxy = https://new.proxy\n"
-            "url = http://new.url\n")
+            b"[client]\n"
+            b"computer_title = New Title\n"
+            b"account_name = New Name\n"
+            b"registration_key = New Password\n"
+            b"http_proxy = http://new.proxy\n"
+            b"https_proxy = https://new.proxy\n"
+            b"url = http://new.url\n")
 
         mock_fetch.return_value = configuration
 
@@ -1670,7 +1670,7 @@ registration_key = shared-secret
             "Fetching configuration from https://config.url...")
 
     @mock.patch("landscape.configuration.print_text")
-    @mock.patch("landscape.configuration.fetch", return_value="")
+    @mock.patch("landscape.configuration.fetch", return_value=b"")
     def test_import_from_url_with_empty_content(
             self, mock_fetch, mock_print_text):
         # Use a command line option as well to test the precedence.
@@ -1687,7 +1687,7 @@ registration_key = shared-secret
 
     @mock.patch("landscape.configuration.print_text")
     @mock.patch("landscape.configuration.fetch",
-                return_value="<strong>BOGUS!</strong>")
+                return_value=b"<strong>BOGUS!</strong>")
     def test_import_from_url_with_bogus_content(
             self, mock_fetch, mock_print_text):
         # Use a command line option as well to test the precedence.

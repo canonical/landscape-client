@@ -17,7 +17,7 @@ from landscape.lib import bpickle
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
-from landscape.lib.fs import touch_file
+from landscape.lib.fs import touch_file, create_binary_file
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 
 from landscape.package.taskhandler import (
@@ -131,9 +131,7 @@ class PackageReporter(PackageTaskHandler):
             url = str(base_url + os.path.basename(hash_id_db_filename))
 
             def fetch_ok(data):
-                hash_id_db_fd = open(hash_id_db_filename, "w")
-                hash_id_db_fd.write(data)
-                hash_id_db_fd.close()
+                create_binary_file(hash_id_db_filename, data)
                 logging.info("Downloaded hash=>id database from %s" % url)
 
             def fetch_error(failure):

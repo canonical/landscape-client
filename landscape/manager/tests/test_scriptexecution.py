@@ -209,9 +209,10 @@ class RunScriptTests(LandscapeTest):
             mock_umask.assert_has_calls([mock.call(0o022)])
             mock_mkdtemp.assert_called_with()
 
-        def cleanup(_):
+        def cleanup(result):
             patch_umask.stop()
             patch_mkdtemp.stop()
+            return result
 
         return result.addErrback(check).addBoth(cleanup)
 
@@ -243,7 +244,7 @@ class RunScriptTests(LandscapeTest):
         patch_fetch = mock.patch(
             "landscape.manager.scriptexecution.fetch_async")
         mock_fetch = patch_fetch.start()
-        mock_fetch.return_value = succeed("some other data")
+        mock_fetch.return_value = succeed(b"some other data")
 
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
@@ -260,8 +261,10 @@ class RunScriptTests(LandscapeTest):
                 "https://localhost/attachment/14", headers=headers,
                 cainfo=None)
 
-        def cleanup(_):
+        def cleanup(result):
             patch_fetch.stop()
+            # We have to return the Failure or result to get a working test.
+            return result
 
         return result.addCallback(check).addBoth(cleanup)
 
@@ -281,7 +284,7 @@ class RunScriptTests(LandscapeTest):
         patch_fetch = mock.patch(
             "landscape.manager.scriptexecution.fetch_async")
         mock_fetch = patch_fetch.start()
-        mock_fetch.return_value = succeed("some other data")
+        mock_fetch.return_value = succeed(b"some other data")
 
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
@@ -298,8 +301,9 @@ class RunScriptTests(LandscapeTest):
                 "https://localhost/attachment/14", headers=headers,
                 cainfo="/some/key")
 
-        def cleanup(_):
+        def cleanup(result):
             patch_fetch.stop()
+            return result
 
         return result.addCallback(check).addBoth(cleanup)
 
@@ -357,8 +361,9 @@ class RunScriptTests(LandscapeTest):
             mock_chown.assert_called_with()
             self.assertEqual(result, "foobar")
 
-        def cleanup(_):
+        def cleanup(result):
             patch_chown.stop()
+            return result
 
         return result.addErrback(check).addBoth(cleanup)
 
@@ -397,8 +402,9 @@ class RunScriptTests(LandscapeTest):
         def check(result):
             mock_getpwnam.assert_called_with("user")
 
-        def cleanup(_):
+        def cleanup(result):
             patch_getpwnam.stop()
+            return result
 
         return result.addCallback(check).addBoth(cleanup)
 
@@ -437,8 +443,9 @@ class RunScriptTests(LandscapeTest):
             mock_chown.assert_has_calls(
                 [mock.call(mock.ANY, uid, gid) for x in range(3)])
 
-        def cleanup(_):
+        def cleanup(result):
             patch_chown.stop()
+            return result
 
         return result.addCallback(check).addBoth(cleanup)
 

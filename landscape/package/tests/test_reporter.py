@@ -270,7 +270,7 @@ class PackageReporterAptTest(LandscapeTest):
         return deferred.addCallback(got_result)
 
     @mock.patch("landscape.package.reporter.fetch_async",
-                return_value=succeed("hash-ids"))
+                return_value=succeed(b"hash-ids"))
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db(self, logging_mock, mock_fetch_async):
 
@@ -308,7 +308,7 @@ class PackageReporterAptTest(LandscapeTest):
         return result
 
     @mock.patch("landscape.package.reporter.fetch_async",
-                return_value=succeed("hash-ids"))
+                return_value=succeed(b"hash-ids"))
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db_with_proxy(self, logging_mock, mock_fetch_async):
         """fetching hash-id-db uses proxy settings"""
@@ -414,7 +414,7 @@ class PackageReporterAptTest(LandscapeTest):
         return result
 
     @mock.patch("landscape.package.reporter.fetch_async",
-                return_value=succeed("hash-ids"))
+                return_value=succeed(b"hash-ids"))
     def test_fetch_hash_id_db_with_default_url(self, mock_fetch_async):
         # Let's say package_hash_id_url is not set but url is
         self.config.data_path = self.makeDir()
@@ -507,7 +507,7 @@ class PackageReporterAptTest(LandscapeTest):
         return result
 
     @mock.patch("landscape.package.reporter.fetch_async",
-                return_value=succeed("hash-ids"))
+                return_value=succeed(b"hash-ids"))
     def test_fetch_hash_id_db_with_custom_certificate(self, mock_fetch_async):
         """
         The L{PackageReporter.fetch_hash_id_db} method takes into account the
