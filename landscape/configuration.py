@@ -9,11 +9,12 @@ from __future__ import print_function
 from functools import partial
 import base64
 import getpass
+import io
 import os
 import pwd
 import sys
 
-from landscape.compat import StringIO, input
+from landscape.compat import input
 
 from landscape.lib.tag import is_valid_tag
 
@@ -117,7 +118,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         os.environ["https_proxy"] = self.https_proxy
                     content = self.fetch_import_url(self.import_from)
                     parser = self._get_config_object(
-                        alternative_config=StringIO(content))
+                        alternative_config=io.StringIO(
+                            content.decode("utf-8")))
                 elif not os.path.isfile(self.import_from):
                     raise ImportOptionError("File %s doesn't exist." %
                                             self.import_from)

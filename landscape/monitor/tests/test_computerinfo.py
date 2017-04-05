@@ -62,14 +62,15 @@ VmallocChunk:   107432 kB
                 return succeed(value)
 
         self.fetch_func = fetch_stub
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
+        self.add_query_result("instance-id", b"i00001")
+        self.add_query_result("ami-id", b"ami-00002")
+        self.add_query_result("instance-type", b"hs1.8xlarge")
 
     def add_query_result(self, name, value):
         """
         Add a url to self.query_results that is then available through
-        self.fetch_func.
+        self.fetch_func. C{value} must be bytes or an Error as the original
+        fetch returns bytes.
         """
         url = "http://169.254.169.254/latest/meta-data/" + name
         self.query_results[url] = value
@@ -494,7 +495,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual(1, plugin._cloud_retries)
         self.assertEqual(None, result)
         # Fix the error condition for the retry.
-        self.add_query_result("ami-id", "ami-00002")
+        self.add_query_result("ami-id", b"ami-00002")
         result = yield plugin._fetch_ec2_meta_data()
         self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
                           "instance-type": u"hs1.8xlarge"},

@@ -21,14 +21,15 @@ class CloudTest(LandscapeTest):
                 return succeed(value)
 
         self.fetch_func = fetch_stub
-        self.add_query_result("instance-id", "i00001")
-        self.add_query_result("ami-id", "ami-00002")
-        self.add_query_result("instance-type", "hs1.8xlarge")
+        self.add_query_result("instance-id", b"i00001")
+        self.add_query_result("ami-id", b"ami-00002")
+        self.add_query_result("instance-type", b"hs1.8xlarge")
 
     def add_query_result(self, name, value):
         """
         Add a url to self.query_results that is then available through
-        self.fetch_func.
+        self.fetch_func. C{value} must be bytes or an Error as the original
+        fetch returns bytes.
         """
         url = "%s/meta-data/%s" % (EC2_API, name)
         self.query_results[url] = value
@@ -84,9 +85,9 @@ class CloudTest(LandscapeTest):
 
     def test_fetch_ec2_meta_data_truncates(self):
         """L{_fetch_ec2_meta_data} truncates values that are too long."""
-        self.add_query_result("ami-id", "a" * MAX_LENGTH * 5)
-        self.add_query_result("instance-id", "b" * MAX_LENGTH * 5)
-        self.add_query_result("instance-type", "c" * MAX_LENGTH * 5)
+        self.add_query_result("ami-id", b"a" * MAX_LENGTH * 5)
+        self.add_query_result("instance-id", b"b" * MAX_LENGTH * 5)
+        self.add_query_result("instance-type", b"c" * MAX_LENGTH * 5)
         deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
         result = self.successResultOf(deferred)
         self.assertEqual(
@@ -107,7 +108,7 @@ class CloudTest(LandscapeTest):
         self.successResultOf(
             _fetch_ec2_item(
                 "instance-type", accumulate, fetch=self.fetch_func))
-        self.assertEqual(["i00001", "hs1.8xlarge"], accumulate)
+        self.assertEqual([b"i00001", b"hs1.8xlarge"], accumulate)
 
     def test_wb_fetch_ec2_item_error_returns_failure(self):
         """
