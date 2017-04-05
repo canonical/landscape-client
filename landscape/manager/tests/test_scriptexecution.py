@@ -6,12 +6,9 @@ import stat
 
 import mock
 
-from unittest import skipIf
-
 from twisted.internet.defer import gatherResults, succeed, fail
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
-from twisted.python.compat import _PY3
 
 from landscape import VERSION
 from landscape.lib.fetch import HTTPCodeError

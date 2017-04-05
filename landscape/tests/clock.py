@@ -30,9 +30,6 @@ Currently:
  * L{twisted.internet.base.DelayedCall}, which didn't grow its
    C{seconds} argument until after Twisted 2.2.
 """
-
-import functools
-
 from twisted.internet import error
 from twisted.python.runtime import seconds as runtimeSeconds
 from twisted.python import reflect
@@ -63,7 +60,6 @@ class Clock:
         """
         return self.rightNow
 
-
     def callLater(self, when, what, *a, **kw):
         """
         See L{twisted.internet.interfaces.IReactorTime.callLater}.
@@ -76,7 +72,6 @@ class Clock:
                              self.seconds))
         self.calls.sort(key=lambda a: a.getTime())
         return self.calls[-1]
-
 
     def advance(self, amount):
         """
@@ -93,7 +88,6 @@ class Clock:
             call.called = 1
             call.func(*call.args, **call.kw)
 
-
     def pump(self, timings):
         """
         Advance incrementally by the given set of times.
@@ -102,7 +96,6 @@ class Clock:
         """
         for amount in timings:
             self.advance(amount)
-
 
 
 class DelayedCall:

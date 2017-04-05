@@ -3,7 +3,6 @@ import os
 import mock
 
 from twisted.internet.defer import Deferred, succeed
-from twisted.python.compat import _PY3
 
 from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
