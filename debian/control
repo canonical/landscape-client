@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 7), po-debconf, python-dev, lsb-release, gawk, python-twisted-core, python-distutils-extra
+Build-Depends: debhelper (>= 7), po-debconf, python-dev, lsb-release, gawk, python-twisted-core, python-distutils-extra, python3-distutils-extra
 Standards-Version: 3.8.2
 XS-Python-Version: >= 2.4, << 2.8
 
