@@ -1,6 +1,25 @@
+# Copyright 2017 Canonical Limited.  All rights reserved.
+
 from landscape.schema import (
     Message, KeyDict, Dict, List, Tuple,
     Bool, Int, Float, Bytes, Unicode, Constant, Any)
+
+
+__all__ = [
+    "ACTIVE_PROCESS_INFO", "COMPUTER_UPTIME", "CLIENT_UPTIME",
+    "OPERATION_RESULT", "COMPUTER_INFO", "DISTRIBUTION_INFO",
+    "HARDWARE_INVENTORY", "HARDWARE_INFO", "LOAD_AVERAGE", "MEMORY_INFO",
+    "RESYNCHRONIZE", "MOUNT_ACTIVITY", "MOUNT_INFO", "FREE_SPACE",
+    "REGISTER", "REGISTER_3_3",
+    "TEMPERATURE", "PROCESSOR_INFO", "USERS", "PACKAGES", "PACKAGE_LOCKS",
+    "CHANGE_PACKAGES_RESULT", "UNKNOWN_PACKAGE_HASHES",
+    "ADD_PACKAGES", "PACKAGE_REPORTER_RESULT", "TEXT_MESSAGE", "TEST",
+    "CUSTOM_GRAPH", "REBOOT_REQUIRED", "APT_PREFERENCES",
+    "NETWORK_DEVICE", "NETWORK_ACTIVITY",
+    "REBOOT_REQUIRED_INFO", "UPDATE_MANAGER_INFO", "CPU_USAGE",
+    "CEPH_USAGE", "SWIFT_USAGE", "SWIFT_DEVICE_INFO", "KEYSTONE_TOKEN",
+    "JUJU_UNITS_INFO", "CLOUD_METADATA",
+    ]
 
 # When adding a new schema, which deprecates an older schema, the recommended
 # naming convention, is to name it SCHEMA_NAME_ and the last API version that
