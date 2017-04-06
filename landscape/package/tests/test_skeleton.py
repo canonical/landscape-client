@@ -1,5 +1,3 @@
-from twisted.python.compat import _PY3
-
 from landscape.package.skeleton import (
     build_skeleton_apt, DEB_PROVIDES, DEB_PACKAGE,
     DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,

@@ -45,6 +45,10 @@ class BPickleTest(unittest.TestCase):
         self.assertEqual(bpickle.loads(dumped_tobool),
                          {True: False})
 
+    def test_dict_bytes_keys(self):
+        data = bpickle.dumps({b"hello": True})
+        self.assertEqual(bpickle.loads(data), {"hello": True})
+
     def test_long(self):
         long = 99999999999999999999999999999
         self.assertEqual(bpickle.loads(bpickle.dumps(long)), long)
