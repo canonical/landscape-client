@@ -29,6 +29,7 @@ build: build-stamp
 build-stamp:
 	dh_testdir
 	sed -i -e "s/^DEBIAN_REVISION = \"\"/DEBIAN_REVISION = \"-$(revision)\"/g" landscape/__init__.py
+	python2 setup.py build
 	python3 setup.py build
 	make -C apt-update
 	touch build-stamp
@@ -52,6 +53,7 @@ install: build
 		var/log/landscape \
 		usr/share/landscape
 
+	python2 setup.py install --root $(root_dir) $(py_setup_install_args)
 	python3 setup.py install --root $(root_dir) $(py_setup_install_args)
 
 	# Keep in mind that some installed files are defined in setup.py
