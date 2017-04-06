@@ -156,7 +156,7 @@ def loads_dict(bytestring, pos, _lt=loads_table):
         key, pos = _lt[bytestring[pos:pos+1]](bytestring, pos)
         val, pos = _lt[bytestring[pos:pos+1]](bytestring, pos)
         if _PY3 and isinstance(key, bytes):
-            # Although the wire format of dictionary keys is bytes, the
+            # Although the wire format of dictionary keys is ASCII bytes, the
             # code actually expects them to be strings, so we convert them
             # here.
             key = key.decode("ascii")

@@ -777,7 +777,7 @@ class MessageExchange(object):
         if _PY3 and not isinstance(server_api, bytes):
             # The "server-api" field in the bpickle payload sent by the server
             # is a string, however in Python 3 we need to convert it to bytes,
-            # since what's the rest of the code expects.
+            # since that's what the rest of the code expects.
             server_api = server_api.encode()
 
         if is_version_higher(server_api, message_store.get_server_api()):
