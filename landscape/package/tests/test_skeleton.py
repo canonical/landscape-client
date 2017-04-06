@@ -151,11 +151,7 @@ class SkeletonAptTest(LandscapeTest):
         self.facade._cache.open(None)
         pkg = self.get_package("pkg")
         skeleton = build_skeleton_apt(pkg, with_unicode=True, with_info=True)
-        if _PY3:
-            self.assertEqual(
-                b"T\xc3\xa9st", skeleton.description.encode("utf-8"))
-        else:
-            self.assertEqual(u"T?st", skeleton.description)
+        self.assertEqual(u"T?st", skeleton.description)
 
     def test_build_skeleton_minimal(self):
         """
