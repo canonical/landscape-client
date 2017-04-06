@@ -1,8 +1,9 @@
 landscape-client (17.04+bzr1002-0ubuntu0) xenial; urgency=medium
 
+  [ Steffen Allner ]
   * New local test build
 
- -- Steffen Allner <sa@gocept.com>  Fri, 31 Mar 2017 13:27:26 +0200
+ -- Eric Snow (landscape-dev) <esnow@landscape-dev.lxd>  Thu, 06 Apr 2017 19:53:32 +0000
 
 landscape-client (17.04-0ubuntu1) UNRELEASED; urgency=medium
 
