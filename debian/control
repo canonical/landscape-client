@@ -24,8 +24,12 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-Breaks: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
+Breaks: landscape-client-ui (<< 16.04),
+        landscape-client-ui-install (<< 16.04),
+        landscape-common (<< 17.04)
+Replaces: landscape-client-ui (<< 16.04),
+          landscape-client-ui-install (<< 16.04),
+          landscape-common (<< 17.04)
 Description: Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
@@ -51,8 +55,12 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-Breaks: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
+Breaks: landscape-client-ui (<< 16.04),
+        landscape-client-ui-install (<< 16.04),
+        landscape-common3 (<< 17.04)
+Replaces: landscape-client-ui (<< 16.04),
+          landscape-client-ui-install (<< 16.04),
+          landscape-common3 (<< 17.04)
 Description: Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
