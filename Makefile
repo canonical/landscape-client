@@ -71,8 +71,8 @@ pyflakes:
 	-pyflakes `find landscape -name \*py`
 
 clean:
-	-find landscape -name \*.pyc -exec rm -f {} \;
 	-find landscape -name __pycache__ -exec rm -rf {} \;
+	-find landscape -name \*.pyc -exec rm -f {} \;
 	-rm -rf tags
 	-rm -rf _trial_temp
 	-rm -rf docs/api
