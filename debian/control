@@ -91,6 +91,7 @@ Package: landscape-sysinfo
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
+         landscape-client-common (= ${binary:Version}),
          python3-twisted,
          python3-landscape-lib (= ${binary:Version})
 Suggests: ${extra:Suggests}
@@ -107,9 +108,10 @@ Package: landscape-client
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
+         landscape-client-common (= ${binary:Version}),
+         landscape-sysinfo (= ${binary:Version}),
          python3-twisted,
          python3-pycurl,
-         landscape-sysinfo (= ${binary:Version}),
          python3-landscape-lib (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client
