@@ -26,32 +26,6 @@ PYTHON=/usr/bin/python
 case "$1" in
     configure)
 
-       # Since motd shows a different number of security updates, suppress the message
-       dpkg-divert --package landscape-common --rename /etc/update-motd.d/90-updates-available
-
-       db_get $PACKAGE/sysinfo
-       # Choices:
-       #  * Do not display sysinfo on login
-       #  * Cache sysinfo in /etc/motd
-       #  * Run sysinfo on every login
-       SYSINFO="${RET:-Cache sysinfo in /etc/motd}"
-       WRAPPER=/usr/share/landscape/landscape-sysinfo.wrapper
-       PROFILE_LOCATION=/etc/profile.d/50-landscape-sysinfo.sh
-       UPDATE_MOTD_LOCATION=/etc/update-motd.d/50-landscape-sysinfo
-       if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
-           rm -f $PROFILE_LOCATION 2>/dev/null || true
-           ln -sf $WRAPPER $UPDATE_MOTD_LOCATION
-           update-motd 2>/dev/null || true
-       elif [ "$RET" = "Run sysinfo on every login" ]; then
-           rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
-           update-motd 2>/dev/null || true
-           ln -sf $WRAPPER $PROFILE_LOCATION
-       else
-           rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
-           update-motd 2>/dev/null || true
-           rm -f $PROFILE_LOCATION || true
-       fi
-
         # 0.9.1 introduces non-backwards compatible changes.  This detects
         # whether or not the data is in the current format.  If not, all
         # existing data is removed.

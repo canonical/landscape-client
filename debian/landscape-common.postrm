@@ -16,10 +16,8 @@ set -e
 
 case "$1" in
     purge)
-        LOG_DIR=/var/log/landscape
         CONFIG_FILE=/etc/landscape/client.conf
         deluser --quiet --system landscape >/dev/null || true
-        rm -f "${LOG_DIR}/sysinfo.log"*
         rm -f "${CONFIG_FILE}"
     ;;
 
