@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 7), po-debconf, python-dev, lsb-release, gawk, pyth
 Standards-Version: 3.8.2
 XS-Python-Version: >= 2.4, << 2.8
 
-Package: landscape-common
+Package: python-landscape-lib
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
@@ -34,7 +34,7 @@ Description: Landscape administration system client - Common files
  This package provides the core libraries.
 XB-Python-Version: ${python:Versions}
 
-Package: landscape-common3
+Package: python3-landscape-lib
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
@@ -66,7 +66,7 @@ Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
          python3-twisted,
-         landscape-common3 (= ${binary:Version})
+         python3-landscape-lib (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client - sysinfo tool
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -84,7 +84,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python3-twisted,
          python3-pycurl,
          landscape-sysinfo (= ${binary:Version}),
-         landscape-common3 (= ${binary:Version})
+         python3-landscape-lib (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
