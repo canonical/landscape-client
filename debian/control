@@ -30,7 +30,7 @@ Breaks: landscape-client-ui (<< 16.04),
 Replaces: landscape-client-ui (<< 16.04),
           landscape-client-ui-install (<< 16.04),
           landscape-common (<< 17.04)
-Description: Landscape administration system client - Common files
+Description: Landscape administration system client - Python 2 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
@@ -61,13 +61,31 @@ Breaks: landscape-client-ui (<< 16.04),
 Replaces: landscape-client-ui (<< 16.04),
           landscape-client-ui-install (<< 16.04),
           landscape-common3 (<< 17.04)
-Description: Landscape administration system client - Common files
+Description: Landscape administration system client - Python 3 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
  .
  This package provides the core libraries.
 XB-Python-Version: ${python:Versions}
+
+Package: landscape-client-common
+Architecture: any
+Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
+         adduser,
+         libpam-modules
+Suggests: ${extra:Suggests}
+Breaks: landscape-client-ui (<< 16.04),
+        landscape-client-ui-install (<< 16.04),
+        landscape-common (<< 17.04)
+Conflicts: landscape-common (<< 17.04), landscape-common3 (<< 17.04)
+Description: Landscape administration system client - Common setup
+ Landscape is a web-based tool for managing Ubuntu systems. This
+ package is necessary if you want your machine to be managed in a
+ Landscape account.
+ .
+ This package provides the base setup for other packages related
+ to the Landscape client.
 
 Package: landscape-sysinfo
 Architecture: any
