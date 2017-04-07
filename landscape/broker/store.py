@@ -529,7 +529,7 @@ def get_default_message_store(*args, **kwargs):
     """
     Get a L{MessageStore} object with all Landscape message schemas added.
     """
-    from landscape. message_schemas import message_schemas
+    from landscape.message_schemas.server_bound import message_schemas
     store = MessageStore(*args, **kwargs)
     for schema in message_schemas:
         store.add_schema(schema)
