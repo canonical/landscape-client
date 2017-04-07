@@ -86,6 +86,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
          python3-twisted,
          python3-pycurl,
+         landscape-sysinfo (= ${binary:Version}),
          landscape-common3 (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client
