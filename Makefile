@@ -73,11 +73,11 @@ pyflakes:
 clean:
 	-find landscape -name \*.pyc -exec rm -f {} \;
 	-find landscape -name __pycache__ -exec rm -rf {} \;
-	-rm tags
-	-rm _trial_temp -rf
-	-rm docs/api -rf;
-	-rm man/\*.1 -rf
-	-rm sdist -rf
+	-rm -rf tags
+	-rm -rf _trial_temp
+	-rm -rf docs/api
+	-rm -rf man/\*.1
+	-rm -rf sdist
 
 doc: docs/api/twisted/pickle
 	mkdir -p docs/api
