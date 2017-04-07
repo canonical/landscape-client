@@ -68,7 +68,7 @@ lint:
 
 .PHONY: pyflakes
 pyflakes:
-	-pyflakes `find landscape -name \*py`
+	-pyflakes `find landscape -name \*.py`
 
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;
