@@ -1,0 +1,3 @@
+etc/landscape
+var/lib/landscape
+var/log/landscape

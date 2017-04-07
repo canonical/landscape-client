@@ -47,11 +47,7 @@ install: build
 	dh_testdir
 	dh_testroot
 	dh_prep
-	dh_installdirs \
-		etc/landscape \
-		var/lib/landscape \
-		var/log/landscape \
-		usr/share/landscape
+	dh_installdirs
 
 	python2 setup.py install --root $(root_dir) $(py_setup_install_args)
 	python3 setup.py install --root $(root_dir) $(py_setup_install_args)
