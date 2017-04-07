@@ -5,7 +5,9 @@ PYTHON3 ?= python3
 TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 # trial3 does not support threading via `-j` at the moment
-TEST_COMMAND_PY3 = TRIAL_ARGS= trial3 --unclean-warnings $(TRIAL_ARGS) landscape
+# so we ignore TRIAL_ARGS.
+#TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
+TEST_COMMAND_PY3 = trial3 --unclean-warnings landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
