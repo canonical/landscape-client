@@ -72,6 +72,7 @@ pyflakes:
 
 clean:
 	-find landscape -name \*.pyc -exec rm -f {} \;
+	-find landscape -name __pycache__ -exec rm -rf {} \;
 	-rm tags
 	-rm _trial_temp -rf
 	-rm docs/api -rf;
