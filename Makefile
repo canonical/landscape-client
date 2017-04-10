@@ -6,8 +6,7 @@ TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
 # trial3 does not support threading via `-j` at the moment
 # so we ignore TRIAL_ARGS.
-# TODO: Respect $TRIAL_ARGS once trial3 is fixed:
-#TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
+# TODO: Respect $TRIAL_ARGS once trial3 is fixed.
 TEST_COMMAND_PY3 = trial3 --unclean-warnings landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
