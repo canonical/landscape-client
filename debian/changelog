@@ -3,7 +3,7 @@ landscape-client (17.04+bzr1002-0ubuntu0) xenial; urgency=medium
   [ Steffen Allner ]
   * New local test build
 
- -- Eric Snow (landscape-dev) <esnow@landscape-dev.lxd>  Fri, 07 Apr 2017 21:36:04 +0000
+ -- Eric Snow (landscape-dev) <esnow@landscape-dev.lxd>  Mon, 10 Apr 2017 20:29:34 +0000
 
 landscape-client (17.04-0ubuntu1) UNRELEASED; urgency=medium
 
