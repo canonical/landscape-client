@@ -1,5 +1,5 @@
 #!/bin/sh
-# prerm script for landscape-common
+# prerm script for landscape-sysinfo
 #
 # see: dh_installdeb(1)
 
@@ -19,7 +19,7 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-       dpkg-divert --remove --package landscape-common --rename /etc/update-motd.d/90-updates-available
+       dpkg-divert --remove --package landscape-sysinfo --rename /etc/update-motd.d/90-updates-available
        rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null || true
        update-motd 2>/dev/null || true
        rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true

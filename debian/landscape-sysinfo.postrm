@@ -16,9 +16,8 @@ set -e
 
 case "$1" in
     purge)
-        CONFIG_FILE=/etc/landscape/client.conf
-        deluser --quiet --system landscape >/dev/null || true
-        rm -f "${CONFIG_FILE}"
+        LOG_DIR=/var/log/landscape
+        rm -f "${LOG_DIR}/sysinfo.log"*
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

@@ -1,4 +1,3 @@
-etc/update-motd.d
 etc/landscape
 var/lib/landscape
 var/log/landscape

@@ -1,4 +1,4 @@
-Template: landscape-common3/sysinfo
+Template: landscape-sysinfo/sysinfo
 Type: select
 # Translators beware! the following three strings form a single
 # Choices menu. - Every one of these strings has to fit in a standard

@@ -10,6 +10,12 @@ debian/landscape-client.postrm.debhelper
 debian/landscape-client.prerm.debhelper
 debian/landscape-client.substvars
 debian/landscape-client.debhelper.log
+debian/landscape-sysinfo
+debian/landscape-sysinfo.debhelper.log
+debian/landscape-sysinfo.postinst.debhelper
+debian/landscape-sysinfo.postrm.debhelper
+debian/landscape-sysinfo.prerm.debhelper
+debian/landscape-sysinfo.substvars
 debian/landscape-common*/
 debian/landscape-common*.debhelper.log
 debian/landscape-common*.postinst.debhelper
