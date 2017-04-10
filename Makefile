@@ -4,9 +4,10 @@ PYTHON2 ?= python2
 PYTHON3 ?= python3
 TRIAL_ARGS ?=
 TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
-TEST_COMMAND_PY3 = trial3 --unclean-warnings $(TRIAL_ARGS) landscape
 # trial3 does not support threading via `-j` at the moment
-TEST_COMMAND_PY3_READY = TRIAL_ARGS= trial3 --unclean-warnings landscape
+# so we ignore TRIAL_ARGS.
+# TODO: Respect $TRIAL_ARGS once trial3 is fixed.
+TEST_COMMAND_PY3 = trial3 --unclean-warnings landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
@@ -49,14 +50,8 @@ build2:
 build3:
 	$(PYTHON3) setup.py build_ext -i
 
-.PHONY: check5
-check5:
-	-trial --unclean-warnings --reporter=summary landscape > _last_py2_res
-	-trial3 --unclean-warnings landscape
-	./display_py2_testresults
-
 .PHONY: check
-check: check2 check3-ready  ## Run all the tests.
+check: check2 check3  ## Run all the tests.
 
 .PHONY: check2
 check2: build2
@@ -65,10 +60,6 @@ check2: build2
 .PHONY: check3
 check3: build3
 	LC_ALL=C $(TEST_COMMAND_PY3)
-
-.PHONY: check3-ready
-check3-ready:  ## Run py3 tests for ported modules (listed in py3_ready_tests).
-	LC_ALL=C $(TEST_COMMAND_PY3_READY)
 
 .PHONY: ci-check
 ci-check: depends build check  ## Install dependencies and run all the tests.
@@ -79,15 +70,16 @@ lint:
 
 .PHONY: pyflakes
 pyflakes:
-	-pyflakes `find landscape -name \*py`
+	-pyflakes `find landscape -name \*.py`
 
 clean:
+	-find landscape -name __pycache__ -exec rm -rf {} \;
 	-find landscape -name \*.pyc -exec rm -f {} \;
-	-rm tags
-	-rm _trial_temp -rf
-	-rm docs/api -rf;
-	-rm man/\*.1 -rf
-	-rm sdist -rf
+	-rm -rf tags
+	-rm -rf _trial_temp
+	-rm -rf docs/api
+	-rm -rf man/\*.1
+	-rm -rf sdist
 
 doc: docs/api/twisted/pickle
 	mkdir -p docs/api
