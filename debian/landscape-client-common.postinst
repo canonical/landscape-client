@@ -16,7 +16,7 @@ set -e
 . /usr/share/debconf/confmodule
 trap "db_stop || true" EXIT HUP INT QUIT TERM
 
-PACKAGE=landscape-common
+PACKAGE=landscape-client-common
 
 # Use the default installed Python.  Running just "python" might run
 # something from /usr/local/bin, which doesn't necessarily support

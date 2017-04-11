@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 7), po-debconf, python-dev, lsb-release, gawk, pyth
 Standards-Version: 3.8.2
 XS-Python-Version: >= 2.4, << 2.8
 
-Package: landscape-common
+Package: python-landscape-lib
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
@@ -24,9 +24,12 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-Breaks: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
-Description: Landscape administration system client - Common files
+Breaks: landscape-client-ui (<< 16.04),
+        landscape-client-ui-install (<< 16.04)
+Replaces: landscape-client-ui (<< 16.04),
+          landscape-client-ui-install (<< 16.04),
+          landscape-common
+Description: Landscape administration system client - Python 2 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
@@ -34,7 +37,7 @@ Description: Landscape administration system client - Common files
  This package provides the core libraries.
 XB-Python-Version: ${python:Versions}
 
-Package: landscape-common3
+Package: python3-landscape-lib
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
@@ -51,9 +54,12 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-Breaks: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
-Description: Landscape administration system client - Common files
+Breaks: landscape-client-ui (<< 16.04),
+        landscape-client-ui-install (<< 16.04)
+Replaces: landscape-client-ui (<< 16.04),
+          landscape-client-ui-install (<< 16.04),
+          landscape-common3
+Description: Landscape administration system client - Python 3 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
@@ -61,12 +67,29 @@ Description: Landscape administration system client - Common files
  This package provides the core libraries.
 XB-Python-Version: ${python:Versions}
 
+Package: landscape-client-common
+Architecture: any
+Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
+         adduser,
+         libpam-modules
+Suggests: ${extra:Suggests}
+Conflicts: landscape-common,
+           landscape-common3
+Description: Landscape administration system client - Common setup
+ Landscape is a web-based tool for managing Ubuntu systems. This
+ package is necessary if you want your machine to be managed in a
+ Landscape account.
+ .
+ This package provides the base setup for other packages related
+ to the Landscape client.
+
 Package: landscape-sysinfo
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
+         landscape-client-common (= ${binary:Version}),
          python3-twisted,
-         landscape-common3 (= ${binary:Version})
+         python3-landscape-lib (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client - sysinfo tool
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -81,10 +104,11 @@ Package: landscape-client
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
+         landscape-client-common (= ${binary:Version}),
+         landscape-sysinfo (= ${binary:Version}),
          python3-twisted,
          python3-pycurl,
-         landscape-sysinfo (= ${binary:Version}),
-         landscape-common3 (= ${binary:Version})
+         python3-landscape-lib (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
