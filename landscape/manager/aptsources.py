@@ -69,18 +69,18 @@ class AptSources(ManagerPlugin):
         {"sources": [
           {"name": "repository-name",
            "content":
-              b"deb http://archive.ubuntu.com/ubuntu/ maverick main\n\
+              b"deb http://archive.ubuntu.com/ubuntu/ maverick main\n"
               b"deb-src http://archive.ubuntu.com/ubuntu/ maverick main"}
           {"name": "repository-name-dev",
            "content":
-              b"deb http://archive.ubuntu.com/ubuntu/ maverick universe\n\
+              b"deb http://archive.ubuntu.com/ubuntu/ maverick universe\n"
               b"deb-src http://archive.ubuntu.com/ubuntu/ maverick universe"}],
-         "gpg-keys": ["-----BEGIN PGP PUBLIC KEY BLOCK-----\n\
-                      XXXX
-                      -----END PGP PUBLIC KEY BLOCK-----",
-                      "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\
-                      YYY
-                      -----END PGP PUBLIC KEY BLOCK-----"]}
+         "gpg-keys": ["-----BEGIN PGP PUBLIC KEY BLOCK-----\n"
+                      "XXXX"
+                      "-----END PGP PUBLIC KEY BLOCK-----",
+                      "-----BEGIN PGP PUBLIC KEY BLOCK-----\n"
+                      "YYY"
+                      "-----END PGP PUBLIC KEY BLOCK-----"]}
         """
         deferred = succeed(None)
         for key in message["gpg-keys"]:
