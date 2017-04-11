@@ -74,9 +74,7 @@ def dumps_float(obj):
 
 
 def dumps_bytes(obj):
-    sobj = obj.decode("utf-8")
-    return ("s%d:%s" % (len(obj), sobj)
-            ).encode("utf-8")
+    return ("s%d:" % (len(obj),)).encode("utf-8") + obj
 
 
 def dumps_unicode(obj):
