@@ -53,7 +53,7 @@ class AptSourcesTests(LandscapeTest):
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": ""}],
+             "sources": [{"name": "bla", "content": b""}],
              "gpg-keys": [],
              "operation-id": 1})
 
@@ -73,7 +73,7 @@ class AptSourcesTests(LandscapeTest):
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": ""}],
+             "sources": [{"name": "bla", "content": b""}],
              "gpg-keys": [],
              "operation-id": 1})
 
@@ -97,7 +97,7 @@ class AptSourcesTests(LandscapeTest):
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": ""}],
+             "sources": [{"name": "bla", "content": b""}],
              "gpg-keys": [],
              "operation-id": 1})
 
@@ -153,7 +153,7 @@ class AptSourcesTests(LandscapeTest):
 
             self.manager.dispatch_message(
                 {"type": "apt-sources-replace",
-                 "sources": [{"name": "bla", "content": ""}],
+                 "sources": [{"name": "bla", "content": b""}],
                  "gpg-keys": [],
                  "operation-id": 1})
 
@@ -183,7 +183,7 @@ class AptSourcesTests(LandscapeTest):
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": ""}],
+             "sources": [{"name": "bla", "content": b""}],
              "gpg-keys": [],
              "operation-id": 1})
 
@@ -230,8 +230,8 @@ class AptSourcesTests(LandscapeTest):
         For every sources listed in the sources field of the message,
         C{AptSources} creates a file with the content in sources.list.d.
         """
-        sources = [{"name": "dev", "content": "oki\n"},
-                   {"name": "lucid", "content": "doki\n"}]
+        sources = [{"name": "dev", "content": b"oki\n"},
+                   {"name": "lucid", "content": b"doki\n"}]
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": sources, "gpg-keys": [],
              "operation-id": 1})
