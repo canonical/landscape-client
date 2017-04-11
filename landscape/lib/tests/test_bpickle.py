@@ -16,6 +16,9 @@ class BPickleTest(unittest.TestCase):
         self.assertTrue("e" in repr(number))
         self.assertAlmostEquals(bpickle.loads(bpickle.dumps(number)), number)
 
+    def test_bytes(self):
+        self.assertEqual(bpickle.loads(bpickle.dumps(b'foo')), b'foo')
+
     def test_string(self):
         self.assertEqual(bpickle.loads(bpickle.dumps('foo')), 'foo')
 

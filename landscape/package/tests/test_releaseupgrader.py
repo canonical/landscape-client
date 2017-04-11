@@ -523,7 +523,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
                 self.assertEqual(
                     out,
-                    b"--force-apt-update\n%s\n" % os.getcwd().encode("utf-8"))
+                    ("--force-apt-update\n%s\n" % os.getcwd()).encode("utf-8"))
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
 

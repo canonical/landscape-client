@@ -59,32 +59,36 @@ def loads(byte_string, _lt=loads_table):
 
 
 def dumps_bool(obj):
-    return b"b%d" % int(obj)
+    return ("b%d" % int(obj)
+            ).encode("utf-8")
 
 
 def dumps_int(obj):
-    return b"i%d;" % obj
+    return ("i%d;" % obj
+            ).encode("utf-8")
 
 
 def dumps_float(obj):
-    return b"f%r;" % obj
+    return ("f%r;" % obj
+            ).encode("utf-8")
 
 
 def dumps_bytes(obj):
-    return b"s%d:%s" % (len(obj), obj)
+    return ("s%d:" % (len(obj),)).encode("utf-8") + obj
 
 
 def dumps_unicode(obj):
-    obj = obj.encode("utf-8")
-    return b"u%d:%s" % (len(obj), obj)
+    bobj = obj.encode("utf-8")
+    return ("u%d:%s" % (len(bobj), obj)
+            ).encode("utf-8")
 
 
 def dumps_list(obj, _dt=dumps_table):
-    return b"l%s;" % b"".join([_dt[type(val)](val) for val in obj])
+    return b"l" + b"".join([_dt[type(val)](val) for val in obj]) + b";"
 
 
 def dumps_tuple(obj, _dt=dumps_table):
-    return b"t%s;" % b"".join([_dt[type(val)](val) for val in obj])
+    return b"t" + b"".join([_dt[type(val)](val) for val in obj]) + b";"
 
 
 def dumps_dict(obj, _dt=dumps_table):
@@ -96,7 +100,7 @@ def dumps_dict(obj, _dt=dumps_table):
         val = obj[key]
         append(_dt[type(key)](key))
         append(_dt[type(val)](val))
-    return b"d%s;" % b"".join(res)
+    return b"d" + b"".join(res) + b";"
 
 
 def dumps_none(obj):
