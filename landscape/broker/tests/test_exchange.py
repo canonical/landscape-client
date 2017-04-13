@@ -850,10 +850,10 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(b"3.3", self.mstore.get_server_api())
 
     def test_server_uuid_is_stored_on_message_store(self):
-        self.transport.extra["server-uuid"] = "first-uuid"
+        self.transport.extra["server-uuid"] = b"first-uuid"
         self.exchanger.exchange()
         self.assertEqual(self.mstore.get_server_uuid(), "first-uuid")
-        self.transport.extra["server-uuid"] = "second-uuid"
+        self.transport.extra["server-uuid"] = b"second-uuid"
         self.exchanger.exchange()
         self.assertEqual(self.mstore.get_server_uuid(), "second-uuid")
 
