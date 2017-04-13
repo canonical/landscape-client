@@ -69,18 +69,18 @@ class AptSources(ManagerPlugin):
         {"sources": [
           {"name": "repository-name",
            "content":
-              "deb http://archive.ubuntu.com/ubuntu/ maverick main\n\
-              "deb-src http://archive.ubuntu.com/ubuntu/ maverick main"}
+              b"deb http://archive.ubuntu.com/ubuntu/ maverick main\n"
+              b"deb-src http://archive.ubuntu.com/ubuntu/ maverick main"}
           {"name": "repository-name-dev",
            "content":
-              "deb http://archive.ubuntu.com/ubuntu/ maverick universe\n\
-              "deb-src http://archive.ubuntu.com/ubuntu/ maverick universe"}],
-         "gpg-keys": ["-----BEGIN PGP PUBLIC KEY BLOCK-----\n\
-                      XXXX
-                      -----END PGP PUBLIC KEY BLOCK-----",
-                      "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\
-                      YYY
-                      -----END PGP PUBLIC KEY BLOCK-----"]}
+              b"deb http://archive.ubuntu.com/ubuntu/ maverick universe\n"
+              b"deb-src http://archive.ubuntu.com/ubuntu/ maverick universe"}],
+         "gpg-keys": ["-----BEGIN PGP PUBLIC KEY BLOCK-----\n"
+                      "XXXX"
+                      "-----END PGP PUBLIC KEY BLOCK-----",
+                      "-----BEGIN PGP PUBLIC KEY BLOCK-----\n"
+                      "YYY"
+                      "-----END PGP PUBLIC KEY BLOCK-----"]}
         """
         deferred = succeed(None)
         for key in message["gpg-keys"]:
@@ -128,7 +128,7 @@ class AptSources(ManagerPlugin):
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
                                     "landscape-%s.list" % source["name"])
-            with open(filename, "w") as sources_file:
+            with open(filename, "wb") as sources_file:
                 sources_file.write(source["content"])
             os.chmod(filename, 0o644)
         return self._run_reporter().addCallback(lambda ignored: None)
