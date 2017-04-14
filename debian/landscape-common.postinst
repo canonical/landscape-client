@@ -19,26 +19,27 @@ trap "db_stop || true" EXIT HUP INT QUIT TERM
 case "$1" in
     configure)
 
-        # 0.9.1 introduces non-backwards compatible changes.  This detects
-        # whether or not the data is in the current format.  If not, all
-        # existing data is removed.
-        DATA_DIR=/var/lib/landscape
-
-        if [ -d $DATA_DIR/data ]; then
-            rm -rf $DATA_DIR/*
-        elif [ -f $DATA_DIR/client/data.bpickle ]; then
-            LAST_BYTE=`sed -n '$,$s/.*\(.\)/\1/p' $DATA_DIR/client/data.bpickle`
-            if [ "$LAST_BYTE" = e ]; then
-                rm -rf $DATA_DIR/*
-            fi
+        # Create landscape system user
+        if ! getent passwd landscape >/dev/null; then
+            adduser --quiet --system --group --disabled-password \
+                --home /var/lib/landscape --no-create-home landscape
+            touch /etc/landscape/.cleanup.user
         fi
 
-        # Fix prior ownerships, we exclude the custom-graph-scripts directory
-        # because there might script-generated files that we want to preserve
-        # the ownership of.
-        if [ -d /var/lib/landscape/client ]; then
-            find /var/lib/landscape/client/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \; > /dev/null 2>&1
+        # Create landscape system group (for <= 1.0.29.1-0ubuntu0.9.04.0)
+        if ! getent group landscape >/dev/null; then
+            addgroup --quiet --system landscape
+            touch /etc/landscape/.cleanup.group
         fi
+
+        # Ensure primary group is landscape (for <= 1.0.29.1-0ubuntu0.9.04.0)
+        if ! usermod -g landscape landscape > /dev/null 2>&1; then
+          echo "ERROR: usermod -g landscape landscape failed."
+        fi
+
+        # Fix prior ownerships.
+        [ -d /var/lib/landscape/.gnupg ] && chown -R landscape /var/lib/landscape/.gnupg || :
+        chown -R landscape /var/log/landscape
 
     ;;
 

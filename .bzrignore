@@ -9,6 +9,7 @@ debian/tmp
 debian/files
 debian/landscape-client
 debian/landscape-client-common
+debian/landscape-common
 debian/landscape-sysinfo
 debian/python-landscape-lib
 debian/python3-landscape-lib
