@@ -39,6 +39,7 @@ case "$1" in
 
         # Fix ownerships.
         chown -R root:landscape /etc/landscape
+        chmod 0775 /etc/landscape/
         chown -R landscape:landscape /var/lib/landscape
         chown -R landscape:landscape /var/log/landscape
 
