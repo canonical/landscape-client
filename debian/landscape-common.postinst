@@ -37,9 +37,10 @@ case "$1" in
           echo "ERROR: usermod -g landscape landscape failed."
         fi
 
-        # Fix prior ownerships.
-        [ -d /var/lib/landscape/.gnupg ] && chown -R landscape /var/lib/landscape/.gnupg || :
-        chown -R landscape /var/log/landscape
+        # Fix ownerships.
+        chown -R root:landscape /etc/landscape
+        chown -R landscape:landscape /var/lib/landscape
+        chown -R landscape:landscape /var/log/landscape
 
     ;;
 

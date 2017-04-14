@@ -39,6 +39,7 @@ case "$1" in
         if [ -d /var/lib/landscape/client ]; then
             find /var/lib/landscape/client/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \; > /dev/null 2>&1
         fi
+        chown -Rf landscape:root /etc/landscape/client.conf || true
 
     ;;
 
