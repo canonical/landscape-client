@@ -764,6 +764,8 @@ class MessageExchange(object):
 
         old_uuid = message_store.get_server_uuid()
         new_uuid = result.get("server-uuid")
+        if new_uuid and isinstance(new_uuid, bytes):
+            new_uuid = new_uuid.decode("ascii")
         if new_uuid != old_uuid:
             logging.info("Server UUID changed (old=%s, new=%s)."
                          % (old_uuid, new_uuid))
