@@ -165,7 +165,8 @@ class MethodCallReceiver(CommandLocator):
             chunks.append(arguments)
             arguments = b"".join(chunks)
 
-        args, kwargs = bpickle.loads(arguments)
+        # Pass the the arguments as-is without reinterpreting strings.
+        args, kwargs = bpickle.loads(arguments, as_is=True)
 
         # We encoded the method name in `send_method_call` and have to decode
         # it here again.
