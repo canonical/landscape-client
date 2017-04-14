@@ -23,13 +23,13 @@ case "$1" in
         if ! getent passwd landscape >/dev/null; then
             adduser --quiet --system --group --disabled-password \
                 --home /var/lib/landscape --no-create-home landscape
-            touch /etc/landscape/.cleanup.user
+            touch /var/lib/landscape/.cleanup.user
         fi
 
         # Create landscape system group (for <= 1.0.29.1-0ubuntu0.9.04.0)
         if ! getent group landscape >/dev/null; then
             addgroup --quiet --system landscape
-            touch /etc/landscape/.cleanup.group
+            touch /var/lib/landscape/.cleanup.group
         fi
 
         # Ensure primary group is landscape (for <= 1.0.29.1-0ubuntu0.9.04.0)
