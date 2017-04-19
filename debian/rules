@@ -2,7 +2,7 @@
 
 dist_release := $(shell lsb_release -cs)
 
-dh_extra_flags = -ppython-landscape-lib -ppython3-landscape-lib -plandscape-client-common -plandscape-client -plandscape-sysinfo
+dh_extra_flags = -ppython-landscape-lib -ppython3-landscape-lib -plandscape-common -plandscape-client-common -plandscape-client -plandscape-sysinfo
 
 -include /usr/share/python/python.mk
 ifeq (,$(py_sitename))
