@@ -7,14 +7,11 @@ python:
 matrix:
   include:
     - python: 2.7
-      env: TARGET=build2
-    - python: 2.7
       env: TARGET=check2
     - python: 3.6
       env: TARGET=flake8
 # XXX cache the installs?
 env:
-  - TARGET=build3
   - TARGET=check3
 install:
  - pip install flake8
