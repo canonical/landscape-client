@@ -13,7 +13,10 @@ matrix:
     #  env: TARGET=flake8
 # XXX cache the installs?
 env:
-  - TARGET=check3
+  global:
+    - TRIAL_ARGS=-j4
+  matrix:
+    - TARGET=check3
 install:
  - pip install flake8
  # These match "make depends"
