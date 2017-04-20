@@ -1,0 +1,22 @@
+dist: trusty
+language: python
+python:
+  - "3.4"
+  - "3.5"
+  - "3.6"
+matrix:
+  include:
+    - python: 2.7
+      env: TARGET=check2
+    - python: 3.6
+      env: TARGET=flake8
+# XXX cache the installs?
+env:
+  - TARGET=check3
+install:
+ - pip install flake8
+ # These match "make depends"
+ - pip install twisted==16.4.0 mock==1.3.0 configobj==5.0.6 passlib=1.6.5
+ - pip install http://launchpad.net/python-distutils-extra/trunk/2.39/+download/python-distutils-extra-2.39.tar.gz
+script:
+ - make $TARGET PYTHON=python$TRAVIS_PYTHON_VERSION
