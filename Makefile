@@ -75,7 +75,7 @@ pyflakes:
 
 .PHONY: flake8
 flake8:
-	-flake8 `find landscape -name \*.py`
+	flake8 `find landscape -name \*.py`
 
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;
