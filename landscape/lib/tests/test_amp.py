@@ -213,6 +213,21 @@ class MethodCallTest(LandscapeTest):
         self.connection.flush()
         self.assertEqual("barfoobarfoobarfoo", self.successResultOf(deferred))
 
+    def test_with_bytes_dictionary_arguments(self):
+        """
+        Method arguments passed to a MethodCall can be a dict of bytes.
+        """
+        arg = {b"byte_key": 1}
+        self.object.method = lambda d: ",".join([
+            type(x).__name__ for x in d.keys()])
+        deferred = self.sender.send_method_call(
+            method="method",
+            args=[arg],
+            kwargs={})
+        self.connection.flush()
+        # str under python2, bytes under python3
+        self.assertEqual(type(b"").__name__, self.successResultOf(deferred))
+
     def test_with_non_serializable_return_value(self):
         """
         If the target object method returns an object that can't be serialized,

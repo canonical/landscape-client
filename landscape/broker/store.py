@@ -262,7 +262,8 @@ class MessageStore(object):
                 break
             data = read_binary_file(self._message_dir(filename))
             try:
-                message = bpickle.loads(data)
+                # don't reinterpret messages that are meant to be sent out
+                message = bpickle.loads(data, as_is=True)
             except ValueError as e:
                 logging.exception(e)
                 self._add_flags(filename, BROKEN)

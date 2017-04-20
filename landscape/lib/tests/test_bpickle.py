@@ -49,8 +49,14 @@ class BPickleTest(unittest.TestCase):
                          {True: False})
 
     def test_dict_bytes_keys(self):
-        data = bpickle.dumps({b"hello": True})
-        self.assertEqual(bpickle.loads(data), {"hello": True})
+        """Check loading dict bytes keys without reinterpreting."""
+        # Happens in amp and broker. Since those messages are meant to be
+        # forwarded to the server without changing schema, keys shouldn't be
+        # decoded in this case.
+        initial_data = {b"hello": True}
+        data = bpickle.dumps(initial_data)
+        result = bpickle.loads(data, as_is=True)
+        self.assertEqual(initial_data, result)
 
     def test_long(self):
         long = 99999999999999999999999999999
