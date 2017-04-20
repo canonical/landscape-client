@@ -28,6 +28,7 @@ help:  ## Print help about available targets
 
 .PHONY: depends
 depends: depends2 depends3  ## Install py2 and py3 dependencies.
+	sudo apt -y install python3-flake8
 
 .PHONY: depends2
 depends2:
@@ -71,6 +72,10 @@ lint:
 .PHONY: pyflakes
 pyflakes:
 	-pyflakes `find landscape -name \*.py`
+
+.PHONY: flake8
+flake8:
+	-flake8 `find landscape -name \*.py`
 
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;
