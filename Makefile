@@ -2,12 +2,8 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
 PYTHON2 ?= python2
 PYTHON3 ?= python3
+TRIAL ?= $(shell which trial)
 TRIAL_ARGS ?=
-TEST_COMMAND_PY2 = trial --unclean-warnings $(TRIAL_ARGS) landscape
-# trial3 does not support threading via `-j` at the moment
-# so we ignore TRIAL_ARGS.
-# TODO: Respect $TRIAL_ARGS once trial3 is fixed.
-TEST_COMMAND_PY3 = trial3 --unclean-warnings landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
 # version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
@@ -56,11 +52,15 @@ check: check2 check3  ## Run all the tests.
 
 .PHONY: check2
 check2: build2
-	LC_ALL=C $(TEST_COMMAND_PY2)
+	LC_ALL=C $(PYTHON2) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
 
+# trial3 does not support threading via `-j` at the moment
+# so we ignore TRIAL_ARGS.
+# TODO: Respect $TRIAL_ARGS once trial3 is fixed.
 .PHONY: check3
+check3: TRIAL_ARGS=
 check3: build3
-	LC_ALL=C $(TEST_COMMAND_PY3)
+	LC_ALL=C $(PYTHON3) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
 
 .PHONY: ci-check
 ci-check: depends build check  ## Install dependencies and run all the tests.
