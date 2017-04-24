@@ -54,9 +54,7 @@ releasetarball:
 .PHONY: sdist
 sdist: clean
 	mkdir -p sdist
-	# --uncommitted because we want any changes the developer might have made
-	# locally to be included in the package without having to commit
-	bzr export --uncommitted sdist/landscape-client-$(TARBALL_VERSION)
+	git archive --prefix landscape-client-$(TARBALL_VERSION)/ HEAD | tar -x -C sdist
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
 	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
 		sdist/landscape-client-$(TARBALL_VERSION)/landscape/__init__.py
