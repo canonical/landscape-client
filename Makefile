@@ -34,6 +34,14 @@ depends2:
 depends3:
 	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-passlib
 
+.PHONY: pipinstallpythonapt
+pipinstallpythonapt:
+	pip install pyopenssl
+	pip install service_identity
+	sudo apt-get -y build-dep python-apt python3-apt
+	bzr branch lp:ubuntu/trusty/python-apt /tmp/python-apt
+	pip install /tmp/python-apt
+
 all: build
 
 .PHONY: build
@@ -52,7 +60,7 @@ check: check2 check3  ## Run all the tests.
 
 .PHONY: check2
 check2: build2
-	LC_ALL=C $(PYTHON2) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON2) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
 
 # trial3 does not support threading via `-j` at the moment
 # so we ignore TRIAL_ARGS.
@@ -60,7 +68,7 @@ check2: build2
 .PHONY: check3
 check3: TRIAL_ARGS=
 check3: build3
-	LC_ALL=C $(PYTHON3) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
 
 .PHONY: ci-check
 ci-check: depends build check  ## Install dependencies and run all the tests.

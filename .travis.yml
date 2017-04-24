@@ -1,4 +1,5 @@
 dist: trusty
+sudo: true
 language: python
 python:
   - "3.4"
@@ -8,9 +9,8 @@ matrix:
   include:
     - python: 2.7
       env: TARGET=check2
-    # XXX re-enable after fixing all the lint issues
-    #- python: 3.6
-    #  env: TARGET=flake8
+    - python: 3.6
+      env: TARGET=flake8
 # XXX cache the installs?
 env:
   global:
@@ -18,9 +18,11 @@ env:
   matrix:
     - TARGET=check3
 install:
- - pip install flake8
- # These match "make depends"
- - pip install twisted==16.4.0 mock==1.3.0 configobj==5.0.6 passlib==1.6.5
- - pip install http://launchpad.net/python-distutils-extra/trunk/2.39/+download/python-distutils-extra-2.39.tar.gz
+  - pip install flake8
+  # These match "make depends"
+  - pip install twisted==16.4.0 mock==1.3.0 configobj==5.0.6 passlib==1.6.5 pycurl
+  - pip install http://launchpad.net/python-distutils-extra/trunk/2.39/+download/python-distutils-extra-2.39.tar.gz
+  # build & install python-apt
+  - make pipinstallpythonapt
 script:
- - make $TARGET PYTHON=python$TRAVIS_PYTHON_VERSION
+  - make $TARGET PYTHON=python$TRAVIS_PYTHON_VERSION
