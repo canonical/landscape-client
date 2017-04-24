@@ -5,11 +5,13 @@ UBUNTU_RELEASE := $(shell lsb_release -cs)
 # command everytime it is mentioned/used.
 UPSTREAM_VERSION := $(shell python -c "from landscape import UPSTREAM_VERSION; print UPSTREAM_VERSION")
 CHANGELOG_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
-BZR_REVNO := $(shell bzr revno)
-ifeq (+bzr,$(findstring +bzr,$(UPSTREAM_VERSION)))
+GIT_HASH := $(shell git rev-parse --short HEAD)
+# We simulate a git "revno" for the sake of sortability.
+GIT_REVNO := $(shell git rev-list --count HEAD)
+ifeq (+git,$(findstring +git,$(UPSTREAM_VERSION)))
 TARBALL_VERSION := $(UPSTREAM_VERSION)
 else
-TARBALL_VERSION := $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
+TARBALL_VERSION := $(UPSTREAM_VERSION)+git$(GIT_REVNO)
 endif
 
 .PHONY: clean
@@ -24,7 +26,7 @@ origtarball: sdist
 .PHONY: prepchangelog
 prepchangelog:
 # add a temporary entry for a local build if needed
-ifeq (,$(findstring +bzr,$(CHANGELOG_VERSION)))
+ifeq (,$(findstring +git,$(CHANGELOG_VERSION)))
 	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)
 else
 # just update the timestamp
