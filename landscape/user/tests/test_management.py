@@ -256,7 +256,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(users=data, groups=groups,
                                     shadow_file=self.shadow_file,
                                     popen=MockPopen("group id 1002 unknown",
-                                    return_codes=[1]))
+                                                    return_codes=[1]),
+                                    )
         management = UserManagement(provider=provider)
         self.assertRaises(GroupNotFoundError, management.set_user_details,
                           "jdoe", primary_group_name="unknown")
@@ -455,8 +456,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         groups = [("bizdev", "x", 1001, [])]
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups,
-                                    popen=MockPopen(
-                                    "Removing user jdoe from group bizdev"))
+                                    popen=MockPopen("Removing user jdoe "
+                                                    "from group bizdev"),
+                                    )
         management = UserManagement(provider=provider)
 
         output = management.add_group_member("jdoe", "bizdev")
@@ -514,8 +516,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         groups = [("bizdev", "x", 1001, [])]
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups,
-                                    popen=MockPopen(
-                                    "Removing user jdoe from group bizdev"))
+                                    popen=MockPopen("Removing user jdoe "
+                                                    "from group bizdev"),
+                                    )
         management = UserManagement(provider=provider)
         output = management.remove_group_member("jdoe", "bizdev")
         self.assertEqual(provider.popen.popen_inputs,

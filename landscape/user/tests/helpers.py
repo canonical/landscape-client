@@ -85,9 +85,11 @@ class FakeUserManagement(object):
                          location=None, work_number=None, home_number=None,
                          primary_group_name=None):
         data = self._users.setdefault(username, {})
-        for key, value in [("name", name), ("location", location),
-                            ("work-phone", work_number),
-                            ("home-phone", home_number)]:
+        for key, value in [("name", name),
+                           ("location", location),
+                           ("work-phone", work_number),
+                           ("home-phone", home_number),
+                           ]:
             if value:
                 data[key] = value
         if primary_group_name:

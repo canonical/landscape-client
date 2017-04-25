@@ -303,7 +303,7 @@ root:x:0:0:root:/root:/bin/bash
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         groups = [("sales", "x", 50, ["jdoe"]),
                   ("sales", "x", 51, ["jdoe"]),
-                 ]
+                  ]
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups)
         self.assertEqual(provider.get_groups(),
@@ -347,7 +347,7 @@ root:x:0:0:root:/root:/bin/bash
         information from the underlying user database into dictionaries.
         """
         provider = UserProvider(passwd_file=self.passwd_file,
-                                 group_file=self.group_file)
+                                group_file=self.group_file)
         users = provider.get_users()
         self.assertEqual(users[0], {"username": "root",
                                     "name": u"root",
@@ -435,14 +435,14 @@ broken2
                                     "home-phone": u"+44123124",
                                     "work-phone": u"+44123123",
                                     "primary-gid": 65534})
-        log = ("WARNING: passwd file %s is incorrectly formatted: line 2." %
-               passwd_file)
-        self.assertIn(log, self.logfile.getvalue())
+        log1 = ("WARNING: passwd file %s is incorrectly formatted: line 2." %
+                passwd_file)
+        self.assertIn(log1, self.logfile.getvalue())
         log2 = ("WARNING: passwd file %s is incorrectly formatted: line 3." %
-               passwd_file)
+                passwd_file)
         self.assertIn(log2, self.logfile.getvalue())
         log3 = ("WARNING: passwd file %s is incorrectly formatted: line 6." %
-               passwd_file)
+                passwd_file)
         self.assertIn(log3, self.logfile.getvalue())
 
     def test_get_users_nis_line(self):

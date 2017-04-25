@@ -166,8 +166,7 @@ class UserProvider(UserProviderBase):
         for row in reader:
             current_line += 1
             # Skip if we find the NIS marker
-            if (row["name"].startswith("+") or
-                row["name"].startswith("-")):
+            if (row["name"].startswith("+") or row["name"].startswith("-")):
                 continue
             try:
                 group_data.append((row["name"], row["passwd"], int(row["gid"]),
