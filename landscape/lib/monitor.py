@@ -77,16 +77,17 @@ class BurstMonitor(Monitor):
         super(BurstMonitor, self).ping()
         now = self.time()
         self._last_times.append(now)
-        if (self._last_times[0] - now > self.repeat_interval
-            or len(self._last_times) > self.maximum_count + 1):
+        if (self._last_times[0] - now > self.repeat_interval or
+            len(self._last_times) > self.maximum_count + 1
+            ):
             self._last_times.pop(0)
 
     def warn(self):
         if not self._last_times:
             return False
         delta = self.time() - self._last_times[0]
-        return (delta < self.repeat_interval
-                and len(self._last_times) >= self.maximum_count + 1)
+        return (delta < self.repeat_interval and
+                len(self._last_times) >= self.maximum_count + 1)
 
 
 class CoverageMonitor(Monitor):
@@ -178,7 +179,9 @@ class FrequencyMonitor(Monitor):
 
     def warn(self):
         if self.repeat_interval and self.min_frequency:
-            if (self._create_time() - self._last_count >= self.repeat_interval
-                and self.count < self.min_frequency):
+            if ((self._create_time() - self._last_count >=
+                 self.repeat_interval) and
+                self.count < self.min_frequency
+                ):
                 return True
         return False

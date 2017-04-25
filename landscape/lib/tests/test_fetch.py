@@ -458,7 +458,7 @@ class FetchTest(LandscapeTest):
                        "http://im/not": b"not"}
         directory = self.makeDir()
         messages = []
-        logger = lambda message: messages.append(message)
+        logger = (lambda message: messages.append(message))
         curl = CurlManyStub(url_results)
 
         result = fetch_to_files(url_results.keys(), directory, logger=logger,
@@ -492,8 +492,9 @@ class FetchTest(LandscapeTest):
 
         def check_error(failure):
             error = str(failure.value.subFailure.value)
-            self.assertEqual(error, "[Errno 2] No such file or directory: "
-                              "'i/dont/exist/right'")
+            self.assertEqual(error,
+                             ("[Errno 2] No such file or directory: "
+                              "'i/dont/exist/right'"))
             self.assertFalse(os.path.exists(os.path.join(directory, "right")))
 
         result.addErrback(check_error)

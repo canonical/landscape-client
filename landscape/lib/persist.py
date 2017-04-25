@@ -112,7 +112,9 @@ class Persist(object):
         def load_old():
             filepathold = filepath + ".old"
             if (os.path.isfile(filepathold) and
-                os.path.getsize(filepathold) > 0):
+                os.path.getsize(filepathold) > 0
+                ):
+
                 # warning("Broken configuration file at %s" % filepath)
                 # warning("Trying backup at %s" % filepathold)
                 try:

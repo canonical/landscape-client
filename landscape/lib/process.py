@@ -126,9 +126,9 @@ class ProcessInformation(object):
             # which terminates before we open the stat file.
             return None
 
-        assert("pid" in process_info and "state" in process_info
-               and "name" in process_info and "uid" in process_info
-               and "gid" in process_info and "start-time" in process_info)
+        assert("pid" in process_info and "state" in process_info and
+               "name" in process_info and "uid" in process_info and
+               "gid" in process_info and "start-time" in process_info)
         return process_info
 
 

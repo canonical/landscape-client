@@ -145,7 +145,7 @@ class NetworkInfoTest(LandscapeTest):
         self.assertEqual(traffic, test_proc_net_dev_parsed)
 
 
-#exact output of cat /proc/net/dev snapshot with line continuations for pep8
+# exact output of cat /proc/net/dev snapshot with line continuations for pep8
 test_proc_net_dev_output = """\
 Inter-|   Receive                                                |  Transmit
  face |bytes    packets errs drop fifo frame compressed multicast|bytes    \
@@ -158,37 +158,37 @@ Inter-|   Receive                                                |  Transmit
 
 test_proc_net_dev_parsed = {
     "lo": {"recv_bytes": 3272627934,
-          "recv_packets": 3321049,
-          "recv_errs": 0,
-          "recv_drop": 0,
-          "recv_fifo": 0,
-          "recv_frame": 0,
-          "recv_compressed": 0,
-          "recv_multicast": 0,
-          "send_bytes": 3272627934,
-          "send_packets": 3321049,
-          "send_errs": 0,
-          "send_drop": 0,
-          "send_fifo": 0,
-          "send_colls": 0,
-          "send_carrier": 0,
-          "send_compressed": 0},
+           "recv_packets": 3321049,
+           "recv_errs": 0,
+           "recv_drop": 0,
+           "recv_fifo": 0,
+           "recv_frame": 0,
+           "recv_compressed": 0,
+           "recv_multicast": 0,
+           "send_bytes": 3272627934,
+           "send_packets": 3321049,
+           "send_errs": 0,
+           "send_drop": 0,
+           "send_fifo": 0,
+           "send_colls": 0,
+           "send_carrier": 0,
+           "send_compressed": 0},
     "eth0": {"recv_bytes": 6063748,
-            "recv_packets": 12539,
-            "recv_errs": 0,
-            "recv_drop": 0,
-            "recv_fifo": 0,
-            "recv_frame": 0,
-            "recv_compressed": 0,
-            "recv_multicast": 62,
-            "send_bytes": 2279693,
-            "send_packets": 12579,
-            "send_errs": 0,
-            "send_drop": 0,
-            "send_fifo": 0,
-            "send_colls": 19,
-            "send_carrier": 0,
-            "send_compressed": 0}}
+             "recv_packets": 12539,
+             "recv_errs": 0,
+             "recv_drop": 0,
+             "recv_fifo": 0,
+             "recv_frame": 0,
+             "recv_compressed": 0,
+             "recv_multicast": 62,
+             "send_bytes": 2279693,
+             "send_packets": 12579,
+             "send_errs": 0,
+             "send_drop": 0,
+             "send_fifo": 0,
+             "send_colls": 19,
+             "send_carrier": 0,
+             "send_compressed": 0}}
 
 
 class FQDNTest(LandscapeTest):

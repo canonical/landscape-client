@@ -202,7 +202,7 @@ def get_network_traffic(source_file="/proc/net/dev"):
     # Parse out the network devices.
     devices = {}
     for line in lines[2:]:
-        if not ":" in line:
+        if ":" not in line:
             continue
         device, data = line.split(":")
         device = device.strip()
