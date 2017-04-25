@@ -181,8 +181,8 @@ class AptFacade(object):
         """
         return [
             version for version in self.get_packages()
-            if (self.is_package_installed(version)
-                and self._is_package_held(version.package))]
+            if (self.is_package_installed(version) and
+                self._is_package_held(version.package))]
 
     def get_package_holds(self):
         """Return the name of all the packages that are on hold."""
@@ -213,7 +213,8 @@ class AptFacade(object):
         @param version: The version of the package to unhold.
         """
         if (not self.is_package_installed(version) or
-            not self._is_package_held(version.package)):
+            not self._is_package_held(version.package)
+            ):
             return
         self._set_dpkg_selections(version.package.name + " install")
 
@@ -227,7 +228,9 @@ class AptFacade(object):
         self._cache.open(None)
         internal_sources_list = self._get_internal_sources_list()
         if (self.refetch_package_index or
-            (force_reload_binaries and os.path.exists(internal_sources_list))):
+            (force_reload_binaries and os.path.exists(internal_sources_list))
+            ):
+
             # Try to update only the internal repos, if the python-apt
             # version is new enough to accept a sources_list parameter.
             new_apt_args = {}
@@ -464,9 +467,10 @@ class AptFacade(object):
         """
         if package.is_inst_broken:
             return True
-        if (not package.marked_install
-                and not package.marked_upgrade
-                and not package.marked_downgrade):
+        if (not package.marked_install and
+            not package.marked_upgrade and
+            not package.marked_downgrade
+            ):
             return package in self._package_installs
         return False
 
@@ -548,9 +552,11 @@ class AptFacade(object):
         for or_dep in dependency:
             for target in or_dep.all_targets():
                 package = target.parent_pkg
-                if ((package.current_state == apt_pkg.CURSTATE_INSTALLED
-                     or depcache.marked_install(package))
-                    and not depcache.marked_delete(package)):
+                if ((package.current_state == apt_pkg.CURSTATE_INSTALLED or
+                     depcache.marked_install(package)) and
+                    not depcache.marked_delete(package)
+                    ):
+
                     return is_positive
         return not is_positive
 
@@ -671,19 +677,24 @@ class AptFacade(object):
                         install_progress=install_progress)
                     if not install_progress.dpkg_exited:
                         raise SystemError("dpkg didn't exit cleanly.")
-                except (apt.cache.LockFailedException, SystemError) as exception:
-                    result_text = (fetch_output.getvalue()
-                                   + read_text_file(install_output_path))
+                except SystemError as exc:
+                    result_text = (fetch_output.getvalue() +
+                                   read_text_file(install_output_path))
+                    error = TransactionError(exc.args[0] +
+                                             "\n\nPackage operation log:\n" +
+                                             result_text)
+                    # No need to retry SystemError, since it's most
+                    # likely a permanent error.
+                    break
+                except apt.cache.LockFailedException as exception:
+                    result_text = (fetch_output.getvalue() +
+                                   read_text_file(install_output_path))
                     error = TransactionError(exception.args[0] +
                                              "\n\nPackage operation log:\n" +
                                              result_text)
-                    if isinstance(exception, SystemError):
-                        # No need to retry SystemError, since it's most
-                        # likely a permanent error.
-                        break
                 else:
-                    result_text = (fetch_output.getvalue()
-                                   + read_text_file(install_output_path))
+                    result_text = (fetch_output.getvalue() +
+                                   read_text_file(install_output_path))
                     break
             if error is not None:
                 raise error

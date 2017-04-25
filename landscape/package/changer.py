@@ -293,8 +293,8 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
-        needs_reboot = (message.get("reboot-if-necessary")
-                        and os.path.exists(self.reboot_required_filename))
+        needs_reboot = (message.get("reboot-if-necessary") and
+                        os.path.exists(self.reboot_required_filename))
         stop_exchanger = needs_reboot
 
         deferred = self._send_response(None, message, result,

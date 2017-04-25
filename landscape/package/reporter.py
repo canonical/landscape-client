@@ -215,9 +215,10 @@ class PackageReporter(PackageTaskHandler):
 
         @return: a deferred returning (out, err, code)
         """
-        if (self._config.force_apt_update or self._apt_sources_have_changed()
-            or self._apt_update_timeout_expired(
-                self._config.apt_update_interval)):
+        if (self._config.force_apt_update or
+            self._apt_sources_have_changed() or
+            self._apt_update_timeout_expired(self._config.apt_update_interval)
+            ):  # noqa: E129
 
             accepted_apt_errors = (
                 "Problem renaming the file /var/cache/apt/srcpkgcache.bin",

@@ -788,7 +788,7 @@ class ReleaseUpgraderTest(LandscapeTest):
     @mock.patch("os.setsid")
     @mock.patch("os.getpgrp")
     @mock.patch("landscape.package.releaseupgrader.run_task_handler",
-        return_value="RESULT")
+                return_value="RESULT")
     def test_main(self, run_task_handler, getpgrp_mock, setsid_mock):
         """
         The L{main} function creates a new session if the process is not

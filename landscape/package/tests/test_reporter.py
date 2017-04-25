@@ -1300,7 +1300,9 @@ class PackageReporterAptTest(LandscapeTest):
         """
         self._make_fake_apt_update(code=100)
 
-        spawn_patcher = mock.patch.object(reporter, "spawn_process",
+        spawn_patcher = mock.patch.object(
+            reporter,
+            "spawn_process",
             side_effect=[
                 # Simulate series of failures to acquire the apt lock.
                 succeed((b'', b'', 100)),
@@ -1338,7 +1340,9 @@ class PackageReporterAptTest(LandscapeTest):
         warning_mock = warning_patcher.start()
         self.addCleanup(warning_patcher.stop)
 
-        spawn_patcher = mock.patch.object(reporter, "spawn_process",
+        spawn_patcher = mock.patch.object(
+            reporter,
+            "spawn_process",
             side_effect=[
                 # Simulate a failed apt lock grab then a successful one.
                 succeed((b'', b'', 100)),
@@ -1516,8 +1520,8 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    "'%s' didn't run, update interval has not passed" %
-                     self.reporter.apt_update_filename)
+                    ("'%s' didn't run, update interval has not passed"
+                     ) % self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1557,8 +1561,8 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    "'%s' didn't run, update interval has not passed" %
-                     self.reporter.apt_update_filename)
+                    ("'%s' didn't run, update interval has not passed"
+                     ) % self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
