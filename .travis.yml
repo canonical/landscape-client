@@ -13,13 +13,12 @@ matrix:
     # XXX re-enable after fixing all the lint issues
     #- python: 3.6
     #  env: TARGET=flake8
-    # XXX Switch to 3.4 for coverage once trial works right.
-    - python: 2.7
+    - python: 3.4
       env:
           TARGET=coverage
       before_script:
-        - python2 -m pip install -U coverage
-        - python2 -m pip install -U codecov
+        - python3 -m pip install -U coverage
+        - python3 -m pip install -U codecov
       script:
         - make $TARGET
       after_success:
