@@ -59,7 +59,7 @@ class MonitorPluginTest(LandscapeTest):
         """
         plugin = MonitorPlugin()
         plugin.register(self.monitor)
-        callback = lambda: 1 / 0
+        callback = (lambda: 1 / 0)
         plugin.call_on_accepted("type", callback)
         self.reactor.fire(("message-type-acceptance-changed", "type"), False)
 

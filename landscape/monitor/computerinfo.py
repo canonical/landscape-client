@@ -133,7 +133,9 @@ class ComputerInfo(MonitorPlugin):
         """Fetch cloud metadata and insert it in a message."""
         message = None
         if (self._cloud_instance_metadata is None and
-            self._cloud_retries < METADATA_RETRY_MAX):
+            self._cloud_retries < METADATA_RETRY_MAX
+            ):  # noqa: E129
+
             self._cloud_instance_metadata = yield self._fetch_ec2_meta_data()
             message = self._cloud_instance_metadata
         returnValue(message)
@@ -148,7 +150,7 @@ class ComputerInfo(MonitorPlugin):
             self._cloud_retries += 1
             if self._cloud_retries >= METADATA_RETRY_MAX:
                 logging.info("No cloud meta-data available. %s" %
-                        error.getErrorMessage())
+                             error.getErrorMessage())
 
         def log_success(result):
             logging.info("Acquired cloud meta-data.")

@@ -63,7 +63,7 @@ class CPUUsage(MonitorPlugin):
         step_data = None
         if new_cpu_usage is not None:
             step_data = self._accumulate(new_timestamp, new_cpu_usage,
-                                        ACCUMULATOR_KEY)
+                                         ACCUMULATOR_KEY)
         if step_data is not None:
             self._cpu_usage_points.append(step_data)
 

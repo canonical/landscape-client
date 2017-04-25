@@ -29,7 +29,7 @@ Inter-|   Receive                           |  Transmit
         super(NetworkActivityTest, self).tearDown()
 
     def write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
-                        extra="", lo_in_p=0, lo_out_p=0, **kw):
+                       extra="", lo_in_p=0, lo_out_p=0, **kw):
         kw.update(dict(
             lo_in=lo_in,
             lo_out=lo_out,
@@ -182,10 +182,10 @@ Inter-|   Receive                           |  Transmit
         self.plugin.exchange()
         step_size = self.monitor.step_size
         self.assertMessages(self.mstore.get_pending_messages(),
-                        [{"type": "network-activity",
-                          "activities": {
-                              b"lo": [(step_size, 0, 1000)],
-                              b"eth0": [(step_size, 0, 1000)]}}])
+                            [{"type": "network-activity",
+                              "activities": {b"lo": [(step_size, 0, 1000)],
+                                             b"eth0": [(step_size, 0, 1000)],
+                                             }}])
 
     def test_config(self):
         """The network activity plugin is enabled by default."""
@@ -196,12 +196,12 @@ Inter-|   Receive                           |  Transmit
         The network plugin doesn't send too many items at once in a single
         network message, to not crush the server.
         """
+        row = "eth%d: %d   12539      0     62  %d   12579    0    0   0\n    "
+
         def extra(data):
             result = ""
             for i in range(50):
-                result += (
-"""eth%d: %d   12539      0     62  %d   12579    0    0   0\n    """
-                    % (i, data, data))
+                result += row % (i, data, data)
             return result
         for i in range(1, 10):
             data = i * 1000

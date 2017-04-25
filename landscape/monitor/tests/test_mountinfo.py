@@ -9,7 +9,7 @@ from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
 
 
-mb = lambda x: x * 1024 * 1024
+mb = (lambda x: x * 1024 * 1024)
 
 
 def statvfs_result_fixture(path):
