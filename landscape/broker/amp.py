@@ -51,7 +51,7 @@ class FakeRemoteBroker(object):
         if (name in get_remote_methods(self.broker_server) and
             original is not None and
             callable(original)
-            ):  # noqa: E129
+            ):
             def method(*args, **kwargs):
                 for arg in args:
                     assert MethodCallArgument.check(arg)

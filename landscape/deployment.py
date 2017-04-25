@@ -178,7 +178,7 @@ class BaseConfiguration(object):
         for config_filename in config_filenames:
             if (os.path.isfile(config_filename) and
                 os.access(config_filename, os.R_OK)
-                ):  # noqa: E129
+                ):
 
                 self.load_configuration_file(config_filename)
                 break
@@ -283,7 +283,7 @@ class BaseConfiguration(object):
                 if (value == self._command_line_defaults.get(name) and
                     name not in self._config_file_options and
                     name not in self._command_line_options
-                    ):  # noqa: E129
+                    ):
 
                     # We don't want to write this value to the config file
                     # as it is default value and as not present in the

@@ -122,7 +122,7 @@ class MountInfo(MonitorPlugin):
                 not mount_point.startswith("/dev/") and
                 not self.is_device_removable(device) and
                 mount_point not in bound_mount_points
-                ):  # noqa: E129
+                ):
 
                 yield info
 

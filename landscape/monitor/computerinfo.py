@@ -134,7 +134,7 @@ class ComputerInfo(MonitorPlugin):
         message = None
         if (self._cloud_instance_metadata is None and
             self._cloud_retries < METADATA_RETRY_MAX
-            ):  # noqa: E129
+            ):
 
             self._cloud_instance_metadata = yield self._fetch_ec2_meta_data()
             message = self._cloud_instance_metadata

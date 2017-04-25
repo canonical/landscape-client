@@ -311,7 +311,7 @@ class MessageStore(object):
             flags = self._get_flags(filename)
             if ((HELD in flags or i >= pending_offset) and
                 os.stat(filename).st_ino == message_id
-                ):  # noqa: E129
+                ):
                 return True
             if BROKEN not in flags and HELD not in flags:
                 i += 1

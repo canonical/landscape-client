@@ -376,7 +376,7 @@ class MessageExchange(object):
     _api = SERVER_API
 
     def __init__(self, reactor, store, transport, registration_info,
-                 exchange_store, config,  max_messages=100):
+                 exchange_store, config, max_messages=100):
         """
         @param reactor: The L{LandscapeReactor} used to fire events in response
             to messages received by the server.
