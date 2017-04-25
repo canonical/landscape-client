@@ -8,12 +8,6 @@ import time
 
 from operator import attrgetter
 
-# Importing apt throws a FutureWarning on hardy, that we don't want to
-# see.
-import warnings
-warnings.filterwarnings("ignore", module="apt", category=FutureWarning)
-del warnings
-
 import apt
 import apt_inst
 import apt_pkg
