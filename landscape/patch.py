@@ -21,9 +21,9 @@ class UpgradeManagerBase(object):
             being upgraded.
         """
         if version in self._upgraders:
-            raise UpgraderConflict("%s is already registered as %s; "
-                                   "not adding %s" % (
-                    version, self._upgraders[version], function))
+            raise UpgraderConflict(
+                "%s is already registered as %s; not adding %s" %
+                (version, self._upgraders[version], function))
         self._upgraders[version] = function
 
     def get_version(self):
@@ -86,7 +86,7 @@ class SQLiteUpgradeManager(UpgradeManagerBase):
         cursor.execute("SELECT MAX(version) FROM patch")
         version = cursor.fetchone()[0]
         if version:
-           return version
+            return version
         return 0
 
     def apply(self, cursor):

@@ -48,6 +48,12 @@ class ConfigSpecOptionParser(OptionParser):
         return option
 
 
+def _is_script(filename=sys.argv[0],
+               _scriptdir=os.path.abspath("scripts")):
+    filename = os.path.abspath(filename)
+    return (os.path.dirname(filename) == _scriptdir)
+
+
 class BaseConfiguration(object):
     """Base class for configuration implementations.
 
@@ -65,8 +71,7 @@ class BaseConfiguration(object):
     required_options = ()
     unsaved_options = ()
     default_config_filenames = ["/etc/landscape/client.conf"]
-    if (os.path.dirname(os.path.abspath(sys.argv[0]))
-        == os.path.abspath("scripts")):
+    if _is_script():
         default_config_filenames.insert(0, "landscape-client.conf")
     default_config_filenames = tuple(default_config_filenames)
     config_section = "client"
@@ -171,8 +176,9 @@ class BaseConfiguration(object):
             allow_missing = accept_nonexistent_default_config
         # Parse configuration file, if found.
         for config_filename in config_filenames:
-            if (os.path.isfile(config_filename)
-                and os.access(config_filename, os.R_OK)):
+            if (os.path.isfile(config_filename) and
+                os.access(config_filename, os.R_OK)
+                ):  # noqa: E129
 
                 self.load_configuration_file(config_filename)
                 break
@@ -266,7 +272,7 @@ class BaseConfiguration(object):
         # Make sure we read the old values from the config file so that we
         # don't remove *unrelated* values.
         config_obj = self._get_config_object()
-        if not self.config_section in config_obj:
+        if self.config_section not in config_obj:
             config_obj[self.config_section] = {}
         all_options = self._config_file_options.copy()
         all_options.update(self._command_line_options)
@@ -276,7 +282,9 @@ class BaseConfiguration(object):
             if name != "config" and name not in self.unsaved_options:
                 if (value == self._command_line_defaults.get(name) and
                     name not in self._config_file_options and
-                    name not in self._command_line_options):
+                    name not in self._command_line_options
+                    ):  # noqa: E129
+
                     # We don't want to write this value to the config file
                     # as it is default value and as not present in the
                     # config file
