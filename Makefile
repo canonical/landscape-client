@@ -59,7 +59,7 @@ check3: build3
 
 .PHONY: coverage
 coverage:
-	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) -m coverage run $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON2) -m coverage run $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
 
 .PHONY: ci-check
 ci-check: depends build check  ## Install dependencies and run all the tests.
