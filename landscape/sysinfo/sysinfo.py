@@ -151,7 +151,7 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
     # and then we go back from there until we can fit things.
     min_length = width
     for header, value in headers:
-        min_length = min(min_length, len(header)+len(value)+2) # 2 for ": "
+        min_length = min(min_length, len(header)+len(value)+2)  # 2 for ": "
     columns = int(math.ceil(float(width) /
                             (min_length + len(column_separator))))
 
@@ -204,7 +204,6 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
 
         # Otherwise, do the whole thing again with one less column.
         columns -= 1
-
 
     # Alright! Show time! Let's build the headers line by line.
     lines = []

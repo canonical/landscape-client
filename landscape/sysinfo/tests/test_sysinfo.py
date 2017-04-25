@@ -263,8 +263,9 @@ class FormatTest(LandscapeTest):
     def test_stacked_headers_with_clearly_insufficient_space(self):
         output = format_sysinfo([("Header1", "Value1"),
                                  ("Header2", "Value2")], width=1)
-        self.assertEqual(output, "Header1: Value1\n"
-                                  "Header2: Value2")
+        self.assertEqual(output,
+                         "Header1: Value1\n"
+                         "Header2: Value2")
 
     def test_indent_headers_in_parallel_with_just_enough_space(self):
         output = format_sysinfo([("Header1", "Value1"),
@@ -274,8 +275,9 @@ class FormatTest(LandscapeTest):
     def test_indent_headers_stacked_which_barely_doesnt_fit(self):
         output = format_sysinfo([("Header1", "Value1"),
                                  ("Header2", "Value2")], indent=">>", width=35)
-        self.assertEqual(output, ">>Header1: Value1\n"
-                                  ">>Header2: Value2")
+        self.assertEqual(output,
+                         ">>Header1: Value1\n"
+                         ">>Header2: Value2")
 
     def test_parallel_and_stacked_headers(self):
         headers = [("Header%d" % i, "Value%d" % i) for i in range(1, 6)]
