@@ -14,10 +14,6 @@ else
 TARBALL_VERSION := $(UPSTREAM_VERSION)+git$(GIT_REVNO)
 endif
 
-.PHONY: clean
-clean:
-	-rm -rf sdist
-
 .PHONY: origtarball
 origtarball: sdist
 	cp -f sdist/landscape-client-$(TARBALL_VERSION).tar.gz \
@@ -39,11 +35,11 @@ updateversion:
 		landscape/__init__.py
 
 .PHONY: package
-package: clean prepchangelog updateversion
+package: clean prepchangelog updateversion  ## Generate the debian packages (use with DEBUILD_OPTS="-us -uc").
 	debuild -b $(DEBUILD_OPTS)
 
 .PHONY: sourcepackage
-sourcepackage: clean origtarball prepchangelog updateversion
+sourcepackage: origtarball prepchangelog updateversion
 	# need to remove sdist here because it doesn't exist in the
 	# orig tarball
 	rm -rf sdist
@@ -63,5 +59,3 @@ sdist: clean
 	cd sdist && tar cfz landscape-client-$(TARBALL_VERSION).tar.gz landscape-client-$(TARBALL_VERSION)
 	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
-
-.DEFAULT_GOAL := package

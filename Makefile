@@ -7,7 +7,7 @@ TRIAL_ARGS ?=
 
 .PHONY: help
 help:  ## Print help about available targets
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: depends
 depends: depends2 depends3  ## Install py2 and py3 dependencies.
@@ -79,7 +79,7 @@ clean:
 	-rm -rf _trial_temp
 	-rm -rf docs/api
 	-rm -rf man/\*.1
-	$(MAKE) -f Makefile.packaging clean
+	-rm -rf sdist
 
 doc: docs/api/twisted/pickle
 	mkdir -p docs/api
@@ -123,16 +123,6 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-.PHONY: package
-package:  ## Generate the debian packages (use with DEBUILD_OPTS="-us -uc").
-	$(MAKE) -f Makefile.packaging $@
-
-.PHONY: sourcepackage
-sourcepackage:
-	$(MAKE) -f Makefile.packaging $@
-
-.PHONY: releasetarball
-releasetarball:
-	$(MAKE) -f Makefile.packaging $@
+include Makefile.packaging
 
 .DEFAULT_GOAL := help
