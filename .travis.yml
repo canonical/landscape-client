@@ -9,9 +9,8 @@ matrix:
   include:
     - python: 2.7
       env: TARGET=check2
-    # XXX re-enable after fixing all the lint issues
-    #- python: 3.6
-    #  env: TARGET=flake8
+    - python: 3.6
+      env: TARGET=lint
     - python: 3.4
       env:
           TARGET=coverage
