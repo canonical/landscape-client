@@ -358,9 +358,11 @@ class BrokerServer(object):
         indicating as such.
         """
         opid = message.get("operation-id")
-        if (True not in results
-            and opid is not None
-            and message["type"] != "resynchronize"):
+        if (True not in results and
+            opid is not None and
+            message["type"] != "resynchronize"
+            ):  # noqa: E129
+
             mtype = message["type"]
             logging.error("Nobody handled the %s message." % (mtype,))
 

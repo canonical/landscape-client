@@ -1,5 +1,3 @@
-import unittest
-
 import mock
 
 from twisted.internet import reactor
