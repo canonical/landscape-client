@@ -86,7 +86,7 @@ pyflakes:
 
 .PHONY: flake8
 flake8:
-	flake8 --ignore E24,E121,E123,E125,E126,E221,E226,E704 \
+	flake8 --ignore E24,E121,E123,E125,E126,E221,E226,E266,E704 \
 	   	`find landscape -name \*.py`
 
 clean:

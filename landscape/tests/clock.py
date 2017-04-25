@@ -66,10 +66,10 @@ class Clock:
         """
         self.calls.append(
             DelayedCall(self.seconds() + when,
-                             what, a, kw,
-                             self.calls.remove,
-                             lambda c: None,
-                             self.seconds))
+                        what, a, kw,
+                        self.calls.remove,
+                        (lambda c: None),
+                        self.seconds))
         self.calls.sort(key=lambda a: a.getTime())
         return self.calls[-1]
 
@@ -248,7 +248,8 @@ class DelayedCall:
             L.append(")")
 
         if self.debug:
-            L.append("\n\ntraceback at creation: \n\n%s" % ('    '.join(self.creator)))
+            L.append(("\n\ntraceback at creation: \n\n%s"
+                      ) % ('    '.join(self.creator)))
         L.append('>')
 
         return "".join(L)
