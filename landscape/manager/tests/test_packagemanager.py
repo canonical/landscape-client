@@ -78,9 +78,9 @@ class PackageManagerTest(LandscapeTest):
             run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        with mock.patch.object(self.package_manager, "spawn_handler"), \
-             mock.patch.object(self.package_manager, "run",
-                               side_effect=run_has_run):
+        with (mock.patch.object(self.package_manager, "spawn_handler"),
+              mock.patch.object(self.package_manager, "run",
+                                side_effect=run_has_run)):
             service = self.broker_service
             service.message_store.set_accepted_types(
                 ["change-packages-result"])
