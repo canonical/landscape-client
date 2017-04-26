@@ -125,8 +125,6 @@ class BrokerClientTest(LandscapeTest):
         self.client_reactor.advance(plugin.run_interval)
         self.assertEqual(2, plugin.run.call_count)
 
-
-    @unittest.skip('fix: fails on trusty (https://travis-ci.org/CanonicalLtd/landscape-client/jobs/225268335)')
     def test_run_interval_log_exceptions(self):
         """
         If a plugin has a run method, the reactor will call it every
