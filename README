@@ -1,0 +1,44 @@
+[![Build Status](https://travis-ci.org/CanonicalLtd/landscape-client.svg?branch=master)](https://travis-ci.org/CanonicalLtd/landscape-client)
+
+== Non-root mode ==
+
+The Landscape Client generally runs as a combination of the 'root' and
+'landscape' users.  It is possible to disable the administrative features of
+Landscape and run only the monitoring parts of it without using the 'root'
+user at all.
+
+If you wish to use the Landscape Client in this way, it's recommended that you
+perform these steps immediately after installing the landscape-client package.
+
+Edit /etc/default/landscape-client and add the following lines:
+
+  RUN=1
+  DAEMON_USER=landscape
+
+Edit /etc/landscape/client.conf and add the following line:
+
+  monitor_only = true
+
+Now you can run 'sudo landscape-config' as usual to complete the configuration
+of your client and register with the Landscape service.
+
+
+== Developing ==
+
+To run the full test suite, run the following command:
+
+make check
+
+When you want to test the landscape client manually without management
+features, you can simply run:
+
+$ ./scripts/landscape-client
+
+This defaults to the 'landscape-client.conf' configuration file.
+
+When you want to test management features manually, you'll need to run as root.
+There's a configuration file 'root-client.conf' which specifies use of the
+system bus.
+
+$ sudo ./scripts/landscape-client -c root-client.conf
+
