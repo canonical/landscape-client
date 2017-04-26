@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/CanonicalLtd/landscape-client.svg?branch=master)](https://travis-ci.org/CanonicalLtd/landscape-client)
+
 == Non-root mode ==
 
 The Landscape Client generally runs as a combination of the 'root' and
