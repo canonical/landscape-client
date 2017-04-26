@@ -1,0 +1,61 @@
+UBUNTU_RELEASE := $(shell lsb_release -cs)
+# version in the code is authoritative
+# Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
+# will be updated behind your back with the current result of that
+# command everytime it is mentioned/used.
+UPSTREAM_VERSION := $(shell python -c "from landscape import UPSTREAM_VERSION; print UPSTREAM_VERSION")
+CHANGELOG_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
+GIT_HASH := $(shell git rev-parse --short HEAD)
+# We simulate a git "revno" for the sake of sortability.
+GIT_REVNO := $(shell git rev-list --count HEAD)
+ifeq (+git,$(findstring +git,$(UPSTREAM_VERSION)))
+TARBALL_VERSION := $(UPSTREAM_VERSION)
+else
+TARBALL_VERSION := $(UPSTREAM_VERSION)+git$(GIT_REVNO)
+endif
+
+.PHONY: origtarball
+origtarball: sdist
+	cp -f sdist/landscape-client-$(TARBALL_VERSION).tar.gz \
+		../landscape-client_$(TARBALL_VERSION).orig.tar.gz
+
+.PHONY: prepchangelog
+prepchangelog:
+# add a temporary entry for a local build if needed
+ifeq (,$(findstring +git,$(CHANGELOG_VERSION)))
+	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)
+else
+# just update the timestamp
+	dch --distribution $(UBUNTU_RELEASE) --release $(UBUNTU_RELEASE)
+endif
+
+.PHONY: updateversion
+updateversion:
+	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
+		landscape/__init__.py
+
+.PHONY: package
+package: clean prepchangelog updateversion  ## Generate the debian packages (use with DEBUILD_OPTS="-us -uc").
+	debuild -b $(DEBUILD_OPTS)
+
+.PHONY: sourcepackage
+sourcepackage: origtarball prepchangelog updateversion
+	# need to remove sdist here because it doesn't exist in the
+	# orig tarball
+	rm -rf sdist
+	debuild -S $(DEBUILD_OPTS)
+
+.PHONY: releasetarball
+releasetarball:
+	$(MAKE) sdist TARBALL_VERSION=$(UPSTREAM_VERSION)
+
+.PHONY: sdist
+sdist: clean
+	mkdir -p sdist
+	git archive --prefix landscape-client-$(TARBALL_VERSION)/ HEAD | tar -x -C sdist
+	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
+	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
+		sdist/landscape-client-$(TARBALL_VERSION)/landscape/__init__.py
+	cd sdist && tar cfz landscape-client-$(TARBALL_VERSION).tar.gz landscape-client-$(TARBALL_VERSION)
+	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
+	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
