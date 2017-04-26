@@ -22,12 +22,24 @@ depends3:
 	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-passlib
 
 .PHONY: pipinstallpythonapt
-pipinstallpythonapt:
+pipinstallpythonapt: pipinstallpythonapt_deps
+	$(MAKE) pipinstallpythonapt_default || $(MAKE) pipinstallpythonapt_src_$(UBUNTU_RELEASE)
+
+.PHONY: pipinstallpythonapt_deps
+pipinstallpythonapt_deps:
 	pip install pyopenssl
 	pip install service_identity
 	sudo apt-get -y build-dep python-apt python3-apt
-	bzr branch lp:ubuntu/trusty/python-apt /tmp/python-apt
+
+.PHONY: pipinstallpythonapt_default
+pipinstallpythonapt_default:
+	# See: https://code.launchpad.net/ubuntu/+source/python-apt
+	bzr branch lp:ubuntu/$(UBUNTU_RELEASE)/python-apt /tmp/python-apt
 	pip install /tmp/python-apt
+
+.PHONY: pipinstallpythonapt_src_xenial
+pipinstallpythonapt_src_xenial:
+	pip install https://launchpad.net/ubuntu/+archive/primary/+files/python-apt_1.1.0~beta1build1.tar.xz
 
 all: build
 

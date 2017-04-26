@@ -143,8 +143,9 @@ class ScriptRunnerMixin(object):
 
         pp = ProcessAccumulationProtocol(
             self.registry.reactor, self.size_limit, self.truncation_indicator)
+        args = (filename,)
         self.process_factory.spawnProcess(
-            pp, filename, uid=uid, gid=gid, path=path, env=env)
+            pp, filename, args=args, uid=uid, gid=gid, path=path, env=env)
         if time_limit is not None:
             pp.schedule_cancel(time_limit)
         return pp.result_deferred

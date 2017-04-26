@@ -4,8 +4,7 @@ language: python
 python:
   - "3.4"
   - "3.5"
-  # XXX re-enable after fixing tests
-  #- "3.6"
+  - "3.6"
 matrix:
   include:
     - python: 2.7

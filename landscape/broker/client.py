@@ -1,4 +1,5 @@
-from logging import info, exception
+from logging import info, exception, error
+import sys
 
 from twisted.internet.defer import maybeDeferred, succeed
 
@@ -115,8 +116,11 @@ class BrokerClientPlugin(object):
 
     def _error_log(self, failure):
         """Errback to log and reraise uncaught run errors."""
-        exception(
-            "{} raised an uncaught exception".format(type(self).__name__))
+        msg = "{} raised an uncaught exception".format(type(self).__name__)
+        if sys.exc_info() == (None, None, None):
+            error(msg)
+        else:
+            exception(msg)
         return failure
 
 

@@ -52,8 +52,9 @@ class RunScriptTests(LandscapeTest):
     def test_snap_path(self):
         """The bin path for snaps is included in the PATH."""
         deferred = self.plugin.run_script("/bin/sh", "echo $PATH")
-        return deferred.addCallback(
+        deferred.addCallback(
             lambda result: self.assertIn("/snap/bin", result))
+        return deferred
 
     def test_other_interpreter(self):
         """Non-shell interpreters can be specified."""
@@ -594,7 +595,7 @@ class RunScriptTests(LandscapeTest):
 
         mock_fdopen.side_effect = mock_fdopen_side_effect
 
-        def spawnProcess(protocol, filename, uid, gid, path, env):
+        def spawnProcess(protocol, filename, args, env, path, uid, gid):
             self.assertIsNone(uid)
             self.assertIsNone(gid)
             self.assertEqual(get_default_environment(), env)
@@ -761,7 +762,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
-        def spawnProcess(protocol, filename, uid, gid, path, env):
+        def spawnProcess(protocol, filename, args, env, path, uid, gid):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
@@ -775,8 +776,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
         def check(_):
             process_factory.spawnProcess.assert_called_with(
-                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
-                env=get_default_environment())
+                mock.ANY, mock.ANY, args=mock.ANY, uid=None, gid=None,
+                path=mock.ANY, env=get_default_environment())
 
         return result.addCallback(check)
 
@@ -854,7 +855,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
 
-        def spawnProcess(protocol, filename, uid, gid, path, env):
+        def spawnProcess(protocol, filename, args, env, path, uid, gid):
             protocol.childDataReceived(1, b"hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
@@ -874,8 +875,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "result-text": u"hi!\n",
                   "status": SUCCEEDED}])
             process_factory.spawnProcess.assert_called_with(
-                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
-                env=get_default_environment())
+                mock.ANY, mock.ANY, args=mock.ANY, uid=None, gid=None,
+                path=mock.ANY, env=get_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
         return result.addCallback(got_result)
@@ -885,7 +886,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         If a script outputs non-printable characters not handled by utf-8, they
         are replaced during the encoding phase but the script succeeds.
         """
-        def spawnProcess(protocol, filename, uid, gid, path, env):
+        def spawnProcess(protocol, filename, args, env, path, uid, gid):
             protocol.childDataReceived(
                 1, b"\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
             protocol.processEnded(Failure(ProcessDone(0)))
@@ -905,8 +906,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
                 message["result-text"],
                 u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
             process_factory.spawnProcess.assert_called_with(
-                mock.ANY, mock.ANY, uid=None, gid=None, path=mock.ANY,
-                env=get_default_environment())
+                mock.ANY, mock.ANY, args=mock.ANY, uid=None, gid=None,
+                path=mock.ANY, env=get_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
         return result.addCallback(got_result)

@@ -1,8 +1,8 @@
+from collections import namedtuple
 import os
 import sys
 import textwrap
 import tempfile
-import unittest
 
 import apt
 import apt_pkg
@@ -24,6 +24,51 @@ from landscape.package.tests.helpers import (
     PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
     create_deb, AptFacadeHelper,
     create_simple_repository)
+
+
+_normalize_field = (lambda f: f.replace("-", "_").lower())
+_DEB_STANZA_FIELDS = [_normalize_field(f) for f in [
+        "Package",
+        "Architecture",
+        "Version",
+        "Priority",
+        "Section",
+        "Maintainer",
+        "Installed-Size",
+        "Provides",
+        "Pre-Depends",
+        "Depends",
+        "Recommends",
+        "Suggests",
+        "Conflicts",
+        "Filename",
+        "Size",
+        "MD5sum",
+        "SHA1",
+        "SHA256",
+        "Description",
+        ]]
+_DebStanza = namedtuple("DebStanza", _DEB_STANZA_FIELDS)
+
+
+def _parse_deb_stanza(text):
+    last = None
+    data = {}
+    for line in text.splitlines():
+        field, sep, value = line.strip().partition(": ")
+        if not sep:
+            if not last:
+                raise NotImplementedError
+            data[last] += "\n" + line
+            continue
+
+        field = _normalize_field(field)
+        if field in data:
+            raise NotImplementedError
+        data[field] = value
+        last = field
+
+    return _DebStanza(**data)
 
 
 class FakeOwner(object):
@@ -279,7 +324,6 @@ class AptFacadeTest(LandscapeTest):
               'components': 'main', 'distribution': 'lucid', 'type': 'deb'}],
             self.facade.get_channels())
 
-    @unittest.skip('need to adjust for dict ordering')
     def test_get_package_stanza(self):
         """
         C{get_package_stanza} returns an entry for the package that can
@@ -291,7 +335,7 @@ class AptFacadeTest(LandscapeTest):
         stanza = self.facade.get_package_stanza(deb_file)
         SHA256 = (
             "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
-        self.assertEqual(textwrap.dedent("""\
+        expected = textwrap.dedent("""\
             Package: name1
             Architecture: all
             Version: version1-release1
@@ -312,8 +356,10 @@ class AptFacadeTest(LandscapeTest):
             SHA256: %(sha256)s
             Description: Summary1
              Description1
-            """ % {"filename": PKGNAME1, "sha256": SHA256}),
-            stanza)
+            """ % {"filename": PKGNAME1, "sha256": SHA256})
+        expected = _parse_deb_stanza(expected)
+        stanza = _parse_deb_stanza(stanza)
+        self.assertEqual(expected, stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
         """

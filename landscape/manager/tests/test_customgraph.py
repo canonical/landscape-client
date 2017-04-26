@@ -316,7 +316,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
         self.assertEqual(spawn[1], filename)
-        self.assertEqual(spawn[2], ())
+        self.assertEqual(spawn[2], (filename,))
         self.assertEqual(spawn[3], {})
         self.assertEqual(spawn[4], "/")
         self.assertEqual(spawn[5], 1234)
