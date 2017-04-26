@@ -11,7 +11,7 @@ help:  ## Print help about available targets
 
 .PHONY: depends
 depends: depends2 depends3  ## Install py2 and py3 dependencies.
-	sudo apt -y install python3-flake8
+	sudo apt -y install python3-flake8 python3-coverage
 
 .PHONY: depends2
 depends2:
@@ -68,6 +68,10 @@ check2: build2
 check3: TRIAL_ARGS=
 check3: build3
 	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
+
+.PHONY: coverage
+coverage:
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) -m coverage run $(TRIAL) --unclean-warnings landscape
 
 .PHONY: ci-check
 ci-check: depends build check  ## Install dependencies and run all the tests.

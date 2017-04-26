@@ -12,6 +12,16 @@ matrix:
     # XXX re-enable after fixing all the lint issues
     #- python: 3.6
     #  env: TARGET=flake8
+    - python: 3.4
+      env:
+          TARGET=coverage
+      before_script:
+        - python3 -m pip install -U coverage
+        - python3 -m pip install -U codecov
+      script:
+        - make $TARGET
+      after_success:
+        - codecov
 # XXX cache the installs?
 env:
   global:

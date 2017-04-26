@@ -1,4 +1,5 @@
 _trial_temp
+.coverage
 docs/api
 build
 build-stamp

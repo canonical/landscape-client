@@ -1,0 +1,30 @@
+codecov:
+  notify:
+    require_ci_to_pass: true
+ignore:
+  - "scripts/*"
+  - "dev/**/*"
+  - "debian/**/*"
+  - "build/**/*"
+coverage:
+  precision: 2
+  range:
+  - 70.0
+  - 100.0
+  round: down
+  status:
+    project: off
+    patch:
+      default:
+        target: 100%
+        threshold: 0.05
+        only_pulls: true
+    changes: off
+parsers:
+  gcov:
+    branch_detection:
+      conditional: true
+      loop: true
+      macro: false
+      method: false
+comment: off
