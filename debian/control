@@ -87,7 +87,7 @@ Architecture: any
 Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
          adduser,
          libpam-modules,
-         landscape-common
+         landscape-common (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client - Common setup
  Landscape is a web-based tool for managing Ubuntu systems. This
