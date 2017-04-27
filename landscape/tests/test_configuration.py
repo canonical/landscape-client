@@ -1725,8 +1725,8 @@ registration_key = shared-secret
         data_path = self.makeDir()
         config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
         key_filename = os.path.join(
-                data_path,
-                os.path.basename(config_filename) + ".ssl_public_key")
+            data_path,
+            os.path.basename(config_filename) + ".ssl_public_key")
 
         config = self.get_config(["--silent", "-c", config_filename,
                                   "-u", "url", "-a", "account", "-t", "title",
