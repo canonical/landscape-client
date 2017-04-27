@@ -91,6 +91,7 @@ flake8:
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;
 	-find landscape -name \*.pyc -exec rm -f {} \;
+	-rm -rf .coverage
 	-rm -rf tags
 	-rm -rf _trial_temp
 	-rm -rf docs/api
