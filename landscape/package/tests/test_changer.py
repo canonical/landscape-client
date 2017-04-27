@@ -962,7 +962,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-packages",
                                         "hold": [foo.package.id,
-                                                         bar.package.id],
+                                                 bar.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -990,7 +990,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-packages",
                                         "remove-hold": [foo.package.id,
-                                                         bar.package.id],
+                                                        bar.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1095,8 +1095,8 @@ class AptPackageChangerTest(LandscapeTest):
         [baz] = self.facade.get_packages_by_name("baz")
         self.store.add_task("changer", {"type": "change-packages",
                                         "hold": [foo.package.id,
-                                                         bar.package.id,
-                                                         baz.package.id],
+                                                 bar.package.id,
+                                                 baz.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):

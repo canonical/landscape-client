@@ -108,8 +108,9 @@ class RegistrationHandler(object):
         if id.secure_id:
             return False
 
-        return bool(id.computer_title and id.account_name
-                    and self._message_store.accepts("register"))
+        return bool(id.computer_title and
+                    id.account_name and
+                    self._message_store.accepts("register"))
 
     def register(self):
         """

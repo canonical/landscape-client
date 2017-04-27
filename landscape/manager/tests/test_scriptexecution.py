@@ -419,7 +419,7 @@ class RunScriptTests(LandscapeTest):
         self.plugin.process_factory = factory
 
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username,
-            attachments={u"file 1": "some data"})
+                                        attachments={u"file 1": "some data"})
 
         self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]

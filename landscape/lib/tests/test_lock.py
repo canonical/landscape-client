@@ -28,4 +28,3 @@ class LockTest(LandscapeTest):
         started = time.time()
         self.assertRaises(LockError, lock_path, self.filename, timeout=0.5)
         self.assertTrue(started < time.time() - 0.5)
-        

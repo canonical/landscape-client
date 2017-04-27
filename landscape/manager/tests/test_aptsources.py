@@ -148,9 +148,9 @@ class AptSourcesTests(LandscapeTest):
                 return fake_stats
             return orig_stat(filename)
 
-        with mock.patch("os.stat", side_effect=mocked_stat) as mock_stat, \
-             mock.patch("os.chown") as mock_chown:
-
+        _mock_stat = mock.patch("os.stat", side_effect=mocked_stat)
+        _mock_chown = mock.patch("os.chown")
+        with _mock_stat as mock_stat, _mock_chown as mock_chown:
             self.manager.dispatch_message(
                 {"type": "apt-sources-replace",
                  "sources": [{"name": "bla", "content": b""}],

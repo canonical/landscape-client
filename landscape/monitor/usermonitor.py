@@ -96,7 +96,7 @@ class UserMonitor(MonitorPlugin):
         return result
 
     def _detect_changes(self, locked_users, operation_id=None,
-            UserChanges=UserChanges):
+                        UserChanges=UserChanges):
 
         def update_snapshot(result):
             changes.snapshot()

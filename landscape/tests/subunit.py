@@ -1,20 +1,20 @@
 #
-#  subunit: extensions to python unittest to get test results from subprocesses.
-#  Copyright (C) 2005  Robert Collins <robertc@robertcollins.net>
+# subunit: extensions to python unittest to get test results from subprocesses.
+# Copyright (C) 2005  Robert Collins <robertc@robertcollins.net>
 #
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import os
 import subprocess
@@ -68,14 +68,16 @@ class TestProtocolServer(object):
 
     def _addError(self, offset, line):
         if (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description == line[offset:-1]):
+            self.current_test_description == line[offset:-1]
+            ):
+
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
             self.client.addError(self._current_test, RemoteError(""))
             self.client.stopTest(self._current_test)
             self._current_test = None
         elif (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description + " [" == line[offset:-1]):
+              self.current_test_description + " [" == line[offset:-1]):
             self.state = TestProtocolServer.READING_ERROR
             self._message = ""
         else:
@@ -83,13 +85,15 @@ class TestProtocolServer(object):
 
     def _addFailure(self, offset, line):
         if (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description == line[offset:-1]):
+            self.current_test_description == line[offset:-1]
+            ):
+
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
             self.client.addFailure(self._current_test, RemoteError())
             self.client.stopTest(self._current_test)
         elif (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description + " [" == line[offset:-1]):
+              self.current_test_description + " [" == line[offset:-1]):
             self.state = TestProtocolServer.READING_FAILURE
             self._message = ""
         else:
@@ -97,7 +101,9 @@ class TestProtocolServer(object):
 
     def _addSuccess(self, offset, line):
         if (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description == line[offset:-1]):
+            self.current_test_description == line[offset:-1]
+            ):
+
             self.client.addSuccess(self._current_test)
             self.client.stopTest(self._current_test)
             self.current_test_description = None
@@ -207,7 +213,7 @@ class RemoteException(Exception):
 
 
 class TestProtocolClient(unittest.TestResult):
-    """A class that looks like a TestResult and informs a TestProtocolServer."""
+    """Looks like a TestResult and informs a TestProtocolServer."""
 
     def __init__(self, stream):
         unittest.TestResult.__init__(self)
@@ -245,7 +251,7 @@ def RemoteError(description=""):
 class RemotedTestCase(unittest.TestCase):
     """A class to represent test cases run in child processes."""
 
-    def __eq__ (self, other):
+    def __eq__(self, other):
         try:
             return self.__description == other.__description
         except AttributeError:
@@ -256,8 +262,8 @@ class RemotedTestCase(unittest.TestCase):
         self.__description = description
 
     def error(self, label):
-        raise NotImplementedError("%s on RemotedTestCases is not permitted." %
-            label)
+        raise NotImplementedError(
+                "%s on RemotedTestCases is not permitted." % label)
 
     def setUp(self):
         self.error("setUp")
@@ -279,7 +285,8 @@ class RemotedTestCase(unittest.TestCase):
                (self._strclass(), self.__description)
 
     def run(self, result=None):
-        if result is None: result = self.defaultTestResult()
+        if result is None:
+            result = self.defaultTestResult()
         result.startTest(self)
         result.addError(self, RemoteError("Cannot run RemotedTestCases.\n"))
         result.stopTest(self)
@@ -306,7 +313,8 @@ class ExecTestCase(unittest.TestCase):
         return 1
 
     def run(self, result=None):
-        if result is None: result = self.defaultTestResult()
+        if result is None:
+            result = self.defaultTestResult()
         self._run(result)
 
     def debug(self):
@@ -324,7 +332,8 @@ class IsolatedTestCase(unittest.TestCase):
     """A TestCase which runs its tests in a forked process."""
 
     def run(self, result=None):
-        if result is None: result = self.defaultTestResult()
+        if result is None:
+            result = self.defaultTestResult()
         run_isolated(unittest.TestCase, self, result)
 
 
@@ -332,7 +341,8 @@ class IsolatedTestSuite(unittest.TestSuite):
     """A TestCase which runs its tests in a forked process."""
 
     def run(self, result=None):
-        if result is None: result = unittest.TestResult()
+        if result is None:
+            result = unittest.TestResult()
         run_isolated(unittest.TestSuite, self, result)
 
 

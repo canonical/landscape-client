@@ -395,8 +395,8 @@ class FakeReactor(EventHandlingReactorMixin):
         advancing time and triggering the relevant scheduled calls (see
         also C{call_later} and C{call_every}).
         """
-        while (self._calls and self._calls[0][0]
-               <= self._current_time + seconds):
+        while (self._calls and
+               self._calls[0][0] <= self._current_time + seconds):
             call = self._calls.pop(0)
             # If we find a call within the time we're advancing,
             # before calling it, let's advance the time *just* to

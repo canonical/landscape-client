@@ -215,7 +215,7 @@ class ReactorTestMixin(object):
                         self.logfile.getvalue())
 
     def test_weird_event_type(self):
-        #This can be useful for "namespaced" event types
+        # This can be useful for "namespaced" event types
         reactor = self.get_reactor()
         called = []
         reactor.call_on(("message", "foobar"), called.append)

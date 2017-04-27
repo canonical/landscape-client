@@ -63,7 +63,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                   "status": SUCCEEDED,
                                   "operation-id": 123, "timestamp": 0,
                                   "result-text": "add_user succeeded"},
-                                  {"timestamp": 0, "type": "users",
+                                 {"timestamp": 0, "type": "users",
                                   "operation-id": 123,
                                   "create-users": [{"home-phone": None,
                                                     "username": "jdoe",
@@ -98,7 +98,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                   "status": SUCCEEDED,
                                   "operation-id": 123, "timestamp": 0,
                                   "result-text": "add_user succeeded"},
-                                  {"timestamp": 0, "type": "users",
+                                 {"timestamp": 0, "type": "users",
                                   "operation-id": 123,
                                   "create-users": [{"home-phone": None,
                                                     "username": "jdoe",
@@ -134,7 +134,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                   "status": SUCCEEDED,
                                   "operation-id": 123, "timestamp": 0,
                                   "result-text": "add_user succeeded"},
-                                  {"timestamp": 0, "type": "users",
+                                 {"timestamp": 0, "type": "users",
                                   "operation-id": 123,
                                   "create-users": [
                                       {"home-phone": u"請不要刪除",
@@ -1165,18 +1165,18 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
             expected = [{"type": "users",
-                          "create-users": [{"home-phone": None,
-                                            "username": "jdoe",
-                                            "uid": 1000,
-                                            "enabled": True,
-                                            "location": None,
-                                            "work-phone": None,
-                                            "primary-gid": 1000,
-                                            "name": "John Doe"}],
-                          "create-groups": [{"gid": 1001,
-                                             "name": "bizdev"}]},
-                         {"type": "users", "operation-id": 123,
-                          "create-group-members": {"bizdev": ["jdoe"]}}]
+                         "create-users": [{"home-phone": None,
+                                           "username": "jdoe",
+                                           "uid": 1000,
+                                           "enabled": True,
+                                           "location": None,
+                                           "work-phone": None,
+                                           "primary-gid": 1000,
+                                           "name": "John Doe"}],
+                         "create-groups": [{"gid": 1001,
+                                            "name": "bizdev"}]},
+                        {"type": "users", "operation-id": 123,
+                         "create-group-members": {"bizdev": ["jdoe"]}}]
             self.assertMessages([messages[0], messages[2]], expected)
 
         users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",

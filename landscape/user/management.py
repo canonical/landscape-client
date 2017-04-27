@@ -99,8 +99,8 @@ class UserManagement(object):
         logging.info("Locking out user %s (UID %d).", username, uid)
         result, output = self.call_popen(["usermod", "-L", username])
         if result != 0:
-            raise UserManagementError("Error locking user %s.\n%s"
-                                     % (username, output))
+            raise UserManagementError("Error locking user %s.\n%s" %
+                                      (username, output))
 
     def unlock_user(self, username):
         """Unlock the account matching C{username}."""
@@ -149,8 +149,8 @@ class UserManagement(object):
         result, output = self.call_popen(command)
         if result != 0:
             raise UserManagementError("Error renaming group %s (GID %d) to "
-                                       "%s.\n%s" % (groupname, gid, new_name,
-                                                    output))
+                                      "%s.\n%s" % (groupname, gid, new_name,
+                                                   output))
         return output
 
     def add_group_member(self, username, groupname):
@@ -194,13 +194,14 @@ class UserManagement(object):
         logging.info("Removing group %s (GID %d).", groupname, gid)
         result, output = self.call_popen(["groupdel", groupname])
         if result != 0:
-            raise UserManagementError("Error removing group %s (GID %d).\n%s"
-                                   % (groupname, gid, output))
+            raise UserManagementError("Error removing group %s (GID %d).\n%s" %
+                                      (groupname, gid, output))
         return output
 
     def call_popen(self, args):
-        popen = self._provider.popen(args, stdout=subprocess.PIPE,
-                                           stderr=subprocess.STDOUT)
+        popen = self._provider.popen(args,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
         output = popen.stdout.read()
         result = popen.wait()
         return result, output

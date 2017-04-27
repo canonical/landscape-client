@@ -73,7 +73,7 @@ class ExchangeFailureTests(unittest.TestCase):
         involved SSL or not and returns non-zero."""
         results = []
         self.assertNotEqual(0,
-            exchange_failure(results.append, ssl_error=True))
+                            exchange_failure(results.append, ssl_error=True))
         self.assertEqual(["ssl-error"], results)
 
     def test_exchange_failure_non_ssl(self):
@@ -83,7 +83,7 @@ class ExchangeFailureTests(unittest.TestCase):
         """
         results = []
         self.assertNotEqual(0,
-            exchange_failure(results.append, ssl_error=False))
+                            exchange_failure(results.append, ssl_error=False))
         self.assertEqual(["non-ssl-error"], results)
 
 
@@ -1724,7 +1724,8 @@ registration_key = shared-secret
         mock_sysvconfig().restart_landscape.return_value = True
         data_path = self.makeDir()
         config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
-        key_filename = os.path.join(data_path,
+        key_filename = os.path.join(
+            data_path,
             os.path.basename(config_filename) + ".ssl_public_key")
 
         config = self.get_config(["--silent", "-c", config_filename,
@@ -1799,8 +1800,9 @@ registration_key = shared-secret
                              "http://proxy",
                              "--import", "https://config.url"])
         except ImportOptionError:
-            pass  # The returned content is empty.  We don't really care for
-                  # this test.
+            # The returned content is empty.  We don't really care for
+            # this test.
+            pass
         mock_print_text.assert_called_once_with(
             "Fetching configuration from https://config.url...")
 
@@ -1917,7 +1919,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         # We pre-seed a success because no actual result will be generated.
         register(self.config, reactor, connector_factory, max_retries=99,
-            results=['success'])
+                 results=['success'])
         self.assertTrue(reactor.was_run)
         # Only a single callback is registered, it does the real work when a
         # connection is established.
@@ -2021,7 +2023,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertCountEqual(
             ['failure', 'exchange_failure', 'success'],
             [handler.func.__name__
-                for handler in faux_remote.handlers.values()])
+             for handler in faux_remote.handlers.values()])
         # We include a single error handler to react to exchange errors.
         self.assertTrue(1, len(faux_remote.register_deferred.errbacks))
         # the handle_registration_errors is wrapped in a partial()
@@ -2047,7 +2049,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         self.reactor.call_later(1, self.reactor.stop)
         register(self.config, reactor=self.reactor, on_error=on_error,
-            got_connection=faux_got_connection)
+                 got_connection=faux_got_connection)
         self.assertTrue(on_error_was_called)
 
     def test_register_with_on_error_and_no_error(self):
@@ -2063,7 +2065,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         self.reactor.call_later(1, self.reactor.stop)
         register(self.config, reactor=self.reactor, on_error=on_error,
-            got_connection=faux_got_connection)
+                 got_connection=faux_got_connection)
         self.assertFalse(on_error_was_called)
 
     def test_register_happy_path(self):
@@ -2074,7 +2076,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertEqual(
             "success",
             register(self.config, reactor=self.reactor,
-                got_connection=faux_got_connection))
+                     got_connection=faux_got_connection))
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):
@@ -2140,19 +2142,23 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
 
     def test_ssl_error_case(self):
         report_registration_outcome("ssl-error", print=self.record_result)
-        self.assertIn("\nThe server's SSL information is incorrect, or fails "
-              "signature verification!\n"
-              "If the server is using a self-signed certificate, "
-              "please ensure you supply it with the --ssl-public-key "
-              "parameter.", self.result)
+        self.assertIn(
+            ("\nThe server's SSL information is incorrect, or fails "
+             "signature verification!\n"
+             "If the server is using a self-signed certificate, "
+             "please ensure you supply it with the --ssl-public-key "
+             "parameter."),
+            self.result)
         self.assertIn(sys.stderr.name, self.output)
 
     def test_non_ssl_error_case(self):
         report_registration_outcome("non-ssl-error", print=self.record_result)
-        self.assertIn("\nWe were unable to contact the server.\n"
-              "Your internet connection may be down. "
-              "The landscape client will continue to try and contact "
-              "the server periodically.", self.result)
+        self.assertIn(
+            ("\nWe were unable to contact the server.\n"
+             "Your internet connection may be down. "
+             "The landscape client will continue to try and contact "
+             "the server periodically."),
+            self.result)
         self.assertIn(sys.stderr.name, self.output)
 
 

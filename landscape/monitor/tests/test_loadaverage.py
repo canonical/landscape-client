@@ -45,7 +45,7 @@ class LoadAveragePluginTest(LandscapeTest):
         Sample data is used to ensure that the load average included
         in the message is calculated correctly.
         """
-        get_load_average = lambda: (0.15, 1, 500)
+        get_load_average = (lambda: (0.15, 1, 500))
         plugin = LoadAverage(create_time=self.reactor.time,
                              get_load_average=get_load_average)
         self.monitor.add(plugin)

@@ -41,7 +41,8 @@ def get_mount_info(mounts_file, statvfs_,
         except ValueError:
             continue
         if (filesystems_whitelist is not None and
-            filesystem not in filesystems_whitelist):
+            filesystem not in filesystems_whitelist
+            ):
             continue
         megabytes = 1024 * 1024
         try:
@@ -79,8 +80,9 @@ def get_filesystem_for_path(path, mounts_file, statvfs_):
     for info in get_mount_info(mounts_file, statvfs_):
         mount_segments = info["mount-point"].split("/")
         if path.startswith(info["mount-point"]):
-            if ((not candidate)
-                or path_segments[:len(mount_segments)] == mount_segments):
+            if ((not candidate) or
+                path_segments[:len(mount_segments)] == mount_segments
+                ):
                 candidate = info
     return candidate
 

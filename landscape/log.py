@@ -31,6 +31,7 @@ def format_percent(percent):
         percent = 0.0
     return "%.02f%%" % float(percent)
 
+
 def rotate_logs():
     """
     This closes and reopens the underlying files in the logging module's

@@ -356,8 +356,9 @@ class LogKeeperHelper(object):
         errors = []
         for record in self.error_handler.errors:
             for ignored_type in self.ignored_exception_types:
-                if (record.exc_info and record.exc_info[0]
-                    and issubclass(record.exc_info[0], ignored_type)):
+                if (record.exc_info and record.exc_info[0] and
+                    issubclass(record.exc_info[0], ignored_type)
+                    ):
                     break
             else:
                 for ignored_regex in self.ignored_exception_regexes:
@@ -584,7 +585,7 @@ class StubProcessFactory(object):
         self.spawns = []
 
     def spawnProcess(self, protocol, executable, args=(), env={}, path=None,
-                    uid=None, gid=None, usePTY=0, childFDs=None):
+                     uid=None, gid=None, usePTY=0, childFDs=None):
         self.spawns.append((protocol, executable, args,
                             env, path, uid, gid, usePTY, childFDs))
 
@@ -666,7 +667,7 @@ CapInh: 0000000000000000
 CapPrm: 0000000000000000
 CapEff: 0000000000000000
 """ % ({"process_name": process_name[:15], "state": state, "uid": uid,
-        "gid": gid, "vmsize": vmsize})
+        "gid": gid, "vmsize": vmsize})  # noqa
         process_dir = os.path.join(self._sample_dir, str(process_id))
         os.mkdir(process_dir)
         filename = os.path.join(process_dir, "status")

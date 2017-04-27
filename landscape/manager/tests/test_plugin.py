@@ -19,7 +19,7 @@ class BrokerPluginTest(LandscapeTest):
         broker_service = self.broker_service
         broker_service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
-        operation = lambda: None
+        operation = (lambda: None)
 
         def assert_messages(ignored):
             messages = broker_service.message_store.get_pending_messages()
@@ -67,7 +67,7 @@ class BrokerPluginTest(LandscapeTest):
         broker_service = self.broker_service
         broker_service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 123}
-        operation = lambda: None
+        operation = (lambda: None)
 
         def assert_urgency(ignored):
             self.assertTrue(broker_service.exchanger.is_urgent())
@@ -85,7 +85,7 @@ class BrokerPluginTest(LandscapeTest):
         broker_service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
         deferred = Deferred()
-        operation = lambda: deferred
+        operation = (lambda: deferred)
 
         def assert_messages(ignored):
             messages = broker_service.message_store.get_pending_messages()

@@ -1253,6 +1253,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertEqual(mode("custom-graph-scripts"), 0o755)
         self.assertEqual(mode("package/database"), 0o644)
 
+
 STUB_BROKER = """\
 #!%(executable)s
 import sys

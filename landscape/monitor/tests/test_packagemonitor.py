@@ -97,13 +97,14 @@ class PackageMonitorTest(LandscapeTest):
             run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        with mock.patch.object(self.package_monitor, 'spawn_reporter') \
-                    as mock_spawn_reporter, \
-                mock.patch.object(self.package_monitor, 'run',
-                    side_effect=run_has_run):
-            self.broker_service.message_store.set_accepted_types(["packages"])
-            self.monitor.add(self.package_monitor)
-            self.successResultOf(deferred)
+        with (mock.patch.object(self.package_monitor, 'spawn_reporter')
+              ) as mock_spawn_reporter:
+            with mock.patch.object(self.package_monitor, 'run',
+                                   side_effect=run_has_run):
+                (self.broker_service.message_store
+                 ).set_accepted_types(["packages"])
+                self.monitor.add(self.package_monitor)
+                self.successResultOf(deferred)
 
         mock_spawn_reporter.assert_called_once_with()
 

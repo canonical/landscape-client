@@ -392,7 +392,7 @@ processor 3: version = FF,  identification = 018F67,  machine = 2964
 """  # noqa
 
     def test_read_sample_s390x_data(self):
-        """Ensure the plugin can parse /proc/cpuinfo from an IBM zSeries machine."""
+        """Ensure the plugin can parse /proc/cpuinfo for IBM zSeries."""
         filename = self.makeFile(self.S390X)
         plugin = ProcessorInfo(machine_name="s390x",
                                source_filename=filename)

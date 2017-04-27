@@ -677,9 +677,11 @@ class MessageExchangeTest(LandscapeTest):
         # schedule a regular exchange.
         # Let's make sure that that *original* impending-exchange event has
         # been cancelled:
-        self.reactor.advance(60 * 60  # time till exchange
-                             - 10  # time till notification
-                             - 20)  # time that we've already advanced
+        TIME_UNTIL_EXCHANGE = 60 * 60
+        TIME_UNTIL_NOTIFY = 10
+        TIME_ADVANCED = 20  # time that we've already advanced
+        self.reactor.advance(TIME_UNTIL_EXCHANGE -
+                             (TIME_UNTIL_NOTIFY + TIME_ADVANCED))
         self.assertEqual(events, [True])
         # Ok, so no new events means that the original call was
         # cancelled. great.

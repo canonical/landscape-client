@@ -61,8 +61,8 @@ class BasePersistTest(LandscapeTest):
                                 "op": [0, 1, 2]
                                },
                          },
-                   "qr": {"s": {"t": "u"}},
-                   "v": [0, {"v": "woot"}, 2],
+                  "qr": {"s": {"t": "u"}},
+                  "v": [0, {"v": "woot"}, 2],
                  }
 
     get_items = [

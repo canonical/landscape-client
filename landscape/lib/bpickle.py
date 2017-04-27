@@ -207,11 +207,11 @@ if bytes is str:
     # Python 2.x: We need to map internal unicode strings to UTF-8
     # encoded strings, and longs to ints.
     dumps_table.update({
-        unicode: dumps_unicode,
-        long: dumps_int,
-    })
+        unicode: dumps_unicode,  # noqa
+        long: dumps_int,  # noqa
+        })
 else:
     # Python 3.x: We need to map internal strings to UTF-8 encoded strings.
     dumps_table.update({
         str: dumps_unicode,
-    })
+        })

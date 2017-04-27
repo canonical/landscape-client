@@ -171,7 +171,7 @@ class MethodCallReceiver(CommandLocator):
         # We encoded the method name in `send_method_call` and have to decode
         # it here again.
         method = method.decode("utf-8")
-        if not method in self._methods:
+        if method not in self._methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
         method_func = getattr(self._object, method)
@@ -280,8 +280,8 @@ class MethodCallSender(object):
             for chunk in chunks[:-1]:
 
                 def create_send_chunk(sequence, chunk):
-                    send_chunk = lambda x: self._protocol.callRemote(
-                        MethodCallChunk, sequence=sequence, chunk=chunk)
+                    send_chunk = (lambda x: self._protocol.callRemote(
+                        MethodCallChunk, sequence=sequence, chunk=chunk))
                     return send_chunk
 
                 result.addCallback(create_send_chunk(sequence, chunk))

@@ -78,17 +78,17 @@ class PackageManagerTest(LandscapeTest):
             run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        with mock.patch.object(self.package_manager, "spawn_handler"), \
-             mock.patch.object(self.package_manager, "run",
-                               side_effect=run_has_run):
-            service = self.broker_service
-            service.message_store.set_accepted_types(
-                ["change-packages-result"])
-            self.manager.add(self.package_manager)
-            self.successResultOf(deferred)
-            self.package_manager.spawn_handler.assert_called_once_with(
-                PackageChanger)
-            self.package_manager.run.assert_called_once_with()
+        with mock.patch.object(self.package_manager, "spawn_handler"):
+            with mock.patch.object(self.package_manager, "run",
+                                   side_effect=run_has_run):
+                service = self.broker_service
+                service.message_store.set_accepted_types(
+                    ["change-packages-result"])
+                self.manager.add(self.package_manager)
+                self.successResultOf(deferred)
+                self.package_manager.spawn_handler.assert_called_once_with(
+                    PackageChanger)
+                self.package_manager.run.assert_called_once_with()
 
     def test_spawn_changer_on_run_if_message_accepted(self):
         """

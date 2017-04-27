@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from twisted.python.compat import _PY3
 
 

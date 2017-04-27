@@ -48,7 +48,6 @@ class ProcessKillerTests(LandscapeTest):
                                  uid=1000, gid=1000, started_after_boot=10,
                                  process_name="ooga")
 
-
         self.manager.dispatch_message(
             {"type": "signal-process",
              "operation-id": 1,
@@ -155,7 +154,7 @@ class ProcessKillerTests(LandscapeTest):
              "pid": pid, "name": "python",
              "start-time": 11, "signal": "KILL"})
         expected_time = datetime.utcfromtimestamp(11)
-         # boot time + proc start time = 20
+        # boot time + proc start time = 20
         actual_time = datetime.utcfromtimestamp(20)
         expected_text = ("ProcessMismatchError: The process python with "
                          "PID %d that started at %s UTC was not found.  A "

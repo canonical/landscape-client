@@ -78,15 +78,12 @@ ci-check: depends build check  ## Install dependencies and run all the tests.
 
 .PHONY: lint
 lint:
-	bzr ls-lint
+	$(PYTHON3) -m flake8 --ignore E24,E121,E123,E125,E126,E221,E226,E266,E704 \
+		`find landscape -name \*.py`
 
 .PHONY: pyflakes
 pyflakes:
 	-pyflakes `find landscape -name \*.py`
-
-.PHONY: flake8
-flake8:
-	flake8 `find landscape -name \*.py`
 
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;

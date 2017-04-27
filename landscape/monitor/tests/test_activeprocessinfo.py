@@ -567,8 +567,8 @@ class ActiveProcessInfoTest(LandscapeTest):
 
             self.builder.remove_data(1)
             self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                    started_after_boot=1100,
-                                    process_name="init", vmsize=20000)
+                                     started_after_boot=1100,
+                                     process_name="init", vmsize=20000)
             plugin.exchange()
             flush_mock.assert_called_once_with()
 
@@ -581,11 +581,11 @@ class ActiveProcessInfoTest(LandscapeTest):
                                         "add-processes": [{"start-time": 110,
                                                            "name": u"init",
                                                            "pid": 1,
-                                                            "percent-cpu": 0.0,
-                                                            "state": b"R",
-                                                            "gid": 0,
-                                                            "vm-size": 11676,
-                                                            "uid": 0}]},
+                                                           "percent-cpu": 0.0,
+                                                           "state": b"R",
+                                                           "gid": 0,
+                                                           "vm-size": 11676,
+                                                           "uid": 0}]},
                                        {"timestamp": 0,
                                         "api": b"3.2",
                                         "type": "active-process-info",

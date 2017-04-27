@@ -71,6 +71,7 @@ And so the logic goes, continuing in a similar fashion, yielding
 representative data at each step boundary.
 """
 
+
 class Accumulator(object):
 
     def __init__(self, persist, step_size):

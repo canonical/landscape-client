@@ -391,7 +391,7 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_hash_id_request(hashes1)
         self.store1.add_hash_id_request(hashes2)
         hashes = [hash for request in self.store2.iter_hash_id_requests()
-                       for hash in request.hashes]
+                  for hash in request.hashes]
         self.assertEqual(hashes, hashes1 + hashes2)
 
     def test_get_initial_hash_id_request_timestamp(self):

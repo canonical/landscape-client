@@ -121,7 +121,9 @@ class MountInfo(MonitorPlugin):
             if (device.startswith("/dev/") and
                 not mount_point.startswith("/dev/") and
                 not self.is_device_removable(device) and
-                not mount_point in bound_mount_points):
+                mount_point not in bound_mount_points
+                ):
+
                 yield info
 
     def _get_bound_mount_points(self):
