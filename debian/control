@@ -26,9 +26,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
 Suggests: ${extra:Suggests}
 Breaks: landscape-client-ui (<< 16.04),
         landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04),
-          landscape-client-ui-install (<< 16.04),
-          landscape-common (<< 17.04)
+Conflicts: landscape-common (<< 17.04)
 Description: Landscape administration system client - Python 2 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
@@ -54,11 +52,6 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-Breaks: landscape-client-ui (<< 16.04),
-        landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04),
-          landscape-client-ui-install (<< 16.04),
-          landscape-common3
 Description: Landscape administration system client - Python 3 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
@@ -73,7 +66,7 @@ Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
          adduser,
          libpam-modules
 Suggests: ${extra:Suggests}
-Conflicts: landscape-common3
+Conflicts: landscape-common (<< 17.04)
 Description: Landscape administration system - Common setup
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want to run a Landscape server or
@@ -88,6 +81,7 @@ Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
          adduser,
          libpam-modules,
          landscape-common (= ${binary:Version})
+Conflicts: landscape-common (<< 17.04)
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client - Common setup
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -104,6 +98,8 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          landscape-client-common (= ${binary:Version}),
          python3-twisted,
          python3-landscape-lib (= ${binary:Version})
+Replaces: landscape-common (<< 17.04)
+Conflicts: landscape-common (<< 17.04)
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client - sysinfo tool
  Landscape is a web-based tool for managing Ubuntu systems. This
