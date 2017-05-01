@@ -52,7 +52,7 @@ case "$1" in
            rm -f $PROFILE_LOCATION || true
        fi
 
-       # We rely on landscape-common to create the user and log dir.
+       # We rely on landscape-base to create the user and log dir.
 
     ;;
 

@@ -26,9 +26,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
 Suggests: ${extra:Suggests}
 Breaks: landscape-client-ui (<< 16.04),
         landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04),
-          landscape-client-ui-install (<< 16.04),
-          landscape-common (<< 17.04)
+Conflicts: landscape-common (<< 17.04)
 Description: Landscape administration system client - Python 2 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
@@ -54,11 +52,6 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules
 Suggests: ${extra:Suggests}
-Breaks: landscape-client-ui (<< 16.04),
-        landscape-client-ui-install (<< 16.04)
-Replaces: landscape-client-ui (<< 16.04),
-          landscape-client-ui-install (<< 16.04),
-          landscape-common3
 Description: Landscape administration system client - Python 3 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
@@ -67,13 +60,14 @@ Description: Landscape administration system client - Python 3 lib
  This package provides the core libraries.
 XB-Python-Version: ${python:Versions}
 
-Package: landscape-common
+Package: landscape-base
 Architecture: any
 Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
          adduser,
          libpam-modules
 Suggests: ${extra:Suggests}
-Conflicts: landscape-common3
+Conflicts: landscape-common
+Replaces: landscape-common
 Description: Landscape administration system - Common setup
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want to run a Landscape server or
@@ -82,12 +76,15 @@ Description: Landscape administration system - Common setup
  This package provides the base setup for other packages related
  to Landscape.
 
-Package: landscape-client-common
+Package: landscape-client-base
 Architecture: any
 Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
          adduser,
          libpam-modules,
-         landscape-common (= ${binary:Version})
+         landscape-base (= ${binary:Version})
+Conflicts: landscape-common (<< 17.04),
+           landscape-client-common
+Replaces: landscape-client-common
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client - Common setup
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -101,9 +98,11 @@ Package: landscape-sysinfo
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
-         landscape-client-common (= ${binary:Version}),
+         landscape-client-base (= ${binary:Version}),
          python3-twisted,
          python3-landscape-lib (= ${binary:Version})
+Replaces: landscape-common (<< 17.04)
+Conflicts: landscape-common (<< 17.04)
 Suggests: ${extra:Suggests}
 Description: Landscape administration system client - sysinfo tool
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -118,7 +117,7 @@ Package: landscape-client
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
-         landscape-client-common (= ${binary:Version}),
+         landscape-client-base (= ${binary:Version}),
          landscape-sysinfo (= ${binary:Version}),
          python3-twisted,
          python3-pycurl,
