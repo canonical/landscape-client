@@ -113,6 +113,11 @@ Description: Landscape administration system client - sysinfo tool
  to get information about the host.
 XB-Python-Version: ${python:Versions}
 
+Package: landscape-common
+Architecture: any
+Depends: landscape-sysinfo (= ${binary:Version})
+Description: A transitional package to landscape-sysinfo.
+
 Package: landscape-client
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},

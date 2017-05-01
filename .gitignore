@@ -8,9 +8,10 @@ debian/*.debhelper.log
 debian/*.substvars
 debian/tmp
 debian/files
+debian/landscape-base
 debian/landscape-client
 debian/landscape-client-base
-debian/landscape-base
+debian/landscape-common
 debian/landscape-sysinfo
 debian/python-landscape-lib
 debian/python3-landscape-lib
