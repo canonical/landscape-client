@@ -2700,6 +2700,28 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             apt_pkg.SELSTATE_DEINSTALL, foo.package._pkg.selected_state)
 
+    def test_mark_auto_remove(self):
+        """If a package is auto_removable, mark_auto_remove marks it."""
+        deb_dir = self.makeDir()
+        self._add_system_package("auto")
+        self._add_system_package("newauto")
+        self._add_system_package("foo", control_fields={"Depends": "newauto"})
+        self.facade.reload_channels()
+        auto, = sorted(self.facade.get_packages_by_name("auto"))
+        auto.package.mark_auto(True)
+        auto.package.mark_install(False)
+        newauto, = sorted(self.facade.get_packages_by_name("newauto"))
+        newauto.package.mark_auto(True)
+
+        self.facade.mark_auto_remove()
+
+        newauto, = sorted(self.facade.get_packages_by_name("newauto"))
+        self.assertTrue(auto.package.is_installed)
+        self.assertTrue(auto.package.is_auto_installed)
+        self.assertTrue(newauto.package.is_installed)
+        self.assertTrue(auto.package.is_auto_installed)
+        self.assertEqual([auto], self.facade._version_removals)
+
     def test_creation_of_key_ring(self):
         """
         Apt on Trusty requires a keyring exist in its directory structure, so
