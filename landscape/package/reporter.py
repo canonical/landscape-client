@@ -350,6 +350,7 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_installed()
         self._store.clear_locked()
         self._store.clear_hash_id_requests()
+        self._store.clear_autoremovable()
 
         return succeed(None)
 
@@ -551,11 +552,13 @@ class PackageReporter(PackageTaskHandler):
         old_available = set(self._store.get_available())
         old_upgrades = set(self._store.get_available_upgrades())
         old_locked = set(self._store.get_locked())
+        old_autoremovable = set(self._store.get_autoremovable())
 
         current_installed = set()
         current_available = set()
         current_upgrades = set()
         current_locked = set()
+        current_autoremovable = set()
         lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
         backports_archive = "{}-backports".format(lsb["code-name"])
 
@@ -583,6 +586,8 @@ class PackageReporter(PackageTaskHandler):
                     current_installed.add(id)
                     if self._facade.is_package_available(package):
                         current_available.add(id)
+                    if self._facade.is_package_autoremovable(package):
+                        current_autoremovable.add(id)
                 else:
                     current_available.add(id)
 
@@ -600,11 +605,13 @@ class PackageReporter(PackageTaskHandler):
         new_available = current_available - old_available
         new_upgrades = current_upgrades - old_upgrades
         new_locked = current_locked - old_locked
+        new_autoremovable = current_autoremovable - old_autoremovable
 
         not_installed = old_installed - current_installed
         not_available = old_available - current_available
         not_upgrades = old_upgrades - current_upgrades
         not_locked = old_locked - current_locked
+        not_autoremovable = old_autoremovable - current_autoremovable
 
         message = {}
         if new_installed:
@@ -619,6 +626,13 @@ class PackageReporter(PackageTaskHandler):
         if new_locked:
             message["locked"] = \
                 list(sequence_to_ranges(sorted(new_locked)))
+
+        if new_autoremovable:
+            message["autoremovable"] = list(
+                sequence_to_ranges(sorted(new_autoremovable)))
+        if not_autoremovable:
+            message["not-autoremovable"] = list(
+                sequence_to_ranges(sorted(not_autoremovable)))
 
         if not_installed:
             message["not-installed"] = \
@@ -641,12 +655,15 @@ class PackageReporter(PackageTaskHandler):
 
         logging.info("Queuing message with changes in known packages: "
                      "%d installed, %d available, %d available upgrades, "
-                     "%d locked, %d not installed, %d not available, "
-                     "%d not available upgrades, %d not locked."
+                     "%d locked, %d autoremovable, %d not installed, "
+                     "%d not available, %d not available upgrades, "
+                     "%d not locked, %d not autoremovable. "
                      % (len(new_installed), len(new_available),
                         len(new_upgrades), len(new_locked),
+                        len(new_autoremovable),
                         len(not_installed), len(not_available),
-                        len(not_upgrades), len(not_locked)))
+                        len(not_upgrades), len(not_locked),
+                        len(not_autoremovable)))
 
         def update_currently_known(result):
             if new_installed:
@@ -657,6 +674,8 @@ class PackageReporter(PackageTaskHandler):
                 self._store.add_available(new_available)
             if new_locked:
                 self._store.add_locked(new_locked)
+            if new_autoremovable:
+                self._store.add_autoremovable(new_autoremovable)
             if not_available:
                 self._store.remove_available(not_available)
             if new_upgrades:
@@ -665,6 +684,8 @@ class PackageReporter(PackageTaskHandler):
                 self._store.remove_available_upgrades(not_upgrades)
             if not_locked:
                 self._store.remove_locked(not_locked)
+            if not_autoremovable:
+                self._store.remove_autoremovable(not_autoremovable)
             # Something has changed wrt the former run, let's update the
             # timestamp and return True.
             stamp_file = self._config.detect_package_changes_stamp

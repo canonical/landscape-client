@@ -85,6 +85,13 @@ class PackageReporterAptTest(LandscapeTest):
         """Make it so that package "name1" is considered installed."""
         self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
 
+    def set_pkg1_autoremovable(self):
+        """Make it so package "name1" is considered auto removable."""
+        self.set_pkg1_installed()
+        self.facade.reload_channels()
+        name1 = sorted(self.facade.get_packages_by_name("name1"))[0]
+        name1.package.mark_auto(True)
+
     def _make_fake_apt_update(self, out="output", err="error", code=0):
         """Create a fake apt-update executable"""
         self.reporter.apt_update_filename = self.makeFile(
@@ -925,6 +932,51 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
+
+    def test_detect_packages_changes_with_autoremovable(self):
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+        self.store.add_installed([1])
+        self.set_pkg1_autoremovable()
+
+        result = self.successResultOf(self.reporter.detect_packages_changes())
+        self.assertTrue(result)
+
+        expected = [{"type": "packages", "autoremovable": [1]}]
+        self.assertMessages(message_store.get_pending_messages(), expected)
+        self.assertEqual([1], self.store.get_autoremovable())
+
+    def test_detect_packages_changes_with_not_autoremovable(self):
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+        self.store.add_autoremovable([1, 2])
+
+        result = self.successResultOf(self.reporter.detect_packages_changes())
+        self.assertTrue(result)
+
+        expected = [{"type": "packages", "not-autoremovable": [1, 2]}]
+        self.assertMessages(message_store.get_pending_messages(), expected)
+        self.assertEqual([], self.store.get_autoremovable())
+
+    def test_detect_packages_changes_with_known_autoremovable(self):
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+        self.store.add_installed([1])
+        self.store.add_autoremovable([1])
+        self.set_pkg1_autoremovable()
+
+        result = self.successResultOf(self.reporter.detect_packages_changes())
+        self.assertFalse(result)
+        self.assertEqual([1], self.store.get_autoremovable())
 
     def test_detect_packages_changes_with_backports(self):
         """
