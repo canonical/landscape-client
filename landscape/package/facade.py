@@ -839,7 +839,7 @@ class AptFacade(object):
         self._version_hold_removals.append(version)
 
     def mark_auto_remove(self):
-        """Mark  for removal packages which are considered auto_removable."""
+        """Mark for removal packages which are considered auto_removable."""
         for version in self.get_packages():
             if version.package.is_auto_removable:
                 self.mark_remove(version)
