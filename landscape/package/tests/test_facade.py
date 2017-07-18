@@ -891,7 +891,6 @@ class AptFacadeTest(LandscapeTest):
         self.assertTrue(self.facade.is_package_autoremovable(dep))
         self.assertFalse(self.facade.is_package_autoremovable(newdep))
 
-
     def test_is_package_available_in_channel_not_installed(self):
         """
         A package is considered available if the package is in a
@@ -2727,7 +2726,6 @@ class AptFacadeTest(LandscapeTest):
 
     def test_mark_auto_remove(self):
         """If a package is auto_removable, mark_auto_remove marks it."""
-        deb_dir = self.makeDir()
         self._add_system_package("auto")
         self._add_system_package("newauto")
         self._add_system_package("foo", control_fields={"Depends": "newauto"})
