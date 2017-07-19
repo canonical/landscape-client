@@ -23,7 +23,7 @@ depends3:
 
 .PHONY: pipinstallpythonapt
 pipinstallpythonapt: pipinstallpythonapt_deps
-	$(MAKE) pipinstallpythonapt_default || $(MAKE) pipinstallpythonapt_src_$(UBUNTU_RELEASE)
+	$(MAKE) pipinstallpythonapt_src_$(UBUNTU_RELEASE)
 
 .PHONY: pipinstallpythonapt_deps
 pipinstallpythonapt_deps:
@@ -31,11 +31,11 @@ pipinstallpythonapt_deps:
 	pip install service_identity
 	sudo apt-get -y build-dep python-apt python3-apt
 
-.PHONY: pipinstallpythonapt_default
-pipinstallpythonapt_default:
-	# See: https://code.launchpad.net/ubuntu/+source/python-apt
-	bzr branch lp:ubuntu/$(UBUNTU_RELEASE)/python-apt /tmp/python-apt
-	pip install /tmp/python-apt
+.PHONY: pipinstallpythonapt_src_trusty
+pipinstallpythonapt_src_trusty:
+	# travis-ci uses a now uses a backported version of apt.
+	# This matches the libapt-pkg-dev on those nodes so it compiles.
+	pip install https://launchpad.net/ubuntu/+archive/primary/+files/python-apt_1.1.0~beta1build1.tar.xz
 
 .PHONY: pipinstallpythonapt_src_xenial
 pipinstallpythonapt_src_xenial:
