@@ -35,7 +35,10 @@ pipinstallpythonapt_deps:
 pipinstallpythonapt_src_trusty:
 	# travis-ci uses a now uses a backported version of apt.
 	# This matches the libapt-pkg-dev on those nodes so it compiles.
-	pip install https://launchpad.net/ubuntu/+archive/primary/+files/python-apt_1.1.0~beta1build1.tar.xz
+	wget -O /tmp/python-apt.tar.xz https://launchpad.net/ubuntu/+archive/primary/+files/python-apt_1.1.0~beta1build1.tar.xz
+	# py2.7 does not support .xz
+	xz -dk /tmp/python-apt.tar.xz
+	pip install /tmp/python-apt.tar
 
 .PHONY: pipinstallpythonapt_src_xenial
 pipinstallpythonapt_src_xenial:
