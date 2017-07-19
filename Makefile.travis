@@ -1,0 +1,39 @@
+UBUNTU_RELEASE := $(shell lsb_release -cs)
+
+# We'd use the packaged version, but travis runs python in virtualenv,
+# thus this pip workaround.
+.PHONY: pipinstallpythonapt
+pipinstallpythonapt: pipinstallpythonapt_deps
+	$(MAKE) -f $(lastword $(MAKEFILE_LIST)) pipinstallpythonapt_default || \
+	$(MAKE) -f $(lastword $(MAKEFILE_LIST)) pipinstallpythonapt_src_$(UBUNTU_RELEASE)
+
+.PHONY: pipinstallpythonapt_deps
+pipinstallpythonapt_deps:
+	pip install pyopenssl
+	pip install service_identity
+	sudo apt-get -y build-dep python-apt python3-apt
+	sudo apt-get -y install libapt-pkg-dev
+
+.PHONY: pipinstallpythonapt_default
+pipinstallpythonapt_default:
+	# See: https://code.launchpad.net/ubuntu/+source/python-apt
+	bzr branch lp:ubuntu/$(UBUNTU_RELEASE)/python-apt /tmp/python-apt
+	pip install /tmp/python-apt
+
+.PHONY: pipinstallpythonapt_src
+pipinstallpythonapt_src:
+	wget -O /tmp/python-apt_$(PYAPT_VER).tar.xz https://launchpad.net/ubuntu/+archive/primary/+files/python-apt_$(PYAPT_VER).tar.xz
+	# pip2.7 does not support .xz
+	xz -dfk /tmp/python-apt_$(PYAPT_VER).tar.xz
+	pip install /tmp/python-apt_$(PYAPT_VER).tar
+
+.PHONY: pipinstallpythonapt_src_xenial
+pipinstallpythonapt_src_xenial: PYAPT_VER = 1.1.0~beta1build1
+pipinstallpythonapt_src_xenial: pipinstallpythonapt_src
+
+# travis-ci nodes use a backported version of apt incompatible with
+# the version of python-apt on trusty.
+# This version matches the libapt-pkg on travis nodes so it compiles.
+.PHONY: pipinstallpythonapt_src_trusty
+pipinstallpythonapt_src_trusty: PYAPT_VER = 1.1.0~beta1build1
+pipinstallpythonapt_src_trusty: pipinstallpythonapt_src

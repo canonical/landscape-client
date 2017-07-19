@@ -21,29 +21,6 @@ depends2:
 depends3:
 	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-passlib
 
-.PHONY: pipinstallpythonapt
-pipinstallpythonapt: pipinstallpythonapt_deps
-	$(MAKE) pipinstallpythonapt_src_$(UBUNTU_RELEASE)
-
-.PHONY: pipinstallpythonapt_deps
-pipinstallpythonapt_deps:
-	pip install pyopenssl
-	pip install service_identity
-	sudo apt-get -y build-dep python-apt python3-apt
-
-.PHONY: pipinstallpythonapt_src_trusty
-pipinstallpythonapt_src_trusty:
-	# travis-ci uses a now uses a backported version of apt.
-	# This matches the libapt-pkg-dev on those nodes so it compiles.
-	wget -O /tmp/python-apt.tar.xz https://launchpad.net/ubuntu/+archive/primary/+files/python-apt_1.1.0~beta1build1.tar.xz
-	# py2.7 does not support .xz
-	xz -dk /tmp/python-apt.tar.xz
-	pip install /tmp/python-apt.tar
-
-.PHONY: pipinstallpythonapt_src_xenial
-pipinstallpythonapt_src_xenial:
-	pip install https://launchpad.net/ubuntu/+archive/primary/+files/python-apt_1.1.0~beta1build1.tar.xz
-
 all: build
 
 .PHONY: build
