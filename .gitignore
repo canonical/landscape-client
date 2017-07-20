@@ -23,3 +23,5 @@ apt-update/apt-update
 docs
 tags
 _last_py2_res
+*.pyc
+.cache
