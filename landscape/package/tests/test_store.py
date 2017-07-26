@@ -271,6 +271,23 @@ class PackageStoreTest(LandscapeTest):
         self.store1.clear_available_upgrades()
         self.assertEqual(self.store2.get_available_upgrades(), [])
 
+    def test_add_and_get_autoremovable(self):
+        self.store1.add_autoremovable([1, 2])
+        value = self.store1.get_autoremovable()
+        self.assertEqual([1, 2], value)
+
+    def test_clear_autoremovable(self):
+        self.store1.add_autoremovable([1, 2])
+        self.store1.clear_autoremovable()
+        value = self.store1.get_autoremovable()
+        self.assertEqual([], value)
+
+    def test_remove_autoremovable(self):
+        self.store1.add_autoremovable([1, 2, 3, 4])
+        self.store1.remove_autoremovable([2, 4, 5])
+        value = self.store1.get_autoremovable()
+        self.assertEqual([1, 3], value)
+
     def test_add_and_get_installed_packages(self):
         self.store1.add_installed([1, 2])
         self.assertEqual(self.store2.get_installed(), [1, 2])
@@ -335,6 +352,9 @@ class PackageStoreTest(LandscapeTest):
         database = sqlite3.connect(filename)
         cursor = database.cursor()
         cursor.execute("pragma table_info(locked)")
+        result = cursor.fetchall()
+        self.assertTrue(len(result) > 0)
+        cursor.execute("pragma table_info(autoremovable)")
         result = cursor.fetchall()
         self.assertTrue(len(result) > 0)
 

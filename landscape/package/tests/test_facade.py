@@ -867,6 +867,30 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual("version2-release2", version2.version)
         self.assertFalse(self.facade.is_package_installed(version2))
 
+    def test_is_package_autoremovable(self):
+        """
+        Check that auto packages without dependencies on them are correctly
+        detected as being autoremovable.
+        """
+        self._add_system_package("dep")
+        self._add_system_package("newdep")
+        self._add_system_package("foo", control_fields={"Depends": "newdep"})
+        self.facade.reload_channels()
+        dep, = sorted(self.facade.get_packages_by_name("dep"))
+        dep.package.mark_auto(True)
+        # dep should not be explicitely installed
+        dep.package.mark_install(False)
+        newdep, = sorted(self.facade.get_packages_by_name("newdep"))
+        newdep, = sorted(self.facade.get_packages_by_name("newdep"))
+        newdep.package.mark_auto(True)
+        self.assertTrue(dep.package.is_installed)
+        self.assertTrue(dep.package.is_auto_installed)
+        self.assertTrue(newdep.package.is_installed)
+        self.assertTrue(dep.package.is_auto_installed)
+
+        self.assertTrue(self.facade.is_package_autoremovable(dep))
+        self.assertFalse(self.facade.is_package_autoremovable(newdep))
+
     def test_is_package_available_in_channel_not_installed(self):
         """
         A package is considered available if the package is in a

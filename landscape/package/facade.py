@@ -425,6 +425,10 @@ class AptFacade(object):
             return False
         return version > version.package.installed
 
+    def is_package_autoremovable(self, version):
+        """Was the package auto-installed, but isn't required anymore?"""
+        return version.package.is_auto_removable
+
     def _is_main_architecture(self, package):
         """Is the package for the facade's main architecture?"""
         # package.name includes the architecture, if it's for a foreign
