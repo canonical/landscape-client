@@ -90,6 +90,8 @@ class PackageReporterAptTest(LandscapeTest):
         self.set_pkg1_installed()
         self.facade.reload_channels()
         name1 = sorted(self.facade.get_packages_by_name("name1"))[0]
+        # Since no other package depends on this, all that's needed
+        # to have it autoremovable is to mark it as installed+auto.
         name1.package.mark_auto(True)
 
     def _make_fake_apt_update(self, out="output", err="error", code=0):
@@ -955,6 +957,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
+        # We don't care about checking other state changes in this test.
+        # In reality the package would also be installed, available, etc.
         self.store.add_autoremovable([1, 2])
 
         result = self.successResultOf(self.reporter.detect_packages_changes())
