@@ -192,14 +192,19 @@ class GotErrorTests(unittest.TestCase):
             def getTraceback(self):
                 return "traceback"
 
+        results = []
         printed = []
 
         def faux_print(text, file):
             printed.append((text, file))
 
-        with self.assertRaises(SystemExit):
-            got_error(FauxFailure(), print=faux_print)
+        mock_reactor = mock.Mock()
 
+        got_error(FauxFailure(), reactor=mock_reactor,
+                  add_result=results.append, print=faux_print)
+        mock_reactor.stop.assert_called_once_with()
+
+        self.assertIsInstance(results[0], SystemExit)
         self.assertEqual([('traceback', sys.stderr)], printed)
 
 
@@ -1931,7 +1936,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.assertTrue(1, len(connector.connection.errbacks))
         self.assertEqual(
             'got_error',
-            connector.connection.errbacks[0].__name__)
+            connector.connection.errbacks[0].func.__name__)
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
 
