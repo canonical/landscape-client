@@ -650,10 +650,12 @@ def got_connection(add_result, connector, reactor, remote):
     return results
 
 
-def got_error(failure, print=print):
-    """...from broker."""
+def got_error(failure, reactor, add_result, print=print):
+    """Handle errors contacting broker."""
     print(failure.getTraceback(), file=sys.stderr)
-    raise SystemExit
+    # Can't just raise SystemExit; it would be ignored by the reactor.
+    add_result(SystemExit())
+    reactor.stop()
 
 
 def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
@@ -682,6 +684,7 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
     """
     if reactor is None:
         reactor = LandscapeReactor()
+
     if results is None:
         results = []
     add_result = results.append
@@ -690,12 +693,16 @@ def register(config, reactor=None, connector_factory=RemoteBrokerConnector,
     connection = connector.connect(max_retries=max_retries, quiet=True)
     connection.addCallback(
         partial(got_connection, add_result, connector, reactor))
-    connection.addErrback(got_error)
+    connection.addErrback(
+        partial(got_error, reactor=reactor, add_result=add_result))
     reactor.run()
 
     assert len(results) == 1, "We expect exactly one result."
     # Results will be things like "success" or "ssl-error".
     result = results[0]
+
+    if isinstance(result, SystemExit):
+        raise result
 
     # If there was an error and the caller requested that errors be reported
     # to the on_error callable, then do so.
