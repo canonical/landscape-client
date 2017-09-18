@@ -1273,9 +1273,13 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
                 self.assertFalse(warning_mock.called)
-                debug_mock.assert_called_once_with(
-                    "'%s' exited with status 0 (out='output', err='error')" %
-                    self.reporter.apt_update_filename)
+                debug_mock.assert_has_calls(
+                    mock.call(
+                        "Checking if ubuntu-release-upgrader is running."),
+                    mock.call(
+                        "'%s' exited with status 0 (out='output', err='error')"
+                        % self.reporter.apt_update_filename)
+                )
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
