@@ -1576,7 +1576,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    ("'%s' didn't run, update interval has not passed"
+                    ("'%s' didn't run, conditions not met"
                      ) % self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
@@ -1617,7 +1617,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    ("'%s' didn't run, update interval has not passed"
+                    ("'%s' didn't run, conditions not met"
                      ) % self.reporter.apt_update_filename)
             result.addCallback(callback)
             self.reactor.advance(0)
