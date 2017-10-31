@@ -8,6 +8,7 @@ import time
 import os
 import glob
 import apt_pkg
+import re
 
 from twisted.internet.defer import (
     Deferred, succeed, inlineCallbacks, returnValue)
@@ -28,6 +29,9 @@ from landscape.package.store import UnknownHashIDRequest, FakePackageStore
 HASH_ID_REQUEST_TIMEOUT = 7200
 MAX_UNKNOWN_HASHES_PER_REQUEST = 500
 LOCK_RETRY_DELAYS = [0, 20, 40]
+PYTHON_BIN = "/usr/bin/python3"
+RELEASE_UPGRADER_PATTERN = "/tmp/ubuntu-release-upgrader-"
+UID_ROOT = "0"
 
 
 class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
@@ -207,6 +211,51 @@ class PackageReporter(PackageTaskHandler):
         last_update = os.stat(stamp).st_mtime
         return (last_update + interval) < time.time()
 
+    def _is_release_upgrader_running(self):
+        """Detect whether ubuntu-release-upgrader is running.
+
+        This is done by iterating the /proc tree (to avoid external
+        dependencies) and checkign the cmdline and the uid of the process.
+        The assumption is that ubuntu-release-upgrader is something that:
+            * is run by a python interpreter
+            * its first argument starts with '/tmp/ubuntu-release-upgrader-'
+            * is executed by root (effective uid == 0)"""
+        logging.debug("Checking if ubuntu-release-upgrader is running.")
+
+        for cmdline in glob.glob("/proc/*/cmdline"):
+            base = os.path.dirname(cmdline)
+            try:
+                with open(cmdline) as fd:
+                    read = fd.read()
+
+                pid = os.path.basename(os.path.dirname(cmdline))
+
+                cmdline = [f for f in read.split("\x00") if f]
+                if len(cmdline) <= 1:
+                    continue
+
+                with open(os.path.join(base, "status")) as fd:
+                    read = fd.read()
+
+                pattern = re.compile('^Uid\:(.*)$',
+                                     re.VERBOSE | re.MULTILINE)
+
+                for pattern in pattern.finditer(read):
+                    uid = pattern.groups()[0].split("\t")[1]
+            except IOError:
+                continue
+
+            (executable, args) = (cmdline[0], cmdline[1:])
+
+            if (executable.startswith(PYTHON_BIN) and
+                    any(x.startswith(RELEASE_UPGRADER_PATTERN)
+                        for x in args) and
+                    uid == UID_ROOT):
+                logging.info("Found ubuntu-release-upgrader running (pid: %s)"
+                             % (pid))
+                return True
+        return False
+
     @inlineCallbacks
     def run_apt_update(self):
         """
@@ -218,7 +267,8 @@ class PackageReporter(PackageTaskHandler):
         if (self._config.force_apt_update or
             self._apt_sources_have_changed() or
             self._apt_update_timeout_expired(self._config.apt_update_interval)
-            ):
+            ) and \
+           not self._is_release_upgrader_running():
 
             accepted_apt_errors = (
                 "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
@@ -271,7 +321,7 @@ class PackageReporter(PackageTaskHandler):
                     code, err)
                 yield returnValue((out, err, code))
         else:
-            logging.debug("'%s' didn't run, update interval has not passed" %
+            logging.debug("'%s' didn't run, conditions not met" %
                           self.apt_update_filename)
             yield returnValue(("", "", 0))
 
