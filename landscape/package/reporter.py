@@ -230,8 +230,7 @@ class PackageReporter(PackageTaskHandler):
 
                 pid = os.path.basename(os.path.dirname(cmdline))
 
-                cmdline = [f for f in filter(lambda x: x != '',
-                                             read.split("\x00"))]
+                cmdline = [f for f in read.split("\x00") if f]
                 if len(cmdline) <= 1:
                     continue
 
@@ -242,15 +241,16 @@ class PackageReporter(PackageTaskHandler):
                                      re.VERBOSE | re.MULTILINE)
 
                 for pattern in pattern.finditer(read):
-                    uuid = pattern.groups()[0].split("\t")[1]
+                    uid = pattern.groups()[0].split("\t")[1]
             except IOError:
                 continue
 
             (executable, args) = (cmdline[0], cmdline[1:])
 
-            if (PYTHON_BIN in executable and
-                    any(RELEASE_UPGRADER_PATTERN in x for x in args) and
-                    uuid == UID_ROOT):
+            if (executable.startswith(PYTHON_BIN) and
+                    any(x.startswith(RELEASE_UPGRADER_PATTERN)
+                        for x in args) and
+                    uid == UID_ROOT):
                 logging.info("Found ubuntu-release-upgrader running (pid: %s)"
                              % (pid))
                 return True
