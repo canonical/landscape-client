@@ -4,6 +4,7 @@ import time
 import apt_pkg
 import mock
 import shutil
+import subprocess
 
 from twisted.internet.defer import Deferred, succeed, fail, inlineCallbacks
 from twisted.internet import reactor
@@ -1887,6 +1888,24 @@ class PackageReporterAptTest(LandscapeTest):
         os.remove(test_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
+
+    def test_is_release_upgrader_running(self):
+        """
+        The L{PackageReporter._is_release_upgrader_running} method should
+        return True if the simle heuristics detects a release upgrader
+        running concurrently.
+        """
+        # no 'release upgrader running'
+        self.assertFalse(self.reporter._is_release_upgrader_running())
+        # fake 'release ugrader' running with non-root UID
+        p = subprocess.Popen([reporter.PYTHON_BIN, '-c',
+                              'import time; time.sleep(10)',
+                              reporter.RELEASE_UPGRADER_PATTERN + "12345"])
+        self.assertFalse(self.reporter._is_release_upgrader_running())
+        # fake 'release upgrader' running
+        reporter.UID_ROOT = "%d" % os.getuid()
+        self.assertTrue(self.reporter._is_release_upgrader_running())
+        p.terminate()
 
 
 class GlobalPackageReporterAptTest(LandscapeTest):
