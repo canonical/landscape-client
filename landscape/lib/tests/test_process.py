@@ -1,14 +1,13 @@
-import unittest
 import mock
 import os
+import unittest
 
-from landscape.tests.helpers import LandscapeTest
-
+from landscape.lib import testing
 from landscape.lib.process import calculate_pcpu, ProcessInformation
 from landscape.lib.fs import create_text_file
 
 
-class ProcessInfoTest(LandscapeTest):
+class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
 
     def setUp(self):
         super(ProcessInfoTest, self).setUp()

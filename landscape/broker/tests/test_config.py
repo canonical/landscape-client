@@ -1,7 +1,8 @@
 import os
 
 from landscape.broker.config import BrokerConfiguration
-from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
+from landscape.lib.testing import EnvironSaverHelper
+from landscape.tests.helpers import LandscapeTest
 
 
 class ConfigurationTests(LandscapeTest):

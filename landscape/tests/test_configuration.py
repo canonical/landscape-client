@@ -26,9 +26,9 @@ from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
+from landscape.lib.testing import EnvironSaverHelper
 from landscape.sysvconfig import ProcessError
-from landscape.tests.helpers import FakeBrokerServiceHelper
-from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
+from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
 
 
 class LandscapeConfigurationTest(LandscapeTest):

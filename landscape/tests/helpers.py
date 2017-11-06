@@ -1,8 +1,5 @@
 import pprint
-import os
 import unittest
-
-#from twisted.trial.unittest import TestCase
 
 from landscape.tests.subunit import run_isolated
 from landscape.watchdog import bootstrap_list
@@ -22,13 +19,6 @@ from landscape.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
 from landscape.manager.config import ManagerConfiguration
 
 from landscape.lib import testing
-from landscape.lib.testing import (  # NOQA
-        StubProcessFactory, DummyProcess,
-        ErrorHandler, LoggedErrorsError, LogKeeperHelper,
-        EnvironSnapshot, EnvironSaverHelper,
-        MockPopen, StandardIOHelper, ProcessDataBuilder,
-        mock_counter, mock_time,
-        )
 
 
 DEFAULT_ACCEPTED_TYPES = [
@@ -84,15 +74,7 @@ class LandscapeTest(MessageTestCase, testing.TwistedTestCase,
 
         The possible .old persist file is cleaned up after the test.
         """
-        persist_filename = self.makeFile(*args, **kwargs)
-
-        def remove_saved_persist():
-            try:
-                os.remove(persist_filename + ".old")
-            except OSError:
-                pass
-        self.addCleanup(remove_saved_persist)
-        return persist_filename
+        return self.makeFile(*args, backupsuffix=".old", **kwargs)
 
 
 class LandscapeIsolatedTest(LandscapeTest):

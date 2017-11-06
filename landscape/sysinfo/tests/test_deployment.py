@@ -7,6 +7,7 @@ from logging import getLogger
 from twisted.internet.defer import Deferred
 
 from landscape.lib.fs import create_text_file
+from landscape.lib.testing import StandardIOHelper
 
 from landscape.sysinfo.deployment import (
     SysInfoConfiguration, ALL_PLUGINS, run, setup_logging,
@@ -15,7 +16,7 @@ from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
 
-from landscape.tests.helpers import LandscapeTest, StandardIOHelper
+from landscape.tests.helpers import LandscapeTest
 
 
 class DeploymentTest(LandscapeTest):

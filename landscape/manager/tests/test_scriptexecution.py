@@ -13,13 +13,13 @@ from twisted.python.failure import Failure
 from landscape import VERSION
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.persist import Persist
+from landscape.lib.testing import StubProcessFactory, DummyProcess
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
     UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError,
     FETCH_ATTACHMENTS_FAILED_RESULT)
 from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.tests.helpers import (
-    LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
+from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
 def get_default_environment():

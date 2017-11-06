@@ -8,9 +8,9 @@ from landscape.package.changer import PackageChanger
 from landscape.package.releaseupgrader import ReleaseUpgrader
 from landscape.package.store import PackageStore
 
+from landscape.lib.testing import EnvironSaverHelper
 from landscape.manager.packagemanager import PackageManager
-from landscape.tests.helpers import (
-    LandscapeTest, EnvironSaverHelper, ManagerHelper)
+from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class PackageManagerTest(LandscapeTest):

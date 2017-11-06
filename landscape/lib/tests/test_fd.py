@@ -1,13 +1,14 @@
 """Tests for L{landscape.lib.fd}"""
 
+import unittest
+
 import resource
 from mock import patch, call
 
 from landscape.lib.fd import clean_fds
-from landscape.tests.helpers import LandscapeTest
 
 
-class CleanFDsTests(LandscapeTest):
+class CleanFDsTests(unittest.TestCase):
     """Tests for L{clean_fds}."""
 
     def mock_getrlimit(self, limit):

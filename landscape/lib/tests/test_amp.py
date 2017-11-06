@@ -1,14 +1,16 @@
+import unittest
+
 from twisted.internet import reactor
 from twisted.internet.error import ConnectError, ConnectionDone
 from twisted.internet.task import Clock
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
+from landscape.lib import testing
 from landscape.lib.amp import (
     MethodCallError, MethodCallServerProtocol, MethodCallClientProtocol,
     MethodCallServerFactory, MethodCallClientFactory, RemoteObject,
     MethodCallSender)
-from landscape.tests.helpers import LandscapeTest
 
 
 class FakeTransport(object):
@@ -92,7 +94,11 @@ class DummyObject(object):
     method = None
 
 
-class MethodCallTest(LandscapeTest):
+class BaseTestCase(testing.TwistedTestCase, unittest.TestCase):
+    pass
+
+
+class MethodCallTest(BaseTestCase):
 
     def setUp(self):
         super(MethodCallTest, self).setUp()
@@ -372,7 +378,7 @@ class MethodCallTest(LandscapeTest):
         failure.trap(MethodCallError)
 
 
-class RemoteObjectTest(LandscapeTest):
+class RemoteObjectTest(BaseTestCase):
 
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
@@ -479,7 +485,7 @@ class RemoteObjectTest(LandscapeTest):
         self.assertEqual("Forbidden method 'method'", str(failure.value))
 
 
-class MethodCallClientFactoryTest(LandscapeTest):
+class MethodCallClientFactoryTest(BaseTestCase):
 
     def setUp(self):
         super(MethodCallClientFactoryTest, self).setUp()
@@ -573,7 +579,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
         self.assertIs(None, self.successResultOf(deferred))
 
 
-class MethodCallFunctionalTest(LandscapeTest):
+class MethodCallFunctionalTest(BaseTestCase):
 
     def setUp(self):
         super(MethodCallFunctionalTest, self).setUp()

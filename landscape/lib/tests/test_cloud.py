@@ -1,14 +1,17 @@
+import unittest
+
+from landscape.lib import testing
 from landscape.lib.cloud import (
     EC2_API, _fetch_ec2_item, fetch_ec2_meta_data, MAX_LENGTH)
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
-from landscape.tests.helpers import LandscapeTest
 from twisted.internet.defer import succeed, fail
 
 
-class CloudTest(LandscapeTest):
+class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
+                unittest.TestCase):
 
     def setUp(self):
-        LandscapeTest.setUp(self)
+        super(CloudTest, self).setUp()
         self.query_results = {}
         self.kwargs = {}
 

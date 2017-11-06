@@ -7,12 +7,13 @@ import os.path
 import sys
 
 from landscape.lib.fs import read_text_file, create_text_file
+from landscape.lib.testing import LogKeeperHelper
 
 from landscape.deployment import (
     BaseConfiguration, Configuration, get_versioned_persist, get_bindir)
 from landscape.manager.config import ManagerConfiguration
 
-from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
+from landscape.tests.helpers import LandscapeTest
 
 
 class BabbleConfiguration(Configuration):

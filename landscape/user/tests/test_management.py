@@ -1,7 +1,8 @@
+from landscape.lib.testing import MockPopen
 from landscape.user.management import UserManagement, UserManagementError
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.user.provider import UserNotFoundError, GroupNotFoundError
-from landscape.tests.helpers import LandscapeTest, MockPopen
+from landscape.tests.helpers import LandscapeTest
 from passlib.hash import md5_crypt
 
 

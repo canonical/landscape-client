@@ -1,10 +1,15 @@
 import os
+import unittest
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.lib import testing
 from landscape.lib.vm_info import get_vm_info, get_container_info
 
 
-class GetVMInfoTest(LandscapeTest):
+class BaseTestCase(testing.FSTestCase, unittest.TestCase):
+    pass
+
+
+class GetVMInfoTest(BaseTestCase):
 
     def setUp(self):
         super(GetVMInfoTest, self).setUp()
@@ -141,7 +146,7 @@ class GetVMInfoTest(LandscapeTest):
         self.assertEqual(b"", get_vm_info(root_path=self.root_path))
 
 
-class GetContainerInfoTest(LandscapeTest):
+class GetContainerInfoTest(BaseTestCase):
 
     def setUp(self):
         super(GetContainerInfoTest, self).setUp()

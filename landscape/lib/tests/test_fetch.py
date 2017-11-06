@@ -1,15 +1,16 @@
 import os
 from threading import local
+import unittest
 
 import pycurl
 
 from twisted.internet.defer import FirstError
 from twisted.python.compat import unicode
 
+from landscape.lib import testing
 from landscape.lib.fetch import (
     fetch, fetch_async, fetch_many_async, fetch_to_files,
     url_to_filename, HTTPCodeError, PyCurlError)
-from landscape.tests.helpers import LandscapeTest
 
 
 class CurlStub(object):
@@ -91,7 +92,8 @@ class Any(object):
         return True
 
 
-class FetchTest(LandscapeTest):
+class FetchTest(testing.FSTestCase, testing.TwistedTestCase,
+                unittest.TestCase):
 
     def test_basic(self):
         curl = CurlStub(b"result")

@@ -5,9 +5,9 @@ from twisted.internet.defer import Deferred
 
 from landscape.package.store import PackageStore
 
+from landscape.lib.testing import EnvironSaverHelper
 from landscape.monitor.packagemonitor import PackageMonitor
-from landscape.tests.helpers import (
-    LandscapeTest, EnvironSaverHelper, MonitorHelper)
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class PackageMonitorTest(LandscapeTest):

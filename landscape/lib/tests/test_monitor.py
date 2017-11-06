@@ -1,10 +1,12 @@
+import unittest
+
+from landscape.lib import testing
 from landscape.lib.monitor import (
     Timer, Monitor, BurstMonitor, CoverageMonitor, FrequencyMonitor)
 from landscape.reactor import FakeReactor
-from landscape.tests.helpers import LandscapeTest
 
 
-class ReactorHavingTest(LandscapeTest):
+class ReactorHavingTest(testing.HelperTestCase, unittest.TestCase):
     def setUp(self):
         super(ReactorHavingTest, self).setUp()
         self.reactor = FakeReactor()

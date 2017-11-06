@@ -9,11 +9,11 @@ from twisted.internet.defer import succeed, fail, Deferred
 
 from landscape.lib.gpg import InvalidGPGSignature
 from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.testing import LogKeeperHelper, EnvironSaverHelper
 from landscape.package.store import PackageStore
 from landscape.package.releaseupgrader import (
     ReleaseUpgrader, ReleaseUpgraderConfiguration, main)
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, LogKeeperHelper, EnvironSaverHelper)
+from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.manager.manager import SUCCEEDED, FAILED
 
 

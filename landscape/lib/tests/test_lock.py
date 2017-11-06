@@ -1,12 +1,12 @@
 import time
 import os
+import unittest
 
-from landscape.tests.helpers import LandscapeTest
-
+from landscape.lib import testing
 from landscape.lib.lock import lock_path, LockError
 
 
-class LockTest(LandscapeTest):
+class LockTest(testing.FSTestCase, unittest.TestCase):
 
     def setUp(self):
         super(LockTest, self).setUp()

@@ -1,13 +1,14 @@
-import pprint
 import os
+import pprint
+import unittest
 
+from landscape.lib import testing
 from landscape.lib.persist import (
     path_string_to_tuple, path_tuple_to_string, Persist, RootedPersist,
     PickleBackend, PersistError, PersistReadOnlyError)
-from landscape.tests.helpers import LandscapeTest
 
 
-class PersistHelpersTest(LandscapeTest):
+class PersistHelpersTest(unittest.TestCase):
 
     paths = [
         ("ab", ("ab",)),
@@ -32,7 +33,7 @@ class PersistHelpersTest(LandscapeTest):
             self.assertEqual(path_tuple_to_string(path_tuple), path_string)
 
 
-class BasePersistTest(LandscapeTest):
+class BasePersistTest(unittest.TestCase):
 
     set_items = [
         ("ab", 1),
@@ -103,12 +104,12 @@ class BasePersistTest(LandscapeTest):
                  }
 
     def setUp(self):
-        LandscapeTest.setUp(self)
+        super(BasePersistTest, self).setUp()
         self.persist = self.build_persist()
 
     def tearDown(self):
         del self.persist
-        LandscapeTest.tearDown(self)
+        super(BasePersistTest, self).tearDown()
 
     def build_persist(self, *args, **kwargs):
         return Persist(*args, **kwargs)
@@ -275,7 +276,10 @@ class GeneralPersistTest(BasePersistTest):
         self.assertEqual(self.persist.get("my-module.option"), 1)
 
 
-class SaveLoadPersistTest(BasePersistTest):
+class SaveLoadPersistTest(testing.FSTestCase, BasePersistTest):
+
+    def makePersistFile(self, *args, **kwargs):
+        return self.makeFile(*args, backupsuffix=".old", **kwargs)
 
     def test_readonly(self):
         self.assertFalse(self.persist.readonly)

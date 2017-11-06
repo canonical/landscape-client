@@ -5,8 +5,9 @@ import tempfile
 from twisted.python.compat import StringType as basestring
 from twisted.python.compat import long
 
+from landscape.lib.testing import mock_counter
 from landscape.monitor.mountinfo import MountInfo
-from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 
 mb = (lambda x: x * 1024 * 1024)

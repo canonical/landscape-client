@@ -1,9 +1,10 @@
-from landscape.tests.helpers import LandscapeTest
+import unittest
 
+from landscape.lib import testing
 from landscape.lib.lsb_release import parse_lsb_release
 
 
-class LsbReleaseTest(LandscapeTest):
+class LsbReleaseTest(testing.FSTestCase, unittest.TestCase):
 
     def test_parse_lsb_release(self):
         """

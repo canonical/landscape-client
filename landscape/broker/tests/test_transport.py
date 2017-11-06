@@ -5,8 +5,9 @@ from landscape import VERSION
 from landscape.broker.transport import HTTPTransport
 from landscape.lib import bpickle
 from landscape.lib.fetch import PyCurlError
+from landscape.lib.testing import LogKeeperHelper
 
-from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
+from landscape.tests.helpers import LandscapeTest
 
 from twisted.web import server, resource
 from twisted.internet import reactor

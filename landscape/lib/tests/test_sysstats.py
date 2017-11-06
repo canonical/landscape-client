@@ -1,9 +1,10 @@
 import os
 import re
+import unittest
 
+from landscape.lib import testing
 from landscape.lib.sysstats import (
     MemoryStats, CommandError, get_logged_in_users, get_thermal_zones)
-from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 
 
 SAMPLE_MEMORY_INFO = """
@@ -33,7 +34,12 @@ VmallocChunk:   510252 kB
 """
 
 
-class MemoryStatsTest(LandscapeTest):
+class BaseTestCase(testing.TwistedTestCase, testing.FSTestCase,
+                   unittest.TestCase):
+    pass
+
+
+class MemoryStatsTest(BaseTestCase):
 
     def test_get_memory_info(self):
         filename = self.makeFile(SAMPLE_MEMORY_INFO)
@@ -63,9 +69,9 @@ class MemoryStatsTest(LandscapeTest):
         self.assertEqual(type(memstats.free_swap_percentage), float)
 
 
-class FakeWhoQTest(LandscapeTest):
+class FakeWhoQTest(testing.HelperTestCase, BaseTestCase):
 
-    helpers = [EnvironSaverHelper]
+    helpers = [testing.EnvironSaverHelper]
 
     def fake_who(self, users):
         dirname = self.makeDir()
@@ -116,7 +122,7 @@ class LoggedInUsersTest(FakeWhoQTest):
         return result
 
 
-class ThermalZoneTest(LandscapeTest):
+class ThermalZoneTest(BaseTestCase):
 
     def setUp(self):
         super(ThermalZoneTest, self).setUp()

@@ -63,7 +63,7 @@ class FSTestCase(object):
         self.assertEqual(expected_content, actual_content)
 
     def makeFile(self, content=None, suffix="", prefix="tmp", basename=None,
-                 dirname=None, path=None, mode="w"):
+                 dirname=None, path=None, mode="w", backupsuffix=None):
         """Create a temporary file and return the path to it.
 
         @param content: Initial content for the file.
@@ -87,6 +87,16 @@ class FSTestCase(object):
             with open(path, mode) as file:
                 file.write(content)
         self.addCleanup(self._clean_file, path)
+
+        if backupsuffix:
+
+            def remove_backup():
+                try:
+                    os.remove(path + backupsuffix)
+                except OSError:
+                    pass
+            self.addCleanup(remove_backup)
+
         return path
 
     def _clean_file(self, path):

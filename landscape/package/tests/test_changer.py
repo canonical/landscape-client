@@ -11,6 +11,7 @@ from twisted.internet.error import ProcessTerminated, ProcessDone
 from mock import patch, Mock, call
 
 from landscape.lib.fs import create_text_file, read_text_file, touch_file
+from landscape.lib.testing import StubProcessFactory
 from landscape.package.changer import (
     PackageChanger, main, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -20,8 +21,7 @@ from landscape.package.facade import (
     DependencyError, TransactionError)
 from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, StubProcessFactory)
+from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)

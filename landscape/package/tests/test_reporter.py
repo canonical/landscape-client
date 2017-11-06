@@ -14,6 +14,7 @@ from landscape.lib import bpickle
 from landscape.lib.fs import create_text_file, touch_file
 from landscape.lib.fetch import FetchError
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
+from landscape.lib.testing import EnvironSaverHelper
 from landscape.package.store import (
     PackageStore, UnknownHashIDRequest, FakePackageStore)
 from landscape.package.reporter import (
@@ -24,8 +25,7 @@ from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SimpleRepositoryHelper,
     HASH1, HASH2, HASH3, PKGNAME1)
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
+from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.reactor import FakeReactor
 
 

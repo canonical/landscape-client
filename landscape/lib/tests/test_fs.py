@@ -3,16 +3,20 @@ import codecs
 import os
 from mock import patch
 import time
+import unittest
 
 from twisted.python.compat import long
 
-from landscape.tests.helpers import LandscapeTest
-
+from landscape.lib import testing
 from landscape.lib.fs import append_text_file, append_binary_file, touch_file
 from landscape.lib.fs import read_text_file, read_binary_file
 
 
-class ReadFileTest(LandscapeTest):
+class BaseTestCase(testing.FSTestCase, unittest.TestCase):
+    pass
+
+
+class ReadFileTest(BaseTestCase):
 
     def test_read_binary_file(self):
         """
@@ -87,7 +91,7 @@ class ReadFileTest(LandscapeTest):
         self.assertEqual(read_text_file(path, limit=-100), u"foo ☃ bar")
 
 
-class TouchFileTest(LandscapeTest):
+class TouchFileTest(BaseTestCase):
 
     @patch("os.utime")
     def test_touch_file(self, utime_mock):
@@ -130,7 +134,7 @@ class TouchFileTest(LandscapeTest):
         self.assertFileContent(path, b"")
 
 
-class AppendFileTest(LandscapeTest):
+class AppendFileTest(BaseTestCase):
 
     def test_append_existing_text_file(self):
         """
