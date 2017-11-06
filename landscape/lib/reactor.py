@@ -1,6 +1,8 @@
 """
 Extend the regular Twisted reactor with event-handling features.
 """
+from __future__ import absolute_import
+
 import logging
 import time
 

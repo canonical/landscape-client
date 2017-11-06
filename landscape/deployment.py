@@ -1,12 +1,10 @@
 import os.path
 import sys
 
-from logging import (getLevelName, getLogger,
-                     FileHandler, StreamHandler, Formatter)
-
 from optparse import SUPPRESS_HELP
 
 from landscape import VERSION
+from landscape.lib import logging
 from landscape.lib.config import BaseConfiguration as _BaseConfiguration
 from landscape.lib.persist import Persist
 
@@ -15,19 +13,8 @@ from landscape.upgraders import UPGRADE_MANAGERS
 
 def init_logging(configuration, program_name):
     """Given a basic configuration, set up logging."""
-    handlers = []
-    if not os.path.exists(configuration.log_dir):
-        os.makedirs(configuration.log_dir)
-    log_filename = os.path.join(configuration.log_dir, program_name + ".log")
-    handlers.append(FileHandler(log_filename))
-    if not configuration.quiet:
-        handlers.append(StreamHandler(sys.stdout))
-    getLogger().setLevel(getLevelName(configuration.log_level.upper()))
-    for handler in handlers:
-        getLogger().addHandler(handler)
-        format = ("%(asctime)s %(levelname)-8s [%(threadName)-10s] "
-                  "%(message)s")
-        handler.setFormatter(Formatter(format))
+    logging.init_app_logging(configuration.log_dir, configuration.log_level,
+                             quiet=configuration.quiet)
 
 
 def _is_script(filename=sys.argv[0],
@@ -91,15 +78,7 @@ class Configuration(BaseConfiguration):
               - C{ignore_sigint} (C{False})
         """
         parser = super(Configuration, self).make_parser()
-        parser.add_option("-q", "--quiet", default=False, action="store_true",
-                          help="Do not log to the standard output.")
-        parser.add_option("-l", "--log-dir", metavar="FILE",
-                          help="The directory to write log files to "
-                               "(default: '/var/log/landscape').",
-                          default="/var/log/landscape")
-        parser.add_option("--log-level", default="info",
-                          help="One of debug, info, warning, error or "
-                               "critical.")
+        logging.add_cli_options(parser, logdir="/var/log/landscape")
         parser.add_option("-u", "--url", default=self.DEFAULT_URL,
                           help="The server URL to connect to.")
         parser.add_option("--ping-url",

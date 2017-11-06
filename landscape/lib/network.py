@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 """
 Network introspection utilities using ioctl and the /proc filesystem.
 """
