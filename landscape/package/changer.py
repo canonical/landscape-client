@@ -13,7 +13,7 @@ from landscape.constants import (
     POLICY_STRICT, POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
-from landscape.deployment import get_bindir
+from landscape.lib.config import get_bindir
 from landscape.lib.fs import create_binary_file
 from landscape.lib.log import log_failure
 from landscape.package.reporter import find_reporter_command

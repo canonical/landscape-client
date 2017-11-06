@@ -16,6 +16,7 @@ from landscape.manager.manager import Manager
 
 from landscape.broker.service import BrokerService
 from landscape.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
+from landscape.deployment import BaseConfiguration
 from landscape.manager.config import ManagerConfiguration
 
 from landscape.lib import testing
@@ -63,9 +64,17 @@ class LandscapeTest(MessageTestCase, testing.TwistedTestCase,
 
     def setUp(self):
         testing.TwistedTestCase.setUp(self)
-        return testing.HelperTestCase.setUp(self)
+        result = testing.HelperTestCase.setUp(self)
+
+        self._orig_filenames = BaseConfiguration.default_config_filenames
+        BaseConfiguration.default_config_filenames = (
+                testing.BaseConfiguration.default_config_filenames)
+
+        return result
 
     def tearDown(self):
+        BaseConfiguration.default_config_filenames = self._orig_filenames
+
         testing.TwistedTestCase.tearDown(self)
         testing.HelperTestCase.tearDown(self)
 
