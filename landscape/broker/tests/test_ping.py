@@ -214,11 +214,9 @@ class PingerTest(LandscapeTest):
         self.reactor.advance(30)
 
         log = self.logfile.getvalue()
-        self.assertTrue("Error contacting ping server at "
-                        "http://foo.com/" in log,
-                        log)
-        self.assertTrue("ZeroDivisionError" in log)
-        self.assertTrue("Couldn't fetch page" in log)
+        self.assertIn("Error contacting ping server at http://foo.com/", log)
+        self.assertIn("ZeroDivisionError", log)
+        self.assertIn("Couldn't fetch page", log)
 
     def test_get_interval(self):
         self.assertEqual(self.pinger.get_interval(), 10)
