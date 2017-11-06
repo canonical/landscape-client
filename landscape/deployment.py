@@ -10,6 +10,7 @@ from logging import (getLevelName, getLogger,
 from optparse import OptionParser, SUPPRESS_HELP
 
 from landscape import VERSION
+from landscape.lib import cli
 from landscape.lib.persist import Persist
 
 from landscape.upgraders import UPGRADE_MANAGERS
@@ -84,6 +85,7 @@ class BaseConfiguration(object):
         self._config_file_options = {}
         self._parser = self.make_parser()
         self._command_line_defaults = self._parser.defaults.copy()
+        self._command_line_defaults["config"] = None
         # We don't want them mixed with explicitly given options,
         # otherwise we can't define the precedence properly.
         self._parser.defaults.clear()
@@ -305,14 +307,10 @@ class BaseConfiguration(object):
               - C{data_path} (C{"/var/lib/landscape/client/"})
         """
         parser = OptionParser(version=VERSION)
-        parser.add_option("-c", "--config", metavar="FILE",
-                          help="Use config from this file (any command line "
-                               "options override settings from the file) "
-                               "(default: '/etc/landscape/client.conf').")
-        parser.add_option("-d", "--data-path", metavar="PATH",
-                          default="/var/lib/landscape/client/",
-                          help="The directory to store data files in "
-                               "(default: '/var/lib/landscape/client/').")
+        cli.add_cli_options(parser,
+                            cfgfile="/etc/landscape/client.conf",
+                            datadir="/var/lib/landscape/client/",
+                            )
         return parser
 
     def get_config_filename(self):
