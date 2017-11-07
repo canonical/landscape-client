@@ -1,8 +1,9 @@
 # Copyright 2017 Canonical Limited.  All rights reserved.
 
-from landscape.schema import (
-    Message, KeyDict, Dict, List, Tuple,
+from landscape.lib.schema import (
+    KeyDict, Dict, List, Tuple,
     Bool, Int, Float, Bytes, Unicode, Constant, Any)
+from .message import Message
 
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "CEPH_USAGE", "SWIFT_USAGE", "SWIFT_DEVICE_INFO", "KEYSTONE_TOKEN",
     "JUJU_UNITS_INFO", "CLOUD_METADATA",
     ]
+
 
 # When adding a new schema, which deprecates an older schema, the recommended
 # naming convention, is to name it SCHEMA_NAME_ and the last API version that

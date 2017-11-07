@@ -1,8 +1,8 @@
-from landscape.tests.helpers import LandscapeTest
+import unittest
 
-from landscape.schema import (
+from landscape.lib.schema import (
     InvalidError, Constant, Bool, Int, Float, Bytes, Unicode, List, KeyDict,
-    Dict, Tuple, Any, Message)
+    Dict, Tuple, Any)
 
 from twisted.python.compat import long
 
@@ -12,7 +12,7 @@ class DummySchema(object):
         return "hello!"
 
 
-class BasicTypesTest(LandscapeTest):
+class BasicTypesTest(unittest.TestCase):
 
     def test_any(self):
         schema = Any(Constant(None), Unicode())
@@ -201,49 +201,3 @@ class BasicTypesTest(LandscapeTest):
 
     def test_dict_wrong_type(self):
         self.assertRaises(InvalidError, Dict(Int(), Int()).coerce, 32)
-
-    def test_message(self):
-        """The L{Message} schema should be very similar to KeyDict."""
-        schema = Message("foo", {"data": Int()})
-        self.assertEqual(
-            schema.coerce({"type": "foo", "data": 3}),
-            {"type": "foo", "data": 3})
-
-    def test_message_timestamp(self):
-        """L{Message} schemas should accept C{timestamp} keys."""
-        schema = Message("bar", {})
-        self.assertEqual(
-            schema.coerce({"type": "bar", "timestamp": 0.33}),
-            {"type": "bar", "timestamp": 0.33})
-
-    def test_message_api(self):
-        """L{Message} schemas should accept C{api} keys."""
-        schema = Message("baz", {})
-        self.assertEqual(
-            schema.coerce({"type": "baz", "api": b"whatever"}),
-            {"type": "baz", "api": b"whatever"})
-
-    def test_message_api_None(self):
-        """L{Message} schemas should accept None for C{api}."""
-        schema = Message("baz", {})
-        self.assertEqual(
-            schema.coerce({"type": "baz", "api": None}),
-            {"type": "baz", "api": None})
-
-    def test_message_optional(self):
-        """The L{Message} schema should allow additional optional keys."""
-        schema = Message("foo", {"data": Int()}, optional=["data"])
-        self.assertEqual(schema.coerce({"type": "foo"}), {"type": "foo"})
-
-    def test_message_type(self):
-        """The C{type} should be introspectable on L{Message} objects."""
-        schema = Message("foo", {})
-        self.assertEqual(schema.type, "foo")
-
-    def test_message_with_unknown_fields(self):
-        """
-        The L{Message} schema discards unknown fields when coercing values.
-        """
-        schema = Message("foo", {})
-        self.assertEqual({"type": "foo"},
-                         schema.coerce({"type": "foo", "crap": 123}))

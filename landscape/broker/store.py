@@ -294,7 +294,8 @@ class MessageStore(object):
     def add_schema(self, schema):
         """Add a schema to be applied to messages of the given type.
 
-        The schema must be an instance of L{landscape.schema.Message}.
+        The schema must be an instance of
+        landscape.message_schemas.message.Message.
         """
         api = schema.api if schema.api else self._api
         schemas = self._schemas.setdefault(schema.type, {})

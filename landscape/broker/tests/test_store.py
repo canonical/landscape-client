@@ -5,8 +5,9 @@ import mock
 from twisted.python.compat import intToBytes
 
 from landscape.lib.persist import Persist
+from landscape.lib.schema import InvalidError, Int, Bytes, Unicode
+from landscape.message_schemas.message import Message
 from landscape.broker.store import MessageStore
-from landscape.schema import InvalidError, Message, Int, Bytes, Unicode
 
 from landscape.tests.helpers import LandscapeTest
 
