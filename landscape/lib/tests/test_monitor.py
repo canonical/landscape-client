@@ -3,13 +3,12 @@ import unittest
 from landscape.lib import testing
 from landscape.lib.monitor import (
     Timer, Monitor, BurstMonitor, CoverageMonitor, FrequencyMonitor)
-from landscape.reactor import FakeReactor
 
 
 class ReactorHavingTest(testing.HelperTestCase, unittest.TestCase):
     def setUp(self):
         super(ReactorHavingTest, self).setUp()
-        self.reactor = FakeReactor()
+        self.reactor = testing.FakeReactor()
 
 
 class TimerTest(ReactorHavingTest):

@@ -4,7 +4,7 @@ import signal
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
-from landscape.reactor import FakeReactor
+from landscape.lib.testing import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
 from landscape.tests.helpers import LandscapeTest

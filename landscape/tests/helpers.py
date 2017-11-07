@@ -5,8 +5,7 @@ from landscape.tests.subunit import run_isolated
 from landscape.watchdog import bootstrap_list
 
 from landscape.lib.persist import Persist
-
-from landscape.reactor import FakeReactor
+from landscape.lib.testing import FakeReactor
 
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.transport import FakeTransport

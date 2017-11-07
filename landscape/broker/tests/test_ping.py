@@ -4,7 +4,7 @@ from twisted.internet.defer import fail
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
-from landscape.reactor import FakeReactor
+from landscape.lib.testing import FakeReactor
 from landscape.broker.ping import PingClient, Pinger
 from landscape.broker.tests.helpers import ExchangeHelper
 

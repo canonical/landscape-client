@@ -7,7 +7,7 @@ from landscape.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.broker.service import BrokerService
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.amp import RemoteBrokerConnector
-from landscape.reactor import FakeReactor
+from landscape.lib.testing import FakeReactor
 
 
 class BrokerServiceTest(LandscapeTest):

@@ -1,3 +1,4 @@
+import bisect
 import logging
 import os
 import os.path
@@ -15,10 +16,12 @@ from twisted.python.compat import StringType as basestring
 from twisted.python.compat import _PY3
 from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
+from twisted.internet.error import ConnectError
 
 from landscape.lib.compat import ConfigParser
 from landscape.lib.compat import stringio, cstringio
 from landscape.lib.config import BaseConfiguration
+from landscape.lib.reactor import EventHandlingReactorMixin
 from landscape.lib.sysstats import LoginInfo
 
 
@@ -538,3 +541,189 @@ CapEff: 0000000000000000
         """Remove sample data for the process that matches C{process_id}."""
         process_dir = os.path.join(self._sample_dir, str(process_id))
         shutil.rmtree(process_dir)
+
+
+class FakeReactorID(object):
+
+    def __init__(self, data):
+        self.active = True
+        self._data = data
+
+
+class FakeReactor(EventHandlingReactorMixin):
+    """A fake reactor with the same API of L{LandscapeReactor}.
+
+    This reactor emulates the asychronous interface of L{LandscapeReactor}, but
+    implementing it in a synchronous way, for easier unit-testing.
+
+    Note that the C{listen_unix} method is *not* emulated, but rather inherited
+    blindly from L{UnixReactorMixin}, this means that there's no way to control
+    it in a synchronous way (see the docstring of the mixin). A better approach
+    would be to fake the AMP transport (i.e. fake the twisted abstractions
+    around Unix sockets), and implement a fake version C{listen_unix}, but this
+    hasn't been done yet.
+    """
+    # XXX probably this shouldn't be a class attribute, but we need client-side
+    # FakeReactor instaces to be aware of listening sockets created by
+    # server-side FakeReactor instances.
+    _socket_paths = {}
+
+    def __init__(self):
+        super(FakeReactor, self).__init__()
+        self._current_time = 0
+        self._calls = []
+        self.hosts = {}
+        self._threaded_callbacks = []
+
+        # XXX we need a reference to the Twisted reactor as well because
+        # some tests use it
+        from twisted.internet import reactor
+        self._reactor = reactor
+
+    def time(self):
+        return float(self._current_time)
+
+    def call_later(self, seconds, f, *args, **kwargs):
+        scheduled_time = self._current_time + seconds
+        call = (scheduled_time, f, args, kwargs)
+        self._insort_call(call)
+        return FakeReactorID(call)
+
+    def _insort_call(self, call):
+        # We want to insert the call in the appropriate time slot. A simple
+        # bisect.insort_left() is not sufficient as the comparison of two
+        # methods is not defined in Python 3.
+        times = [c[0] for c in self._calls]
+        index = bisect.bisect_left(times, call[0])
+        self._calls.insert(index, call)
+
+    def call_every(self, seconds, f, *args, **kwargs):
+
+        def fake():
+            # update the call so that cancellation will continue
+            # working with the same ID. And do it *before* the call
+            # because the call might cancel it!
+            call._data = self.call_later(seconds, fake)._data
+            try:
+                f(*args, **kwargs)
+            except:
+                if call.active:
+                    self.cancel_call(call)
+                raise
+        call = self.call_later(seconds, fake)
+        return call
+
+    def cancel_call(self, id):
+        if type(id) is FakeReactorID:
+            if id._data in self._calls:
+                self._calls.remove(id._data)
+            id.active = False
+        else:
+            super(FakeReactor, self).cancel_call(id)
+
+    def call_when_running(self, f):
+        # Just schedule a call that will be kicked by the run() method.
+        self.call_later(0, f)
+
+    def call_in_main(self, f, *args, **kwargs):
+        """Schedule a function for execution in the main thread."""
+        self._threaded_callbacks.append(lambda: f(*args, **kwargs))
+
+    def call_in_thread(self, callback, errback, f, *args, **kwargs):
+        """Emulate L{LandscapeReactor.call_in_thread} without spawning threads.
+
+        Note that running threaded callbacks here doesn't reflect reality,
+        since they're usually run while the main reactor loop is active. At
+        the same time, this is convenient as it means we don't need to run
+        the the real Twisted reactor with to test actions performed on
+        completion of specific events (e.g. L{MessageExchange.exchange} uses
+        call_in_thread to run the HTTP request in a separate thread, because
+        we use libcurl which is blocking). IOW, it's easier to test things
+        synchronously.
+        """
+        self._in_thread(callback, errback, f, args, kwargs)
+        self._run_threaded_callbacks()
+
+    def listen_unix(self, socket_path, factory):
+
+        class FakePort(object):
+
+            def stopListening(oself):
+                self._socket_paths.pop(socket_path)
+
+        self._socket_paths[socket_path] = factory
+        return FakePort()
+
+    def connect_unix(self, path, factory):
+        server = self._socket_paths.get(path)
+        from landscape.lib.tests.test_amp import FakeConnector
+        if server:
+            connector = FakeConnector(factory, server)
+            connector.connect()
+        else:
+            connector = object()  # Fake connector
+            failure = Failure(ConnectError("No such file or directory"))
+            factory.clientConnectionFailed(connector, failure)
+        return connector
+
+    def run(self):
+        """Continuously advance this reactor until reactor.stop() is called."""
+        self.fire("run")
+        self._running = True
+        while self._running:
+            self.advance(self._calls[0][0])
+        self.fire("stop")
+
+    def stop(self):
+        self._running = False
+
+    def advance(self, seconds):
+        """Advance this reactor C{seconds} into the future.
+
+        This method is not part of the L{LandscapeReactor} API and is specific
+        to L{FakeReactor}. It's meant to be used only in unit tests for
+        advancing time and triggering the relevant scheduled calls (see
+        also C{call_later} and C{call_every}).
+        """
+        while (self._calls and
+               self._calls[0][0] <= self._current_time + seconds):
+            call = self._calls.pop(0)
+            # If we find a call within the time we're advancing,
+            # before calling it, let's advance the time *just* to
+            # when that call is expecting to be run, so that if it
+            # schedules any calls itself they will be relative to
+            # the correct time.
+            seconds -= call[0] - self._current_time
+            self._current_time = call[0]
+            try:
+                call[1](*call[2], **call[3])
+            except Exception as e:
+                logging.exception(e)
+        self._current_time += seconds
+
+    def _in_thread(self, callback, errback, f, args, kwargs):
+        try:
+            result = f(*args, **kwargs)
+        except Exception as e:
+            exc_info = sys.exc_info()
+            if errback is None:
+                self.call_in_main(logging.error, e, exc_info=exc_info)
+            else:
+                self.call_in_main(errback, *exc_info)
+        else:
+            if callback:
+                self.call_in_main(callback, result)
+
+    def _run_threaded_callbacks(self):
+        while self._threaded_callbacks:
+            try:
+                self._threaded_callbacks.pop(0)()
+            except Exception as e:
+                logging.exception(e)
+
+    def _hook_threaded_callbacks(self):
+        id = self.call_every(0.5, self._run_threaded_callbacks)
+        self._run_threaded_callbacks_id = id
+
+    def _unhook_threaded_callbacks(self):
+        self.cancel_call(self._run_threaded_callbacks_id)

@@ -5,8 +5,7 @@ from mock import patch, Mock, ANY
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
-from landscape.lib.testing import EnvironSaverHelper
-from landscape.reactor import FakeReactor
+from landscape.lib.testing import EnvironSaverHelper, FakeReactor
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
