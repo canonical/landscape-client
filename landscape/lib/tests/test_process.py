@@ -41,7 +41,7 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
 
     @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
     @mock.patch("os.listdir")
-    @mock.patch("landscape.monitor.computeruptime.get_uptime")
+    @mock.patch("landscape.lib.sysstats.get_uptime")
     def test_missing_process_race(self, get_uptime_mock, list_dir_mock,
                                   jiffies_mock):
         """

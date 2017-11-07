@@ -4,7 +4,8 @@ import unittest
 
 from landscape.lib import testing
 from landscape.lib.sysstats import (
-    MemoryStats, CommandError, get_logged_in_users, get_thermal_zones)
+    MemoryStats, CommandError, get_logged_in_users, get_uptime,
+    get_thermal_zones)
 
 
 SAMPLE_MEMORY_INFO = """
@@ -120,6 +121,16 @@ class LoggedInUsersTest(FakeWhoQTest):
             self.assertEqual(str(failure.value), "ERROR\n")
         result.addErrback(assert_failure)
         return result
+
+
+class UptimeTest(BaseTestCase):
+    """Test for parsing /proc/uptime data."""
+
+    def test_valid_uptime_file(self):
+        """Test ensures that we can read a valid /proc/uptime file."""
+        proc_file = self.makeFile("17608.24 16179.25")
+        self.assertEqual("%0.2f" % get_uptime(proc_file),
+                         "17608.24")
 
 
 class ThermalZoneTest(BaseTestCase):

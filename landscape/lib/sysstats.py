@@ -71,6 +71,17 @@ def get_logged_in_users():
     return result.addCallback(parse_output)
 
 
+def get_uptime(uptime_file=u"/proc/uptime"):
+    """
+    This parses a file in /proc/uptime format and returns a floating point
+    version of the first value (the actual uptime).
+    """
+    with open(uptime_file, 'r') as ufile:
+        data = ufile.readline()
+    up, idle = data.split()
+    return float(up)
+
+
 def get_thermal_zones(thermal_zone_path=None):
     if thermal_zone_path is None:
         thermal_zone_path = "/proc/acpi/thermal_zone"

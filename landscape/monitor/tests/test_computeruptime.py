@@ -1,9 +1,8 @@
 from datetime import datetime
 import struct
 
-from landscape.monitor.computeruptime import (LoginInfo, LoginInfoReader,
-                                              ComputerUptime, BootTimes,
-                                              get_uptime)
+from landscape.monitor.computeruptime import (
+        LoginInfo, LoginInfoReader, ComputerUptime, BootTimes)
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from mock import ANY, Mock
 
@@ -27,16 +26,6 @@ def append_login_data(filename, login_type=0, pid=0, tty_device="/dev/",
                                b""))
     finally:
         file.close()
-
-
-class UptimeTest(LandscapeTest):
-    """Test for parsing /proc/uptime data."""
-
-    def test_valid_uptime_file(self):
-        """Test ensures that we can read a valid /proc/uptime file."""
-        proc_file = self.makeFile("17608.24 16179.25")
-        self.assertEqual("%0.2f" % get_uptime(proc_file),
-                         "17608.24")
 
 
 class LoginInfoReaderTest(LandscapeTest):
