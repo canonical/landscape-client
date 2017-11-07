@@ -1,10 +1,13 @@
+from __future__ import absolute_import
+
 import logging
+import unittest
 
-from landscape.log import rotate_logs
-from landscape.tests.helpers import LandscapeTest
+from landscape.lib.testing import FSTestCase
+from landscape.lib.logging import rotate_logs
 
 
-class RotateLogsTest(LandscapeTest):
+class RotateLogsTest(FSTestCase, unittest.TestCase):
 
     def test_log_rotation(self):
         logging.getLogger().addHandler(logging.FileHandler(self.makeFile()))

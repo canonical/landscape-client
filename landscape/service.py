@@ -4,7 +4,7 @@ import signal
 from twisted.application.service import Application, Service
 from twisted.application.app import startApplication
 
-from landscape.log import rotate_logs
+from landscape.lib.logging import rotate_logs
 from landscape.reactor import LandscapeReactor
 from landscape.deployment import get_versioned_persist, init_logging
 
