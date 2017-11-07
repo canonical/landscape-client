@@ -6,10 +6,6 @@ from landscape.lib import sysstats
 from landscape.lib.timestamp import to_timestamp
 from landscape.lib.jiffies import detect_jiffies
 
-# FIXME: It'd be nice to avoid having library code which depends on
-#        landscape-specific modules.
-from landscape.monitor.computeruptime import BootTimes
-
 
 class ProcessInformation(object):
     """
@@ -23,7 +19,7 @@ class ProcessInformation(object):
     def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None,
                  uptime=None):
         if boot_time is None:
-            boot_time = BootTimes().get_last_boot_time()
+            boot_time = sysstats.BootTimes().get_last_boot_time()
         if boot_time is not None:
             boot_time = datetime.utcfromtimestamp(boot_time)
         self._boot_time = boot_time

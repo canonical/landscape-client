@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import re
 import unittest
@@ -5,7 +6,8 @@ import unittest
 from landscape.lib import testing
 from landscape.lib.sysstats import (
     MemoryStats, CommandError, get_logged_in_users, get_uptime,
-    get_thermal_zones)
+    get_thermal_zones, LoginInfoReader, BootTimes)
+from landscape.lib.testing import append_login_data
 
 
 SAMPLE_MEMORY_INFO = """
@@ -212,3 +214,98 @@ class GetThermalZonesTest(ThermalZoneTest):
         self.assertEqual(thermal_zones[0].temperature, None)
         self.assertEqual(thermal_zones[0].temperature_value, None)
         self.assertEqual(thermal_zones[0].temperature_unit, None)
+
+
+class LoginInfoReaderTest(BaseTestCase):
+    """Tests for login info file reader."""
+
+    def test_read_empty_file(self):
+        """Test ensures the reader is resilient to empty files."""
+        filename = self.makeFile("")
+
+        file = open(filename, "rb")
+        try:
+            reader = LoginInfoReader(file)
+            self.assertEqual(reader.read_next(), None)
+        finally:
+            file.close()
+
+    def test_read_login_info(self):
+        """Test ensures the reader can read login info."""
+        filename = self.makeFile("")
+        append_login_data(filename, login_type=1, pid=100, tty_device="/dev/",
+                          id="1", username="jkakar", hostname="localhost",
+                          termination_status=0, exit_status=0, session_id=1,
+                          entry_time_seconds=105, entry_time_milliseconds=10,
+                          remote_ip_address=[192, 168, 42, 102])
+        append_login_data(filename, login_type=1, pid=101, tty_device="/dev/",
+                          id="1", username="root", hostname="localhost",
+                          termination_status=0, exit_status=0, session_id=2,
+                          entry_time_seconds=235, entry_time_milliseconds=17,
+                          remote_ip_address=[192, 168, 42, 102])
+
+        file = open(filename, "rb")
+        try:
+            reader = LoginInfoReader(file)
+
+            info = reader.read_next()
+            self.assertEqual(info.login_type, 1)
+            self.assertEqual(info.pid, 100)
+            self.assertEqual(info.tty_device, "/dev/")
+            self.assertEqual(info.id, "1")
+            self.assertEqual(info.username, "jkakar")
+            self.assertEqual(info.hostname, "localhost")
+            self.assertEqual(info.termination_status, 0)
+            self.assertEqual(info.exit_status, 0)
+            self.assertEqual(info.session_id, 1)
+            self.assertEqual(info.entry_time, datetime.utcfromtimestamp(105))
+            # FIXME Test IP address handling. -jk
+
+            info = reader.read_next()
+            self.assertEqual(info.login_type, 1)
+            self.assertEqual(info.pid, 101)
+            self.assertEqual(info.tty_device, "/dev/")
+            self.assertEqual(info.id, "1")
+            self.assertEqual(info.username, "root")
+            self.assertEqual(info.hostname, "localhost")
+            self.assertEqual(info.termination_status, 0)
+            self.assertEqual(info.exit_status, 0)
+            self.assertEqual(info.session_id, 2)
+            self.assertEqual(info.entry_time, datetime.utcfromtimestamp(235))
+            # FIXME Test IP address handling. -jk
+
+            info = reader.read_next()
+            self.assertEqual(info, None)
+        finally:
+            file.close()
+
+    def test_login_info_iterator(self):
+        """Test ensures iteration behaves correctly."""
+        filename = self.makeFile("")
+        append_login_data(filename)
+        append_login_data(filename)
+
+        file = open(filename, "rb")
+        try:
+            reader = LoginInfoReader(file)
+            count = 0
+
+            for info in reader.login_info():
+                count += 1
+
+            self.assertEqual(count, 2)
+        finally:
+            file.close()
+
+
+class BootTimesTest(BaseTestCase):
+
+    def test_fallback_to_uptime(self):
+        """
+        When no data is available in C{/var/log/wtmp}
+        L{BootTimes.get_last_boot_time} falls back to C{/proc/uptime}.
+        """
+        wtmp_filename = self.makeFile("")
+        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
+                          entry_time_seconds=535)
+        self.assertTrue(BootTimes(filename=wtmp_filename).get_last_boot_time())

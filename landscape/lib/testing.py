@@ -3,6 +3,7 @@ import os
 import os.path
 import re
 import shutil
+import struct
 import sys
 import tempfile
 import unittest
@@ -18,6 +19,7 @@ from twisted.internet.defer import Deferred
 from landscape.lib.compat import ConfigParser
 from landscape.lib.compat import stringio, cstringio
 from landscape.lib.config import BaseConfiguration
+from landscape.lib.sysstats import LoginInfo
 
 
 class CompatTestCase(unittest.TestCase):
@@ -369,6 +371,27 @@ class StandardIOHelper(object):
     def tear_down(self, test_case):
         sys.stdout = test_case.old_stdout
         sys.stdin = test_case.old_stdin
+
+
+def append_login_data(filename, login_type=0, pid=0, tty_device="/dev/",
+                      id="", username="", hostname="", termination_status=0,
+                      exit_status=0, session_id=0, entry_time_seconds=0,
+                      entry_time_milliseconds=0,
+                      remote_ip_address=[0, 0, 0, 0]):
+    """Append binary login data to the specified filename."""
+    file = open(filename, "ab")
+    try:
+        file.write(struct.pack(LoginInfo.RAW_FORMAT, login_type, pid,
+                               tty_device.encode("utf-8"), id.encode("utf-8"),
+                               username.encode("utf-8"),
+                               hostname.encode("utf-8"),
+                               termination_status, exit_status, session_id,
+                               entry_time_seconds, entry_time_milliseconds,
+                               remote_ip_address[0], remote_ip_address[1],
+                               remote_ip_address[2], remote_ip_address[3],
+                               b""))
+    finally:
+        file.close()
 
 
 def mock_counter(i=0):
