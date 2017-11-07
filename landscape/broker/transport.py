@@ -10,7 +10,7 @@ from twisted.python.compat import unicode, _PY3
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
-from landscape.log import format_delta
+from landscape.lib.format import format_delta
 from landscape import SERVER_API, VERSION
 
 

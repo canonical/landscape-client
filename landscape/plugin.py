@@ -1,6 +1,6 @@
 from logging import info
 
-from landscape.log import format_object
+from landscape.lib.format import format_object
 
 
 class PluginConfigError(Exception):

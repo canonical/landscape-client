@@ -2,7 +2,7 @@ from logging import info
 
 from twisted.internet.defer import succeed
 
-from landscape.log import format_object
+from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
 from landscape.broker.client import BrokerClientPlugin
 

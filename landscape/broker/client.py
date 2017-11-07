@@ -3,7 +3,7 @@ import sys
 
 from twisted.internet.defer import maybeDeferred, succeed
 
-from landscape.log import format_object
+from landscape.lib.format import format_object
 from landscape.lib.twisted_util import gather_results
 from landscape.amp import remote
 

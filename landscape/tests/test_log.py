@@ -1,65 +1,7 @@
 import logging
 
-from landscape.log import (format_object, format_delta, format_percent,
-                           rotate_logs)
+from landscape.log import rotate_logs
 from landscape.tests.helpers import LandscapeTest
-
-
-def function():
-    pass
-
-
-class FormatObjectTest(LandscapeTest):
-
-    def test_format_instance(self):
-        self.assertEqual(format_object(self),
-                         "landscape.tests.test_log.FormatObjectTest")
-
-    def method(self):
-        pass
-
-    def test_format_method(self):
-        self.assertEqual(format_object(self.method),
-                         "landscape.tests.test_log.FormatObjectTest.method()")
-
-    def test_format_function(self):
-        self.assertEqual(format_object(function),
-                         "landscape.tests.test_log.function()")
-
-    # FIXME Write tests to make sure that inner functions render
-    # usefully.
-
-
-class FormatDeltaTest(LandscapeTest):
-
-    def test_format_float(self):
-        self.assertEqual(format_delta(0.0), "0.00s")
-        self.assertEqual(format_delta(47.16374), "47.16s")
-        self.assertEqual(format_delta(100.0), "100.00s")
-
-    def test_format_int(self):
-        self.assertEqual(format_delta(0), "0.00s")
-        self.assertEqual(format_delta(47), "47.00s")
-        self.assertEqual(format_delta(100), "100.00s")
-
-    def test_format_none(self):
-        self.assertEqual(format_delta(None), "0.00s")
-
-
-class FormatPercentTest(LandscapeTest):
-
-    def test_format_float(self):
-        self.assertEqual(format_percent(0.0), "0.00%")
-        self.assertEqual(format_percent(47.16374), "47.16%")
-        self.assertEqual(format_percent(100.0), "100.00%")
-
-    def test_format_int(self):
-        self.assertEqual(format_percent(0), "0.00%")
-        self.assertEqual(format_percent(47), "47.00%")
-        self.assertEqual(format_percent(100), "100.00%")
-
-    def test_format_none(self):
-        self.assertEqual(format_percent(None), "0.00%")
 
 
 class RotateLogsTest(LandscapeTest):

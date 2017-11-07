@@ -10,7 +10,7 @@ from twisted.python.failure import Failure
 from twisted.internet.error import ConnectError
 from twisted.internet.threads import deferToThread
 
-from landscape.log import format_object
+from landscape.lib.format import format_object
 
 
 class InvalidID(Exception):

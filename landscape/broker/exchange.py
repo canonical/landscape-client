@@ -350,9 +350,9 @@ from twisted.internet.defer import Deferred, succeed
 from twisted.python.compat import _PY3
 
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.format import format_delta
 from landscape.lib.message import got_next_expected, ANCIENT
 from landscape.lib.versioning import is_version_higher, sort_versions
-from landscape.log import format_delta
 
 from landscape import DEFAULT_SERVER_API, SERVER_API, CLIENT_API
 
