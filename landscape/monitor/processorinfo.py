@@ -2,7 +2,7 @@ import logging
 import os
 import re
 
-from landscape.plugin import PluginConfigError
+from landscape.lib.plugin import PluginConfigError
 from landscape.monitor.plugin import MonitorPlugin
 
 

@@ -1,4 +1,4 @@
-from landscape.plugin import PluginConfigError
+from landscape.lib.plugin import PluginConfigError
 from landscape.monitor.processorinfo import ProcessorInfo
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from mock import ANY, Mock
