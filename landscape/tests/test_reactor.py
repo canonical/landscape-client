@@ -1,7 +1,7 @@
 import types
 import time
 
-from landscape.compat import thread
+from landscape.lib.compat import thread
 from landscape.reactor import FakeReactor, LandscapeReactor
 from landscape.tests.helpers import LandscapeTest
 

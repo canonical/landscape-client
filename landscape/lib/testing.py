@@ -15,9 +15,8 @@ from twisted.python.compat import _PY3
 from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 
-from landscape.compat import ConfigParser
-from landscape.compat import stringio, cstringio
-
+from landscape.lib.compat import ConfigParser
+from landscape.lib.compat import stringio, cstringio
 from landscape.lib.config import BaseConfiguration
 
 

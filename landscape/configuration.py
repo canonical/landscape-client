@@ -14,7 +14,7 @@ import os
 import pwd
 import sys
 
-from landscape.compat import input
+from landscape.lib.compat import input
 
 from landscape.lib.tag import is_valid_tag
 

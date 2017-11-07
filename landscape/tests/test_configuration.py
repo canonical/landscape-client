@@ -9,8 +9,8 @@ import unittest
 from twisted.internet.defer import succeed, fail, Deferred
 from twisted.python.compat import iteritems
 
-from landscape.compat import ConfigParser
-from landscape.compat import StringIO
+from landscape.lib.compat import ConfigParser
+from landscape.lib.compat import StringIO
 from landscape.broker.registration import RegistrationError
 from landscape.broker.tests.helpers import (
     RemoteBrokerHelper, BrokerConfigurationHelper)
