@@ -3,28 +3,26 @@ import os
 import sys
 import textwrap
 import tempfile
+import unittest
 
 import apt
 import apt_pkg
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
 from apt.cache import LockFailedException
-
+import mock
 from twisted.python.compat import unicode
 
 from landscape.lib.fs import read_text_file, create_text_file
-from landscape.lib.testing import EnvironSaverHelper
-from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, AptFacade,
-    LandscapeInstallProgress)
-
-import mock
-from landscape.tests.helpers import LandscapeTest
-from landscape.package.tests.helpers import (
+from landscape.lib import testing
+from landscape.lib.apt.package.testing import (
     HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
     PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
     create_deb, AptFacadeHelper,
     create_simple_repository)
+from landscape.lib.apt.package.facade import (
+    TransactionError, DependencyError, ChannelError, AptFacade,
+    LandscapeInstallProgress)
 
 
 _normalize_field = (lambda f: f.replace("-", "_").lower())
@@ -109,9 +107,10 @@ class TestCache(apt.cache.Cache):
         return super(TestCache, self).update()
 
 
-class AptFacadeTest(LandscapeTest):
+class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
+                    unittest.TestCase):
 
-    helpers = [AptFacadeHelper, EnvironSaverHelper]
+    helpers = [AptFacadeHelper, testing.EnvironSaverHelper]
 
     def setUp(self):
         super(AptFacadeTest, self).setUp()
@@ -653,7 +652,8 @@ class AptFacadeTest(LandscapeTest):
         apt fails to load the configured channels.
         """
         self.facade.add_channel_apt_deb("non-proto://fail.url", "./")
-        self.assertRaises(ChannelError, self.facade.reload_channels)
+        with self.assertRaises(ChannelError):
+            self.facade.reload_channels()
 
     def test_get_set_arch(self):
         """
@@ -1133,11 +1133,11 @@ class AptFacadeTest(LandscapeTest):
             raise SystemError("Oops")
 
         self.facade._cache.commit = commit
-        exception = self.assertRaises(
-            TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError) as cm:
+            self.facade.perform_changes()
         output = [
             line.rstrip()
-            for line in exception.args[0].splitlines() if line.strip()]
+            for line in cm.exception.args[0].splitlines() if line.strip()]
         self.assertEqual(
             ["Oops", "Package operation log:", "Stdout output",
              "Stderr output", "Stdout output again"],
@@ -1194,7 +1194,8 @@ class AptFacadeTest(LandscapeTest):
             os.write(1, b"good stuff!")
 
         self.facade._cache.commit = commit1
-        self.assertRaises(TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError):
+            self.facade.perform_changes()
 
     def test_perform_changes_dpkg_error_real(self):
         """
@@ -1210,7 +1211,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_remove(foo)
-        self.assertRaises(TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError):
+            self.facade.perform_changes()
 
     def test_perform_changes_dpkg_error_retains_excepthook(self):
         """
@@ -1225,7 +1227,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_remove(foo)
-        self.assertRaises(TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError):
+            self.facade.perform_changes()
         self.assertIs(old_excepthook, sys.excepthook)
 
     def test_prevent_dpkg_apport_error_system_error(self):
@@ -1292,11 +1295,11 @@ class AptFacadeTest(LandscapeTest):
             os.write(1, b"Stdout output\n")
 
         self.facade._cache.commit = commit
-        exception = self.assertRaises(
-            TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError) as cm:
+            self.facade.perform_changes()
         output = [
             line.rstrip()
-            for line in exception.args[0].splitlines()if line.strip()]
+            for line in cm.exception.args[0].splitlines()if line.strip()]
         self.assertEqual(
             ["dpkg didn't exit cleanly.", "Package operation log:",
              "Stdout output"],
@@ -1324,8 +1327,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade.mark_install(bar)
         self.patch_cache_commit()
-        error = self.assertRaises(
-            TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError) as cm:
+            self.facade.perform_changes()
         self.assertEqual(
             ["The following packages have unmet dependencies:",
              "  bar: PreDepends: also-pre-missing but is not installable or",
@@ -1336,7 +1339,7 @@ class AptFacadeTest(LandscapeTest):
              "                   pre-lost but is not installable",
              "  foo: Depends: missing but is not installable or",
              "                lost (>= 1.0) but is not installable"],
-            error.args[0].splitlines()[-9:])
+            cm.exception.args[0].splitlines()[-9:])
 
     def test_get_broken_packages_already_installed(self):
         """
@@ -1376,8 +1379,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1398,8 +1401,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1420,8 +1423,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1446,8 +1449,8 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
         self.facade.mark_install(bar)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1473,8 +1476,8 @@ class AptFacadeTest(LandscapeTest):
         [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
         self.assertEqual(bar2, bar1.package.candidate)
         self.facade.mark_install(foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1502,8 +1505,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade.mark_install(bar2)
         self.facade.mark_remove(bar1)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1531,8 +1534,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade.mark_install(bar1)
         self.facade.mark_remove(bar2)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1553,8 +1556,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1605,8 +1608,8 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1690,8 +1693,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
@@ -1715,8 +1718,8 @@ class AptFacadeTest(LandscapeTest):
         [another_foo] = self.facade.get_packages_by_name("another-foo")
         self.facade.mark_install(foo)
         self.facade.mark_install(another_foo)
-        self.assertRaises(
-            TransactionError, self.facade._preprocess_package_changes)
+        with self.assertRaises(TransactionError):
+            self.facade._preprocess_package_changes()
         self.assertEqual(
             set([foo.package, another_foo.package]),
             self.facade._get_broken_packages())
@@ -1804,7 +1807,8 @@ class AptFacadeTest(LandscapeTest):
             raise SystemError("Error")
 
         self.facade._cache.commit = commit
-        self.assertRaises(TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError):
+            self.facade.perform_changes()
         # Make sure we don't leave the tempfile behind.
         self.assertFalse(os.path.exists(outfile))
         mock_dup2.assert_any_call(mock.ANY, 1)
@@ -1854,7 +1858,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        self.assertRaises(DependencyError, self.facade.perform_changes)
+        with self.assertRaises(DependencyError):
+            self.facade.perform_changes()
         self.assertNotEqual([], list(self.facade._cache.get_changes()))
         self.facade.reset_marks()
         self.assertEqual([], list(self.facade._cache.get_changes()))
@@ -1999,10 +2004,10 @@ class AptFacadeTest(LandscapeTest):
             self.facade.get_packages_by_name("multi-arch"))
         self.facade.mark_global_upgrade()
         self.patch_cache_commit()
-        exception = self.assertRaises(
-            DependencyError, self.facade.perform_changes)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
         self.assertEqual(
-            sorted([multi_arch1, multi_arch2]), sorted(exception.packages))
+            sorted([multi_arch1, multi_arch2]), sorted(cm.exception.packages))
         changes = [
             (pkg.name, pkg.candidate.version)
             for pkg in self.facade._cache.get_changes()]
@@ -2026,9 +2031,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
         self.facade.mark_global_upgrade()
-        exception = self.assertRaises(
-            DependencyError, self.facade.perform_changes)
-        self.assertEqual(set([foo1, foo2]), set(exception.packages))
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
+        self.assertEqual(set([foo1, foo2]), set(cm.exception.packages))
 
     def test_mark_global_upgrade_candidate_version(self):
         """
@@ -2047,9 +2052,9 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo3, foo1.package.candidate)
         self.facade.mark_global_upgrade()
-        exception = self.assertRaises(
-            DependencyError, self.facade.perform_changes)
-        self.assertEqual(set([foo1, foo3]), set(exception.packages))
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
+        self.assertEqual(set([foo1, foo3]), set(cm.exception.packages))
 
     def test_mark_global_upgrade_no_upgrade(self):
         """
@@ -2084,7 +2089,8 @@ class AptFacadeTest(LandscapeTest):
         auto1.package.mark_auto(True)
         noauto1.package.mark_auto(False)
         self.facade.mark_global_upgrade()
-        self.assertRaises(DependencyError, self.facade.perform_changes)
+        with self.assertRaises(DependencyError):
+            self.facade.perform_changes()
         self.assertTrue(auto2.package.is_auto_installed)
         self.assertFalse(noauto2.package.is_auto_installed)
 
@@ -2164,8 +2170,9 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
         self.patch_cache_commit()
-        error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual([bar], error.packages)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
+        self.assertEqual([bar], cm.exception.packages)
 
     def test_perform_changes_with_broken_packages_remove_simple(self):
         """
@@ -2212,10 +2219,11 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade.mark_install(missing)
         self.patch_cache_commit()
-        error = self.assertRaises(
-            TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError) as cm:
+            self.facade.perform_changes()
         self.assertIn(
-            "The following packages have unmet dependencies", error.args[0])
+            "The following packages have unmet dependencies",
+            cm.exception.args[0])
         self.assertEqual(
             set([foo.package]), self.facade._get_broken_packages())
 
@@ -2231,11 +2239,11 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_remove(foo)
         with mock.patch.object(self.facade._cache, "commit") as mock_commit:
             mock_commit.side_effect = SystemError("Something went wrong.")
-            exception = self.assertRaises(TransactionError,
-                                          self.facade.perform_changes)
+            with self.assertRaises(TransactionError) as cm:
+                self.facade.perform_changes()
             mock_commit.assert_called_with(
                 fetch_progress=mock.ANY, install_progress=mock.ANY)
-        self.assertIn("Something went wrong.", exception.args[0])
+        self.assertIn("Something went wrong.", cm.exception.args[0])
 
     def test_mark_install_transaction_error(self):
         """
@@ -2250,15 +2258,15 @@ class AptFacadeTest(LandscapeTest):
 
         [pkg] = self.facade.get_packages_by_name("name1")
         self.facade.mark_install(pkg)
-        exception = self.assertRaises(TransactionError,
-                                      self.facade.perform_changes)
+        with self.assertRaises(TransactionError) as cm:
+            self.facade.perform_changes()
         self.assertEqual(
             ["The following packages have unmet dependencies:",
              "  name1: PreDepends: prerequirename1 (= prerequireversion1)" +
                 " but is not installable",
              "  name1: Depends: requirename1 (= requireversion1) but is not" +
                 " installable"],
-            exception.args[0].splitlines()[-3:])
+            cm.exception.args[0].splitlines()[-3:])
 
     def test_mark_install_dependency_error(self):
         """
@@ -2274,8 +2282,9 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
-        error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual([bar], error.packages)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
+        self.assertEqual([bar], cm.exception.packages)
 
     def test_wb_check_changes_unapproved_install_default(self):
         """
@@ -2297,9 +2306,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual([package], self.facade._cache.get_changes())
         self.assertTrue(package.marked_install)
 
-        error = self.assertRaises(
-            DependencyError, self.facade._check_changes, [])
-        self.assertEqual([foo2], error.packages)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade._check_changes([])
+        self.assertEqual([foo2], cm.exception.packages)
 
     def test_wb_check_changes_unapproved_install_specific_version(self):
         """
@@ -2321,9 +2330,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual([package], self.facade._cache.get_changes())
         self.assertTrue(package.marked_install)
 
-        error = self.assertRaises(
-            DependencyError, self.facade._check_changes, [])
-        self.assertEqual([foo1], error.packages)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade._check_changes([])
+        self.assertEqual([foo1], cm.exception.packages)
 
     def test_check_changes_unapproved_remove(self):
         """
@@ -2339,9 +2348,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual([foo.package], self.facade._cache.get_changes())
         self.assertTrue(foo.package.marked_delete)
 
-        error = self.assertRaises(
-            DependencyError, self.facade._check_changes, [])
-        self.assertEqual([foo], error.packages)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade._check_changes([])
+        self.assertEqual([foo], cm.exception.packages)
 
     def test_check_changes_unapproved_remove_with_update_available(self):
         """
@@ -2362,9 +2371,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual([package], self.facade._cache.get_changes())
         self.assertTrue(package.marked_delete)
 
-        error = self.assertRaises(
-            DependencyError, self.facade._check_changes, [])
-        self.assertEqual([foo1], error.packages)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade._check_changes([])
+        self.assertEqual([foo1], cm.exception.packages)
 
     def test_check_changes_unapproved_upgrade(self):
         """
@@ -2385,9 +2394,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual([package], self.facade._cache.get_changes())
         self.assertTrue(package.marked_upgrade)
 
-        error = self.assertRaises(
-            DependencyError, self.facade._check_changes, [])
-        self.assertEqual(set([foo1, foo2]), set(error.packages))
+        with self.assertRaises(DependencyError) as cm:
+            self.facade._check_changes([])
+        self.assertEqual(set([foo1, foo2]), set(cm.exception.packages))
 
     def test_check_changes_unapproved_downgrade(self):
         """
@@ -2410,9 +2419,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual([package], self.facade._cache.get_changes())
         self.assertTrue(package.marked_downgrade)
 
-        error = self.assertRaises(
-            DependencyError, self.facade._check_changes, [])
-        self.assertEqual(set([foo1, foo2]), set(error.packages))
+        with self.assertRaises(DependencyError) as cm:
+            self.facade._check_changes([])
+        self.assertEqual(set([foo1, foo2]), set(cm.exception.packages))
 
     def test_mark_global_upgrade_dependency_error(self):
         """
@@ -2430,10 +2439,11 @@ class AptFacadeTest(LandscapeTest):
         foo_10, foo_15 = sorted(self.facade.get_packages_by_name("foo"))
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_global_upgrade()
-        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
         self.assertEqual(
             sorted([bar, foo_10, foo_15], key=self.version_sortkey),
-            sorted(error.packages, key=self.version_sortkey))
+            sorted(cm.exception.packages, key=self.version_sortkey))
 
     def test_mark_remove_dependency_error(self):
         """
@@ -2446,8 +2456,9 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_remove(foo)
-        error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual([bar], error.packages)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
+        self.assertEqual([bar], cm.exception.packages)
 
     def test_mark_remove_held_packages(self):
         """
@@ -2463,11 +2474,11 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_remove(foo)
         self.facade.mark_remove(bar)
-        error = self.assertRaises(
-            TransactionError, self.facade.perform_changes)
+        with self.assertRaises(TransactionError) as cm:
+            self.facade.perform_changes()
         self.assertEqual(
             "Can't perform the changes, since the following packages" +
-            " are held: bar, foo", error.args[0])
+            " are held: bar, foo", cm.exception.args[0])
 
     def test_changer_upgrade_package(self):
         """
@@ -2587,10 +2598,11 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(foo)
-        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        with self.assertRaises(DependencyError) as cm:
+            self.facade.perform_changes()
 
         self.assertEqual(
-            sorted(error.packages, key=self.version_sortkey),
+            sorted(cm.exception.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
 
     def test_get_package_holds_with_no_hold(self):

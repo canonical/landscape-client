@@ -3,7 +3,7 @@ import mock
 
 from twisted.internet.defer import Deferred
 
-from landscape.package.store import PackageStore
+from landscape.lib.apt.package.store import PackageStore
 
 from landscape.lib.testing import EnvironSaverHelper
 from landscape.monitor.packagemonitor import PackageMonitor

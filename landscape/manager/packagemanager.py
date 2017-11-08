@@ -5,7 +5,7 @@ from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import succeed
 
 from landscape.lib.encoding import encode_values
-from landscape.package.store import PackageStore
+from landscape.lib.apt.package.store import PackageStore
 from landscape.package.changer import PackageChanger
 from landscape.package.releaseupgrader import ReleaseUpgrader
 from landscape.manager.plugin import ManagerPlugin

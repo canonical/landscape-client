@@ -1,15 +1,19 @@
 import mock
+import sqlite3
 import threading
 import time
+import unittest
 
-import sqlite3
-from landscape.tests.helpers import LandscapeTest
-
-from landscape.package.store import (HashIdStore, PackageStore,
-                                     UnknownHashIDRequest, InvalidHashIdDb)
+from landscape.lib import testing
+from landscape.lib.apt.package.store import (
+        HashIdStore, PackageStore, UnknownHashIDRequest, InvalidHashIdDb)
 
 
-class HashIdStoreTest(LandscapeTest):
+class BaseTestCase(testing.FSTestCase, unittest.TestCase):
+    pass
+
+
+class HashIdStoreTest(BaseTestCase):
 
     def setUp(self):
         super(HashIdStoreTest, self).setUp()
@@ -122,7 +126,7 @@ class HashIdStoreTest(LandscapeTest):
         self.assertRaises(InvalidHashIdDb, store.check_sanity)
 
 
-class PackageStoreTest(LandscapeTest):
+class PackageStoreTest(BaseTestCase):
 
     def setUp(self):
         super(PackageStoreTest, self).setUp()

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import hashlib
 import logging
 import os
@@ -21,7 +23,7 @@ from twisted.python.compat import itervalues
 from landscape.lib.compat import StringIO
 from landscape.lib.fs import append_text_file, create_text_file
 from landscape.lib.fs import read_text_file, read_binary_file, touch_file
-from landscape.package.skeleton import build_skeleton_apt
+from .skeleton import build_skeleton_apt
 
 
 class TransactionError(Exception):

@@ -4,15 +4,15 @@ from mock import patch, Mock, ANY
 
 from twisted.internet.defer import Deferred, fail
 
+from landscape.lib.apt.package.facade import AptFacade
+from landscape.lib.apt.package.store import HashIdStore, PackageStore
+from landscape.lib.apt.package.testing import AptFacadeHelper
 from landscape.lib.lock import lock_path
 from landscape.lib.testing import EnvironSaverHelper, FakeReactor
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
-from landscape.package.facade import AptFacade
-from landscape.package.store import HashIdStore, PackageStore
-from landscape.package.tests.helpers import AptFacadeHelper
 from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 
 

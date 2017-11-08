@@ -1,9 +1,7 @@
-from landscape.package.skeleton import (
-    build_skeleton_apt, DEB_PROVIDES, DEB_PACKAGE,
-    DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,
-    DEB_CONFLICTS, PackageSkeleton)
+import unittest
 
-from landscape.package.tests.helpers import (
+from landscape.lib import testing
+from landscape.lib.apt.package.testing import (
     AptFacadeHelper, HASH1, create_simple_repository, create_deb,
     PKGNAME_MINIMAL, PKGDEB_MINIMAL, HASH_MINIMAL, PKGNAME_SIMPLE_RELATIONS,
     PKGDEB_SIMPLE_RELATIONS, HASH_SIMPLE_RELATIONS, PKGNAME_VERSION_RELATIONS,
@@ -11,7 +9,10 @@ from landscape.package.tests.helpers import (
     PKGNAME_MULTIPLE_RELATIONS, PKGDEB_MULTIPLE_RELATIONS,
     HASH_MULTIPLE_RELATIONS, PKGNAME_OR_RELATIONS, PKGDEB_OR_RELATIONS,
     HASH_OR_RELATIONS)
-from landscape.tests.helpers import LandscapeTest
+from landscape.lib.apt.package.skeleton import (
+    build_skeleton_apt, DEB_PROVIDES, DEB_PACKAGE,
+    DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,
+    DEB_CONFLICTS, PackageSkeleton)
 
 from twisted.python.compat import unicode
 
@@ -38,7 +39,12 @@ class SkeletonTestHelper(object):
             PKGDEB_OR_RELATIONS)
 
 
-class SkeletonAptTest(LandscapeTest):
+class BaseTestCase(testing.HelperTestCase, testing.FSTestCase,
+                   unittest.TestCase):
+    pass
+
+
+class SkeletonAptTest(BaseTestCase):
     """C{PackageSkeleton} tests for apt packages."""
 
     helpers = [AptFacadeHelper, SkeletonTestHelper]
@@ -271,7 +277,7 @@ class SkeletonAptTest(LandscapeTest):
         self.assertEqual(HASH_OR_RELATIONS, skeleton.get_hash())
 
 
-class SkeletonTest(LandscapeTest):
+class SkeletonTest(BaseTestCase):
 
     def test_skeleton_set_hash(self):
         """

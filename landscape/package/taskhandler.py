@@ -4,12 +4,12 @@ import logging
 
 from twisted.internet.defer import succeed, Deferred
 
+from landscape.lib.apt.package.store import PackageStore, InvalidHashIdDb
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.reactor import LandscapeReactor
 from landscape.deployment import Configuration, init_logging
-from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.amp import RemoteBrokerConnector
 
 
@@ -282,7 +282,7 @@ def run_task_handler(cls, args, reactor=None):
     package_store = cls.package_store_class(config.store_filename)
     # Delay importing of the facades so that we don't
     # import Apt unless we need to.
-    from landscape.package.facade import AptFacade
+    from landscape.lib.apt.package.facade import AptFacade
     package_facade = AptFacade()
 
     def finish():

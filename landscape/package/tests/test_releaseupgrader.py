@@ -7,10 +7,10 @@ import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail, Deferred
 
+from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.gpg import InvalidGPGSignature
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.testing import LogKeeperHelper, EnvironSaverHelper
-from landscape.package.store import PackageStore
 from landscape.package.releaseupgrader import (
     ReleaseUpgrader, ReleaseUpgraderConfiguration, main)
 from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
