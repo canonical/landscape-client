@@ -127,7 +127,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                     try:
                         parser = self._get_config_object(
                             alternative_config=self.import_from)
-                    except:
+                    except Exception:
                         raise ImportOptionError(
                             "Couldn't read configuration from %s." %
                             self.import_from)

@@ -606,7 +606,7 @@ class FakeReactor(EventHandlingReactorMixin):
             call._data = self.call_later(seconds, fake)._data
             try:
                 f(*args, **kwargs)
-            except:
+            except Exception:
                 if call.active:
                     self.cancel_call(call)
                 raise

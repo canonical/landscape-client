@@ -205,7 +205,7 @@ class BrokerClient(object):
             raise HandlerNotFoundError(type)
         try:
             return handler(message)
-        except:
+        except Exception:
             exception("Error running message handler for type %r: %r"
                       % (type, handler))
 
@@ -227,7 +227,7 @@ class BrokerClient(object):
             if hasattr(plugin, "exchange"):
                 try:
                     plugin.exchange()
-                except:
+                except Exception:
                     exception("Error during plugin exchange")
 
     def notify_exchange(self):

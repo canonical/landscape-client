@@ -97,7 +97,7 @@ class SysInfoPluginRegistry(PluginRegistry):
         for plugin in self.get_plugins():
             try:
                 result = plugin.run()
-            except:
+            except Exception:
                 self._log_plugin_error(Failure(), plugin)
             else:
                 result.addErrback(self._log_plugin_error, plugin)

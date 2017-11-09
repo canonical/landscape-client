@@ -93,7 +93,7 @@ class EventHandlingReactorMixin(object):
                                   event_type, args, kwargs)
                 self.stop()
                 raise
-            except:
+            except Exception:
                 logging.exception("Error running event handler %s for "
                                   "event type %r with args %r %r.",
                                   format_object(handler), event_type,
