@@ -777,9 +777,9 @@ time.sleep(999)
         immediately successful.
         """
         daemon = self.get_daemon()
-        l = []
-        daemon.wait_or_die().addCallback(l.append)
-        self.assertEqual(l, [None])
+        calls = []
+        daemon.wait_or_die().addCallback(calls.append)
+        self.assertEqual(calls, [None])
 
     def test_simulate_broker_not_starting_up(self):
         """

@@ -23,19 +23,19 @@ class PatchTest(LandscapeTest):
 
     def test_one_patch(self):
         """Test that patches are called and passed a L{Persist} object."""
-        l = []
-        self.manager.register_upgrader(1, l.append)
+        calls = []
+        self.manager.register_upgrader(1, calls.append)
         self.manager.apply(self.persist)
-        self.assertEqual(l, [self.persist])
+        self.assertEqual(calls, [self.persist])
 
     def test_two_patches(self):
         """Test that patches are run in order."""
-        l = []
-        self.manager.register_upgrader(2, lambda x: l.append(2))
-        self.manager.register_upgrader(1, lambda x: l.append(1))
+        calls = []
+        self.manager.register_upgrader(2, lambda x: calls.append(2))
+        self.manager.register_upgrader(1, lambda x: calls.append(1))
 
         self.manager.apply(self.persist)
-        self.assertEqual(l, [1, 2])
+        self.assertEqual(calls, [1, 2])
 
     def test_record_version(self):
         """When a patch is run it should update the C{system-version}."""
@@ -46,11 +46,11 @@ class PatchTest(LandscapeTest):
 
     def test_only_apply_unapplied_versions(self):
         """Upgraders should only be run if they haven't been run before."""
-        l = []
-        self.manager.register_upgrader(1, lambda x: l.append(1))
+        calls = []
+        self.manager.register_upgrader(1, lambda x: calls.append(1))
         self.manager.apply(self.persist)
         self.manager.apply(self.persist)
-        self.assertEqual(l, [1])
+        self.assertEqual(calls, [1])
 
     def test_initialize(self):
         """Marking no upgraders as applied should leave the version at 0."""
@@ -108,23 +108,23 @@ class SQLitePatchTest(LandscapeTest):
 
     def test_one_patch(self):
         """Test that patches are called and passed a sqlite db object."""
-        l = []
+        calls = []
         self.manager.initialize(self.cursor)
-        self.manager.register_upgrader(1, l.append)
+        self.manager.register_upgrader(1, calls.append)
         self.manager.apply(self.cursor)
-        self.assertEqual(l, [self.cursor])
+        self.assertEqual(calls, [self.cursor])
         self.cursor.execute(self.version_query)
         self.assertEqual(self.cursor.fetchone(), (1,))
 
     def test_two_patches(self):
         """Test that patches are run in order."""
-        l = []
+        calls = []
         self.manager.initialize(self.cursor)
-        self.manager.register_upgrader(2, lambda x: l.append(2))
-        self.manager.register_upgrader(1, lambda x: l.append(1))
+        self.manager.register_upgrader(2, lambda x: calls.append(2))
+        self.manager.register_upgrader(1, lambda x: calls.append(1))
 
         self.manager.apply(self.cursor)
-        self.assertEqual(l, [1, 2])
+        self.assertEqual(calls, [1, 2])
         self.cursor.execute(self.version_query)
         self.assertEqual(self.cursor.fetchone(), (2,))
 
@@ -163,11 +163,11 @@ class SQLitePatchTest(LandscapeTest):
         """
         upgrade_manager = SQLiteUpgradeManager()
         upgrade_manager.initialize(self.cursor)
-        l = []
+        calls = []
 
         @upgrade_manager.upgrader(1)
         def upgrade(db):
-            l.append(db)
+            calls.append(db)
 
         upgrade_manager.apply(self.cursor)
-        self.assertEqual(l, [self.cursor])
+        self.assertEqual(calls, [self.cursor])
