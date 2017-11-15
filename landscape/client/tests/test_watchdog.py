@@ -16,7 +16,7 @@ from landscape.lib.fs import read_text_file
 from landscape.lib.testing import EnvironSaverHelper
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
-from landscape.watchdog import (
+from landscape.client.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
@@ -25,7 +25,7 @@ from landscape.amp import ComponentConnector
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.reactor import LandscapeReactor
 
-import landscape.watchdog
+import landscape.client.watchdog
 
 
 class StubDaemon(object):
@@ -34,16 +34,19 @@ class StubDaemon(object):
 
 class WatchDogTest(LandscapeTest):
     """
-    Tests for L{landscape.watchdog.WatchDog}.
+    Tests for L{landscape.client.watchdog.WatchDog}.
     """
 
     def setUp(self):
         super(WatchDogTest, self).setUp()
-        self.broker_factory_patch = mock.patch("landscape.watchdog.Broker")
+        self.broker_factory_patch = (
+                mock.patch("landscape.client.watchdog.Broker"))
         self.broker_factory = self.broker_factory_patch.start()
-        self.monitor_factory_patch = mock.patch("landscape.watchdog.Monitor")
+        self.monitor_factory_patch = (
+                mock.patch("landscape.client.watchdog.Monitor"))
         self.monitor_factory = self.monitor_factory_patch.start()
-        self.manager_factory_patch = mock.patch("landscape.watchdog.Manager")
+        self.manager_factory_patch = (
+                mock.patch("landscape.client.watchdog.Manager"))
         self.manager_factory = self.manager_factory_patch.start()
         self.config = WatchDogConfiguration()
         self.addCleanup(self.cleanup_mocks)
@@ -659,9 +662,9 @@ class DaemonTest(DaemonTestBase):
              "os.kill(os.getpid(), signal.SIGSTOP)\n"
              ) % (sys.executable, output_filename))
 
-        self.addCleanup(setattr, landscape.watchdog, "SIGKILL_DELAY",
-                        landscape.watchdog.SIGKILL_DELAY)
-        landscape.watchdog.SIGKILL_DELAY = 1
+        self.addCleanup(setattr, landscape.client.watchdog, "SIGKILL_DELAY",
+                        landscape.client.watchdog.SIGKILL_DELAY)
+        landscape.client.watchdog.SIGKILL_DELAY = 1
 
         waiter = FileChangeWaiter(output_filename)
         self.daemon.start()
@@ -718,9 +721,10 @@ signal.signal(signal.SIGTERM, term)
 time.sleep(999)
         """ % {"exe": sys.executable, "out": output_filename})
 
-        self.addCleanup(setattr, landscape.watchdog, "GRACEFUL_WAIT_PERIOD",
-                        landscape.watchdog.GRACEFUL_WAIT_PERIOD)
-        landscape.watchdog.GRACEFUL_WAIT_PERIOD = 0.2
+        self.addCleanup(setattr,
+                        landscape.client.watchdog, "GRACEFUL_WAIT_PERIOD",
+                        landscape.client.watchdog.GRACEFUL_WAIT_PERIOD)
+        landscape.client.watchdog.GRACEFUL_WAIT_PERIOD = 0.2
         self.daemon.start()
 
         def got_result(result):
@@ -743,12 +747,14 @@ time.sleep(999)
              "os.kill(os.getpid(), signal.SIGSTOP)\n"
              ) % (sys.executable, output_filename))
 
-        self.addCleanup(setattr, landscape.watchdog, "SIGKILL_DELAY",
-                        landscape.watchdog.SIGKILL_DELAY)
-        self.addCleanup(setattr, landscape.watchdog, "GRACEFUL_WAIT_PERIOD",
-                        landscape.watchdog.GRACEFUL_WAIT_PERIOD)
-        landscape.watchdog.GRACEFUL_WAIT_PERIOD = 1
-        landscape.watchdog.SIGKILL_DELAY = 1
+        self.addCleanup(setattr,
+                        landscape.client.watchdog, "SIGKILL_DELAY",
+                        landscape.client.watchdog.SIGKILL_DELAY)
+        self.addCleanup(setattr,
+                        landscape.client.watchdog, "GRACEFUL_WAIT_PERIOD",
+                        landscape.client.watchdog.GRACEFUL_WAIT_PERIOD)
+        landscape.client.watchdog.GRACEFUL_WAIT_PERIOD = 1
+        landscape.client.watchdog.SIGKILL_DELAY = 1
 
         waiter = FileChangeWaiter(output_filename)
         self.daemon.start()
@@ -1058,8 +1064,8 @@ class WatchDogServiceTest(LandscapeTest):
                                  "--data-path", self.data_path,
                                  "--log-dir", self.log_dir])
 
-    @mock.patch("landscape.watchdog.daemonize")
-    @mock.patch("landscape.watchdog.WatchDog")
+    @mock.patch("landscape.client.watchdog.daemonize")
+    @mock.patch("landscape.client.watchdog.WatchDog")
     def test_daemonize(self, mock_watchdog, mock_daemonize):
         mock_watchdog().check_running.return_value = succeed([])
         self.configuration.daemon = True
@@ -1070,8 +1076,8 @@ class WatchDogServiceTest(LandscapeTest):
         mock_watchdog().start.assert_called_once_with()
         mock_daemonize.assert_called_once_with()
 
-    @mock.patch("landscape.watchdog.daemonize")
-    @mock.patch("landscape.watchdog.WatchDog")
+    @mock.patch("landscape.client.watchdog.daemonize")
+    @mock.patch("landscape.client.watchdog.WatchDog")
     def test_pid_file(self, mock_watchdog, mock_daemonize):
         mock_watchdog().check_running.return_value = succeed([])
         pid_file = self.makeFile()
@@ -1086,9 +1092,9 @@ class WatchDogServiceTest(LandscapeTest):
         mock_watchdog().start.assert_called_once_with()
         mock_daemonize.assert_called_once_with()
 
-    @mock.patch("landscape.watchdog.reactor")
-    @mock.patch("landscape.watchdog.daemonize")
-    @mock.patch("landscape.watchdog.WatchDog")
+    @mock.patch("landscape.client.watchdog.reactor")
+    @mock.patch("landscape.client.watchdog.daemonize")
+    @mock.patch("landscape.client.watchdog.WatchDog")
     def test_dont_write_pid_file_until_we_really_start(
             self, mock_watchdog, mock_daemonize, mock_reactor):
         """
@@ -1113,8 +1119,8 @@ class WatchDogServiceTest(LandscapeTest):
         mock_watchdog().start.assert_not_called()
         mock_reactor.crash.assert_called_once_with()
 
-    @mock.patch("landscape.watchdog.daemonize")
-    @mock.patch("landscape.watchdog.WatchDog")
+    @mock.patch("landscape.client.watchdog.daemonize")
+    @mock.patch("landscape.client.watchdog.WatchDog")
     def test_remove_pid_file(self, mock_watchdog, mock_daemonize):
         """
         When the service is stopped, the pid file is removed.
@@ -1137,7 +1143,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(mock_daemonize.called)
         self.assertTrue(mock_watchdog().request_exit.called)
 
-    @mock.patch("landscape.watchdog.WatchDog")
+    @mock.patch("landscape.client.watchdog.WatchDog")
     def test_remove_pid_file_only_when_ours(self, mock_watchdog):
         mock_watchdog().request_exit.return_value = succeed(None)
         pid_file = self.makeFile()
@@ -1149,8 +1155,8 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(mock_watchdog().request_exit.called)
 
     # Make os.access say that the file isn't writable
-    @mock.patch("landscape.watchdog.os.access", return_value=False)
-    @mock.patch("landscape.watchdog.WatchDog")
+    @mock.patch("landscape.client.watchdog.os.access", return_value=False)
+    @mock.patch("landscape.client.watchdog.WatchDog")
     def test_remove_pid_file_doesnt_explode_on_inaccessibility(
             self, mock_watchdog, mock_access):
         mock_watchdog().request_exit.return_value = succeed(None)
@@ -1165,8 +1171,8 @@ class WatchDogServiceTest(LandscapeTest):
         mock_access.assert_called_once_with(
             pid_file, os.W_OK)
 
-    @mock.patch("landscape.watchdog.reactor")
-    @mock.patch("landscape.watchdog.bootstrap_list")
+    @mock.patch("landscape.client.watchdog.reactor")
+    @mock.patch("landscape.client.watchdog.bootstrap_list")
     def test_start_service_exits_when_already_running(
             self, mock_bootstrap_list, mock_reactor):
         self.log_helper.ignore_errors(
@@ -1183,8 +1189,8 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(mock_reactor.crash.called)
         return result
 
-    @mock.patch("landscape.watchdog.reactor")
-    @mock.patch("landscape.watchdog.bootstrap_list")
+    @mock.patch("landscape.client.watchdog.reactor")
+    @mock.patch("landscape.client.watchdog.bootstrap_list")
     def test_start_service_exits_when_unknown_errors_occur(
             self, mock_bootstrap_list, mock_reactor):
         self.log_helper.ignore_errors(ZeroDivisionError)
@@ -1204,7 +1210,7 @@ class WatchDogServiceTest(LandscapeTest):
         mock_reactor.crash.assert_called_once_with()
         return result
 
-    @mock.patch("landscape.watchdog.os.chown")
+    @mock.patch("landscape.client.watchdog.os.chown")
     @mock.patch("landscape.lib.bootstrap.grp.getgrnam")
     @mock.patch("landscape.lib.bootstrap.os.getuid", return_value=0)
     def test_bootstrap(self, mock_getuid, mock_getgrnam, mock_chown):
@@ -1309,7 +1315,7 @@ class WatchDogRunTests(LandscapeTest):
         """
         self.fake_pwd.addUser(
             "landscape", None, 1001, None, None, None, None)
-        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
+        with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("landscape-client can only be run"
                       " as 'root' or 'landscape'.", str(sys_exit))
@@ -1321,7 +1327,7 @@ class WatchDogRunTests(LandscapeTest):
         self.fake_pwd.addUser(
             "landscape", None, os.getuid(), None, None, None, None)
         reactor = FakeReactor()
-        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
+        with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             run(["--log-dir", self.makeDir()], reactor=reactor)
         self.assertTrue(reactor.running)
 
@@ -1330,7 +1336,7 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog should print an error message and exit if the
         'landscape' user doesn't exist.
         """
-        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
+        with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("The 'landscape' user doesn't exist!", str(sys_exit))
 
@@ -1344,7 +1350,7 @@ class WatchDogRunTests(LandscapeTest):
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
-        with mock.patch("landscape.watchdog.pwd", new=self.fake_pwd):
+        with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             run(["--log-dir", self.makeDir()], reactor=reactor)
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)

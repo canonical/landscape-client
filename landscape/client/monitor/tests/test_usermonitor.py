@@ -9,7 +9,7 @@ from landscape.monitor.usermonitor import (
 from landscape.manager.usermanager import UserManager
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-import landscape.monitor.usermonitor
+import landscape.client.monitor.usermonitor
 
 
 class UserMonitorNoManagerTest(LandscapeTest):
@@ -64,13 +64,13 @@ class UserMonitorTest(LandscapeTest):
         self.plugin = UserMonitor(self.provider)
         # Part of bug 1048576 remediation:
         self._original_USER_UPDATE_FLAG_FILE = (
-            landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE)
+            landscape.client.monitor.usermonitor.USER_UPDATE_FLAG_FILE)
 
     def tearDown(self):
         self.publisher.stop()
         self.plugin.stop()
         # Part of bug 1048576 remediation:
-        landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = (
+        landscape.client.monitor.usermonitor.USER_UPDATE_FLAG_FILE = (
             self._original_USER_UPDATE_FLAG_FILE)
         return super(UserMonitorTest, self).tearDown()
 
@@ -357,7 +357,7 @@ class UserMonitorTest(LandscapeTest):
                 self.__class__.cleared = True
 
         # Create the (temporary, test) user update flag file.
-        landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
+        landscape.client.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
             update_flag_file = self.makeFile("")
         self.addCleanup(lambda: os.remove(update_flag_file))
 
@@ -379,7 +379,7 @@ class UserMonitorTest(LandscapeTest):
             self.assertFalse(os.path.exists(update_flag_file))
 
         # Create the (temporary, test) user update flag file.
-        landscape.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
+        landscape.client.monitor.usermonitor.USER_UPDATE_FLAG_FILE = \
             update_flag_file = self.makeFile("")
 
         self.broker_service.message_store.set_accepted_types(["users"])
