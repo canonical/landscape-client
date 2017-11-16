@@ -1,0 +1,2 @@
+version=3
+https://launchpad.net/landscape-client/+download  https://launchpad.net/landscape-client/[^/]+/[^/]+/\+download/landscape-client-(.*)\.tar\.(?:bz2|gz)

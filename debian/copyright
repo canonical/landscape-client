@@ -1,0 +1,36 @@
+This package was debianized by
+ * Jamshed Kakar <jamshed.kakar@canonical.com> on Wed, 28 Jun 2006
+ * Rick Clark <rick.clark@canonical.com> in Aug 2008
+ * Dustin Kirkland <kirkland@canonical.com> in Aug 2008
+
+   Copyright (C) 2006-2008 Canonical Ltd.
+
+License:
+
+Upstream source is located at: https://code.launchpad.net/landscape-client
+
+
+Copyright:
+
+The packaging of this software and the programs in this package are distributed
+under the terms of the GNU General Public License, version 2 as distributed by
+the Free Software Foundation.
+
+License:
+    Copyright (C) 2006-2008 Canonical Ltd.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 2,
+    as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+On Debian systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL-2'.
+

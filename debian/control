@@ -1,0 +1,49 @@
+Source: landscape-client
+Section: admin
+Priority: optional
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
+Build-Depends: debhelper (>= 7), po-debconf, libdistro-info-perl,
+               dh-python, python3-dev, python3-distutils-extra,
+               lsb-release, gawk
+Standards-Version: 3.8.2
+X-Python3-Version: >= 3.5
+
+Package: landscape-common
+Architecture: any
+Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
+         python3-twisted,
+         python3-configobj,
+         python3-apt,
+         python3-passlib,
+         ca-certificates,
+         python3-gdbm,
+         lsb-release,
+         lsb-base,
+         adduser,
+         bc,
+         lshw,
+         libpam-modules
+Breaks: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
+Replaces: landscape-client-ui (<< 16.04), landscape-client-ui-install (<< 16.04)
+Description: Landscape administration system client - Common files
+ Landscape is a web-based tool for managing Ubuntu systems. This
+ package is necessary if you want your machine to be managed in a
+ Landscape account.
+ .
+ This package provides the core libraries, as well as the landscape-sysinfo
+ command.  It also sets up the landscape user, landscape directories, and the
+ hook that runs landscape-sysinfo on startup.
+
+Package: landscape-client
+Architecture: any
+Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
+         ${shlibs:Depends},
+         landscape-common (= ${binary:Version}),
+         python3-pycurl,
+Description: Landscape administration system client
+ Landscape is a web-based tool for managing Ubuntu systems. This
+ package is necessary if you want your machine to be managed in a
+ Landscape account.
+ .
+ This package provides the Landscape client and requires a Landscape account.

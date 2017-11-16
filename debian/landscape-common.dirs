@@ -1,0 +1,5 @@
+etc/landscape
+etc/profile.d
+etc/update-motd.d
+var/lib/landscape
+var/log/landscape

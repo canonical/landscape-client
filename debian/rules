@@ -1,0 +1,101 @@
+#!/usr/bin/make -f
+
+dist_release := $(shell lsb_release -cs)
+
+dh_extra_flags = -plandscape-common -plandscape-client
+
+-include /usr/share/python/python.mk
+ifeq (,$(py_sitename))
+	py_sitename = site-packages
+	py_libdir = /usr/lib/python$(subst python,,$(1))/site-packages
+	py_sitename_sh = $(py_sitename)
+	py_libdir_sh = $(py_libdir)
+endif
+
+package = landscape-client
+root_dir = debian/tmp
+SHAREDIR = /usr/share/landscape
+LIBDIR = /usr/lib/landscape
+
+revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f 2 -d "-")
+
+landscape_common_substvars = debian/landscape-common.substvars
+landscape_client_substvars = debian/landscape-client.substvars
+
+build-arch: build
+
+build-indep: build
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	sed -i -e "s/^DEBIAN_REVISION = \"\"/DEBIAN_REVISION = \"-$(revision)\"/g" landscape/__init__.py
+	python3 setup.py build
+	make -C apt-update
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	rm -rf build
+	make -C apt-update clean
+	dh_clean
+	sed -i -e "s/^DEBIAN_REVISION = .*/DEBIAN_REVISION = \"\"/g" landscape/__init__.py
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+
+	python3 setup.py install --root $(root_dir)/ $(py_setup_install_args)
+
+	# Keep in mind that some installed files are defined in setup.py
+	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)$(SHAREDIR)/landscape-sysinfo.wrapper
+	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)$(LIBDIR)/apt-update
+
+binary-indep:
+# do nothing
+#
+binary-arch: build install
+	dh_lintian
+	dh_testdir
+	dh_testroot
+	dh_installdocs
+	dh_installman
+	dh_installchangelogs
+	dh_install --sourcedir debian/tmp/
+	dh_installinit -- start 45 2 3 4 5 . stop 15 0 1 6 .
+	dh_installlogrotate
+	dh_installdebconf
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_shlibdeps
+
+# from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
+ifneq (,$(filter $(dist_release),lucid precise))
+	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
+else
+	echo "extra:Depends=" >> $(landscape_common_substvars)
+endif
+
+# In xenial the client needs to depend on libpam-systemd (#1590838)
+ifeq ($(dist_release),xenial)
+	echo "extra:Depends=libpam-systemd" >> $(landscape_client_substvars)
+else
+	echo "extra:Depends=" >> $(landscape_client_substvars)
+endif
+
+	dh_python3 -p landscape-common -V 3.5-
+	dh_python3 -p landscape-client -V 3.5-
+	dh_installdeb $(dh_extra_flags)
+	dh_gencontrol $(dh_extra_flags)
+	dh_md5sums $(dh_extra_flags)
+	dh_builddeb $(dh_extra_flags)
+
+
+binary: binary-arch binary-indep
+
+.PHONY: binary binary-arch binary-indep clean
