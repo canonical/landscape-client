@@ -7,3 +7,4 @@ usr/bin/landscape-package-changer
 usr/bin/landscape-package-reporter
 usr/bin/landscape-release-upgrader
 usr/lib/landscape
+usr/lib/python3*/dist-packages/landscape/client

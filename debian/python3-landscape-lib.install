@@ -1,1 +1,4 @@
-usr/lib/python3*
+usr/lib/python3*/dist-packages/landscape/__init__.py
+usr/lib/python3*/dist-packages/landscape/constants.py
+usr/lib/python3*/dist-packages/landscape/lib
+usr/lib/python3*/dist-packages/landscape/message_schemas
