@@ -3,7 +3,7 @@ import os
 from twisted.internet.utils import getProcessOutput
 
 from landscape.lib.encoding import encode_values
-from landscape.manager.plugin import ManagerPlugin
+from landscape.client.manager.plugin import ManagerPlugin
 
 
 class HardwareInfo(ManagerPlugin):

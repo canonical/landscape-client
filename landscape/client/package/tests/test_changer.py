@@ -18,15 +18,15 @@ from landscape.lib.apt.package.testing import (
     AptFacadeHelper, SimpleRepositoryHelper)
 from landscape.lib.fs import create_text_file, read_text_file, touch_file
 from landscape.lib.testing import StubProcessFactory, FakeReactor
-from landscape.package.changer import (
+from landscape.client.package.changer import (
     PackageChanger, main, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
     POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
-from landscape.package.changer import (
+from landscape.client.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
-from landscape.manager.manager import FAILED
-from landscape.manager.shutdownmanager import ShutdownFailedError
+from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.client.manager.manager import FAILED
+from landscape.client.manager.shutdownmanager import ShutdownFailedError
 
 
 class AptPackageChangerTest(LandscapeTest):
@@ -751,7 +751,7 @@ class AptPackageChangerTest(LandscapeTest):
         pid = os.getpid() + 1
         with patch("os.getpgrp", return_value=pid) as getpgrp_mock:
             with patch("os.setsid") as setsid_mock:
-                with patch("landscape.package.changer.run_task_handler",
+                with patch("landscape.client.package.changer.run_task_handler",
                            return_value="RESULT") as run_task_handler_mock:
                     self.assertEqual(main(["ARGS"]), "RESULT")
 
@@ -767,7 +767,8 @@ class AptPackageChangerTest(LandscapeTest):
         """
         pid = os.getpid()
         with patch("os.getpgrp", return_value=pid) as pgrp:
-            with patch("landscape.package.changer.run_task_handler") as task:
+            mocktarget = "landscape.client.package.changer.run_task_handler"
+            with patch(mocktarget) as task:
                 main(["ARGS"])
 
         pgrp.assert_called_once_with()

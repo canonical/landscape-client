@@ -20,7 +20,7 @@ from landscape.lib.fetch import fetch_async, HTTPCodeError
 from landscape.lib.persist import Persist
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.user import get_user_info
-from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
+from landscape.client.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 ALL_USERS = object()
@@ -373,7 +373,7 @@ class ScriptExecution(ManagerPlugin):
     """
 
     def __init__(self):
-        from landscape.manager.customgraph import CustomGraphPlugin
+        from landscape.client.manager.customgraph import CustomGraphPlugin
         self._script_execution = ScriptExecutionPlugin()
         self._custom_graph = CustomGraphPlugin()
 

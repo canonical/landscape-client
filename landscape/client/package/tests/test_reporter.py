@@ -21,11 +21,11 @@ from landscape.lib.fs import create_text_file, touch_file
 from landscape.lib.fetch import FetchError
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.testing import EnvironSaverHelper, FakeReactor
-from landscape.package.reporter import (
+from landscape.client.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
-from landscape.package import reporter
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.client.package import reporter
+from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -278,7 +278,7 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
 
-    @mock.patch("landscape.package.reporter.fetch_async",
+    @mock.patch("landscape.client.package.reporter.fetch_async",
                 return_value=succeed(b"hash-ids"))
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db(self, logging_mock, mock_fetch_async):
@@ -316,7 +316,7 @@ class PackageReporterAptTest(LandscapeTest):
             hash_id_db_url, cainfo=None, proxy=None)
         return result
 
-    @mock.patch("landscape.package.reporter.fetch_async",
+    @mock.patch("landscape.client.package.reporter.fetch_async",
                 return_value=succeed(b"hash-ids"))
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db_with_proxy(self, logging_mock, mock_fetch_async):
@@ -343,7 +343,7 @@ class PackageReporterAptTest(LandscapeTest):
             hash_id_db_url, cainfo=None, proxy="http://helloproxy:8000")
         return result
 
-    @mock.patch("landscape.package.reporter.fetch_async")
+    @mock.patch("landscape.client.package.reporter.fetch_async")
     def test_fetch_hash_id_db_does_not_download_twice(self, mock_fetch_async):
 
         # Let's say that the hash=>id database is already there
@@ -422,7 +422,7 @@ class PackageReporterAptTest(LandscapeTest):
             "unknown dpkg architecture")
         return result
 
-    @mock.patch("landscape.package.reporter.fetch_async",
+    @mock.patch("landscape.client.package.reporter.fetch_async",
                 return_value=succeed(b"hash-ids"))
     def test_fetch_hash_id_db_with_default_url(self, mock_fetch_async):
         # Let's say package_hash_id_url is not set but url is
@@ -453,7 +453,7 @@ class PackageReporterAptTest(LandscapeTest):
             hash_id_db_url, cainfo=None, proxy=None)
         return result
 
-    @mock.patch("landscape.package.reporter.fetch_async",
+    @mock.patch("landscape.client.package.reporter.fetch_async",
                 return_value=fail(FetchError("fetch error")))
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_with_download_error(
@@ -515,7 +515,7 @@ class PackageReporterAptTest(LandscapeTest):
             "Can't determine the hash=>id database url")
         return result
 
-    @mock.patch("landscape.package.reporter.fetch_async",
+    @mock.patch("landscape.client.package.reporter.fetch_async",
                 return_value=succeed(b"hash-ids"))
     def test_fetch_hash_id_db_with_custom_certificate(self, mock_fetch_async):
         """
@@ -1167,7 +1167,8 @@ class PackageReporterAptTest(LandscapeTest):
         self.assertTrue(self.reporter.detect_changes.called)
 
     def test_main(self):
-        with mock.patch("landscape.package.reporter.run_task_handler") as m:
+        mocktarget = "landscape.client.package.reporter.run_task_handler"
+        with mock.patch(mocktarget) as m:
             m.return_value = "RESULT"
             self.assertEqual("RESULT", main(["ARGS"]))
         m.assert_called_once_with(PackageReporter, ["ARGS"])
@@ -1689,7 +1690,7 @@ class PackageReporterAptTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    @mock.patch("landscape.package.reporter.spawn_process",
+    @mock.patch("landscape.client.package.reporter.spawn_process",
                 return_value=succeed((b"", b"", 0)))
     def test_run_apt_update_honors_http_proxy(self, mock_spawn_process):
         """
@@ -1708,7 +1709,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.apt_update_filename,
             env={"http_proxy": "http://proxy_server:8080"})
 
-    @mock.patch("landscape.package.reporter.spawn_process",
+    @mock.patch("landscape.client.package.reporter.spawn_process",
                 return_value=succeed((b"", b"", 0)))
     def test_run_apt_update_honors_https_proxy(self, mock_spawn_process):
         """

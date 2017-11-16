@@ -1,8 +1,8 @@
 from landscape.lib.persist import Persist
-from landscape.user.changes import UserChanges
-from landscape.user.tests.helpers import FakeUserInfo, FakeUserProvider
+from landscape.client.user.changes import UserChanges
+from landscape.client.user.tests.helpers import FakeUserInfo, FakeUserProvider
 
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class UserChangesTest(LandscapeTest):

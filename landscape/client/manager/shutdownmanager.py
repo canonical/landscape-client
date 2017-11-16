@@ -4,7 +4,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.error import ProcessDone
 
-from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
+from landscape.client.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 class ShutdownFailedError(Exception):

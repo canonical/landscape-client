@@ -1,8 +1,9 @@
 import mock
 
 from landscape.lib.amp import MethodCallError
-from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import (
+from landscape.client.tests.helpers import (
+        LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.client.broker.tests.helpers import (
     RemoteBrokerHelper, RemoteClientHelper)
 
 

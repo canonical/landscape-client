@@ -1,7 +1,7 @@
 import os.path
 
 from landscape.lib import sysstats
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class ComputerUptime(MonitorPlugin):

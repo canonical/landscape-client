@@ -7,11 +7,11 @@ import mock
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
-from landscape.manager.customgraph import CustomGraphPlugin
-from landscape.manager.store import ManagerStore
+from landscape.client.manager.customgraph import CustomGraphPlugin
+from landscape.client.manager.store import ManagerStore
 
 from landscape.lib.testing import StubProcessFactory, DummyProcess
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class CustomGraphManagerTests(LandscapeTest):

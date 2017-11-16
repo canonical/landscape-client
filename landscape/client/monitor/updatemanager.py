@@ -2,7 +2,7 @@ import os
 import logging
 
 from landscape.lib.compat import SafeConfigParser
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class UpdateManager(MonitorPlugin):

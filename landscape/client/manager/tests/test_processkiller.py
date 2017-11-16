@@ -5,10 +5,10 @@ import subprocess
 
 from landscape.lib.process import ProcessInformation
 from landscape.lib.testing import ProcessDataBuilder
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
-from landscape.manager.plugin import SUCCEEDED, FAILED
-from landscape.manager.processkiller import (
+from landscape.client.manager.plugin import SUCCEEDED, FAILED
+from landscape.client.manager.processkiller import (
     ProcessKiller, ProcessNotFoundError, ProcessMismatchError,
     SignalProcessError)
 

@@ -5,7 +5,7 @@ from twisted.python.compat import iteritems
 from landscape.lib.fs import read_text_file
 from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
 
-from landscape.monitor.plugin import DataWatcher
+from landscape.client.monitor.plugin import DataWatcher
 
 
 class AptPreferences(DataWatcher):

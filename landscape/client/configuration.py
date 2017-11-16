@@ -18,19 +18,19 @@ from landscape.lib.compat import input
 
 from landscape.lib.tag import is_valid_tag
 
-from landscape.sysvconfig import SysVConfig, ProcessError
+from landscape.client.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.fs import create_binary_file
 from landscape.lib.bootstrap import BootstrapList, BootstrapDirectory
 from landscape.lib.persist import Persist
-from landscape.reactor import LandscapeReactor
-from landscape.broker.registration import RegistrationError
-from landscape.broker.config import BrokerConfiguration
-from landscape.broker.amp import RemoteBrokerConnector
-from landscape.broker.registration import Identity
-from landscape.broker.service import BrokerService
+from landscape.client.reactor import LandscapeReactor
+from landscape.client.broker.registration import RegistrationError
+from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.broker.registration import Identity
+from landscape.client.broker.service import BrokerService
 
 
 class ConfigurationError(Exception):

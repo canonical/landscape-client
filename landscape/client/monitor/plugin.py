@@ -4,7 +4,7 @@ from twisted.internet.defer import succeed
 
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
-from landscape.broker.client import BrokerClientPlugin
+from landscape.client.broker.client import BrokerClientPlugin
 
 
 class MonitorPlugin(BrokerClientPlugin):

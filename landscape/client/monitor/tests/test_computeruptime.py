@@ -1,6 +1,6 @@
 from landscape.lib.testing import append_login_data
-from landscape.monitor.computeruptime import ComputerUptime
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.computeruptime import ComputerUptime
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from mock import ANY, Mock
 
 

@@ -1,7 +1,7 @@
 import random
 
-from landscape.manager.plugin import ManagerPlugin
-from landscape.manager.manager import SUCCEEDED
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.manager import SUCCEEDED
 
 
 class FakePackageManager(ManagerPlugin):

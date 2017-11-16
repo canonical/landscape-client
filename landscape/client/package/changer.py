@@ -16,13 +16,13 @@ from landscape.constants import (
 from landscape.lib.config import get_bindir
 from landscape.lib.fs import create_binary_file
 from landscape.lib.log import log_failure
-from landscape.package.reporter import find_reporter_command
-from landscape.package.taskhandler import (
+from landscape.client.package.reporter import find_reporter_command
+from landscape.client.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
-from landscape.manager.manager import FAILED
-from landscape.manager.shutdownmanager import ShutdownProcessProtocol
-from landscape.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
+from landscape.client.manager.manager import FAILED
+from landscape.client.manager.shutdownmanager import ShutdownProcessProtocol
+from landscape.client.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
 
 
 class UnknownPackageData(Exception):
@@ -70,7 +70,7 @@ class PackageChanger(PackageTaskHandler):
             store, facade, remote, config, landscape_reactor)
         self._process_factory = process_factory
         if landscape_reactor is None:  # For testing purposes.
-            from landscape.reactor import LandscapeReactor
+            from landscape.client.reactor import LandscapeReactor
             self._landscape_reactor = LandscapeReactor()
         else:
             self._landscape_reactor = landscape_reactor

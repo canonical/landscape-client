@@ -1,6 +1,6 @@
-from landscape.tests.helpers import LandscapeTest
-from landscape.manager.config import ManagerConfiguration, ALL_PLUGINS
-from landscape.manager.scriptexecution import ALL_USERS
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.manager.config import ManagerConfiguration, ALL_PLUGINS
+from landscape.client.manager.scriptexecution import ALL_USERS
 
 
 class ManagerConfigurationTest(LandscapeTest):

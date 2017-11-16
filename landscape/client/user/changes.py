@@ -1,6 +1,6 @@
 from twisted.python.compat import iteritems, itervalues
 
-from landscape.diff import diff
+from landscape.client.diff import diff
 
 
 class UserChanges(object):

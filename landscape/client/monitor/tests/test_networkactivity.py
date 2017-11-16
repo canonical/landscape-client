@@ -1,6 +1,6 @@
 import socket
-from landscape.monitor.networkactivity import NetworkActivity
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.networkactivity import NetworkActivity
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class NetworkActivityTest(LandscapeTest):

@@ -4,13 +4,13 @@ import os.path
 
 from twisted.internet.defer import Deferred
 
-from landscape.package.changer import PackageChanger
-from landscape.package.releaseupgrader import ReleaseUpgrader
+from landscape.client.package.changer import PackageChanger
+from landscape.client.package.releaseupgrader import ReleaseUpgrader
 from landscape.lib.apt.package.store import PackageStore
 
 from landscape.lib.testing import EnvironSaverHelper
-from landscape.manager.packagemanager import PackageManager
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.manager.packagemanager import PackageManager
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class PackageManagerTest(LandscapeTest):

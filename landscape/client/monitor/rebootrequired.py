@@ -2,7 +2,7 @@ import os
 import logging
 
 from landscape.lib.fs import read_text_file
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 REBOOT_REQUIRED_FILENAME = "/var/run/reboot-required"

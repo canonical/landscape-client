@@ -1,11 +1,11 @@
 import pwd
 import grp
 
-from landscape.user.provider import (
+from landscape.client.user.provider import (
     UserProvider, UserNotFoundError, GroupNotFoundError)
 
-from landscape.tests.helpers import LandscapeTest
-from landscape.user.tests.helpers import FakeUserProvider
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.user.tests.helpers import FakeUserProvider
 
 
 class ProviderTest(LandscapeTest):

@@ -2,10 +2,10 @@ import codecs
 import time
 import os
 
-from landscape.accumulate import Accumulator
+from landscape.client.accumulate import Accumulator
 from landscape.lib.disk import get_mount_info, is_device_removable
 from landscape.lib.monitor import CoverageMonitor
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class MountInfo(MonitorPlugin):

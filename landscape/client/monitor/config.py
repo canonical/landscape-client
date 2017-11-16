@@ -1,4 +1,4 @@
-from landscape.deployment import Configuration
+from landscape.client.deployment import Configuration
 
 
 ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo",

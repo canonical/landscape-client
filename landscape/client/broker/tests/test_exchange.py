@@ -6,15 +6,17 @@ from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.hashlib import md5
 from landscape.lib.schema import Int
 from landscape.message_schemas.message import Message
-from landscape.broker.config import BrokerConfiguration
-from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
-from landscape.broker.transport import FakeTransport
-from landscape.broker.store import MessageStore
-from landscape.broker.ping import Pinger
-from landscape.broker.registration import RegistrationHandler
-from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
-from landscape.broker.tests.helpers import ExchangeHelper
-from landscape.broker.server import BrokerServer
+from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.broker.exchange import (
+        get_accepted_types_diff, MessageExchange)
+from landscape.client.broker.transport import FakeTransport
+from landscape.client.broker.store import MessageStore
+from landscape.client.broker.ping import Pinger
+from landscape.client.broker.registration import RegistrationHandler
+from landscape.client.tests.helpers import (
+        LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.client.broker.tests.helpers import ExchangeHelper
+from landscape.client.broker.server import BrokerServer
 
 
 class MessageExchangeTest(LandscapeTest):

@@ -9,18 +9,18 @@ import os
 
 from landscape.lib.persist import Persist
 from landscape.lib.testing import FakeReactor
-from landscape.watchdog import bootstrap_list
-from landscape.amp import ComponentPublisher
-from landscape.broker.transport import FakeTransport
-from landscape.broker.exchange import MessageExchange
-from landscape.broker.exchangestore import ExchangeStore
-from landscape.broker.store import get_default_message_store
-from landscape.broker.registration import Identity, RegistrationHandler
-from landscape.broker.ping import Pinger
-from landscape.broker.config import BrokerConfiguration
-from landscape.broker.server import BrokerServer
-from landscape.broker.amp import RemoteBrokerConnector
-from landscape.broker.client import BrokerClient
+from landscape.client.watchdog import bootstrap_list
+from landscape.client.amp import ComponentPublisher
+from landscape.client.broker.transport import FakeTransport
+from landscape.client.broker.exchange import MessageExchange
+from landscape.client.broker.exchangestore import ExchangeStore
+from landscape.client.broker.store import get_default_message_store
+from landscape.client.broker.registration import Identity, RegistrationHandler
+from landscape.client.broker.ping import Pinger
+from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.broker.server import BrokerServer
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.broker.client import BrokerClient
 
 
 class BrokerConfigurationHelper(object):

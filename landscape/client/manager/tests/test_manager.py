@@ -1,6 +1,6 @@
-from landscape.manager.store import ManagerStore
+from landscape.client.manager.store import ManagerStore
 
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class ManagerTest(LandscapeTest):

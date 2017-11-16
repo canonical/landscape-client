@@ -48,8 +48,8 @@ import logging
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
-from landscape.amp import remote
-from landscape.manager.manager import FAILED
+from landscape.client.amp import remote
+from landscape.client.manager.manager import FAILED
 
 
 def event(method):
@@ -85,7 +85,7 @@ class BrokerServer(object):
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store, pinger):
-        from landscape.broker.amp import get_component_registry
+        from landscape.client.broker.amp import get_component_registry
         self.connectors_registry = get_component_registry()
         self._config = config
         self._reactor = reactor

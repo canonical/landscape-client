@@ -2,10 +2,10 @@ import mock
 
 from landscape.lib.fs import read_text_file, create_text_file
 
-from landscape.deployment import (
+from landscape.client.deployment import (
     BaseConfiguration, Configuration, get_versioned_persist)
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest
 
 
 class BabbleConfiguration(BaseConfiguration):
@@ -250,7 +250,7 @@ class GetVersionedPersistTest(LandscapeTest):
             service_name = "monitor"
 
         mock_monitor = mock.Mock()
-        with mock.patch.dict("landscape.upgraders.UPGRADE_MANAGERS",
+        with mock.patch.dict("landscape.client.upgraders.UPGRADE_MANAGERS",
                              {"monitor": mock_monitor}):
             persist = get_versioned_persist(FakeService())
             mock_monitor.apply.assert_called_with(persist)

@@ -3,12 +3,12 @@ import os
 from mock import Mock, ANY
 from twisted.internet.defer import fail
 
-from landscape.amp import ComponentPublisher
-from landscape.monitor.usermonitor import (
+from landscape.client.amp import ComponentPublisher
+from landscape.client.monitor.usermonitor import (
     UserMonitor, RemoteUserMonitorConnector)
-from landscape.manager.usermanager import UserManager
-from landscape.user.tests.helpers import FakeUserProvider
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.manager.usermanager import UserManager
+from landscape.client.user.tests.helpers import FakeUserProvider
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 import landscape.client.monitor.usermonitor
 
 

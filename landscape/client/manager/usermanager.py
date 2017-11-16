@@ -1,10 +1,10 @@
 import logging
 
-from landscape.amp import ComponentConnector, ComponentPublisher, remote
+from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
 
-from landscape.user.management import UserManagement
-from landscape.manager.plugin import ManagerPlugin
-from landscape.monitor.usermonitor import RemoteUserMonitorConnector
+from landscape.client.user.management import UserManagement
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector
 
 
 class UserManager(ManagerPlugin):

@@ -7,9 +7,9 @@ from twisted.python.compat import iteritems
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.lib.user import get_user_info, UnknownUserError
-from landscape.accumulate import Accumulator
-from landscape.manager.plugin import ManagerPlugin
-from landscape.manager.scriptexecution import (
+from landscape.client.accumulate import Accumulator
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.scriptexecution import (
     ProcessFailedError, ScriptRunnerMixin, ProcessTimeLimitReachedError)
 
 

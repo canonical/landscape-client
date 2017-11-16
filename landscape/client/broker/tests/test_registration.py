@@ -5,9 +5,9 @@ import mock
 
 from twisted.python.compat import _PY3
 
-from landscape.broker.registration import RegistrationError, Identity
-from landscape.tests.helpers import LandscapeTest
-from landscape.broker.tests.helpers import (
+from landscape.client.broker.registration import RegistrationError, Identity
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.broker.tests.helpers import (
     BrokerConfigurationHelper, RegistrationHelper)
 from landscape.lib.persist import Persist
 
@@ -162,7 +162,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
 
-    @mock.patch("landscape.broker.registration.get_vm_info")
+    @mock.patch("landscape.client.broker.registration.get_vm_info")
     def test_queue_message_on_exchange_with_vm_info(self, get_vm_info_mock):
         """
         When a computer_title and account_name are available, no
@@ -181,7 +181,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                          "'account_name' without a password.")
         get_vm_info_mock.assert_called_once_with()
 
-    @mock.patch("landscape.broker.registration.get_container_info")
+    @mock.patch("landscape.client.broker.registration.get_container_info")
     def test_queue_message_on_exchange_with_lxc_container(
             self, get_container_info_mock):
         """

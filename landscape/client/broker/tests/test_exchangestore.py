@@ -5,9 +5,9 @@ try:
 except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest
 
-from landscape.broker.exchangestore import ExchangeStore
+from landscape.client.broker.exchangestore import ExchangeStore
 
 
 class ExchangeStoreTest(LandscapeTest):

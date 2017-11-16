@@ -1,9 +1,9 @@
 import mock
 
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.network import (
     get_active_device_info)
-from landscape.monitor.networkdevice import NetworkDevice
+from landscape.client.monitor.networkdevice import NetworkDevice
 
 
 def test_get_active_device_info():

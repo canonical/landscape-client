@@ -1,5 +1,5 @@
-from landscape.manager.store import ManagerStore
-from landscape.broker.client import BrokerClient
+from landscape.client.manager.store import ManagerStore
+from landscape.client.broker.client import BrokerClient
 
 # Protocol messages! Same constants are defined in the server.
 FAILED = 5

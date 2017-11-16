@@ -1,6 +1,6 @@
 from landscape.lib.plugin import PluginConfigError
-from landscape.monitor.processorinfo import ProcessorInfo
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.processorinfo import ProcessorInfo
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from mock import ANY, Mock
 
 

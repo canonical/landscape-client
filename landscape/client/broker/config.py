@@ -2,7 +2,7 @@
 
 import os
 
-from landscape.deployment import Configuration
+from landscape.client.deployment import Configuration
 
 
 class BrokerConfiguration(Configuration):

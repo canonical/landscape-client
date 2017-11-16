@@ -1,7 +1,7 @@
-from landscape.tests.helpers import LandscapeTest
-from landscape.patch import SQLiteUpgradeManager
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.patch import SQLiteUpgradeManager
 
-from landscape.upgraders import package
+from landscape.client.upgraders import package
 
 
 class TestPackageUpgraders(LandscapeTest):

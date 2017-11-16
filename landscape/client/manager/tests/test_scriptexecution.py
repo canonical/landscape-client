@@ -15,11 +15,11 @@ from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.persist import Persist
 from landscape.lib.testing import StubProcessFactory, DummyProcess
 from landscape.lib.user import get_user_info, UnknownUserError
-from landscape.manager.scriptexecution import (
+from landscape.client.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
     UBUNTU_PATH, UnknownInterpreterError, FETCH_ATTACHMENTS_FAILED_RESULT)
-from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.manager.manager import SUCCEEDED, FAILED
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 def get_default_environment():
@@ -240,7 +240,7 @@ class RunScriptTests(LandscapeTest):
         persist.save()
 
         patch_fetch = mock.patch(
-            "landscape.manager.scriptexecution.fetch_async")
+            "landscape.client.manager.scriptexecution.fetch_async")
         mock_fetch = patch_fetch.start()
         mock_fetch.return_value = succeed(b"some other data")
 
@@ -280,7 +280,7 @@ class RunScriptTests(LandscapeTest):
         persist.save()
 
         patch_fetch = mock.patch(
-            "landscape.manager.scriptexecution.fetch_async")
+            "landscape.client.manager.scriptexecution.fetch_async")
         mock_fetch = patch_fetch.start()
         mock_fetch.return_value = succeed(b"some other data")
 
@@ -983,7 +983,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    @mock.patch("landscape.manager.scriptexecution.fetch_async")
+    @mock.patch("landscape.client.manager.scriptexecution.fetch_async")
     def test_fetch_attachment_failure(self, mock_fetch):
         """
         If the plugin fails to retrieve the attachments with a

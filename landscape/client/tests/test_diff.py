@@ -1,5 +1,5 @@
-from landscape.diff import diff
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.diff import diff
+from landscape.client.tests.helpers import LandscapeTest
 
 
 class DiffTest(LandscapeTest):

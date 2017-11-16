@@ -7,7 +7,7 @@ from landscape.lib.fs import read_text_file
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.network import get_fqdn
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 METADATA_RETRY_MAX = 3  # Number of retries to get EC2 meta-data
 

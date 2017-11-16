@@ -1,8 +1,8 @@
 import mock
 
 from landscape.lib.testing import LogKeeperHelper
-from landscape.monitor.updatemanager import UpdateManager
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.updatemanager import UpdateManager
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class UpdateManagerTest(LandscapeTest):

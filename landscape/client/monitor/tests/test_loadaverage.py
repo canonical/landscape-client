@@ -1,7 +1,7 @@
 import mock
 
-from landscape.monitor.loadaverage import LoadAverage
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.loadaverage import LoadAverage
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 def get_load_average():

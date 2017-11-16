@@ -1,7 +1,7 @@
 import os
 
-from landscape.deployment import Configuration
-from landscape.manager.scriptexecution import ALL_USERS
+from landscape.client.deployment import Configuration
+from landscape.client.manager.scriptexecution import ALL_USERS
 
 
 ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager",

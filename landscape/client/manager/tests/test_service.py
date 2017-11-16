@@ -1,9 +1,9 @@
-from landscape.tests.helpers import (
+from landscape.client.tests.helpers import (
     LandscapeTest, FakeBrokerServiceHelper)
 from landscape.lib.testing import FakeReactor
-from landscape.manager.config import ManagerConfiguration, ALL_PLUGINS
-from landscape.manager.service import ManagerService
-from landscape.manager.processkiller import ProcessKiller
+from landscape.client.manager.config import ManagerConfiguration, ALL_PLUGINS
+from landscape.client.manager.service import ManagerService
+from landscape.client.manager.processkiller import ProcessKiller
 
 
 class ManagerServiceTest(LandscapeTest):

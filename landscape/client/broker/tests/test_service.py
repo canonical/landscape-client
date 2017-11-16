@@ -2,11 +2,11 @@ import os
 
 from mock import Mock
 
-from landscape.tests.helpers import LandscapeTest
-from landscape.broker.tests.helpers import BrokerConfigurationHelper
-from landscape.broker.service import BrokerService
-from landscape.broker.transport import HTTPTransport
-from landscape.broker.amp import RemoteBrokerConnector
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
+from landscape.client.broker.service import BrokerService
+from landscape.client.broker.transport import HTTPTransport
+from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.lib.testing import FakeReactor
 
 

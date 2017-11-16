@@ -1,7 +1,7 @@
-from landscape.tests.helpers import LandscapeTest
-from landscape.patch import UpgradeManager
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.patch import UpgradeManager
 
-from landscape.upgraders import monitor
+from landscape.client.upgraders import monitor
 
 
 class TestMonitorUpgraders(LandscapeTest):

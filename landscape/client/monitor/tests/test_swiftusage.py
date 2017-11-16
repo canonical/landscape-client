@@ -1,8 +1,8 @@
 from twisted.internet.defer import succeed
 from unittest import skipUnless
 
-from landscape.monitor.swiftusage import SwiftUsage
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.swiftusage import SwiftUsage
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from mock import ANY, Mock
 
 try:

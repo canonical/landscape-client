@@ -1,8 +1,8 @@
 import os
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest
 
-from landscape.manager.keystonetoken import KeystoneToken
-from landscape.tests.helpers import ManagerHelper, FakePersist
+from landscape.client.manager.keystonetoken import KeystoneToken
+from landscape.client.tests.helpers import ManagerHelper, FakePersist
 
 
 class KeystoneTokenTest(LandscapeTest):

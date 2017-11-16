@@ -1,9 +1,9 @@
 from mock import Mock
 
-from landscape.monitor.monitor import Monitor
+from landscape.client.monitor.monitor import Monitor
 from landscape.lib.persist import Persist
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.broker.client import BrokerClientPlugin
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.broker.client import BrokerClientPlugin
 
 
 class MonitorTest(LandscapeTest):

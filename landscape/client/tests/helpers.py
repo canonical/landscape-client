@@ -1,22 +1,22 @@
 import pprint
 import unittest
 
-from landscape.tests.subunit import run_isolated
-from landscape.watchdog import bootstrap_list
+from landscape.client.tests.subunit import run_isolated
+from landscape.client.watchdog import bootstrap_list
 
 from landscape.lib.persist import Persist
 from landscape.lib.testing import FakeReactor
 
-from landscape.broker.config import BrokerConfiguration
-from landscape.broker.transport import FakeTransport
-from landscape.monitor.config import MonitorConfiguration
-from landscape.monitor.monitor import Monitor
-from landscape.manager.manager import Manager
+from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.broker.transport import FakeTransport
+from landscape.client.monitor.config import MonitorConfiguration
+from landscape.client.monitor.monitor import Monitor
+from landscape.client.manager.manager import Manager
 
-from landscape.broker.service import BrokerService
-from landscape.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
-from landscape.deployment import BaseConfiguration
-from landscape.manager.config import ManagerConfiguration
+from landscape.client.broker.service import BrokerService
+from landscape.client.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
+from landscape.client.deployment import BaseConfiguration
+from landscape.client.manager.config import ManagerConfiguration
 
 from landscape.lib import testing
 

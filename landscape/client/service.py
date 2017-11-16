@@ -5,8 +5,8 @@ from twisted.application.service import Application, Service
 from twisted.application.app import startApplication
 
 from landscape.lib.logging import rotate_logs
-from landscape.reactor import LandscapeReactor
-from landscape.deployment import get_versioned_persist, init_logging
+from landscape.client.reactor import LandscapeReactor
+from landscape.client.deployment import get_versioned_persist, init_logging
 
 
 class LandscapeService(Service, object):

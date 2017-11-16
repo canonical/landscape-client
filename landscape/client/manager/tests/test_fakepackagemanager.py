@@ -1,7 +1,7 @@
-from landscape.manager.plugin import SUCCEEDED
+from landscape.client.manager.plugin import SUCCEEDED
 
-from landscape.manager.fakepackagemanager import FakePackageManager
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.manager.fakepackagemanager import FakePackageManager
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class FakePackageManagerTest(LandscapeTest):

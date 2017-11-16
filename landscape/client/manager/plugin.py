@@ -2,7 +2,7 @@ from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
-from landscape.broker.client import BrokerClientPlugin
+from landscape.client.broker.client import BrokerClientPlugin
 
 # Protocol messages! Same constants are defined in the server.
 FAILED = 5

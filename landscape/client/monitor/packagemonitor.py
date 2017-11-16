@@ -5,8 +5,8 @@ from twisted.internet.utils import getProcessOutput
 
 from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.encoding import encode_values
-from landscape.package.reporter import find_reporter_command
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.package.reporter import find_reporter_command
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class PackageMonitor(MonitorPlugin):
@@ -78,7 +78,7 @@ class PackageMonitor(MonitorPlugin):
 
         if getattr(self, "_fake_reporter", None) is None:
 
-            from landscape.package.reporter import (
+            from landscape.client.package.reporter import (
                 FakeReporter, PackageReporterConfiguration)
             from landscape.lib.apt.package.store import FakePackageStore
             package_facade = FakeFacade()

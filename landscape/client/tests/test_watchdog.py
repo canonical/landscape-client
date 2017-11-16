@@ -14,16 +14,17 @@ from twisted.python.fakepwd import UserDatabase
 from landscape.lib.encoding import encode_values
 from landscape.lib.fs import read_text_file
 from landscape.lib.testing import EnvironSaverHelper
-from landscape.tests.clock import Clock
-from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
+from landscape.client.tests.clock import Clock
+from landscape.client.tests.helpers import (
+        LandscapeTest, FakeBrokerServiceHelper)
 from landscape.client.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
     Broker, Monitor, Manager)
-from landscape.amp import ComponentConnector
-from landscape.broker.amp import RemoteBrokerConnector
-from landscape.reactor import LandscapeReactor
+from landscape.client.amp import ComponentConnector
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.reactor import LandscapeReactor
 
 import landscape.client.watchdog
 
@@ -1273,8 +1274,8 @@ from twisted.internet import reactor
 sys.path = %(path)r
 
 from landscape.lib.amp import MethodCallServerFactory
-from landscape.broker.server import BrokerServer
-from landscape.amp import get_remote_methods
+from landscape.client.broker.server import BrokerServer
+from landscape.client.amp import get_remote_methods
 
 class StubBroker(object):
 

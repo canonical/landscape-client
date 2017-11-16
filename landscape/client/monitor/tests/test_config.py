@@ -1,5 +1,5 @@
-from landscape.tests.helpers import LandscapeTest
-from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.monitor.config import MonitorConfiguration, ALL_PLUGINS
 
 
 class MonitorConfigurationTest(LandscapeTest):

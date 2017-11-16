@@ -3,8 +3,8 @@ import time
 from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.sysstats import get_thermal_zones
 
-from landscape.accumulate import Accumulator
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.accumulate import Accumulator
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class Temperature(MonitorPlugin):

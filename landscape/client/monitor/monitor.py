@@ -2,7 +2,7 @@
 
 import os
 
-from landscape.broker.client import BrokerClient
+from landscape.client.broker.client import BrokerClient
 
 
 class Monitor(BrokerClient):

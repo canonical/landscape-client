@@ -22,7 +22,7 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
-from landscape.deployment import init_logging, Configuration
+from landscape.client.deployment import init_logging, Configuration
 from landscape.lib.config import get_bindir
 from landscape.lib.encoding import encode_values
 from landscape.lib.twisted_util import gather_results
@@ -30,9 +30,9 @@ from landscape.lib.log import log_failure
 from landscape.lib.logging import rotate_logs
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
-from landscape.broker.amp import (
+from landscape.client.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
-from landscape.reactor import LandscapeReactor
+from landscape.client.reactor import LandscapeReactor
 
 GRACEFUL_WAIT_PERIOD = 10
 MAXIMUM_CONSECUTIVE_RESTARTS = 5

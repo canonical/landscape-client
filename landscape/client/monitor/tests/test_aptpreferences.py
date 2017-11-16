@@ -3,9 +3,9 @@ import mock
 
 from twisted.python.compat import unicode
 
-from landscape.monitor.aptpreferences import AptPreferences
-from landscape.tests.helpers import LandscapeTest
-from landscape.tests.helpers import MonitorHelper
+from landscape.client.monitor.aptpreferences import AptPreferences
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 
 
 class AptPreferencesTest(LandscapeTest):

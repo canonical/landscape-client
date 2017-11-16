@@ -9,11 +9,11 @@ from landscape.lib.apt.package.store import HashIdStore, PackageStore
 from landscape.lib.apt.package.testing import AptFacadeHelper
 from landscape.lib.lock import lock_path
 from landscape.lib.testing import EnvironSaverHelper, FakeReactor
-from landscape.broker.amp import RemoteBrokerConnector
-from landscape.package.taskhandler import (
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -305,10 +305,10 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.assertTrue(result.called)
 
     @patch("os.umask")
-    @patch("landscape.package.taskhandler.RemoteBrokerConnector")
-    @patch("landscape.package.taskhandler.LandscapeReactor")
-    @patch("landscape.package.taskhandler.init_logging")
-    @patch("landscape.package.taskhandler.lock_path")
+    @patch("landscape.client.package.taskhandler.RemoteBrokerConnector")
+    @patch("landscape.client.package.taskhandler.LandscapeReactor")
+    @patch("landscape.client.package.taskhandler.init_logging")
+    @patch("landscape.client.package.taskhandler.lock_path")
     def test_run_task_handler(self, lock_path_mock, init_logging_mock,
                               reactor_class_mock, connector_class_mock, umask):
         """
@@ -404,7 +404,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         else:
             self.fail("SystemExit not raised")
 
-    @patch("landscape.package.taskhandler.init_logging")
+    @patch("landscape.client.package.taskhandler.init_logging")
     def test_errors_are_printed_and_exit_program(self, init_logging_mock):
 
         class MyException(Exception):

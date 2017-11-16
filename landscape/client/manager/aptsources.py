@@ -9,8 +9,8 @@ from twisted.internet.defer import succeed
 
 from landscape.lib.twisted_util import spawn_process
 
-from landscape.manager.plugin import ManagerPlugin
-from landscape.package.reporter import find_reporter_command
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.package.reporter import find_reporter_command
 
 
 class ProcessError(Exception):

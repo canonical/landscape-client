@@ -4,12 +4,12 @@ import mock
 
 from twisted.internet.defer import Deferred, succeed
 
-from landscape.manager.aptsources import AptSources
-from landscape.manager.plugin import SUCCEEDED, FAILED
+from landscape.client.manager.aptsources import AptSources
+from landscape.client.manager.plugin import SUCCEEDED, FAILED
 
 from landscape.lib.twisted_util import gather_results, SignalError
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.package.reporter import find_reporter_command
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.package.reporter import find_reporter_command
 
 
 class FakeStatResult(object):

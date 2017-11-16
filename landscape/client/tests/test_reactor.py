@@ -1,8 +1,8 @@
 import time
 
-from landscape.reactor import LandscapeReactor
+from landscape.client.reactor import LandscapeReactor
 from landscape.lib.tests.test_reactor import ReactorTestMixin
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest
 
 
 class LandscapeReactorTest(LandscapeTest, ReactorTestMixin):

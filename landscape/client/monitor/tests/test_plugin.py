@@ -3,8 +3,8 @@ from mock import ANY, Mock, patch
 from landscape.lib.testing import LogKeeperHelper
 from landscape.lib.schema import Int
 from landscape.message_schemas.message import Message
-from landscape.monitor.plugin import MonitorPlugin, DataWatcher
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.plugin import MonitorPlugin, DataWatcher
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class MonitorPluginTest(LandscapeTest):
@@ -146,8 +146,8 @@ class DataWatcherTest(LandscapeTest):
         self.assertEqual(messages[0]["type"], "wubble")
         self.assertEqual(messages[0]["wubblestuff"], 1)
         self.assertIn("Queueing a message with updated data watcher info for "
-                      "landscape.monitor.tests.test_plugin.StubDataWatching"
-                      "Plugin.", self.logfile.getvalue())
+                      "landscape.client.monitor.tests.test_plugin."
+                      "StubDataWatchingPlugin.", self.logfile.getvalue())
 
     def test_unchanging_value(self):
         # Is this really want we want to do?

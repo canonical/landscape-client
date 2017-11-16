@@ -5,9 +5,9 @@ from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
 from landscape.lib.testing import FakeReactor
-from landscape.deployment import Configuration
-from landscape.service import LandscapeService
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.deployment import Configuration
+from landscape.client.service import LandscapeService
+from landscape.client.tests.helpers import LandscapeTest
 
 
 class TestComponent(object):

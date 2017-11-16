@@ -1,11 +1,12 @@
 from mock import Mock
 
 from landscape.lib.testing import FakeReactor
-from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
-from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
-from landscape.monitor.service import MonitorService
-from landscape.monitor.computerinfo import ComputerInfo
-from landscape.monitor.loadaverage import LoadAverage
+from landscape.client.tests.helpers import (
+        LandscapeTest, FakeBrokerServiceHelper)
+from landscape.client.monitor.config import MonitorConfiguration, ALL_PLUGINS
+from landscape.client.monitor.service import MonitorService
+from landscape.client.monitor.computerinfo import ComputerInfo
+from landscape.client.monitor.loadaverage import LoadAverage
 
 
 class MonitorServiceTest(LandscapeTest):

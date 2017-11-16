@@ -1,12 +1,12 @@
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest
 
 from twisted.internet.defer import fail
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
 from landscape.lib.testing import FakeReactor
-from landscape.broker.ping import PingClient, Pinger
-from landscape.broker.tests.helpers import ExchangeHelper
+from landscape.client.broker.ping import PingClient, Pinger
+from landscape.client.broker.tests.helpers import ExchangeHelper
 
 
 class FakePageGetter(object):

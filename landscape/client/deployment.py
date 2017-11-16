@@ -8,7 +8,7 @@ from landscape.lib import logging
 from landscape.lib.config import BaseConfiguration as _BaseConfiguration
 from landscape.lib.persist import Persist
 
-from landscape.upgraders import UPGRADE_MANAGERS
+from landscape.client.upgraders import UPGRADE_MANAGERS
 
 
 def init_logging(configuration, program_name):

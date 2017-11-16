@@ -5,11 +5,11 @@ import os.path
 from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
-from landscape.amp import ComponentPublisher, ComponentConnector, remote
+from landscape.client.amp import ComponentPublisher, ComponentConnector, remote
 
-from landscape.monitor.plugin import MonitorPlugin
-from landscape.user.changes import UserChanges
-from landscape.user.provider import UserProvider
+from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.client.user.changes import UserChanges
+from landscape.client.user.provider import UserProvider
 
 
 # Part of bug 1048576 remediation:
@@ -71,7 +71,8 @@ class UserMonitor(MonitorPlugin):
         @param operation_id: When present it will be included in the
             C{operation-id} field.
         """
-        from landscape.manager.usermanager import RemoteUserManagerConnector
+        from landscape.client.manager.usermanager import (
+                RemoteUserManagerConnector)
         user_manager_connector = RemoteUserManagerConnector(
             self.registry.reactor, self.registry.config)
 

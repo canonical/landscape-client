@@ -5,9 +5,9 @@ import os
 from twisted.internet import threads
 from twisted.python.compat import unicode
 
-from landscape.accumulate import Accumulator
+from landscape.client.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 try:

@@ -8,9 +8,9 @@ from landscape.lib.apt.package.store import PackageStore, InvalidHashIdDb
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
-from landscape.reactor import LandscapeReactor
-from landscape.deployment import Configuration, init_logging
-from landscape.broker.amp import RemoteBrokerConnector
+from landscape.client.reactor import LandscapeReactor
+from landscape.client.deployment import Configuration, init_logging
+from landscape.client.broker.amp import RemoteBrokerConnector
 
 
 class PackageTaskError(Exception):

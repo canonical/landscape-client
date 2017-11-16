@@ -2,16 +2,16 @@
 
 import os
 
-from landscape.service import LandscapeService, run_landscape_service
-from landscape.amp import ComponentPublisher
-from landscape.broker.registration import RegistrationHandler, Identity
-from landscape.broker.config import BrokerConfiguration
-from landscape.broker.transport import HTTPTransport
-from landscape.broker.exchange import MessageExchange
-from landscape.broker.exchangestore import ExchangeStore
-from landscape.broker.ping import Pinger
-from landscape.broker.store import get_default_message_store
-from landscape.broker.server import BrokerServer
+from landscape.client.service import LandscapeService, run_landscape_service
+from landscape.client.amp import ComponentPublisher
+from landscape.client.broker.registration import RegistrationHandler, Identity
+from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.broker.transport import HTTPTransport
+from landscape.client.broker.exchange import MessageExchange
+from landscape.client.broker.exchangestore import ExchangeStore
+from landscape.client.broker.ping import Pinger
+from landscape.client.broker.store import get_default_message_store
+from landscape.client.broker.server import BrokerServer
 
 
 class BrokerService(LandscapeService):

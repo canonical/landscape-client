@@ -4,10 +4,10 @@ import os
 
 from twisted.internet import threads
 
-from landscape.accumulate import Accumulator
+from landscape.client.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.network import get_active_device_info
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 try:
     from swift.common.ring import Ring

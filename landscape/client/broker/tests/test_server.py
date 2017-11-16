@@ -4,11 +4,12 @@ from configobj import ConfigObj
 from mock import Mock
 from twisted.internet.defer import succeed, fail
 
-from landscape.manager.manager import FAILED
-from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import (
+from landscape.client.manager.manager import FAILED
+from landscape.client.tests.helpers import (
+        LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.client.broker.tests.helpers import (
     BrokerServerHelper, RemoteClientHelper)
-from landscape.broker.tests.test_ping import FakePageGetter
+from landscape.client.broker.tests.test_ping import FakePageGetter
 
 
 class FakeClient(object):

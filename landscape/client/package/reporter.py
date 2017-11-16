@@ -22,7 +22,7 @@ from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file, create_binary_file
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
-from landscape.package.taskhandler import (
+from landscape.client.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 
 
@@ -179,7 +179,7 @@ class PackageReporter(PackageTaskHandler):
 
     def _apt_sources_have_changed(self):
         """Return a boolean indicating if the APT sources were modified."""
-        from landscape.monitor.packagemonitor import PackageMonitor
+        from landscape.client.monitor.packagemonitor import PackageMonitor
 
         filenames = []
 

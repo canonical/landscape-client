@@ -1,6 +1,6 @@
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
-from landscape.manager.hardwareinfo import HardwareInfo
+from landscape.client.manager.hardwareinfo import HardwareInfo
 
 
 class HardwareInfoTests(LandscapeTest):

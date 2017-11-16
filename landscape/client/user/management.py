@@ -8,7 +8,7 @@ import logging
 import subprocess
 from passlib.hash import md5_crypt
 
-from landscape.user.provider import UserManagementError, UserProvider
+from landscape.client.user.provider import UserManagementError, UserProvider
 
 
 class UserManagement(object):

@@ -4,11 +4,11 @@ import os
 
 from twisted.python.reflect import namedClass
 
-from landscape.service import LandscapeService, run_landscape_service
-from landscape.monitor.config import MonitorConfiguration
-from landscape.monitor.monitor import Monitor
-from landscape.broker.amp import RemoteBrokerConnector
-from landscape.amp import ComponentPublisher
+from landscape.client.service import LandscapeService, run_landscape_service
+from landscape.client.monitor.config import MonitorConfiguration
+from landscape.client.monitor.monitor import Monitor
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.amp import ComponentPublisher
 
 
 class MonitorService(LandscapeService):
@@ -30,7 +30,7 @@ class MonitorService(LandscapeService):
                                             self.config)
 
     def get_plugins(self):
-        return [namedClass("landscape.monitor.%s.%s"
+        return [namedClass("landscape.client.monitor.%s.%s"
                            % (plugin_name.lower(), plugin_name))()
                 for plugin_name in self.config.plugin_factories]
 

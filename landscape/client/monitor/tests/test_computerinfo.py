@@ -6,8 +6,9 @@ from twisted.internet.defer import succeed, fail, inlineCallbacks
 
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import create_text_file
-from landscape.monitor.computerinfo import ComputerInfo, METADATA_RETRY_MAX
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.computerinfo import (
+        ComputerInfo, METADATA_RETRY_MAX)
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 SAMPLE_LSB_RELEASE = "DISTRIB_ID=Ubuntu\n"                         \
                      "DISTRIB_RELEASE=6.06\n"                      \

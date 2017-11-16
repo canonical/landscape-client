@@ -6,9 +6,9 @@ with the inbound/outbound traffic per interface per step interval.
 import time
 
 from landscape.lib.network import get_network_traffic, is_64
-from landscape.accumulate import Accumulator
+from landscape.client.accumulate import Accumulator
 
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class NetworkActivity(MonitorPlugin):

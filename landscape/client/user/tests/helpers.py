@@ -1,7 +1,7 @@
 from twisted.python.compat import iteritems, itervalues
 
-from landscape.user.management import UserManagementError
-from landscape.user.provider import UserProviderBase
+from landscape.client.user.management import UserManagementError
+from landscape.client.user.provider import UserProviderBase
 
 
 class FakeUserManagement(object):

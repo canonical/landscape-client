@@ -1,7 +1,7 @@
 import mock
 from landscape.lib.fs import touch_file
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.monitor.cephusage import CephUsage
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.cephusage import CephUsage
 
 
 class CephUsagePluginTest(LandscapeTest):

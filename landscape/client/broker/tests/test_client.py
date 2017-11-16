@@ -4,9 +4,11 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
-from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import BrokerClientHelper
-from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
+from landscape.client.tests.helpers import (
+        LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.client.broker.tests.helpers import BrokerClientHelper
+from landscape.client.broker.client import (
+        BrokerClientPlugin, HandlerNotFoundError)
 
 
 class BrokerClientTest(LandscapeTest):

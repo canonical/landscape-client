@@ -5,7 +5,7 @@ from twisted.internet.defer import maybeDeferred, succeed
 
 from landscape.lib.format import format_object
 from landscape.lib.twisted_util import gather_results
-from landscape.amp import remote
+from landscape.client.amp import remote
 
 
 class HandlerNotFoundError(Exception):

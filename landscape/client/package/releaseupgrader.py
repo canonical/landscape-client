@@ -13,11 +13,11 @@ from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
 from landscape.lib.fs import read_text_file
-from landscape.package.taskhandler import (
+from landscape.client.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.lib.twisted_util import spawn_process
-from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.package.reporter import find_reporter_command
+from landscape.client.manager.manager import SUCCEEDED, FAILED
+from landscape.client.package.reporter import find_reporter_command
 
 
 class ReleaseUpgraderConfiguration(PackageTaskHandlerConfiguration):

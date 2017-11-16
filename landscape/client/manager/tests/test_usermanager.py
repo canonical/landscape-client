@@ -4,13 +4,14 @@ from mock import Mock
 
 from landscape.lib.persist import Persist
 from landscape.lib.twisted_util import gather_results
-from landscape.manager.plugin import SUCCEEDED, FAILED
-from landscape.monitor.usermonitor import UserMonitor
-from landscape.manager.usermanager import (
+from landscape.client.manager.plugin import SUCCEEDED, FAILED
+from landscape.client.monitor.usermonitor import UserMonitor
+from landscape.client.manager.usermanager import (
     UserManager, RemoteUserManagerConnector)
-from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.user.provider import UserManagementError
+from landscape.client.user.tests.helpers import (
+        FakeUserProvider, FakeUserManagement)
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.user.provider import UserManagementError
 
 
 class UserGroupTestBase(LandscapeTest):

@@ -11,10 +11,10 @@ from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.gpg import InvalidGPGSignature
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.testing import LogKeeperHelper, EnvironSaverHelper
-from landscape.package.releaseupgrader import (
+from landscape.client.package.releaseupgrader import (
     ReleaseUpgrader, ReleaseUpgraderConfiguration, main)
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
-from landscape.manager.manager import SUCCEEDED, FAILED
+from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.client.manager.manager import SUCCEEDED, FAILED
 
 
 class ReleaseUpgraderConfigurationTest(unittest.TestCase):
@@ -120,7 +120,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         result.addErrback(check_failure)
         return result
 
-    @mock.patch("landscape.package.releaseupgrader.gpg_verify",
+    @mock.patch("landscape.client.package.releaseupgrader.gpg_verify",
                 return_value=succeed(True))
     def test_verify(self, gpg_mock):
         """
@@ -141,7 +141,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         result.addCallback(check_result)
         return result
 
-    @mock.patch("landscape.package.releaseupgrader.gpg_verify")
+    @mock.patch("landscape.client.package.releaseupgrader.gpg_verify")
     def test_verify_invalid_signature(self, gpg_mock):
         """
         L{ReleaseUpgrader.verify} logs a warning in case the tarball signature
@@ -787,7 +787,7 @@ class ReleaseUpgraderTest(LandscapeTest):
 
     @mock.patch("os.setsid")
     @mock.patch("os.getpgrp")
-    @mock.patch("landscape.package.releaseupgrader.run_task_handler",
+    @mock.patch("landscape.client.package.releaseupgrader.run_task_handler",
                 return_value="RESULT")
     def test_main(self, run_task_handler, getpgrp_mock, setsid_mock):
         """

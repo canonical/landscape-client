@@ -3,7 +3,7 @@ import os
 import re
 
 from landscape.lib.plugin import PluginConfigError
-from landscape.monitor.plugin import MonitorPlugin
+from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class ProcessorInfo(MonitorPlugin):

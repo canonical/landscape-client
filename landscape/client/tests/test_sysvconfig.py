@@ -1,8 +1,8 @@
 import mock
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest
 
-from landscape.sysvconfig import SysVConfig, ProcessError
+from landscape.client.sysvconfig import SysVConfig, ProcessError
 
 
 class SysVConfigTest(LandscapeTest):
