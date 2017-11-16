@@ -1,11 +1,13 @@
+import unittest
+
 import mock
 
+from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
-from landscape.tests.helpers import LandscapeTest
 
 
-class LoadTest(LandscapeTest):
+class LoadTest(TwistedTestCase, unittest.TestCase):
 
     def setUp(self):
         super(LoadTest, self).setUp()

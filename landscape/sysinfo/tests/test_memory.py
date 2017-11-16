@@ -1,6 +1,8 @@
+import unittest
+
+from landscape.lib.testing import TwistedTestCase, FSTestCase
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.memory import Memory
-from landscape.tests.helpers import LandscapeTest
 
 
 MEMINFO_SAMPLE = """
@@ -35,7 +37,7 @@ VmallocChunk:    86764 kB
 """
 
 
-class MemoryTest(LandscapeTest):
+class MemoryTest(FSTestCase, TwistedTestCase, unittest.TestCase):
 
     def setUp(self):
         super(MemoryTest, self).setUp()

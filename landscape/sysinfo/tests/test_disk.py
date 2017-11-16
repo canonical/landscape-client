@@ -1,13 +1,14 @@
 import os
+import unittest
 
 from twisted.internet.defer import Deferred
 
+from landscape.lib.testing import FSTestCase
 from landscape.sysinfo.disk import Disk, format_megabytes
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
-from landscape.tests.helpers import LandscapeTest
 
 
-class DiskTest(LandscapeTest):
+class DiskTest(FSTestCase, unittest.TestCase):
 
     def setUp(self):
         super(DiskTest, self).setUp()

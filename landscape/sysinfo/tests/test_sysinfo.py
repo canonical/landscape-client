@@ -1,16 +1,17 @@
 from logging import getLogger, StreamHandler
 import mock
 import os
+import unittest
 
 from twisted.internet.defer import Deferred, succeed, fail
 
 from landscape.lib.compat import StringIO
 from landscape.lib.plugin import PluginRegistry
+from landscape.lib.testing import HelperTestCase
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
-from landscape.tests.helpers import LandscapeTest
 
 
-class SysInfoPluginRegistryTest(LandscapeTest):
+class SysInfoPluginRegistryTest(HelperTestCase):
 
     def setUp(self):
         super(SysInfoPluginRegistryTest, self).setUp()
@@ -240,7 +241,7 @@ class SysInfoPluginRegistryTest(LandscapeTest):
             [self.plugin_exception_message % path])
 
 
-class FormatTest(LandscapeTest):
+class FormatTest(unittest.TestCase):
 
     def test_no_headers(self):
         output = format_sysinfo([])
