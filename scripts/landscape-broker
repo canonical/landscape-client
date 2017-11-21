@@ -3,6 +3,6 @@ import sys, os
 if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
 
-from landscape.broker.service import run
+from landscape.client.broker.service import run
 
 run(sys.argv)
