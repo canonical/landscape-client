@@ -32,7 +32,7 @@ def with_cursor(method):
             finally:
                 cursor.close()
             self._db.commit()
-        except:
+        except BaseException:
             self._db.rollback()
             raise
         return result

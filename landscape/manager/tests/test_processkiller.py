@@ -3,9 +3,9 @@ from mock import patch
 import signal
 import subprocess
 
-from landscape.tests.helpers import (LandscapeTest, ManagerHelper,
-                                     ProcessDataBuilder)
 from landscape.lib.process import ProcessInformation
+from landscape.lib.testing import ProcessDataBuilder
+from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.manager.processkiller import (

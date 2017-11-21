@@ -13,12 +13,13 @@ from apt.cache import LockFailedException
 from twisted.python.compat import unicode
 
 from landscape.lib.fs import read_text_file, create_text_file
+from landscape.lib.testing import EnvironSaverHelper
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,
     LandscapeInstallProgress)
 
 import mock
-from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
+from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
     PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,

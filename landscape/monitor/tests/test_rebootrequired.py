@@ -1,8 +1,8 @@
 import mock
 
+from landscape.lib.testing import LogKeeperHelper
 from landscape.monitor.rebootrequired import RebootRequired
-from landscape.tests.helpers import (
-    LandscapeTest, MonitorHelper, LogKeeperHelper)
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class RebootRequiredTest(LandscapeTest):

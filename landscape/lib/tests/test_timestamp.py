@@ -1,10 +1,10 @@
 from datetime import datetime
+import unittest
 
 from landscape.lib.timestamp import to_timestamp
-from landscape.tests.helpers import LandscapeTest
 
 
-class TimestampTest(LandscapeTest):
+class TimestampTest(unittest.TestCase):
     """Test for timestamp conversion function."""
 
     def test_conversion(self):

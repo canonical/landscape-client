@@ -4,10 +4,10 @@ import tempfile
 
 from landscape.monitor.temperature import Temperature
 from landscape.lib.tests.test_sysstats import ThermalZoneTest
-from landscape.tests.helpers import MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 
-class TemperatureTestWithSampleData(ThermalZoneTest):
+class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
     """Tests for the temperature plugin."""
 
     helpers = [MonitorHelper]

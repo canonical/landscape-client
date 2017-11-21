@@ -1,11 +1,11 @@
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
 
+from landscape.lib.testing import StubProcessFactory
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.manager.shutdownmanager import (
     ShutdownManager, ShutdownProcessProtocol)
-from landscape.tests.helpers import (
-    LandscapeTest, ManagerHelper, StubProcessFactory)
+from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class ShutdownManagerTest(LandscapeTest):

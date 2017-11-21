@@ -3,7 +3,7 @@ import logging
 
 from twisted.python.compat import _PY3
 
-from landscape.compat import ConfigParser, NoOptionError
+from landscape.lib.compat import ConfigParser, NoOptionError
 from landscape.monitor.plugin import DataWatcher
 from landscape.lib.persist import Persist
 from landscape.lib.fs import read_binary_file

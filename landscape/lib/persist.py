@@ -119,7 +119,7 @@ class Persist(object):
                 # warning("Trying backup at %s" % filepathold)
                 try:
                     self._hardmap = self._backend.load(filepathold)
-                except:
+                except Exception:
                     raise PersistError("Broken configuration file at %s" %
                                        filepathold)
                 return True
@@ -135,7 +135,7 @@ class Persist(object):
             return
         try:
             self._hardmap = self._backend.load(filepath)
-        except:
+        except Exception:
             if load_old():
                 return
             raise PersistError("Broken configuration file at %s" % filepath)
@@ -594,7 +594,7 @@ class Backend(object):
 class PickleBackend(Backend):
 
     def __init__(self):
-        from landscape.compat import cPickle
+        from landscape.lib.compat import cPickle
         self._pickle = cPickle
 
     def new(self):

@@ -13,8 +13,8 @@ import re
 from twisted.internet.defer import (
     Deferred, succeed, inlineCallbacks, returnValue)
 
-from landscape.deployment import get_bindir
 from landscape.lib import bpickle
+from landscape.lib.config import get_bindir
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async

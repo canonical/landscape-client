@@ -1,11 +1,13 @@
 import os
+import unittest
 
+from landscape.lib import testing
 from landscape.lib.fs import create_text_file
 from landscape.lib.twisted_util import spawn_process
-from landscape.tests.helpers import LandscapeTest
 
 
-class SpawnProcessTest(LandscapeTest):
+class SpawnProcessTest(testing.TwistedTestCase, testing.FSTestCase,
+                       unittest.TestCase):
 
     def setUp(self):
         super(SpawnProcessTest, self).setUp()

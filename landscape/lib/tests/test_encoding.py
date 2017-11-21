@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import codecs
+import unittest
 
-from landscape.tests.helpers import LandscapeTest
 from landscape.lib.encoding import encode_if_needed, encode_values
 
 
 EXPECTED_UTF8 = codecs.encode(u"請不要刪除", "utf-8")
 
 
-class EncodingTest(LandscapeTest):
+class EncodingTest(unittest.TestCase):
 
     def test_encode_if_needed_utf_string(self):
         """

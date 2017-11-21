@@ -1,14 +1,19 @@
 import os
+import unittest
 
 from mock import patch
 
+from landscape.lib import testing
 from landscape.lib.disk import (
     get_filesystem_for_path, get_mount_info, is_device_removable,
     _get_device_removable_file_path)
-from landscape.tests.helpers import LandscapeTest
 
 
-class DiskUtilitiesTest(LandscapeTest):
+class BaseTestCase(testing.FSTestCase, unittest.TestCase):
+    pass
+
+
+class DiskUtilitiesTest(BaseTestCase):
 
     def setUp(self):
         super(DiskUtilitiesTest, self).setUp()
@@ -84,7 +89,7 @@ class DiskUtilitiesTest(LandscapeTest):
         self.set_mount_points(["/secret"], read_access=False)
         info = get_filesystem_for_path(
             "/secret", self.mount_file, self.statvfs)
-        self.assertIdentical(info, None)
+        self.assertIs(info, None)
 
     def test_ignore_unmounted_and_virtual_mountpoints(self):
         """
@@ -110,7 +115,7 @@ class DiskUtilitiesTest(LandscapeTest):
         self.assertEqual([expected], result)
 
 
-class RemovableDiskTest(LandscapeTest):
+class RemovableDiskTest(BaseTestCase):
 
     @patch("os.path.islink")
     def test_wb_get_device_removable_file_path(self, is_link_mock):

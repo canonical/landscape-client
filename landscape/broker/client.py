@@ -3,7 +3,7 @@ import sys
 
 from twisted.internet.defer import maybeDeferred, succeed
 
-from landscape.log import format_object
+from landscape.lib.format import format_object
 from landscape.lib.twisted_util import gather_results
 from landscape.amp import remote
 
@@ -205,7 +205,7 @@ class BrokerClient(object):
             raise HandlerNotFoundError(type)
         try:
             return handler(message)
-        except:
+        except Exception:
             exception("Error running message handler for type %r: %r"
                       % (type, handler))
 
@@ -227,7 +227,7 @@ class BrokerClient(object):
             if hasattr(plugin, "exchange"):
                 try:
                     plugin.exchange()
-                except:
+                except Exception:
                     exception("Error during plugin exchange")
 
     def notify_exchange(self):

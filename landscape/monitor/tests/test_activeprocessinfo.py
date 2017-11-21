@@ -6,9 +6,9 @@ import subprocess
 
 from twisted.internet.defer import fail
 
+from landscape.lib.testing import ProcessDataBuilder
 from landscape.monitor.activeprocessinfo import ActiveProcessInfo
-from landscape.tests.helpers import (LandscapeTest, MonitorHelper,
-                                     ProcessDataBuilder)
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from mock import ANY, Mock, patch
 
 

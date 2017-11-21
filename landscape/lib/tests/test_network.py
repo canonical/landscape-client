@@ -1,16 +1,21 @@
 import array
 import socket
+import unittest
 
 from mock import patch, ANY, mock_open
 from subprocess import Popen, PIPE
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.lib import testing
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
     get_fqdn, get_network_interface_speed)
 
 
-class NetworkInfoTest(LandscapeTest):
+class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
+    pass
+
+
+class NetworkInfoTest(BaseTestCase):
 
     @patch("landscape.lib.network.get_network_interface_speed")
     def test_get_active_device_info(self, mock_get_network_interface_speed):
@@ -191,7 +196,7 @@ test_proc_net_dev_parsed = {
              "send_compressed": 0}}
 
 
-class FQDNTest(LandscapeTest):
+class FQDNTest(BaseTestCase):
 
     def test_default_fqdn(self):
         """
@@ -212,7 +217,7 @@ class FQDNTest(LandscapeTest):
         self.assertNotIn("localhost", get_fqdn())
 
 
-class NetworkInterfaceSpeedTest(LandscapeTest):
+class NetworkInterfaceSpeedTest(BaseTestCase):
 
     @patch("struct.unpack")
     @patch("fcntl.ioctl")

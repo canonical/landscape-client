@@ -14,7 +14,7 @@ import os
 import pwd
 import sys
 
-from landscape.compat import input
+from landscape.lib.compat import input
 
 from landscape.lib.tag import is_valid_tag
 
@@ -127,7 +127,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                     try:
                         parser = self._get_config_object(
                             alternative_config=self.import_from)
-                    except:
+                    except Exception:
                         raise ImportOptionError(
                             "Couldn't read configuration from %s." %
                             self.import_from)

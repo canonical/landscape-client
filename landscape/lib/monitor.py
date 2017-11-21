@@ -1,7 +1,7 @@
 import logging
 import time
 
-from landscape.log import format_delta, format_percent
+from landscape.lib.format import format_delta, format_percent
 
 
 class Timer(object):

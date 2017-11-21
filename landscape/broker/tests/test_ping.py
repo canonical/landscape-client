@@ -4,7 +4,7 @@ from twisted.internet.defer import fail
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
-from landscape.reactor import FakeReactor
+from landscape.lib.testing import FakeReactor
 from landscape.broker.ping import PingClient, Pinger
 from landscape.broker.tests.helpers import ExchangeHelper
 
@@ -214,11 +214,9 @@ class PingerTest(LandscapeTest):
         self.reactor.advance(30)
 
         log = self.logfile.getvalue()
-        self.assertTrue("Error contacting ping server at "
-                        "http://foo.com/" in log,
-                        log)
-        self.assertTrue("ZeroDivisionError" in log)
-        self.assertTrue("Couldn't fetch page" in log)
+        self.assertIn("Error contacting ping server at http://foo.com/", log)
+        self.assertIn("ZeroDivisionError", log)
+        self.assertIn("Couldn't fetch page", log)
 
     def test_get_interval(self):
         self.assertEqual(self.pinger.get_interval(), 10)

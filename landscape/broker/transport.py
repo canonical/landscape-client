@@ -10,7 +10,7 @@ from twisted.python.compat import unicode, _PY3
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
-from landscape.log import format_delta
+from landscape.lib.format import format_delta
 from landscape import SERVER_API, VERSION
 
 
@@ -80,7 +80,7 @@ class HTTPTransport(object):
         try:
             curly, data = self._curl(spayload, computer_id, exchange_token,
                                      message_api)
-        except:
+        except Exception:
             logging.exception("Error contacting the server at %s." % self._url)
             raise
         else:
@@ -90,7 +90,7 @@ class HTTPTransport(object):
 
         try:
             response = bpickle.loads(data)
-        except:
+        except Exception:
             logging.exception("Server returned invalid data: %r" % data)
             return None
         else:

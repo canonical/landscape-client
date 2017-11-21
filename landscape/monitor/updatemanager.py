@@ -1,7 +1,7 @@
 import os
 import logging
 
-from landscape.compat import SafeConfigParser
+from landscape.lib.compat import SafeConfigParser
 from landscape.monitor.plugin import MonitorPlugin
 
 

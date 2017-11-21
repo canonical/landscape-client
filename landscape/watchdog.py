@@ -22,7 +22,8 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
-from landscape.deployment import init_logging, Configuration, get_bindir
+from landscape.deployment import init_logging, Configuration
+from landscape.lib.config import get_bindir
 from landscape.lib.encoding import encode_values
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure

@@ -66,7 +66,7 @@ class ProcessKiller(ManagerPlugin):
         signum = getattr(signal, "SIG%s" % (signame,))
         try:
             os.kill(pid, signum)
-        except:
+        except Exception:
             # XXX Nothing is indicating what the problem was.
             message = ("Attempting to send the %s signal to the process "
                        "%s with PID %d failed") % (signame, name, pid)

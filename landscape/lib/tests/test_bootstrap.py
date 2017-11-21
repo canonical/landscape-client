@@ -1,14 +1,18 @@
 import os
+import unittest
 
 from mock import patch, Mock
 
-from landscape.tests.helpers import LandscapeTest
-
+from landscape.lib import testing
 from landscape.lib.bootstrap import (
     BootstrapPath, BootstrapFile, BootstrapDirectory, BootstrapList)
 
 
-class BootstrapPathTest(LandscapeTest):
+class BaseTestCase(testing.FSTestCase, unittest.TestCase):
+    pass
+
+
+class BootstrapPathTest(BaseTestCase):
 
     bootstrap_class = BootstrapPath
 
@@ -134,7 +138,7 @@ class BootstrapDirectoryTest(BootstrapCreationTest):
         self.assertRaises(OSError, dir.bootstrap)
 
 
-class BootstrapListTest(LandscapeTest):
+class BootstrapListTest(BaseTestCase):
 
     def test_creation(self):
         dirname = self.makeDir()

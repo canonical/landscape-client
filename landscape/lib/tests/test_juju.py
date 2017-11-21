@@ -1,7 +1,8 @@
 from collections import namedtuple
 import json
+import unittest
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.lib import testing
 from landscape.lib.juju import get_juju_info
 
 
@@ -16,7 +17,7 @@ SAMPLE_JUJU_INFO_2 = json.dumps({"environment-uuid": "DEAD-BEEF",
                                  "private-address": "127.0.0.1"})
 
 
-class JujuTest(LandscapeTest):
+class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
 
     Config = namedtuple("Config", ["juju_filename"])
 

@@ -1,14 +1,15 @@
 import mock
 import os
+import unittest
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
-from landscape.tests.helpers import LandscapeTest
+from landscape.lib import testing
 from landscape.lib.gpg import gpg_verify
 
 
-class GPGTest(LandscapeTest):
+class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
 
     def test_gpg_verify(self):
         """

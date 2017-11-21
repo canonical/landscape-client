@@ -310,12 +310,12 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     def _cleanup(self, result, filename, env, old_umask):
         try:
             os.unlink(filename)
-        except:
+        except Exception:
             pass
         if "LANDSCAPE_ATTACHMENTS" in env:
             try:
                 shutil.rmtree(env["LANDSCAPE_ATTACHMENTS"])
-            except:
+            except Exception:
                 pass
         os.umask(old_umask)
         return result

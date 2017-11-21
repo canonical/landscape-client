@@ -1,8 +1,9 @@
 from twisted.internet.defer import Deferred
 
+from landscape.lib.testing import ProcessDataBuilder
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.processes import Processes
-from landscape.tests.helpers import LandscapeTest, ProcessDataBuilder
+from landscape.tests.helpers import LandscapeTest
 
 
 class ProcessesTest(LandscapeTest):

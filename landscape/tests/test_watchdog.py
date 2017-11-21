@@ -13,9 +13,9 @@ from twisted.python.fakepwd import UserDatabase
 
 from landscape.lib.encoding import encode_values
 from landscape.lib.fs import read_text_file
+from landscape.lib.testing import EnvironSaverHelper
 from landscape.tests.clock import Clock
-from landscape.tests.helpers import (
-    LandscapeTest, EnvironSaverHelper, FakeBrokerServiceHelper)
+from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
@@ -777,9 +777,9 @@ time.sleep(999)
         immediately successful.
         """
         daemon = self.get_daemon()
-        l = []
-        daemon.wait_or_die().addCallback(l.append)
-        self.assertEqual(l, [None])
+        calls = []
+        daemon.wait_or_die().addCallback(calls.append)
+        self.assertEqual(calls, [None])
 
     def test_simulate_broker_not_starting_up(self):
         """

@@ -1,118 +1,7 @@
-import time
-from datetime import datetime
-import os
-import struct
+import os.path
 
-from landscape.lib.timestamp import to_timestamp
+from landscape.lib import sysstats
 from landscape.monitor.plugin import MonitorPlugin
-
-
-def get_uptime(uptime_file=u"/proc/uptime"):
-    """
-    This parses a file in /proc/uptime format and returns a floating point
-    version of the first value (the actual uptime).
-    """
-    with open(uptime_file, 'r') as ufile:
-        data = ufile.readline()
-    up, idle = data.split()
-    return float(up)
-
-
-class LoginInfo(object):
-    """Information about a login session gathered from wtmp or utmp."""
-
-    # FIXME This format string works fine on my hardware, but *may* be
-    # different depending on the values of __WORDSIZE and
-    # __WORDSIZE_COMPAT32 defined in /usr/include/bits/utmp.h:68 (in
-    # the definition of struct utmp).  Make sure it works
-    # everywhere.   -jk
-    RAW_FORMAT = "hi32s4s32s256shhiiiiiii20s"
-
-    def __init__(self, raw_data):
-        info = struct.unpack(self.RAW_FORMAT, raw_data)
-        self.login_type = info[0]
-        self.pid = info[1]
-        self.tty_device = self._strip_and_decode(info[2])
-        self.id = self._strip_and_decode(info[3])
-        self.username = self._strip_and_decode(info[4])
-        self.hostname = self._strip_and_decode(info[5])
-        self.termination_status = info[6]
-        self.exit_status = info[7]
-        self.session_id = info[8]
-        self.entry_time = datetime.utcfromtimestamp(info[9])
-        # FIXME Convert this to a dotted decimal string. -jk
-        self.remote_ip_address = info[11]
-
-    def _strip_and_decode(self, bytestring):
-        """Helper method to strip b"\0" and return a utf-8 decoded string."""
-        return bytestring.strip(b"\0").decode("utf-8")
-
-
-class LoginInfoReader(object):
-    """Reader parses C{/var/log/wtmp} and/or C{/var/run/utmp} files.
-
-    @file: Initialize the reader with an open file.
-    """
-
-    def __init__(self, file):
-        self._file = file
-        self._struct_length = struct.calcsize(LoginInfo.RAW_FORMAT)
-
-    def login_info(self):
-        """Returns a generator that yields LoginInfo objects."""
-        while True:
-            info = self.read_next()
-
-            if not info:
-                break
-
-            yield info
-
-    def read_next(self):
-        """Returns login data or None if no login data is available."""
-        data = self._file.read(self._struct_length)
-
-        if data and len(data) == self._struct_length:
-            return LoginInfo(data)
-
-        return None
-
-
-class BootTimes(object):
-    _last_boot = None
-    _last_shutdown = None
-
-    def __init__(self, filename="/var/log/wtmp",
-                 boots_newer_than=0, shutdowns_newer_than=0):
-        self._filename = filename
-        self._boots_newer_than = boots_newer_than
-        self._shutdowns_newer_than = shutdowns_newer_than
-
-    def get_times(self):
-        reboot_times = []
-        shutdown_times = []
-        with open(self._filename, "rb") as login_info_file:
-            reader = LoginInfoReader(login_info_file)
-            self._last_boot = self._boots_newer_than
-            self._last_shutdown = self._shutdowns_newer_than
-
-            for info in reader.login_info():
-                if info.tty_device.startswith("~"):
-                    timestamp = to_timestamp(info.entry_time)
-                    if (info.username == "reboot" and
-                            timestamp > self._last_boot):
-                        reboot_times.append(timestamp)
-                        self._last_boot = timestamp
-                    elif (info.username == "shutdown" and
-                            timestamp > self._last_shutdown):
-                        shutdown_times.append(timestamp)
-                        self._last_shutdown = timestamp
-        return reboot_times, shutdown_times
-
-    def get_last_boot_time(self):
-        if self._last_boot is None:
-            self._last_boot = int(time.time() - get_uptime())
-        return self._last_boot
 
 
 class ComputerUptime(MonitorPlugin):
@@ -168,9 +57,9 @@ class ComputerUptime(MonitorPlugin):
         last_startup_time = self._persist.get("last-startup-time", 0)
         last_shutdown_time = self._persist.get("last-shutdown-time", 0)
 
-        times = BootTimes(filename,
-                          boots_newer_than=last_startup_time,
-                          shutdowns_newer_than=last_shutdown_time)
+        times = sysstats.BootTimes(filename,
+                                   boots_newer_than=last_startup_time,
+                                   shutdowns_newer_than=last_shutdown_time)
 
         startup_times, shutdown_times = times.get_times()
 

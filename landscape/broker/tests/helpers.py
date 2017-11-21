@@ -8,8 +8,8 @@ connected to remote test L{BrokerClient}.
 import os
 
 from landscape.lib.persist import Persist
+from landscape.lib.testing import FakeReactor
 from landscape.watchdog import bootstrap_list
-from landscape.reactor import FakeReactor
 from landscape.amp import ComponentPublisher
 from landscape.broker.transport import FakeTransport
 from landscape.broker.exchange import MessageExchange
