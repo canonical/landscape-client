@@ -3,7 +3,7 @@ try:
 except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
-from landscape.package.store import with_cursor
+from landscape.lib.apt.package.store import with_cursor
 
 
 class ManagerStore(object):

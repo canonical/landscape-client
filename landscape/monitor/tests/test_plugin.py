@@ -1,8 +1,9 @@
 from mock import ANY, Mock, patch
 
 from landscape.lib.testing import LogKeeperHelper
+from landscape.lib.schema import Int
+from landscape.message_schemas.message import Message
 from landscape.monitor.plugin import MonitorPlugin, DataWatcher
-from landscape.schema import Message, Int
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 

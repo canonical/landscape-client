@@ -3,8 +3,8 @@ import os
 
 from twisted.internet.utils import getProcessOutput
 
+from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.encoding import encode_values
-from landscape.package.store import PackageStore
 from landscape.package.reporter import find_reporter_command
 from landscape.monitor.plugin import MonitorPlugin
 
@@ -80,7 +80,7 @@ class PackageMonitor(MonitorPlugin):
 
             from landscape.package.reporter import (
                 FakeReporter, PackageReporterConfiguration)
-            from landscape.package.store import FakePackageStore
+            from landscape.lib.apt.package.store import FakePackageStore
             package_facade = FakeFacade()
             package_config = PackageReporterConfiguration()
             package_config.load(args + ["-d", self.config.data_path,

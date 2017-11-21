@@ -224,7 +224,8 @@ class PackageChanger(PackageTaskHandler):
         """
         # Delay importing these so that we don't import Apt unless
         # we really need to.
-        from landscape.package.facade import DependencyError, TransactionError
+        from landscape.lib.apt.package.facade import (
+                DependencyError, TransactionError)
 
         result = ChangePackagesResult()
         count = 0

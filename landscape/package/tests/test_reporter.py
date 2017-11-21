@@ -11,20 +11,20 @@ from twisted.internet import reactor
 
 
 from landscape.lib import bpickle
+from landscape.lib.apt.package.facade import AptFacade
+from landscape.lib.apt.package.store import (
+    PackageStore, UnknownHashIDRequest, FakePackageStore)
+from landscape.lib.apt.package.testing import (
+    AptFacadeHelper, SimpleRepositoryHelper,
+    HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.lib.fs import create_text_file, touch_file
 from landscape.lib.fetch import FetchError
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.testing import EnvironSaverHelper, FakeReactor
-from landscape.package.store import (
-    PackageStore, UnknownHashIDRequest, FakePackageStore)
 from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
-from landscape.package.facade import AptFacade
-from landscape.package.tests.helpers import (
-    AptFacadeHelper, SimpleRepositoryHelper,
-    HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 
 

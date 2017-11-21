@@ -4,7 +4,8 @@ from landscape import CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.hashlib import md5
-from landscape.schema import Message, Int
+from landscape.lib.schema import Int
+from landscape.message_schemas.message import Message
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
