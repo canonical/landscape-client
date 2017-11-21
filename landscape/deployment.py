@@ -40,11 +40,14 @@ class BaseConfiguration(_BaseConfiguration):
 
     version = VERSION
 
-    default_config_filenames = ["/etc/landscape/client.conf"]
+    default_config_filename = "/etc/landscape/client.conf"
     if _is_script():
-        default_config_filenames.insert(0, "landscape-client.conf")
-    default_config_filenames = tuple(default_config_filenames)
+        default_config_filenames = ("landscape-client.conf",
+                                    default_config_filename)
+    else:
+        default_config_filenames = (default_config_filename,)
     default_data_dir = "/var/lib/landscape/client/"
+
     config_section = "client"
 
     def __init__(self):
@@ -61,8 +64,8 @@ class BaseConfiguration(_BaseConfiguration):
               - data_path
         """
         return super(BaseConfiguration, self).make_parser(
-                cfgfile="/etc/landscape/client.conf",
-                datadir="/var/lib/landscape/client/",
+                cfgfile=self.default_config_filename,
+                datadir=self.default_data_dir,
                 )
 
 
