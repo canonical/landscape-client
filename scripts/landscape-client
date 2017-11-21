@@ -12,7 +12,7 @@ from landscape.lib.fd import clean_fds
 # create a critical FD. Even before the reactor is installed!
 clean_fds()
 
-from landscape.watchdog import run
+from landscape.client.watchdog import run
 
 if __name__ == "__main__":
     sys.exit(run())

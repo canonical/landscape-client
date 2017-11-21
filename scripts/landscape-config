@@ -6,7 +6,7 @@ else:
     from landscape.lib.warning import hide_warnings
     hide_warnings()
 
-from landscape.configuration import main
+from landscape.client.configuration import main
 
 
 if __name__ == "__main__":

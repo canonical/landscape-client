@@ -3,7 +3,7 @@ import sys, os
 if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
 
-from landscape.package.changer import main
+from landscape.client.package.changer import main
 
 
 if __name__ == "__main__":
