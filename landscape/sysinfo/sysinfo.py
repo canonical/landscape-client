@@ -5,9 +5,9 @@ import os
 
 from twisted.python.failure import Failure
 
-from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
-from landscape.plugin import PluginRegistry
+from landscape.lib.plugin import PluginRegistry
+from landscape.lib.twisted_util import gather_results
 
 
 class SysInfoPluginRegistry(PluginRegistry):

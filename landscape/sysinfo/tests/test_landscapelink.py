@@ -1,9 +1,11 @@
+import unittest
+
+from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.landscapelink import LandscapeLink
-from landscape.tests.helpers import LandscapeTest
 
 
-class LandscapeLinkTest(LandscapeTest):
+class LandscapeLinkTest(TwistedTestCase, unittest.TestCase):
 
     def setUp(self):
         super(LandscapeLinkTest, self).setUp()

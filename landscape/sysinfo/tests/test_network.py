@@ -1,9 +1,11 @@
+import unittest
+
+from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.network import Network
-from landscape.tests.helpers import LandscapeTest
 
 
-class NetworkTest(LandscapeTest):
+class NetworkTest(TwistedTestCase, unittest.TestCase):
 
     def setUp(self):
         super(NetworkTest, self).setUp()

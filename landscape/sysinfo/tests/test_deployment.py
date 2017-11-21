@@ -1,13 +1,14 @@
-import mock
-import os
-
 from logging.handlers import RotatingFileHandler
 from logging import getLogger
+import os
+import unittest
 
+import mock
 from twisted.internet.defer import Deferred
 
 from landscape.lib.fs import create_text_file
-from landscape.lib.testing import StandardIOHelper
+from landscape.lib.testing import (
+        ConfigTestCase, TwistedTestCase, HelperTestCase, StandardIOHelper)
 
 from landscape.sysinfo.deployment import (
     SysInfoConfiguration, ALL_PLUGINS, run, setup_logging,
@@ -16,10 +17,8 @@ from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
 
-from landscape.tests.helpers import LandscapeTest
 
-
-class DeploymentTest(LandscapeTest):
+class DeploymentTest(ConfigTestCase, unittest.TestCase):
 
     def setUp(self):
         super(DeploymentTest, self).setUp()
@@ -82,7 +81,8 @@ class FakeReactor(object):
         self.running = False
 
 
-class RunTest(LandscapeTest):
+class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
+              unittest.TestCase):
 
     helpers = [StandardIOHelper]
 

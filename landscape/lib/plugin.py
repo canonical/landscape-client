@@ -1,6 +1,8 @@
-from logging import info
+from __future__ import absolute_import
 
-from landscape.lib.format import format_object
+import logging
+
+from .format import format_object
 
 
 class PluginConfigError(Exception):
@@ -23,7 +25,7 @@ class PluginRegistry(object):
         If the plugin has a C{plugin_name} attribute, it will be possible to
         look up the plugin later with L{get_plugin}.
         """
-        info("Registering plugin %s.", format_object(plugin))
+        logging.info("Registering plugin %s.", format_object(plugin))
         self._plugins.append(plugin)
         if hasattr(plugin, "plugin_name"):
             self._plugin_names[plugin.plugin_name] = plugin

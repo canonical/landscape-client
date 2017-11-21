@@ -1,8 +1,9 @@
+import unittest
+
 from twisted.internet.defer import Deferred
 
-from landscape.tests.helpers import LandscapeTest
-
-from landscape.plugin import PluginRegistry
+from landscape.lib import testing
+from landscape.lib.plugin import PluginRegistry
 
 
 class SamplePlugin(object):
@@ -33,7 +34,8 @@ class ExchangePlugin(SamplePlugin):
             self.waiter.callback(None)
 
 
-class PluginTest(LandscapeTest):
+class PluginTest(testing.FSTestCase, testing.TwistedTestCase,
+                 unittest.TestCase):
 
     def setUp(self):
         super(PluginTest, self).setUp()

@@ -27,9 +27,9 @@ from landscape.lib.config import get_bindir
 from landscape.lib.encoding import encode_values
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
+from landscape.lib.logging import rotate_logs
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
-from landscape.log import rotate_logs
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import LandscapeReactor

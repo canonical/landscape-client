@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from logging import getLogger
 from optparse import OptionParser
 import os

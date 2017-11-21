@@ -1,12 +1,14 @@
+import unittest
+
 from twisted.internet.defer import Deferred
 
-from landscape.lib.testing import ProcessDataBuilder
+from landscape.lib.testing import (
+        FSTestCase, TwistedTestCase, ProcessDataBuilder)
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.processes import Processes
-from landscape.tests.helpers import LandscapeTest
 
 
-class ProcessesTest(LandscapeTest):
+class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
 
     def setUp(self):
         super(ProcessesTest, self).setUp()
