@@ -82,7 +82,7 @@ ifneq (,$(filter $(dist_release),lucid precise))
 endif
 
 # In xenial the client needs to depend on libpam-systemd (#1590838)
-ifeq ($(dist_release),xenial))
+ifeq ($(dist_release),xenial)
 	echo "extra:Depends=libpam-systemd" >> $(landscape_client_substvars)
 endif
 
