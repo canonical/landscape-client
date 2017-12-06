@@ -21,6 +21,15 @@ origtarball: sdist
 
 .PHONY: prepchangelog
 prepchangelog:
+	@_=$$(dpkg-query -s libdistro-info-perl 2>&1) ;\
+	if [ "$$?" -ne 0 ]; then \
+		echo sudo apt-get install libdistro-info-perl ;\
+		sudo apt-get install libdistro-info-perl ;\
+	fi
+	@if [ "$$DEBEMAIL" = "" ]; then \
+		echo "ERROR: please set \$$DEBEMAIL (NAME <EMAIL>)" 1>&2 ;\
+	    exit 1 ;\
+	fi
 # add a temporary entry for a local build if needed
 ifeq (,$(findstring +git,$(CHANGELOG_VERSION)))
 	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)

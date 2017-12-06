@@ -23,11 +23,12 @@ PACKAGE=landscape-sysinfo
 # running the landscape client.
 PYTHON=/usr/bin/python3
 
+SHAREDIR=/usr/share/landscape
+
 case "$1" in
     configure)
-
-       # Since motd shows a different number of security updates, suppress the message
-       dpkg-divert --package landscape-sysinfo --rename /etc/update-motd.d/90-updates-available
+       # Since motd shows a different number of security updates, suppress the message.
+       dpkg-divert --package $PACKAGE --rename /etc/update-motd.d/90-updates-available
 
        db_get $PACKAGE/sysinfo
        # Choices:
@@ -35,7 +36,7 @@ case "$1" in
        #  * Cache sysinfo in /etc/motd
        #  * Run sysinfo on every login
        SYSINFO="${RET:-Cache sysinfo in /etc/motd}"
-       WRAPPER=/usr/share/landscape/landscape-sysinfo.wrapper
+       WRAPPER=$SHAREDIR/landscape-sysinfo.wrapper
        PROFILE_LOCATION=/etc/profile.d/50-landscape-sysinfo.sh
        UPDATE_MOTD_LOCATION=/etc/update-motd.d/50-landscape-sysinfo
        if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
@@ -53,7 +54,6 @@ case "$1" in
        fi
 
        # We rely on landscape-base to create the user and log dir.
-
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

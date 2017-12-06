@@ -14,23 +14,22 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+DATADIR=/var/lib/landscape
+LOGDIR=/var/log/landscape
+
 case "$1" in
     purge)
-    LOG_DIR=/var/log/landscape
-    DATA_DIR=/var/lib/landscape
+        rm -f "/etc/default/landscape-client"
 
-    rm -f "/etc/default/landscape-client"
+        rm -f "${LOGDIR}/manager.log"*
+        rm -f "${LOGDIR}/monitor.log"*
+        rm -f "${LOGDIR}/broker.log"*
+        rm -f "${LOGDIR}/watchdog.log"*
+        rm -f "${LOGDIR}/package-reporter.log"*
+        rm -f "${LOGDIR}/package-changer.log"*
 
-    rm -f "${LOG_DIR}/manager.log"*
-    rm -f "${LOG_DIR}/monitor.log"*
-    rm -f "${LOG_DIR}/broker.log"*
-    rm -f "${LOG_DIR}/watchdog.log"*
-    rm -f "${LOG_DIR}/package-reporter.log"*
-    rm -f "${LOG_DIR}/package-changer.log"*
-
-    rm -rf "${DATA_DIR}/client"
-    rm -rf "${DATA_DIR}/.gnupg"
-
+        rm -rf "${DATADIR}/client"
+        rm -rf "${DATADIR}/.gnupg"
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

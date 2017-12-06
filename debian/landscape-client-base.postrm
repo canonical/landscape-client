@@ -14,10 +14,11 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+CFGDIR=/etc/landscape
+
 case "$1" in
     purge)
-        CONFIG_FILE=/etc/landscape/client.conf
-        rm -f "${CONFIG_FILE}"
+        rm -f $CFGDIR/client.conf
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

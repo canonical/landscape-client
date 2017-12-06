@@ -4,7 +4,7 @@ dist_release := $(shell lsb_release -cs)
 
 dh_extra_flags = -ppython-landscape-lib -ppython3-landscape-lib -plandscape-base -plandscape-client-base -plandscape-client -plandscape-sysinfo -plandscape-common
 
--include /usr/share/python/python.mk
+-include /usr/share/python3/python.mk
 ifeq (,$(py_sitename))
 	py_sitename = site-packages
 	py_libdir = /usr/lib/python$(subst python,,$(1))/site-packages
@@ -13,12 +13,17 @@ ifeq (,$(py_sitename))
 endif
 
 package = landscape-client
-root_dir = debian/tmp/
+root_dir = debian/tmp
+SHAREDIR = /usr/share/landscape
+LIBDIR = /usr/lib/landscape
 
 revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f 2 -d "-")
 
 python_landscape_lib_substvars = debian/python-landscape-lib.substvars
 python3_landscape_lib_substvars = debian/python3-landscape-lib.substvars
+landscape_base_substvars = debian/landscape-base.substvars
+landscape_client_base_substvars = debian/landscape-client-base.substvars
+landscape_sysinfo_substvars = debian/landscape-sysinfo.substvars
 landscape_client_substvars = debian/landscape-client.substvars
 
 build-arch: build
@@ -49,12 +54,12 @@ install: build
 	dh_prep
 	dh_installdirs
 
-	python2 setup.py install --root $(root_dir) $(py_setup_install_args)
-	python3 setup.py install --root $(root_dir) $(py_setup_install_args)
+	python2 setup.py install --root $(root_dir)/ $(py_setup_install_args)
+	python3 setup.py install --root $(root_dir)/ $(py_setup_install_args)
 
 	# Keep in mind that some installed files are defined in setup.py
-	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
-	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)/usr/lib/landscape/apt-update
+	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)$(SHAREDIR)/landscape-sysinfo.wrapper
+	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)$(LIBDIR)/apt-update
 
 binary-indep:
 # do nothing
@@ -78,15 +83,26 @@ binary-arch: build install
 # from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
 ifneq (,$(filter $(dist_release),lucid precise))
 	echo "extra:Depends=python-gnupginterface" >> $(python_landscape_lib_substvars)
-	echo "extra:Depends=python-gnupginterface" >> $(python3_landscape_lib_substvars)
+	echo "extra:Depends=python3-gnupginterface" >> $(python3_landscape_lib_substvars)
+else
+	echo "extra:Depends=" >> $(python_landscape_lib_substvars)
+	echo "extra:Depends=" >> $(python3_landscape_lib_substvars)
 endif
 
 # In xenial the client needs to depend on libpam-systemd (#1590838)
-ifeq ($(dist_release),xenial))
+ifeq ($(dist_release),xenial)
 	echo "extra:Depends=libpam-systemd" >> $(landscape_client_substvars)
+else
+	echo "extra:Depends=" >> $(landscape_client_substvars)
 endif
+	echo "extra:Depends=" >> $(landscape_base_substvars)
+	echo "extra:Depends=" >> $(landscape_client_base_substvars)
+	echo "extra:Depends=" >> $(landscape_sysinfo_substvars)
 
-	dh_python2 --no-guessing-versions
+	dh_python2 --no-guessing-versions -p python-landscape-lib
+	dh_python3 -p python3-landscape-lib -V 3.5-
+	dh_python3 -p landscape-sysinfo -V 3.5-
+	dh_python3 -p landscape-client -V 3.5-
 	dh_installdeb $(dh_extra_flags)
 	dh_gencontrol $(dh_extra_flags)
 	dh_md5sums $(dh_extra_flags)

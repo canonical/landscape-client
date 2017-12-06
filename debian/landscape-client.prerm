@@ -16,12 +16,13 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+LIBDIR=/usr/lib/landscape
 
 case "$1" in
     remove|upgrade|deconfigure)
 
         # Remove statoverride for apt-update
-        apt_update=/usr/lib/landscape/apt-update
+        apt_update=$LIBDIR/apt-update
         if dpkg-statoverride --list $apt_update >/dev/null 2>&1; then
             dpkg-statoverride --remove $apt_update
         fi

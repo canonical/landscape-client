@@ -14,17 +14,21 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+DATADIR=/var/lib/landscape
+USER=landscape
+GROUP=landscape
+
 case "$1" in
     purge)
         # Clean up the landscape user.
-        if [ -f /var/lib/landscape/.cleanup.user ]; then
-            deluser --quiet --system landscape >/dev/null || true
-            rm -f /var/lib/landscape/.cleanup.user
-            if [ -f /var/lib/landscape/.cleanup.group ]; then
-                delgroup --quiet --system landscape >/dev/null || true
+        if [ -f $DATADIR/.cleanup.user ]; then
+            deluser --quiet --system $USER >/dev/null || true
+            rm -f $DATADIR/.cleanup.user
+            if [ -f $DATADIR/.cleanup.group ]; then
+                delgroup --quiet --system $GROUP >/dev/null || true
             fi
         fi
-        rm -f /var/lib/landscape/.cleanup.group
+        rm -f $DATADIR/.cleanup.group
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

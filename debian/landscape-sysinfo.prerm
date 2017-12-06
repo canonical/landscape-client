@@ -16,10 +16,11 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+PACKAGE=landscape-sysinfo
 
 case "$1" in
     remove|upgrade|deconfigure)
-       dpkg-divert --remove --package landscape-sysinfo --rename /etc/update-motd.d/90-updates-available
+       dpkg-divert --remove --package $PACKAGE --rename /etc/update-motd.d/90-updates-available
        rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null || true
        update-motd 2>/dev/null || true
        rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true

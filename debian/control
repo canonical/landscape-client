@@ -3,14 +3,17 @@ Section: admin
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 7), po-debconf, python-dev, lsb-release, gawk, python-twisted-core, python-distutils-extra, python3-distutils-extra
+Build-Depends: debhelper (>= 7), po-debconf,
+               dh-python, python-dev,
+               python-distutils-extra, python3-distutils-extra,
+               python-twisted-core,
+               lsb-release, gawk
 Standards-Version: 3.8.2
-XS-Python-Version: >= 2.4, << 2.8
+X-Python3-Version: >= 3.5
 
 Package: python-landscape-lib
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
-         ${shlibs:Depends},
          python-twisted-core,
          python-configobj,
          python-apt,
@@ -23,7 +26,6 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          bc,
          lshw,
          libpam-modules
-Suggests: ${extra:Suggests}
 Breaks: landscape-client-ui (<< 16.04),
         landscape-client-ui-install (<< 16.04)
 Conflicts: landscape-common (<< 17.04)
@@ -33,12 +35,10 @@ Description: Landscape administration system client - Python 2 lib
  Landscape account.
  .
  This package provides the core libraries.
-XB-Python-Version: ${python:Versions}
 
 Package: python3-landscape-lib
 Architecture: any
-Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
-         ${shlibs:Depends},
+Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
          python3-twisted,
          python3-configobj,
          python3-apt,
@@ -51,21 +51,18 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          bc,
          lshw,
          libpam-modules
-Suggests: ${extra:Suggests}
 Description: Landscape administration system client - Python 3 lib
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
  .
  This package provides the core libraries.
-XB-Python-Version: ${python:Versions}
 
 Package: landscape-base
 Architecture: any
-Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
+Depends: ${misc:Depends}, ${extra:Depends},
          adduser,
          libpam-modules
-Suggests: ${extra:Suggests}
 Conflicts: landscape-common (<< 17.04)
 Description: Landscape administration system - Common setup
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -77,12 +74,9 @@ Description: Landscape administration system - Common setup
 
 Package: landscape-client-base
 Architecture: any
-Depends: ${misc:Depends}, ${extra:Depends}, ${shlibs:Depends},
-         adduser,
-         libpam-modules,
+Depends: ${misc:Depends}, ${extra:Depends},
          landscape-base (= ${binary:Version})
 Conflicts: landscape-common (<< 17.04)
-Suggests: ${extra:Suggests}
 Description: Landscape administration system client - Common setup
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
@@ -93,14 +87,11 @@ Description: Landscape administration system client - Common setup
 
 Package: landscape-sysinfo
 Architecture: any
-Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
-         ${shlibs:Depends},
+Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
          landscape-client-base (= ${binary:Version}),
-         python3-twisted,
          python3-landscape-lib (= ${binary:Version})
 Replaces: landscape-common (<< 17.04)
 Conflicts: landscape-common (<< 17.04)
-Suggests: ${extra:Suggests}
 Description: Landscape administration system client - sysinfo tool
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
@@ -108,7 +99,6 @@ Description: Landscape administration system client - sysinfo tool
  .
  This package provides the landscape-sysinfo tool that Landscape uses
  to get information about the host.
-XB-Python-Version: ${python:Versions}
 
 Package: landscape-common
 Architecture: any
@@ -117,18 +107,15 @@ Description: A transitional package to landscape-sysinfo.
 
 Package: landscape-client
 Architecture: any
-Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
+Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
          ${shlibs:Depends},
          landscape-client-base (= ${binary:Version}),
          landscape-sysinfo (= ${binary:Version}),
-         python3-twisted,
-         python3-pycurl,
-         python3-landscape-lib (= ${binary:Version})
-Suggests: ${extra:Suggests}
+         python3-landscape-lib (= ${binary:Version}),
+         python3-pycurl
 Description: Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
  .
  This package provides the Landscape client and requires a Landscape account.
-XB-Python-Version: ${python:Versions}
