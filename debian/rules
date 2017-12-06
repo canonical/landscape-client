@@ -13,7 +13,9 @@ ifeq (,$(py_sitename))
 endif
 
 package = landscape-client
-root_dir = debian/tmp/
+root_dir = debian/tmp
+SHAREDIR = /usr/share/landscape
+LIBDIR = /usr/lib/landscape
 
 revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f 2 -d "-")
 
@@ -49,12 +51,12 @@ install: build
 	dh_prep
 	dh_installdirs
 
-	python2 setup.py install --root $(root_dir) $(py_setup_install_args)
-	python3 setup.py install --root $(root_dir) $(py_setup_install_args)
+	python2 setup.py install --root $(root_dir)/ $(py_setup_install_args)
+	python3 setup.py install --root $(root_dir)/ $(py_setup_install_args)
 
 	# Keep in mind that some installed files are defined in setup.py
-	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
-	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)/usr/lib/landscape/apt-update
+	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)$(SHAREDIR)/landscape-sysinfo.wrapper
+	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)$(LIBDIR)/apt-update
 
 binary-indep:
 # do nothing

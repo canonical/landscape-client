@@ -23,21 +23,26 @@ PACKAGE=landscape-client
 # running the landscape client.
 PYTHON=/usr/bin/python3
 
+CFGDIR=/etc/landscape
+DATADIR=/var/lib/landscape
+LIBDIR=/usr/lib/landscape
+USER=landscape
+
 case "$1" in
     configure)
 
-        CONFIG_FILE=/etc/landscape/client.conf
+        CONFIG_FILE=$CFGDIR/client.conf
         if [ ! -f $CONFIG_FILE ]; then
             # Create new configuration, with private mode
-            TEMPFILE=$(mktemp -p /etc/landscape)
+            TEMPFILE=$(mktemp -p $CFGDIR)
             cat > $TEMPFILE <<END
 [client]
 log_level = info
 url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
-data_path = /var/lib/landscape/client
+data_path = $DATADIR/client
 END
-            chown landscape $TEMPFILE
+            chown $USER $TEMPFILE
             mv $TEMPFILE $CONFIG_FILE
 
             # Get configuration values from debconf
@@ -82,29 +87,29 @@ END
         else
             # Fix non-private permissions
             chmod 0600 $CONFIG_FILE
-            chown landscape $CONFIG_FILE
+            chown $USER $CONFIG_FILE
         fi
 
         # Remove statoverride for smart-update, if there's one
-        smart_update=/usr/lib/landscape/smart-update
+        smart_update=$LIBDIR/smart-update
         if dpkg-statoverride --list $smart_update >/dev/null 2>&1; then
             dpkg-statoverride --remove $smart_update
         fi
 
         # Add the setuid flag to apt-update, and make it be executable by
         # users in the landscape group (that normally means landscape itself)
-        apt_update=/usr/lib/landscape/apt-update
+        apt_update=$LIBDIR/apt-update
         if ! dpkg-statoverride --list $apt_update >/dev/null 2>&1; then
-            dpkg-statoverride --update --add root landscape 4754 $apt_update
+            dpkg-statoverride --update --add root $USER 4754 $apt_update
         fi
 
         # In response to bug 1508110 we need to trigger a complete update of
         # user information.  The flag file will be removed by the client when
         # the update completes.
-        DATA_PATH="`grep ^data_path /etc/landscape/client.conf | cut -d= -f2 | tr -d '[[:space:]]'`"
-        install --owner=landscape --directory $DATA_PATH
+        DATA_PATH="`grep ^data_path $CFGDIR/client.conf | cut -d= -f2 | tr -d '[[:space:]]'`"
+        install --owner=$USER --directory $DATA_PATH
         USER_UPDATE_FLAG_FILE="$DATA_PATH/user-update-flag"
-        install --owner=landscape /dev/null $USER_UPDATE_FLAG_FILE
+        install --owner=$USER /dev/null $USER_UPDATE_FLAG_FILE
         echo "This file indicates that the Landscape client needs to send updated user information to the server." >> $USER_UPDATE_FLAG_FILE
     ;;
 
