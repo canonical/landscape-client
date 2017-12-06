@@ -21,6 +21,9 @@ revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f
 
 python_landscape_lib_substvars = debian/python-landscape-lib.substvars
 python3_landscape_lib_substvars = debian/python3-landscape-lib.substvars
+landscape_base_substvars = debian/landscape-base.substvars
+landscape_client_base_substvars = debian/landscape-client-base.substvars
+landscape_sysinfo_substvars = debian/landscape-sysinfo.substvars
 landscape_client_substvars = debian/landscape-client.substvars
 
 build-arch: build
@@ -80,13 +83,21 @@ binary-arch: build install
 # from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
 ifneq (,$(filter $(dist_release),lucid precise))
 	echo "extra:Depends=python-gnupginterface" >> $(python_landscape_lib_substvars)
-	echo "extra:Depends=python-gnupginterface" >> $(python3_landscape_lib_substvars)
+	echo "extra:Depends=python3-gnupginterface" >> $(python3_landscape_lib_substvars)
+else
+	echo "extra:Depends=" >> $(python_landscape_lib_substvars)
+	echo "extra:Depends=" >> $(python3_landscape_lib_substvars)
 endif
 
 # In xenial the client needs to depend on libpam-systemd (#1590838)
 ifeq ($(dist_release),xenial)
 	echo "extra:Depends=libpam-systemd" >> $(landscape_client_substvars)
+else
+	echo "extra:Depends=" >> $(landscape_client_substvars)
 endif
+	echo "extra:Depends=" >> $(landscape_base_substvars)
+	echo "extra:Depends=" >> $(landscape_client_base_substvars)
+	echo "extra:Depends=" >> $(landscape_sysinfo_substvars)
 
 	dh_python2 --no-guessing-versions
 	dh_installdeb $(dh_extra_flags)
