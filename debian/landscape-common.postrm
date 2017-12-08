@@ -16,6 +16,29 @@ set -e
 
 case "$1" in
     purge)
+
+        #########################################
+        # from landscape-base
+
+        # Clean up the landscape user.
+        if [ -f /var/lib/landscape/.cleanup.user ]; then
+            deluser --quiet --system landscape >/dev/null || true
+            rm -f /var/lib/landscape/.cleanup.user
+            if [ -f /var/lib/landscape/.cleanup.group ]; then
+                delgroup --quiet --system landscape >/dev/null || true
+            fi
+        fi
+        rm -f /var/lib/landscape/.cleanup.group
+
+        #########################################
+        # from landscape-client-base
+
+        CONFIG_FILE=/etc/landscape/client.conf
+        rm -f "${CONFIG_FILE}"
+
+        #########################################
+        # from landscape-sysinfo
+
         LOG_DIR=/var/log/landscape
         rm -f "${LOG_DIR}/sysinfo.log"*
     ;;
