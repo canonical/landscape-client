@@ -56,6 +56,7 @@ def _get_vm_by_vendor(sys_vendor_path):
     # Use lower-key string for vendors, since we do case-insentive match.
     # We need bytes here as required by the message schema.
     content_vendors_map = (
+        ("amazon ec2", b"kvm"),
         ("bochs", b"kvm"),
         ("google", b"gce"),
         ("innotek", b"virtualbox"),
