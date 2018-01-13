@@ -55,9 +55,14 @@ def _get_vm_by_vendor(sys_vendor_path):
     vendor = read_text_file(sys_vendor_path).lower()
     # Use lower-key string for vendors, since we do case-insentive match.
     # We need bytes here as required by the message schema.
+
+    # 2018-01: AWS and DO are now returning custom sys_vendor names
+    # instead of qemu. If this becomes a trend, it may be worth also checking
+    # dmi/id/chassis_vendor which seems to unchanged (bochs).
     content_vendors_map = (
         ("amazon ec2", b"kvm"),
         ("bochs", b"kvm"),
+        ("digitalocean", b"kvm"),
         ("google", b"gce"),
         ("innotek", b"virtualbox"),
         ("microsoft", b"hyperv"),
