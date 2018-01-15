@@ -1,8 +1,8 @@
-landscape-client (17.04-0ubuntu1) UNRELEASED; urgency=medium
+landscape-client (18.01-0ubuntu1) UNRELEASED; urgency=medium
 
   * New trunk build
 
- -- Andreas Hasenack <andreas@canonical.com>  Mon, 27 Mar 2017 17:10:23 -0300
+ -- Simon Poirier <simon.poirier@canonical.com>  Mon, 15 Jan 2018 15:31:57 -0500
 
 landscape-client (16.03-0ubuntu1) xenial; urgency=medium
 
