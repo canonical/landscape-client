@@ -71,6 +71,13 @@ class GetVMInfoTest(BaseTestCase):
         self.make_sys_vendor("Amazon EC2")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_digitalocean_sys_vendor(self):
+        """
+        get_vm_info should return "kvm" when sys_vendor is "DigitalOcean".
+        """
+        self.make_sys_vendor("DigitalOcean")
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_bochs_sys_vendor(self):
         """
         L{get_vm_info} should return "kvm" when we detect the sys_vendor is
