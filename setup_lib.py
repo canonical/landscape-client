@@ -5,6 +5,8 @@ NAME = "landscape-lib",
 DESCRIPTION = "Common code used by Landscape applications"
 PACKAGES = [
         "landscape.lib",
+        "landscape.lib.apt",
+        "landscape.lib.apt.package",
         "landscape.message_schemas",
         ]
 MODULES = [
