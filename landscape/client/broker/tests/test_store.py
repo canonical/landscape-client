@@ -628,7 +628,7 @@ class MessageStoreTest(LandscapeTest):
     def test_wb_get_pending_legacy_messages(self):
         """Pending messages queued by legacy py27 are converted."""
         filename = os.path.join(self.temp_dir, "0", "0")
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        os.makedirs(os.path.dirname(filename))
         with open(filename, "wb") as fh:
             fh.write(dumps({b"type": b"data",
                             b"data": b"A thing",
