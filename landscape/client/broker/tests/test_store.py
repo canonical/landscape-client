@@ -640,4 +640,3 @@ class MessageStoreTest(LandscapeTest):
         self.assertIsInstance(message[u"api"], bytes)  # api is bytes
         self.assertEqual(u"data", message[u"type"])  # message type is decoded
         self.assertEqual(b"A thing", message[u"data"])  # other are kept as-is
-
