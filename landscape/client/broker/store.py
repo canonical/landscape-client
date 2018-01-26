@@ -268,6 +268,17 @@ class MessageStore(object):
                 logging.exception(e)
                 self._add_flags(filename, BROKEN)
             else:
+                if u"type" not in message:
+                    # Special case to decode keys for messages which were
+                    # serialized by py27 prior to py3 upgrade, and having
+                    # implicit byte message keys. Message may still get
+                    # rejected by the server, but it won't block the client
+                    # broker. (lp: #1718689)
+                    message = {
+                        (k if isinstance(k, str) else k.decode("ascii")): v
+                        for k, v in message.items()}
+                    message[u"type"] = message[u"type"].decode("ascii")
+
                 unknown_type = message["type"] not in accepted_types
                 unknown_api = not is_version_higher(server_api, message["api"])
                 if unknown_type or unknown_api:
