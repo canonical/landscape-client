@@ -3,7 +3,8 @@ import mock
 from landscape.lib.fs import read_text_file, create_text_file
 
 from landscape.client.deployment import (
-    BaseConfiguration, Configuration, get_versioned_persist)
+    BaseConfiguration, Configuration, get_versioned_persist,
+    init_logging)
 
 from landscape.client.tests.helpers import LandscapeTest
 
@@ -16,6 +17,23 @@ class BabbleConfiguration(BaseConfiguration):
         parser = super(BabbleConfiguration, self).make_parser()
         parser.add_option("--whatever", metavar="STUFF")
         return parser
+
+
+class LoggingTest(LandscapeTest):
+
+    def test_init_logging_file(self):
+        """Check init_logging sets proper logging paths."""
+
+        class MyConfiguration(BaseConfiguration):
+            quiet = True
+            log_dir = "/somepath"
+            log_level = "info"  # 20
+
+        with mock.patch("landscape.lib.logging._init_logging") as mock_log:
+            init_logging(MyConfiguration(), "fooprog")
+
+        mock_log.assert_called_once_with(
+            mock.ANY, 20, "/somepath", "fooprog", mock.ANY, None)
 
 
 class BaseConfigurationTest(LandscapeTest):

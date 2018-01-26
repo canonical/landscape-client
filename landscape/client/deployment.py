@@ -14,6 +14,7 @@ from landscape.client.upgraders import UPGRADE_MANAGERS
 def init_logging(configuration, program_name):
     """Given a basic configuration, set up logging."""
     logging.init_app_logging(configuration.log_dir, configuration.log_level,
+                             progname=program_name,
                              quiet=configuration.quiet)
 
 
