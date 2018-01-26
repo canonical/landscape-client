@@ -276,7 +276,7 @@ class RunScriptTests(LandscapeTest):
         persist = Persist(
             filename=os.path.join(self.config.data_path, "broker.bpickle"))
         registration_persist = persist.root_at("registration")
-        registration_persist.set("secure-id", "secure_id")
+        registration_persist.set("secure-id", b"secure_id")
         persist.save()
 
         patch_fetch = mock.patch(
