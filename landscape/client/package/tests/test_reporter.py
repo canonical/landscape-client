@@ -132,6 +132,22 @@ class PackageReporterAptTest(LandscapeTest):
         # Nothing bad should happen.
         return self.reporter.handle_tasks()
 
+    def test_set_package_ids_py27(self):
+        """Check py27 upgraded messages are decoded."""
+        self.store.add_task("reporter",
+                            {"type": b"package-ids", "ids": [123, 456],
+                             "request-id": 123})
+        result = self.reporter.handle_tasks()
+        self.assertIsInstance(result, Deferred)
+
+    @mock.patch("logging.warning", return_value=None)
+    def test_handle_task_unknown(self, mock_warn):
+        """handle_task fails warns about unknown messages."""
+        self.store.add_task("reporter", {"type": "spam"})
+        result = self.reporter.handle_tasks()
+        self.assertIsInstance(result, Deferred)
+        mock_warn.assert_called_once_with("Unknown task message type: 'spam'")
+
     def test_set_package_ids_with_unknown_hashes(self):
         message_store = self.broker_service.message_store
 
