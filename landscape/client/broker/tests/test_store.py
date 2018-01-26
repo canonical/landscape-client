@@ -4,6 +4,7 @@ import mock
 
 from twisted.python.compat import intToBytes
 
+from landscape.lib.bpickle import dumps
 from landscape.lib.persist import Persist
 from landscape.lib.schema import InvalidError, Int, Bytes, Unicode
 from landscape.message_schemas.message import Message
@@ -623,3 +624,19 @@ class MessageStoreTest(LandscapeTest):
         self.store.record_failure((7 * 24 * 60 * 60) + 1)
         [empty, message] = self.store.get_pending_messages()
         self.assertEqual("resynchronize", message["type"])
+
+    def test_wb_get_pending_legacy_messages(self):
+        """Pending messages queued by legacy py27 are converted."""
+        filename = os.path.join(self.temp_dir, "0", "0")
+        os.makedirs(os.path.dirname(filename))
+        with open(filename, "wb") as fh:
+            fh.write(dumps({b"type": b"data",
+                            b"data": b"A thing",
+                            b"api": b"3.2"}))
+        [message] = self.store.get_pending_messages()
+        # message keys are decoded
+        self.assertIn(u"type", message)
+        self.assertIn(u"api", message)
+        self.assertIsInstance(message[u"api"], bytes)  # api is bytes
+        self.assertEqual(u"data", message[u"type"])  # message type is decoded
+        self.assertEqual(b"A thing", message[u"data"])  # other are kept as-is
