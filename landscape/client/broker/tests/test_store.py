@@ -62,6 +62,20 @@ class MessageStoreTest(LandscapeTest):
         store = self.create_store()
         self.assertEqual(store.get_server_uuid(), "abcd-efgh")
 
+    def test_get_set_server_uuid_py27(self):
+        """
+        Check get_server_uuid gets decoded value if it was stored
+        prior to py3 client upgrade.
+        """
+        self.assertEqual(self.store.get_server_uuid(), None)
+        self.store.set_server_uuid(b"abcd-efgh")
+        self.assertEqual(self.store.get_server_uuid(), "abcd-efgh")
+
+        # Ensure it's actually saved.
+        self.store.commit()
+        store = self.create_store()
+        self.assertEqual(store.get_server_uuid(), "abcd-efgh")
+
     def test_get_set_exchange_token(self):
         """
         The next-exchange-token value can be persisted and retrieved.
