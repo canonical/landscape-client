@@ -260,6 +260,10 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                                       "broker.bpickle"))
             persist = persist.root_at("registration")
             computer_id = persist.get("secure-id")
+            try:
+                computer_id = computer_id.decode("ascii")
+            except AttributeError:
+                pass
             d = self._save_attachments(attachments, uid, gid, computer_id, env)
         else:
             d = succeed(None)
