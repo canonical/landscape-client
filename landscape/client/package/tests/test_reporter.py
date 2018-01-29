@@ -146,7 +146,8 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_task("reporter", {"type": "spam"})
         result = self.reporter.handle_tasks()
         self.assertIsInstance(result, Deferred)
-        mock_warn.assert_called_once_with("Unknown task message type: 'spam'")
+        expected = "Unknown task message type: {!r}".format(u"spam")  # py2/3
+        mock_warn.assert_called_once_with(expected)
 
     def test_set_package_ids_with_unknown_hashes(self):
         message_store = self.broker_service.message_store
