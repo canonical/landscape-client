@@ -276,11 +276,11 @@ class AptFacade(object):
         @param url: The base URL of the repository.
         @param codename: The dist in the repository.
         @param components: The components to be included.
-        @param trusted: Whether validation shoule be skipped (if local).
+        @param trusted: Whether validation should be skipped (if local).
         """
         sources_file_path = self._get_internal_sources_list()
         source_options = ""
-        if trusted is not None:
+        if trusted is not None and url.startswith("file:"):
             trusted_val = "yes" if trusted else "no"
             source_options = "[ trusted={} ] ".format(trusted_val)
         sources_line = "deb {}{} {}".format(source_options, url, codename)

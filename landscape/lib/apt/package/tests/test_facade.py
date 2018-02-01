@@ -268,6 +268,38 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
             "deb http://example.com/ubuntu lucid main restricted\n",
             sources_contents)
 
+    def test_add_channel_apt_deb_trusted(self):
+        """add_channel_apt_deb sets trusted option if trusted and local."""
+        # Don't override trust on unsigned/signed remotes.
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "unsigned", ["main"], trusted=True)
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "signed", ["main"], trusted=False)
+
+        # We explicitly trust local
+        self.facade.add_channel_apt_deb(
+            "file://opt/spam", "unsigned", ["main"], trusted=True)
+        # We explicitly distrust local (thus check gpg signatures)
+        self.facade.add_channel_apt_deb(
+            "file://opt/spam", "signed", ["main"], trusted=False)
+        # apt defaults (which is to check signatures on >xenial)
+        self.facade.add_channel_apt_deb(
+            "file://opt/spam", "default", ["main"])
+
+        list_filename = (
+            self.apt_root +
+            "/etc/apt/sources.list.d/_landscape-internal-facade.list")
+        sources_contents = read_text_file(list_filename)
+        self.assertEqual(
+            textwrap.dedent("""\
+            deb http://example.com/ubuntu unsigned main
+            deb http://example.com/ubuntu signed main
+            deb [ trusted=yes ] file://opt/spam unsigned main
+            deb [ trusted=no ] file://opt/spam signed main
+            deb file://opt/spam default main
+            """),
+            sources_contents)
+
     def test_add_channel_deb_dir_adds_deb_channel(self):
         """
         C{add_channel_deb_dir()} adds a deb channel pointing to the
