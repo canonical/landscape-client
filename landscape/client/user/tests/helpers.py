@@ -3,6 +3,8 @@ from twisted.python.compat import iteritems, itervalues
 from landscape.client.user.management import UserManagementError
 from landscape.client.user.provider import UserProviderBase
 
+import PAM
+
 
 class FakeUserManagement(object):
 
