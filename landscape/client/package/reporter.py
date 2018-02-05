@@ -355,12 +355,22 @@ class PackageReporter(PackageTaskHandler):
 
     def handle_task(self, task):
         message = task.data
-        if message["type"] == "package-ids":
+        message_type = message["type"]
+        try:
+            message_type = message_type.decode("ascii")
+        except AttributeError:
+            pass
+
+        if message_type == "package-ids":
             self._got_task = True
             return self._handle_package_ids(message)
-        if message["type"] == "resynchronize":
+        if message_type == "resynchronize":
             self._got_task = True
             return self._handle_resynchronize()
+
+        # Skip and continue.
+        logging.warning("Unknown task message type: {!r}".format(message_type))
+        return succeed(None)
 
     def _handle_package_ids(self, message):
         unknown_hashes = []

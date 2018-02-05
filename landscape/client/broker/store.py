@@ -201,7 +201,12 @@ class MessageStore(object):
 
     def get_server_uuid(self):
         """Return the currently set server UUID."""
-        return self._persist.get("server_uuid")
+        uuid = self._persist.get("server_uuid")
+        try:
+            return uuid.decode("ascii")
+        except AttributeError:
+            pass
+        return uuid
 
     def set_server_uuid(self, uuid):
         """Change the known UUID from the server we're communicating to."""
