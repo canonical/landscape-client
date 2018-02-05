@@ -1,3 +1,6 @@
+import mock
+import PAM
+
 from landscape.lib.testing import MockPopen
 from landscape.client.user.management import (
         UserManagement, UserManagementError)
@@ -5,13 +8,6 @@ from landscape.client.user.tests.helpers import FakeUserProvider
 from landscape.client.user.provider import (
         UserNotFoundError, GroupNotFoundError)
 from landscape.client.tests.helpers import LandscapeTest
-from passlib.hash import md5_crypt
-
-
-def guess_password(generated_password, plaintext_password):
-    salt = generated_password[len("$1$"):generated_password.rfind("$")]
-    crypted = md5_crypt.encrypt(plaintext_password, salt=salt)
-    return crypted
 
 
 class UserWriteTest(LandscapeTest):
@@ -29,18 +25,20 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         groups = [("users", "x", 1001, [])]
         provider = FakeUserProvider(groups=groups, popen=MockPopen(""))
         management = UserManagement(provider=provider)
-        management.add_user("jdoe", "John Doe", "password", False, "users",
-                            "Room 101", "+123456", None)
-        self.assertEqual(len(provider.popen.popen_inputs), 2)
+
+        with mock.patch("PAM.pam") as mock_pam:
+            mock_pam().start.side_effect = self._mock_pass_prompt
+            management.add_user("jdoe", "John Doe", "password", False, "users",
+                                "Room 101", "+123456", None)
+
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
         self.assertEqual(provider.popen.popen_inputs[0],
                          ["adduser", "jdoe", "--disabled-password",
                           "--gecos", "John Doe,Room 101,+123456,",
                           "--gid", "1001"])
-
-        usermod = provider.popen.popen_inputs[1]
-        self.assertEqual(len(usermod), 4, usermod)
-        password = guess_password(usermod[2], "password")
-        self.assertEqual(usermod, ["usermod", "-p", password, "jdoe"])
+        mock_pam().start.assert_called_once_with("passwd", "jdoe", mock.ANY)
+        mock_pam().chauthtok.assert_called()
+        self.assertEqual([("password", PAM.PAM_SUCCESS)], self._conv_result)
 
     def test_add_user_error(self):
         """
@@ -55,14 +53,34 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
     def test_change_password_error(self):
         """
-        L{UserManagement.add_user} should raise an L{UserManagementError} if
-        C{usermod} fails.
+        UserManagement.add_user should raise a UserManagementError if
+        PAM fails.
         """
         provider = FakeUserProvider(popen=MockPopen("", return_codes=[0, 1]))
         management = UserManagement(provider=provider)
-        self.assertRaises(UserManagementError, management.add_user,
-                          "jdoe", u"John Doe", "password", False, None, None,
-                          None, None)
+        with mock.patch("PAM.pam") as mock_pam:
+            mock_pam().start.side_effect = PAM.error(
+                'Authentication token manipulation error', 20)
+
+            with self.assertRaises(UserManagementError):
+                management.add_user(
+                    "jdoe", u"John Doe", "password", False, None, None,
+                    None, None)
+
+    def test_change_password_invalid_user(self):
+        """
+        UserManagement.add_user should raise a UserManagementError if
+        PAM starts asking for anything other than the new password.
+        """
+        provider = FakeUserProvider(popen=MockPopen("", return_codes=[0, 1]))
+        management = UserManagement(provider=provider)
+        with mock.patch("PAM.pam") as mock_pam:
+            mock_pam().start.side_effect = self._mock_user_prompt
+
+            with self.assertRaises(UserManagementError):
+                management.add_user(
+                    "jdoe", u"John Doe", "password", False, None, None,
+                    None, None)
 
     def test_expire_password_error(self):
         """
@@ -78,37 +96,38 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
     def test_set_password(self):
         """
-        L{UserManagement.set_password} should use C{usermod} to change
-        a user's password.
+        UserManagement.set_password should use PAM to change a user's password.
         """
         data = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file,
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
-        management.set_user_details("jdoe", password="password")
 
-        self.assertEqual(len(provider.popen.popen_inputs), 1)
-        password = provider.popen.popen_inputs[0][2]
-        password = guess_password(password, "password")
-        self.assertEqual(provider.popen.popen_inputs,
-                         [["usermod", "-p", password, "jdoe"]])
+        with mock.patch("PAM.pam") as mock_pam:
+            mock_pam().start.side_effect = self._mock_pass_prompt
+            management.set_user_details("jdoe", password="password")
+
+        mock_pam().start.assert_called_once_with("passwd", "jdoe", mock.ANY)
+        mock_pam().chauthtok.assert_called()
+        self.assertEqual([("password", PAM.PAM_SUCCESS)], self._conv_result)
 
     def test_set_password_with_system_user(self):
         """
-        L{UserManagement.set_password} should allow us to edit system
-        users.
+        UserManagement.set_password should allow us to edit system users.
         """
         data = [("root", "x", 0, 0, ",,,,", "/home/root", "/bin/zsh")]
         provider = FakeUserProvider(users=data,
                                     shadow_file=self.shadow_file,
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
-        management.set_user_details("root", password="password")
-        self.assertEqual(len(provider.popen.popen_inputs), 1)
-        password = provider.popen.popen_inputs[0][2]
-        password = guess_password(password, "password")
-        self.assertEqual(provider.popen.popen_inputs,
-                         [["usermod", "-p", password, "root"]])
+
+        with mock.patch("PAM.pam") as mock_pam:
+            mock_pam().start.side_effect = self._mock_pass_prompt
+            management.set_user_details("root", password="password")
+
+        mock_pam().start.assert_called_once_with("passwd", "root", mock.ANY)
+        mock_pam().chauthtok.assert_called()
+        self.assertEqual([("password", PAM.PAM_SUCCESS)], self._conv_result)
 
     def test_set_password_unicode(self):
         """
@@ -120,13 +139,14 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file,
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
-        management.set_user_details("jdoe", password=u"password")
 
-        self.assertEqual(len(provider.popen.popen_inputs), 1)
-        password = provider.popen.popen_inputs[0][2]
-        password = guess_password(password, "password")
-        self.assertEqual(provider.popen.popen_inputs,
-                         [["usermod", "-p", password, "jdoe"]])
+        with mock.patch("PAM.pam") as mock_pam:
+            mock_pam().start.side_effect = self._mock_pass_prompt
+            management.set_user_details("jdoe", password=u"password")
+
+        mock_pam().start.assert_called_once_with("passwd", "jdoe", mock.ANY)
+        mock_pam().chauthtok.assert_called()
+        self.assertEqual([(u"password", PAM.PAM_SUCCESS)], self._conv_result)
 
     def test_set_name(self):
         """
@@ -377,6 +397,24 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management.remove_user("jdoe", delete_home=True)
         self.assertEqual(popen.popen_inputs,
                          [["deluser", "jdoe", "--remove-home"]])
+
+    def _mock_pass_prompt(self, service, user, conv):
+        """Mock PAM asking password."""
+        self._conv_result = conv(
+            None,
+            [("Enter new UNIX password:", PAM.PAM_PROMPT_ECHO_OFF)],
+            None)
+        if not self._conv_result:
+            raise PAM.error('Authentication token manipulation error', 20)
+
+    def _mock_user_prompt(self, service, user, conv):
+        """Mock PAM asking user."""
+        self._conv_result = conv(
+            None,
+            [("login:", PAM.PAM_PROMPT_ECHO_ON)],
+            None)
+        if not self._conv_result:
+            raise PAM.error('Authentication token manipulation error', 20)
 
 
 class GroupWriteTest(LandscapeTest):

@@ -2,6 +2,9 @@ UBUNTU_RELEASE := $(shell lsb_release -cs)
 
 # We'd use the packaged version, but travis runs python in virtualenv,
 # thus this pip workaround.
+.PHONY: pipinstallpython_deps
+pipinstallpython_deps: pipinstallpythonapt_deps pipinstallpythonpam_deps
+
 .PHONY: pipinstallpythonapt
 pipinstallpythonapt: pipinstallpythonapt_deps
 	$(MAKE) -f $(lastword $(MAKEFILE_LIST)) pipinstallpythonapt_default || \
@@ -11,7 +14,7 @@ pipinstallpythonapt: pipinstallpythonapt_deps
 pipinstallpythonapt_deps:
 	pip install pyopenssl
 	pip install service_identity
-	sudo apt-get -y build-dep python-apt python3-apt
+	sudo apt-get -y build-dep python-apt python3-apt python3-pam
 	sudo apt-get -y install libapt-pkg-dev
 
 .PHONY: pipinstallpythonapt_default
@@ -37,3 +40,12 @@ pipinstallpythonapt_src_xenial: pipinstallpythonapt_src
 .PHONY: pipinstallpythonapt_src_trusty
 pipinstallpythonapt_src_trusty: PYAPT_VER = 1.1.0~beta1build1
 pipinstallpythonapt_src_trusty: pipinstallpythonapt_src
+
+
+# python-PAM
+PYPAM_VER := 0.4.2.orig
+
+.PHONY: pipinstallpythonpam_deps
+pipinstallpythonpam_deps:
+	wget -O /tmp/python-pam_$(PYPAM_VER).tar.gz https://launchpad.net/ubuntu/+archive/primary/+files/python-pam_$(PYPAM_VER).tar.gz
+	pip install /tmp/python-pam_$(PYPAM_VER).tar.gz

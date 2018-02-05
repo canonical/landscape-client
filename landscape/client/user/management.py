@@ -6,7 +6,7 @@
 
 import logging
 import subprocess
-from passlib.hash import md5_crypt
+import PAM
 
 from landscape.client.user.provider import UserManagementError, UserProvider
 
@@ -48,13 +48,27 @@ class UserManagement(object):
         return output
 
     def _set_password(self, username, password):
-        password = password.encode("utf-8")
-        crypted = md5_crypt.encrypt(password)
-        result, output = self.call_popen(["usermod", "-p", crypted, username])
-        if result != 0:
-            raise UserManagementError("Error setting password for user "
-                                      "%s.\n%s" % (username, output))
-        return output
+        """Sets a user password through PAM."""
+        pam_log = []
+
+        def _conv(auth, query_list, user_data):
+            results = []
+            pam_log.extend(query_list)
+            for _, query_type in query_list:
+                if query_type == PAM.PAM_PROMPT_ECHO_OFF:
+                    results.append((password, PAM.PAM_SUCCESS))
+                else:
+                    # Reject any conversation querying other than password.
+                    return None
+            return results
+        try:
+            auth = PAM.pam()
+            auth.start("passwd", username, _conv)
+            auth.chauthtok(PAM.PAM_SILENT)
+        except PAM.error as e:
+            raise UserManagementError(
+                "Error setting password for user {}."
+                "\n{} {}".format(username, pam_log, e))
 
     def _set_primary_group(self, username, groupname):
         primary_gid = self._provider.get_gid(groupname)

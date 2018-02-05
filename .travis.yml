@@ -30,9 +30,9 @@ env:
 install:
   - pip install flake8
   # These match "make depends"
-  - pip install twisted==16.4.0 mock==1.3.0 configobj==5.0.6 passlib==1.6.5 pycurl
+  - pip install twisted==16.4.0 mock==1.3.0 configobj==5.0.6 pycurl
   - pip install http://launchpad.net/python-distutils-extra/trunk/2.39/+download/python-distutils-extra-2.39.tar.gz
   # build & install python-apt
-  - make -f Makefile.travis pipinstallpythonapt
+  - make -f Makefile.travis pipinstallpython_deps
 script:
   - make $TARGET PYTHON=python$TRAVIS_PYTHON_VERSION
