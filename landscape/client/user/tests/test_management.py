@@ -56,8 +56,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         with self.assertRaises(UserManagementError) as e:
             management.add_user("jdoe", u"John Doe", "password", False, None,
                                 None, None, None)
-        expected = ("Error setting password for user b'jdoe'.\n "
-                    "b'PAM is unhappy'")
+        expected = "Error setting password for user {}.\n {}".format(
+            b"jdoe", b"PAM is unhappy")
         self.assertEqual(expected, str(e.exception))
 
     def test_expire_password_error(self):
