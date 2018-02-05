@@ -52,12 +52,13 @@ class UserManagement(object):
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT)
-        output, _ = chpasswd.communicate(chpasswd_input)
+        output, stderr = chpasswd.communicate(chpasswd_input)
         result = chpasswd.returncode
         if result != 0:
             username = username.encode("utf-8")
-            raise UserManagementError("Error setting password for user "
-                                      "%s.\n%s" % (username, output))
+            raise UserManagementError(
+                "Error setting password for user {}.\n{} {}".format(
+                    username, output, stderr))
         return output
 
     def _set_primary_group(self, username, groupname):
