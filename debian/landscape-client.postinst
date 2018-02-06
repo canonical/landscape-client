@@ -109,10 +109,9 @@ END
 
         # To work around bug #1735100 we rewrite file-local landscape sources
         # with the trusted flag, as they have no release file, thus are
-        # unsigned repositories.
+        # unsigned repositories. It exists while package profile is applying.
         LANDSCAPE_INTERNAL_SOURCES=/etc/apt/sources.list.d/_landscape-internal-facade.list
         if grep -q -e "^deb file:" $LANDSCAPE_INTERNAL_SOURCES; then
-            cp $LANDSCAPE_INTERNAL_SOURCES $LANDSCAPE_INTERNAL_SOURCES.orig
             sed -i 's/^deb file:/deb [ trusted=yes ] file:/' $LANDSCAPE_INTERNAL_SOURCES
         fi
     ;;
