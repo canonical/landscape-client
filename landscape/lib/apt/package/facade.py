@@ -269,15 +269,21 @@ class AptFacade(object):
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
         return os.path.join(sources_dir, "_landscape-internal-facade.list")
 
-    def add_channel_apt_deb(self, url, codename, components=None):
+    def add_channel_apt_deb(self, url, codename, components=None,
+                            trusted=None):
         """Add a deb URL which points to a repository.
 
         @param url: The base URL of the repository.
         @param codename: The dist in the repository.
         @param components: The components to be included.
+        @param trusted: Whether validation should be skipped (if local).
         """
         sources_file_path = self._get_internal_sources_list()
-        sources_line = "deb %s %s" % (url, codename)
+        source_options = ""
+        if trusted is not None and url.startswith("file:"):
+            trusted_val = "yes" if trusted else "no"
+            source_options = "[ trusted={} ] ".format(trusted_val)
+        sources_line = "deb {}{} {}".format(source_options, url, codename)
         if components:
             sources_line += " %s" % " ".join(components)
         if os.path.exists(sources_file_path):
@@ -296,7 +302,9 @@ class AptFacade(object):
         about the deb files.
         """
         self._create_packages_file(path)
-        self.add_channel_apt_deb("file://%s" % path, "./", None)
+        # yakkety+ validate even file repository by default. deb dirs don't
+        # have a signed Release file but are local so they should be trusted.
+        self.add_channel_apt_deb("file://%s" % path, "./", None, trusted=True)
 
     def clear_channels(self):
         """Clear the channels that have been added through the facade.

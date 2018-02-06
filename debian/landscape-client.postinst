@@ -106,6 +106,14 @@ END
         USER_UPDATE_FLAG_FILE="$DATA_PATH/user-update-flag"
         install --owner=landscape /dev/null $USER_UPDATE_FLAG_FILE
         echo "This file indicates that the Landscape client needs to send updated user information to the server." >> $USER_UPDATE_FLAG_FILE
+
+        # To work around bug #1735100 we rewrite file-local landscape sources
+        # with the trusted flag, as they have no release file, thus are
+        # unsigned repositories. It exists while package profile is applying.
+        LANDSCAPE_INTERNAL_SOURCES=/etc/apt/sources.list.d/_landscape-internal-facade.list
+        if grep -q -e "^deb file:" $LANDSCAPE_INTERNAL_SOURCES; then
+            sed -i 's/^deb file:/deb [ trusted=yes ] file:/' $LANDSCAPE_INTERNAL_SOURCES
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
