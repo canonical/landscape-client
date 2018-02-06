@@ -5,13 +5,6 @@ from landscape.client.user.tests.helpers import FakeUserProvider
 from landscape.client.user.provider import (
         UserNotFoundError, GroupNotFoundError)
 from landscape.client.tests.helpers import LandscapeTest
-from passlib.hash import md5_crypt
-
-
-def guess_password(generated_password, plaintext_password):
-    salt = generated_password[len("$1$"):generated_password.rfind("$")]
-    crypted = md5_crypt.encrypt(plaintext_password, salt=salt)
-    return crypted
 
 
 class UserWriteTest(LandscapeTest):
@@ -37,10 +30,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                           "--gecos", "John Doe,Room 101,+123456,",
                           "--gid", "1001"])
 
-        usermod = provider.popen.popen_inputs[1]
-        self.assertEqual(len(usermod), 4, usermod)
-        password = guess_password(usermod[2], "password")
-        self.assertEqual(usermod, ["usermod", "-p", password, "jdoe"])
+        chpasswd = provider.popen.popen_inputs[1]
+        self.assertEqual(len(chpasswd), 1, chpasswd)
+        self.assertEqual(b"jdoe:password", provider.popen.received_input)
 
     def test_add_user_error(self):
         """
@@ -55,14 +47,18 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
     def test_change_password_error(self):
         """
-        L{UserManagement.add_user} should raise an L{UserManagementError} if
-        C{usermod} fails.
+        UserManagement.add_user should raise a UserManagementError if
+        chpasswd fails.
         """
         provider = FakeUserProvider(popen=MockPopen("", return_codes=[0, 1]))
+        provider.popen.err_out = b"PAM is unhappy"
         management = UserManagement(provider=provider)
-        self.assertRaises(UserManagementError, management.add_user,
-                          "jdoe", u"John Doe", "password", False, None, None,
-                          None, None)
+        with self.assertRaises(UserManagementError) as e:
+            management.add_user("jdoe", u"John Doe", "password", False, None,
+                                None, None, None)
+        expected = "Error setting password for user {}.\n {}".format(
+            b"jdoe", b"PAM is unhappy")
+        self.assertEqual(expected, str(e.exception))
 
     def test_expire_password_error(self):
         """
@@ -78,7 +74,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
     def test_set_password(self):
         """
-        L{UserManagement.set_password} should use C{usermod} to change
+        UserManagement.set_password should use chpasswd to change
         a user's password.
         """
         data = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
@@ -87,11 +83,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", password="password")
 
-        self.assertEqual(len(provider.popen.popen_inputs), 1)
-        password = provider.popen.popen_inputs[0][2]
-        password = guess_password(password, "password")
-        self.assertEqual(provider.popen.popen_inputs,
-                         [["usermod", "-p", password, "jdoe"]])
+        self.assertEqual(b"jdoe:password", provider.popen.received_input)
+        self.assertEqual(provider.popen.popen_inputs, [["chpasswd"]])
 
     def test_set_password_with_system_user(self):
         """
@@ -105,10 +98,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_user_details("root", password="password")
         self.assertEqual(len(provider.popen.popen_inputs), 1)
-        password = provider.popen.popen_inputs[0][2]
-        password = guess_password(password, "password")
-        self.assertEqual(provider.popen.popen_inputs,
-                         [["usermod", "-p", password, "root"]])
+        self.assertEqual(b"root:password", provider.popen.received_input)
 
     def test_set_password_unicode(self):
         """
@@ -123,10 +113,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management.set_user_details("jdoe", password=u"password")
 
         self.assertEqual(len(provider.popen.popen_inputs), 1)
-        password = provider.popen.popen_inputs[0][2]
-        password = guess_password(password, "password")
-        self.assertEqual(provider.popen.popen_inputs,
-                         [["usermod", "-p", password, "jdoe"]])
+        self.assertEqual(b"jdoe:password", provider.popen.received_input)
 
     def test_set_name(self):
         """

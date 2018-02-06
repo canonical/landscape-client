@@ -22,7 +22,6 @@ if sys.version_info[0] > 2:
 DEB_REQUIRES = [
         ]
 REQUIRES = [
-        "passlib",
         "landscape-lib={}".format(UPSTREAM_VERSION),
         ]
 

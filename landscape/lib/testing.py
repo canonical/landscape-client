@@ -344,20 +344,30 @@ class EnvironSaverHelper(object):
 
 class MockPopen(object):
 
-    def __init__(self, output, return_codes=None):
+    def __init__(self, output, return_codes=None, err_out=""):
         self.output = output
+        self.err_out = err_out
         self.stdout = cstringio(output)
         self.popen_inputs = []
         self.return_codes = return_codes
+        self.received_input = None
 
-    def __call__(self, args, stdout=None, stderr=None):
-        return self.popen(args, stdout=stdout, stderr=stderr)
+    def __call__(self, args, stdin=None, stdout=None, stderr=None):
+        return self.popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
 
-    def popen(self, args, stdout=None, stderr=None):
+    def popen(self, args, stdin=None, stdout=None, stderr=None):
         self.popen_inputs.append(args)
         return self
 
     def wait(self):
+        return self.returncode
+
+    def communicate(self, input=None):
+        self.received_input = input
+        return self.output, self.err_out
+
+    @property
+    def returncode(self):
         if self.return_codes is None:
             return 0
         return self.return_codes.pop(0)

@@ -6,7 +6,6 @@
 
 import logging
 import subprocess
-from passlib.hash import md5_crypt
 
 from landscape.client.user.provider import UserManagementError, UserProvider
 
@@ -48,12 +47,18 @@ class UserManagement(object):
         return output
 
     def _set_password(self, username, password):
-        password = password.encode("utf-8")
-        crypted = md5_crypt.encrypt(password)
-        result, output = self.call_popen(["usermod", "-p", crypted, username])
+        chpasswd_input = "{}:{}".format(username, password).encode("utf-8")
+        chpasswd = self._provider.popen(["chpasswd"],
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
+        output, stderr = chpasswd.communicate(chpasswd_input)
+        result = chpasswd.returncode
         if result != 0:
-            raise UserManagementError("Error setting password for user "
-                                      "%s.\n%s" % (username, output))
+            username = username.encode("utf-8")
+            raise UserManagementError(
+                "Error setting password for user {}.\n{} {}".format(
+                    username, output, stderr))
         return output
 
     def _set_primary_group(self, username, groupname):
