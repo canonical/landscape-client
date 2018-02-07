@@ -2,7 +2,7 @@ import os
 
 from mock import patch, Mock, ANY
 
-from twisted.internet.defer import Deferred, fail
+from twisted.internet.defer import Deferred, fail, succeed
 
 from landscape.lib.apt.package.facade import AptFacade
 from landscape.lib.apt.package.store import HashIdStore, PackageStore
@@ -276,6 +276,25 @@ class PackageTaskHandlerTest(LandscapeTest):
         handle_tasks_result = self.handler.handle_tasks()
         self.assertTrue(handle_tasks_result.called)
         self.assertEqual(3, self.handler.handle_task.call_count)
+
+    def test_handle_py2_tasks(self):
+        """Check py27-serialized messages-types are decoded."""
+        queue_name = PackageTaskHandler.queue_name
+
+        self.store.add_task(queue_name, {"type": b"spam"})
+        self.store.add_task(queue_name, {"type": "ham"})
+
+        stash = []
+
+        def handle_task(task):
+            stash.append(task.data["type"])
+            return succeed(None)
+
+        self.handler.handle_task = Mock(side_effect=handle_task)
+
+        self.handler.handle_tasks()
+        self.assertEqual(stash, ["spam", "ham"])
+        self.assertEqual(2, self.handler.handle_task.call_count)
 
     def test_handle_tasks_hooks_errback(self):
         queue_name = PackageTaskHandler.queue_name

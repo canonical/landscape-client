@@ -356,10 +356,6 @@ class PackageReporter(PackageTaskHandler):
     def handle_task(self, task):
         message = task.data
         message_type = message["type"]
-        try:
-            message_type = message_type.decode("ascii")
-        except AttributeError:
-            pass
 
         if message_type == "package-ids":
             self._got_task = True

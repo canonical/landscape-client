@@ -2,7 +2,7 @@ import os
 import re
 import logging
 
-from twisted.internet.defer import succeed, Deferred
+from twisted.internet.defer import succeed, Deferred, maybeDeferred
 
 from landscape.lib.apt.package.store import PackageStore, InvalidHashIdDb
 from landscape.lib.lock import lock_path, LockError
@@ -131,8 +131,9 @@ class PackageTaskHandler(object):
         task = self._store.get_next_task(self.queue_name)
 
         if task:
+            self._decode_task_type(task)
             # We have another task.  Let's handle it.
-            result = self.handle_task(task)
+            result = maybeDeferred(self.handle_task, task)
             result.addCallback(self._handle_next_task, last_task=task)
             result.addErrback(self._handle_task_failure)
             return result
@@ -248,6 +249,17 @@ class PackageTaskHandler(object):
         result = self._broker.get_session_id()
         result.addCallback(got_session_id)
         return result
+
+    def _decode_task_type(self, task):
+        """Decode message_type for tasks created pre-py3."""
+        try:
+            message_type = task.data["type"]
+        except (TypeError, KeyError):
+            return
+        try:
+            task.data["type"] = message_type.decode("ascii")
+        except AttributeError:
+            pass
 
 
 def run_task_handler(cls, args, reactor=None):
