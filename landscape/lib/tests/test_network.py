@@ -31,7 +31,7 @@ class NetworkInfoTest(BaseTestCase):
             ["/sbin/ifconfig"], stdout=PIPE, env={"LC_ALL": "C"})
         result = process.communicate()[0].decode("ascii")
         interface_blocks = dict(
-            [(block.split()[0], block.upper()) for block in
+            [(block.split()[0].strip(":"), block.upper()) for block in
              filter(None, result.split("\n\n"))])
 
         for device in device_info:
