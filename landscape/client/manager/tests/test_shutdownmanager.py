@@ -48,8 +48,8 @@ class ShutdownManagerTest(LandscapeTest):
                   "result-text": u"Data may arrive in batches."}])
 
         protocol.result.addCallback(restart_performed)
-        protocol.childDataReceived(0, "Data may arrive ")
-        protocol.childDataReceived(0, "in batches.")
+        protocol.childDataReceived(0, b"Data may arrive ")
+        protocol.childDataReceived(0, b"in batches.")
         # We need to advance both reactors to simulate that fact they
         # are loosely in sync with each other
         self.broker_service.reactor.advance(10)
@@ -90,7 +90,7 @@ class ShutdownManagerTest(LandscapeTest):
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.result.addCallback(restart_failed)
-        protocol.childDataReceived(0, "Failure text is reported.")
+        protocol.childDataReceived(0, b"Failure text is reported.")
         protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))
         return protocol.result
 
@@ -125,11 +125,11 @@ class ShutdownManagerTest(LandscapeTest):
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
-        protocol.childDataReceived(0, "Data may arrive ")
-        protocol.childDataReceived(0, "in batches.")
+        protocol.childDataReceived(0, b"Data may arrive ")
+        protocol.childDataReceived(0, b"in batches.")
         self.manager.reactor.advance(10)
         self.assertEqual(protocol.get_data(), "Data may arrive in batches.")
-        protocol.childDataReceived(0, "Even when you least expect it.")
+        protocol.childDataReceived(0, b"Even when you least expect it.")
         self.assertEqual(protocol.get_data(), "Data may arrive in batches.")
 
     def test_restart_stops_exchanger(self):

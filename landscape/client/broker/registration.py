@@ -30,7 +30,11 @@ class RegistrationError(Exception):
 def persist_property(name):
 
     def get(self):
-        return self._persist.get(name)
+        value = self._persist.get(name)
+        try:
+            return value.decode("ascii")
+        except (AttributeError, UnicodeDecodeError):
+            return value
 
     def set(self, value):
         self._persist.set(name, value)
