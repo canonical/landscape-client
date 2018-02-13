@@ -45,6 +45,11 @@ class IdentityTest(LandscapeTest):
         self.check_persist_property("secure_id",
                                     "registration.secure-id")
 
+    def test_secure_id_as_unicode(self):
+        """secure-id is expected to be retrieved as unicode."""
+        self.identity.secure_id = b"spam"
+        self.assertEqual(self.identity.secure_id, "spam")
+
     def test_insecure_id(self):
         self.check_persist_property("insecure_id",
                                     "registration.insecure-id")
