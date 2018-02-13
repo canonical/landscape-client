@@ -113,7 +113,7 @@ class ShutdownProcessProtocol(ProcessProtocol):
 
     def get_data(self):
         """Get the data printed by the subprocess."""
-        return "".join(self._data)
+        return b"".join(self._data).decode("utf-8", "replace")
 
     def set_timeout(self, reactor, timeout=10):
         """
