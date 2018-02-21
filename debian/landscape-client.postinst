@@ -111,8 +111,10 @@ END
         # with the trusted flag, as they have no release file, thus are
         # unsigned repositories. It exists while package profile is applying.
         LANDSCAPE_INTERNAL_SOURCES=/etc/apt/sources.list.d/_landscape-internal-facade.list
-        if grep -q -e "^deb file:" $LANDSCAPE_INTERNAL_SOURCES; then
-            sed -i 's/^deb file:/deb [ trusted=yes ] file:/' $LANDSCAPE_INTERNAL_SOURCES
+        if [ -f "$LANDSCAPE_INTERNAL_SOURCES" ]; then
+            if grep -q -e "^deb file:" $LANDSCAPE_INTERNAL_SOURCES; then
+                sed -i 's/^deb file:/deb [ trusted=yes ] file:/' $LANDSCAPE_INTERNAL_SOURCES
+            fi
         fi
     ;;
 
