@@ -81,9 +81,6 @@ case "$1" in
         #########################################
         # from landscape-sysinfo
 
-        # Since motd shows a different number of security updates, suppress the message
-        dpkg-divert --package $PACKAGE --rename /etc/update-motd.d/90-updates-available
-
         db_get $PACKAGE/sysinfo
         # Choices:
         #  * Do not display sysinfo on login
