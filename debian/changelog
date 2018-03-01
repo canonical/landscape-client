@@ -1,8 +1,78 @@
-landscape-client (18.01-0ubuntu1) UNRELEASED; urgency=medium
+landscape-client (18.03-0ubuntu1) bionic; urgency=medium
 
   * New trunk build
 
- -- Simon Poirier <simon.poirier@canonical.com>  Mon, 15 Jan 2018 15:31:57 -0500
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 01 Mar 2018 11:14:02 -0300
+
+landscape-client (18.01-0ubuntu1) bionic; urgency=medium
+
+  * New upstream release 18.01:
+    - Ported to python3 (LP: #1577850)
+    - move Replaces/Breaks landscape-client-ui rules to landscape-common
+      (LP: #1560424)
+    - Add a libpam-systemd Depends if built for xenial (LP: #1590838)
+    - Some units not reporting swift usage (LP: #1588404)
+    - Fix missing install directories for landscape-common and drop
+      usr/share/landscape as its only used and created by landscape-client.
+      (LP: #1680842)
+    - Fix VM detection for Xen, by returning "xen" only for paravirtualized and
+      HVM hosts, not for dom0. (LP: #1601818)
+    - Add an indication of truncation to process output that has been truncated
+      prior to delivery to the server. (LP: #1629000)
+    - add /snap/bin to the PATH when executing scripts. (LP: #1635634)
+    - Save the original sources.list file when a repository profile is
+      associated with a computer and restore it when the profile is removed.
+      (LP: #1607529)
+    - Drop the legacy HAService plugin, which is no longer used.
+    - Avoid double-decoding package descriptions in build_skeleton_apt, which
+      causes an error with Xenial python-apt. (LP: #1655395)
+    - Remove dead dbus code and textmessage (confirmed not supported in server
+      for ~2 years). (LP: #1657372)
+    - Move bzr-builddeb conf file from deprecated location to debian/
+      (LP: #1658796)
+    - Support for new server error message about there being too many pending
+      computers already (LP: #1662530)
+    - Add a timestamp to the package reporter result (LP: #1674252)
+    - Check if ubuntu-release-upgrader is running before apt-update (LP: #1699179)
+    - Implicitly trust file-local sources managed by landscape. On upgrades,
+      add the trusted flag to the landscape file-local apt source file if it's
+      not there. (LP: #1736576)
+    - Use local system tools to change the user's password (LP: #1743558)
+  * clean up packaging and getting in sync with the new landscape version:
+    - d/rules: drop extra:suggests which is unused since 13.07.1-0ubuntu2
+    - Remove antique postinst code. No supported landscape-client version
+      installs cronjobs anymore (since a long time).
+    - d/landscape-client.docs: the README file is now a markdown file, so
+      install that instead.
+    - d/landscape-common.postinst: no need to single out
+      /var/lib/landscape/.gnupg when fixing ownerships, just do it over
+      the entire parent directory.
+    - guard user and group removal via an empty .cleanup.* file in post, so we
+      only remove the user/group if we were the ones who created them at
+      install time.
+    - lintian: remove absolute path from update-motd calls in maintainer
+      scripts
+    - d/rules: drop special handling for dapper, hardy and lucid, which are no
+      longer supported.
+    - d/rules: make sure we have an "extra:Depends=" in substvars even if it's
+      empty
+    - d/rules: drop dh_pycentral handling, it's obsolete
+  * Dropped (already included in this version):
+    - d/p/set-vm-info-to-kvm-for-aws-C5-instances.patch:
+      Sets vm_info to kvm for new AWS EC2 C5 instances. (LP #1742531)
+    - d/p/set-vm-info-to-kvm-for-digitalocean-instances.patch:
+      Sets vm_info to kvm for digitalocean instances. (LP #1743232)
+    - Add proxy handling to package reporter. (LP #1531150)
+    - Fix regression in configuration hook under install-cd chroot (LP #1699789)
+    - Report autoremovable packages (LP #1208393)
+    - Do not re-register client by default (LP #1618483)
+    - Don't report packages that are coming from backports, so that Landscape
+      doesn't try to upgrade to versions of packages that are in backports.
+      (LP #1668583)
+    - Cope with an api change in python-swift that broke swift storage
+      reporting in Autopilot. (LP #1563565)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 21 Feb 2018 18:04:05 -0300
 
 landscape-client (16.03-0ubuntu1) xenial; urgency=medium
 
