@@ -13,7 +13,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 
 ALL_PLUGINS = ["Load", "Disk", "Memory", "Temperature", "Processes",
-               "LoggedInUsers", "Network"]
+               "LoggedInUsers", "LandscapeLink", "Network"]
 
 
 class SysInfoConfiguration(BaseConfiguration):
