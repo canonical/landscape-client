@@ -36,8 +36,11 @@ OPTIONS
                         Comma-delimited list of sysinfo plugins to NOT use.
                         This always take precedence over plugins to include.
 
-Default plugins: Load, Disk, Memory, Temperature, Processes, LoggedInUsers,
-LandscapeLink, Network
+  Available plugins: Load, Disk, Memory, Temperature, Processes, LoggedInUsers,
+  LandscapeLink, Network
+
+  Default plugins: Load, Disk, Memory, Temperature, Processes, LoggedInUsers,
+  Network
 
 CONFIGURATION FILE
 
@@ -45,12 +48,12 @@ Any of the long command-line options can be used as a configuration directive
 in that configuration file, under the section [sysinfo], by replacing the hyphen
 (-) with an underscore (_).
 
-For example, to disable the LandscapeLink and Temperature plugins
+For example, to disable the Network and Temperature plugins
 without having to use the command line option, the following can be added to
 /etc/landscape/client.conf:
 
     [sysinfo]
-    exclude_sysinfo_plugins = Temperature, LandscapeLink
+    exclude_sysinfo_plugins = Temperature, Network
 
 
 EXAMPLES
@@ -58,6 +61,7 @@ EXAMPLES
 This is the default configuration with all plugins enabled:
 
     $ landscape-sysinfo
+
       System load:    0.66               Processes:             242
       Usage of /home: 72.0% of 27.50GB   Users logged in:       1
       Memory usage:   31%                IP address for wlan0:  10.0.1.6
@@ -66,15 +70,12 @@ This is the default configuration with all plugins enabled:
 
       => There is 1 zombie process.
 
-      Graph this data and manage this system at https://landscape.canonical.com/
+If you want to disable the temperature and Network plugins, you could run it like this:
 
-If you want to disable the temperature and Landscape plugins, you could run it like this:
+    $ landscape-sysinfo --exclude-sysinfo-plugins=Temperature,Network
 
-    $ landscape-sysinfo --exclude-sysinfo-plugins=Temperature,LandscapeLink
-      System load:    1.08               Processes:             242
-      Usage of /home: 72.0% of 27.50GB   Users logged in:       1
-      Memory usage:   31%                IP address for wlan0:  10.0.1.6
-      Swap usage:     0%                 IP address for virbr0: 192.168.122.1
+      System load: 0.3               Memory usage: 12%   Processes:       88
+      Usage of /:  14.0% of 9.52GB   Swap usage:   0%    Users logged in: 1
 
       => There is 1 zombie process.
 
