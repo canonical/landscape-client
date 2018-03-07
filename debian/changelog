@@ -1,6 +1,8 @@
 landscape-client (18.03-0ubuntu1) bionic; urgency=medium
 
   * New trunk build
+  * debian/patches/remove-landscape-link.patch: Remove the landscape url
+    from motd output. (LP: #1753936)
 
  -- Andreas Hasenack <andreas@canonical.com>  Thu, 01 Mar 2018 11:14:02 -0300
 
