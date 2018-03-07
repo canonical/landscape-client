@@ -1,6 +1,8 @@
 landscape-client (18.03-0ubuntu1) bionic; urgency=medium
 
   * New trunk build
+  * Remove the landscape url from motd output by removing LandscapeLink
+    from the list of default landscape-sysinfo plugins. (LP: #1753936)
 
  -- Andreas Hasenack <andreas@canonical.com>  Thu, 01 Mar 2018 11:14:02 -0300
 
