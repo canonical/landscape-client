@@ -16,6 +16,7 @@ from landscape.sysinfo.deployment import (
 from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
+from landscape.sysinfo.landscapelink import LandscapeLink
 
 
 class DeploymentTest(ConfigTestCase, unittest.TestCase):
@@ -40,6 +41,12 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
         self.configuration.load(["-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), len(ALL_PLUGINS))
+
+    def test_landscape_link_not_default(self):
+        self.configuration.load(["-d", self.makeFile()])
+        plugins = self.configuration.get_plugins()
+        for plugin in plugins:
+            self.assertFalse(isinstance(plugin, LandscapeLink))
 
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")

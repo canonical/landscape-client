@@ -36,8 +36,11 @@ OPTIONS
                         Comma-delimited list of sysinfo plugins to NOT use.
                         This always take precedence over plugins to include.
 
-Default plugins: Load, Disk, Memory, Temperature, Processes, LoggedInUsers,
-Network
+  Available plugins: Load, Disk, Memory, Temperature, Processes, LoggedInUsers,
+  LandscapeLink, Network
+
+  Default plugins: Load, Disk, Memory, Temperature, Processes, LoggedInUsers,
+  Network
 
 CONFIGURATION FILE
 
