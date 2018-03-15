@@ -31,7 +31,6 @@ OPTIONS
                         The directory to store data files in (default: '/var/lib/landscape/client/').
   --sysinfo-plugins=PLUGIN_LIST     
                         Comma-delimited list of sysinfo plugins to use.
-                        Default is to use all plugins.
   --exclude-sysinfo-plugins=PLUGIN_LIST     
                         Comma-delimited list of sysinfo plugins to NOT use.
                         This always take precedence over plugins to include.
