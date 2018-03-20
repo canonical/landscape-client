@@ -19,11 +19,18 @@ def get_vm_info(root_path="/"):
     if _is_vm_xen(root_path):
         return b"xen"
 
-    sys_vendor_path = os.path.join(root_path, "sys/class/dmi/id/sys_vendor")
-    if os.path.exists(sys_vendor_path):
-        return _get_vm_by_vendor(sys_vendor_path)
-    else:
-        return _get_vm_legacy(root_path)
+    # Iterate through all dmi *_vendors, as clouds can (and will) customize
+    # sysinfo values. (https://libvirt.org/formatdomain.html#elementsSysinfo)
+    dmi_info_path = os.path.join(root_path, "sys/class/dmi/id")
+    for dmi_info_file in ("sys_vendor", "chassis_vendor", "bios_vendor"):
+        dmi_vendor_path = os.path.join(dmi_info_path, dmi_info_file)
+        if not os.path.exists(dmi_vendor_path):
+            continue
+        vendor = _get_vm_by_vendor(dmi_vendor_path)
+        if vendor:
+            return vendor
+
+    return _get_vm_legacy(root_path)
 
 
 def get_container_info(run_path="/run"):

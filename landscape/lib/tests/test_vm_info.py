@@ -20,11 +20,12 @@ class GetVMInfoTest(BaseTestCase):
         self.proc_sys_path = self.makeDir(
             path=os.path.join(self.proc_path, "sys"))
 
-    def make_sys_vendor(self, content):
-        """Create /sys/class/dmi/id/sys_vendor with the specified content."""
+    def make_dmi_info(self, name, content):
+        """Create /sys/class/dmi/id/<name> with the specified content."""
         dmi_path = os.path.join(self.root_path, "sys/class/dmi/id")
-        self.makeDir(path=dmi_path)
-        self.makeFile(dirname=dmi_path, basename="sys_vendor", content=content)
+        if not os.path.exists(dmi_path):
+            self.makeDir(path=dmi_path)
+        self.makeFile(dirname=dmi_path, basename=name, content=content)
 
     def test_get_vm_info_empty_when_no_virtualization_is_found(self):
         """
@@ -68,14 +69,24 @@ class GetVMInfoTest(BaseTestCase):
         get_vm_info should return "kvm" when sys_vendor is "Amazon EC2",
         which is the case for C5 instances which are based on KVM.
         """
-        self.make_sys_vendor("Amazon EC2")
+        self.make_dmi_info("sys_vendor", "Amazon EC2")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_digitalocean_sys_vendor(self):
         """
         get_vm_info should return "kvm" when sys_vendor is "DigitalOcean".
         """
-        self.make_sys_vendor("DigitalOcean")
+        self.make_dmi_info("sys_vendor", "DigitalOcean")
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_with_bochs_chassis_vendor(self):
+        """
+        get_vm_info should return "kvm" when chassis_vendor is "Bochs".
+        """
+        # DigitalOcean, AWs and Cloudstack are known to customize sys_vendor
+        # and/or bios_vendor.
+        self.make_dmi_info("sys_vendor", "Apache Software Foundation")
+        self.make_dmi_info("chassis_vendor", "Bochs")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_bochs_sys_vendor(self):
@@ -83,7 +94,7 @@ class GetVMInfoTest(BaseTestCase):
         L{get_vm_info} should return "kvm" when we detect the sys_vendor is
         Bochs.
         """
-        self.make_sys_vendor("Bochs")
+        self.make_dmi_info("sys_vendor", "Bochs")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_openstack_sys_vendor(self):
@@ -91,7 +102,7 @@ class GetVMInfoTest(BaseTestCase):
         L{get_vm_info} should return "kvm" when we detect the sys_vendor is
         Openstack.
         """
-        self.make_sys_vendor("OpenStack Foundation")
+        self.make_dmi_info("sys_vendor", "OpenStack Foundation")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_qemu_sys_vendor(self):
@@ -99,7 +110,7 @@ class GetVMInfoTest(BaseTestCase):
         L{get_vm_info} should return "kvm" when we detect the sys_vendor is
         QEMU.
         """
-        self.make_sys_vendor("QEMU")
+        self.make_dmi_info("sys_vendor", "QEMU")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_vmware_sys_vendor(self):
@@ -107,7 +118,7 @@ class GetVMInfoTest(BaseTestCase):
         L{get_vm_info} should return "vmware" when we detect the sys_vendor is
         VMware Inc.
         """
-        self.make_sys_vendor("VMware, Inc.")
+        self.make_dmi_info("sys_vendor", "VMware, Inc.")
         self.assertEqual(b"vmware", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_virtualbox_sys_vendor(self):
@@ -115,28 +126,28 @@ class GetVMInfoTest(BaseTestCase):
         L{get_vm_info} should return "virtualbox" when we detect the sys_vendor
         is innotek. GmbH.
         """
-        self.make_sys_vendor("innotek GmbH")
+        self.make_dmi_info("sys_vendor", "innotek GmbH")
         self.assertEqual(b"virtualbox", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_microsoft_sys_vendor(self):
         """
         L{get_vm_info} returns "hyperv" if the sys_vendor is Microsoft.
         """
-        self.make_sys_vendor("Microsoft Corporation")
+        self.make_dmi_info("sys_vendor", "Microsoft Corporation")
         self.assertEqual(b"hyperv", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_google_sys_vendor(self):
         """
         L{get_vm_info} returns "gce" if the sys_vendor is Google.
         """
-        self.make_sys_vendor("Google")
+        self.make_dmi_info("sys_vendor", "Google")
         self.assertEqual(b"gce", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_matches_insensitive(self):
         """
         L{get_vm_info} matches the vendor string in a case-insentive way.
         """
-        self.make_sys_vendor("openstack foundation")
+        self.make_dmi_info("sys_vendor", "openstack foundation")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
     def test_get_vm_info_with_kvm_on_other_architecture(self):
@@ -157,7 +168,7 @@ class GetVMInfoTest(BaseTestCase):
         L{get_vm_info} should return an empty string when the sys_vendor is
         unknown.
         """
-        self.make_sys_vendor("Some other vendor")
+        self.make_dmi_info("sys_vendor", "Some other vendor")
         self.assertEqual(b"", get_vm_info(root_path=self.root_path))
 
 
