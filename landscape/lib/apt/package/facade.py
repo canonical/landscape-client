@@ -57,6 +57,15 @@ class LandscapeAcquireProgress(AcquireProgress):
         fcntl.ioctl API differences for different Python versions.
         """
 
+    def pulse(self, owner):
+        """Override updating the acquire progress, which needs a tty.
+
+        Under Python3, StringIO.fileno() raises UnsupportedOperation instead
+        of an AttributeError. This would be uncaught by apt, thus we force a
+        NOOP here.
+        """
+        return True
+
 
 class LandscapeInstallProgress(InstallProgress):
 
