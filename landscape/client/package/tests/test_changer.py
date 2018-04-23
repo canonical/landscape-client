@@ -641,6 +641,9 @@ class AptPackageChangerTest(LandscapeTest):
             self.assertMessages(self.get_pending_messages(),
                                 [{"operation-id": 123,
                                   "result-code": 1,
+                                  "result-text":
+                                      u"No changes required; all changes "
+                                      u"already performed",
                                   "type": "change-packages-result"}])
 
         return result.addCallback(got_result)

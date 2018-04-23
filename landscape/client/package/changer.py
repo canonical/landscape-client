@@ -259,6 +259,8 @@ class PackageChanger(PackageTaskHandler):
             else:
                 result.code = SUCCESS_RESULT
 
+        if result.code == SUCCESS_RESULT and result.text is None:
+            result.text = 'No changes required; all changes already performed'
         return result
 
     def may_complement_changes(self, result, policy):
