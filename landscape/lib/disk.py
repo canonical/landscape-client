@@ -10,7 +10,7 @@ from twisted.python.compat import _PY3
 # List of filesystem types authorized when generating disk use statistics.
 STABLE_FILESYSTEMS = frozenset(
     ["ext", "ext2", "ext3", "ext4", "reiserfs", "ntfs", "msdos", "dos", "vfat",
-     "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
+     "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus", "simfs"])
 
 
 EXTRACT_DEVICE = re.compile("([a-z]+)[0-9]*")
@@ -67,8 +67,6 @@ def get_filesystem_for_path(path, mounts_file, statvfs_):
     @param mounts_file: A file with information about mounted filesystems,
         such as C{/proc/mounts}.
     @param statvfs_: A function to get file status information.
-    @param filesystems_whitelist: Optionally, a list of which filesystems to
-        stat.
     @return: A C{dict} with C{device}, C{mount-point}, C{filesystem},
         C{total-space} and C{free-space} keys. If the filesystem information
         is not available, C{None} is returned. Both C{total-space} and

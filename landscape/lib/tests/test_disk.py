@@ -31,7 +31,7 @@ class DiskUtilitiesTest(BaseTestCase):
         else:
             raise OSError("Permission denied")
 
-    def set_mount_points(self, points, read_access=True):
+    def set_mount_points(self, points, read_access=True, fs='ext4'):
         """
         This method prepares a fake mounts file containing the
         mount points specified in the C{points} list of strings. This file
@@ -41,7 +41,7 @@ class DiskUtilitiesTest(BaseTestCase):
         yield a permission denied error when inspected.
         """
         self.read_access = read_access
-        content = "\n".join("/dev/sda%d %s ext4 rw 0 0" % (i, point)
+        content = "\n".join("/dev/sda%d %s %s rw 0 0" % (i, point, fs)
                             for i, point in enumerate(points))
         f = open(self.mount_file, "w")
         f.write(content)
@@ -69,6 +69,11 @@ class DiskUtilitiesTest(BaseTestCase):
 
     def test_get_filesystem_subpath_not_stupid(self):
         self.set_mount_points(["/", "/ho"])
+        info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
+        self.assertEqual(info["mount-point"], "/")
+
+    def test_get_filesystem_weird_fs(self):
+        self.set_mount_points(["/"], fs='simfs')
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
         self.assertEqual(info["mount-point"], "/")
 
