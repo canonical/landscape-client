@@ -128,7 +128,10 @@ class AptSources(ManagerPlugin):
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
                                     "landscape-%s.list" % source["name"])
-            with open(filename, "wb") as sources_file:
+            # Servers send unicode, but an upgrade from python2 can get bytes
+            # from stored messages, so we need to handle both.
+            is_unicode = isinstance(source["content"], type(u""))
+            with open(filename, ("w" if is_unicode else "wb")) as sources_file:
                 sources_file.write(source["content"])
             os.chmod(filename, 0o644)
         return self._run_reporter().addCallback(lambda ignored: None)

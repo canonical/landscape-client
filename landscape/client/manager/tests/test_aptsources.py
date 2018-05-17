@@ -105,6 +105,23 @@ class AptSourcesTests(LandscapeTest):
         with open(saved_sources_path) as saved_sources:
             self.assertEqual("original content\n", saved_sources.read())
 
+    def test_sources_list_unicode(self):
+        """
+        When receiving apt-sources-replace, client correctly also handles
+        unicode content correctly.
+        """
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace",
+             "sources": [{"name": "bla", "content": u"fancy content"}],
+             "gpg-keys": [],
+             "operation-id": 1})
+
+        saved_sources_path = os.path.join(
+            self.sourceslist.SOURCES_LIST_D, "landscape-bla.list")
+        self.assertTrue(os.path.exists(saved_sources_path))
+        with open(saved_sources_path, "rb") as saved_sources:
+            self.assertEqual(b"fancy content", saved_sources.read())
+
     def test_restore_sources_list(self):
         """
         When getting a repository message without sources, AptSources
