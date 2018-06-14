@@ -2,6 +2,7 @@ import os.path
 import sys
 
 from optparse import SUPPRESS_HELP
+from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
 from landscape.lib import logging
@@ -16,6 +17,10 @@ def init_logging(configuration, program_name):
     logging.init_app_logging(configuration.log_dir, configuration.log_level,
                              progname=program_name,
                              quiet=configuration.quiet)
+    # Initialize twisted logging, even if we don't explicitly use it,
+    # because of leaky logs https://twistedmatrix.com/trac/ticket/8164
+    globalLogBeginner.beginLoggingTo(
+        [lambda _: None], redirectStandardIO=False, discardBuffer=True)
 
 
 def _is_script(filename=sys.argv[0],
