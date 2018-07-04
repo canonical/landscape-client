@@ -4,6 +4,7 @@ import sys
 import textwrap
 import tempfile
 import unittest
+import weakref
 
 import apt
 import apt_pkg
@@ -814,6 +815,8 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
         [pkg2] = self.facade.get_packages_by_name("name2")
         [pkg3] = self.facade.get_packages_by_name("name3")
         self.assertTrue(pkg1 and pkg2)
+        pkg2 = weakref.ref(pkg2)
+        pkg3 = weakref.ref(pkg3)
 
         # Remove the package from the repository.
         packages_path = os.path.join(deb_dir, "Packages")
@@ -828,20 +831,19 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
         # Reload channel to reload the cache.
         self.facade.reload_channels()
 
-        # Only packages with name2 and name3 should be loaded, and they're
-        # not the same objects anymore.
+        # Only packages with name2 and name3 should be loaded, and they might
+        # be the same objects if references were held, as apt-cache tries
+        # not to re-create objects anymore.
         self.assertEqual(
             sorted([version.package.name
                     for version in self.facade.get_packages()]),
             ["name2", "name3"])
-        self.assertNotEquals(
-            set([version.package for version in self.facade.get_packages()]),
-            set([pkg2.package, pkg3.package]))
+        # Those should have been collected.
+        self.assertIsNone(pkg2())
+        self.assertIsNone(pkg3())
 
         # The hash cache shouldn't include either of the old packages.
         self.assertEqual(self.facade.get_package_hash(pkg1), None)
-        self.assertEqual(self.facade.get_package_hash(pkg2), None)
-        self.assertEqual(self.facade.get_package_hash(pkg3), None)
 
         # Also, the hash for package1 shouldn't be present at all.
         self.assertEqual(self.facade.get_package_by_hash(HASH1), None)
@@ -855,10 +857,6 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
             self.facade.get_package_by_hash(HASH2).package in new_pkgs)
         self.assertTrue(
             self.facade.get_package_by_hash(HASH3).package in new_pkgs)
-
-        # Which are not the old packages.
-        self.assertFalse(pkg2.package in new_pkgs)
-        self.assertFalse(pkg3.package in new_pkgs)
 
     def test_is_package_installed_in_channel_not_installed(self):
         """
