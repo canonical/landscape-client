@@ -259,9 +259,10 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             "PATH": UBUNTU_PATH,
             "USER": user or "",
             "HOME": path or "",
-            "LANG": os.environ.get("LANG", ""),
-            "LC_CTYPE": os.environ.get("LC_CTYPE", ""),
         }
+        for locale_var in ("LANG", "LC_ALL", "LC_CTYPE"):
+            if locale_var in os.environ:
+                env[locale_var] = os.environ[locale_var]
         if server_supplied_env:
             env.update(server_supplied_env)
         old_umask = os.umask(0o022)

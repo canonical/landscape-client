@@ -30,6 +30,7 @@ def get_default_environment():
         "USER": username,
         "HOME": home,
         "LANG": os.environ.get("LANG", ""),
+        "LC_ALL": os.environ.get("LC_ALL", ""),
         "LC_CTYPE": os.environ.get("LC_CTYPE", ""),
     }
 
