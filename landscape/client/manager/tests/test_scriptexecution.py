@@ -28,7 +28,10 @@ def get_default_environment():
     return {
         "PATH": UBUNTU_PATH,
         "USER": username,
-        "HOME": home}
+        "HOME": home,
+        "LANG": os.environ.get("LANG", ""),
+        "LC_CTYPE": os.environ.get("LC_CTYPE", ""),
+    }
 
 
 class RunScriptTests(LandscapeTest):
@@ -84,6 +87,31 @@ class RunScriptTests(LandscapeTest):
         variables then passed to script.
         """
         server_supplied_env = {"DOG": "Woof", "CAT": "Meow"}
+        result = self.plugin.run_script(
+            sys.executable,
+            "import os\nprint(os.environ)",
+            server_supplied_env=server_supplied_env)
+
+        def check_environment(results):
+            for string in get_default_environment():
+                self.assertIn(string, results)
+            for name, value in server_supplied_env.items():
+                self.assertIn(name, results)
+                self.assertIn(value, results)
+
+        result.addCallback(check_environment)
+        return result
+
+    def test_server_supplied_env_with_funky_chars(self):
+        """
+        Server-supplied environment variables can be unicode strings; client
+        should pass these to the script's environment encoded appropriately
+        (encoding from Python's sys.getfilesystemencoding).
+        """
+        server_supplied_env = {
+            "LEMMY": u"Mot\N{LATIN SMALL LETTER O WITH DIAERESIS}rhead",
+            # Somehow it's just not as cool...
+        }
         result = self.plugin.run_script(
             sys.executable,
             "import os\nprint(os.environ)",
