@@ -107,8 +107,10 @@ class ScriptRunnerMixin(object):
         if gid == os.getgid():
             gid = None
         env = {
-            key: value.encode(sys.getfilesystemencoding(), errors='replace')
-            if isinstance(value, unicode) else value
+            key: (
+                value.encode(sys.getfilesystemencoding(), errors='replace')
+                if isinstance(value, unicode) else value
+            )
             for key, value in env.items()
         }
 
