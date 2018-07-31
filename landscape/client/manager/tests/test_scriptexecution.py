@@ -25,14 +25,15 @@ from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 def get_default_environment():
     username = pwd.getpwuid(os.getuid())[0]
     uid, gid, home = get_user_info(username)
-    return {
+    env = {
         "PATH": UBUNTU_PATH,
         "USER": username,
         "HOME": home,
-        "LANG": os.environ.get("LANG", ""),
-        "LC_ALL": os.environ.get("LC_ALL", ""),
-        "LC_CTYPE": os.environ.get("LC_CTYPE", ""),
     }
+    for var in {"LANG", "LC_ALL", "LC_CTYPE"}:
+        if var in os.environ:
+            env[var] = os.environ[var]
+    return env
 
 
 def encoded_default_environment():
