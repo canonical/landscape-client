@@ -25,10 +25,22 @@ from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 def get_default_environment():
     username = pwd.getpwuid(os.getuid())[0]
     uid, gid, home = get_user_info(username)
-    return {
+    env = {
         "PATH": UBUNTU_PATH,
         "USER": username,
-        "HOME": home}
+        "HOME": home,
+    }
+    for var in {"LANG", "LC_ALL", "LC_CTYPE"}:
+        if var in os.environ:
+            env[var] = os.environ[var]
+    return env
+
+
+def encoded_default_environment():
+    return {
+        key: value.encode('ascii', 'replace')
+        for key, value in get_default_environment().items()
+    }
 
 
 class RunScriptTests(LandscapeTest):
@@ -97,6 +109,35 @@ class RunScriptTests(LandscapeTest):
                 self.assertIn(value, results)
 
         result.addCallback(check_environment)
+        return result
+
+    def test_server_supplied_env_with_funky_chars(self):
+        """
+        Server-supplied environment variables can be unicode strings; client
+        should pass these to the script's environment encoded appropriately
+        (encoding from Python's sys.getfilesystemencoding).
+        """
+        patch_fs_encoding = mock.patch(
+            'sys.getfilesystemencoding', return_value='UTF-8'
+        )
+        patch_fs_encoding.start()
+
+        server_supplied_env = {
+            "LEMMY": u"Mot\N{LATIN SMALL LETTER O WITH DIAERESIS}rhead",
+            # Somehow it's just not as cool...
+        }
+        result = self.plugin.run_script(
+            "/bin/sh", "echo $LEMMY",
+            server_supplied_env=server_supplied_env)
+
+        def check_environment(results):
+            self.assertEqual(server_supplied_env["LEMMY"] + u'\n', results)
+
+        def cleanup(result):
+            patch_fs_encoding.stop()
+            return result
+
+        result.addCallback(check_environment).addBoth(cleanup)
         return result
 
     def test_server_supplied_env_overrides_client(self):
@@ -424,7 +465,7 @@ class RunScriptTests(LandscapeTest):
         self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
         self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3])
-        attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
+        attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"].decode('ascii')
         self.assertEqual(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0o700)
         filename = os.path.join(attachment_dir, "file 1")
         self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0o600)
@@ -598,7 +639,7 @@ class RunScriptTests(LandscapeTest):
         def spawnProcess(protocol, filename, args, env, path, uid, gid):
             self.assertIsNone(uid)
             self.assertIsNone(gid)
-            self.assertEqual(get_default_environment(), env)
+            self.assertEqual(encoded_default_environment(), env)
             protocol.result_deferred.callback(None)
 
         process_factory = mock.Mock()
@@ -737,7 +778,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         self.assertIn("USER", factory.spawns[0][3])
         self.assertIn("PATH", factory.spawns[0][3])
         self.assertIn("Dog", factory.spawns[0][3])
-        self.assertEqual("Woof", factory.spawns[0][3]["Dog"])
+        self.assertEqual(b"Woof", factory.spawns[0][3]["Dog"])
 
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(), [])
@@ -777,7 +818,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         def check(_):
             process_factory.spawnProcess.assert_called_with(
                 mock.ANY, mock.ANY, args=mock.ANY, uid=None, gid=None,
-                path=mock.ANY, env=get_default_environment())
+                path=mock.ANY, env=encoded_default_environment())
 
         return result.addCallback(check)
 
@@ -876,7 +917,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "status": SUCCEEDED}])
             process_factory.spawnProcess.assert_called_with(
                 mock.ANY, mock.ANY, args=mock.ANY, uid=None, gid=None,
-                path=mock.ANY, env=get_default_environment())
+                path=mock.ANY, env=encoded_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
         return result.addCallback(got_result)
@@ -907,7 +948,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                 u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
             process_factory.spawnProcess.assert_called_with(
                 mock.ANY, mock.ANY, args=mock.ANY, uid=None, gid=None,
-                path=mock.ANY, env=get_default_environment())
+                path=mock.ANY, env=encoded_default_environment())
 
         result = self._send_script(sys.executable, "print 'hi'")
         return result.addCallback(got_result)

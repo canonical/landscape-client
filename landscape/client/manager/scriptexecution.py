@@ -4,6 +4,7 @@ Functionality for running arbitrary shell scripts.
 @var ALL_USERS: A token indicating all users should be allowed.
 """
 import os
+import sys
 import os.path
 import tempfile
 import shutil
@@ -105,6 +106,13 @@ class ScriptRunnerMixin(object):
             uid = None
         if gid == os.getgid():
             gid = None
+        env = {
+            key: (
+                value.encode(sys.getfilesystemencoding(), errors='replace')
+                if isinstance(value, unicode) else value
+            )
+            for key, value in env.items()
+        }
 
         pp = ProcessAccumulationProtocol(
             self.registry.reactor, self.size_limit, self.truncation_indicator)
@@ -249,7 +257,14 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         self.write_script_file(
             script_file, filename, shell, code, uid, gid)
 
-        env = {"PATH": UBUNTU_PATH, "USER": user or "", "HOME": path or ""}
+        env = {
+            "PATH": UBUNTU_PATH,
+            "USER": user or "",
+            "HOME": path or "",
+        }
+        for locale_var in ("LANG", "LC_ALL", "LC_CTYPE"):
+            if locale_var in os.environ:
+                env[locale_var] = os.environ[locale_var]
         if server_supplied_env:
             env.update(server_supplied_env)
         old_umask = os.umask(0o022)
