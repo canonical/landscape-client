@@ -79,6 +79,13 @@ class GetVMInfoTest(BaseTestCase):
         self.make_dmi_info("sys_vendor", "DigitalOcean")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_hetzner_sys_vendor(self):
+        """
+        get_vm_info should return "kvm" when sys_vendor is "Hetzner".
+        """
+        self.make_dmi_info("sys_vendor", "Hetzner")
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_kvm_bios_vendor(self):
         """
         get_vm_info should return "kvm" when bios_vendor maps to kvm.

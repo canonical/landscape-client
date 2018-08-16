@@ -71,6 +71,7 @@ def _get_vm_by_vendor(sys_vendor_path):
         ("bochs", b"kvm"),
         ("digitalocean", b"kvm"),
         ("google", b"gce"),
+        ("hetzner", b"kvm"),
         ("innotek", b"virtualbox"),
         ("microsoft", b"hyperv"),
         ("openstack", b"kvm"),
