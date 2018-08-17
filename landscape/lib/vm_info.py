@@ -22,7 +22,7 @@ def get_vm_info(root_path="/"):
     # Iterate through all dmi *_vendors, as clouds can (and will) customize
     # sysinfo values. (https://libvirt.org/formatdomain.html#elementsSysinfo)
     dmi_info_path = os.path.join(root_path, "sys/class/dmi/id")
-    for dmi_info_file in ("sys_vendor", "chassis_vendor", "bios_vendor"):
+    for dmi_info_file in ("chassis_vendor", "sys_vendor", "bios_vendor"):
         dmi_vendor_path = os.path.join(dmi_info_path, dmi_info_file)
         if not os.path.exists(dmi_vendor_path):
             continue
@@ -71,7 +71,6 @@ def _get_vm_by_vendor(sys_vendor_path):
         ("bochs", b"kvm"),
         ("digitalocean", b"kvm"),
         ("google", b"gce"),
-        ("hetzner", b"kvm"),
         ("innotek", b"virtualbox"),
         ("microsoft", b"hyperv"),
         ("openstack", b"kvm"),
