@@ -73,6 +73,7 @@ def _get_vm_by_vendor(sys_vendor_path):
         ("google", b"gce"),
         ("innotek", b"virtualbox"),
         ("microsoft", b"hyperv"),
+        ("nutanix", b"kvm"),
         ("openstack", b"kvm"),
         ("qemu", b"kvm"),
         ("vmware", b"vmware"))
