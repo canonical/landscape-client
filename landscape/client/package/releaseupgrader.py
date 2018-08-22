@@ -210,6 +210,9 @@ class ReleaseUpgrader(PackageTaskHandler):
         @param allow_third_party: Whether to enable non-official APT repo.
         @param debug: Whether to turn on debug level logging.
         """
+        # This bizarre (and apparently unused) import is a workaround for
+        # LP: #1670291 -- see comments in that ticket for an explanation
+        import twisted.internet.unix  # noqa: F401
         upgrade_tool_directory = self._config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
         args = ["--frontend", "DistUpgradeViewNonInteractive"]
