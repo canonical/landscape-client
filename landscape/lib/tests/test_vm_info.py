@@ -97,6 +97,16 @@ class GetVMInfoTest(BaseTestCase):
         self.make_dmi_info("chassis_vendor", "Bochs")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_qemu_chassis_vendor(self):
+        """
+        get_vm_info should return "kvm" when chassis_vendor is "QEMU".
+        """
+        # DigitalOcean, AWS and Cloudstack are known to customize sys_vendor
+        # and/or bios_vendor.
+        self.make_dmi_info("sys_vendor", "Apache Software Foundation")
+        self.make_dmi_info("chassis_vendor", "QEMU")
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
+
     def test_get_vm_info_with_bochs_sys_vendor(self):
         """
         L{get_vm_info} should return "kvm" when we detect the sys_vendor is
