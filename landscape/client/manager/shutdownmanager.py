@@ -45,7 +45,7 @@ class ShutdownManager(ManagerPlugin):
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self.registry.reactor)
         protocol.result.addCallback(self._respond_success, operation_id)
-        protocol.result.addErrback(self._respond_failure, operation_id)
+        protocol.result.addErrback(self._respond_failure, operation_id, reboot)
         command, args = self._get_command_and_args(protocol, reboot)
         self._process_factory.spawnProcess(protocol, command, args=args)
 
@@ -58,9 +58,31 @@ class ShutdownManager(ManagerPlugin):
             lambda _: self.registry.broker.stop_exchanger())
         return deferred
 
-    def _respond_failure(self, failure, operation_id):
+    def _respond_failure(self, failure, operation_id, reboot):
         logging.info("Shutdown request failed.")
-        return self._respond(FAILED, failure.value.data, operation_id)
+        failure_report = '\n'.join([
+            failure.value.data,
+            "",
+            "Attempting to force {operation}. Please note that if this "
+            "succeeds, Landscape will have no way of knowing and will still "
+            "mark this activity as having failed. It is recommended you check "
+            "the state of the machine manually to determine whether "
+            "{operation} succeeded.".format(
+                operation="reboot" if reboot else "shutdown")
+        ])
+        deferred = self._respond(FAILED, failure_report, operation_id)
+        # Add another callback spawning the poweroff or reboot command (which
+        # seem more reliable in aberrant situations like a post-trusty release
+        # upgrade where upstart has been replaced with systemd). If this
+        # succeeds, we won't have any opportunity to report it and if it fails
+        # we'll already have responded indicating we're attempting to force
+        # the operation so either way there's no sense capturing output
+        protocol = ProcessProtocol()
+        command, args = self._get_command_and_args(protocol, reboot, True)
+        deferred.addCallback(
+            lambda _: self._process_factory.spawnProcess(
+                protocol, command, args=args))
+        return deferred
 
     def _respond(self, status, data, operation_id):
         message = {"type": "operation-result",
@@ -70,19 +92,23 @@ class ShutdownManager(ManagerPlugin):
         return self.registry.broker.send_message(
             message, self._session_id, True)
 
-    def _get_command_and_args(self, protocol, reboot):
+    def _get_command_and_args(self, protocol, reboot, force=False):
         """
         Returns a C{command, args} 2-tuple suitable for use with
         L{IReactorProcess.spawnProcess}.
         """
-        minutes = "+%d" % (protocol.delay // 60,)
-        if reboot:
-            args = ["/sbin/shutdown", "-r", minutes,
-                    "Landscape is rebooting the system"]
-        else:
-            args = ["/sbin/shutdown", "-h", minutes,
-                    "Landscape is shutting down the system"]
-        return "/sbin/shutdown", args
+        minutes = None if force else "+%d" % (protocol.delay // 60,)
+        args = {
+            (False, False): [
+                "/sbin/shutdown", "-h", minutes,
+                "Landscape is shutting down the system"],
+            (False, True): [
+                "/sbin/shutdown", "-r", minutes,
+                "Landscape is rebooting the system"],
+            (True, False): ["/sbin/poweroff"],
+            (True, True): ["/sbin/reboot"],
+        }[force, reboot]
+        return args[0], args
 
 
 class ShutdownProcessProtocol(ProcessProtocol):

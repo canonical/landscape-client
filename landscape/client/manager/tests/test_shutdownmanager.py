@@ -1,5 +1,6 @@
 from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated, ProcessDone
+from twisted.internet.protocol import ProcessProtocol
 
 from landscape.lib.testing import StubProcessFactory
 from landscape.client.manager.plugin import SUCCEEDED, FAILED
@@ -76,16 +77,28 @@ class ShutdownManagerTest(LandscapeTest):
         be failed.  Data printed by the process prior to the failure is
         included in the activity's result text.
         """
-        message = {"type": "shutdown", "reboot": False, "operation-id": 100}
+        message = {"type": "shutdown", "reboot": True, "operation-id": 100}
         self.plugin.perform_shutdown(message)
 
         def restart_failed(message_id):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
-            self.assertEqual(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result", "api": b"3.2",
-                  "operation-id": 100, "timestamp": 0, "status": FAILED,
-                  "result-text": u"Failure text is reported."}])
+            messages = self.broker_service.message_store.get_pending_messages()
+            self.assertEqual(len(messages), 1)
+            message = messages[0]
+            self.assertEqual(message["type"], "operation-result")
+            self.assertEqual(message["api"], b"3.2")
+            self.assertEqual(message["operation-id"], 100)
+            self.assertEqual(message["timestamp"], 0)
+            self.assertEqual(message["status"], FAILED)
+            self.assertIn(u"Failure text is reported.", message["result-text"])
+
+            # Check that after failing, we attempt to force the shutdown by
+            # switching the binary called
+            [spawn1_args, spawn2_args] = self.process_factory.spawns
+            protocol = spawn2_args[0]
+            self.assertIsInstance(protocol, ProcessProtocol)
+            self.assertEqual(spawn2_args[1:3],
+                             ("/sbin/reboot", ["/sbin/reboot"]))
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
