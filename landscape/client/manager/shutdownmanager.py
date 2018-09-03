@@ -63,12 +63,12 @@ class ShutdownManager(ManagerPlugin):
         failure_report = '\n'.join([
             failure.value.data,
             "",
-            "Attempting to force %(operation)s. Please note that if this "
+            "Attempting to force {operation}. Please note that if this "
             "succeeds, Landscape will have no way of knowing and will still "
             "mark this activity as having failed. It is recommended you check "
             "the state of the machine manually to determine whether "
-            "%(operation)s succeeded." %
-            {"operation": "reboot" if reboot else "shutdown"}
+            "{operation} succeeded.".format(
+                operation="reboot" if reboot else "shutdown")
         ])
         deferred = self._respond(FAILED, failure_report, operation_id)
         # Add another callback spawning the poweroff or reboot command (which
