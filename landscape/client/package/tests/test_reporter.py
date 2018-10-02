@@ -1228,9 +1228,8 @@ class PackageReporterAptTest(LandscapeTest):
         hash_id_file = os.path.join(
             self.config.hash_id_directory, "uuid_codename_arch")
         os.makedirs(self.config.hash_id_directory)
-        with open(hash_id_file, "w") as f:
+        with open(hash_id_file, "w"):
             pass
-        self.assertFileContent(hash_id_file, b"")
 
         self.store.set_hash_ids({foo_hash: 3, HASH2: 4})
         self.store.add_available([1])
@@ -1269,8 +1268,6 @@ class PackageReporterAptTest(LandscapeTest):
         self.assertNotEqual(hash1, 3)
         self.assertNotEqual(hash2, 4)
         self.assertFalse(os.path.exists(hash_id_file))
-
-        # But the other data should.
         self.assertEqual(self.store.get_available_upgrades(), [])
 
         # After running the resychronize task, the hash db is empty,
