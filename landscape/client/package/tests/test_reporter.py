@@ -1204,10 +1204,11 @@ class PackageReporterAptTest(LandscapeTest):
 
         self.assertEqual(expected, command)
 
+    @inlineCallbacks
     def test_resynchronize(self):
         """
         When a resynchronize task arrives, the reporter should clear
-        out all the data in the package store, except the hash ids.
+        out all the data in the package store, including the hash ids.
 
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
@@ -1220,6 +1221,17 @@ class PackageReporterAptTest(LandscapeTest):
         self.facade.reload_channels()
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-locks"])
+
+        # create hash_id file
+        message_store.set_server_uuid("uuid")
+        self.facade.set_arch("arch")
+        hash_id_file = os.path.join(
+            self.config.hash_id_directory, "uuid_codename_arch")
+        os.makedirs(self.config.hash_id_directory)
+        with open(hash_id_file, "w") as f:
+            pass
+        self.assertFileContent(hash_id_file, b"")
+
         self.store.set_hash_ids({foo_hash: 3, HASH2: 4})
         self.store.add_available([1])
         self.store.add_available_upgrades([2])
@@ -1243,30 +1255,35 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_task("reporter", {"type": "resynchronize"})
 
         deferred = self.reporter.run()
-
-        def check_result(result):
-            # The hashes should not go away.
-            hash1 = self.store.get_hash_id(foo_hash)
-            hash2 = self.store.get_hash_id(HASH2)
-            self.assertEqual([hash1, hash2], [3, 4])
-
-            # But the other data should.
-            self.assertEqual(self.store.get_available_upgrades(), [])
-
-            # After running the resychronize task, detect_packages_changes is
-            # called, and the existing known hashes are made available.
-            self.assertEqual(self.store.get_available(), [4])
-            self.assertEqual(self.store.get_installed(), [3])
-            self.assertEqual(self.store.get_locked(), [3])
-
-            # The two original hash id requests are gone, and a new hash id
-            # request should be detected for HASH3.
-            [request] = self.store.iter_hash_id_requests()
-            self.assertEqual(request.hashes, [HASH3, HASH1])
-
-        deferred.addCallback(check_result)
         self.reactor.advance(0)
-        return deferred
+        with mock.patch(
+            "landscape.client.package.taskhandler.parse_lsb_release",
+            side_effect=lambda _: {"code-name": "codename"}
+        ):
+            yield deferred
+
+        # The hashes should go away to avoid loops
+        # when server gets restored to an early state.
+        hash1 = self.store.get_hash_id(foo_hash)
+        hash2 = self.store.get_hash_id(HASH2)
+        self.assertNotEqual(hash1, 3)
+        self.assertNotEqual(hash2, 4)
+        self.assertFalse(os.path.exists(hash_id_file))
+
+        # But the other data should.
+        self.assertEqual(self.store.get_available_upgrades(), [])
+
+        # After running the resychronize task, the hash db is empty,
+        # thus detect_packages_changes will generate an empty set until
+        # next run when hash-id db is populated again.
+        self.assertEqual(self.store.get_available(), [])
+        self.assertEqual(self.store.get_installed(), [])
+        self.assertEqual(self.store.get_locked(), [])
+
+        # The two original hash id requests are gone, and a new hash id
+        # request should be detected for HASH3.
+        [request] = self.store.iter_hash_id_requests()
+        self.assertEqual(request.hashes, [HASH3, HASH2, foo_hash, HASH1])
 
     @mock.patch("logging.warning")
     def test_run_apt_update(self, warning_mock):
