@@ -400,15 +400,16 @@ class PackageReporter(PackageTaskHandler):
 
         return result
 
+    @inlineCallbacks
     def _handle_resynchronize(self):
+        self._store.clear_hash_ids()
+        yield self._remove_hash_id_db()
         self._store.clear_available()
         self._store.clear_available_upgrades()
         self._store.clear_installed()
         self._store.clear_locked()
         self._store.clear_hash_id_requests()
         self._store.clear_autoremovable()
-
-        return succeed(None)
 
     def _handle_unknown_packages(self, hashes):
 
@@ -443,6 +444,18 @@ class PackageReporter(PackageTaskHandler):
         else:
             result = succeed(None)
 
+        return result
+
+    def _remove_hash_id_db(self):
+
+        def _remove_it(hash_id_db_filename):
+            if hash_id_db_filename and os.path.exists(hash_id_db_filename):
+                logging.warning(
+                    "Removing cached hash=>id database %s",
+                    hash_id_db_filename)
+                os.remove(hash_id_db_filename)
+        result = self._determine_hash_id_db_filename()
+        result.addCallback(_remove_it)
         return result
 
     def remove_expired_hash_id_requests(self):
