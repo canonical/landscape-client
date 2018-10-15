@@ -999,6 +999,47 @@ class PackageReporterAptTest(LandscapeTest):
         self.assertFalse(result)
         self.assertEqual([1], self.store.get_autoremovable())
 
+    @inlineCallbacks
+    def test_detect_packages_from_security_pocket(self):
+        """Packages versions coming from security are reported as such."""
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        release_path = os.path.join(self.repository_dir, "Release")
+        with open(release_path, "w") as release:
+            release.write("Suite: {}-security".format(lsb["code-name"]))
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        yield self.reporter.detect_packages_changes()
+
+        self.assertMessages(message_store.get_pending_messages(), [{
+            "type": "packages",
+            "available": [(1, 3)],
+            "security": [(1, 3)],
+        }])
+        self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
+        self.assertEqual(sorted(self.store.get_security()), [1, 2, 3])
+
+    @inlineCallbacks
+    def test_detect_packages_not_from_security_pocket(self):
+        """Packages versions removed from security are reported as such."""
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+        self.store.add_security([1, 2])
+
+        yield self.reporter.detect_packages_changes()
+
+        self.assertMessages(message_store.get_pending_messages(), [{
+            "type": "packages",
+            "not-security": [1, 2],
+        }])
+        self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
+        self.assertEqual(self.store.get_security(), [])
+
     def test_detect_packages_changes_with_backports(self):
         """
         Package versions coming from backports aren't considered to be

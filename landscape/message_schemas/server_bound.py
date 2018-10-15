@@ -367,13 +367,16 @@ PACKAGES = Message(
      "locked": package_ids_or_ranges,
      "autoremovable": package_ids_or_ranges,
      "not-autoremovable": package_ids_or_ranges,
+     "security": package_ids_or_ranges,
      "not-installed": package_ids_or_ranges,
      "not-available": package_ids_or_ranges,
      "not-available-upgrades": package_ids_or_ranges,
-     "not-locked": package_ids_or_ranges},
+     "not-locked": package_ids_or_ranges,
+     "not-security": package_ids_or_ranges},
     optional=["installed", "available", "available-upgrades", "locked",
               "not-available", "not-installed", "not-available-upgrades",
-              "not-locked", "autoremovable", "not-autoremovable"])
+              "not-locked", "autoremovable", "not-autoremovable", "security",
+              "not-security"])
 
 package_locks = List(Tuple(Unicode(), Unicode(), Unicode()))
 PACKAGE_LOCKS = Message(

@@ -609,6 +609,9 @@ class PackageReporter(PackageTaskHandler):
         - are now set, and were not;
         - were previously set but are not anymore;
 
+        Also, packages coming from the security pocket will be
+        reported as such.
+
         In all cases, the server is notified of the new situation
         with a "packages" message.
 
@@ -622,14 +625,17 @@ class PackageReporter(PackageTaskHandler):
         old_upgrades = set(self._store.get_available_upgrades())
         old_locked = set(self._store.get_locked())
         old_autoremovable = set(self._store.get_autoremovable())
+        old_security = set(self._store.get_security())
 
         current_installed = set()
         current_available = set()
         current_upgrades = set()
         current_locked = set()
         current_autoremovable = set()
+        current_security = set()
         lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
         backports_archive = "{}-backports".format(lsb["code-name"])
+        security_archive = "{}-security".format(lsb["code-name"])
 
         for package in self._facade.get_packages():
             # Don't include package versions from the official backports
@@ -664,6 +670,13 @@ class PackageReporter(PackageTaskHandler):
                 if self._facade.is_package_upgrade(package):
                     current_upgrades.add(id)
 
+                # Is this package present in the security pocket?
+                security_origins = any(
+                    origin for origin in package.origins
+                    if origin.archive == security_archive)
+                if security_origins:
+                    current_security.add(id)
+
         for package in self._facade.get_locked_packages():
             hash = self._facade.get_package_hash(package)
             id = self._store.get_hash_id(hash)
@@ -675,12 +688,14 @@ class PackageReporter(PackageTaskHandler):
         new_upgrades = current_upgrades - old_upgrades
         new_locked = current_locked - old_locked
         new_autoremovable = current_autoremovable - old_autoremovable
+        new_security = current_security - old_security
 
         not_installed = old_installed - current_installed
         not_available = old_available - current_available
         not_upgrades = old_upgrades - current_upgrades
         not_locked = old_locked - current_locked
         not_autoremovable = old_autoremovable - current_autoremovable
+        not_security = old_security - current_security
 
         message = {}
         if new_installed:
@@ -703,6 +718,13 @@ class PackageReporter(PackageTaskHandler):
             message["not-autoremovable"] = list(
                 sequence_to_ranges(sorted(not_autoremovable)))
 
+        if new_security:
+            message["security"] = list(
+                sequence_to_ranges(sorted(new_security)))
+        if not_security:
+            message["not-security"] = list(
+                sequence_to_ranges(sorted(not_security)))
+
         if not_installed:
             message["not-installed"] = \
                 list(sequence_to_ranges(sorted(not_installed)))
@@ -722,17 +744,25 @@ class PackageReporter(PackageTaskHandler):
         message["type"] = "packages"
         result = self.send_message(message)
 
-        logging.info("Queuing message with changes in known packages: "
-                     "%d installed, %d available, %d available upgrades, "
-                     "%d locked, %d autoremovable, %d not installed, "
-                     "%d not available, %d not available upgrades, "
-                     "%d not locked, %d not autoremovable. "
-                     % (len(new_installed), len(new_available),
-                        len(new_upgrades), len(new_locked),
-                        len(new_autoremovable),
-                        len(not_installed), len(not_available),
-                        len(not_upgrades), len(not_locked),
-                        len(not_autoremovable)))
+        logging.info(
+            "Queuing message with changes in known packages: "
+            "%(installed)d installed, %(available)d available, "
+            "%(upgrades)d available upgrades, %(locked)d locked, "
+            "%(auto)d autoremovable, %(security)d security, "
+            "%(not_installed)d not installed, "
+            "%(not_available)d not available, "
+            "%(not_upgrades)d not available upgrades, "
+            "%(not_locked)d not locked, "
+            "%(not_auto)d not autoremovable, "
+            "%(not_security)d not security.",
+            extra=dict(
+                installed=len(new_installed), available=len(new_available),
+                upgrades=len(new_upgrades), locked=len(new_locked),
+                auto=len(new_autoremovable), not_installed=len(not_installed),
+                not_available=len(not_available),
+                not_upgrades=len(not_upgrades), not_locked=len(not_locked),
+                not_auto=len(not_autoremovable), security=len(new_security),
+                not_security=len(not_security)))
 
         def update_currently_known(result):
             if new_installed:
@@ -755,6 +785,10 @@ class PackageReporter(PackageTaskHandler):
                 self._store.remove_locked(not_locked)
             if not_autoremovable:
                 self._store.remove_autoremovable(not_autoremovable)
+            if new_security:
+                self._store.add_security(new_security)
+            if not_security:
+                self._store.remove_security(not_security)
             # Something has changed wrt the former run, let's update the
             # timestamp and return True.
             stamp_file = self._config.detect_package_changes_stamp
