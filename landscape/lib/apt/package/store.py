@@ -233,6 +233,25 @@ class PackageStore(HashIdStore):
         return [row[0] for row in cursor.fetchall()]
 
     @with_cursor
+    def add_security(self, cursor, ids):
+        for id in ids:
+            cursor.execute("REPLACE INTO security VALUES (?)", (id,))
+
+    @with_cursor
+    def remove_security(self, cursor, ids):
+        id_list = ",".join(str(int(id)) for id in ids)
+        cursor.execute("DELETE FROM security WHERE id IN (%s)" % id_list)
+
+    @with_cursor
+    def clear_security(self, cursor):
+        cursor.execute("DELETE FROM security")
+
+    @with_cursor
+    def get_security(self, cursor):
+        cursor.execute("SELECT id FROM security")
+        return [row[0] for row in cursor.fetchall()]
+
+    @with_cursor
     def add_installed(self, cursor, ids):
         for id in ids:
             cursor.execute("REPLACE INTO installed VALUES (?)", (id,))
@@ -450,6 +469,8 @@ def ensure_package_schema(db):
     #       try block.
     cursor = db.cursor()
     try:
+        cursor.execute("CREATE TABLE security"
+                       " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE autoremovable"
                        " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE locked"
