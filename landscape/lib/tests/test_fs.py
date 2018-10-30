@@ -90,6 +90,17 @@ class ReadFileTest(BaseTestCase):
         self.assertEqual(read_text_file(path, limit=100), u"foo ☃ bar")
         self.assertEqual(read_text_file(path, limit=-100), u"foo ☃ bar")
 
+    def test_read_text_file_with_broken_utf8(self):
+        """
+        A text file containing broken UTF-8 shouldn't cause an error, just
+        return some sensible replacement chars.
+        """
+        not_quite_utf8_content = b'foo \xca\xff bar'
+        path = self.makeFile(not_quite_utf8_content, mode='wb')
+        self.assertEqual(read_text_file(path), u'foo \ufffd\ufffd bar')
+        self.assertEqual(read_text_file(path, limit=5), u'foo \ufffd')
+        self.assertEqual(read_text_file(path, limit=-3), u'bar')
+
 
 class TouchFileTest(BaseTestCase):
 
