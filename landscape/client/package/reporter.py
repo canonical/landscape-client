@@ -237,7 +237,7 @@ class PackageReporter(PackageTaskHandler):
                 with open(os.path.join(base, "status")) as fd:
                     read = fd.read()
 
-                pattern = re.compile('^Uid\:(.*)$',
+                pattern = re.compile(r'^Uid\:(.*)$',
                                      re.VERBOSE | re.MULTILINE)
 
                 for pattern in pattern.finditer(read):

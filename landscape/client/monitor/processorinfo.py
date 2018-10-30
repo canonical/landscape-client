@@ -166,7 +166,7 @@ class ARMMessageFactory:
         file = open(self._source_filename)
 
         try:
-            regexp = re.compile("(?P<key>.*?)\s*:\s*(?P<value>.*)")
+            regexp = re.compile(r"(?P<key>.*?)\s*:\s*(?P<value>.*)")
             current = {}
 
             for line in file:
@@ -207,7 +207,7 @@ class SparcMessageFactory:
         file = open(self._source_filename)
 
         try:
-            regexp = re.compile("CPU(\d{1})+")
+            regexp = re.compile(r"CPU(\d{1})+")
 
             for line in file:
                 parts = line.split(":", 1)
@@ -216,7 +216,7 @@ class SparcMessageFactory:
                 if key == "cpu":
                     model = parts[1].strip()
                 elif regexp.match(key):
-                    start, end = re.compile("\d+").search(key).span()
+                    start, end = re.compile(r"\d+").search(key).span()
                     message = {"processor-id": int(key[start:end]),
                                "model": model}
                     processors.append(message)
