@@ -3,7 +3,7 @@ Network introspection utilities using ioctl and the /proc filesystem.
 """
 import os
 
-from landscape.lib.fs import read_text_file
+from landscape.lib.fs import read_binary_file, read_text_file
 
 
 def get_vm_info(root_path="/"):
@@ -59,24 +59,25 @@ def _is_vm_openvz(root_path):
 
 def _get_vm_by_vendor(sys_vendor_path):
     """Return the VM type byte string (possibly empty) based on the vendor."""
-    vendor = read_text_file(sys_vendor_path).lower()
     # Use lower-key string for vendors, since we do case-insentive match.
     # We need bytes here as required by the message schema.
+    vendor = read_binary_file(sys_vendor_path, limit=1024).lower()
 
     # 2018-01: AWS and DO are now returning custom sys_vendor names
     # instead of qemu. If this becomes a trend, it may be worth also checking
     # dmi/id/chassis_vendor which seems to unchanged (bochs).
     content_vendors_map = (
-        ("amazon ec2", b"kvm"),
-        ("bochs", b"kvm"),
-        ("digitalocean", b"kvm"),
-        ("google", b"gce"),
-        ("innotek", b"virtualbox"),
-        ("microsoft", b"hyperv"),
-        ("nutanix", b"kvm"),
-        ("openstack", b"kvm"),
-        ("qemu", b"kvm"),
-        ("vmware", b"vmware"))
+        (b"amazon ec2", b"kvm"),
+        (b"bochs", b"kvm"),
+        (b"digitalocean", b"kvm"),
+        (b"google", b"gce"),
+        (b"innotek", b"virtualbox"),
+        (b"microsoft", b"hyperv"),
+        (b"nutanix", b"kvm"),
+        (b"openstack", b"kvm"),
+        (b"qemu", b"kvm"),
+        (b"vmware", b"vmware"),
+    )
     for name, vm_type in content_vendors_map:
         if name in vendor:
             return vm_type

@@ -458,7 +458,7 @@ def path_tuple_to_string(path):
         if type(elem) is int:
             result[-1] += "[%d]" % elem
         else:
-            result.append(str(elem).replace(".", "\."))
+            result.append(str(elem).replace(".", r"\."))
     return ".".join(result)
 
 

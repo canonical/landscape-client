@@ -28,11 +28,11 @@ class ReadFileTest(BaseTestCase):
 
     def test_read_binary_file_with_limit(self):
         """
-        With a positive limit L{read_binary_file} reads only the bytes after
-        the given limit.
+        With a positive limit L{read_binary_file} reads up to L{limit} bytes
+        from the start of the file.
         """
         path = self.makeFile("foo bar")
-        self.assertEqual(read_binary_file(path, limit=3), b" bar")
+        self.assertEqual(read_binary_file(path, limit=3), b"foo")
 
     def test_read_binary_file_with_negative_limit(self):
         """
@@ -64,12 +64,12 @@ class ReadFileTest(BaseTestCase):
 
     def test_read_text_file_with_limit(self):
         """
-        With a positive limit L{read_text_file} returns only the characters
-        after the first L{limit} characters as string.
+        With a positive limit L{read_text_file} returns up to L{limit}
+        characters from the start of the file.
         """
         utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
         path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_text_file(path, limit=3), u" ☃")
+        self.assertEqual(read_text_file(path, limit=3), u"foo")
 
     def test_read_text_file_with_negative_limit(self):
         """
@@ -89,6 +89,17 @@ class ReadFileTest(BaseTestCase):
         path = self.makeFile(utf8_content, mode="wb")
         self.assertEqual(read_text_file(path, limit=100), u"foo ☃ bar")
         self.assertEqual(read_text_file(path, limit=-100), u"foo ☃ bar")
+
+    def test_read_text_file_with_broken_utf8(self):
+        """
+        A text file containing broken UTF-8 shouldn't cause an error, just
+        return some sensible replacement chars.
+        """
+        not_quite_utf8_content = b'foo \xca\xff bar'
+        path = self.makeFile(not_quite_utf8_content, mode='wb')
+        self.assertEqual(read_text_file(path), u'foo \ufffd\ufffd bar')
+        self.assertEqual(read_text_file(path, limit=5), u'foo \ufffd')
+        self.assertEqual(read_text_file(path, limit=-3), u'bar')
 
 
 class TouchFileTest(BaseTestCase):

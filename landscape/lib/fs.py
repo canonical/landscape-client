@@ -23,14 +23,8 @@ def create_binary_file(path, content):
     @param path: The path to the file.
     @param content: The content to be written in the file.
     """
-    # XXX: Due to a very specific mock of `open()` in landscape.broker.tests.\
-    # test_store.MessageStoreTest.test_atomic_message_writing it is hard to
-    # write this file opening as context manager.
-    fd = open(path, "wb")
-    try:
+    with open(path, "wb") as fd:
         fd.write(content)
-    finally:
-        fd.close()
 
 
 def append_text_file(path, content):
@@ -63,17 +57,26 @@ def read_text_file(path, limit=None):
 
     @param path: The path to the file.
     @param limit: An optional read limit. If positive, read up to that number
-        of bytes from the beginning of the file. If negative, read up to that
-        number of bytes from the end of the file.
+        of characters from the beginning of the file. If negative, read up to
+        that number of bytes from the end of the file.
     @return content: The content of the file string, possibly trimmed to
-        C{limit}.
+        C{limit} characters.
     """
     # Use binary mode since opening a file in text mode in Python 3 does not
-    # allow non-zero offset seek from the end of the file.
-    content = read_binary_file(path).decode("utf-8")
-    if limit and len(content) > abs(limit):
-        content = content[limit:]
-    return content
+    # allow non-zero offset seek from the end of the file. If a limit is
+    # specified, use the 4*limit as the largest UTF-8 encoding is 4-bytes. We
+    # don't worry about slicing a UTF-8 char in half firstly as error handling
+    # is "replace" below, and secondly because if the first/last char is
+    # corrupted as a result we won't want it anyway (because limit chars must
+    # be before/after the first/last char)
+    content = read_binary_file(path, None if limit is None else limit * 4)
+    content = content.decode("utf-8", "replace")
+    if limit is None:
+        return content
+    elif limit >= 0:
+        return content[:limit]
+    else:
+        return content[limit:]
 
 
 def read_binary_file(path, limit=None):
@@ -87,13 +90,12 @@ def read_binary_file(path, limit=None):
         C{limit}.
     """
     with open(path, "rb") as fd:
-        if limit and os.path.getsize(path) > abs(limit):
-            whence = 0
-            if limit < 0:
-                whence = 2
-            fd.seek(limit, whence)
-        content = fd.read()
-    return content
+        if limit is not None and os.path.getsize(path) > abs(limit):
+            if limit >= 0:
+                return fd.read(limit)
+            else:
+                fd.seek(limit, os.SEEK_END)
+        return fd.read()
 
 
 # Aliases for backwards compatibility
@@ -109,8 +111,7 @@ def touch_file(path, offset_seconds=None):
         atime and mtime of the file from the current time.
 
     """
-    fd = open(path, "a")
-    fd.close()
+    open(path, "ab").close()
     if offset_seconds is not None:
         offset_time = long(time.time()) + offset_seconds
         touch_time = (offset_time, offset_time)

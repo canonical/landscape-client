@@ -300,16 +300,16 @@ class MessageStoreTest(LandscapeTest):
         self.store.add({"type": "data", "data": 1})
         # We simulate it by creating a fake file which raises halfway through
         # writing a file.
-        with mock.patch("landscape.lib.fs.open") as mock_open:
-            mocked_file = mock_open.return_value
-            mocked_file.write.side_effect = IOError("Sorry, pal!")
+        mock_open = mock.mock_open()
+        with mock.patch("landscape.lib.fs.open", mock_open):
+            mock_open().write.side_effect = IOError("Sorry, pal!")
             # This kind of ensures that raising an exception is somewhat
             # similar to unplugging the power -- i.e., we're not relying
             # on special exception-handling in the file-writing code.
             self.assertRaises(
                 IOError, self.store.add, {"type": "data", "data": 2})
             mock_open.assert_called_with(mock.ANY, "wb")
-            mocked_file.write.assert_called_once_with(mock.ANY)
+            mock_open().write.assert_called_once_with(mock.ANY)
         self.assertEqual(self.store.get_pending_messages(),
                          [{"type": "data", "data": 1, "api": b"3.2"}])
 
