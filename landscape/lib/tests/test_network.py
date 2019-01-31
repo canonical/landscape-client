@@ -111,7 +111,9 @@ class NetworkInfoTest(BaseTestCase):
         the parsed output against a known sample.
         """
         m = mock_open(read_data=test_proc_net_dev_output)
-        with patch('landscape.lib.network.open', m):
+        # Trusty's version of `mock.mock_open` does not support `readlines()`.
+        m().readlines = test_proc_net_dev_output.splitlines
+        with patch('landscape.lib.network.open', m, create=True):
             traffic = get_network_traffic()
         m.assert_called_with("/proc/net/dev", "r")
         self.assertEqual(traffic, test_proc_net_dev_parsed)
