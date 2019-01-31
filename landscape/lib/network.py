@@ -60,7 +60,6 @@ def get_mac_address(interface):
     Return the hardware MAC address for an interface in human friendly form,
     ie. six colon separated groups of two hexadecimal digits.
 
-    @param sock: a socket instance.
     @param interface: The name of the interface.
     """
     return netifaces.ifaddresses(interface)[netifaces.AF_LINK][0]['addr']
