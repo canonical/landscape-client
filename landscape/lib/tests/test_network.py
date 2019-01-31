@@ -1,8 +1,12 @@
-import array
 import socket
 import unittest
 
 from mock import patch, ANY, mock_open
+from netifaces import (
+    AF_INET,
+    ifaddresses as _ifaddresses,
+    interfaces as _interfaces,
+)
 from subprocess import Popen, PIPE
 
 from landscape.lib import testing
@@ -82,6 +86,24 @@ class NetworkInfoTest(BaseTestCase):
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0:foo", interfaces)
+
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_skip_iface_with_no_addr(self, mock_interfaces, mock_ifaddresses):
+        mock_interfaces.return_value = _interfaces() + ["test_iface"]
+        mock_ifaddresses.side_effect = lambda iface: (
+            _ifaddresses(iface) if iface in _interfaces() else {})
+        device_info = get_active_device_info()
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("test_iface", interfaces)
+
+    def test_default_broadcast_addr(self):
+        # lo has no broadcast address.
+        self.assertNotIn("broadcast", _ifaddresses('lo')[AF_INET][0])
+        device_info = get_active_device_info(skipped_interfaces=())
+        lo = [i for i in device_info if i["interface"] == "lo"][0]
+        self.assertIn("broadcast_address", lo)
+        self.assertEqual(lo["broadcast_address"], "0.0.0.0")
 
     def test_get_network_traffic(self):
         """
