@@ -21,6 +21,11 @@ SIOCETHTOOL = 0x8946  # As defined in include/uapi/linux/sockios.h
 ETHTOOL_GSET = 0x00000001  # Get status command.
 
 
+def is_64():
+    """Returns C{True} if the platform is 64-bit, otherwise C{False}."""
+    return struct.calcsize("l") == 8
+
+
 def get_active_interfaces():
     for interface in netifaces.interfaces():
         ifaddresses = netifaces.ifaddresses(interface)
