@@ -5,7 +5,7 @@ matrix:
   include:
     - env: TARGET=check2 IMAGE=ubuntu:xenial
       script:
-        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python-distutils-extra python-mock python-twisted python-apt python-twisted-core python-pycurl"';
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python-distutils-extra python-mock python-twisted python-apt python-twisted-core python-pycurl python-netifaces"';
         # creates user and dirs, some used through tests
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get -y install landscape-common"';
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo chown -R ubuntu:ubuntu /target"';
@@ -14,7 +14,7 @@ matrix:
       script:
         # bionic needs cgroupv2 not on this kernel, so nudge the system a bit
         - sg lxd -c 'lxc exec testcontainer -- sh -c "dhclient eth0; cloud-init init"';
-        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python3-distutils-extra python3-mock python3-twisted python3-apt python-twisted-core python3-pycurl"';
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python3-distutils-extra python3-mock python3-twisted python3-apt python-twisted-core python3-pycurl python3-netifaces"';
         # creates user and dirs, some used through tests
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get -y install landscape-common"';
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo chown -R ubuntu:ubuntu /target"';
