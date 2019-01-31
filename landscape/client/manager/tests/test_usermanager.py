@@ -483,17 +483,17 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         """
 
         def handle_callback(result):
-                messages = (
-                    self.broker_service.message_store.get_pending_messages())
-                self.assertEqual(len(messages), 3)
-                # Ignore the message created by plugin.run.
-                self.assertMessages([messages[2], messages[1]],
-                                    [{"timestamp": 0, "delete-users": ["jdoe"],
-                                      "type": "users", "operation-id": 39},
-                                     {"type": "operation-result",
-                                      "status": SUCCEEDED,
-                                      "operation-id": 39, "timestamp": 0,
-                                      "result-text": "remove_user succeeded"}])
+            messages = (
+                self.broker_service.message_store.get_pending_messages())
+            self.assertEqual(len(messages), 3)
+            # Ignore the message created by plugin.run.
+            self.assertMessages([messages[2], messages[1]],
+                                [{"timestamp": 0, "delete-users": ["jdoe"],
+                                  "type": "users", "operation-id": 39},
+                                 {"type": "operation-result",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 39, "timestamp": 0,
+                                  "result-text": "remove_user succeeded"}])
 
         users = [("jdoe", "x", 1000, 1000,
                   "John Doe,,,,", "/home/bo", "/bin/zsh")]
