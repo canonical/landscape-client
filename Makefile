@@ -15,11 +15,11 @@ depends: depends2 depends3  ## Install py2 and py3 dependencies.
 
 .PHONY: depends2
 depends2:
-	sudo apt -y install python-twisted-core python-distutils-extra python-mock python-configobj
+	sudo apt -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces
 
 .PHONY: depends3
 depends3:
-	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj
+	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces
 
 all: build
 
