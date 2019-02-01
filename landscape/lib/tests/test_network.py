@@ -72,7 +72,7 @@ class NetworkInfoTest(BaseTestCase):
     def test_skip_vlan(self, mock_get_active_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
         mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + ["eth0.1"])
+            list(get_active_interfaces()) + [("eth0.1", {})])
         device_info = get_active_device_info()
         self.assertTrue(mock_get_active_interfaces.called)
         interfaces = [i["interface"] for i in device_info]
@@ -82,7 +82,7 @@ class NetworkInfoTest(BaseTestCase):
     def test_skip_alias(self, mock_get_active_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
         mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + ["eth0:foo"])
+            list(get_active_interfaces()) + [("eth0:foo", {})])
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0:foo", interfaces)

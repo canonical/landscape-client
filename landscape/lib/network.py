@@ -32,42 +32,41 @@ def get_active_interfaces():
         # Skip interfaces with no IPv4 addresses.
         inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
         if inet_addr:
-            yield interface
+            yield interface, ifaddresses
 
 
-def get_broadcast_address(interface):
+def get_broadcast_address(ifaddresses):
     """Return the broadcast address associated to an interface.
 
     @param interface: The name of the interface.
     """
-    ifaddresses = netifaces.ifaddresses(interface)
     return ifaddresses[netifaces.AF_INET][0].get('broadcast', '0.0.0.0')
 
 
-def get_netmask(interface):
+def get_netmask(ifaddresses):
     """Return the network mask associated to an interface.
 
     @param interface: The name of the interface.
     """
-    return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['netmask']
+    return ifaddresses[netifaces.AF_INET][0]['netmask']
 
 
-def get_ip_address(interface):
+def get_ip_address(ifaddresses):
     """Return the IP address associated to the interface.
 
     @param interface: The name of the interface.
     """
-    return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
+    return ifaddresses[netifaces.AF_INET][0]['addr']
 
 
-def get_mac_address(interface):
+def get_mac_address(ifaddresses):
     """
     Return the hardware MAC address for an interface in human friendly form,
     ie. six colon separated groups of two hexadecimal digits.
 
     @param interface: The name of the interface.
     """
-    return netifaces.ifaddresses(interface)[netifaces.AF_LINK][0]['addr']
+    return ifaddresses[netifaces.AF_LINK][0]['addr']
 
 
 def get_flags(sock, interface):
@@ -92,7 +91,7 @@ def get_active_device_info(skipped_interfaces=("lo",),
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
-        for interface in get_active_interfaces():
+        for interface, ifaddresses in get_active_interfaces():
             if interface in skipped_interfaces:
                 continue
             if skip_vlan and "." in interface:
@@ -100,11 +99,11 @@ def get_active_device_info(skipped_interfaces=("lo",),
             if skip_alias and ":" in interface:
                 continue
             interface_info = {"interface": interface}
-            interface_info["ip_address"] = get_ip_address(interface)
-            interface_info["mac_address"] = get_mac_address(interface)
+            interface_info["ip_address"] = get_ip_address(ifaddresses)
+            interface_info["mac_address"] = get_mac_address(ifaddresses)
             interface_info["broadcast_address"] = get_broadcast_address(
-                interface)
-            interface_info["netmask"] = get_netmask(interface)
+                ifaddresses)
+            interface_info["netmask"] = get_netmask(ifaddresses)
             interface_info["flags"] = get_flags(sock, interface.encode())
             speed, duplex = get_network_interface_speed(
                 sock, interface.encode())
