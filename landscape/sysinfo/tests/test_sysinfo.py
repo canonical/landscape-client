@@ -44,6 +44,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.sysinfo.add_header("Header2", "Value4")
         self.assertEqual(self.sysinfo.get_headers(),
                          [("Header1", "Value1"),
+                          ("Header2", "Value2"),
                           ("Header2", "Value4"),
                           ("Header3", "Value3")])
 
