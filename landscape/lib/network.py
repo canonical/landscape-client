@@ -35,9 +35,8 @@ def get_active_interfaces():
             yield interface, ifaddresses
 
 
-def get_ip_addresses(interface):
+def get_ip_addresses(ifaddresses):
     results = {}
-    ifaddresses = netifaces.ifaddresses(interface)
     if netifaces.AF_INET in ifaddresses:
         results[netifaces.AF_INET] = ifaddresses[netifaces.AF_INET]
     return results
@@ -113,7 +112,7 @@ def get_active_device_info(skipped_interfaces=("lo",),
                 ifaddresses)
             interface_info["netmask"] = get_netmask(ifaddresses)
             if extended:
-                interface_info["ip_addresses"] = get_ip_addresses(interface)
+                interface_info["ip_addresses"] = get_ip_addresses(ifaddresses)
             interface_info["flags"] = get_flags(sock, interface.encode())
             speed, duplex = get_network_interface_speed(
                 sock, interface.encode())
