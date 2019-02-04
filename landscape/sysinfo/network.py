@@ -1,3 +1,7 @@
+from functools import partial
+from operator import itemgetter
+
+from netifaces import AF_INET
 from twisted.internet.defer import succeed
 
 from landscape.lib.network import get_active_device_info
@@ -12,7 +16,7 @@ class Network(object):
 
     def __init__(self, get_device_info=None):
         if get_device_info is None:
-            get_device_info = get_active_device_info
+            get_device_info = partial(get_active_device_info, extended=True)
         self._get_device_info = get_device_info
 
     def register(self, sysinfo):
@@ -29,9 +33,13 @@ class Network(object):
 
         @return: A succeeded C{Deferred}.
         """
-        for info in self._get_device_info():
+        device_info = self._get_device_info()
+        for info in sorted(device_info, key=itemgetter('interface')):
             interface = info["interface"]
-            ip_address = info["ip_address"]
-            self._sysinfo.add_header("IP address for %s" % interface,
-                                     ip_address)
+
+            ipv4_addresses = info["ip_addresses"].get(AF_INET, [])
+            for addr in ipv4_addresses:
+                self._sysinfo.add_header(
+                    "IPv4 address for %s" % interface, addr['addr'])
+
         return succeed(None)

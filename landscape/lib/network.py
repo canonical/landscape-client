@@ -35,6 +35,14 @@ def get_active_interfaces():
             yield interface, ifaddresses
 
 
+def get_ip_addresses(interface):
+    results = {}
+    ifaddresses = netifaces.ifaddresses(interface)
+    if netifaces.AF_INET in ifaddresses:
+        results[netifaces.AF_INET] = ifaddresses[netifaces.AF_INET]
+    return results
+
+
 def get_broadcast_address(ifaddresses):
     """Return the broadcast address associated to an interface.
 
@@ -82,7 +90,7 @@ def get_flags(sock, interface):
 
 
 def get_active_device_info(skipped_interfaces=("lo",),
-                           skip_vlan=True, skip_alias=True):
+                           skip_vlan=True, skip_alias=True, extended=False):
     """
     Returns a dictionary containing information on each active network
     interface present on a machine.
@@ -104,6 +112,8 @@ def get_active_device_info(skipped_interfaces=("lo",),
             interface_info["broadcast_address"] = get_broadcast_address(
                 ifaddresses)
             interface_info["netmask"] = get_netmask(ifaddresses)
+            if extended:
+                interface_info["ip_addresses"] = get_ip_addresses(interface)
             interface_info["flags"] = get_flags(sock, interface.encode())
             speed, duplex = get_network_interface_speed(
                 sock, interface.encode())
