@@ -4,6 +4,7 @@ import unittest
 from mock import patch, ANY, mock_open
 from netifaces import (
     AF_INET,
+    AF_INET6,
     AF_LINK,
     AF_UNIX,
     ifaddresses as _ifaddresses,
@@ -78,7 +79,10 @@ class NetworkInfoTest(BaseTestCase):
                 {"addr": "aa:bb:cc:dd:ee:f1"}],
             AF_INET: [
                 {"addr": "192.168.0.50", "netmask": "255.255.255.0"},
-                {"addr": "192.168.1.50", "netmask": "255.255.255.0"}]}
+                {"addr": "192.168.1.50", "netmask": "255.255.255.0"}],
+            AF_INET6: [
+                {"addr": "2001::1"},
+                {"addr": "2002::2"}]}
 
         device_info = get_active_device_info(extended=True)
 
@@ -93,10 +97,56 @@ class NetworkInfoTest(BaseTestCase):
                 'ip_addresses': {
                     AF_INET: [
                         {'addr': '192.168.0.50', 'netmask': '255.255.255.0'},
-                        {'addr': '192.168.1.50', 'netmask': '255.255.255.0'}]},
+                        {'addr': '192.168.1.50', 'netmask': '255.255.255.0'}],
+                    AF_INET6: [
+                        {"addr": "2001::1"},
+                        {"addr": "2002::2"}]},
                 'flags': 'FLAGS',
                 'speed': 100,
                 'duplex': True}])
+
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_skip_ipv6_only_in_non_extended_mode(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed):
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = "FLAGS"
+        mock_interfaces.return_value = ["test_iface"]
+        mock_ifaddresses.return_value = {
+            AF_LINK: [{"addr": "aa:bb:cc:dd:ee:f0"}],
+            AF_INET6: [{"addr": "2001::1"}]}
+
+        device_info = get_active_device_info(extended=False)
+
+        self.assertEqual(device_info, [])
+
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_ipv6_only_in_extended_mode(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed):
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = "FLAGS"
+        mock_interfaces.return_value = ["test_iface"]
+        mock_ifaddresses.return_value = {
+            AF_LINK: [{"addr": "aa:bb:cc:dd:ee:f0"}],
+            AF_INET6: [{"addr": "2001::1"}]}
+
+        device_info = get_active_device_info(extended=True)
+
+        self.assertEqual(
+            device_info,
+            [{
+                'interface': 'test_iface',
+                'flags': 'FLAGS',
+                'speed': 100,
+                'duplex': True,
+                'ip_addresses': {AF_INET6: [{'addr': '2001::1'}]}}])
 
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
@@ -163,6 +213,34 @@ class NetworkInfoTest(BaseTestCase):
             traffic = get_network_traffic()
         m.assert_called_with("/proc/net/dev", "r")
         self.assertEqual(traffic, test_proc_net_dev_parsed)
+
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_ipv6_skip_link_local(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed):
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = "FLAGS"
+        mock_interfaces.return_value = ["test_iface"]
+        mock_ifaddresses.return_value = {
+            AF_LINK: [
+                {"addr": "aa:bb:cc:dd:ee:f1"}],
+            AF_INET6: [
+                {"addr": "fe80::1"},
+                {"addr": "2001::1"}]}
+
+        device_info = get_active_device_info(extended=True)
+
+        self.assertEqual(
+            device_info,
+            [{
+                'interface': 'test_iface',
+                'flags': 'FLAGS',
+                'speed': 100,
+                'duplex': True,
+                'ip_addresses': {AF_INET6: [{"addr": "2001::1"}]}}])
 
 
 # exact output of cat /proc/net/dev snapshot with line continuations for pep8

@@ -29,9 +29,10 @@ def is_64():
 def get_active_interfaces():
     for interface in netifaces.interfaces():
         ifaddresses = netifaces.ifaddresses(interface)
-        # Skip interfaces with no IPv4 addresses.
+        # Skip interfaces with no IPv4 or IPv6 addresses.
         inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
-        if inet_addr:
+        inet6_addr = ifaddresses.get(netifaces.AF_INET6, [{}])[0].get('addr')
+        if inet_addr or inet6_addr:
             yield interface, ifaddresses
 
 
@@ -39,6 +40,13 @@ def get_ip_addresses(ifaddresses):
     results = {}
     if netifaces.AF_INET in ifaddresses:
         results[netifaces.AF_INET] = ifaddresses[netifaces.AF_INET]
+    if netifaces.AF_INET6 in ifaddresses:
+        # Ignore link-local IPv6 addresses (fe80::/10).
+        global_addrs = [addr for addr in ifaddresses[netifaces.AF_INET6]
+                        if not addr['addr'].startswith('fe80:')]
+        if global_addrs:
+            results[netifaces.AF_INET6] = global_addrs
+
     return results
 
 
@@ -106,19 +114,24 @@ def get_active_device_info(skipped_interfaces=("lo",),
             if skip_alias and ":" in interface:
                 continue
             interface_info = {"interface": interface}
-            interface_info["ip_address"] = get_ip_address(ifaddresses)
-            interface_info["mac_address"] = get_mac_address(ifaddresses)
-            interface_info["broadcast_address"] = get_broadcast_address(
-                ifaddresses)
-            interface_info["netmask"] = get_netmask(ifaddresses)
-            if extended:
-                interface_info["ip_addresses"] = get_ip_addresses(ifaddresses)
             interface_info["flags"] = get_flags(sock, interface.encode())
             speed, duplex = get_network_interface_speed(
                 sock, interface.encode())
             interface_info["speed"] = speed
             interface_info["duplex"] = duplex
-            results.append(interface_info)
+            ip_addresses = get_ip_addresses(ifaddresses)
+            if extended:
+                interface_info["ip_addresses"] = ip_addresses
+            if netifaces.AF_INET in ip_addresses:
+                interface_info["ip_address"] = get_ip_address(ifaddresses)
+                interface_info["mac_address"] = get_mac_address(ifaddresses)
+                interface_info["broadcast_address"] = get_broadcast_address(
+                    ifaddresses)
+                interface_info["netmask"] = get_netmask(ifaddresses)
+            # Skip interfaces with no IPv4 address in non-extended mode
+            # to keep backwards compatibility with single-IPv4 addr support.
+            if netifaces.AF_INET in ip_addresses or extended:
+                results.append(interface_info)
     finally:
         del sock
 

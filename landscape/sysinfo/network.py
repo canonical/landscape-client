@@ -1,7 +1,7 @@
 from functools import partial
 from operator import itemgetter
 
-from netifaces import AF_INET
+from netifaces import AF_INET, AF_INET6
 from twisted.internet.defer import succeed
 
 from landscape.lib.network import get_active_device_info
@@ -36,10 +36,13 @@ class Network(object):
         device_info = self._get_device_info()
         for info in sorted(device_info, key=itemgetter('interface')):
             interface = info["interface"]
-
             ipv4_addresses = info["ip_addresses"].get(AF_INET, [])
+            ipv6_addresses = info["ip_addresses"].get(AF_INET6, [])
             for addr in ipv4_addresses:
                 self._sysinfo.add_header(
                     "IPv4 address for %s" % interface, addr['addr'])
+            for addr in ipv6_addresses:
+                self._sysinfo.add_header(
+                    "IPv6 address for %s" % interface, addr['addr'])
 
         return succeed(None)
