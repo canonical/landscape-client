@@ -54,6 +54,14 @@ def get_active_interfaces():
 
 
 def get_ip_addresses(ifaddresses):
+    """Return a all IP addresses of an interfaces.
+
+    Returns the same structure as L{ifaddresses}, but filtered to keep
+    IP addresses only.
+
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
+        the address data in L{get_active_interfaces}'s output.
+    """
     results = {}
     if netifaces.AF_INET in ifaddresses:
         results[netifaces.AF_INET] = ifaddresses[netifaces.AF_INET]
