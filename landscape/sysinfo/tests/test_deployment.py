@@ -265,7 +265,7 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
                 mock.patch.object(
                     os.path, "isdir", return_value=False) as mock_isdir, \
                 mock.patch.object(os, "mkdir") as mock_mkdir, \
-                mock.patch("logging.open") as mock_open:
+                mock.patch("logging.open", create=True) as mock_open:
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
 

@@ -10,34 +10,15 @@ import struct
 import errno
 import logging
 
-from twisted.python.compat import long, _PY3
+import netifaces
+from twisted.python.compat import long
 
-__all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
+__all__ = ["get_active_device_info", "get_network_traffic"]
 
-# from header /usr/include/bits/ioctls.h
-SIOCGIFCONF = 0x8912
-SIOCGIFFLAGS = 0x8913
-SIOCGIFNETMASK = 0x891b
-SIOCGIFBRDADDR = 0x8919
-SIOCGIFADDR = 0x8915
-SIOCGIFHWADDR = 0x8927
 
+SIOCGIFFLAGS = 0x8913  # from header /usr/include/bits/ioctls.h
 SIOCETHTOOL = 0x8946  # As defined in include/uapi/linux/sockios.h
 ETHTOOL_GSET = 0x00000001  # Get status command.
-
-# struct definition from header /usr/include/net/if.h
-# the struct size varies according to the platform arch size
-# a minimal c program was used to determine the size of the
-# struct, standard headers removed for brevity.
-"""
-#include <linux/if.h>
-int main() {
-  printf("Size of struct %lu\n", sizeof(struct ifreq));
-}
-"""
-
-IF_STRUCT_SIZE_32 = 32
-IF_STRUCT_SIZE_64 = 40
 
 
 def is_64():
@@ -45,94 +26,67 @@ def is_64():
     return struct.calcsize("l") == 8
 
 
-# initialize the struct size as per the machine's architecture
-IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
+def get_active_interfaces():
+    """Generator yields (active network interface name, address data) tuples.
 
+    Address data is formated exactly like L{netifaces.ifaddresses}, e.g.::
 
-def get_active_interfaces(sock):
-    """Generator yields active network interface names.
+        ('eth0', {
+            AF_LINK: [
+                {'addr': '...', 'broadcast': '...'}, ],
+            AF_INET: [
+                {'addr': '...', 'broadcast': '...', 'netmask': '...'},
+                {'addr': '...', 'broadcast': '...', 'netmask': '...'}, ...],
+            AF_INET6: [
+                {'addr': '...', 'netmask': '...'},
+                {'addr': '...', 'netmask': '...'}, ...], })
 
-    @param sock: a socket instance.
+    Interfaces with no IP address are ignored.
     """
-    max_interfaces = 128
-
-    # Setup an array to hold our response, and initialized to null strings.
-    interfaces = array.array("B", b"\0" * max_interfaces * IF_STRUCT_SIZE)
-    buffer_size = interfaces.buffer_info()[0]
-    packed_bytes = struct.pack(
-        "iL", max_interfaces * IF_STRUCT_SIZE, buffer_size)
-
-    byte_length = struct.unpack(
-        "iL", fcntl.ioctl(sock.fileno(), SIOCGIFCONF, packed_bytes))[0]
-
-    result = interfaces.tostring()
-
-    # Generator over the interface names
-    already_found = set()
-    for index in range(0, byte_length, IF_STRUCT_SIZE):
-        ifreq_struct = result[index:index + IF_STRUCT_SIZE]
-        interface_name = ifreq_struct[:ifreq_struct.index(b"\0")]
-        if interface_name not in already_found:
-            already_found.add(interface_name)
-            yield interface_name
+    for interface in netifaces.interfaces():
+        ifaddresses = netifaces.ifaddresses(interface)
+        # Skip interfaces with no IPv4 addresses.
+        inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
+        if inet_addr:
+            yield interface, ifaddresses
 
 
-def get_broadcast_address(sock, interface):
+def get_broadcast_address(ifaddresses):
     """Return the broadcast address associated to an interface.
 
-    @param sock: a socket instance.
-    @param interface: The name of the interface.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
+        the address data in L{get_active_interfaces}'s output.
     """
-    return socket.inet_ntoa(fcntl.ioctl(
-        sock.fileno(),
-        SIOCGIFBRDADDR,
-        struct.pack("256s", interface[:15]))[20:24])
+    return ifaddresses[netifaces.AF_INET][0].get('broadcast', '0.0.0.0')
 
 
-def get_netmask(sock, interface):
+def get_netmask(ifaddresses):
     """Return the network mask associated to an interface.
 
-    @param sock: a socket instance.
-    @param interface: The name of the interface.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
+        the address data in L{get_active_interfaces}'s output.
     """
-    return socket.inet_ntoa(fcntl.ioctl(
-        sock.fileno(),
-        SIOCGIFNETMASK,
-        struct.pack("256s", interface[:15]))[20:24])
+    return ifaddresses[netifaces.AF_INET][0]['netmask']
 
 
-def get_ip_address(sock, interface):
+def get_ip_address(ifaddresses):
     """Return the IP address associated to the interface.
 
-    @param sock: a socket instance.
-    @param interface: The name of the interface.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
+        the address data in L{get_active_interfaces}'s output.
     """
-    return socket.inet_ntoa(fcntl.ioctl(
-        sock.fileno(),
-        SIOCGIFADDR,
-        struct.pack("256s", interface[:15]))[20:24])
+    return ifaddresses[netifaces.AF_INET][0]['addr']
 
 
-def get_mac_address(sock, interface):
+def get_mac_address(ifaddresses):
     """
     Return the hardware MAC address for an interface in human friendly form,
     ie. six colon separated groups of two hexadecimal digits.
 
-    @param sock: a socket instance.
-    @param interface: The name of the interface.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
+        the address data in L{get_active_interfaces}'s output.
     """
-    mac_address = fcntl.ioctl(
-        sock.fileno(), SIOCGIFHWADDR, struct.pack("256s", interface[:15]))
-    if _PY3:
-        def to_int(char):
-            # We have already bytes, so we do nothing
-            return char
-    else:
-        def to_int(char):
-            # We have a string in python 2 and need the int here.
-            return ord(char)
-    return "".join(["%02x:" % to_int(char)
-                    for char in mac_address[18:24]])[:-1]
+    return ifaddresses[netifaces.AF_LINK][0]['addr']
 
 
 def get_flags(sock, interface):
@@ -157,28 +111,22 @@ def get_active_device_info(skipped_interfaces=("lo",),
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
-        for interface in get_active_interfaces(sock):
-            if _PY3:
-                interface_string = interface.decode("ascii")
-            else:
-                interface_string = interface
-            if interface_string in skipped_interfaces:
+        for interface, ifaddresses in get_active_interfaces():
+            if interface in skipped_interfaces:
                 continue
-            if skip_vlan and b"." in interface:
+            if skip_vlan and "." in interface:
                 continue
-            if skip_alias and b":" in interface:
+            if skip_alias and ":" in interface:
                 continue
-            # We keep values as byte strings for use in struct.pack() in
-            # different getter methods, and only use the decoded value of the
-            # interface name here.
-            interface_info = {"interface": interface_string}
-            interface_info["ip_address"] = get_ip_address(sock, interface)
-            interface_info["mac_address"] = get_mac_address(sock, interface)
+            interface_info = {"interface": interface}
+            interface_info["ip_address"] = get_ip_address(ifaddresses)
+            interface_info["mac_address"] = get_mac_address(ifaddresses)
             interface_info["broadcast_address"] = get_broadcast_address(
-                sock, interface)
-            interface_info["netmask"] = get_netmask(sock, interface)
-            interface_info["flags"] = get_flags(sock, interface)
-            speed, duplex = get_network_interface_speed(sock, interface)
+                ifaddresses)
+            interface_info["netmask"] = get_netmask(ifaddresses)
+            interface_info["flags"] = get_flags(sock, interface.encode())
+            speed, duplex = get_network_interface_speed(
+                sock, interface.encode())
             interface_info["speed"] = speed
             interface_info["duplex"] = duplex
             results.append(interface_info)

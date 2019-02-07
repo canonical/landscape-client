@@ -1,8 +1,12 @@
-import array
 import socket
 import unittest
 
 from mock import patch, ANY, mock_open
+from netifaces import (
+    AF_INET,
+    ifaddresses as _ifaddresses,
+    interfaces as _interfaces,
+)
 from subprocess import Popen, PIPE
 
 from landscape.lib import testing
@@ -67,76 +71,39 @@ class NetworkInfoTest(BaseTestCase):
     @patch("landscape.lib.network.get_active_interfaces")
     def test_skip_vlan(self, mock_get_active_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
-        mock_get_active_interfaces.side_effect = lambda sock: (
-            list(get_active_interfaces(sock)) + [b"eth0.1"])
+        mock_get_active_interfaces.side_effect = lambda: (
+            list(get_active_interfaces()) + [("eth0.1", {})])
         device_info = get_active_device_info()
-        mock_get_active_interfaces.assert_called_with(ANY)
+        self.assertTrue(mock_get_active_interfaces.called)
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0.1", interfaces)
 
     @patch("landscape.lib.network.get_active_interfaces")
     def test_skip_alias(self, mock_get_active_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
-        mock_get_active_interfaces.side_effect = lambda sock: (
-            list(get_active_interfaces(sock)) + [b"eth0:foo"])
+        mock_get_active_interfaces.side_effect = lambda: (
+            list(get_active_interfaces()) + [("eth0:foo", {})])
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0:foo", interfaces)
 
-    @patch("struct.unpack")
-    @patch("fcntl.ioctl")
-    def test_duplicate_network_interfaces(self, mock_ioctl, mock_unpack):
-        """
-        L{get_active_interfaces} doesn't return duplicate network interfaces.
-        The call to C{fcntl.ioctl} might return the same interface several
-        times, so we make sure to clean it up.
-        """
-        import landscape.lib.network
-        original_struct_size = landscape.lib.network.IF_STRUCT_SIZE
-        landscape.lib.network.IF_STRUCT_SIZE = 40
-        self.addCleanup(
-            setattr, landscape.lib.network, "IF_STRUCT_SIZE",
-            original_struct_size)
-        # This is a fake response observed to return the same interface several
-        # times (here, br1:priv)
-        response = (
-            b"lo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02"
-            b"\x00\x00\x00\x7f\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00eth1:pub\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x02\x00\x00\x00\xc8\xb4\xc4.\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00br1:metadata\x00\x00\x00\x00\x02"
-            b"\x00\x00\x00\xa9\xfe\xa9\xfe\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00br1:0\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00"
-            b"\x00\x00\x00\x02\x00\x00\x00\xc9\x19\x1f\x1d\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00br1\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\xc0\xa8d"
-            b"\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00br1:priv\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\xac"
-            b"\x13\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00br1:priv\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00"
-            b"\x00\xac\x13\x02A")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_skip_iface_with_no_addr(self, mock_interfaces, mock_ifaddresses):
+        mock_interfaces.return_value = _interfaces() + ["test_iface"]
+        mock_ifaddresses.side_effect = lambda iface: (
+            _ifaddresses(iface) if iface in _interfaces() else {})
+        device_info = get_active_device_info()
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("test_iface", interfaces)
 
-        fake_array = array.array("B", response + b"\0" * 4855)
-
-        with patch("array.array") as mock_array:
-            mock_array.return_value = fake_array
-            mock_ioctl.return_value = 0
-            mock_unpack.return_value = (280, 38643456)
-
-            sock = socket.socket(
-                socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
-            interfaces = list(get_active_interfaces(sock))
-
-        mock_array.assert_called_with("B", ANY)
-        mock_ioctl.assert_called_with(ANY, ANY, ANY)
-        mock_unpack.assert_called_with("iL", ANY)
-
-        self.assertEqual(
-            [b"lo", b"eth1:pub", b"br1:metadata",
-             b"br1:0", b"br1", b"br1:priv"],
-            interfaces)
+    def test_default_broadcast_addr(self):
+        # lo has no broadcast address.
+        self.assertNotIn("broadcast", _ifaddresses('lo')[AF_INET][0])
+        device_info = get_active_device_info(skipped_interfaces=())
+        lo = [i for i in device_info if i["interface"] == "lo"][0]
+        self.assertIn("broadcast_address", lo)
+        self.assertEqual(lo["broadcast_address"], "0.0.0.0")
 
     def test_get_network_traffic(self):
         """
@@ -144,7 +111,9 @@ class NetworkInfoTest(BaseTestCase):
         the parsed output against a known sample.
         """
         m = mock_open(read_data=test_proc_net_dev_output)
-        with patch('landscape.lib.network.open', m):
+        # Trusty's version of `mock.mock_open` does not support `readlines()`.
+        m().readlines = test_proc_net_dev_output.splitlines
+        with patch('landscape.lib.network.open', m, create=True):
             traffic = get_network_traffic()
         m.assert_called_with("/proc/net/dev", "r")
         self.assertEqual(traffic, test_proc_net_dev_parsed)

@@ -5,7 +5,7 @@ matrix:
   include:
     - env: TARGET=check2 IMAGE=ubuntu:xenial
       script:
-        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python-distutils-extra python-mock python-twisted python-apt python-twisted-core python-pycurl"';
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python-distutils-extra python-mock python-twisted python-apt python-twisted-core python-pycurl python-netifaces"';
         # creates user and dirs, some used through tests
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get -y install landscape-common"';
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo chown -R ubuntu:ubuntu /target"';
@@ -14,7 +14,7 @@ matrix:
       script:
         # bionic needs cgroupv2 not on this kernel, so nudge the system a bit
         - sg lxd -c 'lxc exec testcontainer -- sh -c "dhclient eth0; cloud-init init"';
-        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python3-distutils-extra python3-mock python3-twisted python3-apt python-twisted-core python3-pycurl"';
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python3-distutils-extra python3-mock python3-twisted python3-apt python-twisted-core python3-pycurl python3-netifaces"';
         # creates user and dirs, some used through tests
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get -y install landscape-common"';
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo chown -R ubuntu:ubuntu /target"';
@@ -31,7 +31,7 @@ matrix:
       install:
         - pip install flake8
         # These match "make depends"
-        - pip install twisted==16.4.0 mock==1.3.0 configobj==5.0.6 pycurl
+        - pip install twisted==16.4.0 mock==1.3.0 configobj==5.0.6 pycurl netifaces==0.10.4
         - pip install http://launchpad.net/python-distutils-extra/trunk/2.39/+download/python-distutils-extra-2.39.tar.gz
         # build & install python-apt
         - make -f Makefile.travis pipinstallpythonapt
