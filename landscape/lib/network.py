@@ -54,7 +54,7 @@ def get_active_interfaces():
 
 
 def get_ip_addresses(ifaddresses):
-    """Return a all IP addresses of an interfaces.
+    """Return all IP addresses of an interfaces.
 
     Returns the same structure as L{ifaddresses}, but filtered to keep
     IP addresses only.
