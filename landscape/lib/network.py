@@ -29,17 +29,19 @@ def is_64():
 def get_active_interfaces():
     """Generator yields (active network interface name, address data) tuples.
 
-    Address data is formated exactly like L{netifaces.ifaddresses}, e.g.::
+    Address data is formatted exactly like L{netifaces.ifaddresses}, e.g.::
 
         ('eth0', {
             AF_LINK: [
                 {'addr': '...', 'broadcast': '...'}, ],
             AF_INET: [
                 {'addr': '...', 'broadcast': '...', 'netmask': '...'},
-                {'addr': '...', 'broadcast': '...', 'netmask': '...'}, ...],
+                {'addr': '...', 'broadcast': '...', 'netmask': '...'},
+                ...],
             AF_INET6: [
                 {'addr': '...', 'netmask': '...'},
-                {'addr': '...', 'netmask': '...'}, ...], })
+                {'addr': '...', 'netmask': '...'},
+                ...], })
 
     Interfaces with no IP address are ignored.
     """
@@ -53,6 +55,14 @@ def get_active_interfaces():
 
 
 def get_ip_addresses(ifaddresses):
+    """Return all IP addresses of an interfaces.
+
+    Returns the same structure as L{ifaddresses}, but filtered to keep
+    IP addresses only.
+
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
+        the address data in L{get_active_interfaces}'s output.
+    """
     results = {}
     if netifaces.AF_INET in ifaddresses:
         results[netifaces.AF_INET] = ifaddresses[netifaces.AF_INET]
