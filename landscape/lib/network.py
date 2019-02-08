@@ -29,17 +29,19 @@ def is_64():
 def get_active_interfaces():
     """Generator yields (active network interface name, address data) tuples.
 
-    Address data is formated exactly like L{netifaces.ifaddresses}, e.g.::
+    Address data is formatted exactly like L{netifaces.ifaddresses}, e.g.::
 
         ('eth0', {
             AF_LINK: [
                 {'addr': '...', 'broadcast': '...'}, ],
             AF_INET: [
                 {'addr': '...', 'broadcast': '...', 'netmask': '...'},
-                {'addr': '...', 'broadcast': '...', 'netmask': '...'}, ...],
+                {'addr': '...', 'broadcast': '...', 'netmask': '...'},
+                ...],
             AF_INET6: [
                 {'addr': '...', 'netmask': '...'},
-                {'addr': '...', 'netmask': '...'}, ...], })
+                {'addr': '...', 'netmask': '...'},
+                ...], })
 
     Interfaces with no IP address are ignored.
     """
@@ -49,6 +51,21 @@ def get_active_interfaces():
         inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
         if inet_addr:
             yield interface, ifaddresses
+
+
+def get_ip_addresses(ifaddresses):
+    """Return all IP addresses of an interfaces.
+
+    Returns the same structure as L{ifaddresses}, but filtered to keep
+    IP addresses only.
+
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
+        the address data in L{get_active_interfaces}'s output.
+    """
+    results = {}
+    if netifaces.AF_INET in ifaddresses:
+        results[netifaces.AF_INET] = ifaddresses[netifaces.AF_INET]
+    return results
 
 
 def get_broadcast_address(ifaddresses):
@@ -102,7 +119,7 @@ def get_flags(sock, interface):
 
 
 def get_active_device_info(skipped_interfaces=("lo",),
-                           skip_vlan=True, skip_alias=True):
+                           skip_vlan=True, skip_alias=True, extended=False):
     """
     Returns a dictionary containing information on each active network
     interface present on a machine.
@@ -124,6 +141,8 @@ def get_active_device_info(skipped_interfaces=("lo",),
             interface_info["broadcast_address"] = get_broadcast_address(
                 ifaddresses)
             interface_info["netmask"] = get_netmask(ifaddresses)
+            if extended:
+                interface_info["ip_addresses"] = get_ip_addresses(ifaddresses)
             interface_info["flags"] = get_flags(sock, interface.encode())
             speed, duplex = get_network_interface_speed(
                 sock, interface.encode())

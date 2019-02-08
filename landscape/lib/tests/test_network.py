@@ -4,6 +4,8 @@ import unittest
 from mock import patch, ANY, mock_open
 from netifaces import (
     AF_INET,
+    AF_LINK,
+    AF_UNIX,
     ifaddresses as _ifaddresses,
     interfaces as _interfaces,
 )
@@ -30,9 +32,8 @@ class NetworkInfoTest(BaseTestCase):
         """
         mock_get_network_interface_speed.return_value = (100, True)
 
-        device_info = get_active_device_info()
-        process = Popen(
-            ["/sbin/ifconfig"], stdout=PIPE, env={"LC_ALL": "C"})
+        device_info = get_active_device_info(extended=False)
+        process = Popen(["/sbin/ifconfig"], stdout=PIPE, env={"LC_ALL": "C"})
         result = process.communicate()[0].decode("ascii")
         interface_blocks = dict(
             [(block.split()[0].strip(":"), block.upper()) for block in
@@ -43,7 +44,7 @@ class NetworkInfoTest(BaseTestCase):
                 continue
             self.assertTrue(device["interface"] in result)
             block = interface_blocks[device["interface"]]
-            self.assertTrue(device["netmask"] in block)
+            self.assertIn(device["netmask"], block)
             self.assertIn(device["ip_address"], block)
             self.assertIn(device["mac_address"].upper(), block)
             self.assertIn(device["broadcast_address"], block)
@@ -61,6 +62,41 @@ class NetworkInfoTest(BaseTestCase):
 
         self.assertTrue(mock_get_network_interface_speed.call_count >= 1)
         mock_get_network_interface_speed.assert_called_with(ANY, ANY)
+
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_extended_info(self, mock_interfaces, mock_ifaddresses,
+                           mock_get_flags, mock_get_network_interface_speed):
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = "FLAGS"
+        mock_interfaces.return_value = ["test_iface"]
+        mock_ifaddresses.return_value = {
+            AF_LINK: [
+                {"addr": "aa:bb:cc:dd:ee:f0"},
+                {"addr": "aa:bb:cc:dd:ee:f1"}],
+            AF_INET: [
+                {"addr": "192.168.0.50", "netmask": "255.255.255.0"},
+                {"addr": "192.168.1.50", "netmask": "255.255.255.0"}]}
+
+        device_info = get_active_device_info(extended=True)
+
+        self.assertEqual(
+            device_info,
+            [{
+                'interface': 'test_iface',
+                'ip_address': '192.168.0.50',
+                'mac_address': 'aa:bb:cc:dd:ee:f0',
+                'broadcast_address': '0.0.0.0',
+                'netmask': '255.255.255.0',
+                'ip_addresses': {
+                    AF_INET: [
+                        {'addr': '192.168.0.50', 'netmask': '255.255.255.0'},
+                        {'addr': '192.168.1.50', 'netmask': '255.255.255.0'}]},
+                'flags': 'FLAGS',
+                'speed': 100,
+                'duplex': True}])
 
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
@@ -93,6 +129,16 @@ class NetworkInfoTest(BaseTestCase):
         mock_interfaces.return_value = _interfaces() + ["test_iface"]
         mock_ifaddresses.side_effect = lambda iface: (
             _ifaddresses(iface) if iface in _interfaces() else {})
+        device_info = get_active_device_info()
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("test_iface", interfaces)
+
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_skip_iface_with_no_ip(self, mock_interfaces, mock_ifaddresses):
+        mock_interfaces.return_value = _interfaces() + ["test_iface"]
+        mock_ifaddresses.side_effect = lambda iface: (
+             _ifaddresses(iface) if iface in _interfaces() else {AF_UNIX: []})
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("test_iface", interfaces)

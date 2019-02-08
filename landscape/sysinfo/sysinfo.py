@@ -47,9 +47,7 @@ class SysInfoPluginRegistry(PluginRegistry):
     def add_header(self, name, value):
         """Add a new information header to be displayed to the user.
 
-        Each header name is only present once.  If a header is added
-        multiple times, the last value added will be returned in
-        the get_headers() call.
+        Header names can be repeated.
 
         Headers with value None are not returned by get_headers(), but
         they still allocate a position in the list.  This fact may be
@@ -61,7 +59,9 @@ class SysInfoPluginRegistry(PluginRegistry):
             self._header_index[name] = len(self._headers)
             self._headers.append((name, value))
         else:
-            self._headers[index] = (name, value)
+            index += 1
+            self._header_index[name] = index
+            self._headers.insert(index, (name, value))
 
     def get_headers(self):
         """Get all information headers to be displayed to the user.
