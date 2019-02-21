@@ -753,6 +753,13 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEqual(self.config.access_group, u"webservers")
         mock_input.assert_not_called()
 
+    @mock.patch("landscape.client.configuration.input")
+    def test_stagger_defined_on_command_line(self, mock_input):
+        self.assertEqual(self.config.stagger_launch, 0)
+        self.config.load_command_line(["--stagger-launch", "0.5"])
+        self.assertEqual(self.config.stagger_launch, 0.5)
+        mock_input.assert_not_called()
+
     @mock.patch("landscape.client.configuration.show_help")
     def test_show_header(self, mock_show_help):
         help_snippet = "This script will"

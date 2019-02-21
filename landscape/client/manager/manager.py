@@ -12,7 +12,7 @@ class Manager(BrokerClient):
     name = "manager"
 
     def __init__(self, reactor, config):
-        super(Manager, self).__init__(reactor)
+        super(Manager, self).__init__(reactor, config)
         self.reactor = reactor
         self.config = config
         self.store = ManagerStore(self.config.store_filename)

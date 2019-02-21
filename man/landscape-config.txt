@@ -58,6 +58,8 @@ OPTIONS
                            EC2 or UEC. Read below for details.
   --tags=TAGS              Comma separated list of tag names to be sent to the
                            server.
+  --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to scatter various
+                           tasks of landscape.
   --import=FILENAME_OR_URL   Filename or URL to import configuration from.
                            Imported options behave as if they were passed in
                            the command line, with precedence being given to

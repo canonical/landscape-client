@@ -12,7 +12,7 @@ class Monitor(BrokerClient):
 
     def __init__(self, reactor, config, persist, persist_filename=None,
                  step_size=5 * 60):
-        super(Monitor, self).__init__(reactor)
+        super(Monitor, self).__init__(reactor, config)
         self.reactor = reactor
         self.config = config
         self.persist = persist
