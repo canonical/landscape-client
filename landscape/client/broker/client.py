@@ -106,8 +106,8 @@ class BrokerClientPlugin(object):
             if self.run_immediately:
                 self._run_with_error_log()
             if self.run_interval is not None:
-                delay = (random.random() * self.run_interval
-                         * self.client.config.stagger_launch)
+                delay = (random.random() * self.run_interval *
+                         self.client.config.stagger_launch)
                 debug("delaying start of %s for %d seconds",
                       format_object(self), delay)
                 self._loop = self.client.reactor.call_later(
