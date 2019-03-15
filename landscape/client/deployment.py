@@ -82,7 +82,7 @@ class Configuration(BaseConfiguration):
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
               - C{ssl_public_key}
               - C{ignore_sigint} (C{False})
-              - C{stagger_launch} (C{0})
+              - C{stagger_launch} (C{0.1})
         """
         parser = super(Configuration, self).make_parser()
         logging.add_cli_options(parser, logdir="/var/log/landscape")
@@ -113,7 +113,7 @@ class Configuration(BaseConfiguration):
                           help="The number of seconds between flushes to disk "
                                "for persistent data.")
         parser.add_option("--stagger-launch", metavar="STAGGER_RATIO",
-                          dest="stagger_launch", default=0, type=float,
+                          dest="stagger_launch", default=0.1, type=float,
                           help="Ratio, between 0 and 1, by which to scatter "
                                "various tasks of landscape.")
 

@@ -207,6 +207,7 @@ class BrokerClientHelper(RemoteBrokerHelper):
         # when the broker broadcasts and event
         test_case.client_reactor = FakeReactor()
         config = BrokerConfiguration()
+        config.stagger_launch = 0  # let's keep tests deterministic
         test_case.client = BrokerClient(test_case.client_reactor, config)
         test_case.client.broker = test_case.remote
 
