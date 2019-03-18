@@ -178,6 +178,26 @@ class BrokerClientTest(LandscapeTest):
         deferred.callback(123)
         self.assertEquals(runs, [True, True])
 
+    @mock.patch("random.random")
+    def test_run_interval_staggered(self, mock_random):
+        """
+        If a plugin has a run method and staggered_launch is set,
+        the launch gets delayed by a random factor.
+        """
+        mock_random.return_value = 1.0
+        plugin = BrokerClientPlugin()
+        plugin.run_interval = 60
+        plugin.run = mock.Mock()
+        self.client.config.stagger_launch = 0.5
+        self.client.add(plugin)
+        self.client_reactor.advance(30)
+        self.assertEqual(0, plugin.run.call_count)
+        self.client_reactor.advance(60)
+        self.assertEqual(1, plugin.run.call_count)
+        self.client_reactor.advance(60)
+        self.assertEqual(2, plugin.run.call_count)
+        self.assertEqual(1, mock_random.call_count)
+
     def test_run_immediately(self):
         """
         If a plugin has a C{run} method and C{run_immediately} is C{True},

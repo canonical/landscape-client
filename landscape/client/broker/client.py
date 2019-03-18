@@ -1,5 +1,6 @@
-from logging import info, exception, error
+from logging import info, exception, error, debug
 import sys
+import random
 
 from twisted.internet.defer import maybeDeferred, succeed
 
@@ -105,9 +106,18 @@ class BrokerClientPlugin(object):
             if self.run_immediately:
                 self._run_with_error_log()
             if self.run_interval is not None:
-                self._loop = self.client.reactor.call_every(
-                    self.run_interval,
-                    self._run_with_error_log)
+                delay = (random.random() * self.run_interval *
+                         self.client.config.stagger_launch)
+                debug("delaying start of %s for %d seconds",
+                      format_object(self), delay)
+                self._loop = self.client.reactor.call_later(
+                    delay, self._start_loop)
+
+    def _start_loop(self):
+        """Launch the client loop."""
+        self._loop = self.client.reactor.call_every(
+            self.run_interval,
+            self._run_with_error_log)
 
     def _run_with_error_log(self):
         """Wrap self.run in a Deferred with a logging error handler."""
@@ -140,10 +150,11 @@ class BrokerClient(object):
     """
     name = "client"
 
-    def __init__(self, reactor):
+    def __init__(self, reactor, config):
         super(BrokerClient, self).__init__()
         self.reactor = reactor
         self.broker = None
+        self.config = config
         self._registered_messages = {}
         self._plugins = []
         self._plugin_names = {}

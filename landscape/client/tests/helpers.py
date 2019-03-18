@@ -175,6 +175,7 @@ class MonitorHelper(FakeBrokerServiceHelper):
         persist_filename = test_case.makePersistFile()
         test_case.config = MonitorConfiguration()
         test_case.config.load(["-c", test_case.config_filename])
+        test_case.config.stagger_launch = 0  # let's keep tests deterministic
         test_case.reactor = FakeReactor()
         test_case.monitor = Monitor(
             test_case.reactor, test_case.config,
