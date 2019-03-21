@@ -100,11 +100,11 @@ def get_netmask(ifaddresses):
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
         the address data in L{get_active_interfaces}'s output.
     """
-    return ifaddresses[netifaces.AF_INET][0]['netmask']
+    return ifaddresses[netifaces.AF_INET][0].get('netmask', '')
 
 
 def get_ip_address(ifaddresses):
-    """Return the IP address associated to the interface.
+    """Return the first IPv4 address associated to the interface.
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
         the address data in L{get_active_interfaces}'s output.
@@ -115,12 +115,15 @@ def get_ip_address(ifaddresses):
 def get_mac_address(ifaddresses):
     """
     Return the hardware MAC address for an interface in human friendly form,
-    ie. six colon separated groups of two hexadecimal digits.
+    ie. six colon separated groups of two hexadecimal digits, if available;
+    otherwise an empty string.
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
         the address data in L{get_active_interfaces}'s output.
     """
-    return ifaddresses[netifaces.AF_LINK][0]['addr']
+    if netifaces.AF_LINK in ifaddresses:
+        return ifaddresses[netifaces.AF_LINK][0].get('addr', '')
+    return ''
 
 
 def get_flags(sock, interface):

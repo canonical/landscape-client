@@ -43,7 +43,7 @@ class NetworkInfoTest(BaseTestCase):
         for device in device_info:
             if device["mac_address"] == "00:00:00:00:00:00":
                 continue
-            self.assertTrue(device["interface"] in result)
+            self.assertIn(device["interface"], result)
             block = interface_blocks[device["interface"]]
             self.assertIn(device["netmask"], block)
             self.assertIn(device["ip_address"], block)
@@ -210,13 +210,29 @@ class NetworkInfoTest(BaseTestCase):
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("test_iface", interfaces)
 
-    def test_default_broadcast_addr(self):
-        # lo has no broadcast address.
-        self.assertNotIn("broadcast", _ifaddresses('lo')[AF_INET][0])
-        device_info = get_active_device_info(skipped_interfaces=())
-        lo = [i for i in device_info if i["interface"] == "lo"][0]
-        self.assertIn("broadcast_address", lo)
-        self.assertEqual(lo["broadcast_address"], "0.0.0.0")
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_no_macaddr_no_netmask_no_broadcast(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed):
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = 4163
+        mock_interfaces.return_value = ["test_iface"]
+        mock_ifaddresses.return_value = {AF_INET: [{"addr": "192.168.0.50"}]}
+        device_info = get_active_device_info(extended=False)
+        self.assertEqual(
+            device_info,
+            [{
+                'interface': 'test_iface',
+                'ip_address': '192.168.0.50',
+                'broadcast_address': '0.0.0.0',
+                'mac_address': '',
+                'netmask': '',
+                'flags': 4163,
+                'speed': 100,
+                'duplex': True}])
 
     def test_get_network_traffic(self):
         """
@@ -262,6 +278,7 @@ class NetworkInfoTest(BaseTestCase):
     def test_is_up(self):
         self.assertTrue(is_up(1))
         self.assertTrue(is_up(1 + 2 + 64 + 4096))
+        self.assertTrue(is_up(0b11111111111111))
         self.assertFalse(is_up(0))
         self.assertFalse(is_up(2 + 64 + 4096))
         self.assertFalse(is_up(0b11111111111110))
