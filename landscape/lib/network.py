@@ -26,6 +26,15 @@ def is_64():
     return struct.calcsize("l") == 8
 
 
+def is_up(flags):
+    """Returns C{True} if the interface is up, otherwise C{False}.
+
+    @param flags: the integer value of an interface's flags.
+    @see /usr/include/linux/if.h for the meaning of the flags.
+    """
+    return flags & 1
+
+
 def get_active_interfaces():
     """Generator yields (active network interface name, address data) tuples.
 
@@ -143,8 +152,11 @@ def get_active_device_info(skipped_interfaces=("lo",),
                 continue
             if skip_alias and ":" in interface:
                 continue
+            flags = get_flags(sock, interface.encode())
+            if not is_up(flags):
+                continue
             interface_info = {"interface": interface}
-            interface_info["flags"] = get_flags(sock, interface.encode())
+            interface_info["flags"] = flags
             speed, duplex = get_network_interface_speed(
                 sock, interface.encode())
             interface_info["speed"] = speed
