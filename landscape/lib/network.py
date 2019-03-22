@@ -26,6 +26,15 @@ def is_64():
     return struct.calcsize("l") == 8
 
 
+def is_up(flags):
+    """Returns C{True} if the interface is up, otherwise C{False}.
+
+    @param flags: the integer value of an interface's flags.
+    @see /usr/include/linux/if.h for the meaning of the flags.
+    """
+    return flags & 1
+
+
 def get_active_interfaces():
     """Generator yields (active network interface name, address data) tuples.
 
@@ -91,11 +100,11 @@ def get_netmask(ifaddresses):
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
         the address data in L{get_active_interfaces}'s output.
     """
-    return ifaddresses[netifaces.AF_INET][0]['netmask']
+    return ifaddresses[netifaces.AF_INET][0].get('netmask', '')
 
 
 def get_ip_address(ifaddresses):
-    """Return the IP address associated to the interface.
+    """Return the first IPv4 address associated to the interface.
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
         the address data in L{get_active_interfaces}'s output.
@@ -106,12 +115,15 @@ def get_ip_address(ifaddresses):
 def get_mac_address(ifaddresses):
     """
     Return the hardware MAC address for an interface in human friendly form,
-    ie. six colon separated groups of two hexadecimal digits.
+    ie. six colon separated groups of two hexadecimal digits, if available;
+    otherwise an empty string.
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
         the address data in L{get_active_interfaces}'s output.
     """
-    return ifaddresses[netifaces.AF_LINK][0]['addr']
+    if netifaces.AF_LINK in ifaddresses:
+        return ifaddresses[netifaces.AF_LINK][0].get('addr', '')
+    return ''
 
 
 def get_flags(sock, interface):
@@ -143,8 +155,11 @@ def get_active_device_info(skipped_interfaces=("lo",),
                 continue
             if skip_alias and ":" in interface:
                 continue
+            flags = get_flags(sock, interface.encode())
+            if not is_up(flags):
+                continue
             interface_info = {"interface": interface}
-            interface_info["flags"] = get_flags(sock, interface.encode())
+            interface_info["flags"] = flags
             speed, duplex = get_network_interface_speed(
                 sock, interface.encode())
             interface_info["speed"] = speed

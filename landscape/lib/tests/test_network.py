@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 from landscape.lib import testing
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
-    get_fqdn, get_network_interface_speed)
+    get_fqdn, get_network_interface_speed, is_up)
 
 
 class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
@@ -43,7 +43,7 @@ class NetworkInfoTest(BaseTestCase):
         for device in device_info:
             if device["mac_address"] == "00:00:00:00:00:00":
                 continue
-            self.assertTrue(device["interface"] in result)
+            self.assertIn(device["interface"], result)
             block = interface_blocks[device["interface"]]
             self.assertIn(device["netmask"], block)
             self.assertIn(device["ip_address"], block)
@@ -71,7 +71,7 @@ class NetworkInfoTest(BaseTestCase):
     def test_extended_info(self, mock_interfaces, mock_ifaddresses,
                            mock_get_flags, mock_get_network_interface_speed):
         mock_get_network_interface_speed.return_value = (100, True)
-        mock_get_flags.return_value = "FLAGS"
+        mock_get_flags.return_value = 4163
         mock_interfaces.return_value = ["test_iface"]
         mock_ifaddresses.return_value = {
             AF_LINK: [
@@ -101,7 +101,7 @@ class NetworkInfoTest(BaseTestCase):
                     AF_INET6: [
                         {"addr": "2001::1"},
                         {"addr": "2002::2"}]},
-                'flags': 'FLAGS',
+                'flags': 4163,
                 'speed': 100,
                 'duplex': True}])
 
@@ -113,7 +113,7 @@ class NetworkInfoTest(BaseTestCase):
             self, mock_interfaces, mock_ifaddresses, mock_get_flags,
             mock_get_network_interface_speed):
         mock_get_network_interface_speed.return_value = (100, True)
-        mock_get_flags.return_value = "FLAGS"
+        mock_get_flags.return_value = 4163
         mock_interfaces.return_value = ["test_iface"]
         mock_ifaddresses.return_value = {
             AF_LINK: [{"addr": "aa:bb:cc:dd:ee:f0"}],
@@ -131,7 +131,7 @@ class NetworkInfoTest(BaseTestCase):
             self, mock_interfaces, mock_ifaddresses, mock_get_flags,
             mock_get_network_interface_speed):
         mock_get_network_interface_speed.return_value = (100, True)
-        mock_get_flags.return_value = "FLAGS"
+        mock_get_flags.return_value = 4163
         mock_interfaces.return_value = ["test_iface"]
         mock_ifaddresses.return_value = {
             AF_LINK: [{"addr": "aa:bb:cc:dd:ee:f0"}],
@@ -143,7 +143,7 @@ class NetworkInfoTest(BaseTestCase):
             device_info,
             [{
                 'interface': 'test_iface',
-                'flags': 'FLAGS',
+                'flags': 4163,
                 'speed': 100,
                 'duplex': True,
                 'ip_addresses': {AF_INET6: [{'addr': '2001::1'}]}}])
@@ -193,13 +193,46 @@ class NetworkInfoTest(BaseTestCase):
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("test_iface", interfaces)
 
-    def test_default_broadcast_addr(self):
-        # lo has no broadcast address.
-        self.assertNotIn("broadcast", _ifaddresses('lo')[AF_INET][0])
-        device_info = get_active_device_info(skipped_interfaces=())
-        lo = [i for i in device_info if i["interface"] == "lo"][0]
-        self.assertIn("broadcast_address", lo)
-        self.assertEqual(lo["broadcast_address"], "0.0.0.0")
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_skip_iface_down(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed):
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = 0
+        mock_interfaces.return_value = ["test_iface"]
+        mock_ifaddresses.return_value = {
+            AF_LINK: [{"addr": "aa:bb:cc:dd:ee:f0"}],
+            AF_INET: [{"addr": "192.168.1.50", "netmask": "255.255.255.0"}]}
+        device_info = get_active_device_info()
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("test_iface", interfaces)
+
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_no_macaddr_no_netmask_no_broadcast(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed):
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = 4163
+        mock_interfaces.return_value = ["test_iface"]
+        mock_ifaddresses.return_value = {AF_INET: [{"addr": "192.168.0.50"}]}
+        device_info = get_active_device_info(extended=False)
+        self.assertEqual(
+            device_info,
+            [{
+                'interface': 'test_iface',
+                'ip_address': '192.168.0.50',
+                'broadcast_address': '0.0.0.0',
+                'mac_address': '',
+                'netmask': '',
+                'flags': 4163,
+                'speed': 100,
+                'duplex': True}])
 
     def test_get_network_traffic(self):
         """
@@ -222,7 +255,7 @@ class NetworkInfoTest(BaseTestCase):
             self, mock_interfaces, mock_ifaddresses, mock_get_flags,
             mock_get_network_interface_speed):
         mock_get_network_interface_speed.return_value = (100, True)
-        mock_get_flags.return_value = "FLAGS"
+        mock_get_flags.return_value = 4163
         mock_interfaces.return_value = ["test_iface"]
         mock_ifaddresses.return_value = {
             AF_LINK: [
@@ -237,10 +270,18 @@ class NetworkInfoTest(BaseTestCase):
             device_info,
             [{
                 'interface': 'test_iface',
-                'flags': 'FLAGS',
+                'flags': 4163,
                 'speed': 100,
                 'duplex': True,
                 'ip_addresses': {AF_INET6: [{"addr": "2001::1"}]}}])
+
+    def test_is_up(self):
+        self.assertTrue(is_up(1))
+        self.assertTrue(is_up(1 + 2 + 64 + 4096))
+        self.assertTrue(is_up(0b11111111111111))
+        self.assertFalse(is_up(0))
+        self.assertFalse(is_up(2 + 64 + 4096))
+        self.assertFalse(is_up(0b11111111111110))
 
 
 # exact output of cat /proc/net/dev snapshot with line continuations for pep8
