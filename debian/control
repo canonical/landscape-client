@@ -5,7 +5,7 @@ Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
 Build-Depends: debhelper (>= 7), po-debconf, libdistro-info-perl,
                dh-python, python3-dev, python3-distutils-extra,
-               lsb-release, gawk
+               lsb-release, gawk, dh-systemd (>= 1.3)
 Standards-Version: 3.8.2
 X-Python3-Version: >= 3.5
 

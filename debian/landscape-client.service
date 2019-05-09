@@ -1,0 +1,15 @@
+[Unit]
+Description=Landscape client daemons
+Documentation=man:landscape-client(1)
+Documentation=man:landscape-config(1)
+After=local-fs.target
+After=remote-fs.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=forking
+Group=landscape
+ExecStart=/usr/bin/landscape-client --daemon --pid-file /run/landscape/landscape-client.pid
+PIDFile=/run/landscape/landscape-client.pid
