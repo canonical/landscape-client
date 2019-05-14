@@ -6,6 +6,9 @@ import os
 from landscape.lib.fs import read_binary_file, read_text_file
 
 
+DMI_FILES = ("sys_vendor", "chassis_vendor", "bios_vendor", "product_name")
+
+
 def get_vm_info(root_path="/"):
     """
     Return a bytestring with the virtualization type if it's known, an empty
@@ -22,7 +25,7 @@ def get_vm_info(root_path="/"):
     # Iterate through all dmi *_vendors, as clouds can (and will) customize
     # sysinfo values. (https://libvirt.org/formatdomain.html#elementsSysinfo)
     dmi_info_path = os.path.join(root_path, "sys/class/dmi/id")
-    for dmi_info_file in ("sys_vendor", "chassis_vendor", "bios_vendor"):
+    for dmi_info_file in DMI_FILES:
         dmi_vendor_path = os.path.join(dmi_info_path, dmi_info_file)
         if not os.path.exists(dmi_vendor_path):
             continue
@@ -76,6 +79,7 @@ def _get_vm_by_vendor(sys_vendor_path):
         (b"nutanix", b"kvm"),
         (b"openstack", b"kvm"),
         (b"qemu", b"kvm"),
+        (b"kvm", b"kvm"),
         (b"vmware", b"vmware"),
     )
     for name, vm_type in content_vendors_map:
