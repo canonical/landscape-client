@@ -12,17 +12,16 @@ class SystemdConfig(object):
     @param filename: Path to the file holding service env variables.
     """
 
-    def __init__(self, filename="/etc/default/landscape-client"):
-        self._filename = filename
-
     def set_start_on_boot(self, flag):
         """Make the service decide to start the client when it's run."""
         action = "enable" if flag else "disable"
-        Popen(["systemctl", action, "landscape-client.service"]).wait()
+        cmd = ["systemctl", action, "landscape-client.service"]
+        Popen(cmd).wait()
 
     def restart_landscape(self):
         """Restart the Landscape client service."""
-        if Popen(["systemctl", "restart", "landscape-client.service"]).wait():
+        cmd = ["systemctl", "restart", "landscape-client.service"]
+        if Popen(cmd).wait():
             raise ProcessError("Could not restart client")
 
     def stop_landscape(self):
