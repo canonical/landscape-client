@@ -102,6 +102,9 @@ END
         # user information.  The flag file will be removed by the client when
         # the update completes.
         DATA_PATH="`grep ^data_path /etc/landscape/client.conf | cut -d= -f2 | tr -d '[[:space:]]'`"
+        if [ -z "$DATA_PATH" ]; then
+            DATA_PATH=/var/lib/landscape/client
+        fi
         install --owner=landscape --directory $DATA_PATH
         USER_UPDATE_FLAG_FILE="$DATA_PATH/user-update-flag"
         install --owner=landscape /dev/null $USER_UPDATE_FLAG_FILE
