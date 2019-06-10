@@ -179,6 +179,11 @@ class GetVMInfoTest(BaseTestCase):
         self.make_dmi_info("sys_vendor", "Some other vendor")
         self.assertEqual(b"", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_kvm_product(self):
+        """get_vm_info returns 'kvm', if product_name is 'KVM'."""
+        self.make_dmi_info("product_name", "KVM")
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
+
 
 class GetContainerInfoTest(BaseTestCase):
 
