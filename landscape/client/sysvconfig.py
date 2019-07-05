@@ -7,10 +7,7 @@ class ProcessError(Exception):
 
 
 class SystemdConfig(object):
-    """Configure and drive the Landscape client service.
-
-    @param filename: Path to the file holding service env variables.
-    """
+    """Configure and drive the Landscape client service."""
 
     def set_start_on_boot(self, flag):
         """Make the service decide to start the client when it's run."""
