@@ -9,7 +9,6 @@ After=remote-fs.target
 WantedBy=multi-user.target
 
 [Service]
-Type=forking
+Type=simple
 Group=landscape
-ExecStart=/usr/bin/landscape-client --daemon --pid-file /run/landscape/landscape-client.pid
-PIDFile=/run/landscape/landscape-client.pid
+ExecStart=/usr/bin/landscape-client
