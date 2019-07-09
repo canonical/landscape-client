@@ -8,7 +8,7 @@ from landscape.client.sysvconfig import SystemdConfig, ProcessError
 class SystemdConfigTest(LandscapeTest):
 
     def setUp(self):
-        super().setUp()
+        super(SystemdConfigTest, self).setUp()
         patcher = mock.patch("landscape.client.sysvconfig.Popen")
         self.mock_popen = patcher.start()
         self.mock_popen.return_value.wait.return_value = 0
