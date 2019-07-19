@@ -119,6 +119,26 @@ END
                 sed -i 's/^deb file:/deb [ trusted=yes ] file:/' $LANDSCAPE_INTERNAL_SOURCES
             fi
         fi
+
+        # XXX handle regression with systemd 1.19.3 (disco+) refusing to stop
+        # old sysvinit service if pid file is not root-owned. Thus we
+        # chown it for the upggrade.
+        if [ -f /etc/init.d/landscape-client ]; then
+            chown -f root:root /var/run/landscape/landscape-client.pid || true
+            invoke-rc.d landscape-client stop >/dev/null
+            update-rc.d landscape-client remove >/dev/null
+            rm -f /etc/init.d/landscape-client
+        fi
+
+        # Migrate old sysvinit config to systemd
+        DEFAULTS=/etc/default/landscape-client
+        if [ -f $DEFAULTS ]; then
+            RUN=$(. $DEFAULTS; echo $RUN)
+            if [ "$RUN" = "1" ]; then
+                systemctl enable landscape-client.service
+            fi
+            rm -f $DEFAULTS
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

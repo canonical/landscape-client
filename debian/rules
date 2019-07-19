@@ -66,7 +66,9 @@ binary-arch: build install
 	dh_installman
 	dh_installchangelogs
 	dh_install --sourcedir debian/tmp/
-	dh_installinit -- start 45 2 3 4 5 . stop 15 0 1 6 .
+	dh_systemd_enable --no-enable
+	dh_installinit
+	dh_systemd_start
 	dh_installlogrotate
 	dh_installdebconf
 	dh_strip
