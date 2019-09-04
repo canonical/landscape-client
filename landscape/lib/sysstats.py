@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import os.path
+import re
 import struct
 import time
 
@@ -89,7 +90,10 @@ def get_uptime(uptime_file=u"/proc/uptime"):
 
 def get_thermal_zones(thermal_zone_path=None):
     if thermal_zone_path is None:
-        thermal_zone_path = "/proc/acpi/thermal_zone"
+        if os.path.isdir("/sys/class/thermal"):
+            thermal_zone_path = "/sys/class/thermal"
+        else:
+            thermal_zone_path = "/proc/acpi/thermal_zone"
     if os.path.isdir(thermal_zone_path):
         for zone_name in sorted(os.listdir(thermal_zone_path)):
             yield ThermalZone(thermal_zone_path, zone_name)
@@ -104,17 +108,26 @@ class ThermalZone(object):
     def __init__(self, base_path, name):
         self.name = name
         self.path = os.path.join(base_path, name)
-        temperature_path = os.path.join(self.path, "temperature")
+        temperature_path = os.path.join(self.path, "temp")
         if os.path.isfile(temperature_path):
-            for line in open(temperature_path):
-                if line.startswith("temperature:"):
-                    self.temperature = line[12:].strip()
-                    try:
-                        value, unit = self.temperature.split()
-                        self.temperature_value = int(value)
-                        self.temperature_unit = unit
-                    except ValueError:
-                        pass
+            with open(temperature_path) as f:
+                line = f.readline()
+                if re.match(r'^\d+\s*$', line):
+                    self.temperature_value = int(line.strip()) / 1000
+                    self.temperature_unit = ' C'
+                    self.temperature = '{:.1f}{}'.format(self.temperature_value, self.temperature_unit)
+        else:
+            temperature_path = os.path.join(self.path, "temperature")
+            if os.path.isfile(temperature_path):
+                for line in open(temperature_path):
+                    if line.startswith("temperature:"):
+                        self.temperature = line[12:].strip()
+                        try:
+                            value, unit = self.temperature.split()
+                            self.temperature_value = int(value)
+                            self.temperature_unit = unit
+                        except ValueError:
+                            pass
 
 
 class LoginInfo(object):
