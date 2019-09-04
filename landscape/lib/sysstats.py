@@ -114,8 +114,9 @@ class ThermalZone(object):
                 line = f.readline()
                 if re.match(r'^\d+\s*$', line):
                     self.temperature_value = int(line.strip()) / 1000
-                    self.temperature_unit = ' C'
-                    self.temperature = '{:.1f}{}'.format(self.temperature_value, self.temperature_unit)
+                    self.temperature_unit = 'C'
+                    self.temperature = '{:.1f}{}'.format(
+                            self.temperature_value, self.temperature_unit)
         else:
             temperature_path = os.path.join(self.path, "temperature")
             if os.path.isfile(temperature_path):
