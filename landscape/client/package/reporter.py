@@ -755,7 +755,7 @@ class PackageReporter(PackageTaskHandler):
             "%(not_locked)d not locked, "
             "%(not_auto)d not autoremovable, "
             "%(not_security)d not security.",
-            extra=dict(
+            dict(
                 installed=len(new_installed), available=len(new_available),
                 upgrades=len(new_upgrades), locked=len(new_locked),
                 auto=len(new_autoremovable), not_installed=len(not_installed),
