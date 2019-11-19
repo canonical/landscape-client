@@ -328,10 +328,13 @@ class AptFacade(object):
 
     def _create_packages_file(self, deb_dir):
         """Create a Packages file in a directory with debs."""
-        packages_contents = "\n".join(
-            self.get_package_stanza(os.path.join(deb_dir, filename))
-            for filename in sorted(os.listdir(deb_dir)))
-        create_text_file(os.path.join(deb_dir, "Packages"), packages_contents)
+        packages = sorted(os.listdir(deb_dir))
+        with open(os.path.join(deb_dir, "Packages"), "wb", 0) as dest:
+            for i, filename in enumerate(packages):
+                if i > 0:
+                    dest.write(b"\n")
+                deb_file = os.path.join(deb_dir, filename)
+                self.write_package_stanza(deb_file, dest)
 
     def get_channels(self):
         """Return a list of channels configured.
@@ -352,10 +355,11 @@ class AptFacade(object):
             entry.set_enabled(False)
         sources_list.save()
 
-    def get_package_stanza(self, deb_path):
-        """Return a stanza for the package to be included in a Packages file.
+    def write_package_stanza(self, deb_path, dest):
+        """Write a stanza for the package to a Packages file.
 
         @param deb_path: The path to the deb package.
+        @param dest: A writable package file.
         """
         deb_file = open(deb_path)
         deb = apt_inst.DebFile(deb_file)
@@ -367,11 +371,19 @@ class AptFacade(object):
         md5 = hashlib.md5(contents).hexdigest()
         sha1 = hashlib.sha1(contents).hexdigest()
         sha256 = hashlib.sha256(contents).hexdigest()
-        # Use rewrite_section to ensure that the field order is correct.
-        return apt_pkg.rewrite_section(
-            apt_pkg.TagSection(control), apt_pkg.REWRITE_PACKAGE_ORDER,
-            [("Filename", filename), ("Size", str(size)),
-             ("MD5sum", md5), ("SHA1", sha1), ("SHA256", sha256)])
+        tag_section = apt_pkg.TagSection(control)
+        new_tags = [("Filename", filename), ("Size", str(size)),
+                    ("MD5sum", md5), ("SHA1", sha1), ("SHA256", sha256)]
+        try:
+            tag_section.write(
+                dest,
+                apt_pkg.REWRITE_PACKAGE_ORDER,
+                [apt_pkg.TagRewrite(k, v) for k, v in new_tags])
+        except AttributeError:
+            # support for python-apt < 1.9
+            section = apt_pkg.rewrite_section(
+                tag_section, apt_pkg.REWRITE_PACKAGE_ORDER, new_tags)
+            dest.write(section.encode("utf-8"))
 
     def get_arch(self):
         """Return the architecture APT is configured to use."""
@@ -763,7 +775,11 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
             fixer.remove(version.package._pkg)
-            fixer.install_protect()
+            try:
+                # obsoleted in python-apt 1.9
+                fixer.install_protect()
+            except AttributeError:
+                pass
 
         if held_package_names:
             raise TransactionError(

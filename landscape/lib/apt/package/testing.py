@@ -1,6 +1,5 @@
 import base64
 import os
-import textwrap
 import time
 
 import apt_inst
@@ -35,31 +34,28 @@ class AptFacadeHelper(object):
                      control_fields=None):
         if control_fields is None:
             control_fields = {}
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: %(architecture)s
-                Source: source
-                Version: %(version)s
-                Description: short description
-                 %(description)s
-                """ % {
-                    "name": name, "version": version,
-                    "architecture": architecture,
-                    "description": description}).encode("utf-8")
-        # We want to re-order the TagSection, but it requires bytes as input.
-        # As we also want to write a binary file, we have to explicitly pass
-        # the hardly documented `bytes=True` to TagSection as it would be
-        # returned as unicode in Python 3 otherwise. In future versions of
-        # apt_pkg there should be a TagSection.write() which is recommended.
-        package_stanza = apt_pkg.rewrite_section(
-            apt_pkg.TagSection(package_stanza, bytes=True),
-            apt_pkg.REWRITE_PACKAGE_ORDER,
-            list(control_fields.items()))
-        append_binary_file(packages_file, b"\n" + package_stanza + b"\n")
+        package_stanza = {
+            "Package": name,
+            "Priority": "optional",
+            "Section": "misc",
+            "Installed-Size": "1234",
+            "Maintainer": "Someone",
+            "Architecture": architecture,
+            "Source": "source",
+            "Version": version,
+            "Description": "short description\n " + description}
+        package_stanza.update(control_fields)
+
+        # avoid deprecated apt_pkg.rewrite_section
+        with open(packages_file, "ab", 0) as dest:
+            dest.write(b"\n")
+            for key in apt_pkg.REWRITE_PACKAGE_ORDER:
+                try:
+                    dest.write(u"{}: {}\n".format(
+                        key, package_stanza[key]).encode("utf-8"))
+                except KeyError:
+                    pass
+            dest.write(b"\n")
 
     def _add_system_package(self, name, architecture="all", version="1.0",
                             control_fields=None):
