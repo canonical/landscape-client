@@ -1,7 +1,6 @@
 from datetime import datetime
 import os
 import os.path
-import re
 import struct
 import time
 
