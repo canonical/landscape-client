@@ -110,13 +110,18 @@ class ThermalZone(object):
         self.path = os.path.join(base_path, name)
         temperature_path = os.path.join(self.path, "temp")
         if os.path.isfile(temperature_path):
-            with open(temperature_path) as f:
-                line = f.readline()
-                if re.match(r'^\d+\s*$', line):
-                    self.temperature_value = int(line.strip()) / 1000
-                    self.temperature_unit = 'C'
-                    self.temperature = '{:.1f}{}'.format(
-                            self.temperature_value, self.temperature_unit)
+            try:
+                with open(temperature_path) as f:
+                    line = f.readline()
+                    try:
+                        self.temperature_value = int(line.strip()) / 1000
+                        self.temperature_unit = 'C'
+                        self.temperature = '{:.1f} {}'.format(
+                                self.temperature_value, self.temperature_unit)
+                    except ValueError:
+                        pass
+            except EnvironmentError:
+                pass
         else:
             temperature_path = os.path.join(self.path, "temperature")
             if os.path.isfile(temperature_path):

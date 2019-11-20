@@ -135,10 +135,10 @@ class UptimeTest(BaseTestCase):
                          "17608.24")
 
 
-class ThermalZoneTest(BaseTestCase):
+class ProcfsThermalZoneTest(BaseTestCase):
 
     def setUp(self):
-        super(ThermalZoneTest, self).setUp()
+        super(ProcfsThermalZoneTest, self).setUp()
         self.thermal_zone_path = self.makeDir()
 
     def get_thermal_zones(self):
@@ -153,7 +153,7 @@ class ThermalZoneTest(BaseTestCase):
         file.close()
 
 
-class GetThermalZonesTest(ThermalZoneTest):
+class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
 
     def test_non_existent_thermal_zone_directory(self):
         thermal_zones = list(get_thermal_zones("/non-existent/thermal_zone"))
@@ -209,6 +209,89 @@ class GetThermalZonesTest(ThermalZoneTest):
         file = open(temperature_path, "w")
         file.write("bad-label: foo bar\n")
         file.close()
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+        self.assertEqual(thermal_zones[0].temperature, None)
+        self.assertEqual(thermal_zones[0].temperature_value, None)
+        self.assertEqual(thermal_zones[0].temperature_unit, None)
+
+
+class ThermalZoneTest(BaseTestCase):
+
+    def setUp(self):
+        super(ThermalZoneTest, self).setUp()
+        self.thermal_zone_path = self.makeDir()
+
+    def get_thermal_zones(self):
+        return list(get_thermal_zones(self.thermal_zone_path))
+
+    def write_thermal_zone(self, name, temperature):
+        zone_path = os.path.join(self.thermal_zone_path, name)
+        if not os.path.isdir(zone_path):
+            os.mkdir(zone_path)
+        file = open(os.path.join(zone_path, "temp"), "w")
+        file.write(temperature)
+        file.close()
+
+
+class GetSysfsThermalZonesTest(ThermalZoneTest):
+
+    def test_non_existent_thermal_zone_directory(self):
+        thermal_zones = list(get_thermal_zones("/non-existent/thermal_zone"))
+        self.assertEqual(thermal_zones, [])
+
+    def test_empty_thermal_zone_directory(self):
+        self.assertEqual(self.get_thermal_zones(), [])
+
+    def test_one_thermal_zone(self):
+        self.write_thermal_zone("THM0", "50000")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+
+        self.assertEqual(thermal_zones[0].name, "THM0")
+        self.assertEqual(thermal_zones[0].temperature, "50.0 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50.0)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(thermal_zones[0].path,
+                         os.path.join(self.thermal_zone_path, "THM0"))
+
+    def test_two_thermal_zones(self):
+        self.write_thermal_zone("THM0", "50000")
+        self.write_thermal_zone("THM1", "51000")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 2)
+        self.assertEqual(thermal_zones[0].temperature, "50.0 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50.0)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(thermal_zones[1].temperature, "51.0 C")
+        self.assertEqual(thermal_zones[1].temperature_value, 51.0)
+        self.assertEqual(thermal_zones[1].temperature_unit, "C")
+
+    def test_non_int_temperature(self):
+        self.write_thermal_zone("THM0", "50432")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+
+        self.assertEqual(thermal_zones[0].name, "THM0")
+        self.assertEqual(thermal_zones[0].temperature, "50.4 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50.432)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(thermal_zones[0].path,
+                         os.path.join(self.thermal_zone_path, "THM0"))
+
+    def test_badly_formatted_temperature(self):
+        self.write_thermal_zone("THM0", "SOMETHING BAD")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+        self.assertEqual(thermal_zones[0].temperature, None)
+        self.assertEqual(thermal_zones[0].temperature_value, None)
+        self.assertEqual(thermal_zones[0].temperature_unit, None)
+
+    def test_read_error(self):
+        self.write_thermal_zone("THM0", "50000")
+        temperature_path = os.path.join(self.thermal_zone_path,
+                                        "THM0/temp")
+        os.chmod(temperature_path, 0o200) # --w-------
         thermal_zones = self.get_thermal_zones()
         self.assertEqual(len(thermal_zones), 1)
         self.assertEqual(thermal_zones[0].temperature, None)
