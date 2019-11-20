@@ -291,7 +291,7 @@ class GetSysfsThermalZonesTest(ThermalZoneTest):
         self.write_thermal_zone("THM0", "50000")
         temperature_path = os.path.join(self.thermal_zone_path,
                                         "THM0/temp")
-        os.chmod(temperature_path, 0o200) # --w-------
+        os.chmod(temperature_path, 0o200)  # --w-------
         thermal_zones = self.get_thermal_zones()
         self.assertEqual(len(thermal_zones), 1)
         self.assertEqual(thermal_zones[0].temperature, None)
