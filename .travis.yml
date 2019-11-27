@@ -10,7 +10,16 @@ matrix:
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get -y install landscape-common"';
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo chown -R ubuntu:ubuntu /target"';
         - sg lxd -c 'lxc exec testcontainer -- sudo -i -u ubuntu sh -c "cd /target; make ${TARGET}" ubuntu';
-    - env: TARGET=check3 IMAGE=ubuntu-daily:bionic
+    - env: TARGET=check3 IMAGE=ubuntu:bionic
+      script:
+        # bionic needs cgroupv2 not on this kernel, so nudge the system a bit
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "dhclient eth0; cloud-init init"';
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get update && sudo apt-get -y install make python3-distutils-extra python3-mock python3-twisted python3-apt python-twisted-core python3-pycurl python3-netifaces"';
+        # creates user and dirs, some used through tests
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get -y install landscape-common"';
+        - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo chown -R ubuntu:ubuntu /target"';
+        - sg lxd -c 'lxc exec testcontainer -- sudo -i -u ubuntu sh -c "cd /target; make ${TARGET}" ubuntu';
+    - env: TARGET=check3 IMAGE=ubuntu-daily:focal
       script:
         # bionic needs cgroupv2 not on this kernel, so nudge the system a bit
         - sg lxd -c 'lxc exec testcontainer -- sh -c "dhclient eth0; cloud-init init"';
