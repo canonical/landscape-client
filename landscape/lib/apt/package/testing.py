@@ -1,5 +1,6 @@
 import base64
 import os
+import textwrap
 import time
 
 import apt_inst
@@ -46,15 +47,24 @@ class AptFacadeHelper(object):
             "Description": "short description\n " + description}
         package_stanza.update(control_fields)
 
-        # avoid deprecated apt_pkg.rewrite_section
-        with open(packages_file, "ab", 0) as dest:
-            dest.write(b"\n")
-            for key in apt_pkg.REWRITE_PACKAGE_ORDER:
-                try:
-                    dest.write(u"{}: {}\n".format(
-                        key, package_stanza[key]).encode("utf-8"))
-                except KeyError:
-                    pass
+        try:
+            with open(packages_file, "rb") as src:
+                packages = src.read().split(b"\n\n")
+        except IOError:
+            packages = []
+        if b"" in packages:
+            packages.remove(b"")
+
+        new_package = u"\n".join([
+            u"{}: {}".format(key, package_stanza[key])
+            for key in apt_pkg.REWRITE_PACKAGE_ORDER
+            if key in package_stanza
+        ]).encode("utf-8")
+        packages.append(new_package)
+
+        with open(packages_file, "wb", 0) as dest:
+            # keep Pacakges sorted to avoid odd behaviours like changing IDs.
+            dest.write(b"\n\n".join(sorted(packages)))
             dest.write(b"\n")
 
     def _add_system_package(self, name, architecture="all", version="1.0",
