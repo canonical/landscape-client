@@ -916,13 +916,13 @@ class AptPackageChangerTest(LandscapeTest):
         message.
         """
         self._add_system_package("foo")
-        self._add_system_package("bar")
+        self._add_system_package("baz")
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
-        self._hash_packages_by_name(self.facade, self.store, "bar")
+        self._hash_packages_by_name(self.facade, self.store, "baz")
         [foo] = self.facade.get_packages_by_name("foo")
-        [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.set_package_hold(bar)
+        [baz] = self.facade.get_packages_by_name("baz")
+        self.facade.set_package_hold(baz)
         # Make sure that the mtime of the dpkg status file is old when
         # apt loads it, so that it will be reloaded when asserting the
         # test result.
@@ -931,7 +931,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-packages",
                                         "hold": [foo.package.id],
-                                        "remove-hold": [bar.package.id],
+                                        "remove-hold": [baz.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
