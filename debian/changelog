@@ -1,3 +1,28 @@
+landscape-client (19.12-0ubuntu1) focal; urgency=medium
+
+  * New upstream release 19.12:
+    - Modernized packaging.
+    - Added support for python-apt 1.9
+    - Converted init script to systemd service.
+    - Set default value if data_path is missing. (LP: #1728681)
+    - Sysinfo: add support for multiple IPv6 addresses per interface.
+      (LP: #829379)
+    - Clear hash id database on package resync. (LP: #1616116)
+    - Permit environments containing unicode chars for script execution.
+      (LP: #1765518)
+    - Set LANG in sysinfo wrapper. (LP: #1780071)
+    - Avoid leaking memory through unused twisted logs. (LP: #1685885)
+    - Handle unicode apt-sources-replace (LP: #1771443)
+    - Add simfs to the whitelist of watched file-systems (LP: #1499104)
+    - Return non-blank message when tasks already performed. (LP: #928933)
+    - Override apt progress pulse(). (LP: #1758529)
+    - Improvements on vm_info detection (LP: #1754073) (LP: #1799843)
+      (LP: #1828217)
+    - Remove the landscape url from motd output by removing LandscapeLink
+      from the list of default landscape-sysinfo plugins. (LP: #1753936) 
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Wed, 04 Dec 2019 15:08:27 +0000
+
 landscape-client (18.03-0ubuntu1) bionic; urgency=medium
 
   * New trunk build
