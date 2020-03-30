@@ -9,7 +9,7 @@ matrix:
         # creates user and dirs, some used through tests
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo apt-get -y install landscape-common"';
         - sg lxd -c 'lxc exec testcontainer -- sh -c "sudo chown -R ubuntu:ubuntu /target"';
-        - sg lxd -c 'lxc exec testcontainer -- sudo -i -u ubuntu sh -c "cd /target; make ${TARGET}" ubuntu';
+        - sg lxd -c 'lxc exec testcontainer -- sudo -i -u ubuntu sh -c "cd /target; make ${TARGET} TRIAL=/usr/bin/trial" ubuntu';
     - env: TARGET=check3 IMAGE=ubuntu:bionic
       script:
         # bionic needs cgroupv2 not on this kernel, so nudge the system a bit
