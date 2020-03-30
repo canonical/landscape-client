@@ -14,7 +14,7 @@ from landscape.client.manager.processkiller import (
 
 
 def get_active_process():
-    return subprocess.Popen(["python", "-c", "raw_input()"],
+    return subprocess.Popen(["python3", "-c", "input()"],
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)

@@ -70,7 +70,7 @@ class RunScriptTests(LandscapeTest):
 
     def test_other_interpreter(self):
         """Non-shell interpreters can be specified."""
-        result = self.plugin.run_script("/usr/bin/python", "print 'hi'")
+        result = self.plugin.run_script("/usr/bin/python3", "print('hi')")
         result.addCallback(self.assertEqual, "hi\n")
         return result
 
