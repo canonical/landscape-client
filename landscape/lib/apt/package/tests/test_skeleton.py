@@ -1,3 +1,4 @@
+import locale
 import unittest
 
 from landscape.lib import testing
@@ -147,15 +148,22 @@ class SkeletonAptTest(BaseTestCase):
     def test_build_skeleton_with_unicode_and_non_ascii(self):
         """
         If with_unicode and with_info are passed to build_skeleton_apt,
-        the description is decoded and non-ascii chars replaced.
+        the description is decoded.
         """
+        # Py2 used to convert to lossy ascii (thus LC_ in Makefile)
+        # Py3 doesn't, and python3-apt assumes UTF8 (LP: #1827857).
+        # If you revisit this test, also check reporter.main(), which
+        # should set this globally to the reporter process.
+        locale.setlocale(locale.LC_CTYPE, "C.UTF-8")
+        self.addCleanup(locale.resetlocale)
+
         self._add_package_to_deb_dir(
             self.skeleton_repository_dir, "pkg", description=u"T\xe9st")
         self.facade._cache.update(None)
         self.facade._cache.open(None)
         pkg = self.get_package("pkg")
         skeleton = build_skeleton_apt(pkg, with_unicode=True, with_info=True)
-        self.assertEqual(u"T?st", skeleton.description)
+        self.assertEqual(u"T\u00E9st", skeleton.description)
 
     def test_build_skeleton_minimal(self):
         """
