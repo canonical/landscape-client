@@ -3,6 +3,7 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+import locale
 import logging
 import time
 import os
@@ -866,6 +867,10 @@ class FakeReporter(PackageReporter):
 
 
 def main(args):
+    # Force UTF-8 encoding only for the reporter, thus allowing libapt-pkg to
+    # return unmangled descriptions.
+    locale.setlocale(locale.LC_CTYPE, ("C", "UTF-8"))
+
     if "FAKE_GLOBAL_PACKAGE_STORE" in os.environ:
         return run_task_handler(FakeGlobalReporter, args)
     elif "FAKE_PACKAGE_STORE" in os.environ:
