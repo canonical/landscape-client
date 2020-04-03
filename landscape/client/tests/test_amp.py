@@ -1,9 +1,15 @@
+import os
+import errno
+
+import mock
+
 from twisted.internet.error import ConnectError
 from twisted.internet.task import Clock
 
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.deployment import Configuration
 from landscape.client.amp import ComponentPublisher, ComponentConnector, remote
+from landscape.client.reactor import LandscapeReactor
 from landscape.lib.amp import MethodCallError
 from landscape.lib.testing import FakeReactor
 
@@ -159,3 +165,21 @@ class ComponentConnectorTest(LandscapeTest):
         effectively a no-op.
         """
         self.connector.disconnect()
+
+    @mock.patch("twisted.python.lockfile.kill")
+    def test_stale_locks_recycled_pid(self, mock_lock):
+        """Publisher starts with stale lock."""
+        mock_lock.side_effect = [
+            OSError(errno.EPERM, "Operation not permitted"), False]
+        lock_path = os.path.join(self.config.sockets_path, "test.sock.lock")
+        os.symlink("0", lock_path)
+
+        component = TestComponent()
+        reactor = LandscapeReactor()
+        publisher = ComponentPublisher(component, reactor, self.config)
+        # Shouldn't raise the exception.
+        publisher.start()
+        publisher.stop()
+
+        # ensure stale lock was replaced
+        self.assertNotEqual("0", os.readlink(lock_path))
