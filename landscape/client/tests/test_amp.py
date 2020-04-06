@@ -171,15 +171,20 @@ class ComponentConnectorTest(LandscapeTest):
         """Publisher starts with stale lock."""
         mock_lock.side_effect = [
             OSError(errno.EPERM, "Operation not permitted"), False]
-        lock_path = os.path.join(self.config.sockets_path, "test.sock.lock")
+        sock_path = os.path.join(self.config.sockets_path, u"test.sock")
+        lock_path = u"{}.lock".format(sock_path)
         os.symlink("0", lock_path)
 
         component = TestComponent()
+        # Test the actual Unix reactor implementation. Fakes won't do.
         reactor = LandscapeReactor()
         publisher = ComponentPublisher(component, reactor, self.config)
+
         # Shouldn't raise the exception.
         publisher.start()
-        publisher.stop()
 
         # ensure stale lock was replaced
         self.assertNotEqual("0", os.readlink(lock_path))
+
+        publisher.stop()
+        reactor._cleanup()
