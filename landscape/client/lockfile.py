@@ -1,4 +1,3 @@
-import errno
 import os
 
 from twisted.python import lockfile
@@ -17,18 +16,33 @@ class PatchedFilesystemLock(lockfile.FilesystemLock):
     """
 
     def lock(self):
+        # XXX Twisted assumes PIDs don't get reused, which is incorrect.
+        # As such, we pre-check that any existing lock file isn't
+        # associated to a live process, and that any associated
+        # process is from landscape. Otherwise, clean up the lock file,
+        # considering it to be locked to a recycled PID.
+        #
+        # Although looking for the process name may seem fragile, it's the
+        # most acurate info we have since:
+        # * some process run as root, so the UID is not a reference
+        # * process may not be spawned by systemd, so cgroups are not reliable
+        # * python executable is not a reference
         try:
-            return super(PatchedFilesystemLock, self).lock()
-        except OSError as e:
-            if e.errno != errno.EPERM:
-                raise
-            # XXX Ideally, twisted would name the process and check if
-            # processes match the expected name before killing them.
-            # Landscape-client runs as a separate user, so this issue should be
-            # mitigated, though it does get permission errors trying to kill a
-            # recycled PID. (LP: #1870087)
-            #
-            # Workaround is to remove the current lock file on such error and
-            # then retry locking.
-            os.remove(self.name)
-            return super(PatchedFilesystemLock, self).lock()
+            pid = os.readlink(self.name)
+            ps_name = get_process_name(int(pid))
+            if not ps_name.startswith("landscape"):
+                os.remove(self.name)
+        except Exception:
+            # We can't figure the lock state, let FilesystemLock figure it
+            # out normally.
+            pass
+
+        return super(PatchedFilesystemLock, self).lock()
+
+
+def get_process_name(pid):
+    """Return a process name from a pid."""
+    stat_path = "/proc/{}/stat".format(pid)
+    with open(stat_path) as stat_file:
+        stat = stat_file.read()
+    return stat.partition("(")[2].rpartition(")")[0]
