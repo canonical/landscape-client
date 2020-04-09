@@ -214,6 +214,7 @@ class ComponentConnectorTest(LandscapeTest):
         # ensure stale lock was replaced
         self.assertNotEqual("1", os.readlink(lock_path))
         mock_kill.assert_not_called()
+        self.assertFalse(publisher._port.lockFile.clean)
 
         publisher.stop()
         reactor._cleanup()

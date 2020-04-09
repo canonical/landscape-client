@@ -27,17 +27,21 @@ class PatchedFilesystemLock(lockfile.FilesystemLock):
         # * some process run as root, so the UID is not a reference
         # * process may not be spawned by systemd, so cgroups are not reliable
         # * python executable is not a reference
+        clean = True
         try:
             pid = os.readlink(self.name)
             ps_name = get_process_name(int(pid))
             if not ps_name.startswith("landscape"):
                 os.remove(self.name)
+                clean = False
         except Exception:
             # We can't figure the lock state, let FilesystemLock figure it
             # out normally.
             pass
 
-        return super(PatchedFilesystemLock, self).lock()
+        result = super(PatchedFilesystemLock, self).lock()
+        self.clean = self.clean and clean
+        return result
 
 
 def get_process_name(pid):
