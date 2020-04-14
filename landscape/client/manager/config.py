@@ -30,12 +30,13 @@ class ManagerConfiguration(Configuration):
                           help="Comma-delimited list of usernames that scripts"
                                " may be run as. Default is to allow all "
                                "users.")
-        parser.add_option("--script-output-limit", metavar="SCRIPT_OUTPUT_LIMIT",
+        parser.add_option("--script-output-limit",
+                          metavar="SCRIPT_OUTPUT_LIMIT",
                           type="int", default=512,
-                          help="Maximum allowed output size that scripts can send (in kB)"
+                          help="Maximum allowed output size that scripts"
+                               " can send\n"
                                "Script output will be truncated at that limit."
                                "Default is 512 (kB)")
-
 
         return parser
 

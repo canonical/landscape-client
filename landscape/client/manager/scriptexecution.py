@@ -115,7 +115,8 @@ class ScriptRunnerMixin(object):
         }
 
         pp = ProcessAccumulationProtocol(
-            self.registry.reactor, self.registry.config.script_output_limit, self.truncation_indicator)
+            self.registry.reactor, self.registry.config.script_output_limit,
+            self.truncation_indicator)
         args = (filename,)
         self.process_factory.spawnProcess(
             pp, filename, args=args, uid=uid, gid=gid, path=path, env=env)
@@ -128,7 +129,6 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """A plugin which allows execution of arbitrary shell scripts.
 
     """
-
 
     def register(self, registry):
         super(ScriptExecutionPlugin, self).register(registry)
