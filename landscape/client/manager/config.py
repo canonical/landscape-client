@@ -33,10 +33,10 @@ class ManagerConfiguration(Configuration):
         parser.add_option("--script-output-limit",
                           metavar="SCRIPT_OUTPUT_LIMIT",
                           type="int", default=512,
-                          help="Maximum allowed output size that scripts "
-                               "can send. "
-                               "Script output will be truncated at that limit. "
-                               "Default is 512 (kB)")
+                          help="Maximum allowed output size that scripts"
+                               " can send. "
+                               "Script output will be truncated at that limit."
+                               " Default is 512 (kB)")
 
         return parser
 
