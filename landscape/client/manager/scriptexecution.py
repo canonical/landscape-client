@@ -115,7 +115,8 @@ class ScriptRunnerMixin(object):
         }
 
         pp = ProcessAccumulationProtocol(
-            self.registry.reactor, self.size_limit, self.truncation_indicator)
+            self.registry.reactor, self.registry.config.script_output_limit,
+            self.truncation_indicator)
         args = (filename,)
         self.process_factory.spawnProcess(
             pp, filename, args=args, uid=uid, gid=gid, path=path, env=env)
@@ -127,10 +128,7 @@ class ScriptRunnerMixin(object):
 class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """A plugin which allows execution of arbitrary shell scripts.
 
-    @ivar size_limit: The number of bytes at which to truncate process output.
     """
-
-    size_limit = 500000
 
     def register(self, registry):
         super(ScriptExecutionPlugin, self).register(registry)
@@ -316,7 +314,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         self._size = 0
         self.result_deferred = Deferred()
         self._cancelled = False
-        self.size_limit = size_limit
+        self.size_limit = size_limit * 1024
         self._truncation_indicator = truncation_indicator.encode("utf-8")
         self._truncation_offset = len(self._truncation_indicator)
         self._truncated_size_limit = self.size_limit - self._truncation_offset

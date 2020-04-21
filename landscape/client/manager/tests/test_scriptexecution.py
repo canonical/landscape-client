@@ -492,18 +492,18 @@ class RunScriptTests(LandscapeTest):
         """Data returned from the command is limited."""
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        self.plugin.size_limit = 100
+        self.manager.config.script_output_limit = 1
         result = self.plugin.run_script("/bin/sh", "")
 
         # Ultimately we assert that the resulting output is limited to
-        # 100 bytes and indicates its truncation.
+        # 1024 bytes and indicates its truncation.
         result.addCallback(self.assertEqual,
-                           ("x" * 79) + "\n**OUTPUT TRUNCATED**")
+                           ("x" * (1024 - 21)) + "\n**OUTPUT TRUNCATED**")
 
         protocol = factory.spawns[0][0]
 
-        # Push 200 bytes of output, so we trigger truncation.
-        protocol.childDataReceived(1, b"x" * 200)
+        # Push 2kB of output, so we trigger truncation.
+        protocol.childDataReceived(1, b"x" * (2*1024))
 
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
@@ -515,19 +515,19 @@ class RunScriptTests(LandscapeTest):
         """After truncation, no further output is recorded."""
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        self.plugin.size_limit = 100
+        self.manager.config.script_output_limit = 1
         result = self.plugin.run_script("/bin/sh", "")
 
         # Ultimately we assert that the resulting output is limited to
-        # 100 bytes and indicates its truncation.
+        # 1024 bytes and indicates its truncation.
         result.addCallback(self.assertEqual,
-                           ("x" * 79) + "\n**OUTPUT TRUNCATED**")
+                           ("x" * (1024 - 21)) + "\n**OUTPUT TRUNCATED**")
         protocol = factory.spawns[0][0]
 
-        # Push 200 bytes of output, so we trigger truncation.
-        protocol.childDataReceived(1, b"x" * 200)
-        # Push 200 bytes more
-        protocol.childDataReceived(1, b"x" * 200)
+        # Push 1024 bytes of output, so we trigger truncation.
+        protocol.childDataReceived(1, b"x" * 1024)
+        # Push 1024 bytes more
+        protocol.childDataReceived(1, b"x" * 1024)
 
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
