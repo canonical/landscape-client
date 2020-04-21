@@ -16,7 +16,7 @@ from twisted.internet.threads import deferToThread
 
 
 def sibpath(path):
-    return os.path.join(os.path.dirname(__file__), path)
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
 
 
 PRIVKEY = sibpath("private.ssl")
