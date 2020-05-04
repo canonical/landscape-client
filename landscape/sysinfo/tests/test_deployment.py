@@ -119,11 +119,11 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
 
     @mock.patch("landscape.sysinfo.deployment.format_sysinfo")
     def test_format_sysinfo_gets_correct_information(self, format_sysinfo):
-        run(["--sysinfo-plugins", "TestPlugin"])
+        run(["--sysinfo-plugins", "TestPlugin", "--width", "100"])
         format_sysinfo.assert_called_once_with(
             [("Test header", "Test value")],
             ["Test note"], ["Test footnote"],
-            indent="  ")
+            width=100, indent="  ")
 
     def test_format_sysinfo_output_is_printed(self):
         with mock.patch(
