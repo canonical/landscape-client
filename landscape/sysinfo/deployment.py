@@ -49,7 +49,7 @@ class SysInfoConfiguration(BaseConfiguration):
                           help="Comma-delimited list of sysinfo plugins to "
                                "NOT use. This always take precedence over "
                                "plugins to include.")
-        
+
         parser.add_option("--width", type=int, default=80,
                           help="Maximum width for each column of output.")
 
