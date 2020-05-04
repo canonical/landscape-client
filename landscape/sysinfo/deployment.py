@@ -122,7 +122,7 @@ def run(args, reactor=None, sysinfo=None):
         print(format_sysinfo(headers=sysinfo.get_headers(),
                              notes=sysinfo.get_notes(),
                              footnotes=sysinfo.get_footnotes(),
-                             width=sysinfo.get_width(),
+                             width=config.width,
                              indent="  "))
 
     def run_sysinfo():
