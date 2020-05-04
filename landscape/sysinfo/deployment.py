@@ -49,6 +49,9 @@ class SysInfoConfiguration(BaseConfiguration):
                           help="Comma-delimited list of sysinfo plugins to "
                                "NOT use. This always take precedence over "
                                "plugins to include.")
+        
+        parser.add_option("--width", type=int, default=80,
+                          help="Maximum width for each column of output.")
 
         parser.epilog = "Default plugins: %s" % (", ".join(ALL_PLUGINS))
         return parser
@@ -116,8 +119,11 @@ def run(args, reactor=None, sysinfo=None):
         sysinfo.add(plugin)
 
     def show_output(result):
-        print(format_sysinfo(sysinfo.get_headers(), sysinfo.get_notes(),
-                             sysinfo.get_footnotes(), indent="  "))
+        print(format_sysinfo(headers=sysinfo.get_headers(),
+                             notes=sysinfo.get_notes(),
+                             footnotes=sysinfo.get_footnotes(),
+                             width=sysinfo.get_width(),
+                             indent="  "))
 
     def run_sysinfo():
         return sysinfo.run().addCallback(show_output)
