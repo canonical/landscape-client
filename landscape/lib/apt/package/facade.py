@@ -750,8 +750,8 @@ class AptFacade(object):
             # installed packages from auto-removal, while allowing upgrades
             # of auto-removable packages.
             is_manual = (
-                not version.package.installed
-                or not version.package.is_auto_installed)
+                not version.package.installed or
+                not version.package.is_auto_installed)
 
             # Set auto_fix=False to avoid removing the package we asked to
             # install when we need to resolve dependencies.
