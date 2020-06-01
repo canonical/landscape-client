@@ -2601,6 +2601,72 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
         [bar] = self.facade._cache.get_changes()
         self.assertTrue(bar.marked_upgrade)
 
+    def test_changer_upgrade_keeps_auto(self):
+        """
+        An upgrade request should preserve an existing auto flag on the
+        upgraded package.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Depends": "bar"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb(
+            "file://%s" % deb_dir, "./", trusted=True)
+        self.facade.reload_channels()
+        bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
+        bar_1.package.mark_auto()
+
+        self.facade.mark_install(bar_2)
+        self.facade.mark_remove(bar_1)
+        self.patch_cache_commit()
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+        self.assertTrue(bar.is_auto_installed)
+
+    def test_changer_upgrade_keeps_manual(self):
+        """
+        An upgrade request should mark a package as manual if the installed
+        version is manual.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Depends": "bar"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb(
+            "file://%s" % deb_dir, "./", trusted=True)
+        self.facade.reload_channels()
+        bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
+
+        self.facade.mark_install(bar_2)
+        self.facade.mark_remove(bar_1)
+        self.patch_cache_commit()
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+        self.assertFalse(bar.is_auto_installed)
+
+    def test_changer_install_sets_manual(self):
+        """
+        An installation request should mark the new package as manually
+        installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb(
+            "file://%s" % deb_dir, "./", trusted=True)
+        self.facade.reload_channels()
+        bar_2, = self.facade.get_packages_by_name("bar")
+
+        self.facade.mark_install(bar_2)
+        self.patch_cache_commit()
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+        self.assertFalse(bar.is_auto_installed)
+
     def test_mark_global_upgrade_held_packages(self):
         """
         If a package that is on hold is marked for upgrade,

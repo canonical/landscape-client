@@ -744,9 +744,18 @@ class AptFacade(object):
             # Set the candidate version, so that the version we want to
             # install actually is the one getting installed.
             version.package.candidate = version
+
+            # Flag the package as manual if it's a new install, otherwise
+            # preserve the auto flag. This should preserve explicitly
+            # installed packages from auto-removal, while allowing upgrades
+            # of auto-removable packages.
+            is_manual = (
+                not version.package.installed
+                or not version.package.is_auto_installed)
+
             # Set auto_fix=False to avoid removing the package we asked to
             # install when we need to resolve dependencies.
-            version.package.mark_install(auto_fix=False)
+            version.package.mark_install(auto_fix=False, from_user=is_manual)
             self._package_installs.add(version.package)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
