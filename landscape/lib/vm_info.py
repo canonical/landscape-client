@@ -66,9 +66,6 @@ def _get_vm_by_vendor(sys_vendor_path):
     # We need bytes here as required by the message schema.
     vendor = read_binary_file(sys_vendor_path, limit=1024).lower()
 
-    # 2018-01: AWS and DO are now returning custom sys_vendor names
-    # instead of qemu. If this becomes a trend, it may be worth also checking
-    # dmi/id/chassis_vendor which seems to unchanged (bochs).
     content_vendors_map = (
         (b"amazon ec2", b"kvm"),
         (b"bochs", b"kvm"),
@@ -81,6 +78,7 @@ def _get_vm_by_vendor(sys_vendor_path):
         (b"qemu", b"kvm"),
         (b"kvm", b"kvm"),
         (b"vmware", b"vmware"),
+        (b"rhev", b"kvm")
     )
     for name, vm_type in content_vendors_map:
         if name in vendor:
