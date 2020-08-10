@@ -12,6 +12,7 @@ import logging
 
 from twisted.internet.defer import Deferred
 
+from landscape.client.broker.exchange import maybe_bytes
 from landscape.lib.juju import get_juju_info
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
@@ -239,8 +240,9 @@ class RegistrationHandler(object):
         self._reactor.fire("resynchronize-clients")
 
     def _handle_registration(self, message):
-        if message["info"] in ("unknown-account", "max-pending-computers"):
-            self._reactor.fire("registration-failed", reason=message["info"])
+        message_info = maybe_bytes(message["info"])
+        if message_info in ("unknown-account", "max-pending-computers"):
+            self._reactor.fire("registration-failed", reason=message_info)
 
     def _handle_unknown_id(self, message):
         id = self._identity

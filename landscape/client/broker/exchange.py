@@ -800,8 +800,7 @@ class MessageExchange(object):
             # actually expect it to be a string. Some unit tests set it to
             # a regular string (since there is no difference between strings
             # and bytes in Python 2), so we check the type before converting.
-            if _PY3 and isinstance(message["type"], bytes):
-                message["type"] = message["type"].decode("ascii")
+            message["type"] = maybe_bytes(message["type"])
             self.handle_message(message)
             sequence += 1
             message_store.set_server_sequence(sequence)
@@ -843,8 +842,9 @@ class MessageExchange(object):
 
         self._reactor.fire("message", message)
         # This has plan interference! but whatever.
-        if message["type"] in self._message_handlers:
-            for handler in self._message_handlers[message["type"]]:
+        message_type = maybe_bytes(message["type"])
+        if message_type in self._message_handlers:
+            for handler in self._message_handlers[message_type]:
                 handler(message)
 
     def register_client_accepted_message_type(self, type):
@@ -866,3 +866,10 @@ def get_accepted_types_diff(old_types, new_types):
     diff.extend(["%s" % type for type in stable_types])
     diff.extend(["-%s" % type for type in removed_types])
     return " ".join(diff)
+
+
+def maybe_bytes(thing):
+    """Return a py3 ascii string from maybe py2 bytes."""
+    if _PY3 and isinstance(thing, bytes):
+        return thing.decode("ascii")
+    return thing
