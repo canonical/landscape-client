@@ -90,7 +90,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         and insecure ids even if no requests were sent.
         """
         self.exchanger.handle_message(
-            {"type": "set-id", "id": "abc", "insecure-id": "def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
         self.assertEqual(self.identity.secure_id, "abc")
         self.assertEqual(self.identity.insecure_id, "def")
 
@@ -101,14 +101,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": "set-id", "id": "abc", "insecure-id": "def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
         reactor_fire_mock.assert_any_call("registration-done")
 
     def test_unknown_id(self):
         self.identity.secure_id = "old_id"
         self.identity.insecure_id = "old_id"
         self.mstore.set_accepted_types(["register"])
-        self.exchanger.handle_message({"type": "unknown-id"})
+        self.exchanger.handle_message({"type": b"unknown-id"})
         self.assertEqual(self.identity.secure_id, None)
         self.assertEqual(self.identity.insecure_id, None)
 
@@ -119,7 +119,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         self.config.computer_title = "Wu"
         self.mstore.set_accepted_types(["register"])
-        self.exchanger.handle_message({"type": "unknown-id", "clone-of": "Wu"})
+        self.exchanger.handle_message(
+            {"type": b"unknown-id", "clone-of": "Wu"})
         self.assertEqual("Wu (clone)", self.config.computer_title)
         self.assertIn("Client is clone of computer Wu",
                       self.logfile.getvalue())
@@ -366,7 +367,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": "registration", "info": "unknown-account"})
+            {"type": b"registration", "info": b"unknown-account"})
         reactor_fire_mock.assert_called_with(
             "registration-failed", reason="unknown-account")
 
@@ -378,7 +379,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": "registration", "info": "max-pending-computers"})
+            {"type": b"registration", "info": b"max-pending-computers"})
         reactor_fire_mock.assert_called_with(
             "registration-failed", reason="max-pending-computers")
 
@@ -389,7 +390,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": "registration", "info": "blah-blah"})
+            {"type": b"registration", "info": b"blah-blah"})
         for name, args, kwargs in reactor_fire_mock.mock_calls:
             self.assertNotEquals("registration-failed", args[0])
 
@@ -420,13 +421,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         # This should somehow callback the deferred.
         self.exchanger.handle_message(
-            {"type": "set-id", "id": "abc", "insecure-id": "def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
 
         self.assertEqual(calls, [1])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
-            {"type": "set-id", "id": "abc", "insecure-id": "def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
 
         self.assertEqual(calls, [1])
 
@@ -448,7 +449,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         # This should somehow callback the deferred.
         self.exchanger.handle_message(
-            {"type": "set-id", "id": "abc", "insecure-id": "def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
 
         self.assertEqual(results, [None])
 
@@ -473,13 +474,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         # This should somehow callback the deferred.
         self.exchanger.handle_message(
-            {"type": "registration", "info": "unknown-account"})
+            {"type": b"registration", "info": b"unknown-account"})
 
         self.assertEqual(calls, [True])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
-            {"type": "registration", "info": "unknown-account"})
+            {"type": b"registration", "info": b"unknown-account"})
 
         self.assertEqual(calls, [True])
 
@@ -505,13 +506,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         d.addErrback(add_call)
 
         self.exchanger.handle_message(
-            {"type": "registration", "info": "max-pending-computers"})
+            {"type": b"registration", "info": b"max-pending-computers"})
 
         self.assertEqual(calls, [True])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
-            {"type": "registration", "info": "max-pending-computers"})
+            {"type": b"registration", "info": b"max-pending-computers"})
 
         self.assertEqual(calls, [True])
 
