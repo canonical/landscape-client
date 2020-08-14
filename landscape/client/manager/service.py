@@ -54,8 +54,9 @@ class ManagerService(LandscapeService):
     def stopService(self):
         """Stop the manager and close the connection with the broker."""
         self.connector.disconnect()
-        self.publisher.stop()
+        deferred = self.publisher.stop()
         super(ManagerService, self).stopService()
+        return deferred
 
 
 def run(args):

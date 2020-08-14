@@ -56,10 +56,11 @@ class MonitorService(LandscapeService):
         The monitor is flushed to ensure that things like persist databases
         get saved to disk.
         """
-        self.publisher.stop()
+        deferred = self.publisher.stop()
         self.monitor.flush()
         self.connector.disconnect()
         super(MonitorService, self).stopService()
+        return deferred
 
 
 def run(args):

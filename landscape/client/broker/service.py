@@ -82,10 +82,11 @@ class BrokerService(LandscapeService):
 
     def stopService(self):
         """Stop the broker."""
-        self.publisher.stop()
+        deferred = self.publisher.stop()
         self.exchanger.stop()
         self.pinger.stop()
         super(BrokerService, self).stopService()
+        return deferred
 
 
 def run(args):
