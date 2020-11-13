@@ -1,5 +1,4 @@
 import itertools
-import os.path
 import shutil
 import tempfile
 
