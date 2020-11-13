@@ -149,7 +149,7 @@ class MessageStoreTest(LandscapeTest):
         for i in range(10):
             self.store.add(dict(type="data", data=intToBytes(i)))
         il = [m["data"] for m in self.store.get_pending_messages(5)]
-        self.assertEqual(il, [intToBytes(i) for i in[0, 1, 2, 3, 4]])
+        self.assertEqual(il, [intToBytes(i) for i in [0, 1, 2, 3, 4]])
 
     def test_offset(self):
         self.store.set_pending_offset(5)

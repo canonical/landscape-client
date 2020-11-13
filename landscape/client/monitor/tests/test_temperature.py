@@ -16,7 +16,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         """Initialize test helpers and create a sample thermal zone."""
         super(TemperatureTestWithSampleData, self).setUp()
         self.mstore.set_accepted_types(["temperature"])
-        self.write_thermal_zone("ZONE1", "50 C")
+        self.write_thermal_zone("ZONE1", "50000")
 
     def test_wb_disabled_with_no_thermal_zones(self):
         """
@@ -46,7 +46,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         zone the data is for.  This test ensures that the plugin
         creates messages with changes reported correctly.
         """
-        self.write_thermal_zone("ZONE2", "50 C")
+        self.write_thermal_zone("ZONE2", "50000")
         plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
                              create_time=self.reactor.time)
         step_size = self.monitor.step_size
@@ -54,7 +54,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
 
         self.reactor.advance(step_size)
 
-        self.write_thermal_zone("ZONE2", "56 C")
+        self.write_thermal_zone("ZONE2", "56000")
         self.reactor.advance(step_size)
 
         messages = list(plugin.create_messages())
@@ -98,7 +98,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         If no data is available when an exchange occurs no messages
         should not be queued.
         """
-        self.write_thermal_zone("ZONE2", "50 C")
+        self.write_thermal_zone("ZONE2", "50000")
         plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
                              create_time=self.reactor.time)
         self.monitor.add(plugin)
@@ -111,7 +111,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         messages collected bewteen exchange periods should be
         delivered in a single message.
         """
-        self.write_thermal_zone("ZONE2", "50 C")
+        self.write_thermal_zone("ZONE2", "50000")
         plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
                              create_time=self.reactor.time)
         step_size = self.monitor.step_size

@@ -433,12 +433,12 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         child_pid_filename = self.makeFile()
         fd = open(upgrade_tool_filename, "w")
-        fd.write("#!/usr/bin/env python\n"
+        fd.write("#!/usr/bin/env python3\n"
                  "import os\n"
                  "import time\n"
                  "import sys\n"
                  "if __name__ == '__main__':\n"
-                 "    print 'First parent'\n"
+                 "    print('First parent')\n"
                  "    pid = os.fork()\n"
                  "    if pid > 0:\n"
                  "        time.sleep(0.5)\n"

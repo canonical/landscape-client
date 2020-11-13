@@ -358,15 +358,17 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
               'components': 'main', 'distribution': 'lucid', 'type': 'deb'}],
             self.facade.get_channels())
 
-    def test_get_package_stanza(self):
+    def test_write_package_stanza(self):
         """
-        C{get_package_stanza} returns an entry for the package that can
+        C{write_package_stanza} returns an entry for the package that can
         be included in a Packages file.
         """
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
-        stanza = self.facade.get_package_stanza(deb_file)
+        packages_file = os.path.join(deb_dir, "Packages")
+        with open(packages_file, "wb") as packages:
+            self.facade.write_package_stanza(deb_file, packages)
         SHA256 = (
             "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
         expected = textwrap.dedent("""\
@@ -392,7 +394,7 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
              Description1
             """ % {"filename": PKGNAME1, "sha256": SHA256})
         expected = _parse_deb_stanza(expected)
-        stanza = _parse_deb_stanza(stanza)
+        stanza = _parse_deb_stanza(open(packages_file).read())
         self.assertEqual(expected, stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
@@ -404,9 +406,14 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
         packages_contents = read_text_file(os.path.join(deb_dir, "Packages"))
-        expected_contents = "\n".join(
-            self.facade.get_package_stanza(os.path.join(deb_dir, pkg_name))
-            for pkg_name in [PKGNAME1, PKGNAME2, PKGNAME3])
+        stanzas = []
+        for pkg_name in [PKGNAME1, PKGNAME2, PKGNAME3]:
+            with open(self.makeFile(), "wb+", 0) as tmp:
+                self.facade.write_package_stanza(
+                    os.path.join(deb_dir, pkg_name), tmp)
+                tmp.seek(0)
+                stanzas.append(tmp.read().decode("utf-8"))
+        expected_contents = "\n".join(stanzas)
         self.assertEqual(expected_contents, packages_contents)
 
     def test_add_channel_deb_dir_get_packages(self):
@@ -2593,6 +2600,72 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
         self.facade.perform_changes()
         [bar] = self.facade._cache.get_changes()
         self.assertTrue(bar.marked_upgrade)
+
+    def test_changer_upgrade_keeps_auto(self):
+        """
+        An upgrade request should preserve an existing auto flag on the
+        upgraded package.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Depends": "bar"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb(
+            "file://%s" % deb_dir, "./", trusted=True)
+        self.facade.reload_channels()
+        bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
+        bar_1.package.mark_auto()
+
+        self.facade.mark_install(bar_2)
+        self.facade.mark_remove(bar_1)
+        self.patch_cache_commit()
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+        self.assertTrue(bar.is_auto_installed)
+
+    def test_changer_upgrade_keeps_manual(self):
+        """
+        An upgrade request should mark a package as manual if the installed
+        version is manual.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Depends": "bar"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb(
+            "file://%s" % deb_dir, "./", trusted=True)
+        self.facade.reload_channels()
+        bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
+
+        self.facade.mark_install(bar_2)
+        self.facade.mark_remove(bar_1)
+        self.patch_cache_commit()
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+        self.assertFalse(bar.is_auto_installed)
+
+    def test_changer_install_sets_manual(self):
+        """
+        An installation request should mark the new package as manually
+        installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb(
+            "file://%s" % deb_dir, "./", trusted=True)
+        self.facade.reload_channels()
+        bar_2, = self.facade.get_packages_by_name("bar")
+
+        self.facade.mark_install(bar_2)
+        self.patch_cache_commit()
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+        self.assertFalse(bar.is_auto_installed)
 
     def test_mark_global_upgrade_held_packages(self):
         """

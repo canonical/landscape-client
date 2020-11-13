@@ -2,7 +2,7 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
 PYTHON2 ?= python2
 PYTHON3 ?= python3
-TRIAL ?= $(shell which trial)
+TRIAL ?= -m twisted.trial
 TRIAL_ARGS ?=
 
 .PHONY: help
