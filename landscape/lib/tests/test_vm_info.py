@@ -184,6 +184,12 @@ class GetVMInfoTest(BaseTestCase):
         self.make_dmi_info("product_name", "KVM")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
+    def test_get_vm_info_with_rhev(self):
+        """get_vm_info returns 'kvm' if running under RHEV Hypervisor."""
+        self.make_dmi_info("product_name", "RHEV Hypervisor")
+        self.make_dmi_info("sys_vendor", "Red Hat")
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
+
 
 class GetContainerInfoTest(BaseTestCase):
 
