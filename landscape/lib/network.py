@@ -246,7 +246,7 @@ def get_network_interface_speed(sock, interface_name):
     speed = -1
     try:
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
-        res = status_cmd.tostring()
+        res = status_cmd.tobytes()
         speed, duplex = struct.unpack("12xHB28x", res)
     except (IOError, OSError) as e:
         if e.errno == errno.EPERM:
