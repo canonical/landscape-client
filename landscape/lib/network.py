@@ -11,7 +11,7 @@ import errno
 import logging
 
 import netifaces
-from twisted.python.compat import long
+from twisted.python.compat import long, _PY3
 
 __all__ = ["get_active_device_info", "get_network_traffic"]
 
@@ -246,7 +246,10 @@ def get_network_interface_speed(sock, interface_name):
     speed = -1
     try:
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
-        res = status_cmd.tostring()
+        if _PY3:
+            res = status_cmd.tobytes()
+        else:
+            res = status_cmd.tostring()
         speed, duplex = struct.unpack("12xHB28x", res)
     except (IOError, OSError) as e:
         if e.errno == errno.EPERM:
