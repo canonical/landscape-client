@@ -849,9 +849,9 @@ class AptPackageChangerTest(LandscapeTest):
 
         binaries_path = self.config.binaries_path
         self.assertFileContent(os.path.join(binaries_path, "111.deb"),
-                               base64.decodestring(PKGDEB1))
+                               base64.decodebytes(PKGDEB1))
         self.assertFileContent(os.path.join(binaries_path, "222.deb"),
-                               base64.decodestring(PKGDEB2))
+                               base64.decodebytes(PKGDEB2))
         self.assertEqual(
             self.facade.get_channels(),
             self.get_binaries_channels(binaries_path))

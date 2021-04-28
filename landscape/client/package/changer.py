@@ -173,7 +173,7 @@ class PackageChanger(PackageTaskHandler):
             hash_ids = {}
             for hash, id, deb in binaries:
                 create_binary_file(os.path.join(binaries_path, "%d.deb" % id),
-                                   base64.decodestring(deb))
+                                   base64.decodebytes(deb))
                 hash_ids[hash] = id
             self._store.set_hash_ids(hash_ids)
             self._facade.add_channel_deb_dir(binaries_path)

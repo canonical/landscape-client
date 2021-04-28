@@ -513,7 +513,7 @@ def decode_base64_ssl_public_certificate(config):
     # WARNING: ssl_public_certificate is misnamed, it's not the key of the
     # certificate, but the actual certificate itself.
     if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
-        decoded_cert = base64.decodestring(
+        decoded_cert = base64.decodebytes(
             config.ssl_public_key[7:].encode("ascii"))
         config.ssl_public_key = store_public_key_data(
             config, decoded_cert)
