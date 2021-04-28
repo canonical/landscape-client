@@ -1812,6 +1812,7 @@ class AptFacadeTest(testing.HelperTestCase, testing.FSTestCase,
         self._add_system_package("foo")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
+        self.facade._version_installs.append(foo)
         self.facade._get_broken_packages = lambda: set([foo.package])
         self.assertEqual(
             ["The following packages have unmet dependencies:",
