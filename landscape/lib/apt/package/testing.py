@@ -1,4 +1,3 @@
-import base64
 import os
 import time
 
@@ -8,6 +7,7 @@ import apt_pkg
 from landscape.lib.apt.package.facade import AptFacade
 from landscape.lib.fs import append_binary_file
 from landscape.lib.fs import create_binary_file
+from landscape.lib import base64
 
 
 class AptFacadeHelper(object):

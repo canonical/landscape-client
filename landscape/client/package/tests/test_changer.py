@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-import base64
 import time
 import sys
 import os
@@ -16,6 +15,7 @@ from landscape.lib.apt.package.facade import (
 from landscape.lib.apt.package.testing import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)
+from landscape.lib import base64
 from landscape.lib.fs import create_text_file, read_text_file, touch_file
 from landscape.lib.testing import StubProcessFactory, FakeReactor
 from landscape.client.package.changer import (

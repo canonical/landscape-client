@@ -1,5 +1,4 @@
 import logging
-import base64
 import time
 import os
 import pwd
@@ -14,6 +13,7 @@ from landscape.constants import (
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
 from landscape.lib.config import get_bindir
+from landscape.lib import base64
 from landscape.lib.fs import create_binary_file
 from landscape.lib.log import log_failure
 from landscape.client.package.reporter import find_reporter_command

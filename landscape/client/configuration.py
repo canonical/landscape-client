@@ -7,7 +7,6 @@ for the C{landscape-config} script.
 from __future__ import print_function
 
 from functools import partial
-import base64
 import getpass
 import io
 import os
@@ -15,6 +14,7 @@ import pwd
 import sys
 
 from landscape.lib.compat import input
+from landscape.lib import base64
 
 from landscape.lib.tag import is_valid_tag
 
