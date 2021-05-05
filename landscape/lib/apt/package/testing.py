@@ -1,4 +1,3 @@
-import base64
 import os
 import time
 
@@ -8,6 +7,7 @@ import apt_pkg
 from landscape.lib.apt.package.facade import AptFacade
 from landscape.lib.fs import append_binary_file
 from landscape.lib.fs import create_binary_file
+from landscape.lib import base64
 
 
 class AptFacadeHelper(object):
@@ -322,9 +322,9 @@ PKGDEB_OR_RELATIONS = (
 ).encode("ascii")
 
 
-HASH1 = base64.decodestring(b"/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
-HASH2 = base64.decodestring(b"glP4DwWOfMULm0AkRXYsH/exehc=")
-HASH3 = base64.decodestring(b"NJM05mj86veaSInYxxqL1wahods=")
+HASH1 = base64.decodebytes(b"/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
+HASH2 = base64.decodebytes(b"glP4DwWOfMULm0AkRXYsH/exehc=")
+HASH3 = base64.decodebytes(b"NJM05mj86veaSInYxxqL1wahods=")
 HASH_MINIMAL = b"6\xce\x8f\x1bM\x82MWZ\x1a\xffjAc(\xdb(\xa1\x0eG"
 HASH_SIMPLE_RELATIONS = (
     b"'#\xab&k\xe6\xf5E\xcfB\x9b\xceO7\xe6\xec\xa9\xddY\xaa")
@@ -339,7 +339,7 @@ HASH_OR_RELATIONS = (
 def create_deb(target_dir, pkg_name, pkg_data):
     """Create a Debian package in the specified C{target_dir}."""
     path = os.path.join(target_dir, pkg_name)
-    data = base64.decodestring(pkg_data)
+    data = base64.decodebytes(pkg_data)
     create_binary_file(path, data)
 
 

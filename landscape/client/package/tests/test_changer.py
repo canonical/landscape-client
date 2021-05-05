@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-import base64
 import time
 import sys
 import os
@@ -16,6 +15,7 @@ from landscape.lib.apt.package.facade import (
 from landscape.lib.apt.package.testing import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)
+from landscape.lib import base64
 from landscape.lib.fs import create_text_file, read_text_file, touch_file
 from landscape.lib.testing import StubProcessFactory, FakeReactor
 from landscape.client.package.changer import (
@@ -849,9 +849,9 @@ class AptPackageChangerTest(LandscapeTest):
 
         binaries_path = self.config.binaries_path
         self.assertFileContent(os.path.join(binaries_path, "111.deb"),
-                               base64.decodestring(PKGDEB1))
+                               base64.decodebytes(PKGDEB1))
         self.assertFileContent(os.path.join(binaries_path, "222.deb"),
-                               base64.decodestring(PKGDEB2))
+                               base64.decodebytes(PKGDEB2))
         self.assertEqual(
             self.facade.get_channels(),
             self.get_binaries_channels(binaries_path))

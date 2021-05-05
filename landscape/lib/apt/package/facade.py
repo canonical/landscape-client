@@ -605,9 +605,12 @@ class AptFacade(object):
         all_info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
             found_dependency_error = False
+            # Fetch candidate version from our install list because
+            # apt-2.1.5 resets broken packages candidate.
+            candidate = next(v._cand for v in self._version_installs
+                             if v.package == package)
             for dep_type in ["PreDepends", "Depends", "Conflicts", "Breaks"]:
-                dependencies = package.candidate._cand.depends_list.get(
-                    dep_type, [])
+                dependencies = candidate.depends_list.get(dep_type, [])
                 for dependency in dependencies:
                     if self._is_dependency_satisfied(dependency, dep_type):
                         continue
