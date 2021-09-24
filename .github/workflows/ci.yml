@@ -1,0 +1,34 @@
+name: ci
+on: [pull_request, workflow_dispatch]
+jobs:
+  check3:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-20.04", "ubuntu-18.04"]
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          make depends
+          # -common seems a catch-22, but this is just a shortcut to
+          # initialize user and dirs, some used through tests.
+          sudo apt-get -y install landscape-common
+      - run: make check3 TRIAL=/usr/bin/trial3
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: make depends
+      - run: make lint
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          make depends
+          # -common seems a catch-22, but this is just a shortcut to
+          # initialize user and dirs, some used through tests.
+          sudo apt-get -y install landscape-common
+      - run: make coverage TRIAL=/usr/bin/trial3
+      - name: upload
+        uses: codecov/codecov-action@v1
