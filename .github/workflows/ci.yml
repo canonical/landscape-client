@@ -1,0 +1,33 @@
+name: ci
+on: [pull_request, workflow_dispatch]
+jobs:
+  check3:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-20.04", "ubuntu-18.04"]
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt-get update && sudo apt-get -y upgrade && make depends3
+      # -common seems a catch-22, but this is just a shortcut to
+      # initializes and dirs, some used through tests.
+      - run: sudo apt-get -y install landscape-common
+      - run: make check3 TRIAL=/usr/bin/trial3
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt-get install -y python3-flake8
+      - run: make lint
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          sudo apt-get update && sudo apt-get -y upgrade && make depends3
+          # -common seems a catch-22, but this is just a shortcut to
+          # initializes and dirs, some used through tests.
+          sudo apt-get -y install landscape-common
+      - run: make coverage TRIAL=/usr/bin/trial3
+      - name: upload
+        uses: codecov/codecov-action@v1
