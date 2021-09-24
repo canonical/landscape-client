@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/CanonicalLtd/landscape-client.svg?branch=master)](https://travis-ci.org/CanonicalLtd/landscape-client)
+[![Build Status](https://github.com/CanonicalLtd/landscape-client/actions/workflows/ci.yml/badge.svg)](https://github.com/CanonicalLtd/landscape-client/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/CanonicalLtd/landscape-client/branch/master/graph/badge.svg)](https://codecov.io/gh/CanonicalLtd/landscape-client)
 
 == Non-root mode ==

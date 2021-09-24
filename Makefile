@@ -10,16 +10,16 @@ help:  ## Print help about available targets
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: depends
-depends: depends2 depends3  ## Install py2 and py3 dependencies.
-	sudo apt -y install python3-flake8 python3-coverage
+depends: depends3  ## py2 is deprecated
+	sudo apt-get -y install python3-flake8 python3-coverage
 
 .PHONY: depends2
 depends2:
-	sudo apt -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces
+	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl
 
 .PHONY: depends3
 depends3:
-	sudo apt -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces
+	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl
 
 all: build
 
@@ -52,9 +52,7 @@ check3: build3
 .PHONY: coverage
 coverage:
 	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) -m coverage run $(TRIAL) --unclean-warnings landscape
-
-.PHONY: ci-check
-ci-check: depends build check  ## Install dependencies and run all the tests.
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) -m coverage xml
 
 .PHONY: lint
 lint:
