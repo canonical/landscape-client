@@ -30,12 +30,16 @@ of your client and register with the Landscape service.
 
 To run the full test suite, run the following command:
 
-`make check`
+```
+make check
+```
 
 When you want to test the landscape client manually without management
 features, you can simply run:
 
-`$ ./scripts/landscape-client`
+```
+$ ./scripts/landscape-client
+```
 
 This defaults to the `landscape-client.conf` configuration file.
 
