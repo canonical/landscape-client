@@ -8,7 +8,7 @@ from landscape.client.monitor.networkdevice import NetworkDevice
 
 def test_get_active_device_info():
     # Don't skip any interfaces for the tests
-    return get_active_device_info(skipped_interfaces=())
+    return get_active_device_info()
 
 
 class NetworkDeviceTest(LandscapeTest):
