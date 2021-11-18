@@ -151,7 +151,7 @@ def get_virtual():
     return interfaces
 
 
-def get_active_device_info(extended=False):
+def get_active_device_info(skip_alias=True, extended=False):
     """
     Returns a dictionary containing information on each active network
     interface present on a machine.
@@ -163,6 +163,8 @@ def get_active_device_info(extended=False):
                              socket.IPPROTO_IP)
         for interface, ifaddresses in get_active_interfaces():
             if interface in virtual_interfaces:
+                continue
+            if skip_alias and ":" in interface:
                 continue
             flags = get_flags(sock, interface.encode())
             if not is_up(flags):
