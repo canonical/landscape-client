@@ -263,7 +263,7 @@ def get_network_interface_speed(sock, interface_name):
     except (IOError, OSError) as e:
         if e.errno == errno.EPERM:
             logging.warning("Could not determine network interface speed, "
-                         "operation not permitted.")
+                            "operation not permitted.")
         elif e.errno != errno.EOPNOTSUPP and e.errno != errno.EINVAL:
             raise e
         speed = -1
