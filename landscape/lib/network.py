@@ -148,7 +148,7 @@ def get_virtual():
         interfaces = os.listdir('/sys/devices/virtual/net')
     except OSError:
         interfaces = []
-    return set(interfaces)
+    return interfaces
 
 
 def get_active_device_info(extended=False):
@@ -157,7 +157,7 @@ def get_active_device_info(extended=False):
     interface present on a machine.
     """
     results = []
-    virtual_interfaces = get_virtual()
+    virtual_interfaces = set(get_virtual())
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
@@ -187,7 +187,7 @@ def get_active_device_info(extended=False):
             if netifaces.AF_INET in ip_addresses or extended:
                 results.append(interface_info)
     finally:
-        del sock
+        sock.close()
 
     return results
 
@@ -262,7 +262,7 @@ def get_network_interface_speed(sock, interface_name):
         speed, duplex = struct.unpack("12xHB28x", res)
     except (IOError, OSError) as e:
         if e.errno == errno.EPERM:
-            logging.warn("Could not determine network interface speed, "
+            logging.warning("Could not determine network interface speed, "
                          "operation not permitted.")
         elif e.errno != errno.EOPNOTSUPP and e.errno != errno.EINVAL:
             raise e
