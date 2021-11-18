@@ -5,6 +5,7 @@ Network introspection utilities using ioctl and the /proc filesystem.
 """
 import array
 import fcntl
+import os
 import socket
 import struct
 import errno
@@ -138,22 +139,30 @@ def get_flags(sock, interface):
     return struct.unpack("H", data[16:18])[0]
 
 
-def get_active_device_info(skipped_interfaces=("lo",),
-                           skip_vlan=True, skip_alias=True, extended=False):
+def get_virtual():
+    """
+    Returns a list of virtual interfaces see link:
+    https://unix.stackexchange.com/a/58328
+    """
+    try:
+        interfaces = os.listdir('/sys/devices/virtual/net')
+    except OSError:
+        interfaces = []
+    return set(interfaces)
+
+
+def get_active_device_info(extended=False):
     """
     Returns a dictionary containing information on each active network
     interface present on a machine.
     """
     results = []
+    virtual_interfaces = get_virtual()
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
         for interface, ifaddresses in get_active_interfaces():
-            if interface in skipped_interfaces:
-                continue
-            if skip_vlan and "." in interface:
-                continue
-            if skip_alias and ":" in interface:
+            if interface in virtual_interfaces:
                 continue
             flags = get_flags(sock, interface.encode())
             if not is_up(flags):
