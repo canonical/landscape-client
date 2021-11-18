@@ -167,17 +167,14 @@ class NetworkInfoTest(BaseTestCase):
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn(vlan_interface, interfaces)
 
-    @patch("landscape.lib.network.get_virtual")
     @patch("landscape.lib.network.get_active_interfaces")
-    def test_skip_alias(self, mock_get_active_interfaces, mock_get_virtual):
+    def test_skip_alias(self, mock_get_active_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
-        alias_interface = 'eth0:foo'
-        mock_get_virtual.return_value = get_virtual() + [alias_interface]
         mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + [(alias_interface, {})])
+            list(get_active_interfaces()) + [("eth0:foo", {})])
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
-        self.assertNotIn(alias_interface, interfaces)
+        self.assertNotIn("eth0:foo", interfaces)
 
     @patch("landscape.lib.network.netifaces.ifaddresses")
     @patch("landscape.lib.network.netifaces.interfaces")
@@ -376,6 +373,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_unpack.assert_called_with("12xHB28x", ANY)
 
         self.assertEqual((100, False), result)
+        sock.close()
 
     @patch("struct.unpack")
     @patch("fcntl.ioctl")
@@ -395,6 +393,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_unpack.assert_called_with("12xHB28x", ANY)
 
         self.assertEqual((0, False), result)
+        sock.close()
 
     @patch("fcntl.ioctl")
     def test_get_network_interface_speed_not_supported(self, mock_ioctl):
@@ -417,6 +416,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
         self.assertEqual((-1, False), result)
+        sock.close()
 
     @patch("fcntl.ioctl")
     def test_get_network_interface_speed_not_permitted(self, mock_ioctl):
@@ -457,3 +457,4 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_ioctl.side_effect = theerror
 
         self.assertRaises(IOError, get_network_interface_speed, sock, b"eth0")
+        sock.close()
