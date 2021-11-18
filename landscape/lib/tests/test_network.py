@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 from landscape.lib import testing
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
-    get_fqdn, get_network_interface_speed, is_up)
+    get_fqdn, get_network_interface_speed, is_up, get_virtual)
 
 
 class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
@@ -154,24 +154,30 @@ class NetworkInfoTest(BaseTestCase):
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("lo", interfaces)
 
+    @patch("landscape.lib.network.get_virtual")
     @patch("landscape.lib.network.get_active_interfaces")
-    def test_skip_vlan(self, mock_get_active_interfaces):
+    def test_skip_vlan(self, mock_get_virtual, mock_get_active_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
+        vlan_interface = 'eth0.1'
+        mock_get_virtual = get_virtual().add(vlan_interface)
         mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + [("eth0.1", {})])
+            list(get_active_interfaces()) + [(vlan_interface, {})])
         device_info = get_active_device_info()
         self.assertTrue(mock_get_active_interfaces.called)
         interfaces = [i["interface"] for i in device_info]
-        self.assertNotIn("eth0.1", interfaces)
+        self.assertNotIn(vlan_interface, interfaces)
 
+    @patch("landscape.lib.network.get_virtual")
     @patch("landscape.lib.network.get_active_interfaces")
-    def test_skip_alias(self, mock_get_active_interfaces):
+    def test_skip_alias(self, mock_get_virtual, mock_get_active_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
+        alias_interface = 'eth0:foo'
+        mock_get_virtual = get_virtual().add(alias_interface)
         mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + [("eth0:foo", {})])
+            list(get_active_interfaces()) + [(alias_interface, {})])
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
-        self.assertNotIn("eth0:foo", interfaces)
+        self.assertNotIn(alias_interface, interfaces)
 
     @patch("landscape.lib.network.netifaces.ifaddresses")
     @patch("landscape.lib.network.netifaces.interfaces")
