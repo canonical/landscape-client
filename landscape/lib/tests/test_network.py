@@ -159,7 +159,7 @@ class NetworkInfoTest(BaseTestCase):
     def test_skip_vlan(self, mock_get_active_interfaces, mock_get_virtual):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
         vlan_interface = 'eth0.1'
-        mock_get_virtual.return_value = get_virtual() | {vlan_interface}
+        mock_get_virtual.return_value = get_virtual() + [vlan_interface]
         mock_get_active_interfaces.side_effect = lambda: (
             list(get_active_interfaces()) + [(vlan_interface, {})])
         device_info = get_active_device_info()
@@ -172,7 +172,7 @@ class NetworkInfoTest(BaseTestCase):
     def test_skip_alias(self, mock_get_active_interfaces, mock_get_virtual):
         """Interface aliases are not reported by L{get_active_device_info}."""
         alias_interface = 'eth0:foo'
-        mock_get_virtual.return_value = get_virtual() | {alias_interface}
+        mock_get_virtual.return_value = get_virtual() + [alias_interface]
         mock_get_active_interfaces.side_effect = lambda: (
             list(get_active_interfaces()) + [(alias_interface, {})])
         device_info = get_active_device_info()
@@ -439,6 +439,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
         self.assertEqual((-1, False), result)
+        sock.close()
 
     @patch("fcntl.ioctl")
     def test_get_network_interface_speed_other_io_error(self, mock_ioctl):
