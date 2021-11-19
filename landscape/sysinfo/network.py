@@ -16,7 +16,7 @@ class Network(object):
 
     def __init__(self, get_device_info=None):
         if get_device_info is None:
-            get_device_info = partial(get_active_device_info, 
+            get_device_info = partial(get_active_device_info,
                                       extended=True, default_only=True)
         self._get_device_info = get_device_info
 
