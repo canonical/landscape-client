@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 from landscape.lib import testing
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
-    get_fqdn, get_network_interface_speed, is_up, get_virtual)
+    get_fqdn, get_network_interface_speed, is_up)
 
 
 class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
@@ -148,24 +148,40 @@ class NetworkInfoTest(BaseTestCase):
                 'duplex': True,
                 'ip_addresses': {AF_INET6: [{'addr': '2001::1'}]}}])
 
+    @patch("landscape.lib.network.get_default_interfaces")
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_default_only_interface(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed, mock_get_default_interfaces):
+        default_iface = "test_iface"
+        mock_get_default_interfaces.return_value = [default_iface]
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = 4163
+        mock_interfaces.return_value = [default_iface]
+        mock_ifaddresses.return_value = {AF_INET: [{"addr": "192.168.0.50"}]}
+        device_info = get_active_device_info(extended=False, default_only=True)
+        interfaces = [i["interface"] for i in device_info]
+        self.assertIn(default_iface, interfaces)
+        self.assertEqual(len(interfaces), 1)
+
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("lo", interfaces)
 
-    @patch("landscape.lib.network.get_virtual")
     @patch("landscape.lib.network.get_active_interfaces")
-    def test_skip_vlan(self, mock_get_active_interfaces, mock_get_virtual):
+    def test_skip_vlan(self, mock_get_active_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
-        vlan_interface = 'eth0.1'
-        mock_get_virtual.return_value = get_virtual() + [vlan_interface]
         mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + [(vlan_interface, {})])
+            list(get_active_interfaces()) + [("eth0.1", {})])
         device_info = get_active_device_info()
         self.assertTrue(mock_get_active_interfaces.called)
         interfaces = [i["interface"] for i in device_info]
-        self.assertNotIn(vlan_interface, interfaces)
+        self.assertNotIn("eth0.1", interfaces)
 
     @patch("landscape.lib.network.get_active_interfaces")
     def test_skip_alias(self, mock_get_active_interfaces):

@@ -5,7 +5,6 @@ Network introspection utilities using ioctl and the /proc filesystem.
 """
 import array
 import fcntl
-import os
 import socket
 import struct
 import errno
@@ -139,32 +138,35 @@ def get_flags(sock, interface):
     return struct.unpack("H", data[16:18])[0]
 
 
-def get_virtual():
+def get_default_interfaces():
     """
-    Returns a list of virtual interfaces see link:
-    https://unix.stackexchange.com/a/58328
+    Returns a list of interfaces with default routes
     """
-    try:
-        interfaces = os.listdir('/sys/devices/virtual/net')
-    except OSError:
-        interfaces = []
+    default_table = netifaces.gateways()['default']
+    interfaces = [gateway[1] for gateway in default_table.values()]
     return interfaces
 
 
-def get_active_device_info(skip_alias=True, extended=False):
+def get_active_device_info(skipped_interfaces=("lo",),
+                           skip_vlan=True, skip_alias=True, 
+                           extended=False, default_only=False):
     """
     Returns a dictionary containing information on each active network
-    interface present on a machine.
+    interface (which can be filtered based on flags) present on a machine.
     """
     results = []
-    virtual_interfaces = set(get_virtual())
+    default_interfaces = get_default_interfaces()
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
         for interface, ifaddresses in get_active_interfaces():
-            if interface in virtual_interfaces:
+            if interface in skipped_interfaces:
+                continue
+            if skip_vlan and "." in interface:
                 continue
             if skip_alias and ":" in interface:
+                continue
+            if default_only and interface not in default_interfaces:
                 continue
             flags = get_flags(sock, interface.encode())
             if not is_up(flags):
