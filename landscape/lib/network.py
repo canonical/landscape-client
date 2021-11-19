@@ -148,7 +148,7 @@ def get_default_interfaces():
 
 
 def get_active_device_info(skipped_interfaces=("lo",),
-                           skip_vlan=True, skip_alias=True, 
+                           skip_vlan=True, skip_alias=True,
                            extended=False, default_only=False):
     """
     Returns a dictionary containing information on each active network
