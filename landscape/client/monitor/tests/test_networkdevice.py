@@ -2,13 +2,13 @@ import mock
 
 from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.network import (
-    get_active_device_info, get_virtual)
+    get_active_device_info)
 from landscape.client.monitor.networkdevice import NetworkDevice
 
 
 def test_get_active_device_info():
     # Don't skip any interfaces for the tests
-    return get_active_device_info()
+    return get_active_device_info(skipped_interfaces=())
 
 
 class NetworkDeviceTest(LandscapeTest):
@@ -22,20 +22,15 @@ class NetworkDeviceTest(LandscapeTest):
         self.broker_service.message_store.set_accepted_types(
             [self.plugin.message_type])
 
-    @mock.patch("landscape.lib.network.get_virtual")
-    def test_get_network_device(self, mock_get_virtual):
+    def test_get_network_device(self):
         """A message is sent with device info"""
         self.plugin.exchange()
-        lo_interface = 'lo'
-        virtual_interfaces = get_virtual()
-        virtual_interfaces.remove(lo_interface)
-        mock_get_virtual.return_value = get_virtual()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "network-device")
         self.failUnlessIn("devices", message)
         self.assertTrue(len(message["devices"]))
         # only network device we can truly assert is localhost
-        self.assertTrue(message["devices"][0]["interface"], lo_interface)
+        self.assertTrue(message["devices"][0]["interface"], "lo")
         self.assertTrue(message["devices"][0]["ip_address"], "0.0.0.0")
         self.assertTrue(message["devices"][0]["netmask"], "255.0.0.0")
         flags = message["devices"][0]["flags"]
