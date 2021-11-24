@@ -138,13 +138,24 @@ def get_flags(sock, interface):
     return struct.unpack("H", data[16:18])[0]
 
 
+def get_default_interfaces():
+    """
+    Returns a list of interfaces with default routes
+    """
+    default_table = netifaces.gateways()['default']
+    interfaces = [gateway[1] for gateway in default_table.values()]
+    return interfaces
+
+
 def get_active_device_info(skipped_interfaces=("lo",),
-                           skip_vlan=True, skip_alias=True, extended=False):
+                           skip_vlan=True, skip_alias=True,
+                           extended=False, default_only=False):
     """
     Returns a dictionary containing information on each active network
-    interface present on a machine.
+    interface (which can be filtered based on flags) present on a machine.
     """
     results = []
+    default_interfaces = get_default_interfaces()
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
@@ -154,6 +165,8 @@ def get_active_device_info(skipped_interfaces=("lo",),
             if skip_vlan and "." in interface:
                 continue
             if skip_alias and ":" in interface:
+                continue
+            if default_only and interface not in default_interfaces:
                 continue
             flags = get_flags(sock, interface.encode())
             if not is_up(flags):
@@ -178,7 +191,7 @@ def get_active_device_info(skipped_interfaces=("lo",),
             if netifaces.AF_INET in ip_addresses or extended:
                 results.append(interface_info)
     finally:
-        del sock
+        sock.close()
 
     return results
 
@@ -253,8 +266,8 @@ def get_network_interface_speed(sock, interface_name):
         speed, duplex = struct.unpack("12xHB28x", res)
     except (IOError, OSError) as e:
         if e.errno == errno.EPERM:
-            logging.warn("Could not determine network interface speed, "
-                         "operation not permitted.")
+            logging.warning("Could not determine network interface speed, "
+                            "operation not permitted.")
         elif e.errno != errno.EOPNOTSUPP and e.errno != errno.EINVAL:
             raise e
         speed = -1

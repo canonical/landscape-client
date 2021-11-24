@@ -148,6 +148,25 @@ class NetworkInfoTest(BaseTestCase):
                 'duplex': True,
                 'ip_addresses': {AF_INET6: [{'addr': '2001::1'}]}}])
 
+    @patch("landscape.lib.network.get_default_interfaces")
+    @patch("landscape.lib.network.get_network_interface_speed")
+    @patch("landscape.lib.network.get_flags")
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_default_only_interface(
+            self, mock_interfaces, mock_ifaddresses, mock_get_flags,
+            mock_get_network_interface_speed, mock_get_default_interfaces):
+        default_iface = "test_iface"
+        mock_get_default_interfaces.return_value = [default_iface]
+        mock_get_network_interface_speed.return_value = (100, True)
+        mock_get_flags.return_value = 4163
+        mock_interfaces.return_value = [default_iface]
+        mock_ifaddresses.return_value = {AF_INET: [{"addr": "192.168.0.50"}]}
+        device_info = get_active_device_info(extended=False, default_only=True)
+        interfaces = [i["interface"] for i in device_info]
+        self.assertIn(default_iface, interfaces)
+        self.assertEqual(len(interfaces), 1)
+
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
         device_info = get_active_device_info()
@@ -370,6 +389,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_unpack.assert_called_with("12xHB28x", ANY)
 
         self.assertEqual((100, False), result)
+        sock.close()
 
     @patch("struct.unpack")
     @patch("fcntl.ioctl")
@@ -389,6 +409,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_unpack.assert_called_with("12xHB28x", ANY)
 
         self.assertEqual((0, False), result)
+        sock.close()
 
     @patch("fcntl.ioctl")
     def test_get_network_interface_speed_not_supported(self, mock_ioctl):
@@ -411,6 +432,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
         self.assertEqual((-1, False), result)
+        sock.close()
 
     @patch("fcntl.ioctl")
     def test_get_network_interface_speed_not_permitted(self, mock_ioctl):
@@ -433,6 +455,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_ioctl.assert_called_with(ANY, ANY, ANY)
 
         self.assertEqual((-1, False), result)
+        sock.close()
 
     @patch("fcntl.ioctl")
     def test_get_network_interface_speed_other_io_error(self, mock_ioctl):
@@ -450,3 +473,4 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         mock_ioctl.side_effect = theerror
 
         self.assertRaises(IOError, get_network_interface_speed, sock, b"eth0")
+        sock.close()
