@@ -35,32 +35,16 @@ def is_up(flags):
     return flags & 1
 
 
-def get_active_interfaces():
-    """Generator yields (active network interface name, address data) tuples.
+def is_active(ifaddresses):
+    """Checks if interface address data has an IP address
 
-    Address data is formatted exactly like L{netifaces.ifaddresses}, e.g.::
-
-        ('eth0', {
-            AF_LINK: [
-                {'addr': '...', 'broadcast': '...'}, ],
-            AF_INET: [
-                {'addr': '...', 'broadcast': '...', 'netmask': '...'},
-                {'addr': '...', 'broadcast': '...', 'netmask': '...'},
-                ...],
-            AF_INET6: [
-                {'addr': '...', 'netmask': '...'},
-                {'addr': '...', 'netmask': '...'},
-                ...], })
-
-    Interfaces with no IP address are ignored.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
-    for interface in netifaces.interfaces():
-        ifaddresses = netifaces.ifaddresses(interface)
-        # Skip interfaces with no IPv4 or IPv6 addresses.
-        inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
-        inet6_addr = ifaddresses.get(netifaces.AF_INET6, [{}])[0].get('addr')
-        if inet_addr or inet6_addr:
-            yield interface, ifaddresses
+    inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
+    inet6_addr = ifaddresses.get(netifaces.AF_INET6, [{}])[0].get('addr')
+    if inet_addr or inet6_addr:
+        return True
+    return False
 
 
 def get_ip_addresses(ifaddresses):
@@ -69,8 +53,7 @@ def get_ip_addresses(ifaddresses):
     Returns the same structure as L{ifaddresses}, but filtered to keep
     IP addresses only.
 
-    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
-        the address data in L{get_active_interfaces}'s output.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
     results = {}
     if netifaces.AF_INET in ifaddresses:
@@ -88,8 +71,7 @@ def get_ip_addresses(ifaddresses):
 def get_broadcast_address(ifaddresses):
     """Return the broadcast address associated to an interface.
 
-    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
-        the address data in L{get_active_interfaces}'s output.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
     return ifaddresses[netifaces.AF_INET][0].get('broadcast', '0.0.0.0')
 
@@ -97,8 +79,7 @@ def get_broadcast_address(ifaddresses):
 def get_netmask(ifaddresses):
     """Return the network mask associated to an interface.
 
-    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
-        the address data in L{get_active_interfaces}'s output.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
     return ifaddresses[netifaces.AF_INET][0].get('netmask', '')
 
@@ -106,8 +87,7 @@ def get_netmask(ifaddresses):
 def get_ip_address(ifaddresses):
     """Return the first IPv4 address associated to the interface.
 
-    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
-        the address data in L{get_active_interfaces}'s output.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
     return ifaddresses[netifaces.AF_INET][0]['addr']
 
@@ -118,8 +98,7 @@ def get_mac_address(ifaddresses):
     ie. six colon separated groups of two hexadecimal digits, if available;
     otherwise an empty string.
 
-    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses} or
-        the address data in L{get_active_interfaces}'s output.
+    @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
     if netifaces.AF_LINK in ifaddresses:
         return ifaddresses[netifaces.AF_LINK][0].get('addr', '')
@@ -159,7 +138,7 @@ def get_active_device_info(skipped_interfaces=("lo",),
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
-        for interface, ifaddresses in get_active_interfaces():
+        for interface in netifaces.interfaces():
             if interface in skipped_interfaces:
                 continue
             if skip_vlan and "." in interface:
@@ -167,6 +146,9 @@ def get_active_device_info(skipped_interfaces=("lo",),
             if skip_alias and ":" in interface:
                 continue
             if default_only and interface not in default_interfaces:
+                continue
+            ifaddresses = netifaces.ifaddresses(interface)
+            if not is_active(ifaddresses):
                 continue
             flags = get_flags(sock, interface.encode())
             if not is_up(flags):
