@@ -194,7 +194,10 @@ class NetworkInfoTest(BaseTestCase):
     @patch("landscape.lib.network.netifaces.ifaddresses")
     @patch("landscape.lib.network.netifaces.interfaces")
     def test_no_extra_netifaces_calls(self, mock_interfaces, mock_ifaddresses):
-        """Make sure filtered out interfaces aren't used in netiface calls"""
+        """
+        Make sure filtered out interfaces aren't used in netiface calls due to
+        their impact on sysinfo/login time with a large amount of interfaces.
+        """
         mock_interfaces.return_value = ["eth0:foo"]
         get_active_device_info()
         assert not mock_ifaddresses.called
