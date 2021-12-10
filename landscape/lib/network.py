@@ -42,9 +42,7 @@ def is_active(ifaddresses):
     """
     inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
     inet6_addr = ifaddresses.get(netifaces.AF_INET6, [{}])[0].get('addr')
-    if inet_addr or inet6_addr:
-        return True
-    return False
+    return bool(inet_addr or inet6_addr)
 
 
 def get_ip_addresses(ifaddresses):
