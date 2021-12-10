@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE
 
 from landscape.lib import testing
 from landscape.lib.network import (
-    get_network_traffic, get_active_device_info, get_active_interfaces,
+    get_network_traffic, get_active_device_info,
     get_fqdn, get_network_interface_speed, is_up)
 
 
@@ -173,24 +173,34 @@ class NetworkInfoTest(BaseTestCase):
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("lo", interfaces)
 
-    @patch("landscape.lib.network.get_active_interfaces")
-    def test_skip_vlan(self, mock_get_active_interfaces):
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_skip_vlan(self, mock_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
-        mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + [("eth0.1", {})])
+        mock_interfaces.side_effect = lambda: (
+            _interfaces() + ["eth0.1"])
         device_info = get_active_device_info()
-        self.assertTrue(mock_get_active_interfaces.called)
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0.1", interfaces)
 
-    @patch("landscape.lib.network.get_active_interfaces")
-    def test_skip_alias(self, mock_get_active_interfaces):
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_skip_alias(self, mock_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
-        mock_get_active_interfaces.side_effect = lambda: (
-            list(get_active_interfaces()) + [("eth0:foo", {})])
+        mock_interfaces.side_effect = lambda: (
+            _interfaces() + ["eth0:foo"])
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0:foo", interfaces)
+
+    @patch("landscape.lib.network.netifaces.ifaddresses")
+    @patch("landscape.lib.network.netifaces.interfaces")
+    def test_no_extra_netifaces_calls(self, mock_interfaces, mock_ifaddresses):
+        """
+        Make sure filtered out interfaces aren't used in netiface calls due to
+        their impact on sysinfo/login time with a large amount of interfaces.
+        """
+        mock_interfaces.return_value = ["eth0:foo"]
+        get_active_device_info()
+        assert not mock_ifaddresses.called
 
     @patch("landscape.lib.network.netifaces.ifaddresses")
     @patch("landscape.lib.network.netifaces.interfaces")
