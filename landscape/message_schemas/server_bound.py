@@ -505,8 +505,8 @@ NETWORK_ACTIVITY = Message(
 UPDATE_MANAGER_INFO = Message("update-manager-info", {"prompt": Unicode()})
 
 COMPUTER_TAGS = Message(
-    "computer-tags", {
-    "tags": Any(Unicode(), Constant(None))})
+    "computer-tags",
+    {"tags": Any(Unicode(), Constant(None))})
 
 
 message_schemas = (
