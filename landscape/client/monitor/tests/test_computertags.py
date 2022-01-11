@@ -1,4 +1,4 @@
-import sys
+import mock
 
 from landscape.client.monitor.computertags import ComputerTags
 from landscape.client.tests.helpers import MonitorHelper, LandscapeTest
@@ -30,12 +30,9 @@ class ComputerTagsTest(LandscapeTest):
         tags = 'check,linode,profile-test'
         file_text = "[client]\ntags = {}".format(tags)
         filename = self.makeFile(file_text)
-        saved_argv = sys.argv
-        try:
-            sys.argv = ['hello.py', '--config', filename]
+        testargs = ["hello.py", "--config", filename]
+        with mock.patch.object(ComputerTags, '_argv', testargs):
             data = self.plugin.get_data()
-        finally:
-            sys.argv = saved_argv
         self.assertEqual(data, tags)
 
     def test_tags_message_sent(self):
