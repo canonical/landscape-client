@@ -13,10 +13,11 @@ class ComputerTags(DataWatcher):
     message_key = "tags"
     run_interval = 3600  # Every hour only when data changed
     run_immediately = True
+    _argv = sys.argv  # To mock argv in unit tests
 
     def get_data(self):
         config = BrokerConfiguration()
-        config.load(sys.argv)  # Load the default or specified config
+        config.load(ComputerTags._argv)  # Load the default or specified config
         tags = config.tags
         if not is_valid_tag_list(tags):
             tags = None
