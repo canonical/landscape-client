@@ -4,6 +4,7 @@ from landscape.client.monitor.computertags import ComputerTags
 from landscape.client.tests.helpers import MonitorHelper, LandscapeTest
 
 
+@mock.patch.object(ComputerTags, '_argv', ['hello.py'])
 class ComputerTagsTest(LandscapeTest):
 
     helpers = [MonitorHelper]
@@ -32,8 +33,7 @@ class ComputerTagsTest(LandscapeTest):
         filename = self.makeFile(file_text)
         testargs = ["hello.py", "--config", filename]
         with mock.patch.object(ComputerTags, '_argv', testargs):
-            data = self.plugin.get_data()
-        self.assertEqual(data, tags)
+            self.assertEqual(self.plugin.get_data(), tags)
 
     def test_tags_message_sent(self):
         """
