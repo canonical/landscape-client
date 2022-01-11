@@ -33,7 +33,8 @@ class ComputerTagsTest(LandscapeTest):
         filename = self.makeFile(file_text)
         testargs = ["hello.py", "--config", filename]
         with mock.patch.object(sys, 'argv', testargs):
-            self.assertEqual(self.plugin.get_data(), tags)
+            data = self.plugin.get_data()
+        self.assertEqual(data, tags)
 
     def test_tags_message_sent(self):
         """
