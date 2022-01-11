@@ -1,3 +1,6 @@
+import mock
+import sys
+
 from landscape.client.monitor.computertags import ComputerTags
 from landscape.client.tests.helpers import MonitorHelper, LandscapeTest
 
@@ -13,13 +16,24 @@ class ComputerTagsTest(LandscapeTest):
 
     def test_tags_are_read(self):
         """
-        Tags are read from the default config file
+        Tags are read from the default config path
         """
         tags = 'check,linode,profile-test'
         file_text = "[client]\ntags = {}".format(tags)
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(file_text, path=config_filename)
         self.assertEqual(self.plugin.get_data(), tags)
+
+    def test_tags_are_read_from_args_path(self):
+        """
+        Tags are read from path specified in command line args
+        """
+        tags = 'check,linode,profile-test'
+        file_text = "[client]\ntags = {}".format(tags)
+        filename = self.makeFile(file_text)
+        testargs = ["hello.py", "--config", filename]
+        with mock.patch.object(sys, 'argv', testargs):
+            self.assertEqual(self.plugin.get_data(), tags)
 
     def test_tags_message_sent(self):
         """
@@ -45,8 +59,8 @@ class ComputerTagsTest(LandscapeTest):
         self.makeFile(file_text, path=config_filename)
         self.assertEqual(self.plugin.get_data(), None)
 
-    def test_empty_config_file(self):
+    def test_empty_tags(self):
         """
-        Makes sure no errors when config file is empty
+        Makes sure no errors when tags section is empty
         """
         self.assertEqual(self.plugin.get_data(), None)
