@@ -8,9 +8,9 @@ class ComputerTagsTest(LandscapeTest):
 
     def setUp(self):
         super(ComputerTagsTest, self).setUp()
-        self.plugin = ComputerTags()
+        test_sys_args = ['hello.py']
+        self.plugin = ComputerTags(args=test_sys_args)
         self.monitor.add(self.plugin)
-        ComputerTags._argv = ['hello.py']  # For testing sys.argv
 
     def test_tags_are_read(self):
         """
@@ -29,8 +29,8 @@ class ComputerTagsTest(LandscapeTest):
         tags = 'check,linode,profile-test'
         file_text = "[client]\ntags = {}".format(tags)
         filename = self.makeFile(file_text)
-        testargs = ["hello.py", "--config", filename]
-        ComputerTags._argv = testargs
+        test_sys_args = ['hello.py', '--config', filename]
+        self.plugin.args = test_sys_args
         self.assertEqual(self.plugin.get_data(), tags)
 
     def test_tags_message_sent(self):
