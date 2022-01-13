@@ -17,7 +17,7 @@ class ComputerTags(DataWatcher):
 
     def __init__(self, args=sys.argv):
         super(ComputerTags, self).__init__()
-        self.args = sys.argv  # Defined to specify args in unit tests
+        self.args = args  # Defined to specify args in unit tests
 
     def get_data(self):
         config = BrokerConfiguration()
