@@ -13,7 +13,7 @@ def got_next_expected(store, next_expected):
     0. The peer expects a sequence number greater than the number of messages
        we just sent. This means something is not right. We advance the pending
        offset from the previous payload since the server does not want old or
-       ancient messages, however we also reset it so that current payload is 
+       ancient messages, however we also reset it so that current payload is
        resent. Then we resynchronize by calling RESYNC. See LP: #1917540
 
     1. The peer expects a sequence greater than what we last
@@ -57,4 +57,3 @@ def got_next_expected(store, next_expected):
     store.set_pending_offset(pending_offset)
     store.set_sequence(next_expected)
     return ret
-
