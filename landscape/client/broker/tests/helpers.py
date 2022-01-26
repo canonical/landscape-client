@@ -39,14 +39,16 @@ class BrokerConfigurationHelper(object):
         log_dir = test_case.makeDir()
         test_case.config_filename = os.path.join(test_case.makeDir(),
                                                  "client.conf")
-        open(test_case.config_filename, "w").write(
-            "[client]\n"
-            "url = http://localhost:91919\n"
-            "computer_title = Some Computer\n"
-            "account_name = some_account\n"
-            "ping_url = http://localhost:91910\n"
-            "data_path = %s\n"
-            "log_dir = %s\n" % (data_path, log_dir))
+
+        with open(test_case.config_filename, "w") as fh:
+            fh.write(
+                "[client]\n"
+                "url = http://localhost:91919\n"
+                "computer_title = Some Computer\n"
+                "account_name = some_account\n"
+                "ping_url = http://localhost:91910\n"
+                "data_path = %s\n"
+                "log_dir = %s\n" % (data_path, log_dir))
 
         bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
 
