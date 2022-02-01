@@ -750,12 +750,17 @@ def determine_exit_code(what_happened):
         return 2  # An error happened
 
 
-def is_registered(config):
-    """Return whether the client is already registered."""
+def get_client_identity(config):
+    """Get client identity based on saved registration data"""
     persist_filename = os.path.join(
         config.data_path, "{}.bpickle".format(BrokerService.service_name))
     persist = Persist(filename=persist_filename)
-    identity = Identity(config, persist)
+    return Identity(config, persist)
+
+
+def is_registered(config):
+    """Return whether the client is already registered."""
+    identity = get_client_identity(config)
     return bool(identity.secure_id)
 
 
