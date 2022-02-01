@@ -1,0 +1,10 @@
+#!/usr/bin/python3
+import sys, os
+if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
+    sys.path.insert(0, "./")
+
+from landscape.client.registration_status import display_registration_status
+
+
+if __name__ == "__main__":
+    display_registration_status()
