@@ -4,6 +4,7 @@ import mock
 from functools import partial
 import os
 import sys
+import textwrap
 import unittest
 
 from twisted.internet.defer import succeed, fail, Deferred
@@ -11,7 +12,7 @@ from twisted.python.compat import iteritems
 
 from landscape.lib.compat import ConfigParser
 from landscape.lib.compat import StringIO
-from landscape.client.broker.registration import RegistrationError
+from landscape.client.broker.registration import RegistrationError, Identity
 from landscape.client.broker.tests.helpers import (
     RemoteBrokerHelper, BrokerConfigurationHelper)
 from landscape.client.configuration import (
@@ -21,7 +22,8 @@ from landscape.client.configuration import (
     ImportOptionError, store_public_key_data,
     bootstrap_tree, got_connection, success, failure, exchange_failure,
     handle_registration_errors, done, got_error, report_registration_outcome,
-    determine_exit_code, is_registered)
+    determine_exit_code, is_registered, registration_info_text,
+    NOT_REGISTERED_EXIT_CODE)
 from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import read_binary_file
@@ -2233,3 +2235,72 @@ class IsRegisteredTest(LandscapeTest):
         self.persist.set("registration.secure-id", "super-secure")
         self.persist.save()
         self.assertTrue(is_registered(self.config))
+
+
+class RegistrationInfoTest(LandscapeTest):
+
+    helpers = [BrokerConfigurationHelper]
+
+    def setUp(self):
+        super(RegistrationInfoTest, self).setUp()
+        self.custom_args = ['hello.py']  # Fake python script name
+        self.account_name = 'world'
+        self.data_path = self.makeDir()
+        self.config_text = textwrap.dedent("""
+            [client]
+            computer_title = hello
+            account_name = {}
+            data_path = {}
+        """.format(self.account_name, self.data_path))
+
+    def test_not_registered(self):
+        '''False when client is not registered'''
+        config_filename = self.config.default_config_filenames[0]
+        self.makeFile(self.config_text, path=config_filename)
+        self.config.load(self.custom_args)
+        text = registration_info_text(self.config, False)
+        self.assertIn('False', text)
+        self.assertNotIn(self.account_name, text)
+
+    def test_registered(self):
+        '''
+        When client is registered, then the text should display as True and
+        account name should be present
+        '''
+        config_filename = self.config.default_config_filenames[0]
+        self.makeFile(self.config_text, path=config_filename)
+        self.config.load(self.custom_args)
+        text = registration_info_text(self.config, True)
+        self.assertIn('True', text)
+        self.assertIn(self.account_name, text)
+
+    def test_custom_config_path(self):
+        '''The custom config path should show up in the text'''
+        custom_path = self.makeFile(self.config_text)
+        self.custom_args += ['-c', custom_path]
+        self.config.load(self.custom_args)
+        text = registration_info_text(self.config, False)
+        self.assertIn(custom_path, text)
+
+    def test_data_path(self):
+        '''The config data path should show in the text'''
+        config_filename = self.config.default_config_filenames[0]
+        self.makeFile(self.config_text, path=config_filename)
+        self.config.load(self.custom_args)
+        text = registration_info_text(self.config, False)
+        self.assertIn(self.data_path, text)
+
+    def test_registered_exit_code(self):
+        '''Returns exit code zero when client is registered'''
+        Identity.secure_id = 'test'  # Simulate successful registration
+        exception = self.assertRaises(
+            SystemExit, main, ["--is-registered", "--silent"],
+            print=noop_print)
+        self.assertEqual(0, exception.code)
+
+    def test_not_registered_exit_code(self):
+        '''Returns special return code when client is not registered'''
+        exception = self.assertRaises(
+            SystemExit, main, ["--is-registered", "--silent"],
+            print=noop_print)
+        self.assertEqual(NOT_REGISTERED_EXIT_CODE, exception.code)
