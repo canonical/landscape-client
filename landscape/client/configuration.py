@@ -12,6 +12,7 @@ import io
 import os
 import pwd
 import sys
+import textwrap
 
 from landscape.lib.compat import input
 from landscape.lib import base64
@@ -31,6 +32,9 @@ from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.service import BrokerService
+
+
+NOT_REGISTERED_EXIT_CODE = 5
 
 
 class ConfigurationError(Exception):
@@ -192,6 +196,10 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_option("--init", action="store_true", default=False,
                           help="Set up the client directories structure "
                                "and exit.")
+        parser.add_option("--is-registered", action="store_true",
+                          help="Returns zero exit code if client is registered"
+                               "else returns {}. Displays registration info."
+                               .format(NOT_REGISTERED_EXIT_CODE))
         return parser
 
 
@@ -759,6 +767,26 @@ def is_registered(config):
     return bool(identity.secure_id)
 
 
+def registration_info_text(config, registration_status):
+    '''
+    A simple output displaying whether the client is registered or not, the
+    account name, and config and data paths
+    '''
+
+    config_path = os.path.abspath(config._config_filename)
+
+    text = textwrap.dedent("""
+                           Registered:    {}
+                           Config Path:   {}
+                           Data Path      {}"""
+                           .format(registration_status, config_path,
+                                   config.data_path))
+    if registration_status:
+        text += '\nAccount Name:  {}'.format(config.account_name)
+
+    return text
+
+
 def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
 
@@ -768,6 +796,18 @@ def main(args, print=print):
     except ImportOptionError as error:
         print_text(str(error), error=True)
         sys.exit(1)
+
+    if config.is_registered:
+
+        registration_status = is_registered(config)
+
+        info_text = registration_info_text(config, registration_status)
+        print(info_text)
+
+        if registration_status:
+            sys.exit(0)
+        else:
+            sys.exit(NOT_REGISTERED_EXIT_CODE)
 
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
