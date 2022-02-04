@@ -331,7 +331,7 @@ class MessageExchangeTest(LandscapeTest):
         '''
         When next expected sequence received from server is too high, then the
         pending offset should reset to zero. This will cause the client to
-        resend the payload.
+        resend the pending messages.
         '''
 
         self.mstore.set_accepted_types(["data"])
@@ -346,20 +346,19 @@ class MessageExchangeTest(LandscapeTest):
 
         self.transport.next_expected_sequence = 100
 
-        # Confirm pending offset is reset so that latest payload is sent again
+        # Confirm pending offset is reset so that messages are sent again
         self.exchanger.exchange()
         self.assertEqual(self.mstore.get_pending_offset(), 0)
 
-        # This function advances the pending offset of the previous payload
-        # to the current one, otherwise an offset of 0 will resend two
-        # payloads
+        # This function flushes the queue, otherwise an offset of 0 will resend
+        # previous messages that were already successful
         self.assertTrue(mock_rm_all_messages.called)
 
     def test_payloads_when_next_expected_too_high(self):
         '''
         When next expected sequence received from server is too high, then the
-        current payload should get sent again since we don't have confirmation
-        that the server received it. Also previous payloads should not get
+        current messages should get sent again since we don't have confirmation
+        that the server received it. Also previous messages should not get
         repeated.
         '''
 
@@ -382,7 +381,7 @@ class MessageExchangeTest(LandscapeTest):
         last_messages = self.transport.payloads[-1]["messages"]
         self.assertTrue(last_messages)
 
-        # Confirm earlier payloads are not resent
+        # Confirm earlier messages are not resent
         self.assertNotIn(message0["data"],
                          [m["data"] for m in last_messages])
 
@@ -404,8 +403,8 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.call_on("resynchronize-clients", lambda scope=None: None)
 
         self.exchanger.exchange()
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "resynchronize"}])
+        self.assertMessage(self.mstore.get_pending_messages()[-1],
+                           {"type": "resynchronize"})
 
     def test_start_with_urgent_exchange(self):
         """
