@@ -1,6 +1,6 @@
 """Helpers for reliable persistent message queues."""
 
-RESYNC = 1
+RESYNC = object()  # Used as a flag indicating a resync is needed
 
 
 def got_next_expected(store, next_expected):
@@ -10,11 +10,11 @@ def got_next_expected(store, next_expected):
     wants next; this will do various things based on what *this* side
     has in its outbound queue store.
 
-    0. The peer expects a sequence number greater than the number of messages
-       we just sent. This means something is not right. We advance the pending
-       offset from the previous payload since the server does not want old or
-       ancient messages, however we also reset it so that current payload is
-       resent. Then we resynchronize by calling RESYNC. See LP: #1917540
+    0. The peer expects a sequence number from the server that is too high, the
+       difference greater than pending messages in the peer. We flush the older
+       messages in queue b/c the server does not want old or ancient messages,
+       however we also reset the offset so that the pending messages are
+       resent. Then we resynchronize by returning RESYNC. See LP: #1917540
 
     1. The peer expects a sequence greater than what we last
        sent. This is the common case and generally it should be
@@ -36,7 +36,7 @@ def got_next_expected(store, next_expected):
     ret = None
     old_sequence = store.get_sequence()
     if (next_expected - old_sequence) > store.count_pending_messages():
-        store.delete_old_messages()  # This will advance prev pending offset
+        store.delete_old_messages()  # Flush queue from previous iteration
         pending_offset = 0  # This means current messages will be resent
         ret = RESYNC
     elif next_expected > old_sequence:
