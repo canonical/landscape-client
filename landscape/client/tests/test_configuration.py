@@ -23,7 +23,7 @@ from landscape.client.configuration import (
     bootstrap_tree, got_connection, success, failure, exchange_failure,
     handle_registration_errors, done, got_error, report_registration_outcome,
     determine_exit_code, is_registered, registration_info_text,
-    NOT_REGISTERED_EXIT_CODE)
+    EXIT_NOT_REGISTERED)
 from landscape.lib.amp import MethodCallError
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import read_binary_file
@@ -2303,4 +2303,4 @@ class RegistrationInfoTest(LandscapeTest):
         exception = self.assertRaises(
             SystemExit, main, ["--is-registered", "--silent"],
             print=noop_print)
-        self.assertEqual(NOT_REGISTERED_EXIT_CODE, exception.code)
+        self.assertEqual(EXIT_NOT_REGISTERED, exception.code)

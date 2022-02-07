@@ -34,7 +34,7 @@ from landscape.client.broker.registration import Identity
 from landscape.client.broker.service import BrokerService
 
 
-NOT_REGISTERED_EXIT_CODE = 5
+EXIT_NOT_REGISTERED = 5
 
 
 class ConfigurationError(Exception):
@@ -197,9 +197,10 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                           help="Set up the client directories structure "
                                "and exit.")
         parser.add_option("--is-registered", action="store_true",
-                          help="Returns zero exit code if client is registered"
-                               "else returns {}. Displays registration info."
-                               .format(NOT_REGISTERED_EXIT_CODE))
+                          help="Exit with code 0 (success) if client is "
+                               "registered else returns {}. Displays "
+                               "registration info."
+                               .format(EXIT_NOT_REGISTERED))
         return parser
 
 
@@ -807,7 +808,7 @@ def main(args, print=print):
         if registration_status:
             sys.exit(0)
         else:
-            sys.exit(NOT_REGISTERED_EXIT_CODE)
+            sys.exit(EXIT_NOT_REGISTERED)
 
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
