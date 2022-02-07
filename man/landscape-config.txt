@@ -75,6 +75,9 @@ OPTIONS
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
   --otp=OTP                The one-time password (OTP) to use in cloud configuration.
+  --is-registered          Exit with code 0 (success) if client 
+                           is registered else returns 5. Display 
+                           registration info.
 
 CLOUD
 
