@@ -351,7 +351,7 @@ from twisted.python.compat import _PY3
 
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.format import format_delta
-from landscape.lib.message import got_next_expected, ANCIENT
+from landscape.lib.message import got_next_expected, RESYNC
 from landscape.lib.versioning import is_version_higher, sort_versions
 
 from landscape import DEFAULT_SERVER_API, SERVER_API, CLIENT_API
@@ -746,9 +746,9 @@ class MessageExchange(object):
             next_expected += len(payload["messages"])
 
         message_store_state = got_next_expected(message_store, next_expected)
-        if message_store_state == ANCIENT:
-            # The server has probably lost some data we sent it. The
-            # slate has been wiped clean (by got_next_expected), now
+        if message_store_state == RESYNC:
+            # The server has probably lost some data we sent it. Or next
+            # expected is too high so the sequences are out of sync. Now
             # let's fire an event to tell all the plugins that they
             # ought to generate new messages so the server gets some
             # up-to-date data.

@@ -324,6 +324,88 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(payload["sequence"], 1)
         self.assertEqual(payload["next-expected-sequence"], 0)
 
+    @mock.patch("landscape.client.broker.store.MessageStore"
+                ".delete_old_messages")
+    def test_pending_offset_when_next_expected_too_high(self,
+                                                        mock_rm_all_messages):
+        '''
+        When next expected sequence received from server is too high, then the
+        pending offset should reset to zero. This will cause the client to
+        resend the pending messages.
+        '''
+
+        self.mstore.set_accepted_types(["data"])
+        self.mstore.add({"type": "data", "data": 0})
+        self.mstore.add({"type": "data", "data": 1})
+
+        self.exchanger.exchange()
+
+        self.assertEqual(self.mstore.get_pending_offset(), 2)
+
+        self.mstore.add({"type": "data", "data": 2})
+
+        self.transport.next_expected_sequence = 100
+
+        # Confirm pending offset is reset so that messages are sent again
+        self.exchanger.exchange()
+        self.assertEqual(self.mstore.get_pending_offset(), 0)
+
+        # This function flushes the queue, otherwise an offset of 0 will resend
+        # previous messages that were already successful
+        self.assertTrue(mock_rm_all_messages.called)
+
+    def test_payloads_when_next_expected_too_high(self):
+        '''
+        When next expected sequence received from server is too high, then the
+        current messages should get sent again since we don't have confirmation
+        that the server received it. Also previous messages should not get
+        repeated.
+        '''
+
+        self.mstore.set_accepted_types(["data"])
+
+        message0 = {"type": "data", "data": 0}
+        self.mstore.add(message0)
+        self.exchanger.exchange()
+
+        message1 = {"type": "data", "data": 1}
+        message2 = {"type": "data", "data": 2}
+        self.mstore.add(message1)
+        self.mstore.add(message2)
+
+        self.transport.next_expected_sequence = 100
+        self.exchanger.exchange()  # Resync
+        self.exchanger.exchange()  # Resend
+
+        # Confirm messages is not empty which was the original bug
+        last_messages = self.transport.payloads[-1]["messages"]
+        self.assertTrue(last_messages)
+
+        # Confirm earlier messages are not resent
+        self.assertNotIn(message0["data"],
+                         [m["data"] for m in last_messages])
+
+        # Confirm contents of payload
+        self.assertEqual([message1, message2], last_messages)
+
+    def test_resync_when_next_expected_too_high(self):
+        '''
+        When next expected sequence received from the server is too high, then
+        a resynchronize should happen
+        '''
+
+        self.mstore.set_accepted_types(["empty", "resynchronize"])
+        self.mstore.add({"type": "empty"})
+        self.exchanger.exchange()
+
+        self.transport.next_expected_sequence = 100
+
+        self.reactor.call_on("resynchronize-clients", lambda scope=None: None)
+
+        self.exchanger.exchange()
+        self.assertMessage(self.mstore.get_pending_messages()[-1],
+                           {"type": "resynchronize"})
+
     def test_start_with_urgent_exchange(self):
         """
         Immediately after registration, an urgent exchange should be scheduled.
