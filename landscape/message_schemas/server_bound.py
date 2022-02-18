@@ -219,10 +219,12 @@ REGISTER_3_3 = Message(
      "juju-info": KeyDict({"environment-uuid": Unicode(),
                            "api-addresses": List(Unicode()),
                            "machine-id": Unicode()}),
-     "access_group": Unicode()},
+     "access_group": Unicode(),
+     "clone_secure_id": Any(Unicode(), Constant(None))},
     api=b"3.3",
     optional=["registration_password", "hostname", "tags", "vm-info",
-              "container-info", "access_group", "juju-info"])
+              "container-info", "access_group", "juju-info",
+              "clone_secure_id"])
 
 
 # XXX The register-provisioned-machine message is obsolete, it's kept around
