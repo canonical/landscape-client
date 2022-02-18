@@ -258,31 +258,11 @@ class RegistrationHandler(object):
         if clone is None:
             logging.info("Client has unknown secure-id for account %s."
                          % id.account_name)
-        else:
+        else:  # Save the secure id as the clone, and clear it so it's renewed
             logging.info("Client is clone of computer %s" % clone)
-            # Set a new computer title so when a registration request will be
-            # made, the pending computer UI will indicate that this is a clone
-            # of another computer. There's no need to persist the changes since
-            # a new registration will be requested immediately.
-            computer_title = self._config.computer_title
-            computer_name = extract_name(computer_title)
-            clone_name = extract_name(clone)
-            if clone_name == computer_name:
-                title = "{} (clone)".format(computer_name)
-            else:
-                title = "{} (clone of {})".format(computer_name, clone_name)
-            self._config.computer_title = title
             self._clone_secure_id = id.secure_id
         id.secure_id = None
         id.insecure_id = None
-
-
-def extract_name(title):
-    '''
-    A helper function to get the name of the computer without the clone suffix
-    '''
-    name = title.split('(clone')[0].strip()
-    return name
 
 
 class RegistrationResponse(object):
