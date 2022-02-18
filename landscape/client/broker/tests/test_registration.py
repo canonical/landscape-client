@@ -125,6 +125,65 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertIn("Client is clone of computer Wu",
                       self.logfile.getvalue())
 
+    def test_no_nested_clones(self):
+        """
+        Make sure that nested clones are no longer set as the computer title
+        """
+        self.config.computer_title = "Wu (clone)"
+        self.mstore.set_accepted_types(["register"])
+        self.exchanger.handle_message(
+            {"type": b"unknown-id", "clone-of": "Wu (clone)"})
+        self.assertEqual("Wu (clone)", self.config.computer_title)
+
+    def test_existing_nested_clones(self):
+        """
+        Make sure that existing nested clones are handled correctly
+        """
+        self.config.computer_title = "Wu"
+        self.mstore.set_accepted_types(["register"])
+        self.exchanger.handle_message(
+            {"type": b"unknown-id", "clone-of": "Wu (clone of Wu (clone))"})
+        self.assertEqual("Wu (clone)", self.config.computer_title)
+
+    def test_clones_with_different_computer_names(self):
+        """
+        Make sure that different computer names don't show up as nested
+        """
+        self.config.computer_title = "Wu"
+        self.mstore.set_accepted_types(["register"])
+        self.exchanger.handle_message(
+            {"type": b"unknown-id", "clone-of": "Kevin (clone)"})
+        self.assertEqual("Wu (clone of Kevin)", self.config.computer_title)
+
+    def test_clone_secure_id_saved(self):
+        """
+        Make sure that secure id is saved when theres a clone and existing
+        value is cleared out
+        """
+        secure_id = "foo"
+        self.identity.secure_id = secure_id
+        self.config.computer_title = "Wu"
+        self.mstore.set_accepted_types(["register"])
+        self.exchanger.handle_message(
+            {"type": b"unknown-id", "clone-of": "Wu"})
+        self.assertEqual(self.handler._clone_secure_id, secure_id)
+        self.assertIsNone(self.identity.secure_id)
+
+    def test_clone_id_in_message(self):
+        """
+        Make sure that the clone id is present in the registration message
+        """
+        secure_id = "foo"
+        self.identity.secure_id = secure_id
+        self.config.computer_title = "Wu"
+        self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api(b"3.3")
+        self.exchanger.handle_message(
+            {"type": b"unknown-id", "clone-of": "Wu"})
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(messages[0]["clone_secure_id"], secure_id)
+
     def test_should_register(self):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
