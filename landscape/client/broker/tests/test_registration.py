@@ -115,45 +115,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
     def test_unknown_id_with_clone(self):
         """
         If the server reports us that we are a clone of another computer, then
-        set our computer's title accordingly.
+        make sure we handle it
         """
         self.config.computer_title = "Wu"
         self.mstore.set_accepted_types(["register"])
         self.exchanger.handle_message(
             {"type": b"unknown-id", "clone-of": "Wu"})
-        self.assertEqual("Wu (clone)", self.config.computer_title)
         self.assertIn("Client is clone of computer Wu",
                       self.logfile.getvalue())
-
-    def test_no_nested_clones(self):
-        """
-        Make sure that nested clones are no longer set as the computer title
-        """
-        self.config.computer_title = "Wu (clone)"
-        self.mstore.set_accepted_types(["register"])
-        self.exchanger.handle_message(
-            {"type": b"unknown-id", "clone-of": "Wu (clone)"})
-        self.assertEqual("Wu (clone)", self.config.computer_title)
-
-    def test_existing_nested_clones(self):
-        """
-        Make sure that existing nested clones are handled correctly
-        """
-        self.config.computer_title = "Wu"
-        self.mstore.set_accepted_types(["register"])
-        self.exchanger.handle_message(
-            {"type": b"unknown-id", "clone-of": "Wu (clone of Wu (clone))"})
-        self.assertEqual("Wu (clone)", self.config.computer_title)
-
-    def test_clones_with_different_computer_names(self):
-        """
-        Make sure that different computer names don't show up as nested
-        """
-        self.config.computer_title = "Wu"
-        self.mstore.set_accepted_types(["register"])
-        self.exchanger.handle_message(
-            {"type": b"unknown-id", "clone-of": "Kevin (clone)"})
-        self.assertEqual("Wu (clone of Kevin)", self.config.computer_title)
 
     def test_clone_secure_id_saved(self):
         """
@@ -177,7 +146,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.identity.secure_id = secure_id
         self.config.computer_title = "Wu"
         self.mstore.set_accepted_types(["register"])
-        self.mstore.set_server_api(b"3.3")
+        self.mstore.set_server_api(b"3.3")  # Note this is only for later api
         self.exchanger.handle_message(
             {"type": b"unknown-id", "clone-of": "Wu"})
         self.reactor.fire("pre-exchange")
