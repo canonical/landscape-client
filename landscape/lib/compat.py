@@ -1,6 +1,6 @@
 # flake8: noqa
 
-from twisted.python.compat import _PY3
+_PY3 = str != bytes
 
 
 if _PY3:
@@ -13,6 +13,8 @@ if _PY3:
     from io import StringIO
     stringio = cstringio = StringIO
     from builtins import input
+    unicode = str
+    long = int
 
 else:
     import cPickle
@@ -24,3 +26,5 @@ else:
     stringio = StringIO
     from cStringIO import StringIO as cstringio
     input = raw_input
+    long = long
+    unicode = unicode

@@ -3,7 +3,7 @@ import logging
 import socket
 import mock
 
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 from landscape.client.broker.registration import RegistrationError, Identity
 from landscape.client.tests.helpers import LandscapeTest

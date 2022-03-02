@@ -15,7 +15,7 @@ import unittest
 from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
 from twisted.python.compat import StringType as basestring
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError

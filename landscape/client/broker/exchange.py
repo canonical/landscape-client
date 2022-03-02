@@ -347,7 +347,7 @@ import logging
 from landscape.lib.hashlib import md5
 
 from twisted.internet.defer import Deferred, succeed
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.format import format_delta

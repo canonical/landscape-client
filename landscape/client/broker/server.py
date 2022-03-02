@@ -46,7 +46,7 @@ Diagram::
 import logging
 
 from twisted.internet.defer import Deferred
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 from landscape.lib.twisted_util import gather_results
 from landscape.client.amp import remote

@@ -1,7 +1,7 @@
 import os.path
 import pwd
 
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 from landscape.lib.encoding import encode_if_needed
 

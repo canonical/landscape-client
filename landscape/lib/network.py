@@ -11,7 +11,7 @@ import errno
 import logging
 
 import netifaces
-from twisted.python.compat import long, _PY3
+from landscape.lib.compat import long, _PY3
 
 __all__ = ["get_active_device_info", "get_network_traffic"]
 

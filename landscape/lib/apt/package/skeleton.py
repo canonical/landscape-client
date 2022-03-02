@@ -1,8 +1,7 @@
+from landscape.lib.compat import unicode, _PY3
 from landscape.lib.hashlib import sha1
 
 import apt_pkg
-
-from twisted.python.compat import unicode, _PY3
 
 
 PACKAGE   = 1 << 0
