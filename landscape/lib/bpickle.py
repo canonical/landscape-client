@@ -32,7 +32,7 @@ This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
 
-from twisted.python.compat import _PY3
+from landscape.lib.compat import long, _PY3
 
 dumps_table = {}
 loads_table = {}

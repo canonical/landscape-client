@@ -4,7 +4,7 @@ import csv
 import logging
 import subprocess
 
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 
 class UserManagementError(Exception):

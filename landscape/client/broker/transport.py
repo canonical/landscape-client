@@ -6,7 +6,7 @@ import uuid
 
 import pycurl
 
-from twisted.python.compat import unicode, _PY3
+from landscape.lib.compat import unicode, _PY3
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch

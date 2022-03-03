@@ -4,7 +4,7 @@ import os
 import re
 import codecs
 
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 
 # List of filesystem types authorized when generating disk use statistics.

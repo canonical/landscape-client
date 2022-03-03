@@ -1,7 +1,7 @@
 import os
 import logging
 
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 from landscape.lib.compat import ConfigParser, NoOptionError
 from landscape.client.monitor.plugin import DataWatcher

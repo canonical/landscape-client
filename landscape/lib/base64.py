@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from twisted.python.compat import _PY3
+from landscape.lib.compat import _PY3
 
 if _PY3:
     from base64 import decodebytes  # noqa
