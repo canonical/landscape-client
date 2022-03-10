@@ -349,6 +349,7 @@ from landscape.lib.hashlib import md5
 from twisted.internet.defer import Deferred, succeed
 from landscape.lib.compat import _PY3
 
+from landscape.lib.backoff import ExponentialBackoff
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.format import format_delta
 from landscape.lib.message import got_next_expected, RESYNC
@@ -406,6 +407,7 @@ class MessageExchange(object):
         self._message_handlers = {}
         self._exchange_store = exchange_store
         self._stopped = False
+        self._backoff_counter = ExponentialBackoff(300, 7200)  # 5 to 120 min
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -567,6 +569,7 @@ class MessageExchange(object):
                     self._urgent_exchange = False
                 self._handle_result(payload, result)
                 self._message_store.record_success(int(self._reactor.time()))
+                self._backoff_counter.decrease()
             else:
                 self._reactor.fire("exchange-failed")
                 logging.info("Message exchange failed.")
@@ -585,6 +588,12 @@ class MessageExchange(object):
                     self._message_store.set_server_api(DEFAULT_SERVER_API)
                     self.exchange()
                     return
+
+            if isinstance(error, HTTPCodeError) and error.http_code >= 500:
+                if error.http_code <= 599:
+                    # If we get any 500 errors than we increment the backoff
+                    # so that a delay will be added to the exchange interval
+                    self._backoff_counter.increase()
 
             ssl_error = False
             if isinstance(error, PyCurlError) and error.error_code == 60:
@@ -642,6 +651,7 @@ class MessageExchange(object):
                 interval = self._config.urgent_exchange_interval
             else:
                 interval = self._config.exchange_interval
+            interval += self._backoff_counter.get_random_delay()
 
             if self._notification_id is not None:
                 self._reactor.cancel_call(self._notification_id)
