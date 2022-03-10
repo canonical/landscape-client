@@ -1170,6 +1170,52 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertEqual(b"3.2", self.mstore.get_server_api())
 
+    def test_500_backoff(self):
+        """
+        If we get a server error then the exponential backoff is triggered
+        """
+        self.config.urgent_exchange_interval = 10
+        self.exchanger._backoff_counter._start_delay = 300
+        self.exchanger._backoff_counter._max_delay = 1000
+        self.transport.responses.append(HTTPCodeError(503, ""))
+        self.exchanger.schedule_exchange(urgent=True)
+        self.reactor.advance(50)
+        self.assertEqual(len(self.transport.payloads), 1)
+        self.reactor.advance(400)
+        self.assertEqual(len(self.transport.payloads), 2)
+
+    def test_backoff_reset_after_success(self):
+        """
+        If we get a success after a 500 error then backoff should be zero
+        """
+        self.config.urgent_exchange_interval = 10
+        self.exchanger._backoff_counter._start_delay = 300
+        self.exchanger._backoff_counter._max_delay = 1000
+        self.transport.responses.append(HTTPCodeError(500, ""))
+        self.exchanger.schedule_exchange(urgent=True)
+        self.reactor.advance(50)
+
+        # Confirm it's not zero after the error
+        self.assertTrue(self.exchanger._backoff_counter.get_random_delay())
+
+        server_message = [{"type": "type-R", "whatever": 5678}]
+        self.transport.responses.append(server_message)
+        self.exchanger.schedule_exchange(urgent=True)
+        self.reactor.advance(500)
+
+        # Confirm it is zero after the success
+        self.assertFalse(self.exchanger._backoff_counter.get_random_delay())
+
+    def test_400_no_backoff(self):
+        """
+        If we get a 400 error then the backoff should not be triggered
+        """
+        self.config.urgent_exchange_interval = 10
+        self.transport.responses.append(HTTPCodeError(400, ""))
+        self.exchanger.schedule_exchange(urgent=True)
+        self.reactor.advance(20)
+        self.assertEqual(len(self.transport.payloads), 2)
+
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
 
