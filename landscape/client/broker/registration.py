@@ -107,6 +107,7 @@ class RegistrationHandler(object):
         self._should_register = None
         self._fetch_async = fetch_async
         self._juju_data = None
+        self._clone_secure_id = None
 
     def should_register(self):
         id = self._identity
@@ -192,6 +193,13 @@ class RegistrationHandler(object):
                    "container-info": get_container_info(),
                    "vm-info": get_vm_info()}
 
+        if self._clone_secure_id:
+            # We use the secure id here because the registration is encrypted
+            # and the insecure id has been already exposed to unencrypted
+            # http from the ping server. In addition it's more straightforward
+            # to get the computer from the server through it than the insecure
+            message["clone_secure_id"] = self._clone_secure_id
+
         if group:
             message["access_group"] = group
 
@@ -250,18 +258,9 @@ class RegistrationHandler(object):
         if clone is None:
             logging.info("Client has unknown secure-id for account %s."
                          % id.account_name)
-        else:
+        else:  # Save the secure id as the clone, and clear it so it's renewed
             logging.info("Client is clone of computer %s" % clone)
-            # Set a new computer title so when a registration request will be
-            # made, the pending computer UI will indicate that this is a clone
-            # of another computer. There's no need to persist the changes since
-            # a new registration will be requested immediately.
-            if clone == self._config.computer_title:
-                title = "%s (clone)" % self._config.computer_title
-            else:
-                title = "%s (clone of %s)" % (self._config.computer_title,
-                                              clone)
-            self._config.computer_title = title
+            self._clone_secure_id = id.secure_id
         id.secure_id = None
         id.insecure_id = None
 
