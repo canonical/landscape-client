@@ -139,6 +139,12 @@ END
             fi
             rm -f $DEFAULTS
         fi
+
+        # Since motd shows a different number of security updates,
+        # suppress the message if registered.
+        if landscape-config --is-registered >/dev/null 2>&1; then
+            dpkg-divert --package $PACKAGE --rename /etc/update-motd.d/90-updates-available
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

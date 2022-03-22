@@ -19,6 +19,8 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
+        # Remove diversion for motd.
+        dpkg-divert --remove --package landscape-client --rename /etc/update-motd.d/90-updates-available
 
         # Remove statoverride for apt-update
         apt_update=/usr/lib/landscape/apt-update
