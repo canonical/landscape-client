@@ -140,11 +140,12 @@ END
             rm -f $DEFAULTS
         fi
 
-        # Since motd shows a different number of security updates,
-        # suppress the message if registered.
-        if landscape-config --is-registered >/dev/null 2>&1; then
-            dpkg-divert --package $PACKAGE --rename /etc/update-motd.d/90-updates-available
-        fi
+        # Since motd shows a different number of security updates,we replace
+        # that script with our own wrapper that does not invoke the original
+        # if the machine is registered
+        dpkg-divert --package $PACKAGE --rename --divert /etc/update-motd.d/90-updates-available.pre-landscape /etc/update-motd.d/90-updates-available
+        ln -sf /usr/share/landscape/landscape-updates-available.wrapper /etc/update-motd.d/90-updates-available-landscape
+        update-motd 2>/dev/null || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
