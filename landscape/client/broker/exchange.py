@@ -589,9 +589,9 @@ class MessageExchange(object):
                     self.exchange()
                     return
 
-            if isinstance(error, HTTPCodeError) and error.http_code >= 500:
-                if error.http_code <= 599:
-                    # If we get any 500 errors than we increment the backoff
+            if isinstance(error, HTTPCodeError):
+                if error.http_code == 429 or (500 <= error.http_code <= 599):
+                    # If we get 429 or 500 errors than we increment the backoff
                     # so that a delay will be added to the exchange interval
                     self._backoff_counter.increase()
 
