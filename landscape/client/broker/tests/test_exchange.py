@@ -1184,6 +1184,18 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.advance(400)
         self.assertEqual(len(self.transport.payloads), 2)
 
+    def test_429_backoff(self):
+        """
+        HTTP error 429 should also trigger backoff
+        """
+        self.config.urgent_exchange_interval = 10
+        self.exchanger._backoff_counter._start_delay = 300
+        self.exchanger._backoff_counter._max_delay = 1000
+        self.transport.responses.append(HTTPCodeError(429, ""))
+        self.exchanger.schedule_exchange(urgent=True)
+        self.reactor.advance(50)
+        self.assertEqual(len(self.transport.payloads), 1)
+
     def test_backoff_reset_after_success(self):
         """
         If we get a success after a 500 error then backoff should be zero
