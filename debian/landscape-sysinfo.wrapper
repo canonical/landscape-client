@@ -1,17 +1,29 @@
 #!/bin/sh
-# pam_motd does not carry the environment
-[ -f /etc/default/locale ] && . /etc/default/locale
-export LANG
-cores=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
-[ "$cores" -eq "0" ] && cores=1
-threshold="${cores:-1}.0"
-if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < $threshold" | bc) -eq 1 ]; then
-    echo
-    echo -n "  System information as of "
-    /bin/date
-    echo
-    /usr/bin/landscape-sysinfo
-else
-    echo
-    echo " System information disabled due to load higher than $threshold"
+
+# don't try refresh this more than once per minute
+# Due to cpu consumption and login delays (LP: #1893716)
+stamp="/var/lib/landscape/landscape-sysinfo.cache"
+NEED_UPDATE="FALSE"
+[ -z "$(find "$stamp" -newermt 'now-1 minutes' 2> /dev/null)" ] && NEED_UPDATE="TRUE"
+
+if [ "$NEED_UPDATE" = "TRUE" ]; then
+    # pam_motd does not carry the environment
+    [ -f /etc/default/locale ] && . /etc/default/locale
+    export LANG
+    cores=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
+    [ "$cores" -eq "0" ] && cores=1
+    threshold="${cores:-1}.0"
+    if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < $threshold" | bc) -eq 1 ]; then
+        printf "\n  System information as of %s\n\n%s\n" \
+            "$(/bin/date)" \
+            "$(/usr/bin/landscape-sysinfo)" \
+            > "$stamp"
+    else
+        # do not replace a formerly good result due to load
+        if ! grep -q "System information as of" $stamp 2> /dev/null; then
+            printf "\n System information disabled due to load higher than %s\n" "$threshold" > "$stamp"
+        fi
+    fi
 fi
+
+[ ! -r "$stamp" ] || cat "$stamp"
