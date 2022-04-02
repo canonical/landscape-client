@@ -41,6 +41,12 @@ case "$1" in
 
         LOG_DIR=/var/log/landscape
         rm -f "${LOG_DIR}/sysinfo.log"*
+
+        #########################################
+        # from landscape-common
+
+        CACHE_FILE="/var/lib/landscape/landscape-sysinfo.cache"
+        rm -f "${CACHE_FILE}"
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
