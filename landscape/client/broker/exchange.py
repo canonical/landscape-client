@@ -591,8 +591,16 @@ class MessageExchange(object):
 
             if isinstance(error, HTTPCodeError):
                 if error.http_code == 429 or (500 <= error.http_code <= 599):
-                    # We add an exponentially increasing delay if the server
-                    # is overloaded to decrease load
+                    # We add an exponentially increasing delay ("backoff") if
+                    # the server is overloaded to decrease load. We assume that
+                    # any server backend error is deserving backoff, including
+                    # 429 which is sent from the server on purpose to trigger
+                    # the backoff. Whether the server is down or overloaded
+                    # (503), has a server bug crashing the response (500),
+                    # backing off should have no ill effect and help the
+                    # service to recover. Client-configuration related errors
+                    # (501, 505) are probably fine to throttle too as a higher
+                    # rate won't help resolve them
                     self._backoff_counter.increase()
 
             ssl_error = False
@@ -651,7 +659,11 @@ class MessageExchange(object):
                 interval = self._config.urgent_exchange_interval
             else:
                 interval = self._config.exchange_interval
-            interval += self._backoff_counter.get_random_delay()
+            backoff_delay = self._backoff_counter.get_random_delay()
+            if backoff_delay:
+                logging.warning("Server is busy. Backing off client for {} "
+                                "seconds".format(backoff_delay))
+                interval += backoff_delay
 
             if self._notification_id is not None:
                 self._reactor.cancel_call(self._notification_id)
