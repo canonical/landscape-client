@@ -349,6 +349,7 @@ from landscape.lib.hashlib import md5
 from twisted.internet.defer import Deferred, succeed
 from landscape.lib.compat import _PY3
 
+from landscape.lib.backoff import ExponentialBackoff
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.format import format_delta
 from landscape.lib.message import got_next_expected, RESYNC
@@ -406,6 +407,7 @@ class MessageExchange(object):
         self._message_handlers = {}
         self._exchange_store = exchange_store
         self._stopped = False
+        self._backoff_counter = ExponentialBackoff(300, 7200)  # 5 to 120 min
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -567,6 +569,7 @@ class MessageExchange(object):
                     self._urgent_exchange = False
                 self._handle_result(payload, result)
                 self._message_store.record_success(int(self._reactor.time()))
+                self._backoff_counter.decrease()
             else:
                 self._reactor.fire("exchange-failed")
                 logging.info("Message exchange failed.")
@@ -585,6 +588,20 @@ class MessageExchange(object):
                     self._message_store.set_server_api(DEFAULT_SERVER_API)
                     self.exchange()
                     return
+
+            if isinstance(error, HTTPCodeError):
+                if error.http_code == 429 or (500 <= error.http_code <= 599):
+                    # We add an exponentially increasing delay ("backoff") if
+                    # the server is overloaded to decrease load. We assume that
+                    # any server backend error is deserving backoff, including
+                    # 429 which is sent from the server on purpose to trigger
+                    # the backoff. Whether the server is down or overloaded
+                    # (503), has a server bug crashing the response (500),
+                    # backing off should have no ill effect and help the
+                    # service to recover. Client-configuration related errors
+                    # (501, 505) are probably fine to throttle too as a higher
+                    # rate won't help resolve them
+                    self._backoff_counter.increase()
 
             ssl_error = False
             if isinstance(error, PyCurlError) and error.error_code == 60:
@@ -642,6 +659,11 @@ class MessageExchange(object):
                 interval = self._config.urgent_exchange_interval
             else:
                 interval = self._config.exchange_interval
+            backoff_delay = self._backoff_counter.get_random_delay()
+            if backoff_delay:
+                logging.warning("Server is busy. Backing off client for {} "
+                                "seconds".format(backoff_delay))
+                interval += backoff_delay
 
             if self._notification_id is not None:
                 self._reactor.cancel_call(self._notification_id)
