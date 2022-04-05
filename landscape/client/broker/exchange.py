@@ -591,8 +591,8 @@ class MessageExchange(object):
 
             if isinstance(error, HTTPCodeError):
                 if error.http_code == 429 or (500 <= error.http_code <= 599):
-                    # If we get 429 or 500 errors than we increment the backoff
-                    # so that a delay will be added to the exchange interval
+                    # We add an exponentially increasing delay if the server
+                    # is overloaded to decrease load
                     self._backoff_counter.increase()
 
             ssl_error = False
