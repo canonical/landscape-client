@@ -5,8 +5,9 @@
     notifempty
     compress
     nocreate
+    sharedscripts
     postrotate
-        [ -f /var/run/landscape/landscape-client.pid ] && kill -s USR1 `cat /var/run/landscape/landscape-client.pid` > /dev/null 2>&1 || :
+        systemctl kill --signal=USR1 --kill-who=main landscape-client > /dev/null 2>&1 || :
     endscript
 }
 
