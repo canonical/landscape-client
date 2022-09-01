@@ -165,9 +165,9 @@ class GetVMInfoTest(BaseTestCase):
         """
         cpuinfo_path = os.path.join(self.proc_path, "cpuinfo")
         cpuinfo = (
-            "platform	: Some Machine\n"
-            "model	: Some CPU (emulated by qemu)\n"
-            "machine	: Some Machine (emulated by qemu)\n")
+            "platform   : Some Machine\n"
+            "model  : Some CPU (emulated by qemu)\n"
+            "machine    : Some Machine (emulated by qemu)\n")
         self.makeFile(path=cpuinfo_path, content=cpuinfo)
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
@@ -188,6 +188,12 @@ class GetVMInfoTest(BaseTestCase):
         """get_vm_info returns 'kvm' if running under RHEV Hypervisor."""
         self.make_dmi_info("product_name", "RHEV Hypervisor")
         self.make_dmi_info("sys_vendor", "Red Hat")
+        self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
+
+    def test_get_vm_info_with_parallels(self):
+        """get_vm_info returns 'kvm' if running under Parallels"""
+        self.make_dmi_info("product_name", "Parallels Virtual Platform")
+        self.make_dmi_info("sys_vendor", "Parallels Software International")
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
 

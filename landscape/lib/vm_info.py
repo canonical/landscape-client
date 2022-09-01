@@ -78,7 +78,8 @@ def _get_vm_by_vendor(sys_vendor_path):
         (b"qemu", b"kvm"),
         (b"kvm", b"kvm"),
         (b"vmware", b"vmware"),
-        (b"rhev", b"kvm")
+        (b"rhev", b"kvm"),
+        (b"parallels", b"kvm")
     )
     for name, vm_type in content_vendors_map:
         if name in vendor:
