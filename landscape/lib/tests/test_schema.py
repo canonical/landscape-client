@@ -69,8 +69,8 @@ class BasicTypesTest(unittest.TestCase):
     def test_string(self):
         self.assertEqual(Bytes().coerce(b"foo"), b"foo")
 
-    def test_string_bad_unicode(self):
-        self.assertRaises(InvalidError, Bytes().coerce, u"foo")
+    def test_string_unicode(self):
+        self.assertEqual(Bytes().coerce(u"foo"), b"foo")
 
     def test_string_bad_anything(self):
         self.assertRaises(InvalidError, Bytes().coerce, object())
