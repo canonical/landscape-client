@@ -67,6 +67,8 @@ class Float(object):
 class Bytes(object):
     """A binary string."""
     def coerce(self, value):
+        if isinstance(value, str):
+            return value.encode()
         if not isinstance(value, bytes):
             raise InvalidError("%r isn't a bytestring" % (value,))
         return value
