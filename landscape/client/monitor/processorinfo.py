@@ -87,7 +87,8 @@ class ProcessorInfo(MonitorPlugin):
                     dirty = True
 
         if dirty:
-            logging.info("Queueing message with updated processor info.")
+            logging.info("Queueing message with updated processor info.  Contents:")
+            logging.info(message)
             self.registry.broker.send_message(
                 message, self._session_id, urgent=urgent)
 
@@ -313,8 +314,47 @@ class S390XMessageFactory:
         return processors
 
 
+class RISCVMessageFactory:
+    """Factory for risc-v-based processors provides processor information.
+
+    @param source_filename: The file name of the data source.
+    """
+
+    def __init__(self, source_filename):
+        self._source_filename = source_filename
+
+    def create_message(self):
+        """Returns a list containing information about each processor."""
+        processors = []
+        file = open(self._source_filename)
+        logging.info("Entered RISCVMessageFactory")
+
+        try:
+            current = None
+
+            for line in file:
+                parts = line.split(":", 1)
+                key = parts[0].strip()
+
+                if key == "processor":
+                    current = {"processor-id": int(parts[1].strip())}
+                    processors.append(current)
+                elif key == "isa":
+                    current["vendor"] = parts[1].strip()
+                elif key == "uarch":
+                    current["model"] = parts[1].strip()
+
+        finally:
+            file.close()
+
+        logging.info("RISC-V processor info collected:")
+        logging.info(processors)
+        return processors
+
+
 message_factories = [("(arm*|aarch64)", ARMMessageFactory),
                      ("ppc(64)?", PowerPCMessageFactory),
                      ("sparc[64]", SparcMessageFactory),
                      ("i[3-7]86|x86_64", X86MessageFactory),
-                     ("s390x", S390XMessageFactory)]
+                     ("s390x", S390XMessageFactory),
+                     ("riscv64", RISCVMessageFactory)]
