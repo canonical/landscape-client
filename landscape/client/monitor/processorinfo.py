@@ -87,7 +87,7 @@ class ProcessorInfo(MonitorPlugin):
                     dirty = True
 
         if dirty:
-            logging.info("Queueing message with updated processor info.  Contents:")
+            logging.info("Queueing updated processor info.  Contents:")
             logging.info(message)
             self.registry.broker.send_message(
                 message, self._session_id, urgent=urgent)
