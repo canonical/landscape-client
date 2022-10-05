@@ -1,26 +1,19 @@
-"""Get information from /etc/lsb_release."""
+"""Get information from /usr/bin/lsb_release."""
 
-LSB_RELEASE_FILENAME = "/etc/lsb-release"
-LSB_RELEASE_INFO_KEYS = {"DISTRIB_ID": "distributor-id",
-                         "DISTRIB_DESCRIPTION": "description",
-                         "DISTRIB_RELEASE": "release",
-                         "DISTRIB_CODENAME": "code-name"}
+LSB_RELEASE_FILENAME = "/usr/bin/lsb_release"
+LSB_RELEASE_INFO_KEYS = {"distributor-id": "-si",
+                         "release": "-sr",
+                         "code-name": "-sc",
+                         "description": "-sd"}
 
+import subprocess
 
 def parse_lsb_release(lsb_release_filename):
     """Return a C{dict} holding information about the system LSB release.
-
-    @raises: An IOError exception if C{lsb_release_filename} could not be read.
+    @raises: An OSError exception if C{lsb_release_filename} does not exist.
     """
-    fd = open(lsb_release_filename, "r")
     info = {}
-    try:
-        for line in fd:
-            key, value = line.split("=")
-            if key in LSB_RELEASE_INFO_KEYS:
-                key = LSB_RELEASE_INFO_KEYS[key.strip()]
-                value = value.strip().strip('"')
-                info[key] = value
-    finally:
-        fd.close()
+    for key in LSB_RELEASE_INFO_KEYS:
+        value = subprocess.check_output([LSB_RELEASE_FILENAME] + [LSB_RELEASE_INFO_KEYS[key.strip()]])
+        info[key.strip()] = value.strip().strip('"')
     return info
