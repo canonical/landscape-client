@@ -23,7 +23,7 @@ def parse_lsb_release(lsb_release_filename=None):
 
     try:
         lsb_info = check_output([LSB_RELEASE, "-as"], stderr=DEVNULL)
-    except CalledProcessError:
+    except (CalledProcessError, FileNotFoundError):
         # Fall back to reading file, even if it doesn't exist.
         return parse_lsb_release_file(lsb_release_filename)
     else:
