@@ -37,7 +37,7 @@ class ReleaseUpgrader(PackageTaskHandler):
     @cvar config_factory: The configuration class to use to build configuration
         objects to be passed to our constructor.
     @cvar queue_name: The queue we pick tasks from.
-    @cvar lsb_release_filename: The path to the LSB data on the file system.
+    @cvar lsb_release_filename: The path to the LSB command on the file system.
     @cvar landscape_ppa_url: The URL of the Landscape PPA, if it is present
         in the computer's sources.list it won't be commented out.
     @cvar logs_directory: Path to the directory holding the upgrade-tool logs.
