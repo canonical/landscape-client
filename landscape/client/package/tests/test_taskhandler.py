@@ -1,4 +1,5 @@
 import os
+from subprocess import CalledProcessError
 
 from mock import patch, Mock, ANY
 
@@ -103,7 +104,9 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.handler.lsb_release_filename = self.makeFile()
 
         # Go!
-        result = self.handler.use_hash_id_db()
+        with patch("landscape.lib.lsb_release.check_output") as co_mock:
+            co_mock.side_effect = CalledProcessError(127, "")
+            result = self.handler.use_hash_id_db()
 
         # The failure should be properly logged
         logging_mock.assert_called_with(
