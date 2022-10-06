@@ -1,6 +1,6 @@
 """Get information from /usr/bin/lsb_release."""
 import os
-from subprocess import DEVNULL, CalledProcessError, check_output
+from subprocess import CalledProcessError, check_output
 
 LSB_RELEASE = "/usr/bin/lsb_release"
 LSB_RELEASE_FILENAME = "/etc/lsb_release"
@@ -21,20 +21,21 @@ def parse_lsb_release(lsb_release_filename=None):
     if lsb_release_filename and os.path.exists(lsb_release_filename):
         return parse_lsb_release_file(lsb_release_filename)
 
-    try:
-        lsb_info = check_output([LSB_RELEASE, "-as"], stderr=DEVNULL)
-    except (CalledProcessError, FileNotFoundError):
-        # Fall back to reading file, even if it doesn't exist.
-        return parse_lsb_release_file(lsb_release_filename)
-    else:
-        dist_id, desc, release, code_name, _ = lsb_info.decode().split("\n")
+    with open(os.devnull, 'w') as FNULL:
+        try:
+            lsb_info = check_output([LSB_RELEASE, "-as"], stderr=FNULL)
+        except (CalledProcessError, FileNotFoundError):
+            # Fall back to reading file, even if it doesn't exist.
+            return parse_lsb_release_file(lsb_release_filename)
+        else:
+            dist_id, desc, release, code_name, _ = lsb_info.decode().split("\n")
 
-        return {
-            "distributor-id": dist_id,
-            "release": release,
-            "code-name": code_name,
-            "description": desc,
-        }
+            return {
+                "distributor-id": dist_id,
+                "release": release,
+                "code-name": code_name,
+                "description": desc,
+            }
 
 
 def parse_lsb_release_file(filename):
