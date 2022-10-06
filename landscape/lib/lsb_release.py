@@ -28,10 +28,10 @@ def parse_lsb_release(lsb_release_filename=None):
             # Fall back to reading file, even if it doesn't exist.
             return parse_lsb_release_file(lsb_release_filename)
         else:
-            dist_id, desc, release, code_name, _ = lsb_info.decode().split("\n")
+            dist, desc, release, code_name, _ = lsb_info.decode().split("\n")
 
             return {
-                "distributor-id": dist_id,
+                "distributor-id": dist,
                 "release": release,
                 "code-name": code_name,
                 "description": desc,
