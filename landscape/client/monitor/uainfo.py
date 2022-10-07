@@ -27,7 +27,7 @@ class UaInfo(DataWatcher):
 
         return {
             "type": "ua-info",
-            "ua-status": json.dumps(ua_status),
+            "ua-status": json.dumps(ua_status, separators=(",", ":")),
         }
 
     def _get_ua_status(self):
