@@ -35,7 +35,7 @@ def get_ua_status():
     try:
         ua_status_call = subprocess.run(
             ["ua", "status", "--format", "json"],
-            text=True, capture_output=True)
+            encoding="utf8", stdout=subprocess.PIPE)
     except FileNotFoundError:
         return {
             "errors": [{
