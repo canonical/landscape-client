@@ -315,7 +315,7 @@ class NetworkInfoTest(BaseTestCase):
     def test_get_filtered_if_info(self):
         def filter_tap(interface):
             return interface.startswith("tap")
-        
+
         with patch.multiple(
                 "landscape.lib.network",
                 get_flags=DEFAULT,

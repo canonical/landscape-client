@@ -128,7 +128,7 @@ def get_filtered_if_info(filters=(), extended=False):
     """
     Returns a dictionary containing info on each active network
     interface that passes all `filters`.
-    
+
     A filter is a callable that returns True if the interface should be
     skipped.
     """
@@ -169,7 +169,8 @@ def get_filtered_if_info(filters=(), extended=False):
             if netifaces.AF_INET in ip_addresses:
                 ifinfo["ip_address"] = get_ip_address(ifaddresses)
                 ifinfo["mac_address"] = get_mac_address(ifaddresses)
-                ifinfo["broadcast_address"] = get_broadcast_address(ifaddresses)
+                ifinfo["broadcast_address"] = get_broadcast_address(
+                    ifaddresses)
                 ifinfo["netmask"] = get_netmask(ifaddresses)
 
             results.append(ifinfo)
