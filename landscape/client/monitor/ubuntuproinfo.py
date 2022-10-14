@@ -8,7 +8,7 @@ class UbuntuProInfo(DataWatcher):
     """
     Plugin that captures and reports Ubuntu Pro registration
     information.
-    
+
     We use the `ua` CLI with output formatted as JSON. This is sent
     as-is and parsed by Landscape Server because the JSON content is
     considered "Experimental" and we don't want to have to change in
