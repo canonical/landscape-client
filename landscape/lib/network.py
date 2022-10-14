@@ -152,7 +152,7 @@ def get_filtered_if_info(filters=(), extended=False):
                 continue
 
             ip_addresses = get_ip_addresses(ifaddresses)
-            if not (netifaces.AF_INET in ip_addresses or extended):
+            if not extended and netifaces.AF_INET not in ip_addresses:
                 # Skip interfaces with no IPv4 addr unless extended to
                 # keep backwards compatibility with single-IPv4 addr
                 # support.
@@ -192,6 +192,8 @@ def get_active_device_info(skipped_interfaces=("lo",),
     def filter_alias(interface):
         return ":" in interface
 
+    # Get default interfaces here because it could be expensive and
+    # there's no reason to do it more than once.
     default_ifs = get_default_interfaces()
 
     def filter_default(interface):
