@@ -14,7 +14,7 @@ import logging
 from twisted.internet.defer import Deferred
 
 from landscape.client.broker.exchange import maybe_bytes
-from landscape.client.monitor.uainfo import get_ua_status
+from landscape.client.monitor.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.lib.juju import get_juju_info
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
@@ -223,7 +223,7 @@ class RegistrationHandler(object):
         with_tags = "and tags %s " % tags if tags else ""
         with_group = "in access group '%s' " % group if group else ""
 
-        message["ua_status"] = json.dumps(get_ua_status())
+        message["ubuntu_pro_info"] = json.dumps(get_ubuntu_pro_info())
 
         logging.info(
             u"Queueing message to register with account %r %s%s"
