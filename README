@@ -50,3 +50,9 @@ system bus.
 ```
 $ sudo ./scripts/landscape-client -c root-client.conf
 ```
+
+Before opening a PR, make sure to run the full testsuite and lint
+```
+make check3
+make lint
+```
