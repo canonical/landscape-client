@@ -21,10 +21,6 @@ class UbuntuProInfo(DataWatcher):
     scope = "ubuntu-pro"
     run_immediately = True
 
-    # def register(self, registry):
-    #     super(UbuntuProInfo, self).register(registry)
-    #     self.call_on_accepted(self.message_type, self.exchange, True)
-
     def get_data(self):
         ubuntu_pro_info = get_ubuntu_pro_info()
 
