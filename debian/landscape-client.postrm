@@ -18,6 +18,7 @@ case "$1" in
     purge)
     LOG_DIR=/var/log/landscape
     DATA_DIR=/var/lib/landscape
+    GPG_DIR=/etc/apt/trusted.gpg.d
 
     rm -f "/etc/default/landscape-client"
 
@@ -27,6 +28,8 @@ case "$1" in
     rm -f "${LOG_DIR}/watchdog.log"*
     rm -f "${LOG_DIR}/package-reporter.log"*
     rm -f "${LOG_DIR}/package-changer.log"*
+
+    rm -f "${GPG_DIR}/landscape-server"*.asc
 
     rm -rf "${DATA_DIR}/client"
     rm -rf "${DATA_DIR}/.gnupg"

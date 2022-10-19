@@ -4,6 +4,7 @@ import pwd
 import grp
 import shutil
 import tempfile
+import uuid
 
 from twisted.internet.defer import succeed
 
@@ -22,6 +23,7 @@ class AptSources(ManagerPlugin):
 
     SOURCES_LIST = "/etc/apt/sources.list"
     SOURCES_LIST_D = "/etc/apt/sources.list.d"
+    TRUSTED_GPG_D = "/etc/apt/trusted.gpg.d"
 
     def register(self, registry):
         super(AptSources, self).register(registry)
@@ -83,16 +85,12 @@ class AptSources(ManagerPlugin):
                       "-----END PGP PUBLIC KEY BLOCK-----"]}
         """
         deferred = succeed(None)
+        prefix = 'landscape-server-'
         for key in message["gpg-keys"]:
-            fd, path = tempfile.mkstemp()
-            os.close(fd)
-            with open(path, "w") as key_file:
+            filename = prefix + str(uuid.uuid4()) + '.asc'
+            key_path = os.path.join(self.TRUSTED_GPG_D, filename)
+            with open(key_path, "w") as key_file:
                 key_file.write(key)
-            deferred.addCallback(
-                lambda ignore, path=path:
-                    self._run_process("/usr/bin/apt-key", ["add", path]))
-            deferred.addCallback(self._handle_process_error)
-            deferred.addBoth(self._remove_and_continue, path)
         deferred.addErrback(self._handle_process_failure)
         deferred.addCallback(self._handle_sources, message["sources"])
         return self.call_with_operation_result(message, lambda: deferred)
