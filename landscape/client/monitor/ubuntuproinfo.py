@@ -1,3 +1,5 @@
+import logging
+
 import json
 import subprocess
 
@@ -16,28 +18,19 @@ class UbuntuProInfo(DataWatcher):
     """
 
     message_type = "ubuntu-pro-info"
+    message_key = message_type
+    persist_name = message_type
     scope = "ubuntu-pro"
+    run_immediately = True
 
-    def __init__(self):
-        super(UbuntuProInfo, self).__init__()
+    # def register(self, registry):
+    #     super(UbuntuProInfo, self).register(registry)
+    #     self.call_on_accepted(self.message_type, self.exchange, True)
 
-        self._persist_ubuntu_pro_info = {}
-
-    def register(self, registry):
-        super(UbuntuProInfo, self).register(registry)
-        self.call_on_accepted(self.message_type, self.exchange, True)
-
-    def get_message(self):
+    def get_data(self):
         ubuntu_pro_info = get_ubuntu_pro_info()
 
-        if ubuntu_pro_info == self._persist_ubuntu_pro_info:
-            return None
-
-        return {
-            "type": "ubuntu-pro-info",
-            "ubuntu-pro-info": json.dumps(ubuntu_pro_info,
-                                          separators=(",", ":")),
-        }
+        return json.dumps(ubuntu_pro_info, separators=(",", ":"))
 
 
 def get_ubuntu_pro_info():
