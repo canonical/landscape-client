@@ -221,11 +221,10 @@ REGISTER_3_3 = Message(
                            "machine-id": Unicode()}),
      "access_group": Unicode(),
      "clone_secure_id": Any(Unicode(), Constant(None)),
-     "ubuntu_pro_info": Unicode()},
     api=b"3.3",
     optional=["registration_password", "hostname", "tags", "vm-info",
               "container-info", "access_group", "juju-info",
-              "clone_secure_id", "ubuntu_pro_info"])
+              "clone_secure_id"])
 
 
 # XXX The register-provisioned-machine message is obsolete, it's kept around
