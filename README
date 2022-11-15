@@ -1,6 +1,14 @@
 [![Build Status](https://github.com/CanonicalLtd/landscape-client/actions/workflows/ci.yml/badge.svg)](https://github.com/CanonicalLtd/landscape-client/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/CanonicalLtd/landscape-client/branch/master/graph/badge.svg)](https://codecov.io/gh/CanonicalLtd/landscape-client)
 
+## Beta PPA
+
+To get the latest updates to the landscape-client package 
+
+```
+sudo add-apt-repository ppa:landscape/self-hosted-beta
+```
+
 ## Non-root mode
 
 The Landscape Client generally runs as a combination of the `root` and
