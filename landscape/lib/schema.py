@@ -1,4 +1,5 @@
 """A schema system. Yes. Another one!"""
+import six
 from twisted.python.compat import iteritems, unicode, long
 
 
@@ -65,12 +66,24 @@ class Float(object):
 
 
 class Bytes(object):
-    """A binary string."""
+    """A binary string.
+
+    If the value is a Python3 str (unicode), it will be automatically
+    encoded.
+    """
     def coerce(self, value):
-        if isinstance(value, str):
-            return value.encode()
-        if not isinstance(value, bytes):
-            raise InvalidError("%r isn't a bytestring" % (value,))
+        error_msg = "%r isn't a bytestring" % value
+
+        if six.PY2:
+            if not isinstance(value, str):
+                raise InvalidError(error_msg)
+        else:  # six.PY3
+            if not isinstance(value, (str, bytes)):
+                raise InvalidError(error_msg)
+
+            if isinstance(value, str):
+                return value.encode()
+
         return value
 
 
