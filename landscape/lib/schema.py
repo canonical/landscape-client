@@ -65,13 +65,19 @@ class Float(object):
 
 
 class Bytes(object):
-    """A binary string."""
+    """A binary string.
+
+    If the value is a Python3 str (unicode), it will be automatically
+    encoded.
+    """
     def coerce(self, value):
+        if isinstance(value, bytes):
+            return value
+
         if isinstance(value, str):
             return value.encode()
-        if not isinstance(value, bytes):
-            raise InvalidError("%r isn't a bytestring" % (value,))
-        return value
+
+        raise InvalidError("%r isn't a bytestring" % value)
 
 
 class Unicode(object):
