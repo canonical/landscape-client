@@ -151,8 +151,8 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["package-reporter-result"])
         self.exchanger._max_log_text_bytes = 5
-        self.exchanger.send({"type": "package-reporter-result", "err":"E"*10, 
-                             "code":0})
+        self.exchanger.send({"type": "package-reporter-result", "err": "E"*10,
+                             "code": 0})
         self.exchanger.exchange()
         self.assertEqual(len(self.transport.payloads), 1)
         messages = self.transport.payloads[0]["messages"]
@@ -166,8 +166,8 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["operation-result"])
         self.exchanger._max_log_text_bytes = 5
-        self.exchanger.send({"type": "operation-result", "result-text":"E"*10, 
-                             "code":0, "status":0, "operation-id":0})
+        self.exchanger.send({"type": "operation-result", "result-text": "E"*10,
+                             "code": 0, "status": 0, "operation-id": 0})
         self.exchanger.exchange()
         self.assertEqual(len(self.transport.payloads), 1)
         messages = self.transport.payloads[0]["messages"]
@@ -181,8 +181,8 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["package-reporter-result"])
         self.exchanger._max_log_text_bytes = 4
-        self.exchanger.send({"type": "package-reporter-result", "err":"E"*4, 
-                             "code":0})
+        self.exchanger.send({"type": "package-reporter-result", "err": "E"*4,
+                             "code": 0})
         self.exchanger.exchange()
         self.assertEqual(len(self.transport.payloads), 1)
         messages = self.transport.payloads[0]["messages"]
