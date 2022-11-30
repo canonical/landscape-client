@@ -18,7 +18,7 @@ gpg --keyserver keyserver.ubuntu.com --recv-keys 6e85a86e4652b4e6
 gpg --export 6e85a86e4652b4e6 | sudo tee -a /usr/share/keyrings/landscape-client-keyring.gpg > /dev/null
 
 # 2. Add repository
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/landscape-client-keyring.gpg] https://ppa.launchpadcontent.net/landscape/self-hosted-beta/ubuntu focal main' | sudo tee -a /etc/apt/sources.list.d/landscape-client.list
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/landscape-client-keyring.gpg] https://ppa.launchpadcontent.net/landscape/self-hosted-beta/ubuntu focal main" | sudo tee -a /etc/apt/sources.list.d/landscape-client.list
 ```
 
 #### Install the package
