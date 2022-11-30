@@ -47,9 +47,14 @@ Edit `/etc/landscape/client.conf` and add the following line:
 ```
 monitor_only = true
 ```
-Now you can run `sudo landscape-config` as usual to complete the configuration
-of your client and register with the Landscape service.
 
+## Running
+
+Now you can complete the configuration of your client and register with the 
+Landscape service. There are two ways to do this:
+
+1. `sudo landscape-config` and answer interactive prompts to finalize your configuration
+2. `sudo landscape-config --account-name standalone --url https://<server>/message-system --ping-url http://<server>/ping` if registering to a self-hosted Landscape instance. Replace `<server>` with the hostname of your self-hosted Landscape instance.
 
 ## Developing
 
