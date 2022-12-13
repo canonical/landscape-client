@@ -14,7 +14,7 @@ class LivePatch(DataWatcher):
     persist_name = message_type
     scope = "livepatch"
     run_immediately = True
-    run_interval = 30
+    run_interval = 1800  # Every 30 min
 
     def get_data(self):
         livepatch_status = get_livepatch_status()
