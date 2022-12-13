@@ -512,8 +512,8 @@ COMPUTER_TAGS = Message(
 
 LIVEPATCH = Message(
     "livepatch",
-     {"livepatch": KeyDict({"output": Unicode(), "code": Int(),
-                            "exception": Unicode()})})
+    {"livepatch": KeyDict({"output": Unicode(), "code": Int(),
+                           "exception": Unicode()})})
 
 
 message_schemas = (
