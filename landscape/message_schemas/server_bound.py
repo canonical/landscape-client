@@ -19,7 +19,7 @@ __all__ = [
     "NETWORK_DEVICE", "NETWORK_ACTIVITY",
     "REBOOT_REQUIRED_INFO", "UPDATE_MANAGER_INFO", "CPU_USAGE",
     "CEPH_USAGE", "SWIFT_USAGE", "SWIFT_DEVICE_INFO", "KEYSTONE_TOKEN",
-    "JUJU_UNITS_INFO", "CLOUD_METADATA", "COMPUTER_TAGS"
+    "JUJU_UNITS_INFO", "CLOUD_METADATA", "COMPUTER_TAGS", "LIVEPATCH"
     ]
 
 
@@ -510,6 +510,11 @@ COMPUTER_TAGS = Message(
     "computer-tags",
     {"tags": Any(Unicode(), Constant(None))})
 
+LIVEPATCH = Message(
+    "livepatch",
+     {"livepatch": KeyDict({"output": Unicode(), "code": Int(),
+      "exception": Unicode()})})
+
 
 message_schemas = (
     ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
@@ -524,4 +529,4 @@ message_schemas = (
     NETWORK_DEVICE, NETWORK_ACTIVITY,
     REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
     CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-    JUJU_UNITS_INFO, CLOUD_METADATA, COMPUTER_TAGS)
+    JUJU_UNITS_INFO, CLOUD_METADATA, COMPUTER_TAGS, LIVEPATCH)
