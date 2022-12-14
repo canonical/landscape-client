@@ -8,11 +8,13 @@ the machinery in this module will notice that we have no identification
 credentials yet and that the server accepts registration messages, so it
 will craft an appropriate one and send it out.
 """
+import json
 import logging
 
 from twisted.internet.defer import Deferred
 
 from landscape.client.broker.exchange import maybe_bytes
+from landscape.client.monitor.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.lib.juju import get_juju_info
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
@@ -220,6 +222,8 @@ class RegistrationHandler(object):
         with_word = "with" if bool(registration_key) else "without"
         with_tags = "and tags %s " % tags if tags else ""
         with_group = "in access group '%s' " % group if group else ""
+
+        message["ubuntu_pro_info"] = json.dumps(get_ubuntu_pro_info())
 
         logging.info(
             u"Queueing message to register with account %r %s%s"
