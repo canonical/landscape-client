@@ -15,7 +15,7 @@ class UbuntuProInfo(DataWatcher):
     both Client and Server in the event that the format changes.
     """
 
-    run_interval = 15
+    run_interval = 900  # 15 minutes
     message_type = "ubuntu-pro-info"
     message_key = message_type
     persist_name = message_type
