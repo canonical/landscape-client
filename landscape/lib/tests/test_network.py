@@ -1,7 +1,7 @@
 import socket
 import unittest
 
-from mock import patch, ANY, mock_open
+from unittest.mock import ANY, DEFAULT, patch, mock_open
 from netifaces import (
     AF_INET,
     AF_INET6,
@@ -14,8 +14,8 @@ from subprocess import Popen, PIPE
 
 from landscape.lib import testing
 from landscape.lib.network import (
-    get_network_traffic, get_active_device_info,
-    get_fqdn, get_network_interface_speed, is_up)
+    get_active_device_info, get_filtered_if_info, get_fqdn,
+    get_network_interface_speed, get_network_traffic, is_up)
 
 
 class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
@@ -311,6 +311,53 @@ class NetworkInfoTest(BaseTestCase):
         self.assertFalse(is_up(0))
         self.assertFalse(is_up(2 + 64 + 4096))
         self.assertFalse(is_up(0b11111111111110))
+
+    def test_get_filtered_if_info(self):
+        def filter_tap(interface):
+            return interface.startswith("tap")
+
+        with patch.multiple(
+                "landscape.lib.network",
+                get_flags=DEFAULT,
+                get_network_interface_speed=DEFAULT,
+                netifaces=DEFAULT,
+        ) as mocks:
+            mocks["netifaces"].interfaces.return_value = [
+                "tap0123",
+                "test_iface",
+                "tap4567",
+                "test_iface2",
+            ]
+            mocks["get_flags"].return_value = 4163
+            mocks["get_network_interface_speed"].return_value = (100, True)
+            device_info = get_filtered_if_info(filters=(filter_tap,),
+                                               extended=True)
+
+        self.assertEqual(len(device_info), 2)
+        self.assertTrue(all("tap" not in i["interface"] for i in device_info))
+
+    def test_get_active_device_info_filtered_taps(self):
+        """
+        Tests that tap network interfaces are filtered out.
+        """
+        with patch.multiple(
+                "landscape.lib.network",
+                get_flags=DEFAULT,
+                get_network_interface_speed=DEFAULT,
+                netifaces=DEFAULT,
+        ) as mocks:
+            mocks["netifaces"].interfaces.return_value = [
+                "tap0123",
+                "test_iface",
+                "tap4567",
+                "test_iface2",
+            ]
+            mocks["get_flags"].return_value = 4163
+            mocks["get_network_interface_speed"].return_value = (100, True)
+            device_info = get_active_device_info(extended=True)
+
+        self.assertEqual(len(device_info), 2)
+        self.assertTrue(all("tap" not in i["interface"] for i in device_info))
 
 
 # exact output of cat /proc/net/dev snapshot with line continuations for pep8

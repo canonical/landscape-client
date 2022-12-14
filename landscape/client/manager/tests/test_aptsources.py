@@ -7,7 +7,6 @@ from twisted.internet.defer import Deferred, succeed
 from landscape.client.manager.aptsources import AptSources
 from landscape.client.manager.plugin import SUCCEEDED, FAILED
 
-from landscape.lib.twisted_util import gather_results, SignalError
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.client.package.reporter import find_reporter_command
 
@@ -272,210 +271,23 @@ class AptSourcesTests(LandscapeTest):
         C{AptSources} runs a process with apt-key for every keys in the
         message.
         """
-        deferred = Deferred()
 
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            self.assertEqual("/usr/bin/apt-key", command)
-            self.assertEqual("add", args[0])
-            filename = args[1]
-            with open(filename) as file:
-                result = file.read()
-            self.assertEqual("Some key content", result)
-            deferred.callback(("ok", "", 0))
-            return deferred
+        self.sourceslist.TRUSTED_GPG_D = self.makeDir()
 
-        self.sourceslist._run_process = _run_process
-
+        gpg_keys = ["key1", "key2"]
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [],
-             "gpg-keys": ["Some key content"], "operation-id": 1})
-
-        return deferred
-
-    def test_import_delete_temporary_files(self):
-        """
-        The files created to be imported by C{apt-key} are removed after the
-        import.
-        """
-        deferred = Deferred()
-        filenames = []
-
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            if not filenames:
-                filenames.append(args[1])
-                deferred.callback(("ok", "", 0))
-                return deferred
-
-        self.sourceslist._run_process = _run_process
-
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [],
-             "gpg-keys": ["Some key content"], "operation-id": 1})
-
-        self.assertFalse(os.path.exists(filenames[0]))
-
-        return deferred
-
-    def test_failed_import_delete_temporary_files(self):
-        """
-        The files created to be imported by C{apt-key} are removed after the
-        import, even if there is a failure.
-        """
-        deferred = Deferred()
-        filenames = []
-
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            filenames.append(args[1])
-            deferred.callback(("error", "", 1))
-            return deferred
-
-        self.sourceslist._run_process = _run_process
-
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [],
-             "gpg-keys": ["Some key content"], "operation-id": 1})
-
-        self.assertFalse(os.path.exists(filenames[0]))
-
-        return deferred
-
-    def test_failed_import_reported(self):
-        """
-        If the C{apt-key} command failed for some reasons, the output of the
-        command is reported and the activity fails.
-        """
-        deferred = Deferred()
-
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            deferred.callback(("nok", "some error", 1))
-            return deferred
-
-        self.sourceslist._run_process = _run_process
-
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
+             "gpg-keys": gpg_keys,
              "operation-id": 1})
 
-        service = self.broker_service
-        msg = "ProcessError: nok\nsome error"
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "result-text": msg, "status": FAILED,
-                              "operation-id": 1}])
-        return deferred
+        keys = []
+        gpg_dirpath = self.sourceslist.TRUSTED_GPG_D
+        for filename in os.listdir(gpg_dirpath):
+            filepath = os.path.join(gpg_dirpath, filename)
+            with open(filepath, 'r') as fh:
+                keys.append(fh.read())
 
-    def test_signaled_import_reported(self):
-        """
-        If the C{apt-key} fails with a signal, the output of the command is
-        reported and the activity fails.
-        """
-        deferred = Deferred()
-
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            deferred.errback(SignalError("nok", "some error", 1))
-            return deferred
-
-        self.sourceslist._run_process = _run_process
-
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
-             "operation-id": 1})
-
-        service = self.broker_service
-        msg = "ProcessError: nok\nsome error"
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "result-text": msg, "status": FAILED,
-                              "operation-id": 1}])
-        return deferred
-
-    def test_failed_import_no_changes(self):
-        """
-        If the C{apt-key} command failed for some reasons, the current
-        repositories aren't changed.
-        """
-        deferred = Deferred()
-
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            deferred.callback(("nok", "some error", 1))
-            return deferred
-
-        self.sourceslist._run_process = _run_process
-
-        with open(self.sourceslist.SOURCES_LIST, "w") as sources:
-            sources.write("oki\n\ndoki\n#comment\n")
-
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
-             "operation-id": 1})
-
-        with open(self.sourceslist.SOURCES_LIST) as sources_list:
-            result = sources_list.read()
-
-        self.assertEqual("oki\n\ndoki\n#comment\n", result)
-
-        return deferred
-
-    def test_multiple_import_sequential(self):
-        """
-        If multiple keys are specified, the imports run sequentially, not in
-        parallel.
-        """
-        deferred1 = Deferred()
-        deferred2 = Deferred()
-        deferreds = [deferred1, deferred2]
-
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            if not deferreds:
-                return succeed(None)
-            return deferreds.pop(0)
-
-        self.sourceslist._run_process = _run_process
-
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [],
-             "gpg-keys": ["key1", "key2"], "operation-id": 1})
-
-        self.assertEqual(1, len(deferreds))
-        deferred1.callback(("ok", "", 0))
-
-        self.assertEqual(0, len(deferreds))
-        deferred2.callback(("ok", "", 0))
-
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "status": SUCCEEDED, "operation-id": 1}])
-        return gather_results(deferreds)
-
-    def test_multiple_import_failure(self):
-        """
-        If multiple keys are specified, and that the first one fails, the error
-        is correctly reported.
-        """
-        deferred1 = Deferred()
-        deferred2 = Deferred()
-        deferreds = [deferred1, deferred2]
-
-        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
-            return deferreds.pop(0)
-
-        self.sourceslist._run_process = _run_process
-
-        self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [],
-             "gpg-keys": ["key1", "key2"], "operation-id": 1})
-
-        deferred1.callback(("error", "", 1))
-        deferred2.callback(("error", "", 1))
-
-        msg = "ProcessError: error\n"
-        service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "result-text": msg, "status": FAILED,
-                              "operation-id": 1}])
-        return gather_results(deferreds)
+        self.assertCountEqual(keys, gpg_keys)
 
     def test_run_reporter(self):
         """

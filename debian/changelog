@@ -1,3 +1,9 @@
+landscape-client (22.09+git6230-0ubuntu0) UNRELEASED; urgency=medium
+
+  * New upstream build for beta ppa
+
+ -- Kevin Nasto <kevin.nasto@canonical.com>  Tue, 29 Nov 2022 00:06:06 +0000
+
 landscape-client (18.03-0ubuntu1) bionic; urgency=medium
 
   * New trunk build

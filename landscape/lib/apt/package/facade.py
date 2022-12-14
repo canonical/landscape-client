@@ -164,9 +164,10 @@ class AptFacade(object):
         self._dpkg_status = os.path.join(dpkg_dir, "status")
         if not os.path.exists(self._dpkg_status):
             create_text_file(self._dpkg_status, "")
-        # Apt will fail if it does not have a keyring.  It does not care if
-        # the keyring is empty.
-        touch_file(os.path.join(apt_dir, "trusted.gpg"))
+        # Apt will fail if it does not have a keyring. It does not care if
+        # the keyring is empty. (Do not create one if dir exists LP: #1973202)
+        if not os.path.isdir(os.path.join(apt_dir, "trusted.gpg.d")):
+            touch_file(os.path.join(apt_dir, "trusted.gpg"))
 
     def _ensure_sub_dir(self, sub_dir):
         """Ensure that a dir in the Apt root exists."""

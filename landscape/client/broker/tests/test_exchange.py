@@ -145,6 +145,50 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add_pending_offset(1)
         self.assertFalse(self.mstore.is_pending(message_id))
 
+    def test_send_big_message_trimmed_err(self):
+        """
+        When package reporter sends error, message is trimmed if too long
+        """
+        self.mstore.set_accepted_types(["package-reporter-result"])
+        self.exchanger._max_log_text_bytes = 5
+        self.exchanger.send({"type": "package-reporter-result", "err": "E"*10,
+                             "code": 0})
+        self.exchanger.exchange()
+        self.assertEqual(len(self.transport.payloads), 1)
+        messages = self.transport.payloads[0]["messages"]
+        self.assertIn('TRUNCATED', messages[0]['err'])
+        self.assertIn('EEEEE', messages[0]['err'])
+        self.assertNotIn('EEEEEE', messages[0]['err'])
+
+    def test_send_big_message_trimmed_result(self):
+        """
+        When an activity sends result log, message is trimmed if too long
+        """
+        self.mstore.set_accepted_types(["operation-result"])
+        self.exchanger._max_log_text_bytes = 5
+        self.exchanger.send({"type": "operation-result", "result-text": "E"*10,
+                             "code": 0, "status": 0, "operation-id": 0})
+        self.exchanger.exchange()
+        self.assertEqual(len(self.transport.payloads), 1)
+        messages = self.transport.payloads[0]["messages"]
+        self.assertIn('TRUNCATED', messages[0]['result-text'])
+        self.assertIn('EEEEE', messages[0]['result-text'])
+        self.assertNotIn('EEEEEE', messages[0]['result-text'])
+
+    def test_send_small_message_not_trimmed(self):
+        """
+        If message is below length, nothing should happen
+        """
+        self.mstore.set_accepted_types(["package-reporter-result"])
+        self.exchanger._max_log_text_bytes = 4
+        self.exchanger.send({"type": "package-reporter-result", "err": "E"*4,
+                             "code": 0})
+        self.exchanger.exchange()
+        self.assertEqual(len(self.transport.payloads), 1)
+        messages = self.transport.payloads[0]["messages"]
+        self.assertNotIn('TRUNCATED', messages[0]['err'])
+        self.assertIn('EEEE', messages[0]['err'])
+
     def test_wb_include_accepted_types(self):
         """
         Every payload from the client needs to specify an ID which

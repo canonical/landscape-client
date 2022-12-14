@@ -124,56 +124,93 @@ def get_default_interfaces():
     return interfaces
 
 
-def get_active_device_info(skipped_interfaces=("lo",),
-                           skip_vlan=True, skip_alias=True,
-                           extended=False, default_only=False):
+def get_filtered_if_info(filters=(), extended=False):
     """
-    Returns a dictionary containing information on each active network
-    interface (which can be filtered based on flags) present on a machine.
+    Returns a dictionary containing info on each active network
+    interface that passes all `filters`.
+
+    A filter is a callable that returns True if the interface should be
+    skipped.
     """
     results = []
-    default_interfaces = get_default_interfaces()
+
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
+
         for interface in netifaces.interfaces():
-            if interface in skipped_interfaces:
+            if any(f(interface) for f in filters):
                 continue
-            if skip_vlan and "." in interface:
-                continue
-            if skip_alias and ":" in interface:
-                continue
-            if default_only and interface not in default_interfaces:
-                continue
+
             ifaddresses = netifaces.ifaddresses(interface)
             if not is_active(ifaddresses):
                 continue
-            flags = get_flags(sock, interface.encode())
+
+            ifencoded = interface.encode()
+            flags = get_flags(sock, ifencoded)
             if not is_up(flags):
                 continue
-            interface_info = {"interface": interface}
-            interface_info["flags"] = flags
-            speed, duplex = get_network_interface_speed(
-                sock, interface.encode())
-            interface_info["speed"] = speed
-            interface_info["duplex"] = duplex
+
             ip_addresses = get_ip_addresses(ifaddresses)
+            if not extended and netifaces.AF_INET not in ip_addresses:
+                # Skip interfaces with no IPv4 addr unless extended to
+                # keep backwards compatibility with single-IPv4 addr
+                # support.
+                continue
+
+            ifinfo = {"interface": interface}
+            ifinfo["flags"] = flags
+            ifinfo["speed"], ifinfo["duplex"] = get_network_interface_speed(
+                sock, ifencoded)
+
             if extended:
-                interface_info["ip_addresses"] = ip_addresses
+                ifinfo["ip_addresses"] = ip_addresses
+
             if netifaces.AF_INET in ip_addresses:
-                interface_info["ip_address"] = get_ip_address(ifaddresses)
-                interface_info["mac_address"] = get_mac_address(ifaddresses)
-                interface_info["broadcast_address"] = get_broadcast_address(
+                ifinfo["ip_address"] = get_ip_address(ifaddresses)
+                ifinfo["mac_address"] = get_mac_address(ifaddresses)
+                ifinfo["broadcast_address"] = get_broadcast_address(
                     ifaddresses)
-                interface_info["netmask"] = get_netmask(ifaddresses)
-            # Skip interfaces with no IPv4 address in non-extended mode
-            # to keep backwards compatibility with single-IPv4 addr support.
-            if netifaces.AF_INET in ip_addresses or extended:
-                results.append(interface_info)
+                ifinfo["netmask"] = get_netmask(ifaddresses)
+
+            results.append(ifinfo)
     finally:
         sock.close()
 
     return results
+
+
+def get_active_device_info(skipped_interfaces=("lo",),
+                           skip_vlan=True, skip_alias=True,
+                           extended=False, default_only=False):
+    def filter_local(interface):
+        return interface in skipped_interfaces
+
+    def filter_vlan(interface):
+        return "." in interface
+
+    def filter_alias(interface):
+        return ":" in interface
+
+    # Get default interfaces here because it could be expensive and
+    # there's no reason to do it more than once.
+    default_ifs = get_default_interfaces()
+
+    def filter_default(interface):
+        return default_only and interface not in default_ifs
+
+    # Tap interfaces can be extremely numerous, slowing us down
+    # significantly.
+    def filter_tap(interface):
+        return interface.startswith("tap")
+
+    return get_filtered_if_info(filters=(
+        filter_tap,
+        filter_local,
+        filter_vlan,
+        filter_alias,
+        filter_default,
+    ), extended=extended)
 
 
 def get_network_traffic(source_file="/proc/net/dev"):

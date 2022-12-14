@@ -398,6 +398,7 @@ class MessageExchange(object):
         self._exchange_interval = config.exchange_interval
         self._urgent_exchange_interval = config.urgent_exchange_interval
         self._max_messages = max_messages
+        self._max_log_text_bytes = 100000  # 100KB
         self._notification_id = None
         self._exchange_id = None
         self._exchanging = False
@@ -438,6 +439,20 @@ class MessageExchange(object):
 
         return result
 
+    def truncate_message_field(self, field, message):
+        """
+        Truncates message field value based on length
+        """
+        if field in message:
+            value = message[field]
+            if isinstance(value, str):
+                # Note this is an approximation based on 1 byte chars
+                max_bytes = self._max_log_text_bytes
+                if len(value) > max_bytes:
+                    value = value[:max_bytes]
+                    value += '...MESSAGE TRUNCATED DUE TO SIZE'
+                    message[field] = value
+
     def send(self, message, urgent=False):
         """Include a message to be sent in an exchange.
 
@@ -452,6 +467,10 @@ class MessageExchange(object):
                 "because the client's secure ID has changed in the meantime"
                 % message.get('operation-id'))
             return None
+
+        # These fields sometimes have really long output we need to trim
+        self.truncate_message_field('err', message)
+        self.truncate_message_field('result-text', message)
 
         if "timestamp" not in message:
             message["timestamp"] = int(self._reactor.time())

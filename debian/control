@@ -3,9 +3,9 @@ Section: admin
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 12), po-debconf, libdistro-info-perl,
+Build-Depends: debhelper (>= 11), po-debconf, libdistro-info-perl,
                dh-python, python3-dev, python3-distutils-extra,
-               lsb-release, gawk, dh-systemd (>= 1.3), net-tools,
+               lsb-release, gawk, net-tools,
                python3-apt, python3-twisted, python3-configobj
 Standards-Version: 4.4.0
 Homepage: https://github.com/CanonicalLtd/landscape-client

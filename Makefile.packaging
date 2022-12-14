@@ -3,7 +3,7 @@ UBUNTU_RELEASE := $(shell lsb_release -cs)
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
 # will be updated behind your back with the current result of that
 # command everytime it is mentioned/used.
-UPSTREAM_VERSION := $(shell python -c "from landscape import UPSTREAM_VERSION; print(UPSTREAM_VERSION)")
+UPSTREAM_VERSION := $(shell python3 -c "from landscape import UPSTREAM_VERSION; print(UPSTREAM_VERSION)")
 CHANGELOG_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
 GIT_HASH := $(shell git rev-parse --short HEAD)
 # We simulate a git "revno" for the sake of sortability.
