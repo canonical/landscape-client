@@ -19,8 +19,8 @@ __all__ = [
     "NETWORK_DEVICE", "NETWORK_ACTIVITY",
     "REBOOT_REQUIRED_INFO", "UPDATE_MANAGER_INFO", "CPU_USAGE",
     "CEPH_USAGE", "SWIFT_USAGE", "SWIFT_DEVICE_INFO", "KEYSTONE_TOKEN",
-    "JUJU_UNITS_INFO", "CLOUD_METADATA", "COMPUTER_TAGS", "LIVEPATCH"
-    ]
+    "JUJU_UNITS_INFO", "CLOUD_METADATA", "COMPUTER_TAGS", "UBUNTU_PRO_INFO", 
+    "LIVEPATCH"]
 
 
 # When adding a new schema, which deprecates an older schema, the recommended
@@ -220,11 +220,12 @@ REGISTER_3_3 = Message(
                            "api-addresses": List(Unicode()),
                            "machine-id": Unicode()}),
      "access_group": Unicode(),
-     "clone_secure_id": Any(Unicode(), Constant(None))},
+     "clone_secure_id": Any(Unicode(), Constant(None)),
+     "ubuntu_pro_info": Unicode()},
     api=b"3.3",
     optional=["registration_password", "hostname", "tags", "vm-info",
               "container-info", "access_group", "juju-info",
-              "clone_secure_id"])
+              "clone_secure_id", "ubuntu_pro_info"])
 
 
 # XXX The register-provisioned-machine message is obsolete, it's kept around
@@ -514,6 +515,9 @@ LIVEPATCH = Message(
     "livepatch",
     {"livepatch": KeyDict({"output": Unicode(), "code": Int(),
                            "exception": Unicode()})})
+UBUNTU_PRO_INFO = Message(
+    "ubuntu-pro-info",
+    {"ubuntu-pro-info": Unicode()})
 
 
 message_schemas = (
@@ -529,4 +533,5 @@ message_schemas = (
     NETWORK_DEVICE, NETWORK_ACTIVITY,
     REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
     CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-    JUJU_UNITS_INFO, CLOUD_METADATA, COMPUTER_TAGS, LIVEPATCH)
+    JUJU_UNITS_INFO, CLOUD_METADATA, COMPUTER_TAGS, UBUNTU_PRO_INFO,
+    LIVEPATCH)
