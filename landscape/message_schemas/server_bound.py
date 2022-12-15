@@ -19,7 +19,7 @@ __all__ = [
     "NETWORK_DEVICE", "NETWORK_ACTIVITY",
     "REBOOT_REQUIRED_INFO", "UPDATE_MANAGER_INFO", "CPU_USAGE",
     "CEPH_USAGE", "SWIFT_USAGE", "SWIFT_DEVICE_INFO", "KEYSTONE_TOKEN",
-    "JUJU_UNITS_INFO", "CLOUD_METADATA", "COMPUTER_TAGS", "UBUNTU_PRO_INFO", 
+    "JUJU_UNITS_INFO", "CLOUD_METADATA", "COMPUTER_TAGS", "UBUNTU_PRO_INFO",
     "LIVEPATCH"]
 
 
@@ -511,14 +511,13 @@ COMPUTER_TAGS = Message(
     "computer-tags",
     {"tags": Any(Unicode(), Constant(None))})
 
-LIVEPATCH = Message(
-    "livepatch",
-    {"livepatch": KeyDict({"output": Unicode(), "code": Int(),
-                           "exception": Unicode()})})
 UBUNTU_PRO_INFO = Message(
     "ubuntu-pro-info",
     {"ubuntu-pro-info": Unicode()})
 
+LIVEPATCH = Message(
+    "livepatch",
+    {"livepatch": Unicode()})
 
 message_schemas = (
     ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
