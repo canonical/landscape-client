@@ -377,7 +377,10 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.computer_title, "frog")
         logged = self.logfile.getvalue()
         self.assertIn(
-            f"WARNING: ERROR at {filename}: Parsing failed with several errors.",
+            (
+            	f"WARNING: ERROR at {filename}: Parsing failed with several "
+	     	"errors."
+            ),
             logged,
         )
         self.assertIn("First error at line 4.", logged)
