@@ -228,7 +228,7 @@ class BaseConfiguration(object):
                                    raise_errors=False, write_empty_values=True)
         except ConfigObjError as e:
             logger = getLogger()
-            logger.warn(str(e))
+            logger.warn("ERROR at {}: {}".format(config_source, str(e)))
             # Good configuration values are recovered here
             config_obj = e.config
         return config_obj

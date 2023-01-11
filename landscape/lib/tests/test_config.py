@@ -338,8 +338,10 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         """))
         self.config.load_configuration_file(filename)
         self.assertEqual(self.config.whatever, "spam")
-        self.assertIn("WARNING: Duplicate keyword name at line 4.",
-                      self.logfile.getvalue())
+        self.assertIn(
+            f"WARNING: ERROR at {filename}: Duplicate keyword name at line 4.",
+            self.logfile.getvalue(),
+        )
 
     def test_duplicate_key(self):
         """
@@ -354,8 +356,10 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         filename = self.makeFile(config)
         self.config.load_configuration_file(filename)
         self.assertEqual(self.config.computer_title, "frog")
-        self.assertIn("WARNING: Duplicate keyword name at line 4.",
-                      self.logfile.getvalue())
+        self.assertIn(
+            f"WARNING: ERROR at {filename}: Duplicate keyword name at line 4.",
+            self.logfile.getvalue(),
+        )
 
     def test_triplicate_key(self):
         """
@@ -372,8 +376,13 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.config.load_configuration_file(filename)
         self.assertEqual(self.config.computer_title, "frog")
         logged = self.logfile.getvalue()
-        self.assertIn("WARNING: Parsing failed with several errors.",
-                      logged)
+        self.assertIn(
+            (
+                f"WARNING: ERROR at {filename}: Parsing failed with several "
+                "errors."
+            ),
+            logged,
+        )
         self.assertIn("First error at line 4.", logged)
 
     def test_load_not_found_default_accept_missing(self):
