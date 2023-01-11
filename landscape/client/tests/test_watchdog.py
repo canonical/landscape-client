@@ -598,7 +598,7 @@ class DaemonTestBase(LandscapeTest):
             daemon = MyDaemon(self.connector, **kwargs)
 
         else:
-            daemon = Daemon
+            daemon = Daemon(self.connector, **kwargs)
         daemon.program = self.EXEC_NAME
         daemon.factor = 0.01
         return daemon

@@ -472,11 +472,11 @@ class StubProcessFactory(object):
         path=None,
         uid=None,
         gid=None,
-        usepty=0,
-        childfds=None,
+        usePTY=0,
+        childFDs=None,
     ):
         self.spawns.append(
-            (protocol, executable, args, env, path, uid, gid, usepty, childfds)
+            (protocol, executable, args, env, path, uid, gid, usePTY, childFDs)
         )
 
 

@@ -627,7 +627,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             gid=None,
             path=None,
             env=None,
-            usepty=None,
+            usePTY=None,
         ):
             self.assertEqual(uid, 1234)
             self.assertEqual(gid, 5678)

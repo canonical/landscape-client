@@ -78,7 +78,7 @@ def spawn_process(
     path=None,
     uid=None,
     gid=None,
-    usepty=False,
+    usePTY=False,
     wait_pipes=True,
     line_received=None,
     stdin=None,
@@ -114,7 +114,7 @@ def spawn_process(
         path=path,
         uid=uid,
         gid=gid,
-        usepty=usepty,
+        usePTY=usePTY,
     )
 
     if not wait_pipes:

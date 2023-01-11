@@ -133,23 +133,6 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-install:
-	@pip install \
-	-r requirements.txt \
-	-r requirements-dev.txt
-
-environment:
-	test ! -f env && virtualenv -p python3 env || true
-	(. ./env/bin/activate && pip install -r requirements.txt)
-
-compile:
-	@rm -f requirements*.txt
-	@pip-compile --resolver=backtracking requirements.in
-	@pip-compile --resolver=backtracking requirements-dev.in
-
-sync: compile
-	(. ./env/bin/activate && pip-sync requirements*.txt)
-
 include Makefile.packaging
 
 .DEFAULT_GOAL := help
