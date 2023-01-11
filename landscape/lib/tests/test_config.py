@@ -378,8 +378,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         logged = self.logfile.getvalue()
         self.assertIn(
             (
-            	f"WARNING: ERROR at {filename}: Parsing failed with several "
-	     	"errors."
+                f"WARNING: ERROR at {filename}: Parsing failed with several "
+                "errors."
             ),
             logged,
         )
