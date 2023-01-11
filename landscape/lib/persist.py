@@ -26,9 +26,16 @@ import re
 from twisted.python.compat import StringType  # Py2: basestring, Py3: str
 
 
-__all__ = ["Persist", "PickleBackend", "BPickleBackend",
-           "path_string_to_tuple", "path_tuple_to_string", "RootedPersist",
-           "PersistError", "PersistReadOnlyError"]
+__all__ = [
+    "Persist",
+    "PickleBackend",
+    "BPickleBackend",
+    "path_string_to_tuple",
+    "path_tuple_to_string",
+    "RootedPersist",
+    "PersistError",
+    "PersistReadOnlyError",
+]
 
 
 NOTHING = object()
@@ -111,17 +118,19 @@ class Persist(object):
 
         def load_old():
             filepathold = filepath + ".old"
-            if (os.path.isfile(filepathold) and
-                os.path.getsize(filepathold) > 0
-                ):
+            if (
+                os.path.isfile(filepathold)
+                and os.path.getsize(filepathold) > 0
+            ):
 
                 # warning("Broken configuration file at %s" % filepath)
                 # warning("Trying backup at %s" % filepathold)
                 try:
                     self._hardmap = self._backend.load(filepathold)
                 except Exception:
-                    raise PersistError("Broken configuration file at %s" %
-                                       filepathold)
+                    raise PersistError(
+                        "Broken configuration file at %s" % filepathold
+                    )
                 return True
             return False
 
@@ -173,10 +182,11 @@ class Persist(object):
             newobj = self._backend.get(obj, elem)
             if newobj is NotImplemented:
                 if queue:
-                    path = path[:-len(queue)]
-                raise PersistError("Can't traverse %r (%r): %r" %
-                                   (type(obj), path_tuple_to_string(path),
-                                    str(obj)))
+                    path = path[: -len(queue)]
+                raise PersistError(
+                    "Can't traverse %r (%r): %r"
+                    % (type(obj), path_tuple_to_string(path), str(obj))
+                )
             if newobj is marker:
                 break
         if newobj is not marker:
@@ -196,8 +206,10 @@ class Persist(object):
                         newvalue = setvalue
                     newobj = self._backend.set(obj, elem, newvalue)
                     if newobj is NotImplemented:
-                        raise PersistError("Can't traverse %r with %r" %
-                                           (type(obj), type(elem)))
+                        raise PersistError(
+                            "Can't traverse %r with %r"
+                            % (type(obj), type(elem))
+                        )
                     if not queue:
                         break
                     obj = newobj
@@ -308,8 +320,9 @@ class Persist(object):
             if obj is not marker:
                 result = self._backend.remove(obj, elem, isvalue)
                 if result is NotImplemented:
-                    raise PersistError("Can't remove %r from %r" %
-                                       (elem, type(obj)))
+                    raise PersistError(
+                        "Can't remove %r from %r" % (elem, type(obj))
+                    )
             if self._backend.empty(obj):
                 if value is not marker:
                     value = marker
@@ -408,8 +421,9 @@ class RootedPersist(object):
             oldpath = path_string_to_tuple(oldpath)
         if isinstance(newpath, StringType):
             newpath = path_string_to_tuple(newpath)
-        return self.parent.move(self.root + oldpath, self.root + newpath,
-                                soft, weak)
+        return self.parent.move(
+            self.root + oldpath, self.root + newpath, soft, weak
+        )
 
     def root_at(self, path):
         if isinstance(path, StringType):
@@ -572,7 +586,7 @@ class Backend(object):
 
     def empty(self, obj):
         """Whether the given node object has no children."""
-        return (not obj)
+        return not obj
 
     def has(self, obj, elem):
         """Whether the given node object contains the given child element."""
@@ -592,16 +606,16 @@ class Backend(object):
 
 
 class PickleBackend(Backend):
-
     def __init__(self):
         from landscape.lib.compat import cPickle
+
         self._pickle = cPickle
 
     def new(self):
         return {}
 
     def load(self, filepath):
-        with open(filepath, 'rb') as fd:
+        with open(filepath, "rb") as fd:
             return self._pickle.load(fd)
 
     def save(self, filepath, map):
@@ -610,9 +624,9 @@ class PickleBackend(Backend):
 
 
 class BPickleBackend(Backend):
-
     def __init__(self):
         from landscape.lib import bpickle
+
         self._bpickle = bpickle
 
     def new(self):
@@ -625,5 +639,6 @@ class BPickleBackend(Backend):
     def save(self, filepath, map):
         with open(filepath, "wb") as fd:
             fd.write(self._bpickle.dumps(map))
+
 
 # vim:ts=4:sw=4:et

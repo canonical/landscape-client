@@ -47,11 +47,18 @@ class UserProviderBase(object):
                 gecos_data.append(None)
             name, location, work_phone, home_phone = tuple(gecos_data)
             enabled = user.pw_name not in self.locked_users
-            users.append({"username": user.pw_name, "name": name,
-                          "uid": user.pw_uid, "enabled": enabled,
-                          "location": location, "work-phone": work_phone,
-                          "home-phone": home_phone,
-                          "primary-gid": user.pw_gid})
+            users.append(
+                {
+                    "username": user.pw_name,
+                    "name": name,
+                    "uid": user.pw_uid,
+                    "enabled": enabled,
+                    "location": location,
+                    "work-phone": work_phone,
+                    "home-phone": home_phone,
+                    "primary-gid": user.pw_gid,
+                }
+            )
             found_usernames.add(user.pw_name)
         return users
 
@@ -70,8 +77,13 @@ class UserProviderBase(object):
             if group.gr_name in found_groupnames:
                 continue
             member_names = user_names.intersection(group.gr_mem)
-            groups.append({"name": group.gr_name, "gid": group.gr_gid,
-                           "members": sorted(list(member_names))})
+            groups.append(
+                {
+                    "name": group.gr_name,
+                    "gid": group.gr_gid,
+                    "members": sorted(list(member_names)),
+                }
+            )
             found_groupnames.add(group.gr_name)
         return groups
 
@@ -102,12 +114,23 @@ class UserProvider(UserProviderBase):
 
     popen = subprocess.Popen
 
-    passwd_fields = ["username", "passwd", "uid", "primary-gid", "gecos",
-                     "home", "shell"]
+    passwd_fields = [
+        "username",
+        "passwd",
+        "uid",
+        "primary-gid",
+        "gecos",
+        "home",
+        "shell",
+    ]
     group_fields = ["name", "passwd", "gid", "members"]
 
-    def __init__(self, locked_users=[], passwd_file="/etc/passwd",
-                 group_file="/etc/group"):
+    def __init__(
+        self,
+        locked_users=[],
+        passwd_file="/etc/passwd",
+        group_file="/etc/group",
+    ):
         super(UserProvider, self).__init__(locked_users)
         self._passwd_file = passwd_file
         self._group_file = group_file
@@ -125,31 +148,44 @@ class UserProvider(UserProviderBase):
         # explicitly indicate the encoding as we cannot rely on the system
         # default encoding.
         if _PY3:
-            open_params = dict(encoding="utf-8", errors='replace')
+            open_params = dict(encoding="utf-8", errors="replace")
         else:
             open_params = dict()
         with open(self._passwd_file, "r", **open_params) as passwd_file:
             reader = csv.DictReader(
-                passwd_file, fieldnames=self.passwd_fields, delimiter=":",
-                quoting=csv.QUOTE_NONE)
+                passwd_file,
+                fieldnames=self.passwd_fields,
+                delimiter=":",
+                quoting=csv.QUOTE_NONE,
+            )
             current_line = 0
             for row in reader:
                 current_line += 1
                 # This skips the NIS user marker in the passwd file.
-                if (row["username"].startswith("+") or
-                        row["username"].startswith("-")):
+                if row["username"].startswith("+") or row[
+                    "username"
+                ].startswith("-"):
                     continue
                 gecos = row["gecos"]
                 if not _PY3 and gecos is not None:
                     gecos = gecos.decode("utf-8", "replace")
                 try:
-                    user_data.append((row["username"], row["passwd"],
-                                      int(row["uid"]), int(row["primary-gid"]),
-                                      gecos, row["home"], row["shell"]))
+                    user_data.append(
+                        (
+                            row["username"],
+                            row["passwd"],
+                            int(row["uid"]),
+                            int(row["primary-gid"]),
+                            gecos,
+                            row["home"],
+                            row["shell"],
+                        )
+                    )
                 except (ValueError, TypeError):
                     logging.warn(
                         "passwd file %s is incorrectly formatted: line %d."
-                        % (self._passwd_file, current_line))
+                        % (self._passwd_file, current_line)
+                    )
         return user_data
 
     def get_group_data(self):
@@ -160,19 +196,31 @@ class UserProvider(UserProviderBase):
         """
         group_data = []
         group_file = open(self._group_file, "r")
-        reader = csv.DictReader(group_file, fieldnames=self.group_fields,
-                                delimiter=":", quoting=csv.QUOTE_NONE)
+        reader = csv.DictReader(
+            group_file,
+            fieldnames=self.group_fields,
+            delimiter=":",
+            quoting=csv.QUOTE_NONE,
+        )
         current_line = 0
         for row in reader:
             current_line += 1
             # Skip if we find the NIS marker
-            if (row["name"].startswith("+") or row["name"].startswith("-")):
+            if row["name"].startswith("+") or row["name"].startswith("-"):
                 continue
             try:
-                group_data.append((row["name"], row["passwd"], int(row["gid"]),
-                                   row["members"].split(",")))
+                group_data.append(
+                    (
+                        row["name"],
+                        row["passwd"],
+                        int(row["gid"]),
+                        row["members"].split(","),
+                    )
+                )
             except (AttributeError, ValueError):
-                logging.warn("group file %s is incorrectly formatted: "
-                             "line %d." % (self._group_file, current_line))
+                logging.warn(
+                    "group file %s is incorrectly formatted: "
+                    "line %d." % (self._group_file, current_line)
+                )
         group_file.close()
         return group_data

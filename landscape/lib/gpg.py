@@ -20,7 +20,7 @@ def gpg_verify(filename, signature, gpg="/usr/bin/gpg", apt_dir="/etc/apt"):
     @param apt_dir: Optionally, path to apt trusted keyring.
     @return: a C{Deferred} resulting in C{True} if the signature is
              valid, C{False} otherwise.
-        """
+    """
 
     def remove_gpg_home(ignored):
         shutil.rmtree(gpg_home)
@@ -32,21 +32,34 @@ def gpg_verify(filename, signature, gpg="/usr/bin/gpg", apt_dir="/etc/apt"):
         # bytes here.
         out, err = out.decode("ascii"), err.decode("ascii")
         if code != 0:
-            raise InvalidGPGSignature("%s failed (out='%s', err='%s', "
-                                      "code='%d')" % (gpg, out, err, code))
+            raise InvalidGPGSignature(
+                "%s failed (out='%s', err='%s', "
+                "code='%d')" % (gpg, out, err, code)
+            )
 
     gpg_home = tempfile.mkdtemp()
-    keyrings = tuple(itertools.chain(*[
-        ("--keyring", keyring)
-        for keyring in sorted(
-            glob("{}/trusted.gpg".format(apt_dir)) +
-            glob("{}/trusted.gpg.d/*.gpg".format(apt_dir))
+    keyrings = tuple(
+        itertools.chain(
+            *[
+                ("--keyring", keyring)
+                for keyring in sorted(
+                    glob("{}/trusted.gpg".format(apt_dir))
+                    + glob("{}/trusted.gpg.d/*.gpg".format(apt_dir))
+                )
+            ]
         )
-    ]))
+    )
     args = (
-        "--no-options", "--homedir", gpg_home, "--no-default-keyring",
-        "--ignore-time-conflict"
-    ) + keyrings + ("--verify", signature, filename)
+        (
+            "--no-options",
+            "--homedir",
+            gpg_home,
+            "--no-default-keyring",
+            "--ignore-time-conflict",
+        )
+        + keyrings
+        + ("--verify", signature, filename)
+    )
 
     result = getProcessOutputAndValue(gpg, args=args)
     result.addBoth(remove_gpg_home)

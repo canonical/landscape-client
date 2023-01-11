@@ -18,8 +18,9 @@ class ProcessInformation(object):
     @param uptime: The uptime value to use (for unit tests only).
     """
 
-    def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None,
-                 uptime=None):
+    def __init__(
+        self, proc_dir="/proc", jiffies=None, boot_time=None, uptime=None
+    ):
         if boot_time is None:
             boot_time = sysstats.BootTimes().get_last_boot_time()
         if boot_time is not None:
@@ -68,8 +69,9 @@ class ProcessInformation(object):
                 for line in file:
                     parts = line.split(":", 1)
                     if parts[0] == "Name":
-                        process_info["name"] = (cmd_line_name.strip() or
-                                                parts[1].strip())
+                        process_info["name"] = (
+                            cmd_line_name.strip() or parts[1].strip()
+                        )
                     elif parts[0] == "State":
                         state = parts[1].strip()
                         # In Lucid, capital T is used for both tracing stop
@@ -107,16 +109,19 @@ class ProcessInformation(object):
                 utime = int(parts[13])
                 stime = int(parts[14])
                 uptime = self._uptime or sysstats.get_uptime()
-                pcpu = calculate_pcpu(utime, stime, uptime,
-                                      start_time, self._jiffies_per_sec)
+                pcpu = calculate_pcpu(
+                    utime, stime, uptime, start_time, self._jiffies_per_sec
+                )
                 process_info["percent-cpu"] = pcpu
                 delta = timedelta(0, start_time // self._jiffies_per_sec)
                 if self._boot_time is None:
                     logging.warning(
-                        "Skipping process (PID %s) without boot time.")
+                        "Skipping process (PID %s) without boot time."
+                    )
                     return None
                 process_info["start-time"] = to_timestamp(
-                    self._boot_time + delta)
+                    self._boot_time + delta
+                )
             finally:
                 file.close()
 
@@ -125,9 +130,14 @@ class ProcessInformation(object):
             # which terminates before we open the stat file.
             return None
 
-        assert("pid" in process_info and "state" in process_info and
-               "name" in process_info and "uid" in process_info and
-               "gid" in process_info and "start-time" in process_info)
+        assert (
+            "pid" in process_info
+            and "state" in process_info
+            and "name" in process_info
+            and "uid" in process_info
+            and "gid" in process_info
+            and "start-time" in process_info
+        )
         return process_info
 
 

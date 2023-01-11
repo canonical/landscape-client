@@ -47,7 +47,7 @@ class CleanFDsTests(unittest.TestCase):
 
         self.assertEqual(closed_fds, expected_fds)
 
-    def test_ignore_OSErrors(self):
+    def test_ignore_OSErrors(self):  # noqa: N802
         """
         If os.close raises an OSError, it is ignored and we continue to close
         the rest of the FDs.

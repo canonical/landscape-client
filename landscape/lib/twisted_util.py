@@ -15,8 +15,9 @@ class SignalError(Exception):
 
 
 def gather_results(deferreds, consume_errors=False):
-    d = DeferredList(deferreds, fireOnOneErrback=1,
-                     consumeErrors=consume_errors)
+    d = DeferredList(
+        deferreds, fireOnOneErrback=1, consumeErrors=consume_errors
+    )
     d.addCallback(lambda r: [x[1] for x in r])
     d.addErrback(lambda f: f.value.subFailure)
     return d
@@ -34,12 +35,12 @@ class AllOutputProcessProtocol(ProcessProtocol):
         self.line_received = line_received
         self._partial_line = b""
 
-    def connectionMade(self):
+    def connectionMade(self):  # noqa: N802
         if self.stdin is not None:
             self.transport.write(networkString(self.stdin))
             self.transport.closeStdin()
 
-    def outReceived(self, data):
+    def outReceived(self, data):  # noqa: N802
         self.outBuf.write(data)
 
         if self.line_received is None:
@@ -55,7 +56,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
         for line in lines:
             self.line_received(line)
 
-    def processEnded(self, reason):
+    def processEnded(self, reason):  # noqa: N802
         if self._partial_line:
             self.line_received(self._partial_line)
             self._partial_line = b""
@@ -70,9 +71,18 @@ class AllOutputProcessProtocol(ProcessProtocol):
             self.deferred.callback((out, err, code))
 
 
-def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
-                  usePTY=False, wait_pipes=True, line_received=None,
-                  stdin=None):
+def spawn_process(
+    executable,
+    args=(),
+    env={},
+    path=None,
+    uid=None,
+    gid=None,
+    usepty=False,
+    wait_pipes=True,
+    line_received=None,
+    stdin=None,
+):
     """
     Spawn a process using Twisted reactor.
 
@@ -92,16 +102,24 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
     list_args.extend(args)
 
     result = Deferred()
-    protocol = AllOutputProcessProtocol(result, stdin=stdin,
-                                        line_received=line_received)
+    protocol = AllOutputProcessProtocol(
+        result, stdin=stdin, line_received=line_received
+    )
     env = encode_values(env)
-    process = reactor.spawnProcess(protocol, executable, args=list_args,
-                                   env=env, path=path, uid=uid, gid=gid,
-                                   usePTY=usePTY)
+    process = reactor.spawnProcess(
+        protocol,
+        executable,
+        args=list_args,
+        env=env,
+        path=path,
+        uid=uid,
+        gid=gid,
+        usepty=usepty,
+    )
 
     if not wait_pipes:
 
-        def maybeCallProcessEnded():
+        def maybeCallProcessEnded():  # noqa: N802
             """A less strict version of Process.maybeCallProcessEnded.
 
             This behaves exactly like the original method, but in case the

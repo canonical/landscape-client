@@ -22,24 +22,29 @@ from landscape.lib import testing
 
 
 DEFAULT_ACCEPTED_TYPES = [
-    "accepted-types", "registration", "resynchronize", "set-id",
-    "set-intervals", "unknown-id"]
+    "accepted-types",
+    "registration",
+    "resynchronize",
+    "set-id",
+    "set-intervals",
+    "unknown-id",
+]
 
 
 class MessageTestCase(unittest.TestCase):
-
-    def assertMessage(self, obtained, expected):
+    def assertMessage(self, obtained, expected):  # noqa: N802
         obtained = obtained.copy()
         for key in ["api", "timestamp"]:
             if key not in expected and key in obtained:
                 obtained.pop(key)
         if obtained != expected:
-            raise self.failureException("Messages don't match.\n"
-                                        "Expected:\n%s\nObtained:\n%s\n"
-                                        % (pprint.pformat(expected),
-                                           pprint.pformat(obtained)))
+            raise self.failureException(
+                "Messages don't match.\n"
+                "Expected:\n%s\nObtained:\n%s\n"
+                % (pprint.pformat(expected), pprint.pformat(obtained))
+            )
 
-    def assertMessages(self, obtained, expected):
+    def assertMessages(self, obtained, expected):  # noqa: N802
         self.assertEqual(type(obtained), list)
         self.assertEqual(type(expected), list)
         for obtained_message, expected_message in zip(obtained, expected):
@@ -49,25 +54,32 @@ class MessageTestCase(unittest.TestCase):
         diff = abs(expected_len - obtained_len)
         if obtained_len < expected_len:
             extra = pprint.pformat(expected[-diff:])
-            raise self.failureException("Expected the following %d additional "
-                                        "messages:\n%s" % (diff, extra))
+            raise self.failureException(
+                "Expected the following %d additional "
+                "messages:\n%s" % (diff, extra)
+            )
         elif expected_len < obtained_len:
             extra = pprint.pformat(obtained[-diff:])
-            raise self.failureException("Got %d more messages than expected:\n"
-                                        "%s" % (diff, extra))
+            raise self.failureException(
+                "Got %d more messages than expected:\n" "%s" % (diff, extra)
+            )
 
 
-class LandscapeTest(MessageTestCase, testing.TwistedTestCase,
-                    testing.HelperTestCase, testing.ConfigTestCase,
-                    testing.CompatTestCase):
-
+class LandscapeTest(
+    MessageTestCase,
+    testing.TwistedTestCase,
+    testing.HelperTestCase,
+    testing.ConfigTestCase,
+    testing.CompatTestCase,
+):
     def setUp(self):
         testing.TwistedTestCase.setUp(self)
         result = testing.HelperTestCase.setUp(self)
 
         self._orig_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = (
-                testing.BaseConfiguration.default_config_filenames)
+            testing.BaseConfiguration.default_config_filenames
+        )
 
         return result
 
@@ -77,7 +89,7 @@ class LandscapeTest(MessageTestCase, testing.TwistedTestCase,
         testing.TwistedTestCase.tearDown(self)
         testing.HelperTestCase.tearDown(self)
 
-    def makePersistFile(self, *args, **kwargs):
+    def makePersistFile(self, *args, **kwargs):  # noqa: N802
         """Return a temporary filename to be used by a L{Persist} object.
 
         The possible .old persist file is cleaned up after the test.
@@ -97,6 +109,7 @@ class LandscapeIsolatedTest(LandscapeTest):
                     return run_method(oself, *args, **kwargs)
                 finally:
                     self.doCleanups()
+
             LandscapeTest.run = run_wrapper
             LandscapeTest._cleanup_patch = True
         run_isolated(LandscapeTest, self, result)
@@ -120,10 +133,12 @@ class FakeBrokerServiceHelper(object):
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
             "data_path = %s\n"
-            "log_dir = %s\n" % (test_case.data_path, log_dir))
+            "log_dir = %s\n" % (test_case.data_path, log_dir)
+        )
 
-        bootstrap_list.bootstrap(data_path=test_case.data_path,
-                                 log_dir=log_dir)
+        bootstrap_list.bootstrap(
+            data_path=test_case.data_path, log_dir=log_dir
+        )
 
         config = BrokerConfiguration()
         config.load(["-c", test_case.config_filename])
@@ -137,7 +152,8 @@ class FakeBrokerServiceHelper(object):
         test_case.remote = FakeRemoteBroker(
             test_case.broker_service.exchanger,
             test_case.broker_service.message_store,
-            test_case.broker_service.broker)
+            test_case.broker_service.broker,
+        )
 
 
 class BrokerServiceHelper(FakeBrokerServiceHelper):
@@ -154,7 +170,8 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
         test_case.broker_service.startService()
         # Use different reactor to simulate separate processes
         self._connector = RemoteBrokerConnector(
-            FakeReactor(), test_case.broker_service.config)
+            FakeReactor(), test_case.broker_service.config
+        )
         deferred = self._connector.connect()
         test_case.remote = test_case.successResultOf(deferred)
 
@@ -178,8 +195,8 @@ class MonitorHelper(FakeBrokerServiceHelper):
         test_case.config.stagger_launch = 0  # let's keep tests deterministic
         test_case.reactor = FakeReactor()
         test_case.monitor = Monitor(
-            test_case.reactor, test_case.config,
-            persist, persist_filename)
+            test_case.reactor, test_case.config, persist, persist_filename
+        )
         test_case.monitor.broker = test_case.remote
         test_case.mstore = test_case.broker_service.message_store
 
@@ -200,9 +217,14 @@ class ManagerHelper(FakeBrokerServiceHelper):
 
 
 class MockCoverageMonitor(object):
-
-    def __init__(self, count=None, expected_count=None, percent=None,
-                 since_reset=None, warn=None):
+    def __init__(
+        self,
+        count=None,
+        expected_count=None,
+        percent=None,
+        since_reset=None,
+        warn=None,
+    ):
         self.count = count or 0
         self.expected_count = expected_count or 0
         self.percent = percent or 0.0
@@ -220,7 +242,6 @@ class MockCoverageMonitor(object):
 
 
 class MockFrequencyMonitor(object):
-
     def __init__(self, count=None, expected_count=None, warn=None):
         self.count = count or 0
         self.expected_count = expected_count or 0

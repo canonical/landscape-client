@@ -18,7 +18,6 @@ class ShutdownFailedError(Exception):
 
 
 class ShutdownManager(ManagerPlugin):
-
     def __init__(self, process_factory=None):
         if process_factory is None:
             from twisted.internet import reactor as process_factory
@@ -54,22 +53,24 @@ class ShutdownManager(ManagerPlugin):
         deferred = self._respond(SUCCEEDED, data, operation_id)
         # After sending the result to the server, stop accepting messages and
         # wait for the reboot/shutdown.
-        deferred.addCallback(
-            lambda _: self.registry.broker.stop_exchanger())
+        deferred.addCallback(lambda _: self.registry.broker.stop_exchanger())
         return deferred
 
     def _respond_failure(self, failure, operation_id, reboot):
         logging.info("Shutdown request failed.")
-        failure_report = '\n'.join([
-            failure.value.data,
-            "",
-            "Attempting to force {operation}. Please note that if this "
-            "succeeds, Landscape will have no way of knowing and will still "
-            "mark this activity as having failed. It is recommended you check "
-            "the state of the machine manually to determine whether "
-            "{operation} succeeded.".format(
-                operation="reboot" if reboot else "shutdown")
-        ])
+        failure_report = "\n".join(
+            [
+                failure.value.data,
+                "",
+                "Attempting to force {operation}. Please note that if this "
+                "succeeds, Landscape will have no way of knowing and will "
+                "still mark this activity as having failed. It is recommended "
+                "you check the state of the machine manually to determine "
+                "whether {operation} succeeded.".format(
+                    operation="reboot" if reboot else "shutdown"
+                ),
+            ]
+        )
         deferred = self._respond(FAILED, failure_report, operation_id)
         # Add another callback spawning the poweroff or reboot command (which
         # seem more reliable in aberrant situations like a post-trusty release
@@ -81,16 +82,21 @@ class ShutdownManager(ManagerPlugin):
         command, args = self._get_command_and_args(protocol, reboot, True)
         deferred.addCallback(
             lambda _: self._process_factory.spawnProcess(
-                protocol, command, args=args))
+                protocol, command, args=args
+            )
+        )
         return deferred
 
     def _respond(self, status, data, operation_id):
-        message = {"type": "operation-result",
-                   "status": status,
-                   "result-text": data,
-                   "operation-id": operation_id}
+        message = {
+            "type": "operation-result",
+            "status": status,
+            "result-text": data,
+            "operation-id": operation_id,
+        }
         return self.registry.broker.send_message(
-            message, self._session_id, True)
+            message, self._session_id, True
+        )
 
     def _get_command_and_args(self, protocol, reboot, force=False):
         """
@@ -100,11 +106,17 @@ class ShutdownManager(ManagerPlugin):
         minutes = None if force else "+%d" % (protocol.delay // 60,)
         args = {
             (False, False): [
-                "/sbin/shutdown", "-h", minutes,
-                "Landscape is shutting down the system"],
+                "/sbin/shutdown",
+                "-h",
+                minutes,
+                "Landscape is shutting down the system",
+            ],
             (False, True): [
-                "/sbin/shutdown", "-r", minutes,
-                "Landscape is rebooting the system"],
+                "/sbin/shutdown",
+                "-r",
+                minutes,
+                "Landscape is rebooting the system",
+            ],
             (True, False): ["/sbin/poweroff"],
             (True, True): ["/sbin/reboot"],
         }[force, reboot]
@@ -148,7 +160,7 @@ class ShutdownProcessProtocol(ProcessProtocol):
         """
         reactor.call_later(timeout, self._succeed)
 
-    def childDataReceived(self, fd, data):
+    def childDataReceived(self, fd, data):  # noqa: N802
         """Some data was received from the child.
 
         Add it to our buffer to pass to C{result} when it's fired.
@@ -156,7 +168,7 @@ class ShutdownProcessProtocol(ProcessProtocol):
         if self._waiting:
             self._data.append(data)
 
-    def processEnded(self, reason):
+    def processEnded(self, reason):  # noqa: N802
         """Fire back the C{result} L{Deferred}.
 
         C{result}'s callback will be fired with the string of data received

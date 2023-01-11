@@ -22,6 +22,7 @@ class LandscapeService(Service, object):
     @ivar factory: A L{LandscapeComponentProtocolFactory}, it must be provided
         by instances of sub-classes.
     """
+
     reactor_factory = LandscapeReactor
     persist_filename = None
 
@@ -32,21 +33,33 @@ class LandscapeService(Service, object):
             self.persist = get_versioned_persist(self)
         if not (self.config is not None and self.config.ignore_sigusr1):
             from twisted.internet import reactor
+
             signal.signal(
                 signal.SIGUSR1,
-                lambda signal, frame: reactor.callFromThread(rotate_logs))
+                lambda signal, frame: reactor.callFromThread(rotate_logs),
+            )
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         Service.startService(self)
-        logging.info("%s started with config %s" % (
-            self.service_name.capitalize(), self.config.get_config_filename()))
+        logging.info(
+            "%s started with config %s"
+            % (
+                self.service_name.capitalize(),
+                self.config.get_config_filename(),
+            )
+        )
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         # We don't need to call port.stopListening(), because the reactor
         # shutdown sequence will do that for us.
         Service.stopService(self)
-        logging.info("%s stopped with config %s" % (
-            self.service_name.capitalize(), self.config.get_config_filename()))
+        logging.info(
+            "%s stopped with config %s"
+            % (
+                self.service_name.capitalize(),
+                self.config.get_config_filename(),
+            )
+        )
 
 
 def run_landscape_service(configuration_class, service_class, args):
@@ -81,6 +94,7 @@ def run_landscape_service(configuration_class, service_class, args):
         # XXX: we should find a better way to expose this knot, and
         # not set it globally on the class
         from landscape.lib.amp import MethodCallSender
+
         MethodCallSender.timeout = 300
 
         # Create clones here because LandscapeReactor.__init__ would otherwise

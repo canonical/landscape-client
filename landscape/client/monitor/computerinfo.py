@@ -22,10 +22,14 @@ class ComputerInfo(MonitorPlugin):
     persist_name = "computer-info"
     scope = "computer"
 
-    def __init__(self, get_fqdn=get_fqdn,
-                 meminfo_filename="/proc/meminfo",
-                 lsb_release_filename=LSB_RELEASE_FILENAME,
-                 root_path="/", fetch_async=fetch_async):
+    def __init__(
+        self,
+        get_fqdn=get_fqdn,
+        meminfo_filename="/proc/meminfo",
+        lsb_release_filename=LSB_RELEASE_FILENAME,
+        root_path="/",
+        fetch_async=fetch_async,
+    ):
         self._get_fqdn = get_fqdn
         self._meminfo_filename = meminfo_filename
         self._lsb_release_filename = lsb_release_filename
@@ -37,48 +41,61 @@ class ComputerInfo(MonitorPlugin):
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
         self._annotations_path = registry.config.annotations_path
-        self.call_on_accepted("computer-info",
-                              self.send_computer_message, True)
-        self.call_on_accepted("distribution-info",
-                              self.send_distribution_message, True)
-        self.call_on_accepted("cloud-instance-metadata",
-                              self.send_cloud_instance_metadata_message, True)
+        self.call_on_accepted(
+            "computer-info", self.send_computer_message, True
+        )
+        self.call_on_accepted(
+            "distribution-info", self.send_distribution_message, True
+        )
+        self.call_on_accepted(
+            "cloud-instance-metadata",
+            self.send_cloud_instance_metadata_message,
+            True,
+        )
 
     def send_computer_message(self, urgent=False):
         message = self._create_computer_info_message()
         if message:
             message["type"] = "computer-info"
             logging.info("Queueing message with updated computer info.")
-            self.registry.broker.send_message(message, self._session_id,
-                                              urgent=urgent)
+            self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent
+            )
 
     def send_distribution_message(self, urgent=False):
         message = self._create_distribution_info_message()
         if message:
             message["type"] = "distribution-info"
             logging.info("Queueing message with updated distribution info.")
-            self.registry.broker.send_message(message, self._session_id,
-                                              urgent=urgent)
+            self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent
+            )
 
     @inlineCallbacks
     def send_cloud_instance_metadata_message(self, urgent=False):
         message = yield self._create_cloud_instance_metadata_message()
         if message:
             message["type"] = "cloud-instance-metadata"
-            logging.info("Queueing message with updated cloud instance "
-                         "metadata.")
-            self.registry.broker.send_message(message, self._session_id,
-                                              urgent=urgent)
+            logging.info(
+                "Queueing message with updated cloud instance " "metadata."
+            )
+            self.registry.broker.send_message(
+                message, self._session_id, urgent=urgent
+            )
 
     def exchange(self, urgent=False):
         broker = self.registry.broker
-        broker.call_if_accepted("computer-info",
-                                self.send_computer_message, urgent)
-        broker.call_if_accepted("distribution-info",
-                                self.send_distribution_message, urgent)
-        broker.call_if_accepted("cloud-instance-metadata",
-                                self.send_cloud_instance_metadata_message,
-                                urgent)
+        broker.call_if_accepted(
+            "computer-info", self.send_computer_message, urgent
+        )
+        broker.call_if_accepted(
+            "distribution-info", self.send_distribution_message, urgent
+        )
+        broker.call_if_accepted(
+            "cloud-instance-metadata",
+            self.send_cloud_instance_metadata_message,
+            urgent,
+        )
 
     def _create_computer_info_message(self):
         message = {}
@@ -90,7 +107,8 @@ class ComputerInfo(MonitorPlugin):
         if os.path.exists(self._annotations_path):
             for key in os.listdir(self._annotations_path):
                 annotations[key] = read_text_file(
-                    os.path.join(self._annotations_path, key))
+                    os.path.join(self._annotations_path, key)
+                )
 
         if annotations:
             self._add_if_new(message, "annotations", annotations)
@@ -113,7 +131,7 @@ class ComputerInfo(MonitorPlugin):
         message = {}
         file = open(self._meminfo_filename)
         for line in file:
-            if line != '\n':
+            if line != "\n":
                 parts = line.split(":")
                 key = parts[0]
                 if key in ["MemTotal", "SwapTotal"]:
@@ -132,9 +150,10 @@ class ComputerInfo(MonitorPlugin):
     def _create_cloud_instance_metadata_message(self):
         """Fetch cloud metadata and insert it in a message."""
         message = None
-        if (self._cloud_instance_metadata is None and
-            self._cloud_retries < METADATA_RETRY_MAX
-            ):
+        if (
+            self._cloud_instance_metadata is None
+            and self._cloud_retries < METADATA_RETRY_MAX
+        ):
 
             self._cloud_instance_metadata = yield self._fetch_ec2_meta_data()
             message = self._cloud_instance_metadata
@@ -149,8 +168,10 @@ class ComputerInfo(MonitorPlugin):
         def log_no_meta_data_found(error):
             self._cloud_retries += 1
             if self._cloud_retries >= METADATA_RETRY_MAX:
-                logging.info("No cloud meta-data available. %s" %
-                             error.getErrorMessage())
+                logging.info(
+                    "No cloud meta-data available. %s"
+                    % error.getErrorMessage()
+                )
 
         def log_success(result):
             logging.info("Acquired cloud meta-data.")

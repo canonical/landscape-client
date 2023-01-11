@@ -21,9 +21,9 @@ def parse_lsb_release(lsb_release_filename=None):
     if lsb_release_filename and os.path.exists(lsb_release_filename):
         return parse_lsb_release_file(lsb_release_filename)
 
-    with open(os.devnull, 'w') as FNULL:
+    with open(os.devnull, "w") as fnull:
         try:
-            lsb_info = check_output([LSB_RELEASE, "-as"], stderr=FNULL)
+            lsb_info = check_output([LSB_RELEASE, "-as"], stderr=fnull)
         except (CalledProcessError, FileNotFoundError):
             # Fall back to reading file, even if it doesn't exist.
             return parse_lsb_release_file(lsb_release_filename)

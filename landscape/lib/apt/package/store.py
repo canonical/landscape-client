@@ -28,6 +28,7 @@ class HashIdStore(object):
 
     @param filename: The file where the mappings are persisted to.
     """
+
     _db = None
 
     def __init__(self, filename):
@@ -43,8 +44,9 @@ class HashIdStore(object):
         @param hash_ids: a C{dict} of hash=>id mappings.
         """
         for hash, id in iteritems(hash_ids):
-            cursor.execute("REPLACE INTO hash VALUES (?, ?)",
-                           (id, sqlite3.Binary(hash)))
+            cursor.execute(
+                "REPLACE INTO hash VALUES (?, ?)", (id, sqlite3.Binary(hash))
+            )
 
     @with_cursor
     def get_hash_id(self, cursor, hash):
@@ -52,8 +54,9 @@ class HashIdStore(object):
 
         @param hash: a C{bytes} representing a hash.
         """
-        cursor.execute("SELECT id FROM hash WHERE hash=?",
-                       (sqlite3.Binary(hash),))
+        cursor.execute(
+            "SELECT id FROM hash WHERE hash=?", (sqlite3.Binary(hash),)
+        )
         value = cursor.fetchone()
         if value:
             return value[0]
@@ -201,8 +204,9 @@ class PackageStore(HashIdStore):
     @with_cursor
     def remove_available_upgrades(self, cursor, ids):
         id_list = ",".join(str(int(id)) for id in ids)
-        cursor.execute("DELETE FROM available_upgrade WHERE id IN (%s)"
-                       % id_list)
+        cursor.execute(
+            "DELETE FROM available_upgrade WHERE id IN (%s)" % id_list
+        )
 
     @with_cursor
     def clear_available_upgrades(self, cursor):
@@ -295,15 +299,17 @@ class PackageStore(HashIdStore):
     @with_cursor
     def add_hash_id_request(self, cursor, hashes):
         hashes = list(hashes)
-        cursor.execute("INSERT INTO hash_id_request (hashes, timestamp)"
-                       " VALUES (?,?)",
-                       (sqlite3.Binary(bpickle.dumps(hashes)), time.time()))
+        cursor.execute(
+            "INSERT INTO hash_id_request (hashes, timestamp)" " VALUES (?,?)",
+            (sqlite3.Binary(bpickle.dumps(hashes)), time.time()),
+        )
         return HashIDRequest(self._db, cursor.lastrowid)
 
     @with_cursor
     def get_hash_id_request(self, cursor, request_id):
-        cursor.execute("SELECT 1 FROM hash_id_request WHERE id=?",
-                       (request_id,))
+        cursor.execute(
+            "SELECT 1 FROM hash_id_request WHERE id=?", (request_id,)
+        )
         if not cursor.fetchone():
             raise UnknownHashIDRequest(request_id)
         return HashIDRequest(self._db, request_id)
@@ -322,13 +328,15 @@ class PackageStore(HashIdStore):
         data = bpickle.dumps(data)
         cursor.execute(
             "INSERT INTO task (queue, timestamp, data) VALUES (?,?,?)",
-            (queue, time.time(), sqlite3.Binary(data)))
+            (queue, time.time(), sqlite3.Binary(data)),
+        )
         return PackageTask(self._db, cursor.lastrowid)
 
     @with_cursor
     def get_next_task(self, cursor, queue):
-        cursor.execute("SELECT id FROM task WHERE queue=? ORDER BY timestamp",
-                       (queue,))
+        cursor.execute(
+            "SELECT id FROM task WHERE queue=? ORDER BY timestamp", (queue,)
+        )
         row = cursor.fetchone()
         if row:
             return PackageTask(self._db, row[0])
@@ -336,8 +344,10 @@ class PackageStore(HashIdStore):
 
     @with_cursor
     def clear_tasks(self, cursor, except_tasks=()):
-        cursor.execute("DELETE FROM task WHERE id NOT IN (%s)" %
-                       ",".join([str(task.id) for task in except_tasks]))
+        cursor.execute(
+            "DELETE FROM task WHERE id NOT IN (%s)"
+            % ",".join([str(task.id) for task in except_tasks])
+        )
 
 
 class FakePackageStore(PackageStore):
@@ -351,31 +361,37 @@ class FakePackageStore(PackageStore):
 
     @with_cursor
     def save_message(self, cursor, message):
-        cursor.execute("INSERT INTO message (data) VALUES (?)",
-                       (sqlite3.Binary(bpickle.dumps(message)),))
+        cursor.execute(
+            "INSERT INTO message (data) VALUES (?)",
+            (sqlite3.Binary(bpickle.dumps(message)),),
+        )
 
     @with_cursor
     def get_message_ids(self, cursor):
-        return [row[0] for row in
-                cursor.execute("SELECT id FROM message").fetchall()]
+        return [
+            row[0]
+            for row in cursor.execute("SELECT id FROM message").fetchall()
+        ]
 
     @with_cursor
     def save_message_ids(self, cursor, message_ids):
         cursor.executemany(
             "INSERT INTO message (id) VALUES (?)",
-            [(message_id,) for message_id in message_ids])
+            [(message_id,) for message_id in message_ids],
+        )
 
     @with_cursor
     def get_messages_by_ids(self, cursor, message_ids):
         params = ", ".join(["?"] * len(message_ids))
         result = cursor.execute(
-                "SELECT id, data FROM message WHERE id IN (%s) "
-                "ORDER BY id" % params, tuple(message_ids)).fetchall()
+            "SELECT id, data FROM message WHERE id IN (%s) "
+            "ORDER BY id" % params,
+            tuple(message_ids),
+        ).fetchall()
         return [(row[0], bytes(row[1])) for row in result]
 
 
 class HashIDRequest(object):
-
     def __init__(self, db, id):
         self._db = db
         self.id = id
@@ -383,33 +399,40 @@ class HashIDRequest(object):
     @property
     @with_cursor
     def hashes(self, cursor):
-        cursor.execute("SELECT hashes FROM hash_id_request WHERE id=?",
-                       (self.id,))
+        cursor.execute(
+            "SELECT hashes FROM hash_id_request WHERE id=?", (self.id,)
+        )
         return bpickle.loads(bytes(cursor.fetchone()[0]))
 
     @with_cursor
     def _get_timestamp(self, cursor):
-        cursor.execute("SELECT timestamp FROM hash_id_request WHERE id=?",
-                       (self.id,))
+        cursor.execute(
+            "SELECT timestamp FROM hash_id_request WHERE id=?", (self.id,)
+        )
         return cursor.fetchone()[0]
 
     @with_cursor
     def _set_timestamp(self, cursor, value):
-        cursor.execute("UPDATE hash_id_request SET timestamp=? WHERE id=?",
-                       (value, self.id))
+        cursor.execute(
+            "UPDATE hash_id_request SET timestamp=? WHERE id=?",
+            (value, self.id),
+        )
 
     timestamp = property(_get_timestamp, _set_timestamp)
 
     @with_cursor
     def _get_message_id(self, cursor):
-        cursor.execute("SELECT message_id FROM hash_id_request WHERE id=?",
-                       (self.id,))
+        cursor.execute(
+            "SELECT message_id FROM hash_id_request WHERE id=?", (self.id,)
+        )
         return cursor.fetchone()[0]
 
     @with_cursor
     def _set_message_id(self, cursor, value):
-        cursor.execute("UPDATE hash_id_request SET message_id=? WHERE id=?",
-                       (value, self.id))
+        cursor.execute(
+            "UPDATE hash_id_request SET message_id=? WHERE id=?",
+            (value, self.id),
+        )
 
     message_id = property(_get_message_id, _set_message_id)
 
@@ -419,15 +442,15 @@ class HashIDRequest(object):
 
 
 class PackageTask(object):
-
     def __init__(self, db, id):
         self._db = db
         self.id = id
 
         cursor = db.cursor()
         try:
-            cursor.execute("SELECT queue, timestamp, data FROM task "
-                           "WHERE id=?", (id,))
+            cursor.execute(
+                "SELECT queue, timestamp, data FROM task " "WHERE id=?", (id,)
+            )
             row = cursor.fetchone()
         finally:
             cursor.close()
@@ -448,8 +471,9 @@ def ensure_hash_id_schema(db):
     """
     cursor = db.cursor()
     try:
-        cursor.execute("CREATE TABLE hash"
-                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+        cursor.execute(
+            "CREATE TABLE hash" " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)"
+        )
     except (sqlite3.OperationalError, sqlite3.DatabaseError):
         cursor.close()
         db.rollback()
@@ -469,24 +493,26 @@ def ensure_package_schema(db):
     #       try block.
     cursor = db.cursor()
     try:
-        cursor.execute("CREATE TABLE security"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE autoremovable"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE locked"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE available"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE available_upgrade"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE installed"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE hash_id_request"
-                       " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
-                       " message_id INTEGER, hashes BLOB)")
-        cursor.execute("CREATE TABLE task"
-                       " (id INTEGER PRIMARY KEY, queue TEXT,"
-                       " timestamp TIMESTAMP, data BLOB)")
+        cursor.execute("CREATE TABLE security" " (id INTEGER PRIMARY KEY)")
+        cursor.execute(
+            "CREATE TABLE autoremovable" " (id INTEGER PRIMARY KEY)"
+        )
+        cursor.execute("CREATE TABLE locked" " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE available" " (id INTEGER PRIMARY KEY)")
+        cursor.execute(
+            "CREATE TABLE available_upgrade" " (id INTEGER PRIMARY KEY)"
+        )
+        cursor.execute("CREATE TABLE installed" " (id INTEGER PRIMARY KEY)")
+        cursor.execute(
+            "CREATE TABLE hash_id_request"
+            " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
+            " message_id INTEGER, hashes BLOB)"
+        )
+        cursor.execute(
+            "CREATE TABLE task"
+            " (id INTEGER PRIMARY KEY, queue TEXT,"
+            " timestamp TIMESTAMP, data BLOB)"
+        )
     except sqlite3.OperationalError:
         cursor.close()
         db.rollback()
@@ -498,8 +524,9 @@ def ensure_package_schema(db):
 def ensure_fake_package_schema(db):
     cursor = db.cursor()
     try:
-        cursor.execute("CREATE TABLE message"
-                       " (id INTEGER PRIMARY KEY, data BLOB)")
+        cursor.execute(
+            "CREATE TABLE message" " (id INTEGER PRIMARY KEY, data BLOB)"
+        )
     except (sqlite3.OperationalError, sqlite3.DatabaseError):
         cursor.close()
         db.rollback()

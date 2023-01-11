@@ -2,7 +2,9 @@ from mock import Mock
 
 from landscape.lib.testing import FakeReactor
 from landscape.client.tests.helpers import (
-        LandscapeTest, FakeBrokerServiceHelper)
+    LandscapeTest,
+    FakeBrokerServiceHelper,
+)
 from landscape.client.monitor.config import MonitorConfiguration, ALL_PLUGINS
 from landscape.client.monitor.service import MonitorService
 from landscape.client.monitor.computerinfo import ComputerInfo
@@ -36,8 +38,9 @@ class MonitorServiceTest(LandscapeTest):
         If the C{--monitor-plugins} command line option is specified, only the
         given plugins will be enabled.
         """
-        self.service.config.load(["--monitor-plugins",
-                                  "ComputerInfo, LoadAverage"])
+        self.service.config.load(
+            ["--monitor-plugins", "ComputerInfo, LoadAverage"]
+        )
         plugins = self.service.get_plugins()
         self.assertTrue(isinstance(plugins[0], ComputerInfo))
         self.assertTrue(isinstance(plugins[1], LoadAverage))

@@ -32,6 +32,7 @@ class BrokerClientPlugin(object):
         sent. See L{landscape.broker.server.BrokerServer.send_message} for
         more details.
     """
+
     run_interval = 5
     run_immediately = False
     scope = None  # Global scope
@@ -58,8 +59,9 @@ class BrokerClientPlugin(object):
             if acceptance:
                 return callable(*args, **kwargs)
 
-        self.client.reactor.call_on(("message-type-acceptance-changed", type),
-                                    acceptance_changed)
+        self.client.reactor.call_on(
+            ("message-type-acceptance-changed", type), acceptance_changed
+        )
 
     def _resynchronize(self, scopes=None):
         """
@@ -106,18 +108,25 @@ class BrokerClientPlugin(object):
             if self.run_immediately:
                 self._run_with_error_log()
             if self.run_interval is not None:
-                delay = (random.random() * self.run_interval *
-                         self.client.config.stagger_launch)
-                debug("delaying start of %s for %d seconds",
-                      format_object(self), delay)
+                delay = (
+                    random.random()
+                    * self.run_interval
+                    * self.client.config.stagger_launch
+                )
+                debug(
+                    "delaying start of %s for %d seconds",
+                    format_object(self),
+                    delay,
+                )
                 self._loop = self.client.reactor.call_later(
-                    delay, self._start_loop)
+                    delay, self._start_loop
+                )
 
     def _start_loop(self):
         """Launch the client loop."""
         self._loop = self.client.reactor.call_every(
-            self.run_interval,
-            self._run_with_error_log)
+            self.run_interval, self._run_with_error_log
+        )
 
     def _run_with_error_log(self):
         """Wrap self.run in a Deferred with a logging error handler."""
@@ -148,6 +157,7 @@ class BrokerClient(object):
 
     @param reactor: A L{LandscapeReactor}.
     """
+
     name = "client"
 
     def __init__(self, reactor, config):
@@ -179,7 +189,7 @@ class BrokerClient(object):
         """
         info("Registering plugin %s.", format_object(plugin))
         self._plugins.append(plugin)
-        if hasattr(plugin, 'plugin_name'):
+        if hasattr(plugin, "plugin_name"):
             self._plugin_names[plugin.plugin_name] = plugin
         plugin.register(self)
 
@@ -217,8 +227,10 @@ class BrokerClient(object):
         try:
             return handler(message)
         except Exception:
-            exception("Error running message handler for type %r: %r"
-                      % (type, handler))
+            exception(
+                "Error running message handler for type %r: %r"
+                % (type, handler)
+            )
 
     @remote
     def message(self, message):
@@ -259,8 +271,9 @@ class BrokerClient(object):
             results = self.reactor.fire((event_type, message_type), acceptance)
         else:
             results = self.reactor.fire(event_type, *args, **kwargs)
-        return gather_results([
-            maybeDeferred(lambda x: x, result) for result in results])
+        return gather_results(
+            [maybeDeferred(lambda x: x, result) for result in results]
+        )
 
     def handle_reconnect(self):
         """Called when the connection with the broker is established again.

@@ -31,7 +31,7 @@ Currently:
    C{seconds} argument until after Twisted 2.2.
 """
 from twisted.internet import error
-from twisted.python.runtime import seconds as runtimeSeconds
+from twisted.python.runtime import seconds as runtimeseconds
 from twisted.python import reflect
 from twisted.python.compat import iteritems
 
@@ -44,7 +44,8 @@ class Clock:
     L{IReactorTime.callLater}.  This is commonly useful for writing
     deterministic unit tests for code which schedules events using this API.
     """
-    rightNow = 0.0
+
+    rightNow = 0.0  # noqa: N815
 
     def __init__(self):
         self.calls = []
@@ -60,16 +61,21 @@ class Clock:
         """
         return self.rightNow
 
-    def callLater(self, when, what, *a, **kw):
+    def callLater(self, when, what, *a, **kw):  # noqa: N802
         """
         See L{twisted.internet.interfaces.IReactorTime.callLater}.
         """
         self.calls.append(
-            DelayedCall(self.seconds() + when,
-                        what, a, kw,
-                        self.calls.remove,
-                        (lambda c: None),
-                        self.seconds))
+            DelayedCall(
+                self.seconds() + when,
+                what,
+                a,
+                kw,
+                self.calls.remove,
+                (lambda c: None),
+                self.seconds,
+            )
+        )
         self.calls.sort(key=lambda a: a.getTime())
         return self.calls[-1]
 
@@ -105,8 +111,9 @@ class DelayedCall:
     debug = False
     _str = None
 
-    def __init__(self, time, func, args, kw, cancel, reset,
-                 seconds=runtimeSeconds):
+    def __init__(
+        self, time, func, args, kw, cancel, reset, seconds=runtimeseconds
+    ):
         """
         @param time: Seconds from the epoch at which to call C{func}.
         @param func: The callable to call.
@@ -132,7 +139,7 @@ class DelayedCall:
         if self.debug:
             self.creator = traceback.format_stack()[:-2]
 
-    def getTime(self):
+    def getTime(self):  # noqa: N802
         """Return the time at which this call will fire
 
         @rtype: C{float}
@@ -160,11 +167,11 @@ class DelayedCall:
                 self._str = str(self)
             del self.func, self.args, self.kw
 
-    def reset(self, secondsFromNow):
+    def reset(self, secondsfromnow):
         """Reschedule this call for a different time
 
-        @type secondsFromNow: C{float}
-        @param secondsFromNow: The number of seconds from the time of the
+        @type secondsfromnow: C{float}
+        @param secondsfromnow: The number of seconds from the time of the
         C{reset} call at which this call will be scheduled.
 
         @raise AlreadyCancelled: Raised if this call has been cancelled.
@@ -175,19 +182,19 @@ class DelayedCall:
         elif self.called:
             raise error.AlreadyCalled
         else:
-            newTime = self.seconds() + secondsFromNow
-            if newTime < self.time:
+            newtime = self.seconds() + secondsfromnow
+            if newtime < self.time:
                 self.delayed_time = 0
-                self.time = newTime
+                self.time = newtime
                 self.resetter(self)
             else:
-                self.delayed_time = newTime - self.time
+                self.delayed_time = newtime - self.time
 
-    def delay(self, secondsLater):
+    def delay(self, secondslater):
         """Reschedule this call for a later time
 
-        @type secondsLater: C{float}
-        @param secondsLater: The number of seconds after the originally
+        @type secondslater: C{float}
+        @param secondslater: The number of seconds after the originally
         scheduled time for which to reschedule this call.
 
         @raise AlreadyCancelled: Raised if this call has been cancelled.
@@ -198,7 +205,7 @@ class DelayedCall:
         elif self.called:
             raise error.AlreadyCalled
         else:
-            self.delayed_time += secondsLater
+            self.delayed_time += secondslater
             if self.delayed_time < 0:
                 self.activate_delay()
                 self.resetter(self)
@@ -222,34 +229,43 @@ class DelayedCall:
     def __str__(self):
         if self._str is not None:
             return self._str
-        if hasattr(self, 'func'):
-            if hasattr(self.func, 'func_name'):
+        if hasattr(self, "func"):
+            if hasattr(self.func, "func_name"):
                 func = self.func.func_name
-                if hasattr(self.func, 'im_class'):
-                    func = self.func.im_class.__name__ + '.' + func
+                if hasattr(self.func, "im_class"):
+                    func = self.func.im_class.__name__ + "." + func
             else:
                 func = reflect.safe_repr(self.func)
         else:
             func = None
 
         now = self.seconds()
-        L = ["<DelayedCall %s [%ss] called=%s cancelled=%s" % (
-                id(self), self.time - now, self.called, self.cancelled)]
+        li = [
+            "<DelayedCall %s [%ss] called=%s cancelled=%s"
+            % (id(self), self.time - now, self.called, self.cancelled)
+        ]
         if func is not None:
-            L.extend((" ", func, "("))
+            li.extend((" ", func, "("))
             if self.args:
-                L.append(", ".join([reflect.safe_repr(e) for e in self.args]))
+                li.append(", ".join([reflect.safe_repr(e) for e in self.args]))
                 if self.kw:
-                    L.append(", ")
+                    li.append(", ")
             if self.kw:
-                L.append(", ".join([
-                    '%s=%s' % (k, reflect.safe_repr(v))
-                    for (k, v) in iteritems(self.kw)]))
-            L.append(")")
+                li.append(
+                    ", ".join(
+                        [
+                            "%s=%s" % (k, reflect.safe_repr(v))
+                            for (k, v) in iteritems(self.kw)
+                        ]
+                    )
+                )
+            li.append(")")
 
         if self.debug:
-            L.append(("\n\ntraceback at creation: \n\n%s"
-                      ) % ('    '.join(self.creator)))
-        L.append('>')
+            li.append(
+                ("\n\ntraceback at creation: \n\n%s")
+                % ("    ".join(self.creator))
+            )
+        li.append(">")
 
-        return "".join(L)
+        return "".join(li)

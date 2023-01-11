@@ -45,30 +45,50 @@ class BrokerService(LandscapeService):
 
     def __init__(self, config):
         self.persist_filename = os.path.join(
-            config.data_path, "%s.bpickle" % (self.service_name,))
+            config.data_path, "%s.bpickle" % (self.service_name,)
+        )
         super(BrokerService, self).__init__(config)
 
         self.transport = self.transport_factory(
-            self.reactor, config.url, config.ssl_public_key)
+            self.reactor, config.url, config.ssl_public_key
+        )
         self.message_store = get_default_message_store(
-            self.persist, config.message_store_path)
+            self.persist, config.message_store_path
+        )
         self.identity = Identity(self.config, self.persist)
         exchange_store = ExchangeStore(self.config.exchange_store_path)
         self.exchanger = MessageExchange(
-            self.reactor, self.message_store, self.transport, self.identity,
-            exchange_store, config)
+            self.reactor,
+            self.message_store,
+            self.transport,
+            self.identity,
+            exchange_store,
+            config,
+        )
         self.pinger = self.pinger_factory(
-            self.reactor, self.identity, self.exchanger, config)
+            self.reactor, self.identity, self.exchanger, config
+        )
         self.registration = RegistrationHandler(
-            config, self.identity, self.reactor, self.exchanger, self.pinger,
-            self.message_store)
-        self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
-                                   self.registration, self.message_store,
-                                   self.pinger)
-        self.publisher = ComponentPublisher(self.broker, self.reactor,
-                                            self.config)
+            config,
+            self.identity,
+            self.reactor,
+            self.exchanger,
+            self.pinger,
+            self.message_store,
+        )
+        self.broker = BrokerServer(
+            self.config,
+            self.reactor,
+            self.exchanger,
+            self.registration,
+            self.message_store,
+            self.pinger,
+        )
+        self.publisher = ComponentPublisher(
+            self.broker, self.reactor, self.config
+        )
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         """Start the broker.
 
         Create a L{BrokerServer} listening on C{broker_socket_path} for clients
@@ -80,7 +100,7 @@ class BrokerService(LandscapeService):
         self.exchanger.start()
         self.pinger.start()
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         """Stop the broker."""
         deferred = self.publisher.stop()
         self.exchanger.stop()

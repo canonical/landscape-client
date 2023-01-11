@@ -21,20 +21,30 @@ class MonitorService(LandscapeService):
 
     def __init__(self, config):
         self.persist_filename = os.path.join(
-            config.data_path, "%s.bpickle" % self.service_name)
+            config.data_path, "%s.bpickle" % self.service_name
+        )
         super(MonitorService, self).__init__(config)
         self.plugins = self.get_plugins()
-        self.monitor = Monitor(self.reactor, self.config, self.persist,
-                               persist_filename=self.persist_filename)
-        self.publisher = ComponentPublisher(self.monitor, self.reactor,
-                                            self.config)
+        self.monitor = Monitor(
+            self.reactor,
+            self.config,
+            self.persist,
+            persist_filename=self.persist_filename,
+        )
+        self.publisher = ComponentPublisher(
+            self.monitor, self.reactor, self.config
+        )
 
     def get_plugins(self):
-        return [namedClass("landscape.client.monitor.%s.%s"
-                           % (plugin_name.lower(), plugin_name))()
-                for plugin_name in self.config.plugin_factories]
+        return [
+            namedClass(
+                "landscape.client.monitor.%s.%s"
+                % (plugin_name.lower(), plugin_name)
+            )()
+            for plugin_name in self.config.plugin_factories
+        ]
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         """Start the monitor."""
         super(MonitorService, self).startService()
         self.publisher.start()
@@ -50,7 +60,7 @@ class MonitorService(LandscapeService):
         connected = self.connector.connect()
         return connected.addCallback(start_plugins)
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         """Stop the monitor.
 
         The monitor is flushed to ensure that things like persist databases

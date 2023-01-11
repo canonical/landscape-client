@@ -28,10 +28,16 @@ from landscape.lib.encoding import encode_values
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.logging import rotate_logs
-from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
-                                     BootstrapDirectory)
+from landscape.lib.bootstrap import (
+    BootstrapList,
+    BootstrapFile,
+    BootstrapDirectory,
+)
 from landscape.client.broker.amp import (
-    RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
+    RemoteBrokerConnector,
+    RemoteMonitorConnector,
+    RemoteManagerConnector,
+)
 from landscape.client.reactor import LandscapeReactor
 
 GRACEFUL_WAIT_PERIOD = 10
@@ -79,8 +85,7 @@ class Daemon(object):
 
     BIN_DIR = None
 
-    def __init__(self, connector, reactor=reactor, verbose=False,
-                 config=None):
+    def __init__(self, connector, reactor=reactor, verbose=False, config=None):
         self._connector = connector
         self._reactor = reactor
         self._env = os.environ.copy()
@@ -150,8 +155,14 @@ class Daemon(object):
         if self.options is not None:
             args.extend(self.options)
         env = encode_values(self._env)
-        self._reactor.spawnProcess(self._process, exe, args=args,
-                                   env=env, uid=self._uid, gid=self._gid)
+        self._reactor.spawnProcess(
+            self._process,
+            exe,
+            args=args,
+            env=env,
+            uid=self._uid,
+            gid=self._gid,
+        )
 
     def stop(self):
         """Stop this daemon."""
@@ -174,8 +185,9 @@ class Daemon(object):
             self._connector.disconnect()
             return True
 
-        connected = self._connector.connect(self.max_retries, self.factor,
-                                            quiet=True)
+        connected = self._connector.connect(
+            self.max_retries, self.factor, quiet=True
+        )
         connected.addCallback(lambda remote: getattr(remote, name)())
         connected.addCallback(disconnect)
         connected.addErrback(lambda x: False)
@@ -258,8 +270,9 @@ class WatchedProcessProtocol(ProcessProtocol):
     def _terminate(self, warn=False):
         if self.transport is not None:
             if warn:
-                warning("%s didn't exit. Sending SIGTERM"
-                        % (self.daemon.program,))
+                warning(
+                    "%s didn't exit. Sending SIGTERM" % (self.daemon.program,)
+                )
             try:
                 self.transport.signalProcess(signal.SIGTERM)
             except ProcessExitedAlready:
@@ -292,23 +305,26 @@ class WatchedProcessProtocol(ProcessProtocol):
         return self._wait_result
 
     def wait_or_die(self):
-        self._delayed_terminate = reactor.callLater(GRACEFUL_WAIT_PERIOD,
-                                                    self._terminate, warn=True)
+        self._delayed_terminate = reactor.callLater(
+            GRACEFUL_WAIT_PERIOD, self._terminate, warn=True
+        )
         return self.wait()
 
-    def outReceived(self, data):
+    def outReceived(self, data):  # noqa: N802
         # it's *probably* going to always be line buffered, by accident
         sys.stdout.buffer.write(data)
 
-    def errReceived(self, data):
+    def errReceived(self, data):  # noqa: N802
         sys.stderr.buffer.write(data)
 
-    def processEnded(self, reason):
+    def processEnded(self, reason):  # noqa: N802
         """The process has ended; restart it."""
         if self._delayed_really_kill is not None:
             self._delayed_really_kill.cancel()
-        if (self._delayed_terminate is not None and
-                self._delayed_terminate.active()):
+        if (
+            self._delayed_terminate is not None
+            and self._delayed_terminate.active()
+        ):
             self._delayed_terminate.cancel()
         if self._wait_result is not None:
             self._wait_result.callback(None)
@@ -322,41 +338,62 @@ class WatchDog(object):
     they are working.
     """
 
-    def __init__(self, reactor=reactor, verbose=False, config=None,
-                 broker=None, monitor=None, manager=None,
-                 enabled_daemons=None):
+    def __init__(
+        self,
+        reactor=reactor,
+        verbose=False,
+        config=None,
+        broker=None,
+        monitor=None,
+        manager=None,
+        enabled_daemons=None,
+    ):
         landscape_reactor = LandscapeReactor()
         if enabled_daemons is None:
             enabled_daemons = [Broker, Monitor, Manager]
         if broker is None and Broker in enabled_daemons:
             broker = Broker(
                 RemoteBrokerConnector(landscape_reactor, config),
-                verbose=verbose, config=config.config)
+                verbose=verbose,
+                config=config.config,
+            )
         if monitor is None and Monitor in enabled_daemons:
             monitor = Monitor(
                 RemoteMonitorConnector(landscape_reactor, config),
-                verbose=verbose, config=config.config)
+                verbose=verbose,
+                config=config.config,
+            )
         if manager is None and Manager in enabled_daemons:
             manager = Manager(
                 RemoteManagerConnector(landscape_reactor, config),
-                verbose=verbose, config=config.config)
+                verbose=verbose,
+                config=config.config,
+            )
 
         self.broker = broker
         self.monitor = monitor
         self.manager = manager
-        self.daemons = [daemon
-                        for daemon in [self.broker, self.monitor, self.manager]
-                        if daemon]
+        self.daemons = [
+            daemon
+            for daemon in [self.broker, self.monitor, self.manager]
+            if daemon
+        ]
         self.reactor = reactor
         self._checking = None
         self._stopping = False
         signal.signal(
             signal.SIGUSR1,
             lambda signal, frame: reactor.callFromThread(
-                self._notify_rotate_logs))
+                self._notify_rotate_logs
+            ),
+        )
         if config is not None and config.clones > 0:
-            options = ["--clones", str(config.clones),
-                       "--start-clones-over", str(config.start_clones_over)]
+            options = [
+                "--clones",
+                str(config.clones),
+                "--start-clones-over",
+                str(config.start_clones_over),
+            ]
             for daemon in self.daemons:
                 daemon.options = options
 
@@ -375,6 +412,7 @@ class WatchDog(object):
 
         def got_all_results(r):
             return [x[1] for x in r if x[0]]
+
         return gather_results(results).addCallback(got_all_results)
 
     def start(self):
@@ -399,8 +437,7 @@ class WatchDog(object):
 
     def _restart_if_not_running(self, is_running, daemon):
         if (not is_running) and (not self._stopping):
-            warning("%s failed to respond to a ping."
-                    % (daemon.program,))
+            warning("%s failed to respond to a ping." % (daemon.program,))
             if daemon not in self._ping_failures:
                 self._ping_failures[daemon] = 0
             self._ping_failures[daemon] += 1
@@ -411,6 +448,7 @@ class WatchDog(object):
                 def stopped(ignored):
                     daemon.start()
                     self._ping_failures[daemon] = 0
+
                 stopping.addBoth(stopped)
                 return stopping
         else:
@@ -425,6 +463,7 @@ class WatchDog(object):
 
         def reschedule(ignored):
             self._checking = self.reactor.callLater(5, self._check)
+
         gather_results(all_running).addBoth(reschedule)
 
     def request_exit(self):
@@ -444,8 +483,10 @@ class WatchDog(object):
             else:
                 # If request_exit fails, we should just kill the daemons
                 # immediately.
-                error("Couldn't request that broker gracefully shut down; "
-                      "killing forcefully.")
+                error(
+                    "Couldn't request that broker gracefully shut down; "
+                    "killing forcefully."
+                )
                 results = [x.stop() for x in self.daemons]
             return gather_results(results)
 
@@ -459,17 +500,23 @@ class WatchDog(object):
 
 
 class WatchDogConfiguration(Configuration):
-
     def make_parser(self):
         parser = super(WatchDogConfiguration, self).make_parser()
-        parser.add_option("--daemon", action="store_true",
-                          help="Fork and run in the background.")
-        parser.add_option("--pid-file", type="str",
-                          help="The file to write the PID to.")
-        parser.add_option("--monitor-only", action="store_true",
-                          help="Don't enable management features. This is "
-                          "useful if you want to run the client as a non-root "
-                          "user.")
+        parser.add_option(
+            "--daemon",
+            action="store_true",
+            help="Fork and run in the background.",
+        )
+        parser.add_option(
+            "--pid-file", type="str", help="The file to write the PID to."
+        )
+        parser.add_option(
+            "--monitor-only",
+            action="store_true",
+            help="Don't enable management features. This is "
+            "useful if you want to run the client as a non-root "
+            "user.",
+        )
         return parser
 
     def get_enabled_daemons(self):
@@ -488,7 +535,7 @@ def daemonize():
         os._exit(0)  # kill off parent again.
     # some argue that this umask should be 0, but that's annoying.
     os.umask(0o077)
-    null = os.open('/dev/null', os.O_RDWR)
+    null = os.open("/dev/null", os.O_RDWR)
     for i in range(3):
         try:
             os.dup2(null, i)
@@ -499,28 +546,33 @@ def daemonize():
 
 
 class WatchDogService(Service):
-
     def __init__(self, config):
         self._config = config
-        self.watchdog = WatchDog(verbose=not config.daemon,
-                                 config=config,
-                                 enabled_daemons=config.get_enabled_daemons())
+        self.watchdog = WatchDog(
+            verbose=not config.daemon,
+            config=config,
+            enabled_daemons=config.get_enabled_daemons(),
+        )
         self.exit_code = 0
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         Service.startService(self)
-        bootstrap_list.bootstrap(data_path=self._config.data_path,
-                                 log_dir=self._config.log_dir)
+        bootstrap_list.bootstrap(
+            data_path=self._config.data_path, log_dir=self._config.log_dir
+        )
         if self._config.clones > 0:
 
             # Let clones open an appropriate number of fds
-            setrlimit(RLIMIT_NOFILE, (self._config.clones * 100,
-                                      self._config.clones * 200))
+            setrlimit(
+                RLIMIT_NOFILE,
+                (self._config.clones * 100, self._config.clones * 200),
+            )
 
             # Increase the timeout of AMP's MethodCalls.
             # XXX: we should find a better way to expose this knot, and
             # not set it globally on the class
             from landscape.lib.amp import MethodCallSender
+
             MethodCallSender.timeout = 300
 
             # Create clones log and data directories
@@ -528,15 +580,18 @@ class WatchDogService(Service):
                 suffix = "-clone-%d" % i
                 bootstrap_list.bootstrap(
                     data_path=self._config.data_path + suffix,
-                    log_dir=self._config.log_dir + suffix)
+                    log_dir=self._config.log_dir + suffix,
+                )
 
         result = succeed(None)
         result.addCallback(lambda _: self.watchdog.check_running())
 
         def start_if_not_running(running_daemons):
             if running_daemons:
-                error("ERROR: The following daemons are already running: %s"
-                      % (", ".join(x.program for x in running_daemons)))
+                error(
+                    "ERROR: The following daemons are already running: %s"
+                    % (", ".join(x.program for x in running_daemons))
+                )
                 self.exit_code = 1
                 reactor.crash()  # so stopService isn't called.
                 return
@@ -548,6 +603,7 @@ class WatchDogService(Service):
             log_failure(failure, "Unknown error occurred!")
             self.exit_code = 2
             reactor.crash()
+
         result.addCallback(start_if_not_running)
         result.addErrback(die)
         return result
@@ -560,7 +616,7 @@ class WatchDogService(Service):
                 stream.write(str(os.getpid()))
                 stream.close()
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         info("Stopping client...")
         Service.stopService(self)
 
@@ -582,21 +638,30 @@ class WatchDogService(Service):
                 os.unlink(pid_file)
 
 
-bootstrap_list = BootstrapList([
-    BootstrapDirectory("$data_path", "landscape", "root", 0o755),
-    BootstrapDirectory("$data_path/package", "landscape", "root", 0o755),
-    BootstrapDirectory(
-        "$data_path/package/hash-id", "landscape", "root", 0o755),
-    BootstrapDirectory(
-        "$data_path/package/binaries", "landscape", "root", 0o755),
-    BootstrapDirectory(
-        "$data_path/package/upgrade-tool", "landscape", "root", 0o755),
-    BootstrapDirectory("$data_path/messages", "landscape", "root", 0o755),
-    BootstrapDirectory("$data_path/sockets", "landscape", "root", 0o750),
-    BootstrapDirectory(
-        "$data_path/custom-graph-scripts", "landscape", "root", 0o755),
-    BootstrapDirectory("$log_dir", "landscape", "root", 0o755),
-    BootstrapFile("$data_path/package/database", "landscape", "root", 0o644)])
+bootstrap_list = BootstrapList(
+    [
+        BootstrapDirectory("$data_path", "landscape", "root", 0o755),
+        BootstrapDirectory("$data_path/package", "landscape", "root", 0o755),
+        BootstrapDirectory(
+            "$data_path/package/hash-id", "landscape", "root", 0o755
+        ),
+        BootstrapDirectory(
+            "$data_path/package/binaries", "landscape", "root", 0o755
+        ),
+        BootstrapDirectory(
+            "$data_path/package/upgrade-tool", "landscape", "root", 0o755
+        ),
+        BootstrapDirectory("$data_path/messages", "landscape", "root", 0o755),
+        BootstrapDirectory("$data_path/sockets", "landscape", "root", 0o750),
+        BootstrapDirectory(
+            "$data_path/custom-graph-scripts", "landscape", "root", 0o755
+        ),
+        BootstrapDirectory("$log_dir", "landscape", "root", 0o755),
+        BootstrapFile(
+            "$data_path/package/database", "landscape", "root", 0o644
+        ),
+    ]
+)
 
 
 def clean_environment():
@@ -608,8 +673,10 @@ def clean_environment():
     *other* maintainer scripts which landscape-client invokes.
     """
     for key in list(os.environ.keys()):
-        if (key.startswith(("DEBIAN_", "DEBCONF_")) or
-                key in ["LANDSCAPE_ATTACHMENTS", "MAIL"]):
+        if key.startswith(("DEBIAN_", "DEBCONF_")) or key in [
+            "LANDSCAPE_ATTACHMENTS",
+            "MAIL",
+        ]:
             del os.environ[key]
 
 
