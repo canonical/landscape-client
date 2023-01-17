@@ -30,15 +30,17 @@ help:  ## Print help about available targets
 
 .PHONY: depends
 depends: depends3  ## py2 is deprecated
-	sudo apt-get -y install python3-flake8 python3-coverage pre-commit
+	sudo apt-get -y install python3-flake8 python3-coverage
 
 .PHONY: depends2
 depends2:
-	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl
+	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl python-pip
+	pip install pre-commit-2.21.0
 
 .PHONY: depends3
 depends3:
-	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl
+	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl python3-pip
+	pip install pre-commit-2.21.0
 
 all: build
 
