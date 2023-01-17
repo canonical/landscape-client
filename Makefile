@@ -35,12 +35,12 @@ depends: depends3  ## py2 is deprecated
 .PHONY: depends2
 depends2:
 	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl python-pip
-	pip install pre-commit-2.21.0
+	pip install pre-commit
 
 .PHONY: depends3
 depends3:
 	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl python3-pip
-	pip install pre-commit-2.21.0
+	pip install pre-commit
 
 all: build
 
