@@ -10,7 +10,6 @@ from landscape.client.manager.manager import Manager
 
 
 class RemoteBroker(RemoteObject):
-
     def call_if_accepted(self, type, callable, *args):
         """Call C{callable} if C{type} is an accepted message type."""
         deferred_types = self.get_accepted_message_types()
@@ -18,6 +17,7 @@ class RemoteBroker(RemoteObject):
         def got_accepted_types(result):
             if type in result:
                 return callable(*args)
+
         deferred_types.addCallback(got_accepted_types)
         return deferred_types
 
@@ -30,8 +30,7 @@ class RemoteBroker(RemoteObject):
             callable will be fired.
         """
         result = self.listen_events(list(handlers.keys()))
-        return result.addCallback(
-            lambda args: handlers[args[0]](**args[1]))
+        return result.addCallback(lambda args: handlers[args[0]](**args[1]))
 
 
 class FakeRemoteBroker(object):
@@ -48,16 +47,19 @@ class FakeRemoteBroker(object):
         that they're encodable with AMP.
         """
         original = getattr(self.broker_server, name, None)
-        if (name in get_remote_methods(self.broker_server) and
-            original is not None and
-            callable(original)
-            ):
+        if (
+            name in get_remote_methods(self.broker_server)
+            and original is not None
+            and callable(original)
+        ):
+
             def method(*args, **kwargs):
                 for arg in args:
                     assert MethodCallArgument.check(arg)
                 for k, v in iteritems(kwargs):
                     assert MethodCallArgument.check(v)
                 return execute(original, *args, **kwargs)
+
             return method
         else:
             raise AttributeError(name)
@@ -76,8 +78,7 @@ class FakeRemoteBroker(object):
             callable will be fired.
         """
         result = self.broker_server.listen_events(handlers.keys())
-        return result.addCallback(
-            lambda args: handlers[args[0]](**args[1]))
+        return result.addCallback(lambda args: handlers[args[0]](**args[1]))
 
     def register(self):
         return succeed(None)
@@ -114,8 +115,8 @@ def get_component_registry():
         RemoteBrokerConnector,
         RemoteClientConnector,
         RemoteMonitorConnector,
-        RemoteManagerConnector
+        RemoteManagerConnector,
     ]
     return dict(
-        (connector.component.name, connector)
-        for connector in all_connectors)
+        (connector.component.name, connector) for connector in all_connectors
+    )

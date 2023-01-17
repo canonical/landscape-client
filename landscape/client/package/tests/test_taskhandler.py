@@ -12,8 +12,11 @@ from landscape.lib.lock import lock_path
 from landscape.lib.testing import EnvironSaverHelper, FakeReactor
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.package.taskhandler import (
-    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
-    LazyRemoteBroker)
+    PackageTaskHandlerConfiguration,
+    PackageTaskHandler,
+    run_task_handler,
+    LazyRemoteBroker,
+)
 from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
 
 
@@ -21,7 +24,6 @@ SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 
 class PackageTaskHandlerConfigurationTest(LandscapeTest):
-
     def test_update_stamp_option(self):
         """
         L{PackageReporterConfiguration.update_stamp_filename} points
@@ -30,7 +32,8 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
         config = PackageTaskHandlerConfiguration()
         self.assertEqual(
             config.update_stamp_filename,
-            "/var/lib/landscape/client/package/update-stamp")
+            "/var/lib/landscape/client/package/update-stamp",
+        )
 
 
 class PackageTaskHandlerTest(LandscapeTest):
@@ -43,7 +46,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.store = PackageStore(self.makeFile())
         self.reactor = FakeReactor()
         self.handler = PackageTaskHandler(
-            self.store, self.facade, self.remote, self.config, self.reactor)
+            self.store, self.facade, self.remote, self.config, self.reactor
+        )
 
     def test_use_hash_id_db(self):
 
@@ -53,8 +57,9 @@ class PackageTaskHandlerTest(LandscapeTest):
         # An appropriate hash=>id database is available
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                           "hash-id", "uuid_codename_arch")
+        hash_id_db_filename = os.path.join(
+            self.config.data_path, "package", "hash-id", "uuid_codename_arch"
+        )
         HashIdStore(hash_id_db_filename).set_hash_ids({b"hash": 123})
 
         # Fake uuid, codename and arch
@@ -69,6 +74,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Now we do have the hash=>id mapping
         def callback(ignored):
             self.assertEqual(self.store.get_hash_id(b"hash"), 123)
+
         result.addCallback(callback)
 
         return result
@@ -89,7 +95,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "missing code-name key in %s" % self.handler.lsb_release_filename)
+            "missing code-name key in %s" % self.handler.lsb_release_filename
+        )
 
         return result
 
@@ -111,8 +118,9 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "[Errno 2] No such file or directory: '%s'" %
-            self.handler.lsb_release_filename)
+            "[Errno 2] No such file or directory: '%s'"
+            % self.handler.lsb_release_filename
+        )
 
         return result
 
@@ -128,6 +136,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         def callback(hash_id_db_filename):
             self.assertIs(hash_id_db_filename, None)
+
         result.addCallback(callback)
         return result
 
@@ -144,10 +153,12 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "server UUID not available")
+            "server UUID not available"
+        )
 
         def callback(ignore):
             self.assertFalse(self.store.has_hash_id_db())
+
         result.addCallback(callback)
         return result
 
@@ -156,7 +167,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         L{get_session_id} returns a session ID.
         """
 
-        def assertHaveSessionId(session_id):
+        def assertHaveSessionId(session_id):  # noqa: N802
             self.assertTrue(session_id is not None)
 
         result = self.handler.get_session_id()
@@ -180,7 +191,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "unknown dpkg architecture")
+            "unknown dpkg architecture"
+        )
 
         return result
 
@@ -201,6 +213,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # We go on without the hash=>id database
         def callback(ignored):
             self.assertFalse(self.store.has_hash_id_db())
+
         result.addCallback(callback)
 
         return result
@@ -211,8 +224,9 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Let's say the appropriate database is actually garbage
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                           "hash-id", "uuid_codename_arch")
+        hash_id_db_filename = os.path.join(
+            self.config.data_path, "package", "hash-id", "uuid_codename_arch"
+        )
         open(hash_id_db_filename, "w").write("junk")
 
         # Fake uuid, codename and arch
@@ -226,12 +240,14 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         # The failure should be properly logged
         logging_mock.assert_called_with(
-            "Invalid hash=>id database %s" % hash_id_db_filename)
+            "Invalid hash=>id database %s" % hash_id_db_filename
+        )
 
         # We remove the broken hash=>id database and go on without it
         def callback(ignored):
             self.assertFalse(os.path.exists(hash_id_db_filename))
             self.assertFalse(self.store.has_hash_id_db())
+
         result.addCallback(callback)
 
         return result
@@ -331,8 +347,14 @@ class PackageTaskHandlerTest(LandscapeTest):
     @patch("landscape.client.package.taskhandler.LandscapeReactor")
     @patch("landscape.client.package.taskhandler.init_logging")
     @patch("landscape.client.package.taskhandler.lock_path")
-    def test_run_task_handler(self, lock_path_mock, init_logging_mock,
-                              reactor_class_mock, connector_class_mock, umask):
+    def test_run_task_handler(
+        self,
+        lock_path_mock,
+        init_logging_mock,
+        reactor_class_mock,
+        connector_class_mock,
+        umask,
+    ):
         """
         The L{run_task_handler} function creates and runs the given task
         handler with the proper arguments.
@@ -350,7 +372,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         handler_args = []
 
         class HandlerMock(PackageTaskHandler):
-
             def __init__(self, *args):
                 handler_args.extend(args)
                 super(HandlerMock, self).__init__(*args)
@@ -379,8 +400,11 @@ class PackageTaskHandlerTest(LandscapeTest):
             self.assertEqual(other_store.get_available(), [1, 2, 3])
 
             # Check the hash=>id database directory as well
-            self.assertTrue(os.path.exists(
-                os.path.join(self.data_path, "package", "hash-id")))
+            self.assertTrue(
+                os.path.exists(
+                    os.path.join(self.data_path, "package", "hash-id")
+                )
+            )
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
 
@@ -388,7 +412,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         # never have two instances running in parallel.  The 'default'
         # below comes from the queue_name attribute.
         lock_path_mock.assert_called_once_with(
-            os.path.join(self.data_path, "package", "default.lock"))
+            os.path.join(self.data_path, "package", "default.lock")
+        )
 
         # Once locking is done, it's safe to start logging without
         # corrupting the file.  We don't want any output unless it's
@@ -419,8 +444,9 @@ class PackageTaskHandlerTest(LandscapeTest):
         lock_path(os.path.join(self.data_path, "package", "default.lock"))
 
         try:
-            run_task_handler(PackageTaskHandler,
-                             ["-c", self.config_filename, "--quiet"])
+            run_task_handler(
+                PackageTaskHandler, ["-c", self.config_filename, "--quiet"]
+            )
         except SystemExit as e:
             self.assertEqual(str(e), "")
         else:
@@ -428,14 +454,12 @@ class PackageTaskHandlerTest(LandscapeTest):
 
     @patch("landscape.client.package.taskhandler.init_logging")
     def test_errors_are_printed_and_exit_program(self, init_logging_mock):
-
         class MyException(Exception):
             pass
 
         self.log_helper.ignore_errors(MyException)
 
         class HandlerMock(PackageTaskHandler):
-
             def run(self):
                 return fail(MyException("Hey error"))
 
@@ -445,9 +469,9 @@ class PackageTaskHandlerTest(LandscapeTest):
             self.assertIn("MyException", self.logfile.getvalue())
             init_logging_mock.assert_called_once_with(ANY, "handler-mock")
 
-        result = run_task_handler(HandlerMock,
-                                  ["-c", self.config_filename],
-                                  reactor=FakeReactor())
+        result = run_task_handler(
+            HandlerMock, ["-c", self.config_filename], reactor=FakeReactor()
+        )
 
         return result.addCallback(assert_log)
 

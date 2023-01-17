@@ -9,15 +9,35 @@ from landscape.lib.compat import _PY3
 
 # List of filesystem types authorized when generating disk use statistics.
 STABLE_FILESYSTEMS = frozenset(
-    ["ext", "ext2", "ext3", "ext4", "reiserfs", "ntfs", "msdos", "dos", "vfat",
-     "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus", "simfs", "drvfs", "lxfs"])
+    [
+        "ext",
+        "ext2",
+        "ext3",
+        "ext4",
+        "reiserfs",
+        "ntfs",
+        "msdos",
+        "dos",
+        "vfat",
+        "xfs",
+        "hpfs",
+        "jfs",
+        "ufs",
+        "hfs",
+        "hfsplus",
+        "simfs",
+        "drvfs",
+        "lxfs",
+    ]
+)
 
 
 EXTRACT_DEVICE = re.compile("([a-z]+)[0-9]*")
 
 
-def get_mount_info(mounts_file, statvfs_,
-                   filesystems_whitelist=STABLE_FILESYSTEMS):
+def get_mount_info(
+    mounts_file, statvfs_, filesystems_whitelist=STABLE_FILESYSTEMS
+):
     """
     This is a generator that yields information about mounted filesystems.
 
@@ -40,9 +60,10 @@ def get_mount_info(mounts_file, statvfs_,
                 mount_point = codecs.decode(mount_point, "string_escape")
         except ValueError:
             continue
-        if (filesystems_whitelist is not None and
-            filesystem not in filesystems_whitelist
-            ):
+        if (
+            filesystems_whitelist is not None
+            and filesystem not in filesystems_whitelist
+        ):
             continue
         megabytes = 1024 * 1024
         try:
@@ -52,9 +73,13 @@ def get_mount_info(mounts_file, statvfs_,
         block_size = stats.f_bsize
         total_space = (stats.f_blocks * block_size) // megabytes
         free_space = (stats.f_bfree * block_size) // megabytes
-        yield {"device": device, "mount-point": mount_point,
-               "filesystem": filesystem, "total-space": total_space,
-               "free-space": free_space}
+        yield {
+            "device": device,
+            "mount-point": mount_point,
+            "filesystem": filesystem,
+            "total-space": total_space,
+            "free-space": free_space,
+        }
 
 
 def get_filesystem_for_path(path, mounts_file, statvfs_):
@@ -78,9 +103,9 @@ def get_filesystem_for_path(path, mounts_file, statvfs_):
     for info in get_mount_info(mounts_file, statvfs_):
         mount_segments = info["mount-point"].split("/")
         if path.startswith(info["mount-point"]):
-            if ((not candidate) or
-                path_segments[:len(mount_segments)] == mount_segments
-                ):
+            if (not candidate) or path_segments[
+                : len(mount_segments)
+            ] == mount_segments:
                 candidate = info
     return candidate
 

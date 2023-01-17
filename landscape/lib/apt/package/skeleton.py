@@ -4,19 +4,19 @@ from landscape.lib.hashlib import sha1
 import apt_pkg
 
 
-PACKAGE   = 1 << 0
-PROVIDES  = 1 << 1
-REQUIRES  = 1 << 2
-UPGRADES  = 1 << 3
+PACKAGE = 1 << 0
+PROVIDES = 1 << 1
+REQUIRES = 1 << 2
+UPGRADES = 1 << 3
 CONFLICTS = 1 << 4
 
-DEB_PACKAGE       = 1 << 16 | PACKAGE
-DEB_PROVIDES      = 2 << 16 | PROVIDES
+DEB_PACKAGE = 1 << 16 | PACKAGE
+DEB_PROVIDES = 2 << 16 | PROVIDES
 DEB_NAME_PROVIDES = 3 << 16 | PROVIDES
-DEB_REQUIRES      = 4 << 16 | REQUIRES
-DEB_OR_REQUIRES   = 5 << 16 | REQUIRES
-DEB_UPGRADES      = 6 << 16 | UPGRADES
-DEB_CONFLICTS     = 7 << 16 | CONFLICTS
+DEB_REQUIRES = 4 << 16 | REQUIRES
+DEB_OR_REQUIRES = 5 << 16 | REQUIRES
+DEB_UPGRADES = 6 << 16 | UPGRADES
+DEB_CONFLICTS = 7 << 16 | CONFLICTS
 
 
 class PackageTypeError(Exception):
@@ -51,13 +51,13 @@ class PackageSkeleton(object):
             return self._hash
         # We use ascii here as encoding  for backwards compatibility as it was
         # default encoding for conversion from unicode to bytes in Python 2.7.
-        package_info = ("[%d %s %s]" % (self.type, self.name, self.version)
-                        ).encode("ascii")
+        package_info = (
+            "[%d %s %s]" % (self.type, self.name, self.version)
+        ).encode("ascii")
         digest = sha1(package_info)
         self.relations.sort()
         for pair in self.relations:
-            digest.update(("[%d %s]" % (pair[0], pair[1])
-                           ).encode("ascii"))
+            digest.update(("[%d %s]" % (pair[0], pair[1])).encode("ascii"))
         return digest.digest()
 
     def set_hash(self, package_hash):
@@ -89,8 +89,9 @@ def relation_to_string(relation_tuple):
     return relation_string
 
 
-def parse_record_field(record, record_field, relation_type,
-                       or_relation_type=None):
+def parse_record_field(
+    record, record_field, relation_type, or_relation_type=None
+):
     """Parse an apt C{Record} field and return skeleton relations
 
     @param record: An C{apt.package.Record} instance with package information.
@@ -126,23 +127,36 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         name, version_string = unicode(name), unicode(version_string)
     skeleton = PackageSkeleton(DEB_PACKAGE, name, version_string)
     relations = set()
-    relations.update(parse_record_field(
-        version.record, "Provides", DEB_PROVIDES))
-    relations.add((
-        DEB_NAME_PROVIDES,
-        "%s = %s" % (version.package.name, version.version)))
-    relations.update(parse_record_field(
-        version.record, "Pre-Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
-    relations.update(parse_record_field(
-        version.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
+    relations.update(
+        parse_record_field(version.record, "Provides", DEB_PROVIDES)
+    )
+    relations.add(
+        (
+            DEB_NAME_PROVIDES,
+            "%s = %s" % (version.package.name, version.version),
+        )
+    )
+    relations.update(
+        parse_record_field(
+            version.record, "Pre-Depends", DEB_REQUIRES, DEB_OR_REQUIRES
+        )
+    )
+    relations.update(
+        parse_record_field(
+            version.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES
+        )
+    )
 
-    relations.add((
-        DEB_UPGRADES, "%s < %s" % (version.package.name, version.version)))
+    relations.add(
+        (DEB_UPGRADES, "%s < %s" % (version.package.name, version.version))
+    )
 
-    relations.update(parse_record_field(
-        version.record, "Conflicts", DEB_CONFLICTS))
-    relations.update(parse_record_field(
-        version.record, "Breaks", DEB_CONFLICTS))
+    relations.update(
+        parse_record_field(version.record, "Conflicts", DEB_CONFLICTS)
+    )
+    relations.update(
+        parse_record_field(version.record, "Breaks", DEB_CONFLICTS)
+    )
     skeleton.relations = sorted(relations)
 
     if with_info:

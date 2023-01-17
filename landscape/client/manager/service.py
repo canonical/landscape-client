@@ -19,16 +19,21 @@ class ManagerService(LandscapeService):
         super(ManagerService, self).__init__(config)
         self.plugins = self.get_plugins()
         self.manager = Manager(self.reactor, self.config)
-        self.publisher = ComponentPublisher(self.manager, self.reactor,
-                                            self.config)
+        self.publisher = ComponentPublisher(
+            self.manager, self.reactor, self.config
+        )
 
     def get_plugins(self):
         """Return instances of all the plugins enabled in the configuration."""
-        return [namedClass("landscape.client.manager.%s.%s"
-                           % (plugin_name.lower(), plugin_name))()
-                for plugin_name in self.config.plugin_factories]
+        return [
+            namedClass(
+                "landscape.client.manager.%s.%s"
+                % (plugin_name.lower(), plugin_name)
+            )()
+            for plugin_name in self.config.plugin_factories
+        ]
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         """Start the manager service.
 
         This method does 3 things, in this order:
@@ -51,7 +56,7 @@ class ManagerService(LandscapeService):
         connected = self.connector.connect()
         return connected.addCallback(start_plugins)
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         """Stop the manager and close the connection with the broker."""
         self.connector.disconnect()
         deferred = self.publisher.stop()

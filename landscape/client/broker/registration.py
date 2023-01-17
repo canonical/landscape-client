@@ -31,7 +31,6 @@ class RegistrationError(Exception):
 
 
 def persist_property(name):
-
     def get(self):
         value = self._persist.get(name)
         try:
@@ -46,7 +45,6 @@ def persist_property(name):
 
 
 def config_property(name):
-
     def get(self):
         return getattr(self._config, name)
 
@@ -91,8 +89,16 @@ class RegistrationHandler(object):
     L{register} should be used to perform initial registration.
     """
 
-    def __init__(self, config, identity, reactor, exchange, pinger,
-                 message_store, fetch_async=None):
+    def __init__(
+        self,
+        config,
+        identity,
+        reactor,
+        exchange,
+        pinger,
+        message_store,
+        fetch_async=None,
+    ):
         self._config = config
         self._identity = identity
         self._reactor = reactor
@@ -104,8 +110,9 @@ class RegistrationHandler(object):
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
         self._exchange.register_message("set-id", self._handle_set_id)
         self._exchange.register_message("unknown-id", self._handle_unknown_id)
-        self._exchange.register_message("registration",
-                                        self._handle_registration)
+        self._exchange.register_message(
+            "registration", self._handle_registration
+        )
         self._should_register = None
         self._fetch_async = fetch_async
         self._juju_data = None
@@ -116,9 +123,11 @@ class RegistrationHandler(object):
         if id.secure_id:
             return False
 
-        return bool(id.computer_title and
-                    id.account_name and
-                    self._message_store.accepts("register"))
+        return bool(
+            id.computer_title
+            and id.account_name
+            and self._message_store.accepts("register")
+        )
 
     def register(self):
         """
@@ -186,14 +195,16 @@ class RegistrationHandler(object):
             tags = None
             logging.error("Invalid tags provided for registration.")
 
-        message = {"type": "register",
-                   "hostname": get_fqdn(),
-                   "account_name": account_name,
-                   "computer_title": identity.computer_title,
-                   "registration_password": identity.registration_key,
-                   "tags": tags,
-                   "container-info": get_container_info(),
-                   "vm-info": get_vm_info()}
+        message = {
+            "type": "register",
+            "hostname": get_fqdn(),
+            "account_name": account_name,
+            "computer_title": identity.computer_title,
+            "registration_password": identity.registration_key,
+            "tags": tags,
+            "container-info": get_container_info(),
+            "vm-info": get_vm_info(),
+        }
 
         if self._clone_secure_id:
             # We use the secure id here because the registration is encrypted
@@ -216,7 +227,8 @@ class RegistrationHandler(object):
             message["juju-info"] = {
                 "environment-uuid": self._juju_data["environment-uuid"],
                 "api-addresses": self._juju_data["api-addresses"],
-                "machine-id": self._juju_data["machine-id"]}
+                "machine-id": self._juju_data["machine-id"],
+            }
 
         # The computer is a normal computer, possibly a container.
         with_word = "with" if bool(registration_key) else "without"
@@ -226,9 +238,9 @@ class RegistrationHandler(object):
         message["ubuntu_pro_info"] = json.dumps(get_ubuntu_pro_info())
 
         logging.info(
-            u"Queueing message to register with account %r %s%s"
-            "%s a password." % (
-                account_name, with_group, with_tags, with_word))
+            "Queueing message to register with account %r %s%s"
+            "%s a password." % (account_name, with_group, with_tags, with_word)
+        )
         self._exchange.send(message)
 
     def _handle_set_id(self, message):
@@ -245,8 +257,11 @@ class RegistrationHandler(object):
 
         id.secure_id = message.get("id")
         id.insecure_id = message.get("insecure-id")
-        logging.info("Using new secure-id ending with %s for account %s.",
-                     id.secure_id[-10:], id.account_name)
+        logging.info(
+            "Using new secure-id ending with %s for account %s.",
+            id.secure_id[-10:],
+            id.account_name,
+        )
         logging.debug("Using new secure-id: %s", id.secure_id)
         self._reactor.fire("registration-done")
         self._reactor.fire("resynchronize-clients")
@@ -260,8 +275,10 @@ class RegistrationHandler(object):
         id = self._identity
         clone = message.get("clone-of")
         if clone is None:
-            logging.info("Client has unknown secure-id for account %s."
-                         % id.account_name)
+            logging.info(
+                "Client has unknown secure-id for account %s."
+                % id.account_name
+            )
         else:  # Save the secure id as the clone, and clear it so it's renewed
             logging.info("Client is clone of computer %s" % clone)
             self._clone_secure_id = id.secure_id

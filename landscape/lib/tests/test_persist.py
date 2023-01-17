@@ -4,8 +4,14 @@ import unittest
 
 from landscape.lib import testing
 from landscape.lib.persist import (
-    path_string_to_tuple, path_tuple_to_string, Persist, RootedPersist,
-    PickleBackend, PersistError, PersistReadOnlyError)
+    path_string_to_tuple,
+    path_tuple_to_string,
+    Persist,
+    RootedPersist,
+    PickleBackend,
+    PersistError,
+    PersistReadOnlyError,
+)
 
 
 class PersistHelpersTest(unittest.TestCase):
@@ -19,7 +25,7 @@ class PersistHelpersTest(unittest.TestCase):
         ("ab.cd[1]", ("ab", "cd", 1)),
         ("ab[0].cd[1]", ("ab", 0, "cd", 1)),
         ("ab.cd.de[2]", ("ab", "cd", "de", 2)),
-        ]
+    ]
 
     def test_path_string_to_tuple(self):
         for path_string, path_tuple in self.paths:
@@ -49,59 +55,59 @@ class BasePersistTest(unittest.TestCase):
         ("qr", {"s": {"t": "u"}}),
         ("v", [0, {}, 2]),
         ("v[1].v", "woot"),
-        ]
+    ]
 
     set_result = {
-                  "ab": 2,
-                  "cd": {
-                         "ef": 3.4,
-                         "gh": "5",
-                         "ij": {
-                                "kl": (1, 2.3, "4", [5], (6,)),
-                                "mn": [1, 2.3, "4", [5], (6,)],
-                                "op": [0, 1, 2]
-                               },
-                         },
-                  "qr": {"s": {"t": "u"}},
-                  "v": [0, {"v": "woot"}, 2],
-                 }
+        "ab": 2,
+        "cd": {
+            "ef": 3.4,
+            "gh": "5",
+            "ij": {
+                "kl": (1, 2.3, "4", [5], (6,)),
+                "mn": [1, 2.3, "4", [5], (6,)],
+                "op": [0, 1, 2],
+            },
+        },
+        "qr": {"s": {"t": "u"}},
+        "v": [0, {"v": "woot"}, 2],
+    }
 
     get_items = [
-                 ("ab", 2),
-                 ("cd.ef", 3.4),
-                 ("cd.gh", "5"),
-                 ("cd.ij.kl", (1, 2.3, "4", [5], (6,))),
-                 ("cd.ij.kl[3]", [5]),
-                 ("cd.ij.kl[3][0]", 5),
-                 ("cd.ij.mn", [1, 2.3, "4", [5], (6,)]),
-                 ("cd.ij.mn.4", "4"),
-                 ("cd.ij.mn.5", None),
-                 ("cd.ij.op", [0, 1, 2]),
-                 ("cd.ij.op[0]", 0),
-                 ("cd.ij.op[1]", 1),
-                 ("cd.ij.op[2]", 2),
-                 ("cd.ij.op[3]", None),
-                 ("qr", {"s": {"t": "u"}}),
-                 ("qr.s", {"t": "u"}),
-                 ("qr.s.t", "u"),
-                 ("x", None),
-                 ("x.y.z", None),
-                ]
+        ("ab", 2),
+        ("cd.ef", 3.4),
+        ("cd.gh", "5"),
+        ("cd.ij.kl", (1, 2.3, "4", [5], (6,))),
+        ("cd.ij.kl[3]", [5]),
+        ("cd.ij.kl[3][0]", 5),
+        ("cd.ij.mn", [1, 2.3, "4", [5], (6,)]),
+        ("cd.ij.mn.4", "4"),
+        ("cd.ij.mn.5", None),
+        ("cd.ij.op", [0, 1, 2]),
+        ("cd.ij.op[0]", 0),
+        ("cd.ij.op[1]", 1),
+        ("cd.ij.op[2]", 2),
+        ("cd.ij.op[3]", None),
+        ("qr", {"s": {"t": "u"}}),
+        ("qr.s", {"t": "u"}),
+        ("qr.s.t", "u"),
+        ("x", None),
+        ("x.y.z", None),
+    ]
 
     add_items = [
-                 ("ab", 1),
-                 ("ab", 2.3),
-                 ("ab", "4"),
-                 ("ab", [5]),
-                 ("ab", (6,)),
-                 ("ab", {}),
-                 ("ab[5].cd", "foo"),
-                 ("ab[5].cd", "bar"),
-                ]
+        ("ab", 1),
+        ("ab", 2.3),
+        ("ab", "4"),
+        ("ab", [5]),
+        ("ab", (6,)),
+        ("ab", {}),
+        ("ab[5].cd", "foo"),
+        ("ab[5].cd", "bar"),
+    ]
 
     add_result = {
-                  "ab": [1, 2.3, "4", [5], (6,), {"cd": ["foo", "bar"]}],
-                 }
+        "ab": [1, 2.3, "4", [5], (6,), {"cd": ["foo", "bar"]}],
+    }
 
     def setUp(self):
         super(BasePersistTest, self).setUp()
@@ -121,27 +127,29 @@ class BasePersistTest(unittest.TestCase):
 
 
 class GeneralPersistTest(BasePersistTest):
-
     def test_set(self):
         for path, value in self.set_items:
             self.persist.set(path, value)
         result = self.persist.get((), hard=True)
-        self.assertEqual(result, self.set_result,
-                         self.format(result, self.set_result))
+        self.assertEqual(
+            result, self.set_result, self.format(result, self.set_result)
+        )
 
     def test_set_tuple_paths(self):
         for path, value in self.set_items:
             self.persist.set(path_string_to_tuple(path), value)
         result = self.persist.get((), hard=True)
-        self.assertEqual(result, self.set_result,
-                         self.format(result, self.set_result))
+        self.assertEqual(
+            result, self.set_result, self.format(result, self.set_result)
+        )
 
     def test_set_from_result(self):
         for path in self.set_result:
             self.persist.set(path, self.set_result[path])
         result = self.persist.get((), hard=True)
-        self.assertEqual(result, self.set_result,
-                         self.format(result, self.set_result))
+        self.assertEqual(
+            result, self.set_result, self.format(result, self.set_result)
+        )
 
     def test_get(self):
         for path in self.set_result:
@@ -159,8 +167,9 @@ class GeneralPersistTest(BasePersistTest):
         for path, value in self.add_items:
             self.persist.add(path, value)
         result = self.persist.get((), hard=True)
-        self.assertEqual(result, self.add_result,
-                         self.format(result, self.add_result))
+        self.assertEqual(
+            result, self.add_result, self.format(result, self.add_result)
+        )
 
     def test_add_unique(self):
         self.persist.add("a", "b")
@@ -277,8 +286,7 @@ class GeneralPersistTest(BasePersistTest):
 
 
 class SaveLoadPersistTest(testing.FSTestCase, BasePersistTest):
-
-    def makePersistFile(self, *args, **kwargs):
+    def makePersistFile(self, *args, **kwargs):  # noqa: N802
         return self.makeFile(*args, backupsuffix=".old", **kwargs)
 
     def test_readonly(self):
@@ -335,8 +343,9 @@ class SaveLoadPersistTest(testing.FSTestCase, BasePersistTest):
         persist.load(filename)
 
         result = persist.get((), hard=True)
-        self.assertEqual(result, self.set_result,
-                         self.format(result, self.set_result))
+        self.assertEqual(
+            result, self.set_result, self.format(result, self.set_result)
+        )
 
     def test_save_on_unexistent_dir(self):
         dirname = self.makePersistFile()
@@ -443,20 +452,19 @@ class SaveLoadPersistTest(testing.FSTestCase, BasePersistTest):
 
 
 class PicklePersistTest(GeneralPersistTest, SaveLoadPersistTest):
-
     def build_persist(self, *args, **kwargs):
         return Persist(PickleBackend(), *args, **kwargs)
 
 
 class RootedPersistTest(GeneralPersistTest):
-
     def build_persist(self, *args, **kwargs):
         return RootedPersist(Persist(), "root.path", *args, **kwargs)
 
     def test_readonly(self):
         self.assertFalse(self.persist.readonly)
-        self.assertRaises(AttributeError,
-                          setattr, self.persist, "readonly", True)
+        self.assertRaises(
+            AttributeError, setattr, self.persist, "readonly", True
+        )
         self.persist.parent.readonly = True
         self.assertTrue(self.persist.readonly)
 

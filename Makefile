@@ -5,13 +5,32 @@ PYTHON3 ?= python3
 TRIAL ?= -m twisted.trial
 TRIAL_ARGS ?=
 
+# PEP8 rules ignored:
+# E121 (*^) continuation line under-indented for hanging indent
+# E123 (*) closing bracket does not match indentation of opening bracket's line
+# E125 (^) continuation line with same indent as next logical line
+# E126 (*^) continuation line over-indented for hanging indent
+# E221 multiple spaces before operator
+# E226 (*) missing whitespace around arithmetic operator
+# E241 (*) multiple spaces after ','
+# E242 (*) tab after ','
+# E265 block comment should start with '# '
+# E266 too many leading '#' for block comment
+# E704 (*) multiple statements on one line (def)
+# W504 Line break occurred after a binary operator
+# PEP8_IGNORED = E24,E121,E123,E125,E126,E221,E226,E266,E704,E265,W504
+#
+# W503 https://www.flake8rules.com/rules/W503.html
+# E203 Whitespace before ':' (enforced by Black)
+PEP8_IGNORED = W503,E203
+
 .PHONY: help
 help:  ## Print help about available targets
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: depends
 depends: depends3  ## py2 is deprecated
-	sudo apt-get -y install python3-flake8 python3-coverage
+	sudo apt-get -y install python3-flake8 python3-coverage pre-commit
 
 .PHONY: depends2
 depends2:
@@ -56,8 +75,7 @@ coverage:
 
 .PHONY: lint
 lint:
-	$(PYTHON3) -m flake8 --ignore E24,E121,E123,E125,E126,E221,E226,E266,E704,E265,W504 \
-		`find landscape -name \*.py`
+	$(PYTHON3) -m flake8 --ignore $(PEP8_IGNORED) `find landscape -name \*.py`
 
 .PHONY: pyflakes
 pyflakes:

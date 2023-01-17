@@ -8,11 +8,19 @@ from twisted.internet.defer import Deferred
 
 from landscape.lib.fs import create_text_file
 from landscape.lib.testing import (
-        ConfigTestCase, TwistedTestCase, HelperTestCase, StandardIOHelper)
+    ConfigTestCase,
+    TwistedTestCase,
+    HelperTestCase,
+    StandardIOHelper,
+)
 
 from landscape.sysinfo.deployment import (
-    SysInfoConfiguration, ALL_PLUGINS, run, setup_logging,
-    get_landscape_log_directory)
+    SysInfoConfiguration,
+    ALL_PLUGINS,
+    run,
+    setup_logging,
+    get_landscape_log_directory,
+)
 from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
@@ -20,7 +28,6 @@ from landscape.sysinfo.landscapelink import LandscapeLink
 
 
 class DeploymentTest(ConfigTestCase, unittest.TestCase):
-
     def setUp(self):
         super(DeploymentTest, self).setUp()
 
@@ -30,8 +37,9 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
         self.configuration = TestConfiguration()
 
     def test_get_plugins(self):
-        self.configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
-                                 "-d", self.makeDir()])
+        self.configuration.load(
+            ["--sysinfo-plugins", "Load,TestPlugin", "-d", self.makeDir()]
+        )
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 2)
         self.assertTrue(isinstance(plugins[0], Load))
@@ -50,8 +58,9 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
 
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
-        self.configuration.load(["--exclude-sysinfo-plugins", exclude,
-                                 "-d", self.makeDir()])
+        self.configuration.load(
+            ["--exclude-sysinfo-plugins", exclude, "-d", self.makeDir()]
+        )
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], Load))
@@ -75,21 +84,22 @@ class FakeReactor(object):
         self.scheduled_calls = []
         self.running = False
 
-    def callWhenRunning(self, callable):
+    def callWhenRunning(self, callable):  # noqa: N802
         self.queued_calls.append(callable)
 
     def run(self):
         self.running = True
 
-    def callLater(self, seconds, callable, *args, **kwargs):
+    def callLater(self, seconds, callable, *args, **kwargs):  # noqa: N802
         self.scheduled_calls.append((seconds, callable, args, kwargs))
 
     def stop(self):
         self.running = False
 
 
-class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
-              unittest.TestCase):
+class RunTest(
+    HelperTestCase, ConfigTestCase, TwistedTestCase, unittest.TestCase
+):
 
     helpers = [StandardIOHelper]
 
@@ -112,8 +122,9 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
 
         self.assertEqual(current_instance.has_run, True)
         sysinfo = current_instance.sysinfo
-        self.assertEqual(sysinfo.get_headers(),
-                         [("Test header", "Test value")])
+        self.assertEqual(
+            sysinfo.get_headers(), [("Test header", "Test value")]
+        )
         self.assertEqual(sysinfo.get_notes(), ["Test note"])
         self.assertEqual(sysinfo.get_footnotes(), ["Test footnote"])
 
@@ -122,13 +133,16 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
         run(["--sysinfo-plugins", "TestPlugin"])
         format_sysinfo.assert_called_once_with(
             [("Test header", "Test value")],
-            ["Test note"], ["Test footnote"],
-            indent="  ")
+            ["Test note"],
+            ["Test footnote"],
+            indent="  ",
+        )
 
     def test_format_sysinfo_output_is_printed(self):
         with mock.patch(
-                "landscape.sysinfo.deployment.format_sysinfo",
-                return_value="Hello there!") as format_sysinfo:
+            "landscape.sysinfo.deployment.format_sysinfo",
+            return_value="Hello there!",
+        ) as format_sysinfo:
             run(["--sysinfo-plugins", "TestPlugin"])
 
         self.assertTrue(format_sysinfo.called)
@@ -148,6 +162,7 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
         def wrapped_sysinfo_run(*args, **kwargs):
             original_sysinfo_run(*args, **kwargs)
             return deferred
+
         sysinfo.run = mock.Mock(side_effect=wrapped_sysinfo_run)
 
         run(["--sysinfo-plugins", "TestPlugin"], sysinfo=sysinfo)
@@ -193,7 +208,8 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
 
         self.assertEqual(
             self.stdout.getvalue(),
-            "  Test header: Test value\n\n  => Test note\n\n  Test footnote\n")
+            "  Test header: Test value\n\n  => Test note\n\n  Test footnote\n",
+        )
         return d
 
     def test_stop_scheduled_in_callback(self):
@@ -216,8 +232,11 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
         reactor = FakeReactor()
         sysinfo = SysInfoPluginRegistry()
         sysinfo.run = lambda: 1 / 0
-        d = run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor,
-                sysinfo=sysinfo)
+        d = run(
+            ["--sysinfo-plugins", "TestPlugin"],
+            reactor=reactor,
+            sysinfo=sysinfo,
+        )
 
         for x in reactor.queued_calls:
             x()
@@ -230,8 +249,9 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
         If landscape-sysinfo is running as a non-privileged user the
         log directory is stored in their home directory.
         """
-        self.assertEqual(get_landscape_log_directory(),
-                         os.path.expanduser("~/.landscape"))
+        self.assertEqual(
+            get_landscape_log_directory(), os.path.expanduser("~/.landscape")
+        )
 
     def test_get_landscape_log_directory_privileged(self):
         """
@@ -240,7 +260,8 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
         """
         with mock.patch("os.getuid", return_value=0) as uid_mock:
             self.assertEqual(
-                get_landscape_log_directory(), "/var/log/landscape")
+                get_landscape_log_directory(), "/var/log/landscape"
+            )
             uid_mock.assert_called_once_with()
 
     def test_wb_logging_setup(self):
@@ -261,11 +282,15 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
         self.assertFalse(logger.propagate)
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
-        with mock.patch.object(os, "getuid", return_value=0) as mock_getuid, \
-                mock.patch.object(
-                    os.path, "isdir", return_value=False) as mock_isdir, \
-                mock.patch.object(os, "mkdir") as mock_mkdir, \
-                mock.patch("logging.open", create=True) as mock_open:
+        with mock.patch.object(
+            os, "getuid", return_value=0
+        ) as mock_getuid, mock.patch.object(
+            os.path, "isdir", return_value=False
+        ) as mock_isdir, mock.patch.object(
+            os, "mkdir"
+        ) as mock_mkdir, mock.patch(
+            "logging.open", create=True
+        ) as mock_open:
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
 
@@ -276,12 +301,13 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
         mock_mkdir.assert_called_with("/var/log/landscape")
         self.assertEqual(
             mock_open.call_args_list[0][0],
-            ("/var/log/landscape/sysinfo.log", "a")
+            ("/var/log/landscape/sysinfo.log", "a"),
         )
         handler = logger.handlers[0]
         self.assertTrue(isinstance(handler, RotatingFileHandler))
-        self.assertEqual(handler.baseFilename,
-                         "/var/log/landscape/sysinfo.log")
+        self.assertEqual(
+            handler.baseFilename, "/var/log/landscape/sysinfo.log"
+        )
 
     def test_create_log_dir(self):
         log_dir = self.makeFile()
@@ -291,17 +317,19 @@ class RunTest(HelperTestCase, ConfigTestCase, TwistedTestCase,
 
     def test_run_sets_up_logging(self):
         with mock.patch(
-                "landscape.sysinfo.deployment"
-                ".setup_logging") as setup_logging_mock:
+            "landscape.sysinfo.deployment" ".setup_logging"
+        ) as setup_logging_mock:
             run(["--sysinfo-plugins", "TestPlugin"])
         setup_logging_mock.assert_called_once_with()
 
     def test_run_setup_logging_exits_gracefully(self):
         io_error = IOError("Read-only filesystem.")
         with mock.patch(
-                "landscape.sysinfo.deployment.setup_logging",
-                side_effect=io_error):
+            "landscape.sysinfo.deployment.setup_logging", side_effect=io_error
+        ):
             error = self.assertRaises(
-                SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
+                SystemExit, run, ["--sysinfo-plugins", "TestPlugin"]
+            )
         self.assertEqual(
-            error.code, "Unable to setup logging. Read-only filesystem.")
+            error.code, "Unable to setup logging. Read-only filesystem."
+        )

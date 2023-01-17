@@ -15,19 +15,25 @@ class CommandError(Exception):
 
 
 class MemoryStats(object):
-
     def __init__(self, filename="/proc/meminfo"):
         data = {}
         for line in open(filename):
             if ":" in line:
                 key, value = line.split(":", 1)
-                if key in ["MemTotal", "SwapFree", "SwapTotal", "MemFree",
-                           "Buffers", "Cached"]:
+                if key in [
+                    "MemTotal",
+                    "SwapFree",
+                    "SwapTotal",
+                    "MemFree",
+                    "Buffers",
+                    "Cached",
+                ]:
                     data[key] = int(value.split()[0])
 
         self.total_memory = data["MemTotal"] // 1024
-        self.free_memory = (data["MemFree"] + data["Buffers"] +
-                            data["Cached"]) // 1024
+        self.free_memory = (
+            data["MemFree"] + data["Buffers"] + data["Cached"]
+        ) // 1024
         self.total_swap = data["SwapTotal"] // 1024
         self.free_swap = data["SwapFree"] // 1024
 
@@ -69,19 +75,20 @@ def get_logged_in_users():
     def parse_output(args):
         stdout_data, stderr_data, status = args
         if status != 0:
-            raise CommandError(stderr_data.decode('ascii'))
+            raise CommandError(stderr_data.decode("ascii"))
         first_line = stdout_data.split(b"\n", 1)[0]
-        first_line = first_line.decode('ascii')
+        first_line = first_line.decode("ascii")
         return sorted(set(first_line.split()))
+
     return result.addCallback(parse_output)
 
 
-def get_uptime(uptime_file=u"/proc/uptime"):
+def get_uptime(uptime_file="/proc/uptime"):
     """
     This parses a file in /proc/uptime format and returns a floating point
     version of the first value (the actual uptime).
     """
-    with open(uptime_file, 'r') as ufile:
+    with open(uptime_file, "r") as ufile:
         data = ufile.readline()
     up, idle = data.split()
     return float(up)
@@ -114,9 +121,10 @@ class ThermalZone(object):
                     line = f.readline()
                     try:
                         self.temperature_value = int(line.strip()) / 1000.0
-                        self.temperature_unit = 'C'
-                        self.temperature = '{:.1f} {}'.format(
-                                self.temperature_value, self.temperature_unit)
+                        self.temperature_unit = "C"
+                        self.temperature = "{:.1f} {}".format(
+                            self.temperature_value, self.temperature_unit
+                        )
                     except ValueError:
                         pass
             except EnvironmentError:
@@ -199,8 +207,12 @@ class BootTimes(object):
     _last_boot = None
     _last_shutdown = None
 
-    def __init__(self, filename="/var/log/wtmp",
-                 boots_newer_than=0, shutdowns_newer_than=0):
+    def __init__(
+        self,
+        filename="/var/log/wtmp",
+        boots_newer_than=0,
+        shutdowns_newer_than=0,
+    ):
         self._filename = filename
         self._boots_newer_than = boots_newer_than
         self._shutdowns_newer_than = shutdowns_newer_than
@@ -216,12 +228,16 @@ class BootTimes(object):
             for info in reader.login_info():
                 if info.tty_device.startswith("~"):
                     timestamp = to_timestamp(info.entry_time)
-                    if (info.username == "reboot" and
-                            timestamp > self._last_boot):
+                    if (
+                        info.username == "reboot"
+                        and timestamp > self._last_boot
+                    ):
                         reboot_times.append(timestamp)
                         self._last_boot = timestamp
-                    elif (info.username == "shutdown" and
-                            timestamp > self._last_shutdown):
+                    elif (
+                        info.username == "shutdown"
+                        and timestamp > self._last_shutdown
+                    ):
                         shutdown_times.append(timestamp)
                         self._last_shutdown = timestamp
         return reboot_times, shutdown_times
