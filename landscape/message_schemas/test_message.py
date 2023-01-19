@@ -1,6 +1,6 @@
 import unittest
 
-from landscape.lib.schema import Int
+from landscape.lib.schema import Constant, Int
 from landscape.message_schemas.message import Message
 
 
@@ -12,6 +12,14 @@ class MessageTest(unittest.TestCase):
         self.assertEqual(
             schema.coerce({"type": "foo", "data": 3}),
             {"type": "foo", "data": 3})
+
+    def test_coerce_bytes_to_str(self):
+        """
+        The L{Constant} schema type recognizes bytestrings that decode to
+        matching strings.
+        """
+        constant = Constant("register")
+        self.assertEqual(constant.coerce(b"register"), "register")
 
     def test_timestamp(self):
         """L{Message} schemas should accept C{timestamp} keys."""
