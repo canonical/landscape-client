@@ -13,6 +13,12 @@ class Constant(object):
         self.value = value
 
     def coerce(self, value):
+        if isinstance(self.value, str) and isinstance(value, bytes):
+            try:
+                value = value.decode()
+            except UnicodeDecodeError:
+                pass
+
         if value != self.value:
             raise InvalidError("%r != %r" % (value, self.value))
         return value
