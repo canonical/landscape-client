@@ -1,4 +1,5 @@
 """Functions used by all sqlite-backed stores."""
+from functools import wraps
 
 try:
     import sqlite3
@@ -16,6 +17,7 @@ def with_cursor(method):
     cursor closing with this decorator.
     """
 
+    @wraps(method)
     def inner(self, *args, **kwargs):
         if not self._db:
             # Create the database connection only when we start to actually

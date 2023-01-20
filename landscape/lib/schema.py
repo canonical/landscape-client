@@ -171,26 +171,35 @@ class KeyDict:
     """Something which must be a C{dict} with defined keys.
 
     The keys must be constant and the values must match a per-key schema.
+    If strict, extra keys cause an exception during coercion.
 
     @param schema: A dict mapping keys to schemas that the values of those
         keys must match.
     """
 
-    def __init__(self, schema, optional=None):
+    def __init__(self, schema, optional=None, strict=True):
         if optional is None:
             optional = []
         self.optional = set(optional)
         self.schema = schema
+        self._strict = strict
 
     def coerce(self, value):
         new_dict = {}
         if not isinstance(value, dict):
             raise InvalidError(f"{value!r} is not a dict.")
+
         for k, v in iteritems(value):
-            if k not in self.schema:
+            unknown_key = k not in self.schema
+
+            if unknown_key and self._strict:
                 raise InvalidError(
                     f"{k!r} is not a valid key as per {self.schema!r}",
                 )
+            elif unknown_key:
+                # We are in non-strict mode, so we ignore unknown keys.
+                continue
+
             try:
                 new_dict[k] = self.schema[k].coerce(v)
             except InvalidError as e:
