@@ -59,6 +59,7 @@ __all__ = [
     "UBUNTU_PRO_INFO",
     "LIVEPATCH",
     "UBUNTU_PRO_REBOOT_REQUIRED",
+    "SNAPS",
 ]
 
 
