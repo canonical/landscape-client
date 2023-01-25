@@ -14,25 +14,32 @@ class SnapdHttpException(Exception):
     pass
 
 
-def get_snaps():
-    return _get("/snaps")
+class SnapHttp:
+    def __init__(self, snap_url=BASE_URL, snap_socket=SNAPD_SOCKET):
+        self._snap_url = snap_url
+        self._snap_socket = snap_socket
 
+    def get_snaps(self):
+        return self._get("/snaps")
 
-def _get(path):
-    if not path.startswith("/"):
-        path = "/" + path
+    def _get(self, path):
+        if not path.startswith("/"):
+            path = "/" + path
 
-    curl = pycurl.Curl()
-    buff = BytesIO()
+        curl = pycurl.Curl()
+        buff = BytesIO()
 
-    curl.setopt(curl.UNIX_SOCKET_PATH, SNAPD_SOCKET)
-    curl.setopt(curl.URL, BASE_URL + path)
-    curl.setopt(curl.WRITEDATA, buff)
+        curl.setopt(curl.UNIX_SOCKET_PATH, self._snap_socket)
+        curl.setopt(curl.URL, self._snap_url + path)
+        curl.setopt(curl.WRITEDATA, buff)
 
-    curl.perform()
+        try:
+            curl.perform()
+        except pycurl.error as e:
+            raise SnapdHttpException(e)
 
-    response_code = curl.getinfo(curl.RESPONSE_CODE)
-    if response_code >= 400:
-        raise SnapdHttpException(buff.getvalue())
+        response_code = curl.getinfo(curl.RESPONSE_CODE)
+        if response_code >= 400:
+            raise SnapdHttpException(buff.getvalue())
 
-    return json.loads(buff.getvalue())
+        return json.loads(buff.getvalue())["result"]

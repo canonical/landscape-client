@@ -151,6 +151,12 @@ class Configuration(BaseConfiguration):
             help="Ratio, between 0 and 1, by which to stagger "
             "various tasks of landscape.",
         )
+        parser.add_option(
+            "--snap-monitor-interval",
+            default=30 * 60,
+            type="int",
+            help="The interval between snap monitor runs (default 1800).",
+        )
 
         # Hidden options, used for load-testing to run in-process clones
         parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)

@@ -758,6 +758,26 @@ UBUNTU_PRO_REBOOT_REQUIRED = Message(
     {"ubuntu-pro-reboot-required": Unicode()},
 )
 
+SNAPS = Message(
+    "snaps",
+    {
+        "snaps": KeyDict({
+            "installed": List(KeyDict({
+                "id": Unicode(),
+                "name": Unicode(),
+                "version": Unicode(),
+                "revision": Unicode(),
+                "tracking-channel": Unicode(),
+                "publisher": KeyDict({
+                    "username": Unicode(),
+                    "validation": Unicode(),
+                }, strict=False),
+                "confinement": Unicode(),
+            }, strict=False)),
+        }),
+    },
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     COMPUTER_UPTIME,
@@ -804,4 +824,5 @@ message_schemas = (
     UBUNTU_PRO_INFO,
     LIVEPATCH,
     UBUNTU_PRO_REBOOT_REQUIRED,
+    SNAPS,
 )

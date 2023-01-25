@@ -50,6 +50,8 @@ OPTIONS
                            with (default: 'http://landscape.canonical.com/ping').
   --package-monitor-interval=PACKAGE_MONITOR_INTERVAL  The interval between
                            package monitor runs (default: 1800).
+  --snap-monitor-interval=SNAP_MONITOR_INTERVAL  The interval between snap
+                           monitor runs (default: 1800).
   --apt-update-interval=APT_UPDATE_INTERVAL  The interval between apt update
                            runs (default: 21600).
   --flush-interval         The number of seconds between flushes to disk for
