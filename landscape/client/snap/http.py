@@ -20,19 +20,72 @@ class SnapHttp:
         self._snap_socket = snap_socket
 
     def get_snaps(self):
+        """GETs a list of installed snaps."""
         return self._get("/snaps")
 
+    def enable_snap(self, name):
+        """
+        Enables a previously disabled snap by `name`.
+        """
+        return self._post("/snaps/" + name, {"action": "enable"})
+
+    def disable_snap(self, name):
+        """
+        Disables a snap by `name`.
+        """
+        return self._post("/snaps/" + name, {"action": "disable"})
+
+    def install_snap(self, name, revision=None, channel=None, classic=False):
+        """
+        Installs a snap by `name` at `revision`, tracking `channel`. If
+        `classic`, then snap is installed in classic containment mode.
+
+        If `revision` is not provided, latest will be used.
+        If `channel` is not provided, stable will be used.
+        """
+        body = {k: v for k, v in {
+            "action": "install",
+            "revision": revision,
+            "channel": channel,
+            "classic": classic,
+        }.items() if v is not None}
+
+        return self._post("/snaps/" + name, body)
+
+    def refresh_snap(self, name, revision=None, channel=None, classic=None):
+        """
+        Refreshes a snap, switching to the given `revision` and `channel` if
+        provided.
+
+        If `classic` is provided, snap will be changed to the classic
+        confinement if True, or out of classic confinement if False.
+        """
+        body = {k: v for k, v in {
+            "action": "refresh",
+            "revision": revision,
+            "channel": channel,
+            "classic": classic,
+        }.items() if v is not None}
+
+        return self._post("/snaps/" + name, body)
+
+    def remove_snap(self, name):
+        """Removes a snap by `name`."""
+        return self._post("/snaps/" + name, {"action": "remove"})
+
     def _get(self, path):
-        if not path.startswith("/"):
-            path = "/" + path
+        """Perform a GET request of `path` to the snap REST API."""
+        curl, buff = self._setup_curl(path)
 
-        curl = pycurl.Curl()
-        buff = BytesIO()
+        self._perform(curl, buff)
 
-        curl.setopt(curl.UNIX_SOCKET_PATH, self._snap_socket)
-        curl.setopt(curl.URL, self._snap_url + path)
-        curl.setopt(curl.WRITEDATA, buff)
+        return json.loads(buff.getvalue())["result"]
 
+    def _perform(self, curl, buff, raise_on_error=True):
+        """
+        Performs a pycurl request, optionally raising on a pycurl or HTTP
+        error.
+        """
         try:
             curl.perform()
         except pycurl.error as e:
@@ -42,4 +95,29 @@ class SnapHttp:
         if response_code >= 400:
             raise SnapdHttpException(buff.getvalue())
 
+    def _post(self, path, body):
+        """
+        Perform a POST request of `path` to the snap REST API, with the
+        JSON-ified `body`
+        """
+        curl, buff = self._setup_curl(path)
+        json_body = json.dumps(body)
+
+        curl.setopt(curl.POSTFIELDS, json_body)
+        self._perform(curl, buff)
+
         return json.loads(buff.getvalue())["result"]
+
+    def _setup_curl(self, path):
+        """
+        Prepares pycurl to communicate with the snap REST API at the given
+        `path`.
+        """
+        curl = pycurl.Curl()
+        buff = BytesIO()
+
+        curl.setopt(curl.UNIX_SOCKET_PATH, self._snap_socket)
+        curl.setopt(curl.URL, self._snap_url + path)
+        curl.setopt(curl.WRITEDATA, buff)
+
+        return curl, buff

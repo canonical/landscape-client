@@ -778,6 +778,18 @@ SNAPS = Message(
     },
 )
 
+# DO WE EVEN NEED THIS???
+#INSTALL_SNAPS = Message(
+#    "install-snaps",
+#    {
+#        "snaps": List(KeyDict({
+#            "name": Unicode(),
+#            "revision": Unicode(),
+#            "tracking-channel": Unicode(),
+#        }))
+#    }
+#)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     COMPUTER_UPTIME,

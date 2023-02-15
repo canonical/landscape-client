@@ -12,6 +12,7 @@ ALL_PLUGINS = [
     "AptSources",
     "HardwareInfo",
     "KeystoneToken",
+    "SnapManager",
 ]
 
 
