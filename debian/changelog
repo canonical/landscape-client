@@ -1,8 +1,125 @@
-landscape-client (22.09+git6230-0ubuntu0) UNRELEASED; urgency=medium
+landscape-client (23.02-0ubuntu1) focal; urgency=medium
 
-  * New upstream build for beta ppa
+  * New upstream release for focal, jammy, kinetic, lunar
 
- -- Kevin Nasto <kevin.nasto@canonical.com>  Tue, 29 Nov 2022 00:06:06 +0000
+ -- Mitch Burton <mitch.burton@canonical.com>  Wed, 08 Feb 2023 10:23:31 -0800
+
+landscape-client (19.12-0ubuntu13) jammy; urgency=medium
+
+  * d/landscape-sysinfo.wrapper, d/landscape-common.postrm: avoid too
+    frequent expensive operations (LP: #1893716)
+    - use a cache file and refresh it only once per minute
+    - use a single printf to format output
+    - if the former info was useful and we'd replace it with "sorry, load to
+      high" skip that update
+    - remove the cache file on purge
+
+ -- Christian Ehrhardt <christian.ehrhardt@canonical.com>  Wed, 30 Mar 2022 12:32:38 +0200
+
+landscape-client (19.12-0ubuntu12) jammy; urgency=medium
+
+  * d/p/lp1903776-release-upgrade.patch (LP: #1903776)
+    - Use /etc/apt/trusted.gpg.d for validating upgrade-tool signature.
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Wed, 09 Mar 2022 11:02:22 -0500
+
+landscape-client (19.12-0ubuntu11) jammy; urgency=medium
+
+  * debian/patches/1962539_twisted_py3.patch:
+    Fix obsolete imports on jammy. (LP: #1962539)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Wed, 02 Mar 2022 18:29:37 -0500
+
+landscape-client (19.12-0ubuntu10) impish; urgency=medium
+
+  * No-change rebuild to build packages with zstd compression.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 07 Oct 2021 12:32:25 +0200
+
+landscape-client (19.12-0ubuntu9.1) hirsute; urgency=medium
+
+  * Replace deprecated tostring() call with tobytes(). (LP: #1911050)
+
+ -- Brian Murray <brian@ubuntu.com>  Thu, 22 Apr 2021 14:59:38 -0700
+
+landscape-client (19.12-0ubuntu9) hirsute; urgency=medium
+
+  * Drop dh-systemd build dependency.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 10 Mar 2021 16:44:11 +0100
+
+landscape-client (19.12-0ubuntu8) hirsute; urgency=medium
+
+  * d/p/0003-clean-publisher-shutdown.patch:
+    Let publisher services shutdown cleanly (LP: #1870087)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Mon, 01 Mar 2021 21:00:40 -0500
+
+landscape-client (19.12-0ubuntu7) hirsute; urgency=medium
+
+  * Switch from depreated base64.decodestring to base64.decodebytes to fix
+    FTBFS with python3.9.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Tue, 24 Nov 2020 10:35:48 +0000
+
+landscape-client (19.12-0ubuntu6) hirsute; urgency=medium
+
+  * No-change rebuild to build with python3.9 as default.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 19 Nov 2020 18:32:52 +0100
+
+landscape-client (19.12-0ubuntu5) groovy; urgency=medium
+
+  * d/landscape-client.service (LP: #1870087)
+    - Set KillMode on service to avoid killing dpkg
+      through self-upgrade.
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Mon, 27 Apr 2020 16:13:02 +0000
+
+landscape-client (19.12-0ubuntu4) focal; urgency=medium
+
+  * d/p/0002-lp1870087-stale-locks.patch:
+    Clean stale twisted lock files (LP: #1870087)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Tue, 14 Apr 2020 11:07:41 -0400
+
+landscape-client (19.12-0ubuntu3) focal; urgency=medium
+
+  * No-change rebuild to build with python3.8.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 25 Jan 2020 04:32:59 +0000
+
+landscape-client (19.12-0ubuntu2) focal; urgency=medium
+
+  * Handle EINVAL error of SIOCETHTOOL ioctl (LP: #1855522)
+    The error occurs on WSL (1) and causes an error showing up in MOTD.
+
+ -- Balint Reczey <rbalint@ubuntu.com>  Sat, 07 Dec 2019 15:52:03 +0100
+
+landscape-client (19.12-0ubuntu1) focal; urgency=medium
+
+  * New upstream release 19.12:
+    - Modernized packaging.
+    - Added support for python-apt 1.9
+    - Converted init script to systemd service.
+    - Set default value if data_path is missing. (LP: #1728681)
+    - Sysinfo: add support for multiple IPv6 addresses per interface.
+      (LP: #829379)
+    - Clear hash id database on package resync. (LP: #1616116)
+    - Permit environments containing unicode chars for script execution.
+      (LP: #1765518)
+    - Set LANG in sysinfo wrapper. (LP: #1780071)
+    - Avoid leaking memory through unused twisted logs. (LP: #1685885)
+    - Handle unicode apt-sources-replace (LP: #1771443)
+    - Add simfs to the whitelist of watched file-systems (LP: #1499104)
+    - Return non-blank message when tasks already performed. (LP: #928933)
+    - Overrid apt progress pulse(). (LP: #1758529)
+    - Improvements on vm_info detection (LP: #1754073) (LP: #1799843)
+      (LP: #1828217)
+    - Remove the landscape url from motd output by removing LandscapeLink
+      from the list of default landscape-sysinfo plugins. (LP: #1753936)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Wed, 04 Dec 2019 14:12:24 +0000
 
 landscape-client (18.03-0ubuntu1) bionic; urgency=medium
 
