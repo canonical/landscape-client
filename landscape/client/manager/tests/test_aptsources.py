@@ -210,7 +210,7 @@ class AptSourcesTests(LandscapeTest):
                               "result-text": msg, "status": FAILED,
                               "operation-id": 1}])
 
-    def test_rename_sources_list_d(self):
+    def test_does_not_rename_sources_list_d(self):
         """
         The sources files in sources.list.d are renamed to .save when a message
         is received.
@@ -227,11 +227,11 @@ class AptSourcesTests(LandscapeTest):
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
              "operation-id": 1})
 
-        self.assertFalse(
+        self.assertTrue(
             os.path.exists(
                 os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list")))
 
-        self.assertTrue(
+        self.assertFalse(
             os.path.exists(
                 os.path.join(self.sourceslist.SOURCES_LIST_D,
                              "file1.list.save")))

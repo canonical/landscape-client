@@ -1,4 +1,3 @@
-import glob
 import os
 import pwd
 import grp
@@ -96,7 +95,11 @@ class AptSources(ManagerPlugin):
         return self.call_with_operation_result(message, lambda: deferred)
 
     def _handle_sources(self, ignored, sources):
-        """Handle sources repositories."""
+        """
+        Replaces `SOURCES_LIST` with a Landscape-managed version and moves the
+        original to a ".save" file.
+        """
+
         saved_sources = "{}.save".format(self.SOURCES_LIST)
         if sources:
             fd, path = tempfile.mkstemp()
@@ -119,9 +122,6 @@ class AptSources(ManagerPlugin):
             # Re-instate original sources
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
-
-        for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
-            shutil.move(filename, "%s.save" % filename)
 
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
