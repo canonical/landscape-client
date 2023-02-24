@@ -7,11 +7,11 @@ from landscape.lib.warning import hide_warnings
 
 class WarningTest(TestCase):
     def setUp(self):
-        super(WarningTest, self).setUp()
+        super().setUp()
         self.orig_filters = warnings.filters[:]
 
     def tearDown(self):
-        super(WarningTest, self).tearDown()
+        super().tearDown()
         warnings.filters[:] = self.orig_filters
 
     def test_hide_warnings(self):

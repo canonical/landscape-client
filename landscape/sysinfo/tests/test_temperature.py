@@ -7,7 +7,7 @@ from landscape.sysinfo.temperature import Temperature
 
 class TemperatureTest(ThermalZoneTest):
     def setUp(self):
-        super(TemperatureTest, self).setUp()
+        super().setUp()
         self.temperature = Temperature(self.thermal_zone_path)
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.temperature)

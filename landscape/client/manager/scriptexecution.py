@@ -73,7 +73,7 @@ class UnknownInterpreterError(Exception):
         return "Unknown interpreter: '%s'" % self.interpreter
 
 
-class ScriptRunnerMixin(object):
+class ScriptRunnerMixin:
     """
     @param process_factory: The L{IReactorProcess} provider to run the
         process with.
@@ -144,7 +144,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """A plugin which allows execution of arbitrary shell scripts."""
 
     def register(self, registry):
-        super(ScriptExecutionPlugin, self).register(registry)
+        super().register(registry)
         registry.register_message(
             "execute-script",
             self._handle_execute_script,
@@ -176,7 +176,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             if not self.is_user_allowed(user):
                 return self._respond(
                     FAILED,
-                    "Scripts cannot be run as user %s." % (user,),
+                    f"Scripts cannot be run as user {user}.",
                     opid,
                 )
             server_supplied_env = message.get("env", None)
@@ -197,7 +197,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             raise
 
     def _format_exception(self, e):
-        return "%s: %s" % (e.__class__.__name__, e.args[0])
+        return "{}: {}".format(e.__class__.__name__, e.args[0])
 
     def _respond_success(self, data, opid):
         return self._respond(SUCCEEDED, data, opid)
@@ -437,7 +437,7 @@ class ScriptExecution(ManagerPlugin):
         self._custom_graph = CustomGraphPlugin()
 
     def register(self, registry):
-        super(ScriptExecution, self).register(registry)
+        super().register(registry)
         self._script_execution.register(registry)
         self._custom_graph.register(registry)
 

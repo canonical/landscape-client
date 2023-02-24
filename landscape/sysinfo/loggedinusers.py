@@ -1,7 +1,7 @@
 from landscape.lib.sysstats import get_logged_in_users
 
 
-class LoggedInUsers(object):
+class LoggedInUsers:
     def register(self, sysinfo):
         self._sysinfo = sysinfo
 

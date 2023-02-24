@@ -17,7 +17,7 @@ class ManagerService(LandscapeService):
     service_name = Manager.name
 
     def __init__(self, config):
-        super(ManagerService, self).__init__(config)
+        super().__init__(config)
         self.plugins = self.get_plugins()
         self.manager = Manager(self.reactor, self.config)
         self.publisher = ComponentPublisher(
@@ -45,7 +45,7 @@ class ManagerService(LandscapeService):
           - Connect to the broker.
           - Add all configured plugins, that will in turn register themselves.
         """
-        super(ManagerService, self).startService()
+        super().startService()
         self.publisher.start()
 
         def start_plugins(broker):
@@ -63,7 +63,7 @@ class ManagerService(LandscapeService):
         """Stop the manager and close the connection with the broker."""
         self.connector.disconnect()
         deferred = self.publisher.stop()
-        super(ManagerService, self).stopService()
+        super().stopService()
         return deferred
 
 

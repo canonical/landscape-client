@@ -36,7 +36,7 @@ class ManagerPlugin(BrokerClientPlugin):
             return SUCCEEDED, text
 
         def failure(failure):
-            text = "%s: %s" % (failure.type.__name__, failure.value)
+            text = f"{failure.type.__name__}: {failure.value}"
             msg = (
                 "Error occured running message handler %s with " "args %r %r.",
                 format_object(callable),

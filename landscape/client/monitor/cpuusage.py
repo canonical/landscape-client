@@ -32,7 +32,7 @@ class CPUUsage(MonitorPlugin):
         self._stat_file = "/proc/stat"
 
     def register(self, registry):
-        super(CPUUsage, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, registry.step_size)
 
         self.registry.reactor.call_every(self._interval, self.run)
@@ -96,7 +96,7 @@ class CPUUsage(MonitorPlugin):
                 # The first line of the file is the CPU information aggregated
                 # across cores.
                 stat = f.readline()
-        except IOError:
+        except OSError:
             logging.error(
                 "Could not open %s for reading, "
                 "CPU usage cannot be computed.",

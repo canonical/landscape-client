@@ -1,6 +1,6 @@
 import os
+from unittest import mock
 
-import mock
 from twisted.python.compat import intToBytes
 
 from landscape.client.broker.store import MessageStore
@@ -16,7 +16,7 @@ from landscape.message_schemas.message import Message
 
 class MessageStoreTest(LandscapeTest):
     def setUp(self):
-        super(MessageStoreTest, self).setUp()
+        super().setUp()
         self.temp_dir = self.makeDir()
         self.persist_filename = self.makeFile()
         self.store = self.create_store()
@@ -169,7 +169,7 @@ class MessageStoreTest(LandscapeTest):
             self.store.add(dict(type="data", data=intToBytes(i)))
         il = [m["data"] for m in self.store.get_pending_messages(60)]
         self.assertEqual(il, [intToBytes(i) for i in range(60)])
-        self.assertEqual(set(os.listdir(self.temp_dir)), set(["0", "1", "2"]))
+        self.assertEqual(set(os.listdir(self.temp_dir)), {"0", "1", "2"})
 
         self.store.set_pending_offset(60)
         self.store.delete_old_messages()
@@ -398,7 +398,7 @@ class MessageStoreTest(LandscapeTest):
         self.store.add(
             {
                 "type": "data",
-                "data": "\N{HIRAGANA LETTER A}".encode("utf-8"),
+                "data": "\N{HIRAGANA LETTER A}".encode(),
                 "api": b"3.2",
             },
         )
@@ -462,7 +462,7 @@ class MessageStoreTest(LandscapeTest):
         self.assertTrue(os.path.exists(filename))
 
         store = MessageStore(Persist(filename=filename), self.temp_dir)
-        self.assertEqual(set(store.get_accepted_types()), set(["foo", "bar"]))
+        self.assertEqual(set(store.get_accepted_types()), {"foo", "bar"})
 
     def test_is_pending_pre_and_post_message_delivery(self):
         self.log_helper.ignore_errors(ValueError)

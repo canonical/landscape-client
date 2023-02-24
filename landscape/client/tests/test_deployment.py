@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.deployment import BaseConfiguration
 from landscape.client.deployment import Configuration
@@ -14,7 +14,7 @@ class BabbleConfiguration(BaseConfiguration):
     default_config_filenames = []
 
     def make_parser(self):
-        parser = super(BabbleConfiguration, self).make_parser()
+        parser = super().make_parser()
         parser.add_option("--whatever", metavar="STUFF")
         return parser
 
@@ -43,7 +43,7 @@ class LoggingTest(LandscapeTest):
 
 class BaseConfigurationTest(LandscapeTest):
     def setUp(self):
-        super(BaseConfigurationTest, self).setUp()
+        super().setUp()
         self.reset_config()
 
     def reset_config(self, configuration_class=None):
@@ -61,7 +61,7 @@ class BaseConfigurationTest(LandscapeTest):
     def write_config_file(self, **kwargs):
         section_name = kwargs.pop("section_name", "client")
         config = "\n".join(
-            ["[%s]" % (section_name,)]
+            [f"[{section_name}]"]
             + ["%s = %s" % pair for pair in kwargs.items()],
         )
         self.config_filename = self.makeFile(config)
@@ -141,7 +141,7 @@ class BaseConfigurationTest(LandscapeTest):
 
 class ConfigurationTest(LandscapeTest):
     def setUp(self):
-        super(ConfigurationTest, self).setUp()
+        super().setUp()
 
         class MyConfiguration(Configuration):
             default_config_filenames = []
@@ -276,7 +276,7 @@ class ConfigurationTest(LandscapeTest):
 
 class GetVersionedPersistTest(LandscapeTest):
     def test_upgrade_service(self):
-        class FakeService(object):
+        class FakeService:
             persist_filename = self.makePersistFile(content="")
             service_name = "monitor"
 

@@ -44,7 +44,7 @@ def join_dir(base_path, path):
     return os.path.join(os.path.dirname(os.path.abspath(base_path)), path)
 
 
-class TestProtocolServer(object):
+class TestProtocolServer:
     """A class for receiving results from a TestProtocol client."""
 
     OUTSIDE_TEST = 0
@@ -300,13 +300,13 @@ class RemotedTestCase(unittest.TestCase):
         return self.__description
 
     def id(self):
-        return "%s.%s" % (self._strclass(), self.__description)
+        return f"{self._strclass()}.{self.__description}"
 
     def __str__(self):
-        return "%s (%s)" % (self.__description, self._strclass())
+        return f"{self.__description} ({self._strclass()})"
 
     def __repr__(self):
-        return "<%s description='%s'>" % (self._strclass(), self.__description)
+        return f"<{self._strclass()} description='{self.__description}'>"
 
     def run(self, result=None):
         if result is None:
@@ -317,7 +317,7 @@ class RemotedTestCase(unittest.TestCase):
 
     def _strclass(self):
         cls = self.__class__
-        return "%s.%s" % (cls.__module__, cls.__name__)
+        return f"{cls.__module__}.{cls.__name__}"
 
 
 class ExecTestCase(unittest.TestCase):

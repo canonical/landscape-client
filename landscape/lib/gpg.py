@@ -42,8 +42,8 @@ def gpg_verify(filename, signature, gpg="/usr/bin/gpg", apt_dir="/etc/apt"):
             *[
                 ("--keyring", keyring)
                 for keyring in sorted(
-                    glob("{}/trusted.gpg".format(apt_dir))
-                    + glob("{}/trusted.gpg.d/*.gpg".format(apt_dir)),
+                    glob(f"{apt_dir}/trusted.gpg")
+                    + glob(f"{apt_dir}/trusted.gpg.d/*.gpg"),
                 )
             ],
         ),

@@ -11,7 +11,7 @@ class BrokerConfiguration(Configuration):
     """
 
     def __init__(self):
-        super(BrokerConfiguration, self).__init__()
+        super().__init__()
         self._original_http_proxy = os.environ.get("http_proxy")
         self._original_https_proxy = os.environ.get("https_proxy")
 
@@ -32,7 +32,7 @@ class BrokerConfiguration(Configuration):
               - C{http_proxy}
               - C{https_proxy}
         """
-        parser = super(BrokerConfiguration, self).make_parser()
+        parser = super().make_parser()
 
         parser.add_option(
             "-a",
@@ -109,7 +109,7 @@ class BrokerConfiguration(Configuration):
         C{http_proxy} and C{https_proxy} environment variables based on
         that config data.
         """
-        super(BrokerConfiguration, self).load(args)
+        super().load(args)
         if self.http_proxy:
             os.environ["http_proxy"] = self.http_proxy
         elif self._original_http_proxy:

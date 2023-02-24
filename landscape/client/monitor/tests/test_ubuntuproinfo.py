@@ -11,7 +11,7 @@ class UbuntuProInfoTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(UbuntuProInfoTest, self).setUp()
+        super().setUp()
         self.mstore.set_accepted_types(["ubuntu-pro-info"])
 
     def test_ubuntu_pro_info(self):

@@ -47,7 +47,7 @@ class PackageTaskHandlerTest(LandscapeTest):
     helpers = [AptFacadeHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(PackageTaskHandlerTest, self).setUp()
+        super().setUp()
         self.config = PackageTaskHandlerConfiguration()
         self.store = PackageStore(self.makeFile())
         self.reactor = FakeReactor()
@@ -390,7 +390,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         class HandlerMock(PackageTaskHandler):
             def __init__(self, *args):
                 handler_args.extend(args)
-                super(HandlerMock, self).__init__(*args)
+                super().__init__(*args)
 
         call_when_running = []
         reactor_mock = Mock(name="mock-reactor")

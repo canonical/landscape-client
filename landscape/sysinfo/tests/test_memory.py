@@ -40,7 +40,7 @@ VmallocChunk:    86764 kB
 
 class MemoryTest(FSTestCase, TwistedTestCase, unittest.TestCase):
     def setUp(self):
-        super(MemoryTest, self).setUp()
+        super().setUp()
         self.memory = Memory(self.makeFile(MEMINFO_SAMPLE))
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.memory)

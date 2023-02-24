@@ -53,7 +53,7 @@ class PackageTaskHandlerConfiguration(Configuration):
         return os.path.join(self.data_path, "detect_package_changes_timestamp")
 
 
-class LazyRemoteBroker(object):
+class LazyRemoteBroker:
     """Wrapper class around L{RemoteBroker} providing lazy initialization.
 
     This class is a wrapper around a regular L{RemoteBroker}. It connects to
@@ -90,7 +90,7 @@ class LazyRemoteBroker(object):
         return wrapper
 
 
-class PackageTaskHandler(object):
+class PackageTaskHandler:
 
     config_factory = PackageTaskHandlerConfiguration
 
@@ -227,7 +227,7 @@ class PackageTaskHandler(object):
 
             try:
                 lsb_release_info = parse_lsb_release(self.lsb_release_filename)
-            except IOError as error:
+            except OSError as error:
                 logging.warning(warning % str(error))
                 return None
             try:
@@ -250,7 +250,7 @@ class PackageTaskHandler(object):
 
             return os.path.join(
                 self._config.hash_id_directory,
-                "%s_%s_%s" % (server_uuid, codename, arch),
+                f"{server_uuid}_{codename}_{arch}",
             )
 
         result = self._broker.get_server_uuid()

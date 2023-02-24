@@ -4,7 +4,7 @@ from twisted.python.compat import itervalues
 from landscape.client.diff import diff
 
 
-class UserChanges(object):
+class UserChanges:
     """Detect changes made since the last snapshot was taken.
 
     If no snapshot is available all users and groups are reported.
@@ -13,7 +13,7 @@ class UserChanges(object):
     """
 
     def __init__(self, persist, provider):
-        super(UserChanges, self).__init__()
+        super().__init__()
         self._persist = persist
         self._provider = provider
         # FIXME This shouldn't really be necessary.  Not having it

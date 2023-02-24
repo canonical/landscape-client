@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.monitor.rebootrequired import RebootRequired
 from landscape.client.tests.helpers import LandscapeTest
@@ -11,7 +11,7 @@ class RebootRequiredTest(LandscapeTest):
     helpers = [MonitorHelper, LogKeeperHelper]
 
     def setUp(self):
-        super(RebootRequiredTest, self).setUp()
+        super().setUp()
         self.reboot_required_filename = self.makeFile()
         self.plugin = RebootRequired(self.reboot_required_filename)
         self.monitor.add(self.plugin)

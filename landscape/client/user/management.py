@@ -10,7 +10,7 @@ from landscape.client.user.provider import UserManagementError
 from landscape.client.user.provider import UserProvider
 
 
-class UserManagement(object):
+class UserManagement:
     """Manage system users and groups."""
 
     def __init__(self, provider=None):
@@ -33,7 +33,7 @@ class UserManagement(object):
         @raises UserManagementError: Raised when C{passwd} fails.
         """
         logging.info("Adding user %s.", username)
-        gecos = "%s,%s,%s,%s" % (
+        gecos = "{},{},{},{}".format(
             name,
             location or "",
             work_phone or "",
@@ -53,7 +53,7 @@ class UserManagement(object):
         result, output = self.call_popen(command)
         if result != 0:
             raise UserManagementError(
-                "Error adding user %s.\n%s" % (username, output),
+                f"Error adding user {username}.\n{output}",
             )
 
         self._set_password(username, password)
@@ -69,7 +69,7 @@ class UserManagement(object):
         return output
 
     def _set_password(self, username, password):
-        chpasswd_input = "{}:{}".format(username, password).encode("utf-8")
+        chpasswd_input = f"{username}:{password}".encode("utf-8")
         chpasswd = self._provider.popen(
             ["chpasswd"],
             stdin=subprocess.PIPE,
@@ -147,7 +147,7 @@ class UserManagement(object):
         result, output = self.call_popen(["usermod", "-L", username])
         if result != 0:
             raise UserManagementError(
-                "Error locking user %s.\n%s" % (username, output),
+                f"Error locking user {username}.\n{output}",
             )
 
     def unlock_user(self, username):
@@ -158,7 +158,7 @@ class UserManagement(object):
         result, output = self.call_popen(["usermod", "-U", username])
         if result != 0:
             raise UserManagementError(
-                "Error unlocking user %s.\n%s" % (username, output),
+                f"Error unlocking user {username}.\n{output}",
             )
         return output
 
@@ -196,7 +196,7 @@ class UserManagement(object):
         result, output = self.call_popen(["addgroup", groupname])
         if result != 0:
             raise UserManagementError(
-                "Error adding group %s.\n%s" % (groupname, output),
+                f"Error adding group {groupname}.\n{output}",
             )
         return output
 

@@ -8,7 +8,7 @@ from twisted.internet.defer import succeed
 from landscape.lib.network import get_active_device_info
 
 
-class Network(object):
+class Network:
     """Show information about active network interfaces.
 
     @param get_device_info: Optionally, a function that returns information

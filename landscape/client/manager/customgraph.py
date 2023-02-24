@@ -19,7 +19,7 @@ from landscape.lib.user import get_user_info
 from landscape.lib.user import UnknownUserError
 
 
-class StoreProxy(object):
+class StoreProxy:
     """
     Persist-like interface to store graph-points into SQLite store.
     """
@@ -82,13 +82,13 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     message_type = "custom-graph"
 
     def __init__(self, process_factory=None, create_time=time.time):
-        super(CustomGraphPlugin, self).__init__(process_factory)
+        super().__init__(process_factory)
         self._create_time = create_time
         self._data = {}
         self.do_send = True
 
     def register(self, registry):
-        super(CustomGraphPlugin, self).register(registry)
+        super().register(registry)
         registry.register_message(
             "custom-graph-add",
             self._handle_custom_graph_add,
@@ -152,7 +152,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         self.registry.store.add_graph(graph_id, filename, user)
 
     def _format_exception(self, e):
-        return "%s: %s" % (e.__class__.__name__, e.args[0])
+        return "{}: {}".format(e.__class__.__name__, e.args[0])
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(

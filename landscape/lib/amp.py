@@ -216,7 +216,7 @@ class MethodCallReceiver(CommandLocator):
         return result
 
 
-class MethodCallSender(object):
+class MethodCallSender:
     """Call methods on a remote object over L{AMP} and return the result.
 
     @param protocol: A connected C{AMP} protocol.
@@ -335,7 +335,7 @@ class MethodCallClientProtocol(AMP):
             self.factory.clientConnectionMade(self)
 
 
-class RemoteObject(object):
+class RemoteObject:
     """An object able to transparently call methods on a remote object.
 
     Any method call on a L{RemoteObject} instance will return a L{Deferred}

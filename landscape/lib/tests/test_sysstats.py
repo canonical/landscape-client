@@ -87,7 +87,7 @@ class FakeWhoQTest(testing.HelperTestCase, BaseTestCase):
 
     def fake_who(self, users):
         dirname = self.makeDir()
-        os.environ["PATH"] = "%s:%s" % (dirname, os.environ["PATH"])
+        os.environ["PATH"] = "{}:{}".format(dirname, os.environ["PATH"])
 
         self.who_path = os.path.join(dirname, "who")
         who = open(self.who_path, "w")
@@ -145,7 +145,7 @@ class UptimeTest(BaseTestCase):
 
 class ProcfsThermalZoneTest(BaseTestCase):
     def setUp(self):
-        super(ProcfsThermalZoneTest, self).setUp()
+        super().setUp()
         self.thermal_zone_path = self.makeDir()
 
     def get_thermal_zones(self):
@@ -228,7 +228,7 @@ class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
 
 class ThermalZoneTest(BaseTestCase):
     def setUp(self):
-        super(ThermalZoneTest, self).setUp()
+        super().setUp()
         self.thermal_zone_path = self.makeDir()
 
     def get_thermal_zones(self):

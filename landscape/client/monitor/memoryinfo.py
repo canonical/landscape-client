@@ -28,7 +28,7 @@ class MemoryInfo(MonitorPlugin):
         self._create_time = create_time
 
     def register(self, registry):
-        super(MemoryInfo, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, self.registry.step_size)
         self.registry.reactor.call_every(self._interval, self.run)
         self._monitor = CoverageMonitor(

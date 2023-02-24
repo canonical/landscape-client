@@ -70,7 +70,7 @@ def event(method):
     return broadcast_event
 
 
-class BrokerServer(object):
+class BrokerServer:
     """
     A broker server capable of handling messages from plugins connected using
     the L{BrokerProtocol}.
@@ -386,15 +386,15 @@ class BrokerServer(object):
         ):
 
             mtype = message["type"]
-            logging.error("Nobody handled the %s message." % (mtype,))
+            logging.error(f"Nobody handled the {mtype} message.")
 
             result_text = """\
-Landscape client failed to handle this request (%s) because the
+Landscape client failed to handle this request ({}) because the
 plugin which should handle it isn't available.  This could mean that the
 plugin has been intentionally disabled, or that the client isn't running
 properly, or you may be running an older version of the client that doesn't
 support this feature.
-""" % (
+""".format(
                 mtype,
             )
             response = {

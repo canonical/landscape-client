@@ -12,4 +12,4 @@ if "".join((err, fail, skip)) != "000":
         "errors={}, total={})".format(skip, fail, err, total),
     )
 else:
-    print("Python 2: \033[92mOK\033[0m (total={})".format(total))
+    print(f"Python 2: \033[92mOK\033[0m (total={total})")

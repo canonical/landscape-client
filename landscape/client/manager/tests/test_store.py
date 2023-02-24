@@ -4,7 +4,7 @@ from landscape.client.tests.helpers import LandscapeTest
 
 class ManagerStoreTest(LandscapeTest):
     def setUp(self):
-        super(ManagerStoreTest, self).setUp()
+        super().setUp()
         self.filename = self.makeFile()
         self.store = ManagerStore(self.filename)
         self.store.add_graph(1, "file 1", "user1")

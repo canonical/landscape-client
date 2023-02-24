@@ -16,7 +16,7 @@ from landscape.lib.schema import Tuple
 from landscape.lib.schema import Unicode
 
 
-class DummySchema(object):
+class DummySchema:
     def coerce(self, value):
         return "hello!"
 

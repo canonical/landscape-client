@@ -363,7 +363,7 @@ from landscape.lib.versioning import is_version_higher
 from landscape.lib.versioning import sort_versions
 
 
-class MessageExchange(object):
+class MessageExchange:
     """Schedule and handle message exchanges with the server.
 
     The L{MessageExchange} is the place where messages are sent to go out
@@ -851,7 +851,7 @@ class MessageExchange(object):
             new_uuid = new_uuid.decode("ascii")
         if new_uuid != old_uuid:
             logging.info(
-                "Server UUID changed (old=%s, new=%s)." % (old_uuid, new_uuid),
+                f"Server UUID changed (old={old_uuid}, new={new_uuid}).",
             )
             self._reactor.fire("server-uuid-changed", old_uuid, new_uuid)
             message_store.set_server_uuid(new_uuid)

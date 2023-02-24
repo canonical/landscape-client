@@ -44,7 +44,7 @@ class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
         return os.path.join(self.package_directory, "binaries")
 
 
-class ChangePackagesResult(object):
+class ChangePackagesResult:
     """Value object to hold the results of change packages operation.
 
     @ivar code: The result code of the requested changes.
@@ -79,7 +79,7 @@ class PackageChanger(PackageTaskHandler):
         landscape_reactor=None,
         reboot_required_filename=REBOOT_REQUIRED_FILENAME,
     ):
-        super(PackageChanger, self).__init__(
+        super().__init__(
             store,
             facade,
             remote,

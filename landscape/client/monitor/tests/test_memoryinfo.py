@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.monitor.memoryinfo import MemoryInfo
 from landscape.client.tests.helpers import LandscapeTest
@@ -36,7 +36,7 @@ VmallocChunk:   510252 kB
 """
 
     def setUp(self):
-        super(MemoryInfoTest, self).setUp()
+        super().setUp()
 
     def test_read_proc_meminfo(self):
         """

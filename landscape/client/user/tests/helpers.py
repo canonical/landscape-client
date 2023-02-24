@@ -5,7 +5,7 @@ from landscape.client.user.management import UserManagementError
 from landscape.client.user.provider import UserProviderBase
 
 
-class FakeUserManagement(object):
+class FakeUserManagement:
     def __init__(self, provider=None):
         self.shadow_file = getattr(provider, "shadow_file", None)
         self.provider = provider
@@ -55,7 +55,7 @@ class FakeUserManagement(object):
                 "home-phone": home_phone,
                 "primary-gid": primary_gid,
             }
-            gecos_string = "%s,%s,%s,%s" % (
+            gecos_string = "{},{},{},{}".format(
                 name,
                 location or "",
                 work_phone or "",
@@ -134,7 +134,7 @@ class FakeUserManagement(object):
             "x",
             data["uid"],
             data["primary-gid"],
-            "%s,%s,%s,%s," % (name, location, work_number, home_number),
+            f"{name},{location},{work_number},{home_number},",
             "/bin/sh",
             "/home/user",
         )
@@ -205,7 +205,7 @@ class FakeUserProvider(UserProviderBase):
         if popen:
             self.popen = popen
         self.shadow_file = shadow_file
-        super(FakeUserProvider, self).__init__(locked_users=locked_users)
+        super().__init__(locked_users=locked_users)
 
     def get_user_data(self, system=False):
         if self.users is None:
@@ -218,7 +218,7 @@ class FakeUserProvider(UserProviderBase):
         return self.groups
 
 
-class FakeUserInfo(object):
+class FakeUserInfo:
     """Implements enough functionality to work for Changes tests."""
 
     persist_name = "users"

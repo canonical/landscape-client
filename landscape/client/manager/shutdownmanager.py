@@ -31,7 +31,7 @@ class ShutdownManager(ManagerPlugin):
         The shutdown manager handles C{shutdown} activity messages broadcast
         from the server.
         """
-        super(ShutdownManager, self).register(registry)
+        super().register(registry)
         registry.register_message("shutdown", self.perform_shutdown)
 
     def perform_shutdown(self, message):

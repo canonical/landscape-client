@@ -11,7 +11,7 @@ class UserChangesTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(UserChangesTest, self).setUp()
+        super().setUp()
         self.persist = Persist()
         self.shadow_file = self.makeFile(
             """\

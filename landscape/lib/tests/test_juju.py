@@ -30,7 +30,7 @@ class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
     Config = namedtuple("Config", ["juju_filename"])
 
     def setUp(self):
-        super(JujuTest, self).setUp()
+        super().setUp()
         self.stub_config = self.Config(self.makeFile())
 
     def _create_tmp_juju_file(self, contents):

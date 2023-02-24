@@ -12,7 +12,7 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 class GetVMInfoTest(BaseTestCase):
     def setUp(self):
-        super(GetVMInfoTest, self).setUp()
+        super().setUp()
         self.root_path = self.makeDir()
         self.proc_path = self.makeDir(
             path=os.path.join(self.root_path, "proc"),
@@ -202,7 +202,7 @@ class GetVMInfoTest(BaseTestCase):
 
 class GetContainerInfoTest(BaseTestCase):
     def setUp(self):
-        super(GetContainerInfoTest, self).setUp()
+        super().setUp()
         self.run_path = self.makeDir()
 
     def test_no_container(self):

@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.monitor.updatemanager import UpdateManager
 from landscape.client.tests.helpers import LandscapeTest
@@ -16,7 +16,7 @@ class UpdateManagerTest(LandscapeTest):
     helpers = [MonitorHelper, LogKeeperHelper]
 
     def setUp(self):
-        super(UpdateManagerTest, self).setUp()
+        super().setUp()
         self.update_manager_filename = self.makeFile()
         self.plugin = UpdateManager(self.update_manager_filename)
         self.monitor.add(self.plugin)

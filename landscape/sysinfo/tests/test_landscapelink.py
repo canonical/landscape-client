@@ -7,7 +7,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 class LandscapeLinkTest(TwistedTestCase, unittest.TestCase):
     def setUp(self):
-        super(LandscapeLinkTest, self).setUp()
+        super().setUp()
         self.landscape_link = LandscapeLink()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.landscape_link)

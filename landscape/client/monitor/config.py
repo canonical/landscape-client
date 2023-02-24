@@ -32,7 +32,7 @@ class MonitorConfiguration(Configuration):
         Specialize L{Configuration.make_parser}, adding many
         monitor-specific options.
         """
-        parser = super(MonitorConfiguration, self).make_parser()
+        parser = super().make_parser()
 
         parser.add_option(
             "--monitor-plugins",

@@ -5,7 +5,7 @@ class UpgraderConflict(Exception):
     """Two upgraders with the same version have been registered."""
 
 
-class UpgradeManagerBase(object):
+class UpgradeManagerBase:
     """A simple upgrade system."""
 
     def __init__(self):
@@ -82,7 +82,7 @@ class SQLiteUpgradeManager(UpgradeManagerBase):
     def get_database_versions(self, cursor):
         cursor.execute("SELECT version FROM patch")
         result = cursor.fetchall()
-        return set([row[0] for row in result])
+        return {row[0] for row in result}
 
     def get_database_version(self, cursor):
         cursor.execute("SELECT MAX(version) FROM patch")

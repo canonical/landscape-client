@@ -2,8 +2,8 @@ import os
 import unittest
 from logging import getLogger
 from logging import StreamHandler
+from unittest import mock
 
-import mock
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
@@ -17,7 +17,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 class SysInfoPluginRegistryTest(HelperTestCase):
     def setUp(self):
-        super(SysInfoPluginRegistryTest, self).setUp()
+        super().setUp()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo_logfile = StringIO()
         self.handler = StreamHandler(self.sysinfo_logfile)
@@ -25,7 +25,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.logger.addHandler(self.handler)
 
     def tearDown(self):
-        super(SysInfoPluginRegistryTest, self).tearDown()
+        super().tearDown()
         self.logger.removeHandler(self.handler)
 
     def test_is_plugin_registry(self):
@@ -95,7 +95,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_run(self):
-        class Plugin(object):
+        class Plugin:
             def __init__(self, deferred):
                 self._deferred = deferred
 
@@ -139,7 +139,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.log_helper.ignore_errors(ZeroDivisionError)
         plugins_what_run = []
 
-        class BadPlugin(object):
+        class BadPlugin:
             def register(self, registry):
                 pass
 
@@ -147,7 +147,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
                 plugins_what_run.append(self)
                 1 / 0
 
-        class GoodPlugin(object):
+        class GoodPlugin:
             def register(self, registry):
                 pass
 
@@ -176,7 +176,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
     def test_asynchronous_errors_logged(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
 
-        class BadPlugin(object):
+        class BadPlugin:
             def register(self, registry):
                 pass
 
@@ -199,14 +199,14 @@ class SysInfoPluginRegistryTest(HelperTestCase):
     def test_multiple_exceptions_get_one_note(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
 
-        class RegularBadPlugin(object):
+        class RegularBadPlugin:
             def register(self, registry):
                 pass
 
             def run(self):
                 1 / 0
 
-        class AsyncBadPlugin(object):
+        class AsyncBadPlugin:
             def register(self, registry):
                 pass
 
@@ -233,7 +233,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         directory.
         """
 
-        class AsyncBadPlugin(object):
+        class AsyncBadPlugin:
             def register(self, registry):
                 pass
 

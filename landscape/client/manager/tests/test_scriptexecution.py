@@ -3,8 +3,8 @@ import pwd
 import stat
 import sys
 import tempfile
+from unittest import mock
 
-import mock
 from twisted.internet.defer import fail
 from twisted.internet.defer import gatherResults
 from twisted.internet.defer import succeed
@@ -60,7 +60,7 @@ class RunScriptTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(RunScriptTests, self).setUp()
+        super().setUp()
         self.plugin = ScriptExecutionPlugin()
         self.manager.add(self.plugin)
 
@@ -204,11 +204,11 @@ class RunScriptTests(LandscapeTest):
         accented_content = "\N{LATIN SMALL LETTER E WITH ACUTE}"
         result = self.plugin.run_script(
             "/bin/sh",
-            "echo %s" % (accented_content,),
+            f"echo {accented_content}",
         )
         # self.assertEqual gets the result as first argument and that's what we
         # compare against.
-        result.addCallback(self.assertEqual, "%s\n" % (accented_content,))
+        result.addCallback(self.assertEqual, f"{accented_content}\n")
         return result
 
     def test_accented_run_in_interpreter(self):
@@ -217,12 +217,12 @@ class RunScriptTests(LandscapeTest):
         """
         accented_content = "\N{LATIN SMALL LETTER E WITH ACUTE}"
         result = self.plugin.run_script(
-            "/bin/echo %s" % (accented_content,),
+            f"/bin/echo {accented_content}",
             "",
         )
 
         def check(result):
-            self.assertTrue("%s " % (accented_content,) in result)
+            self.assertTrue(f"{accented_content} " in result)
 
         result.addCallback(check)
         return result
@@ -473,7 +473,7 @@ class RunScriptTests(LandscapeTest):
         patch_getpwnam = mock.patch("pwd.getpwnam")
         mock_getpwnam = patch_getpwnam.start()
 
-        class PwNam(object):
+        class PwNam:
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
@@ -768,7 +768,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(ScriptExecutionMessageTests, self).setUp()
+        super().setUp()
         self.broker_service.message_store.set_accepted_types(
             ["operation-result"],
         )
@@ -780,7 +780,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         script has the correct content.
         """
         data = open(executable, "r").read()
-        self.assertEqual(data, "#!%s\n%s" % (interp, code))
+        self.assertEqual(data, f"#!{interp}\n{code}")
 
     def _send_script(
         self,

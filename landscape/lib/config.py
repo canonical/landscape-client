@@ -17,7 +17,7 @@ def add_cli_options(parser, filename=None):
         "options override settings from the file)."
     )
     if filename is not None:
-        cfgfilehelp += " (default: {!r})".format(filename)
+        cfgfilehelp += f" (default: {filename!r})"
     parser.add_option(
         "-c",
         "--config",
@@ -41,7 +41,7 @@ class ConfigSpecOptionParser(OptionParser):
         return option
 
 
-class BaseConfiguration(object):
+class BaseConfiguration:
     """Base class for configuration implementations.
 
     @cvar required_options: Optionally, a sequence of key names to require when
@@ -134,7 +134,7 @@ class BaseConfiguration(object):
         not stored in the configuration file.
         """
         if name.startswith("_"):
-            super(BaseConfiguration, self).__setattr__(name, value)
+            super().__setattr__(name, value)
         else:
             self._set_options[name] = value
 

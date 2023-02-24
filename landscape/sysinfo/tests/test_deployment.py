@@ -2,8 +2,8 @@ import os
 import unittest
 from logging import getLogger
 from logging.handlers import RotatingFileHandler
+from unittest import mock
 
-import mock
 from twisted.internet.defer import Deferred
 
 from landscape.lib.fs import create_text_file
@@ -24,7 +24,7 @@ from landscape.sysinfo.testplugin import TestPlugin
 
 class DeploymentTest(ConfigTestCase, unittest.TestCase):
     def setUp(self):
-        super(DeploymentTest, self).setUp()
+        super().setUp()
 
         class TestConfiguration(SysInfoConfiguration):
             default_config_filenames = [self.makeFile("")]
@@ -69,7 +69,7 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
         self.assertTrue(isinstance(plugins[0], TestPlugin))
 
 
-class FakeReactor(object):
+class FakeReactor:
     """
     Something that's simpler and more reusable than a bunch of mocked objects.
     """
@@ -102,12 +102,12 @@ class RunTest(
     helpers = [StandardIOHelper]
 
     def setUp(self):
-        super(RunTest, self).setUp()
+        super().setUp()
         self._old_filenames = SysInfoConfiguration.default_config_filenames
         SysInfoConfiguration.default_config_filenames = [self.makeFile("")]
 
     def tearDown(self):
-        super(RunTest, self).tearDown()
+        super().tearDown()
         SysInfoConfiguration.default_config_filenames = self._old_filenames
         logger = getLogger("landscape-sysinfo")
         for handler in logger.handlers[:]:

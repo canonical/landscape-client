@@ -11,7 +11,7 @@ from landscape.client.reactor import LandscapeReactor
 from landscape.lib.logging import rotate_logs
 
 
-class LandscapeService(Service, object):
+class LandscapeService(Service):
     """Utility superclass for defining Landscape services.
 
     This sets up the reactor and L{Persist} object.
@@ -86,7 +86,7 @@ def run_landscape_service(configuration_class, service_class, args):
     configuration = configuration_class()
     configuration.load(args)
     init_logging(configuration, service_class.service_name)
-    application = Application("landscape-%s" % (service_class.service_name,))
+    application = Application(f"landscape-{service_class.service_name}")
     service = service_class(configuration)
     service.setServiceParent(application)
 

@@ -5,7 +5,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 class LoggedInUsersTest(FakeWhoQTest):
     def setUp(self):
-        super(LoggedInUsersTest, self).setUp()
+        super().setUp()
         self.logged_users = LoggedInUsers()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.logged_users)

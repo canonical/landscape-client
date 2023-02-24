@@ -58,7 +58,7 @@ class ExecutableNotFoundError(Exception):
     """An executable was not found."""
 
 
-class Daemon(object):
+class Daemon:
     """A Landscape daemon which can be started and tracked.
 
     This class should be subclassed to specify individual daemon.
@@ -126,7 +126,7 @@ class Daemon(object):
         dirname = self.BIN_DIR or get_bindir()
         executable = os.path.join(dirname, self.program)
         if not os.path.exists(executable):
-            raise ExecutableNotFoundError("%s doesn't exist" % (executable,))
+            raise ExecutableNotFoundError(f"{executable} doesn't exist")
         return executable
 
     def start(self):
@@ -273,7 +273,7 @@ class WatchedProcessProtocol(ProcessProtocol):
         if self.transport is not None:
             if warn:
                 warning(
-                    "%s didn't exit. Sending SIGTERM" % (self.daemon.program,),
+                    f"{self.daemon.program} didn't exit. Sending SIGTERM",
                 )
             try:
                 self.transport.signalProcess(signal.SIGTERM)
@@ -336,7 +336,7 @@ class WatchedProcessProtocol(ProcessProtocol):
             self.daemon.start()
 
 
-class WatchDog(object):
+class WatchDog:
     """
     The Landscape WatchDog starts all other landscape daemons and ensures that
     they are working.
@@ -441,12 +441,12 @@ class WatchDog(object):
 
     def _restart_if_not_running(self, is_running, daemon):
         if (not is_running) and (not self._stopping):
-            warning("%s failed to respond to a ping." % (daemon.program,))
+            warning(f"{daemon.program} failed to respond to a ping.")
             if daemon not in self._ping_failures:
                 self._ping_failures[daemon] = 0
             self._ping_failures[daemon] += 1
             if self._ping_failures[daemon] == 5:
-                warning("%s died! Restarting." % (daemon.program,))
+                warning(f"{daemon.program} died! Restarting.")
                 stopping = daemon.stop()
 
                 def stopped(ignored):
@@ -505,7 +505,7 @@ class WatchDog(object):
 
 class WatchDogConfiguration(Configuration):
     def make_parser(self):
-        parser = super(WatchDogConfiguration, self).make_parser()
+        parser = super().make_parser()
         parser.add_option(
             "--daemon",
             action="store_true",

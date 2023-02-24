@@ -12,11 +12,11 @@ def format_object(object):
         # from the base class and the method's class name will be from
         # object's class.
         name = repr(object).split(" ")[2]
-        return "%s.%s()" % (object.__module__, name)
+        return f"{object.__module__}.{name}()"
     elif inspect.isfunction(object):
         name = repr(object).split(" ")[1]
-        return "%s.%s()" % (object.__module__, name)
-    return "%s.%s" % (object.__class__.__module__, object.__class__.__name__)
+        return f"{object.__module__}.{name}()"
+    return f"{object.__class__.__module__}.{object.__class__.__name__}"
 
 
 def format_delta(seconds):

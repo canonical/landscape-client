@@ -16,7 +16,7 @@ except ImportError:
     has_swift = False
 
 
-class FakeRing(object):
+class FakeRing:
     def __init__(self, ip_port_tuples=[]):
         self.devs = [{"ip": ip, "port": port} for ip, port in ip_port_tuples]
 

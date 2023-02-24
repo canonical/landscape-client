@@ -10,13 +10,13 @@ from landscape.lib.monitor import Timer
 
 class ReactorHavingTest(testing.HelperTestCase, unittest.TestCase):
     def setUp(self):
-        super(ReactorHavingTest, self).setUp()
+        super().setUp()
         self.reactor = testing.FakeReactor()
 
 
 class TimerTest(ReactorHavingTest):
     def setUp(self):
-        super(TimerTest, self).setUp()
+        super().setUp()
         self.timer = Timer(create_time=self.reactor.time)
 
     def test_since_start(self):
@@ -42,7 +42,7 @@ class TimerTest(ReactorHavingTest):
 
 class MonitorTest(ReactorHavingTest):
     def setUp(self):
-        super(MonitorTest, self).setUp()
+        super().setUp()
         self.monitor = Monitor("test", create_time=self.reactor.time)
 
     def test_ping(self):
@@ -79,7 +79,7 @@ class MonitorTest(ReactorHavingTest):
 
 class BurstMonitorTest(ReactorHavingTest):
     def setUp(self):
-        super(BurstMonitorTest, self).setUp()
+        super().setUp()
         self.monitor = BurstMonitor(
             60,
             1,
@@ -155,7 +155,7 @@ class BurstMonitorTest(ReactorHavingTest):
 
 class CoverageMonitorTest(ReactorHavingTest):
     def setUp(self):
-        super(CoverageMonitorTest, self).setUp()
+        super().setUp()
         self.monitor = CoverageMonitor(
             1,
             1.0,
@@ -251,7 +251,7 @@ class CoverageMonitorTest(ReactorHavingTest):
 
 class FrequencyMonitorTest(ReactorHavingTest):
     def setUp(self):
-        super(FrequencyMonitorTest, self).setUp()
+        super().setUp()
         self.monitor = FrequencyMonitor(
             100,
             1,

@@ -1,7 +1,7 @@
 from landscape.lib.fetch import fetch_async
 
 EC2_HOST = "169.254.169.254"
-EC2_API = "http://%s/latest" % (EC2_HOST,)
+EC2_API = f"http://{EC2_HOST}/latest"
 MAX_LENGTH = 64
 
 

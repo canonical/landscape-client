@@ -15,7 +15,7 @@ from landscape.lib.fetch import fetch
 from landscape.lib.format import format_delta
 
 
-class HTTPTransport(object):
+class HTTPTransport:
     """Transport makes a request to exchange message data over HTTP.
 
     @param url: URL of the remote Landscape server message system.
@@ -127,7 +127,7 @@ class HTTPTransport(object):
         return response
 
 
-class FakeTransport(object):
+class FakeTransport:
     """Fake transport for testing purposes."""
 
     def __init__(self, reactor=None, url=None, pubkey=None):

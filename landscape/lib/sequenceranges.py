@@ -5,7 +5,7 @@ class SequenceError(Exception):
     """Raised when the sequence isn't proper for translation to ranges."""
 
 
-class SequenceRanges(object):
+class SequenceRanges:
     """High level interface to ranges.
 
     A ranges list represent a sequence of ordered and non-repeating
@@ -80,10 +80,10 @@ def sequence_to_ranges(sequence):
             if item is not None and item <= range_stop:
                 if item < range_stop:
                     raise SequenceError(
-                        "Sequence is unordered (%r < %r)" % (item, range_stop),
+                        f"Sequence is unordered ({item!r} < {range_stop!r})",
                     )
                 else:
-                    raise SequenceError("Found duplicated item (%r)" % (item,))
+                    raise SequenceError(f"Found duplicated item ({item!r})")
             if range_stop == range_start:
                 yield range_start
             elif range_stop == range_start + 1:

@@ -1,6 +1,6 @@
 import os
+from unittest import mock
 
-import mock
 from twisted.python.compat import unicode
 
 from landscape.client.monitor.aptpreferences import AptPreferences
@@ -13,7 +13,7 @@ class AptPreferencesTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(AptPreferencesTest, self).setUp()
+        super().setUp()
         self.etc_apt_directory = self.makeDir()
         self.plugin = AptPreferences(self.etc_apt_directory)
         self.monitor.add(self.plugin)

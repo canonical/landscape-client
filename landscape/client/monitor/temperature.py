@@ -33,7 +33,7 @@ class Temperature(MonitorPlugin):
             self._temperatures[thermal_zone.name] = []
 
     def register(self, registry):
-        super(Temperature, self).register(registry)
+        super().register(registry)
         if self._thermal_zones:
             self._accumulate = Accumulator(
                 self._persist,

@@ -2,8 +2,7 @@ import sqlite3
 import threading
 import time
 import unittest
-
-import mock
+from unittest import mock
 
 from landscape.lib import testing
 from landscape.lib.apt.package.store import HashIdStore
@@ -18,7 +17,7 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 class HashIdStoreTest(BaseTestCase):
     def setUp(self):
-        super(HashIdStoreTest, self).setUp()
+        super().setUp()
 
         self.filename = self.makeFile()
         self.store1 = HashIdStore(self.filename)
@@ -51,7 +50,7 @@ class HashIdStoreTest(BaseTestCase):
         db = sqlite3.connect(self.store1._filename)
         commits = []
 
-        class FakeDb(object):
+        class FakeDb:
             def __getattr__(self, name):
                 if name == "commit":
                     return self.commit
@@ -72,7 +71,7 @@ class HashIdStoreTest(BaseTestCase):
         db = sqlite3.connect(self.store1._filename)
         rollbacks = []
 
-        class FakeDb(object):
+        class FakeDb:
             def __getattr__(self, name):
                 if name == "rollback":
                     return self.rollback
@@ -132,7 +131,7 @@ class HashIdStoreTest(BaseTestCase):
 
 class PackageStoreTest(BaseTestCase):
     def setUp(self):
-        super(PackageStoreTest, self).setUp()
+        super().setUp()
 
         self.filename = self.makeFile()
         self.store1 = PackageStore(self.filename)

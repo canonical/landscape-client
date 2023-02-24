@@ -20,7 +20,7 @@ if sys.version_info[0] > 2:
 
 DEB_REQUIRES = []
 REQUIRES = [
-    "landscape-lib={}".format(UPSTREAM_VERSION),
+    f"landscape-lib={UPSTREAM_VERSION}",
 ]
 
 

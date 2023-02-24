@@ -15,7 +15,7 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 class DiskUtilitiesTest(BaseTestCase):
     def setUp(self):
-        super(DiskUtilitiesTest, self).setUp()
+        super().setUp()
         self.mount_file = self.makeFile("")
         self.stat_results = {}
 

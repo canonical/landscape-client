@@ -19,7 +19,7 @@ class BootstrapPathTest(BaseTestCase):
     bootstrap_class = BootstrapPath
 
     def setUp(self):
-        super(BootstrapPathTest, self).setUp()
+        super().setUp()
         self.dirname = self.makeDir()
         self.path = os.path.join(self.dirname, "$my_var")
         self.real_path = os.path.join(self.dirname, "my_var_value")

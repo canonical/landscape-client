@@ -17,7 +17,7 @@ class Monitor(BrokerClient):
         persist_filename=None,
         step_size=5 * 60,
     ):
-        super(Monitor, self).__init__(reactor, config)
+        super().__init__(reactor, config)
         self.reactor = reactor
         self.config = config
         self.persist = persist
@@ -35,5 +35,5 @@ class Monitor(BrokerClient):
 
     def exchange(self):
         """Call C{exchange} on all plugins."""
-        super(Monitor, self).exchange()
+        super().exchange()
         self.flush()

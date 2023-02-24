@@ -37,7 +37,7 @@ class RemoteBroker(RemoteObject):
         return result.addCallback(lambda args: handlers[args[0]](**args[1]))
 
 
-class FakeRemoteBroker(object):
+class FakeRemoteBroker:
     """Looks like L{RemoteBroker}, but actually talks to local objects."""
 
     def __init__(self, exchanger, message_store, broker_server):
@@ -121,6 +121,6 @@ def get_component_registry():
         RemoteMonitorConnector,
         RemoteManagerConnector,
     ]
-    return dict(
-        (connector.component.name, connector) for connector in all_connectors
-    )
+    return {
+        connector.component.name: connector for connector in all_connectors
+    }

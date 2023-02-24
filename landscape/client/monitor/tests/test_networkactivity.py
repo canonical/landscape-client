@@ -18,7 +18,7 @@ Inter-|   Receive                           |  Transmit
 """
 
     def setUp(self):
-        super(NetworkActivityTest, self).setUp()
+        super().setUp()
         self.activity_file = open(self.makeFile(), "w+")
         self.write_activity()
         self.plugin = NetworkActivity(
@@ -29,7 +29,7 @@ Inter-|   Receive                           |  Transmit
 
     def tearDown(self):
         self.activity_file.close()
-        super(NetworkActivityTest, self).tearDown()
+        super().tearDown()
 
     def write_activity(
         self,
@@ -73,7 +73,7 @@ Inter-|   Receive                           |  Transmit
         # hmmm. try to connect anywhere to advance the net stats
         try:
             socket.socket().connect(("localhost", 9999))
-        except socket.error:
+        except OSError:
             pass
         plugin.run()
         message = plugin.create_message()

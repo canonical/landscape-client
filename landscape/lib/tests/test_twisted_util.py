@@ -12,7 +12,7 @@ class SpawnProcessTest(
     unittest.TestCase,
 ):
     def setUp(self):
-        super(SpawnProcessTest, self).setUp()
+        super().setUp()
         self.command = self.makeFile("#!/bin/sh\necho -n $@")
         os.chmod(self.command, 0o755)
 

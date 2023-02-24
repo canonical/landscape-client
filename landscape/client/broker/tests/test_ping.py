@@ -9,7 +9,7 @@ from landscape.lib.fetch import fetch
 from landscape.lib.testing import FakeReactor
 
 
-class FakePageGetter(object):
+class FakePageGetter:
     """An fake web client."""
 
     def __init__(self, response):
@@ -40,7 +40,7 @@ class FakePageGetter(object):
 
 class PingClientTest(LandscapeTest):
     def setUp(self):
-        super(PingClientTest, self).setUp()
+        super().setUp()
         self.reactor = FakeReactor()
 
     def test_default_get_page(self):
@@ -123,7 +123,7 @@ class PingerTest(LandscapeTest):
     install_exchanger = False
 
     def setUp(self):
-        super(PingerTest, self).setUp()
+        super().setUp()
         self.page_getter = FakePageGetter(None)
 
         def factory(reactor):
@@ -206,7 +206,7 @@ class PingerTest(LandscapeTest):
         self.log_helper.ignore_errors(ZeroDivisionError)
         self.identity.insecure_id = 42
 
-        class BadPingClient(object):
+        class BadPingClient:
             def __init__(self, *args, **kwargs):
                 pass
 

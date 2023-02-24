@@ -34,7 +34,7 @@ from landscape.lib.apt.package.testing import PKGNAME_SIMPLE_RELATIONS
 from landscape.lib.apt.package.testing import PKGNAME_VERSION_RELATIONS
 
 
-class SkeletonTestHelper(object):
+class SkeletonTestHelper:
     """A helper to set up a repository for the skeleton tests."""
 
     def set_up(self, test_case):
@@ -81,7 +81,7 @@ class SkeletonAptTest(BaseTestCase):
     helpers = [AptFacadeHelper, SkeletonTestHelper]
 
     def setUp(self):
-        super(SkeletonAptTest, self).setUp()
+        super().setUp()
         self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
         # Don't use reload_channels(), since that causes the test setup
         # depending on build_skeleton_apt working correctly, which makes

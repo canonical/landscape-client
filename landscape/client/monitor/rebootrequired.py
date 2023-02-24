@@ -35,7 +35,7 @@ class RebootRequired(MonitorPlugin):
             return []
 
         lines = read_text_file(self._packages_filename).splitlines()
-        packages = set(line.strip() for line in lines if line)
+        packages = {line.strip() for line in lines if line}
         return sorted(packages)
 
     def _create_message(self):

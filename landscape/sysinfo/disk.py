@@ -18,10 +18,13 @@ def format_megabytes(megabytes):
 def usage(info):
     total = info["total-space"]
     used = total - info["free-space"]
-    return "%0.1f%% of %s" % ((used / total) * 100, format_megabytes(total))
+    return "{:0.1f}% of {}".format(
+        (used / total) * 100,
+        format_megabytes(total),
+    )
 
 
-class Disk(object):
+class Disk:
     def __init__(self, mounts_file="/proc/mounts", statvfs=os.statvfs):
         self._mounts_file = mounts_file
         self._statvfs = statvfs
@@ -77,6 +80,6 @@ class Disk(object):
             used = ((total - info["free-space"]) / total) * 100
             if used >= 85:
                 self._sysinfo.add_note(
-                    "%s is using %s" % (info["mount-point"], usage(info)),
+                    "{} is using {}".format(info["mount-point"], usage(info)),
                 )
         return succeed(None)

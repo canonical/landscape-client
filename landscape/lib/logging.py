@@ -18,7 +18,7 @@ def add_cli_options(parser, level="info", logdir=None):
 
     logdirhelp = "The directory in which to write log files"
     if logdir:
-        logdirhelp += " (default: {!r}).".format(logdir)
+        logdirhelp += f" (default: {logdir!r})."
     parser.add_option(
         "-l",
         "--log-dir",

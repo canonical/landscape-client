@@ -4,7 +4,7 @@ import pwd
 from string import Template
 
 
-class BootstrapList(object):
+class BootstrapList:
     def __init__(self, bootstraps):
         self._bootstraps = bootstraps
 
@@ -13,7 +13,7 @@ class BootstrapList(object):
             bootstrap.bootstrap(**vars)
 
 
-class BootstrapPath(object):
+class BootstrapPath:
     def __init__(self, path, username=None, group=None, mode=None):
         self.path = path
         self.username = username

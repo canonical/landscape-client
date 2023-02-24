@@ -1,6 +1,6 @@
 import os.path
+from unittest import mock
 
-import mock
 from twisted.internet.defer import Deferred
 
 from landscape.client.manager.packagemanager import PackageManager
@@ -19,7 +19,7 @@ class PackageManagerTest(LandscapeTest):
 
     def setUp(self):
         """Initialize test helpers and create a sample package store."""
-        super(PackageManagerTest, self).setUp()
+        super().setUp()
         self.config = self.broker_service.config
         self.package_store = PackageStore(
             os.path.join(self.data_path, "package/database"),

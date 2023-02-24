@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.broker.tests.helpers import RemoteBrokerHelper
 from landscape.client.broker.tests.helpers import RemoteClientHelper

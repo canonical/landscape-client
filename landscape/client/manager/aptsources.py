@@ -25,7 +25,7 @@ class AptSources(ManagerPlugin):
     TRUSTED_GPG_D = "/etc/apt/trusted.gpg.d"
 
     def register(self, registry):
-        super(AptSources, self).register(registry)
+        super().register(registry)
         registry.register_message(
             "apt-sources-replace",
             self._handle_repositories,
@@ -43,7 +43,7 @@ class AptSources(ManagerPlugin):
         """
         out, err, code = result
         if code:
-            raise ProcessError("%s\n%s" % (out, err))
+            raise ProcessError(f"{out}\n{err}")
 
     def _handle_process_failure(self, failure):
         """
@@ -51,7 +51,7 @@ class AptSources(ManagerPlugin):
         """
         if not failure.check(ProcessError):
             out, err, signal = failure.value.args
-            raise ProcessError("%s\n%s" % (out, err))
+            raise ProcessError(f"{out}\n{err}")
         else:
             return failure
 
@@ -98,7 +98,7 @@ class AptSources(ManagerPlugin):
 
     def _handle_sources(self, ignored, sources):
         """Handle sources repositories."""
-        saved_sources = "{}.save".format(self.SOURCES_LIST)
+        saved_sources = f"{self.SOURCES_LIST}.save"
         if sources:
             fd, path = tempfile.mkstemp()
             os.close(fd)

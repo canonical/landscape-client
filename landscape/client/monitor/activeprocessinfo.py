@@ -21,7 +21,7 @@ class ActiveProcessInfo(DataWatcher):
         uptime=None,
         popen=subprocess.Popen,
     ):
-        super(ActiveProcessInfo, self).__init__()
+        super().__init__()
         self._proc_dir = proc_dir
         self._persist_processes = {}
         self._previous_processes = {}
@@ -36,7 +36,7 @@ class ActiveProcessInfo(DataWatcher):
         )
 
     def register(self, manager):
-        super(ActiveProcessInfo, self).register(manager)
+        super().register(manager)
         self.call_on_accepted(self.message_type, self.exchange, True)
 
     def _reset(self):

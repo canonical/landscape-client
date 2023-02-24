@@ -3,8 +3,8 @@ import sys
 import textwrap
 import unittest
 from functools import partial
+from unittest import mock
 
-import mock
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
@@ -117,7 +117,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         and MethodCallError errors.
         """
 
-        class FauxFailure(object):
+        class FauxFailure:
             def trap(self, *trapped):
                 self.trapped_exceptions = trapped
 
@@ -146,7 +146,7 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         connector cleanly.
         """
 
-        class FauxFailure(object):
+        class FauxFailure:
             def trap(self, *trapped):
                 pass
 
@@ -198,13 +198,13 @@ class DoneTests(unittest.TestCase):
     def test_done(self):
         """The done() function handles cleaning up."""
 
-        class FauxConnector(object):
+        class FauxConnector:
             was_disconnected = False
 
             def disconnect(self):
                 self.was_disconnected = True
 
-        class FauxReactor(object):
+        class FauxReactor:
             was_stopped = False
 
             def stop(self):
@@ -222,7 +222,7 @@ class GotErrorTests(unittest.TestCase):
     def test_got_error(self):
         """The got_error() function handles displaying errors and exiting."""
 
-        class FauxFailure(object):
+        class FauxFailure:
             def getTraceback(self):  # noqa: N802
                 return "traceback"
 
@@ -311,7 +311,7 @@ class ShowHelpTest(unittest.TestCase):
 
 class LandscapeSetupScriptTest(LandscapeTest):
     def setUp(self):
-        super(LandscapeSetupScriptTest, self).setUp()
+        super().setUp()
         self.config_filename = self.makeFile()
 
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
@@ -1018,7 +1018,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
     helpers = [EnvironSaverHelper]
 
     def setUp(self):
-        super(ConfigurationFunctionsTest, self).setUp()
+        super().setUp()
         getuid_patcher = mock.patch("os.getuid", return_value=0)
         bootstrap_tree_patcher = mock.patch(
             "landscape.client.configuration.bootstrap_tree",
@@ -1039,7 +1039,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         try:
             config.config = config_file
             config.write()
-            return open(config.config, "r").read().strip() + "\n"
+            return open(config.config).read().strip() + "\n"
         finally:
             config.config = original_config
 
@@ -1073,7 +1073,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
             for key, value in iteritems(fixtures):
                 if key in prompt:
                     return value
-            raise KeyError("Couldn't find answer for {}".format(prompt))
+            raise KeyError(f"Couldn't find answer for {prompt}")
 
         def side_effect_getpass(prompt):
             fixtures = {
@@ -1083,7 +1083,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
             for key, value in iteritems(fixtures):
                 if key in prompt:
                     return value
-            raise KeyError("Couldn't find answer for {}".format(prompt))
+            raise KeyError(f"Couldn't find answer for {prompt}")
 
         mock_input.side_effect = side_effect_input
         mock_getpass.side_effect = side_effect_getpass
@@ -2312,7 +2312,7 @@ registration_key = shared-secret
         mock_print_text.assert_called_once_with(
             "Writing SSL CA certificate to %s..." % key_filename,
         )
-        self.assertEqual("Hi there!", open(key_filename, "r").read())
+        self.assertEqual("Hi there!", open(key_filename).read())
 
         options = ConfigParser()
         options.read(config_filename)
@@ -2419,7 +2419,7 @@ registration_key = shared-secret
         )
 
 
-class FakeConnectorFactory(object):
+class FakeConnectorFactory:
     def __init__(self, remote):
         self.remote = remote
 
@@ -2440,7 +2440,7 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
     helpers = [FakeBrokerServiceHelper]
 
     def setUp(self):
-        super(RegisterRealFunctionTest, self).setUp()
+        super().setUp()
         self.config = LandscapeSetupConfiguration()
         self.config.load(["-c", self.config_filename])
 
@@ -2477,7 +2477,7 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         self.assertEqual("max-pending-computers", result)
 
 
-class FauxConnection(object):
+class FauxConnection:
     def __init__(self):
         self.callbacks = []
         self.errbacks = []
@@ -2489,7 +2489,7 @@ class FauxConnection(object):
         self.errbacks.append(func)
 
 
-class FauxConnector(object):
+class FauxConnector:
 
     was_disconnected = False
 
@@ -2511,18 +2511,18 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
     helpers = [RemoteBrokerHelper]
 
     def setUp(self):
-        super(RegisterFunctionTest, self).setUp()
+        super().setUp()
         self.config = LandscapeSetupConfiguration()
         self.config.load(["-c", self.config_filename])
 
     def test_register(self):
         """Is the async machinery wired up properly?"""
 
-        class FauxFailure(object):
+        class FauxFailure:
             def getTraceback(self):  # noqa: N802
                 return "traceback"
 
-        class FauxReactor(object):
+        class FauxReactor:
             def run(self):
                 self.was_run = True
 
@@ -2586,7 +2586,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         def faux_got_connection(add_result, remote, connector, reactor):
             pass
 
-        class FauxRemote(object):
+        class FauxRemote:
             handlers = None
             deferred = None
 
@@ -2601,7 +2601,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 self.register_deferred = FauxRegisterDeferred()
                 return self.register_deferred
 
-        class FauxCallOnEventDeferred(object):
+        class FauxCallOnEventDeferred:
             def __init__(self):
                 self.callbacks = []
                 self.errbacks = []
@@ -2609,7 +2609,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
             def addCallbacks(self, *funcs, **kws):  # noqa: N802
                 self.callbacks.extend(funcs)
 
-        class FauxRegisterDeferred(object):
+        class FauxRegisterDeferred:
             def __init__(self):
                 self.callbacks = []
                 self.errbacks = []
@@ -2627,7 +2627,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
                 self.errbacks.append(func)
                 return self
 
-        class GatherResultsDeferred(object):
+        class GatherResultsDeferred:
             def __init__(self):
                 self.callbacks = []
                 self.errbacks = []
@@ -2856,7 +2856,7 @@ class IsRegisteredTest(LandscapeTest):
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
-        super(IsRegisteredTest, self).setUp()
+        super().setUp()
         persist_file = os.path.join(self.config.data_path, "broker.bpickle")
         self.persist = Persist(filename=persist_file)
 
@@ -2880,7 +2880,7 @@ class RegistrationInfoTest(LandscapeTest):
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
-        super(RegistrationInfoTest, self).setUp()
+        super().setUp()
         self.custom_args = ["hello.py"]  # Fake python script name
         self.account_name = "world"
         self.data_path = self.makeDir()

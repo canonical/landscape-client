@@ -7,7 +7,7 @@ class HardwareInfoTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(HardwareInfoTests, self).setUp()
+        super().setUp()
         self.info = HardwareInfo()
         self.info.command = "/bin/echo"
         self.manager.add(self.info)

@@ -72,7 +72,7 @@ representative data at each step boundary.
 """
 
 
-class Accumulator(object):
+class Accumulator:
     def __init__(self, persist, step_size):
         self._persist = persist
         self._step_size = step_size

@@ -37,7 +37,7 @@ class HelperTestCase(unittest.TestCase):
     helpers = []
 
     def setUp(self):
-        super(HelperTestCase, self).setUp()
+        super().setUp()
 
         self._helper_instances = []
         if LogKeeperHelper not in self.helpers:
@@ -57,10 +57,10 @@ class HelperTestCase(unittest.TestCase):
             if hasattr(helper, "tear_down"):
                 helper.tear_down(self)
 
-        super(HelperTestCase, self).tearDown()
+        super().tearDown()
 
 
-class FSTestCase(object):
+class FSTestCase:
     def assertFileContent(self, filename, expected_content):  # noqa: N802
         with open(filename, "rb") as fd:
             actual_content = fd.read()
@@ -160,7 +160,7 @@ class FSTestCase(object):
 
 class ConfigTestCase(FSTestCase):
     def setUp(self):
-        super(ConfigTestCase, self).setUp()
+        super().setUp()
 
         self._old_config_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = [self.makeFile("")]
@@ -168,7 +168,7 @@ class ConfigTestCase(FSTestCase):
     def tearDown(self):
         BaseConfiguration.default_config_filenames = self._old_config_filenames
 
-        super(ConfigTestCase, self).tearDown()
+        super().tearDown()
 
     def assertConfigEqual(self, first, second):  # noqa: N802
         """
@@ -289,7 +289,7 @@ class LoggedErrorsError(Exception):
         return out
 
 
-class LogKeeperHelper(object):
+class LogKeeperHelper:
     """Record logging information.
 
     Puts a 'logfile' attribute on your test case, which is a StringIO
@@ -340,7 +340,7 @@ class LogKeeperHelper(object):
             self.ignored_exception_types.append(type_or_regex)
 
 
-class EnvironSnapshot(object):
+class EnvironSnapshot:
     def __init__(self):
         self._snapshot = os.environ.copy()
 
@@ -351,7 +351,7 @@ class EnvironSnapshot(object):
                 del os.environ[key]
 
 
-class EnvironSaverHelper(object):
+class EnvironSaverHelper:
     def set_up(self, test_case):
         self._snapshot = EnvironSnapshot()
 
@@ -359,7 +359,7 @@ class EnvironSaverHelper(object):
         self._snapshot.restore()
 
 
-class MockPopen(object):
+class MockPopen:
     def __init__(self, output, return_codes=None, err_out=""):
         self.output = output
         self.err_out = err_out
@@ -389,7 +389,7 @@ class MockPopen(object):
         return self.return_codes.pop(0)
 
 
-class StandardIOHelper(object):
+class StandardIOHelper:
     def set_up(self, test_case):
         test_case.old_stdout = sys.stdout
         test_case.old_stdin = sys.stdin
@@ -458,7 +458,7 @@ def mock_time():
     return mock_counter(100)
 
 
-class StubProcessFactory(object):
+class StubProcessFactory:
     """
     A L{IReactorProcess} provider which records L{spawnProcess} calls and
     allows tests to get at the protocol.
@@ -494,7 +494,7 @@ class StubProcessFactory(object):
         )
 
 
-class DummyProcess(object):
+class DummyProcess:
     """A process (transport) that doesn't do anything."""
 
     def __init__(self):
@@ -507,7 +507,7 @@ class DummyProcess(object):
         pass
 
 
-class ProcessDataBuilder(object):
+class ProcessDataBuilder:
     """Builder creates sample data for the process info plugin to consume.
 
     @param sample_dir: The directory for sample data.
@@ -613,10 +613,10 @@ CapEff: 0000000000000000
 
         if generate_cmd_line:
             sample_data = """\
-/usr/sbin/%(process_name)s\0--pid-file\0/var/run/%(process_name)s.pid\0
-""" % {
-                "process_name": process_name,
-            }
+/usr/sbin/{process_name}\0--pid-file\0/var/run/{process_name}.pid\0
+""".format(
+                process_name=process_name,
+            )
         else:
             sample_data = ""
         filename = os.path.join(process_dir, "cmdline")
@@ -633,7 +633,7 @@ CapEff: 0000000000000000
         shutil.rmtree(process_dir)
 
 
-class FakeReactorID(object):
+class FakeReactorID:
     def __init__(self, data):
         self.active = True
         self._data = data
@@ -659,7 +659,7 @@ class FakeReactor(EventHandlingReactorMixin):
     _socket_paths = {}
 
     def __init__(self):
-        super(FakeReactor, self).__init__()
+        super().__init__()
         self._current_time = 0
         self._calls = []
         self.hosts = {}
@@ -710,7 +710,7 @@ class FakeReactor(EventHandlingReactorMixin):
                 self._calls.remove(id._data)
             id.active = False
         else:
-            super(FakeReactor, self).cancel_call(id)
+            super().cancel_call(id)
 
     def call_when_running(self, f):
         # Just schedule a call that will be kicked by the run() method.
@@ -736,7 +736,7 @@ class FakeReactor(EventHandlingReactorMixin):
         self._run_threaded_callbacks()
 
     def listen_unix(self, socket_path, factory):
-        class FakePort(object):
+        class FakePort:
             def stopListening(oself):  # noqa: N802,N805
                 self._socket_paths.pop(socket_path)
 

@@ -37,7 +37,7 @@ class SysInfoPluginRegistry(PluginRegistry):
     """
 
     def __init__(self):
-        super(SysInfoPluginRegistry, self).__init__()
+        super().__init__()
         self._header_index = {}
         self._headers = []
         self._notes = []

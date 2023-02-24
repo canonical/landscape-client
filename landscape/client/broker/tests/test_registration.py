@@ -1,8 +1,7 @@
 import json
 import logging
 import socket
-
-import mock
+from unittest import mock
 
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.registration import RegistrationError
@@ -18,7 +17,7 @@ class IdentityTest(LandscapeTest):
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
-        super(IdentityTest, self).setUp()
+        super().setUp()
         self.persist = Persist(filename=self.makePersistFile())
         self.identity = Identity(self.config, self.persist)
 
@@ -40,7 +39,7 @@ class IdentityTest(LandscapeTest):
         self.assertEqual(
             self.persist.get(persist_name),
             value,
-            "%r not set to %r in persist" % (persist_name, value),
+            f"{persist_name!r} not set to {value!r} in persist",
         )
 
     def check_config_property(self, attr):
@@ -85,7 +84,7 @@ class RegistrationHandlerTestBase(LandscapeTest):
     helpers = [RegistrationHelper]
 
     def setUp(self):
-        super(RegistrationHandlerTestBase, self).setUp()
+        super().setUp()
         logging.getLogger().setLevel(logging.INFO)
         self.hostname = "ooga.local"
         self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)

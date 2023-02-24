@@ -19,7 +19,7 @@ class GroupNotFoundError(Exception):
     """Raised when a group couldn't be found by gid/groupname."""
 
 
-class UserProviderBase(object):
+class UserProviderBase:
     """This is a base class for user Providers."""
 
     def __init__(self, locked_users=None):
@@ -68,7 +68,7 @@ class UserProviderBase(object):
         Each group is represented as a dict with the keys: C{name},
         C{gid} and C{members}.
         """
-        user_names = set([x["username"] for x in self.get_users()])
+        user_names = {x["username"] for x in self.get_users()}
         groups = []
         found_groupnames = set()
         for group in self.get_group_data():
@@ -131,7 +131,7 @@ class UserProvider(UserProviderBase):
         passwd_file="/etc/passwd",
         group_file="/etc/group",
     ):
-        super(UserProvider, self).__init__(locked_users)
+        super().__init__(locked_users)
         self._passwd_file = passwd_file
         self._group_file = group_file
 

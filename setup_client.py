@@ -48,8 +48,8 @@ DEB_REQUIRES = [
 ]
 REQUIRES = [
     "pycurl",
-    "landscape-lib={}".format(UPSTREAM_VERSION),
-    "landscape-sysinfo={}".format(UPSTREAM_VERSION),
+    f"landscape-lib={UPSTREAM_VERSION}",
+    f"landscape-sysinfo={UPSTREAM_VERSION}",
 ]
 
 

@@ -93,7 +93,7 @@ def _get_vm_legacy(root_path):
     """Check if the host is virtualized looking at /proc/cpuinfo content."""
     try:
         cpuinfo = read_text_file(os.path.join(root_path, "proc/cpuinfo"))
-    except (IOError, OSError):
+    except OSError:
         return b""
 
     if "qemu" in cpuinfo:

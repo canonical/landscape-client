@@ -33,7 +33,7 @@ class UserMonitor(MonitorPlugin):
         self._publisher = None
 
     def register(self, registry):
-        super(UserMonitor, self).register(registry)
+        super().register(registry)
 
         self.call_on_accepted("users", self._run_detect_changes, None)
 
@@ -52,7 +52,7 @@ class UserMonitor(MonitorPlugin):
 
     def _resynchronize(self, scopes=None):
         """Reset user and group data."""
-        deferred = super(UserMonitor, self)._resynchronize(scopes=scopes)
+        deferred = super()._resynchronize(scopes=scopes)
         # Wait for the superclass' asynchronous _resynchronize method to
         # complete, so we have a new session ID at hand and we can craft a
         # valid message (l.broker.client.BrokerClientPlugin._resynchronize).

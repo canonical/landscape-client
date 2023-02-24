@@ -3,7 +3,7 @@ from twisted.internet.defer import succeed
 from landscape.lib.sysstats import get_thermal_zones
 
 
-class Temperature(object):
+class Temperature:
     def __init__(self, thermal_zone_path=None):
         self._thermal_zone_path = thermal_zone_path
 

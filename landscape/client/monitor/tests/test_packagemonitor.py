@@ -1,6 +1,6 @@
 import os
+from unittest import mock
 
-import mock
 from twisted.internet.defer import Deferred
 
 from landscape.client.monitor.packagemonitor import PackageMonitor
@@ -17,7 +17,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def setUp(self):
         """Initialize test helpers and create a sample thermal zone."""
-        super(PackageMonitorTest, self).setUp()
+        super().setUp()
         self.package_store_filename = self.makeFile()
         self.package_store = PackageStore(self.package_store_filename)
 

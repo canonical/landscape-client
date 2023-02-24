@@ -12,7 +12,7 @@ class ManagerServiceTest(LandscapeTest):
     helpers = [FakeBrokerServiceHelper]
 
     def setUp(self):
-        super(ManagerServiceTest, self).setUp()
+        super().setUp()
         config = ManagerConfiguration()
         config.load(["-c", self.config_filename])
 

@@ -24,7 +24,7 @@ class MonitorService(LandscapeService):
             config.data_path,
             "%s.bpickle" % self.service_name,
         )
-        super(MonitorService, self).__init__(config)
+        super().__init__(config)
         self.plugins = self.get_plugins()
         self.monitor = Monitor(
             self.reactor,
@@ -49,7 +49,7 @@ class MonitorService(LandscapeService):
 
     def startService(self):  # noqa: N802
         """Start the monitor."""
-        super(MonitorService, self).startService()
+        super().startService()
         self.publisher.start()
 
         def start_plugins(broker):
@@ -72,7 +72,7 @@ class MonitorService(LandscapeService):
         deferred = self.publisher.stop()
         self.monitor.flush()
         self.connector.disconnect()
-        super(MonitorService, self).stopService()
+        super().stopService()
         return deferred
 
 

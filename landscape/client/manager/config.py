@@ -23,7 +23,7 @@ class ManagerConfiguration(Configuration):
         Specialize L{Configuration.make_parser}, adding many
         manager-specific options.
         """
-        parser = super(ManagerConfiguration, self).make_parser()
+        parser = super().make_parser()
 
         parser.add_option(
             "--manager-plugins",

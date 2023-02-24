@@ -17,7 +17,7 @@ class MonitorPlugin(BrokerClientPlugin):
     scope = None
 
     def register(self, monitor):
-        super(MonitorPlugin, self).register(monitor)
+        super().register(monitor)
         if self.persist_name is not None:
             self._persist = self.monitor.persist.root_at(self.persist_name)
         else:

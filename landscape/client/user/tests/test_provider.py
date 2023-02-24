@@ -222,7 +222,7 @@ kevin:x:1000:
         name = "Jos\N{LATIN SMALL LETTER E WITH ACUTE}"
         location = "F\N{LATIN SMALL LETTER I WITH DIAERESIS}nland"
         number = "N\N{LATIN SMALL LETTER AE}ver"
-        gecos = "{},{},{},{},".format(name, location, number, number)
+        gecos = f"{name},{location},{number},{number},"
         # We explicitly want to encode this file with utf-8 so we can write in
         # binary mode and do not rely on the default encoding.
         utf8_content = """\

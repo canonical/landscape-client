@@ -6,7 +6,7 @@ class ProcessError(Exception):
     """Error running a process with os.system."""
 
 
-class SystemdConfig(object):
+class SystemdConfig:
     """Configure and drive the Landscape client service."""
 
     def set_start_on_boot(self, flag):

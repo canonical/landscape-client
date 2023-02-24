@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.monitor.cephusage import CephUsage
 from landscape.client.tests.helpers import LandscapeTest
@@ -10,7 +10,7 @@ class CephUsagePluginTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(CephUsagePluginTest, self).setUp()
+        super().setUp()
         self.mstore = self.broker_service.message_store
         self.plugin = CephUsage(create_time=self.reactor.time)
 

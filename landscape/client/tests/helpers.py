@@ -112,7 +112,7 @@ class LandscapeIsolatedTest(LandscapeTest):
         run_isolated(LandscapeTest, self, result)
 
 
-class FakeBrokerServiceHelper(object):
+class FakeBrokerServiceHelper:
     """
     The following attributes will be set in your test case:
       - broker_service: A C{BrokerService}.
@@ -164,7 +164,7 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-        super(BrokerServiceHelper, self).set_up(test_case)
+        super().set_up(test_case)
         test_case.broker_service.startService()
         # Use different reactor to simulate separate processes
         self._connector = RemoteBrokerConnector(
@@ -186,7 +186,7 @@ class MonitorHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-        super(MonitorHelper, self).set_up(test_case)
+        super().set_up(test_case)
         persist = Persist()
         persist_filename = test_case.makePersistFile()
         test_case.config = MonitorConfiguration()
@@ -210,7 +210,7 @@ class ManagerHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-        super(ManagerHelper, self).set_up(test_case)
+        super().set_up(test_case)
         test_case.config = ManagerConfiguration()
         test_case.config.load(["-c", test_case.config_filename])
         test_case.reactor = FakeReactor()
@@ -218,7 +218,7 @@ class ManagerHelper(FakeBrokerServiceHelper):
         test_case.manager.broker = test_case.remote
 
 
-class MockCoverageMonitor(object):
+class MockCoverageMonitor:
     def __init__(
         self,
         count=None,
@@ -243,7 +243,7 @@ class MockCoverageMonitor(object):
         pass
 
 
-class MockFrequencyMonitor(object):
+class MockFrequencyMonitor:
     def __init__(self, count=None, expected_count=None, warn=None):
         self.count = count or 0
         self.expected_count = expected_count or 0
@@ -256,7 +256,7 @@ class MockFrequencyMonitor(object):
         pass
 
 
-class FakePersist(object):
+class FakePersist:
     """
     Incompletely fake a C{landscape.lib.Persist} to simplify higher level tests
     that result in an attempt to clear down persisted data.

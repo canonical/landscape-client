@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.sysvconfig import ProcessError
 from landscape.client.sysvconfig import SystemdConfig
@@ -7,7 +7,7 @@ from landscape.client.tests.helpers import LandscapeTest
 
 class SystemdConfigTest(LandscapeTest):
     def setUp(self):
-        super(SystemdConfigTest, self).setUp()
+        super().setUp()
         patcher = mock.patch("landscape.client.sysvconfig.Popen")
         self.mock_popen = patcher.start()
         self.mock_popen.return_value.wait.return_value = 0

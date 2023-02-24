@@ -40,7 +40,7 @@ class MountInfo(MonitorPlugin):
         self.is_device_removable = is_device_removable
 
     def register(self, registry):
-        super(MountInfo, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, self.registry.step_size)
         self._monitor = CoverageMonitor(
             self.run_interval,

@@ -1,6 +1,6 @@
 import os
+from unittest import mock
 
-import mock
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import succeed
 
@@ -12,7 +12,7 @@ from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
 
 
-class FakeStatResult(object):
+class FakeStatResult:
     def __init__(self, st_mode, st_uid, st_gid):
         self.st_mode = st_mode
         self.st_uid = st_uid
@@ -23,7 +23,7 @@ class AptSourcesTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(AptSourcesTests, self).setUp()
+        super().setUp()
         self.sourceslist = AptSources()
         self.sources_path = self.makeDir()
         self.sourceslist.SOURCES_LIST = os.path.join(
@@ -86,7 +86,7 @@ class AptSourcesTests(LandscapeTest):
             },
         )
 
-        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        saved_sources_path = f"{self.sourceslist.SOURCES_LIST}.save"
         self.assertTrue(os.path.exists(saved_sources_path))
         with open(saved_sources_path) as saved_sources:
             self.assertEqual(
@@ -102,7 +102,7 @@ class AptSourcesTests(LandscapeTest):
         with open(self.sourceslist.SOURCES_LIST, "w") as sources:
             sources.write("oki\n\ndoki\n#comment\n # other comment\n")
 
-        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        saved_sources_path = f"{self.sourceslist.SOURCES_LIST}.save"
         with open(saved_sources_path, "w") as saved_sources:
             saved_sources.write("original content\n")
 
@@ -146,7 +146,7 @@ class AptSourcesTests(LandscapeTest):
         When getting a repository message without sources, AptSources
         restores the previous contents of the sources.list file.
         """
-        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        saved_sources_path = f"{self.sourceslist.SOURCES_LIST}.save"
         with open(saved_sources_path, "w") as old_sources:
             old_sources.write("original content\n")
 

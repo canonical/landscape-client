@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 import os
 import sys
 import time
@@ -48,7 +47,7 @@ class AptPackageChangerTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(AptPackageChangerTest, self).setUp()
+        super().setUp()
         self.store = PackageStore(self.makeFile())
         self.config = PackageChangerConfiguration()
         self.config.data_path = self.makeDir()
@@ -864,10 +863,10 @@ class AptPackageChangerTest(LandscapeTest):
         """
         self.config.bindir = "/fake/bin"
 
-        class FakeGroup(object):
+        class FakeGroup:
             gr_gid = 199
 
-        class FakeUser(object):
+        class FakeUser:
             pw_uid = 199
 
         # We are running as root

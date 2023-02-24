@@ -1,7 +1,6 @@
 import os
 import unittest
-
-import mock
+from unittest import mock
 
 from landscape.lib import testing
 from landscape.lib.fs import create_text_file
@@ -11,7 +10,7 @@ from landscape.lib.process import ProcessInformation
 
 class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
     def setUp(self):
-        super(ProcessInfoTest, self).setUp()
+        super().setUp()
         self.proc_dir = self.makeDir()
 
     def _add_process_info(self, process_id, state="R (running)"):
@@ -58,7 +57,7 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
         this should not trigger an error.
         """
 
-        class FakeFile(object):
+        class FakeFile:
             def __init__(self, response=""):
                 self._response = response
                 self.closed = False
@@ -68,7 +67,7 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
 
             def __iter__(self):
                 if self._response is None:
-                    raise IOError("Fake file error")
+                    raise OSError("Fake file error")
                 else:
                     yield self._response
 

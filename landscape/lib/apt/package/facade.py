@@ -82,13 +82,13 @@ class LandscapeInstallProgress(InstallProgress):
         determine whether there were any errors. If dpkg didn't exit
         cleanly it should mean that something went wrong.
         """
-        res = super(LandscapeInstallProgress, self).wait_child()
+        res = super().wait_child()
         self.dpkg_exited = os.WIFEXITED(res)
         return res
 
     def fork(self):
         """Fork and override the excepthook in the child process."""
-        pid = super(LandscapeInstallProgress, self).fork()
+        pid = super().fork()
         if pid == 0:
             # No need to clean up after ourselves, since the child
             # process will die after dpkg has been run.
@@ -113,7 +113,7 @@ class LandscapeInstallProgress(InstallProgress):
         self.old_excepthook(exc_type, exc_obj, exc_tb)
 
 
-class AptFacade(object):
+class AptFacade:
     """Wrapper for tasks using Apt.
 
     This object wraps Apt features, in a way that makes using and testing
@@ -304,8 +304,8 @@ class AptFacade(object):
         source_options = ""
         if trusted is not None and url.startswith("file:"):
             trusted_val = "yes" if trusted else "no"
-            source_options = "[ trusted={} ] ".format(trusted_val)
-        sources_line = "deb {}{} {}".format(source_options, url, codename)
+            source_options = f"[ trusted={trusted_val} ] "
+        sources_line = f"deb {source_options}{url} {codename}"
         if components:
             sources_line += " %s" % " ".join(components)
         if os.path.exists(sources_file_path):
@@ -537,11 +537,11 @@ class AptFacade(object):
 
     def _get_broken_packages(self):
         """Return the packages that are in a broken state."""
-        return set(
+        return {
             version.package
             for version in self.get_packages()
             if self._is_package_broken(version.package)
-        )
+        }
 
     def _get_changed_versions(self, package):
         """Return the versions that will be changed for the package.
@@ -592,7 +592,7 @@ class AptFacade(object):
         """Return a string representation of a specific dependency relation."""
         info = dep_relation.target_pkg.name
         if dep_relation.target_ver:
-            info += " (%s %s)" % (
+            info += " ({} {})".format(
                 dep_relation.comp_type,
                 dep_relation.target_ver,
             )
@@ -659,13 +659,16 @@ class AptFacade(object):
                         relation_infos.append(
                             self._get_unmet_relation_info(dep_relation),
                         )
-                    info = "  %s: %s: " % (package.name, dep_type)
+                    info = f"  {package.name}: {dep_type}: "
                     or_divider = " or\n" + " " * len(info)
                     all_info.append(info + or_divider.join(relation_infos))
                     found_dependency_error = True
             if not found_dependency_error:
                 all_info.append(
-                    "  %s: %s" % (package.name, "Unknown dependency error"),
+                    "  {}: {}".format(
+                        package.name,
+                        "Unknown dependency error",
+                    ),
                 )
         return "\n".join(all_info)
 
@@ -827,15 +830,15 @@ class AptFacade(object):
     def _preprocess_removes(self, fixer):
         held_package_names = set()
 
-        package_installs = set(
+        package_installs = {
             version.package for version in self._version_installs
-        )
+        }
 
-        package_upgrades = set(
+        package_upgrades = {
             version.package
             for version in self._version_removals
             if version.package in package_installs
-        )
+        }
 
         for version in self._version_removals:
             if self._is_package_held(version.package):

@@ -69,7 +69,7 @@ class ProcessorInfo(MonitorPlugin):
 
     def register(self, registry):
         """Register this plugin with the specified plugin registry."""
-        super(ProcessorInfo, self).register(registry)
+        super().register(registry)
         self.registry.reactor.call_later(self._delay, self.run)
         self.call_on_accepted("processor-info", self.send_message, True)
 

@@ -62,7 +62,7 @@ class CephUsage(MonitorPlugin):
         self._ceph_config = None
 
     def register(self, registry):
-        super(CephUsage, self).register(registry)
+        super().register(registry)
         self._ceph_config = os.path.join(
             self.registry.config.data_path,
             "ceph-client",

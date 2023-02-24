@@ -3,8 +3,8 @@ import signal
 import stat
 import sys
 import time
+from unittest import mock
 
-import mock
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
@@ -36,7 +36,7 @@ from landscape.lib.fs import read_text_file
 from landscape.lib.testing import EnvironSaverHelper
 
 
-class StubDaemon(object):
+class StubDaemon:
     program = "program-name"
 
 
@@ -46,7 +46,7 @@ class WatchDogTest(LandscapeTest):
     """
 
     def setUp(self):
-        super(WatchDogTest, self).setUp()
+        super().setUp()
         self.broker_factory_patch = mock.patch(
             "landscape.client.watchdog.Broker",
         )
@@ -292,7 +292,7 @@ START = "start"
 STOP = "stop"
 
 
-class BoringDaemon(object):
+class BoringDaemon:
     def __init__(self, program):
         self.program = program
         self.boots = []
@@ -559,7 +559,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         return result
 
 
-class StubBroker(object):
+class StubBroker:
 
     name = "broker"
 
@@ -576,7 +576,7 @@ class DaemonTestBase(LandscapeTest):
     EXEC_NAME = "landscape-broker"
 
     def setUp(self):
-        super(DaemonTestBase, self).setUp()
+        super().setUp()
 
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
@@ -598,7 +598,7 @@ class DaemonTestBase(LandscapeTest):
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
             self.broker_service.stopService()
-        super(DaemonTestBase, self).tearDown()
+        super().tearDown()
 
     def get_daemon(self, **kwargs):
         if "username" in kwargs:
@@ -615,7 +615,7 @@ class DaemonTestBase(LandscapeTest):
         return daemon
 
 
-class FileChangeWaiter(object):
+class FileChangeWaiter:
     def __init__(self, filename):
         os.utime(filename, (0, 0))
         self._mtime = os.path.getmtime(filename)
@@ -628,7 +628,7 @@ class FileChangeWaiter(object):
             time.sleep(0.1)
             if timeout and time.time() > end:
                 raise RuntimeError(
-                    "timed out after {} seconds".format(timeout),
+                    f"timed out after {timeout} seconds",
                 )
 
 
@@ -1136,7 +1136,7 @@ class DaemonBrokerTest(DaemonTestBase):
 
 class WatchDogOptionsTest(LandscapeTest):
     def setUp(self):
-        super(WatchDogOptionsTest, self).setUp()
+        super().setUp()
         self.config = WatchDogConfiguration()
         self.config.default_config_filenames = []
 
@@ -1170,7 +1170,7 @@ class WatchDogOptionsTest(LandscapeTest):
 
 class WatchDogServiceTest(LandscapeTest):
     def setUp(self):
-        super(WatchDogServiceTest, self).setUp()
+        super().setUp()
         self.configuration = WatchDogConfiguration()
         self.data_path = self.makeDir()
         self.log_dir = self.makeDir()
@@ -1209,7 +1209,7 @@ class WatchDogServiceTest(LandscapeTest):
 
         service = WatchDogService(self.configuration)
         service.startService()
-        self.assertEqual(int(open(pid_file, "r").read()), os.getpid())
+        self.assertEqual(int(open(pid_file).read()), os.getpid())
         mock_watchdog().check_running.assert_called_once_with()
         mock_watchdog().start.assert_called_once_with()
         mock_daemonize.assert_called_once_with()
@@ -1446,7 +1446,7 @@ class WatchDogRunTests(LandscapeTest):
     helpers = [EnvironSaverHelper]
 
     def setUp(self):
-        super(WatchDogRunTests, self).setUp()
+        super().setUp()
         self.fake_pwd = UserDatabase()
 
     @mock.patch("os.getuid", return_value=1000)

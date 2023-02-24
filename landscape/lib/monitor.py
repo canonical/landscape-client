@@ -5,7 +5,7 @@ from landscape.lib.format import format_delta
 from landscape.lib.format import format_percent
 
 
-class Timer(object):
+class Timer:
     """
     A timer keeps track of the number of seconds passed during it's
     lifetime and since the last reset.
@@ -41,7 +41,7 @@ class Monitor(Timer):
     """
 
     def __init__(self, event_name, create_time=None):
-        super(Monitor, self).__init__(create_time=create_time)
+        super().__init__(create_time=create_time)
         self.event_name = event_name
         self.count = 0
         self.total_count = 0
@@ -51,7 +51,7 @@ class Monitor(Timer):
         self.total_count += 1
 
     def reset(self):
-        super(Monitor, self).reset()
+        super().reset()
         self.count = 0
 
     def log(self):
@@ -78,13 +78,13 @@ class BurstMonitor(Monitor):
         event_name,
         create_time=None,
     ):
-        super(BurstMonitor, self).__init__(event_name, create_time=create_time)
+        super().__init__(event_name, create_time=create_time)
         self.repeat_interval = repeat_interval
         self.maximum_count = maximum_count
         self._last_times = []
 
     def ping(self):
-        super(BurstMonitor, self).ping()
+        super().ping()
         now = self.time()
         self._last_times.append(now)
         if (
@@ -121,7 +121,7 @@ class CoverageMonitor(Monitor):
         event_name,
         create_time=None,
     ):
-        super(CoverageMonitor, self).__init__(
+        super().__init__(
             event_name,
             create_time=create_time,
         )
@@ -184,7 +184,7 @@ class FrequencyMonitor(Monitor):
         event_name,
         create_time=None,
     ):
-        super(FrequencyMonitor, self).__init__(
+        super().__init__(
             event_name,
             create_time=create_time,
         )
@@ -198,7 +198,7 @@ class FrequencyMonitor(Monitor):
         return since_ping // self.repeat_interval
 
     def ping(self):
-        super(FrequencyMonitor, self).ping()
+        super().ping()
         self._last_count = self._create_time()
 
     def log(self):

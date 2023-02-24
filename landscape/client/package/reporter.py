@@ -52,7 +52,7 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
         Specialize L{Configuration.make_parser}, adding options
         reporter-specific options.
         """
-        parser = super(PackageReporterConfiguration, self).make_parser()
+        parser = super().make_parser()
         parser.add_option(
             "--force-apt-update",
             default=False,
@@ -269,7 +269,7 @@ class PackageReporter(PackageTaskHandler):
 
                 for pattern in pattern.finditer(read):
                     uid = pattern.groups()[0].split("\t")[1]
-            except IOError:
+            except OSError:
                 continue
 
             (executable, args) = (cmdline[0], cmdline[1:])
@@ -415,7 +415,7 @@ class PackageReporter(PackageTaskHandler):
             return self._handle_resynchronize()
 
         # Skip and continue.
-        logging.warning("Unknown task message type: {!r}".format(message_type))
+        logging.warning(f"Unknown task message type: {message_type!r}")
         return succeed(None)
 
     def _handle_package_ids(self, message):
@@ -899,7 +899,7 @@ class FakeGlobalReporter(PackageReporter):
 
     def send_message(self, message):
         self._store.save_message(message)
-        return super(FakeGlobalReporter, self).send_message(message)
+        return super().send_message(message)
 
 
 class FakeReporter(PackageReporter):

@@ -17,7 +17,7 @@ class PackageManager(ManagerPlugin):
     _package_store = None
 
     def register(self, registry):
-        super(PackageManager, self).register(registry)
+        super().register(registry)
         self.config = registry.config
 
         if not self._package_store:
@@ -96,5 +96,5 @@ class PackageManager(ManagerPlugin):
     def _got_output(self, output, cls):
         if output:
             logging.warning(
-                "Package %s output:\n%s" % (cls.queue_name, output),
+                f"Package {cls.queue_name} output:\n{output}",
             )

@@ -10,7 +10,7 @@ class FakePackageManager(ManagerPlugin):
     randint = random.randint
 
     def register(self, registry):
-        super(FakePackageManager, self).register(registry)
+        super().register(registry)
         self.config = registry.config
 
         registry.register_message(

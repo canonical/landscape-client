@@ -18,7 +18,7 @@ from landscape.lib.amp import MethodCallServerFactory
 from landscape.lib.amp import RemoteObject
 
 
-class ComponentPublisher(object):
+class ComponentPublisher:
     """Publish a Landscape client component using a UNIX socket.
 
     Other Landscape client processes can then connect to the socket and invoke
@@ -73,7 +73,7 @@ def remote(method):
     return method
 
 
-class ComponentConnector(object):
+class ComponentConnector:
     """Utility superclass for creating connections with a Landscape component.
 
     @cvar component: The class of the component to connect to, it is expected

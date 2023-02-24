@@ -31,7 +31,7 @@ class ProcessKiller(ManagerPlugin):
         self.process_info = process_info
 
     def register(self, registry):
-        super(ProcessKiller, self).register(registry)
+        super().register(registry)
         registry.register_message(
             "signal-process",
             self._handle_signal_process,
@@ -75,7 +75,7 @@ class ProcessKiller(ManagerPlugin):
             ) % (name, pid, expected_time, actual_time, signame)
             raise ProcessMismatchError(message)
 
-        signum = getattr(signal, "SIG%s" % (signame,))
+        signum = getattr(signal, f"SIG{signame}")
         try:
             os.kill(pid, signum)
         except Exception:

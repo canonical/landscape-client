@@ -47,9 +47,9 @@ class BrokerService(LandscapeService):
     def __init__(self, config):
         self.persist_filename = os.path.join(
             config.data_path,
-            "%s.bpickle" % (self.service_name,),
+            f"{self.service_name}.bpickle",
         )
-        super(BrokerService, self).__init__(config)
+        super().__init__(config)
 
         self.transport = self.transport_factory(
             self.reactor,
@@ -105,7 +105,7 @@ class BrokerService(LandscapeService):
         connecting with the L{BrokerServerConnector}, and start the
         L{MessageExchange} and L{Pinger} services.
         """
-        super(BrokerService, self).startService()
+        super().startService()
         self.publisher.start()
         self.exchanger.start()
         self.pinger.start()
@@ -115,7 +115,7 @@ class BrokerService(LandscapeService):
         deferred = self.publisher.stop()
         self.exchanger.stop()
         self.pinger.stop()
-        super(BrokerService, self).stopService()
+        super().stopService()
         return deferred
 
 

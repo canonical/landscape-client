@@ -10,7 +10,7 @@ class FakePackageManagerTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(FakePackageManagerTest, self).setUp()
+        super().setUp()
         self.package_manager = FakePackageManager()
         self.package_manager.randint = lambda x, y: 0
 

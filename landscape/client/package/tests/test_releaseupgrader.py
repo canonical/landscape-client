@@ -2,8 +2,8 @@ import os
 import signal
 import tarfile
 import unittest
+from unittest import mock
 
-import mock
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
@@ -43,7 +43,7 @@ class ReleaseUpgraderTest(LandscapeTest):
     helpers = [LogKeeperHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(ReleaseUpgraderTest, self).setUp()
+        super().setUp()
         self.config = ReleaseUpgraderConfiguration()
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
@@ -542,7 +542,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             result = self.upgrader.upgrade("karmic", 100)
 
             def kill_child(how):
-                fd = open(child_pid_filename, "r")
+                fd = open(child_pid_filename)
                 child_pid = int(fd.read())
                 fd.close()
                 os.remove(child_pid_filename)
@@ -625,12 +625,12 @@ class ReleaseUpgraderTest(LandscapeTest):
         the landscape uid and gid.
         """
 
-        class FakePwNam(object):
+        class FakePwNam:
             pw_uid = 1234
 
         getpwnam_mock.return_value = FakePwNam()
 
-        class FakeGrNam(object):
+        class FakeGrNam:
             gr_gid = 5678
 
         getgrnam_mock.return_value = FakeGrNam()
@@ -900,7 +900,7 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         message = {"type": "release-upgrade"}
 
-        class FakeTask(object):
+        class FakeTask:
             data = message
 
         task = FakeTask()
@@ -913,7 +913,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         message = {"type": "foo"}
 
-        class FakeTask(object):
+        class FakeTask:
             data = message
 
         self.assertEqual(self.upgrader.handle_task(FakeTask()), None)

@@ -8,7 +8,7 @@ from landscape.lib.jiffies import detect_jiffies
 from landscape.lib.timestamp import to_timestamp
 
 
-class ProcessInformation(object):
+class ProcessInformation:
     """
     @param proc_dir: The directory to use for process information.
     @param jiffies: The value to use for jiffies per second.
@@ -132,7 +132,7 @@ class ProcessInformation(object):
             finally:
                 file.close()
 
-        except IOError:
+        except OSError:
             # Handle the race that happens when we find a process
             # which terminates before we open the stat file.
             return None

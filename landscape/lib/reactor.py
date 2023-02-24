@@ -17,7 +17,7 @@ class CallHookError(Exception):
     """Raised when hooking on a reactor incorrectly."""
 
 
-class EventID(object):
+class EventID:
     """Unique identifier for an event handler.
 
     @param event_type: Name of the event type handled by the handler.
@@ -30,7 +30,7 @@ class EventID(object):
         self._pair = pair
 
 
-class EventHandlingReactorMixin(object):
+class EventHandlingReactorMixin:
     """Fire events identified by strings and register handlers for them.
 
     Note that event handlers are executed synchronously when the C{fire} method
@@ -41,7 +41,7 @@ class EventHandlingReactorMixin(object):
     """
 
     def __init__(self):
-        super(EventHandlingReactorMixin, self).__init__()
+        super().__init__()
         self._event_handlers = {}
 
     def call_on(self, event_type, handler, priority=0):
@@ -125,7 +125,7 @@ class EventHandlingReactorMixin(object):
             raise InvalidID("EventID instance expected, received %r" % id)
 
 
-class ReactorID(object):
+class ReactorID:
     def __init__(self, timeout):
         self._timeout = timeout
 
@@ -146,7 +146,7 @@ class EventHandlingReactor(EventHandlingReactorMixin):
         self._reactor = reactor
         self._cleanup()
         self.callFromThread = reactor.callFromThread
-        super(EventHandlingReactor, self).__init__()
+        super().__init__()
 
     def time(self):
         """Get current time.

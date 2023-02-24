@@ -8,7 +8,7 @@ from landscape.lib.reactor import EventHandlingReactor
 from landscape.lib.testing import FakeReactor
 
 
-class ReactorTestMixin(object):
+class ReactorTestMixin:
     def test_call_later(self):
         reactor = self.get_reactor()
         called = []

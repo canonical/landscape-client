@@ -20,7 +20,7 @@ class InvalidHashIdDb(Exception):
     """Raised when trying to add an invalid hash=>id lookaside database."""
 
 
-class HashIdStore(object):
+class HashIdStore:
     """C{HashIdStore} stores package hash=>id mappings in a file.
 
     The file is a SQLite database that contains a single table called "hash".
@@ -112,11 +112,11 @@ class PackageStore(HashIdStore):
     """
 
     def __init__(self, filename):
-        super(PackageStore, self).__init__(filename)
+        super().__init__(filename)
         self._hash_id_stores = []
 
     def _ensure_schema(self):
-        super(PackageStore, self)._ensure_schema()
+        super()._ensure_schema()
         ensure_package_schema(self._db)
 
     def add_hash_id_db(self, filename):
@@ -360,7 +360,7 @@ class FakePackageStore(PackageStore):
     """
 
     def _ensure_schema(self):
-        super(FakePackageStore, self)._ensure_schema()
+        super()._ensure_schema()
         ensure_fake_package_schema(self._db)
 
     @with_cursor
@@ -395,7 +395,7 @@ class FakePackageStore(PackageStore):
         return [(row[0], bytes(row[1])) for row in result]
 
 
-class HashIDRequest(object):
+class HashIDRequest:
     def __init__(self, db, id):
         self._db = db
         self.id = id
@@ -448,7 +448,7 @@ class HashIDRequest(object):
         cursor.execute("DELETE FROM hash_id_request WHERE id=?", (self.id,))
 
 
-class PackageTask(object):
+class PackageTask:
     def __init__(self, db, id):
         self._db = db
         self.id = id

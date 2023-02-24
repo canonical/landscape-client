@@ -15,7 +15,7 @@ class HardwareInfo(ManagerPlugin):
     command = "/usr/bin/lshw"
 
     def register(self, registry):
-        super(HardwareInfo, self).register(registry)
+        super().register(registry)
         self.call_on_accepted(self.message_type, self.send_message)
 
     def run(self):

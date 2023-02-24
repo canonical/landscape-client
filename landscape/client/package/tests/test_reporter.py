@@ -4,9 +4,9 @@ import shutil
 import subprocess
 import sys
 import time
+from unittest import mock
 
 import apt_pkg
-import mock
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
@@ -66,7 +66,7 @@ class PackageReporterAptTest(LandscapeTest):
     Facade = AptFacade
 
     def setUp(self):
-        super(PackageReporterAptTest, self).setUp()
+        super().setUp()
         self.store = PackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
         self.reactor = FakeReactor()
@@ -294,7 +294,7 @@ class PackageReporterAptTest(LandscapeTest):
                 ],
             )
 
-        class FakePackage(object):
+        class FakePackage:
             type = 65537
             name = "name1"
             version = "version1-release1"
@@ -1833,9 +1833,11 @@ class PackageReporterAptTest(LandscapeTest):
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
-                error = "There are no APT sources configured in %s or %s." % (
-                    self.reporter.sources_list_filename,
-                    self.reporter.sources_list_directory,
+                error = (
+                    "There are no APT sources configured in {} or {}.".format(
+                        self.reporter.sources_list_filename,
+                        self.reporter.sources_list_directory,
+                    )
                 )
                 self.assertMessages(
                     message_store.get_pending_messages(),
@@ -2334,7 +2336,7 @@ class GlobalPackageReporterAptTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(GlobalPackageReporterAptTest, self).setUp()
+        super().setUp()
         self.store = FakePackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
         self.reactor = FakeReactor()
@@ -2400,7 +2402,7 @@ class FakePackageReporterTest(LandscapeTest):
     helpers = [EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(FakePackageReporterTest, self).setUp()
+        super().setUp()
         self.store = FakePackageStore(self.makeFile())
         global_file = self.makeFile()
         self.global_store = FakePackageStore(global_file)
@@ -2489,7 +2491,7 @@ class FakePackageReporterTest(LandscapeTest):
         return self.reporter.run().addCallback(check1)
 
 
-class EqualsHashes(object):
+class EqualsHashes:
     def __init__(self, *hashes):
         self._hashes = sorted(hashes)
 

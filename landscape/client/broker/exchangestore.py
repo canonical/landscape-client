@@ -9,7 +9,7 @@ except ImportError:
 from landscape.lib.store import with_cursor
 
 
-class MessageContext(object):
+class MessageContext:
     """Stores a context for incoming messages that require a response.
 
     The context consists of
@@ -43,7 +43,7 @@ class MessageContext(object):
         )
 
 
-class ExchangeStore(object):
+class ExchangeStore:
     """Message meta data required by the L{MessageExchange}.
 
     The implementation uses a SQLite database as backend, with a single table

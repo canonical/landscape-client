@@ -1,7 +1,7 @@
 import os
 import tempfile
+from unittest import mock
 
-import mock
 from twisted.python.compat import long
 from twisted.python.compat import StringType
 
@@ -64,7 +64,7 @@ class MountInfoTest(LandscapeTest):
         self.assertTrue("mount-info" in message)
         self.assertTrue(len(message["mount-info"]) > 0)
 
-        keys = set(["filesystem", "total-space", "device", "mount-point"])
+        keys = {"filesystem", "total-space", "device", "mount-point"}
         for now, mount_info in message["mount-info"]:
             self.assertEqual(set(mount_info.keys()), keys)
             self.assertTrue(isinstance(mount_info["filesystem"], StringType))

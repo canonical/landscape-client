@@ -14,7 +14,7 @@ class BrokerServiceTest(LandscapeTest):
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
-        super(BrokerServiceTest, self).setUp()
+        super().setUp()
 
         class FakeBrokerService(BrokerService):
             reactor_factory = FakeReactor

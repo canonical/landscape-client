@@ -16,7 +16,7 @@ class ComputerUptime(MonitorPlugin):
 
     def register(self, registry):
         """Register this plugin with the specified plugin manager."""
-        super(ComputerUptime, self).register(registry)
+        super().register(registry)
         registry.reactor.call_on("run", self.run)
         self.call_on_accepted("computer-uptime", self.run, True)
 

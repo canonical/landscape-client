@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape import CLIENT_API
 from landscape.client.broker.config import BrokerConfiguration
@@ -25,7 +25,7 @@ class MessageExchangeTest(LandscapeTest):
     helpers = [ExchangeHelper]
 
     def setUp(self):
-        super(MessageExchangeTest, self).setUp()
+        super().setUp()
         self.mstore.add_schema(Message("empty", {}))
         self.mstore.add_schema(Message("data", {"data": Int()}))
         self.mstore.add_schema(Message("holdme", {}))
@@ -1385,7 +1385,7 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
     helpers = [ExchangeHelper]
 
     def setUp(self):
-        super(AcceptedTypesMessageExchangeTest, self).setUp()
+        super().setUp()
         self.pinger = Pinger(
             self.reactor,
             self.identity,

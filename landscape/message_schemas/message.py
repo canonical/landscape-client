@@ -30,7 +30,7 @@ class Message(KeyDict):
             optional.extend(["timestamp", "api"])
         else:
             optional = ["timestamp", "api"]
-        super(Message, self).__init__(schema, optional=optional)
+        super().__init__(schema, optional=optional)
 
     def coerce(self, value):
         for k in list(value.keys()):
@@ -40,4 +40,4 @@ class Message(KeyDict):
                 # in a message talks to an older server, that don't understand
                 # the new field yet.
                 value.pop(k)
-        return super(Message, self).coerce(value)
+        return super().coerce(value)

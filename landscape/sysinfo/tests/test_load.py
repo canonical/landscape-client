@@ -1,6 +1,5 @@
 import unittest
-
-import mock
+from unittest import mock
 
 from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.load import Load
@@ -9,7 +8,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 class LoadTest(TwistedTestCase, unittest.TestCase):
     def setUp(self):
-        super(LoadTest, self).setUp()
+        super().setUp()
         self.load = Load()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.load)

@@ -17,7 +17,7 @@ class PackageMonitor(MonitorPlugin):
     _reporter_command = None
 
     def __init__(self, package_store_filename=None):
-        super(PackageMonitor, self).__init__()
+        super().__init__()
         if package_store_filename:
             self._package_store = PackageStore(package_store_filename)
         else:
@@ -29,7 +29,7 @@ class PackageMonitor(MonitorPlugin):
         if self.config.clones and self.config.is_clone:
             # Run clones a bit more frequently in order to catch up
             self.run_interval = 60  # 300
-        super(PackageMonitor, self).register(registry)
+        super().register(registry)
 
         if not self._package_store:
             filename = os.path.join(
@@ -65,7 +65,7 @@ class PackageMonitor(MonitorPlugin):
     def _run_fake_reporter(self, args):
         """Run a fake-reporter in-process."""
 
-        class FakeFacade(object):
+        class FakeFacade:
             """
             A fake facade to workaround the issue that the AptFacade
             essentially allows only once instance per process.

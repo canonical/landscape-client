@@ -6,7 +6,7 @@ except ImportError:
 from landscape.lib.apt.package.store import with_cursor
 
 
-class ManagerStore(object):
+class ManagerStore:
     def __init__(self, filename):
         self._db = sqlite3.connect(filename)
         ensure_schema(self._db)

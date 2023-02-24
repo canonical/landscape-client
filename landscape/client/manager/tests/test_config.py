@@ -6,7 +6,7 @@ from landscape.client.tests.helpers import LandscapeTest
 
 class ManagerConfigurationTest(LandscapeTest):
     def setUp(self):
-        super(ManagerConfigurationTest, self).setUp()
+        super().setUp()
         self.config = ManagerConfiguration()
 
     def test_plugin_factories(self):

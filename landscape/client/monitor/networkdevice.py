@@ -14,11 +14,11 @@ class NetworkDevice(DataWatcher):
     scope = "network"
 
     def __init__(self, device_info=get_active_device_info):
-        super(NetworkDevice, self).__init__()
+        super().__init__()
         self._device_info = device_info
 
     def register(self, registry):
-        super(NetworkDevice, self).register(registry)
+        super().register(registry)
         self.call_on_accepted(self.message_type, self.exchange, True)
 
     def get_message(self):

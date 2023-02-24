@@ -52,7 +52,7 @@ def config_property(name):
     return property(get)
 
 
-class Identity(object):
+class Identity:
     """Maintains details about the identity of this Landscape client.
 
     @ivar secure_id: A server-provided ID for secure message exchange.
@@ -82,7 +82,7 @@ class Identity(object):
         self._persist = persist.root_at("registration")
 
 
-class RegistrationHandler(object):
+class RegistrationHandler:
     """
     An object from which registration can be requested of the server,
     and which will handle forced ID changes from the server.
@@ -289,7 +289,7 @@ class RegistrationHandler(object):
         id.insecure_id = None
 
 
-class RegistrationResponse(object):
+class RegistrationResponse:
     """A helper for dealing with the response of a single registration request.
 
     @ivar deferred: The L{Deferred} that will be fired as per

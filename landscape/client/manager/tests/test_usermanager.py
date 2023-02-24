@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 from unittest.mock import Mock
 
@@ -21,7 +20,7 @@ class UserGroupTestBase(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(UserGroupTestBase, self).setUp()
+        super().setUp()
         self.shadow_file = self.makeFile(
             """\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
@@ -33,7 +32,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         self.broker_service.message_store.set_accepted_types(accepted_types)
 
     def tearDown(self):
-        super(UserGroupTestBase, self).tearDown()
+        super().tearDown()
         for plugin in self.plugins:
             plugin.stop()
 
@@ -1901,7 +1900,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
 class UserManagerTest(LandscapeTest):
     def setUp(self):
-        super(UserManagerTest, self).setUp()
+        super().setUp()
         self.shadow_file = self.makeFile()
         self.user_manager = UserManager(shadow_file=self.shadow_file)
 
@@ -1949,7 +1948,7 @@ class RemoteUserManagerTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(RemoteUserManagerTest, self).setUp()
+        super().setUp()
 
         def set_remote(remote):
             self.remote_user_manager = remote
@@ -1967,7 +1966,7 @@ class RemoteUserManagerTest(LandscapeTest):
     def tearDown(self):
         self.user_manager_connector.disconnect()
         self.user_manager.stop()
-        return super(RemoteUserManagerTest, self).tearDown()
+        return super().tearDown()
 
     def test_get_locked_usernames(self):
         """

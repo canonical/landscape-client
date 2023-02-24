@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from landscape.client.monitor.loadaverage import LoadAverage
 from landscape.client.tests.helpers import LandscapeTest

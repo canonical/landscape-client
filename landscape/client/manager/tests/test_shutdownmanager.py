@@ -17,7 +17,7 @@ class ShutdownManagerTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(ShutdownManagerTest, self).setUp()
+        super().setUp()
         self.broker_service.message_store.set_accepted_types(
             ["shutdown", "operation-result"],
         )

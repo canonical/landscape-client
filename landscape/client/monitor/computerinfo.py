@@ -42,7 +42,7 @@ class ComputerInfo(MonitorPlugin):
         self._fetch_async = fetch_async
 
     def register(self, registry):
-        super(ComputerInfo, self).register(registry)
+        super().register(registry)
         self._annotations_path = registry.config.annotations_path
         self.call_on_accepted(
             "computer-info",

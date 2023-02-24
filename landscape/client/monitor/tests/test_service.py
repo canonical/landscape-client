@@ -15,7 +15,7 @@ class MonitorServiceTest(LandscapeTest):
     helpers = [FakeBrokerServiceHelper]
 
     def setUp(self):
-        super(MonitorServiceTest, self).setUp()
+        super().setUp()
         config = MonitorConfiguration()
         config.load(["-c", self.config_filename])
 

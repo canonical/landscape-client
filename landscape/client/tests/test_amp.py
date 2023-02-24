@@ -2,8 +2,8 @@ import errno
 import os
 import subprocess
 import textwrap
+from unittest import mock
 
-import mock
 from twisted.internet.error import CannotListenError
 from twisted.internet.error import ConnectError
 from twisted.internet.task import Clock
@@ -18,7 +18,7 @@ from landscape.lib.amp import MethodCallError
 from landscape.lib.testing import FakeReactor
 
 
-class TestComponent(object):
+class TestComponent:
 
     name = "test"
 
@@ -35,14 +35,14 @@ class TestComponentConnector(ComponentConnector):
     component = TestComponent
 
 
-class FakeAMP(object):
+class FakeAMP:
     def __init__(self, locator):
         self._locator = locator
 
 
 class ComponentPublisherTest(LandscapeTest):
     def setUp(self):
-        super(ComponentPublisherTest, self).setUp()
+        super().setUp()
         reactor = FakeReactor()
         config = Configuration()
         config.data_path = self.makeDir()
@@ -59,7 +59,7 @@ class ComponentPublisherTest(LandscapeTest):
     def tearDown(self):
         self.connector.disconnect()
         self.publisher.stop()
-        super(ComponentPublisherTest, self).tearDown()
+        super().tearDown()
 
     def test_remote_methods(self):
         """Methods decorated with @remote are accessible remotely."""
@@ -75,7 +75,7 @@ class ComponentPublisherTest(LandscapeTest):
 
 class ComponentConnectorTest(LandscapeTest):
     def setUp(self):
-        super(ComponentConnectorTest, self).setUp()
+        super().setUp()
         self.reactor = FakeReactor()
         # XXX this should be dropped once the FakeReactor doesn't use the
         # real reactor anymore under the hood.
@@ -174,7 +174,7 @@ class ComponentConnectorTest(LandscapeTest):
         """Publisher starts with stale lock."""
         mock_kill.side_effect = [OSError(errno.ESRCH, "No such process")]
         sock_path = os.path.join(self.config.sockets_path, "test.sock")
-        lock_path = "{}.lock".format(sock_path)
+        lock_path = f"{sock_path}.lock"
         # fake a PID which does not exist
         os.symlink("-1", lock_path)
 
@@ -200,7 +200,7 @@ class ComponentConnectorTest(LandscapeTest):
             OSError(errno.EPERM, "Operation not permitted"),
         ]
         sock_path = os.path.join(self.config.sockets_path, "test.sock")
-        lock_path = "{}.lock".format(sock_path)
+        lock_path = f"{sock_path}.lock"
         # fake a PID recycled by a known process which isn't landscape (init)
         os.symlink("1", lock_path)
 
@@ -224,7 +224,7 @@ class ComponentConnectorTest(LandscapeTest):
     def test_with_valid_lock(self, mock_kill):
         """Publisher raises lock error if a valid lock is held."""
         sock_path = os.path.join(self.config.sockets_path, "test.sock")
-        lock_path = "{}.lock".format(sock_path)
+        lock_path = f"{sock_path}.lock"
         # fake a landscape process
         app = self.makeFile(
             textwrap.dedent(

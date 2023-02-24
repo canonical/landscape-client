@@ -1,7 +1,7 @@
 from twisted.internet.defer import succeed
 
 
-class LandscapeLink(object):
+class LandscapeLink:
     def register(self, sysinfo):
         self._sysinfo = sysinfo
 

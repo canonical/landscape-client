@@ -11,7 +11,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 class DiskTest(FSTestCase, unittest.TestCase):
     def setUp(self):
-        super(DiskTest, self).setUp()
+        super().setUp()
         self.mount_file = self.makeFile("")
         self.stat_results = {}
 
@@ -37,7 +37,7 @@ class DiskTest(FSTestCase, unittest.TestCase):
             (block_size, 0, capacity, unused, 0, 0, 0, 0, 0, 0),
         )
         f = open(self.mount_file, "a")
-        f.write("/dev/%s %s %s rw 0 0\n" % (device, point, fs))
+        f.write(f"/dev/{device} {point} {fs} rw 0 0\n")
         f.close()
 
     def test_run_returns_succeeded_deferred(self):

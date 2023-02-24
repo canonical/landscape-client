@@ -110,7 +110,7 @@ HELD = "h"
 BROKEN = "b"
 
 
-class MessageStore(object):
+class MessageStore:
     """A message store which stores its messages in a file system hierarchy.
 
     Beside the "sequence" and the "pending offset" values described in the

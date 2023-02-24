@@ -13,11 +13,11 @@ from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
 from landscape.client.tests.helpers import LandscapeTest
 
 
-class FakeClient(object):
+class FakeClient:
     pass
 
 
-class FakeCreator(object):
+class FakeCreator:
     def __init__(self, reactor, config):
         pass
 
@@ -562,7 +562,7 @@ class HandlersTest(LandscapeTest):
     helpers = [BrokerServerHelper]
 
     def setUp(self):
-        super(HandlersTest, self).setUp()
+        super().setUp()
         self.broker.connectors_registry = {"test": FakeCreator}
         self.broker.register_client("test")
         self.client = self.broker.get_client("test")
@@ -591,7 +591,7 @@ class HandlersTest(LandscapeTest):
         result = self.reactor.fire("message", message)
         result = [i for i in result if i is not None][0]
 
-        class StartsWith(object):
+        class StartsWith:
             def __eq__(self, other):
                 return other.startswith(
                     "Landscape client failed to handle this request (foobar)",

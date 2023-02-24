@@ -28,7 +28,7 @@ class LoadAverage(MonitorPlugin):
         self._get_load_average = get_load_average
 
     def register(self, registry):
-        super(LoadAverage, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, registry.step_size)
 
         self.registry.reactor.call_every(self._interval, self.run)

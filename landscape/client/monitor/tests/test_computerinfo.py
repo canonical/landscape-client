@@ -1,7 +1,7 @@
 import os
 import re
+from unittest import mock
 
-import mock
 from twisted.internet.defer import fail
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.defer import succeed

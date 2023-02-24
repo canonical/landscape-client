@@ -41,7 +41,7 @@ class SysInfoConfiguration(BaseConfiguration):
     config_section = "sysinfo"
 
     def __init__(self):
-        super(SysInfoConfiguration, self).__init__()
+        super().__init__()
 
         self._command_line_defaults["config"] = None
 
@@ -50,7 +50,7 @@ class SysInfoConfiguration(BaseConfiguration):
         Specialize L{Configuration.make_parser}, adding any
         sysinfo-specific options.
         """
-        parser = super(SysInfoConfiguration, self).make_parser()
+        parser = super().make_parser()
 
         parser.add_option(
             "--sysinfo-plugins",
@@ -85,7 +85,7 @@ class SysInfoConfiguration(BaseConfiguration):
         plugins = [x for x in include if x not in exclude]
         return [
             namedClass(
-                "landscape.sysinfo.%s.%s" % (plugin_name.lower(), plugin_name),
+                f"landscape.sysinfo.{plugin_name.lower()}.{plugin_name}",
             )()
             for plugin_name in plugins
         ]
@@ -126,7 +126,7 @@ def run(args, reactor=None, sysinfo=None):
     """
     try:
         setup_logging()
-    except IOError as e:
+    except OSError as e:
         sys.exit("Unable to setup logging. %s" % e)
 
     if sysinfo is None:

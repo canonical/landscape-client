@@ -34,7 +34,7 @@ class UserManager(ManagerPlugin):
         Schedule reactor events for generic L{Plugin} callbacks, user
         and group management operations, and resynchronization.
         """
-        super(UserManager, self).register(registry)
+        super().register(registry)
         self._registry = registry
 
         self._publisher = ComponentPublisher(
@@ -68,7 +68,7 @@ class UserManager(ManagerPlugin):
                     if len(parts) > 1:
                         if parts[1].startswith("!"):
                             locked_users.append(parts[0].strip())
-            except IOError as e:
+            except OSError as e:
                 logging.error("Error reading shadow file. %s" % e)
         return locked_users
 

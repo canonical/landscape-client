@@ -1,7 +1,6 @@
 import os
 import tempfile
-
-import mock
+from unittest import mock
 
 from landscape.client.monitor.temperature import Temperature
 from landscape.client.tests.helpers import LandscapeTest
@@ -16,7 +15,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
 
     def setUp(self):
         """Initialize test helpers and create a sample thermal zone."""
-        super(TemperatureTestWithSampleData, self).setUp()
+        super().setUp()
         self.mstore.set_accepted_types(["temperature"])
         self.write_thermal_zone("ZONE1", "50000")
 

@@ -17,7 +17,7 @@ class HandlerNotFoundError(Exception):
     """A handler for the given message type was not found."""
 
 
-class BrokerClientPlugin(object):
+class BrokerClientPlugin:
     """A convenience for writing L{BrokerClient} plugins.
 
     This provides a register method which will set up a bunch of
@@ -150,7 +150,7 @@ class BrokerClientPlugin(object):
         return failure
 
 
-class BrokerClient(object):
+class BrokerClient:
     """Basic plugin registry for clients that have to deal with the broker.
 
     This knows about the needs of a client when dealing with the Landscape
@@ -168,7 +168,7 @@ class BrokerClient(object):
     name = "client"
 
     def __init__(self, reactor, config):
-        super(BrokerClient, self).__init__()
+        super().__init__()
         self.reactor = reactor
         self.broker = None
         self.config = config

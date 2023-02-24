@@ -18,7 +18,7 @@ from landscape.lib.amp import MethodCallServerProtocol
 from landscape.lib.amp import RemoteObject
 
 
-class FakeTransport(object):
+class FakeTransport:
     """Accumulate written data into a list."""
 
     def __init__(self, connection):
@@ -38,7 +38,7 @@ class FakeTransport(object):
         pass
 
 
-class FakeConnection(object):
+class FakeConnection:
     """Simulate a connection between a client and a server protocol."""
 
     def __init__(self, client, server):
@@ -67,7 +67,7 @@ class FakeConnection(object):
                 break
 
 
-class FakeConnector(object):
+class FakeConnector:
     """Make L{FakeConnection}s using the given server and client factories."""
 
     def __init__(self, client, server):
@@ -96,7 +96,7 @@ class FakeConnector(object):
         self.connection.lose(self, Failure(ConnectionDone()))
 
 
-class DummyObject(object):
+class DummyObject:
 
     method = None
 
@@ -107,7 +107,7 @@ class BaseTestCase(testing.TwistedTestCase, unittest.TestCase):
 
 class MethodCallTest(BaseTestCase):
     def setUp(self):
-        super(MethodCallTest, self).setUp()
+        super().setUp()
         self.methods = ["method"]
         self.object = DummyObject()
         server = MethodCallServerProtocol(self.object, self.methods)
@@ -267,7 +267,7 @@ class MethodCallTest(BaseTestCase):
         the L{MethodCall} raises an error.
         """
 
-        class Complex(object):
+        class Complex:
             pass
 
         self.object.method = lambda: Complex()
@@ -426,7 +426,7 @@ class MethodCallTest(BaseTestCase):
 
 class RemoteObjectTest(BaseTestCase):
     def setUp(self):
-        super(RemoteObjectTest, self).setUp()
+        super().setUp()
         self.methods = ["method"]
         self.object = DummyObject()
         self.clock = Clock()
@@ -532,7 +532,7 @@ class RemoteObjectTest(BaseTestCase):
 
 class MethodCallClientFactoryTest(BaseTestCase):
     def setUp(self):
-        super(MethodCallClientFactoryTest, self).setUp()
+        super().setUp()
         self.clock = Clock()
         self.factory = MethodCallClientFactory(self.clock)
 
@@ -593,7 +593,7 @@ class MethodCallClientFactoryTest(BaseTestCase):
         is not reached.
         """
 
-        class FakeConnector(object):
+        class FakeConnector:
             called = False
 
             def connect(self):
@@ -626,7 +626,7 @@ class MethodCallClientFactoryTest(BaseTestCase):
 
 class MethodCallFunctionalTest(BaseTestCase):
     def setUp(self):
-        super(MethodCallFunctionalTest, self).setUp()
+        super().setUp()
         self.methods = ["method"]
         self.object = DummyObject()
         self.object.method = lambda word: word.capitalize()
@@ -636,7 +636,7 @@ class MethodCallFunctionalTest(BaseTestCase):
         self.port = reactor.listenUNIX(self.socket, self.server)
 
     def tearDown(self):
-        super(MethodCallFunctionalTest, self).tearDown()
+        super().tearDown()
         self.port.stopListening()
 
     @inlineCallbacks

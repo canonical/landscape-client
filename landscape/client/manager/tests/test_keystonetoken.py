@@ -11,7 +11,7 @@ class KeystoneTokenTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(KeystoneTokenTest, self).setUp()
+        super().setUp()
         self.keystone_file = os.path.join(self.makeDir(), "keystone.conf")
         self.plugin = KeystoneToken(self.keystone_file)
 

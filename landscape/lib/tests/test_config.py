@@ -4,8 +4,7 @@ import sys
 import unittest
 from optparse import OptionParser
 from textwrap import dedent
-
-import mock
+from unittest import mock
 
 from landscape.lib.config import BaseConfiguration
 from landscape.lib.config import get_bindir
@@ -21,7 +20,7 @@ class BabbleConfiguration(BaseConfiguration):
     default_config_filenames = []
 
     def make_parser(self):
-        parser = super(BabbleConfiguration, self).make_parser()
+        parser = super().make_parser()
         parser.add_option("--whatever", metavar="STUFF")
         return parser
 
@@ -32,7 +31,7 @@ def cfg_class(section=None, **defaults):
         default_config_filenames = []
 
         def make_parser(self):
-            parser = super(MyConfiguration, self).make_parser()
+            parser = super().make_parser()
             for name, value in defaults.items():
                 name = name.replace("_", "-")
                 parser.add_option("--" + name, default=value)
@@ -46,7 +45,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
     helpers = [LogKeeperHelper]
 
     def setUp(self):
-        super(BaseConfigurationTest, self).setUp()
+        super().setUp()
         self.reset_config(cfg_class())
 
     def reset_config(self, configuration_class):
@@ -60,7 +59,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
             self.config_class.config_section,
         )
         config = "\n".join(
-            ["[%s]" % (section_name,)]
+            [f"[{section_name}]"]
             + ["%s = %s" % pair for pair in kwargs.items()],
         )
         self.config_filename = self.makeFile(config)
@@ -301,7 +300,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
         class MyConfiguration(self.config_class):
             def make_parser(self):
-                parser = super(MyConfiguration, self).make_parser()
+                parser = super().make_parser()
                 parser.add_option("--year", default=1, type="int")
                 return parser
 
@@ -318,7 +317,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
         class MyConfiguration(self.config_class):
             def make_parser(self):
-                parser = super(MyConfiguration, self).make_parser()
+                parser = super().make_parser()
                 parser.add_option("--year", default=1, type="int")
                 return parser
 

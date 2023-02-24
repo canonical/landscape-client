@@ -108,12 +108,12 @@ class BasePersistTest(unittest.TestCase):
     }
 
     def setUp(self):
-        super(BasePersistTest, self).setUp()
+        super().setUp()
         self.persist = self.build_persist()
 
     def tearDown(self):
         del self.persist
-        super(BasePersistTest, self).tearDown()
+        super().tearDown()
 
     def build_persist(self, *args, **kwargs):
         return Persist(*args, **kwargs)
@@ -121,7 +121,7 @@ class BasePersistTest(unittest.TestCase):
     def format(self, result, expected):
         repr_result = pprint.pformat(result)
         repr_expected = pprint.pformat(expected)
-        return "\nResult:\n%s\nExpected:\n%s\n" % (repr_result, repr_expected)
+        return f"\nResult:\n{repr_result}\nExpected:\n{repr_expected}\n"
 
 
 class GeneralPersistTest(BasePersistTest):
@@ -190,11 +190,11 @@ class GeneralPersistTest(BasePersistTest):
     def test_keys(self):
         self.persist.set("a", {"b": 1, "c": {"d": 2}, "e": list("foo")})
         keys = self.persist.keys
-        self.assertEqual(set(keys((), hard=True)), set(["a"]))
-        self.assertEqual(set(keys("a")), set(["b", "c", "e"]))
-        self.assertEqual(set(keys("a.d")), set([]))
-        self.assertEqual(set(keys("a.e")), set([0, 1, 2]))
-        self.assertEqual(set(keys("a.f")), set([]))
+        self.assertEqual(set(keys((), hard=True)), {"a"})
+        self.assertEqual(set(keys("a")), {"b", "c", "e"})
+        self.assertEqual(set(keys("a.d")), set())
+        self.assertEqual(set(keys("a.e")), {0, 1, 2})
+        self.assertEqual(set(keys("a.f")), set())
         self.assertRaises(PersistError, keys, "a.b")
 
     def test_has(self):

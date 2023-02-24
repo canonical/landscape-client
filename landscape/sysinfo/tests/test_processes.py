@@ -11,7 +11,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
     def setUp(self):
-        super(ProcessesTest, self).setUp()
+        super().setUp()
         self.fake_proc = self.makeDir()
         self.processes = Processes(proc_dir=self.fake_proc)
         self.sysinfo = SysInfoPluginRegistry()

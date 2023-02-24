@@ -39,7 +39,7 @@ class NetworkActivity(MonitorPlugin):
             self._rollover_maxint = pow(2, 32)
 
     def register(self, registry):
-        super(NetworkActivity, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, self.registry.step_size)
         self.call_on_accepted("network-activity", self.exchange, True)
 

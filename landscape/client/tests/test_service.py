@@ -10,7 +10,7 @@ from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.testing import FakeReactor
 
 
-class TestComponent(object):
+class TestComponent:
     name = "monitor"
 
 
@@ -20,7 +20,7 @@ class TestService(LandscapeService):
 
 class LandscapeServiceTest(LandscapeTest):
     def setUp(self):
-        super(LandscapeServiceTest, self).setUp()
+        super().setUp()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
         self.makeDir(path=self.config.sockets_path)
@@ -28,7 +28,7 @@ class LandscapeServiceTest(LandscapeTest):
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
 
     def tearDown(self):
-        super(LandscapeServiceTest, self).tearDown()
+        super().tearDown()
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
 
     def test_create_persist(self):

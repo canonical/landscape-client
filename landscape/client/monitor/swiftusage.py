@@ -46,7 +46,7 @@ class SwiftUsage(MonitorPlugin):
         self.active = True
 
     def register(self, registry):
-        super(SwiftUsage, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, self._interval)
         self._monitor = CoverageMonitor(
             self.run_interval,
@@ -158,7 +158,7 @@ class SwiftUsage(MonitorPlugin):
             for key in ("size", "avail", "used"):
                 # Store values in tree so it's easy to delete all values for a
                 # device
-                persist_key = "usage.%s.%s" % (device, key)
+                persist_key = f"usage.{device}.{key}"
                 step_value = self._accumulate(
                     timestamp,
                     usage[key],

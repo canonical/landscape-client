@@ -1,8 +1,8 @@
 import logging
 import os
 import pwd
+from unittest import mock
 
-import mock
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
@@ -19,7 +19,7 @@ class CustomGraphManagerTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(CustomGraphManagerTests, self).setUp()
+        super().setUp()
         self.store = ManagerStore(":memory:")
         self.manager.store = self.store
         self.broker_service.message_store.set_accepted_types(["custom-graph"])
@@ -98,7 +98,7 @@ class CustomGraphManagerTests(LandscapeTest):
     @mock.patch("os.chmod")
     @mock.patch("pwd.getpwnam")
     def test_add_graph_for_user(self, mock_getpwnam, mock_chmod, mock_chown):
-        class PwNam(object):
+        class PwNam:
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()
@@ -417,7 +417,7 @@ class CustomGraphManagerTests(LandscapeTest):
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
 
-        class PwNam(object):
+        class PwNam:
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.makeFile()

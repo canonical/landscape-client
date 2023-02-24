@@ -49,7 +49,7 @@ class PersistReadOnlyError(PersistError):
     pass
 
 
-class Persist(object):
+class Persist:
 
     """Persist a hierarchical database of key=>value pairs.
 
@@ -321,7 +321,7 @@ class Persist(object):
                 result = self._backend.remove(obj, elem, isvalue)
                 if result is NotImplemented:
                     raise PersistError(
-                        "Can't remove %r from %r" % (elem, type(obj)),
+                        "Can't remove {!r} from {!r}".format(elem, type(obj)),
                     )
             if self._backend.empty(obj):
                 if value is not marker:
@@ -357,7 +357,7 @@ class Persist(object):
         return RootedPersist(self, path)
 
 
-class RootedPersist(object):
+class RootedPersist:
     """Root a L{Persist}'s tree at a particular branch.
 
     This class shares the same interface of L{Persist} and provides a shortcut
@@ -479,7 +479,7 @@ def path_tuple_to_string(path):
     return ".".join(result)
 
 
-class Backend(object):
+class Backend:
     """
     Base class for L{Persist} backends implementing hierarchical storage
     functionality.

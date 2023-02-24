@@ -5,10 +5,10 @@ import textwrap
 import unittest
 import weakref
 from collections import namedtuple
+from unittest import mock
 
 import apt
 import apt_pkg
-import mock
 from apt.cache import LockFailedException
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
@@ -87,7 +87,7 @@ def _parse_deb_stanza(text):
     return _DebStanza(**data)
 
 
-class FakeOwner(object):
+class FakeOwner:
     """Fake Owner object that apt.progress.text.AcquireProgress expects."""
 
     def __init__(self, filesize, error_text=""):
@@ -99,7 +99,7 @@ class FakeOwner(object):
         self.error_text = error_text
 
 
-class FakeFetchItem(object):
+class FakeFetchItem:
     """Fake Item object that apt.progress.text.AcquireProgress expects."""
 
     def __init__(self, owner, description):
@@ -121,7 +121,7 @@ class TestCache(apt.cache.Cache):
 
     def update(self):
         self._update_called = True
-        return super(TestCache, self).update()
+        return super().update()
 
 
 class AptFacadeTest(
@@ -133,7 +133,7 @@ class AptFacadeTest(
     helpers = [AptFacadeHelper, testing.EnvironSaverHelper]
 
     def setUp(self):
-        super(AptFacadeTest, self).setUp()
+        super().setUp()
         self.facade.max_dpkg_retries = 0
         self.facade.dpkg_retry_sleep = 0
 
@@ -1724,7 +1724,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -1758,7 +1758,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -1792,7 +1792,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -1830,7 +1830,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -1869,7 +1869,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -1910,7 +1910,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -1951,7 +1951,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -1985,7 +1985,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -2024,7 +2024,7 @@ class AptFacadeTest(
         self.facade._preprocess_package_changes()
         foo.package.mark_keep()
         self.assertEqual(
-            set([bar.package]),
+            {bar.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -2064,7 +2064,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -2103,7 +2103,7 @@ class AptFacadeTest(
         # removed by the resolver.
         foo.package.mark_keep()
         self.assertEqual(
-            set([bar.package]),
+            {bar.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -2145,7 +2145,7 @@ class AptFacadeTest(
         # removed by the resolver.
         foo.package.mark_keep()
         self.assertEqual(
-            set([bar.package]),
+            {bar.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -2182,7 +2182,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -2222,7 +2222,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package, another_foo.package]),
+            {foo.package, another_foo.package},
             self.facade._get_broken_packages(),
         )
         self.assertEqual(
@@ -2245,7 +2245,7 @@ class AptFacadeTest(
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade._version_installs.append(foo)
-        self.facade._get_broken_packages = lambda: set([foo.package])
+        self.facade._get_broken_packages = lambda: {foo.package}
         self.assertEqual(
             [
                 "The following packages have unmet dependencies:",
@@ -2632,7 +2632,7 @@ class AptFacadeTest(
         self.facade.mark_global_upgrade()
         with self.assertRaises(DependencyError) as cm:
             self.facade.perform_changes()
-        self.assertEqual(set([foo1, foo2]), set(cm.exception.packages))
+        self.assertEqual({foo1, foo2}, set(cm.exception.packages))
 
     def test_mark_global_upgrade_candidate_version(self):
         """
@@ -2657,7 +2657,7 @@ class AptFacadeTest(
         self.facade.mark_global_upgrade()
         with self.assertRaises(DependencyError) as cm:
             self.facade.perform_changes()
-        self.assertEqual(set([foo1, foo3]), set(cm.exception.packages))
+        self.assertEqual({foo1, foo3}, set(cm.exception.packages))
 
     def test_mark_global_upgrade_no_upgrade(self):
         """
@@ -2854,7 +2854,7 @@ class AptFacadeTest(
         [foo] = self.facade.get_packages_by_name("foo")
         [missing] = self.facade.get_packages_by_name("missing")
         self.assertEqual(
-            set([broken.package]),
+            {broken.package},
             self.facade._get_broken_packages(),
         )
         self.facade.mark_install(foo)
@@ -2867,7 +2867,7 @@ class AptFacadeTest(
             cm.exception.args[0],
         )
         self.assertEqual(
-            set([foo.package]),
+            {foo.package},
             self.facade._get_broken_packages(),
         )
 
@@ -3068,7 +3068,7 @@ class AptFacadeTest(
 
         with self.assertRaises(DependencyError) as cm:
             self.facade._check_changes([])
-        self.assertEqual(set([foo1, foo2]), set(cm.exception.packages))
+        self.assertEqual({foo1, foo2}, set(cm.exception.packages))
 
     def test_check_changes_unapproved_downgrade(self):
         """
@@ -3097,7 +3097,7 @@ class AptFacadeTest(
 
         with self.assertRaises(DependencyError) as cm:
             self.facade._check_changes([])
-        self.assertEqual(set([foo1, foo2]), set(cm.exception.packages))
+        self.assertEqual({foo1, foo2}, set(cm.exception.packages))
 
     def test_mark_global_upgrade_dependency_error(self):
         """

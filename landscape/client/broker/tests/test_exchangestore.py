@@ -14,7 +14,7 @@ class ExchangeStoreTest(LandscapeTest):
     """Unit tests for the C{ExchangeStore}."""
 
     def setUp(self):
-        super(ExchangeStoreTest, self).setUp()
+        super().setUp()
 
         self.filename = self.makeFile()
         self.store1 = ExchangeStore(self.filename)

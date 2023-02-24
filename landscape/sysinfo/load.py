@@ -3,7 +3,7 @@ import os
 from twisted.internet.defer import succeed
 
 
-class Load(object):
+class Load:
     def register(self, sysinfo):
         self._sysinfo = sysinfo
 

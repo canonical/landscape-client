@@ -24,7 +24,7 @@ from landscape.lib.persist import Persist
 from landscape.lib.testing import FakeReactor
 
 
-class BrokerConfigurationHelper(object):
+class BrokerConfigurationHelper:
     """Setup a L{BrokerConfiguration} instance with some test config values.
 
     The following attributes will be set on your test case:
@@ -91,7 +91,7 @@ class ExchangeHelper(BrokerConfigurationHelper):
     """
 
     def set_up(self, test_case):
-        super(ExchangeHelper, self).set_up(test_case)
+        super().set_up(test_case)
         test_case.persist_filename = test_case.makePersistFile()
         test_case.persist = Persist(filename=test_case.persist_filename)
         test_case.mstore = get_default_message_store(
@@ -131,7 +131,7 @@ class RegistrationHelper(ExchangeHelper):
     """
 
     def set_up(self, test_case):
-        super(RegistrationHelper, self).set_up(test_case)
+        super().set_up(test_case)
         test_case.pinger = Pinger(
             test_case.reactor,
             test_case.identity,
@@ -165,7 +165,7 @@ class BrokerServerHelper(RegistrationHelper):
     """
 
     def set_up(self, test_case):
-        super(BrokerServerHelper, self).set_up(test_case)
+        super().set_up(test_case)
         test_case.broker = BrokerServer(
             test_case.config,
             test_case.reactor,
@@ -199,7 +199,7 @@ class RemoteBrokerHelper(BrokerServerHelper):
     """
 
     def set_up(self, test_case):
-        super(RemoteBrokerHelper, self).set_up(test_case)
+        super().set_up(test_case)
 
         self._publisher = ComponentPublisher(
             test_case.broker,
@@ -218,7 +218,7 @@ class RemoteBrokerHelper(BrokerServerHelper):
     def tear_down(self, test_case):
         self._connector.disconnect()
         self._publisher.stop()
-        super(RemoteBrokerHelper, self).tear_down(test_case)
+        super().tear_down(test_case)
 
 
 class BrokerClientHelper(RemoteBrokerHelper):
@@ -239,7 +239,7 @@ class BrokerClientHelper(RemoteBrokerHelper):
     """
 
     def set_up(self, test_case):
-        super(BrokerClientHelper, self).set_up(test_case)
+        super().set_up(test_case)
         # The client needs its own reactor to avoid infinite loops
         # when the broker broadcasts and event
         test_case.client_reactor = FakeReactor()
@@ -262,7 +262,7 @@ class RemoteClientHelper(BrokerClientHelper):
     """
 
     def set_up(self, test_case):
-        super(RemoteClientHelper, self).set_up(test_case)
+        super().set_up(test_case)
         self._client_publisher = ComponentPublisher(
             test_case.client,
             test_case.reactor,
@@ -276,4 +276,4 @@ class RemoteClientHelper(BrokerClientHelper):
     def tear_down(self, test_case):
         self._client_connector.disconnect()
         self._client_publisher.stop()
-        super(RemoteClientHelper, self).tear_down(test_case)
+        super().tear_down(test_case)

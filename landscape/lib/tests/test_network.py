@@ -40,12 +40,10 @@ class NetworkInfoTest(BaseTestCase):
         device_info = get_active_device_info(extended=False)
         process = Popen(["/sbin/ifconfig"], stdout=PIPE, env={"LC_ALL": "C"})
         result = process.communicate()[0].decode("ascii")
-        interface_blocks = dict(
-            [
-                (block.split()[0].strip(":"), block.upper())
-                for block in filter(None, result.split("\n\n"))
-            ],
-        )
+        interface_blocks = {
+            block.split()[0].strip(":"): block.upper()
+            for block in filter(None, result.split("\n\n"))
+        }
 
         for device in device_info:
             if device["mac_address"] == "00:00:00:00:00:00":

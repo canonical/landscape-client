@@ -13,7 +13,7 @@ class CommandError(Exception):
     """Raised when an external command returns a non-zero status."""
 
 
-class MemoryStats(object):
+class MemoryStats:
     def __init__(self, filename="/proc/meminfo"):
         data = {}
         for line in open(filename):
@@ -104,7 +104,7 @@ def get_thermal_zones(thermal_zone_path=None):
             yield ThermalZone(thermal_zone_path, zone_name)
 
 
-class ThermalZone(object):
+class ThermalZone:
 
     temperature = None
     temperature_value = None
@@ -127,7 +127,7 @@ class ThermalZone(object):
                         )
                     except ValueError:
                         pass
-            except EnvironmentError:
+            except OSError:
                 pass
         else:
             temperature_path = os.path.join(self.path, "temperature")
@@ -143,7 +143,7 @@ class ThermalZone(object):
                             pass
 
 
-class LoginInfo(object):
+class LoginInfo:
     """Information about a login session gathered from wtmp or utmp."""
 
     # FIXME This format string works fine on my hardware, but *may* be
@@ -173,7 +173,7 @@ class LoginInfo(object):
         return bytestring.strip(b"\0").decode("utf-8")
 
 
-class LoginInfoReader(object):
+class LoginInfoReader:
     """Reader parses C{/var/log/wtmp} and/or C{/var/run/utmp} files.
 
     @file: Initialize the reader with an open file.
@@ -203,7 +203,7 @@ class LoginInfoReader(object):
         return None
 
 
-class BootTimes(object):
+class BootTimes:
     _last_boot = None
     _last_shutdown = None
 

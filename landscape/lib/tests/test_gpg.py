@@ -1,8 +1,8 @@
 import os
 import textwrap
 import unittest
+from unittest import mock
 
-import mock
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import inlineCallbacks
@@ -18,7 +18,7 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
         provided signature is valid.
         """
         aptdir = self.makeDir()
-        os.mknod("{}/trusted.gpg".format(aptdir))
+        os.mknod(f"{aptdir}/trusted.gpg")
         gpg_options = self.makeFile()
         gpg = self.makeFile(
             "#!/bin/sh\n"
@@ -89,10 +89,10 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
         gpg_verify uses keys from the trusted.gpg.d if such a folder exists.
         """
         apt_dir = self.makeDir()
-        os.mkdir("{}/trusted.gpg.d".format(apt_dir))
-        os.mknod("{}/trusted.gpg.d/foo.gpg".format(apt_dir))
-        os.mknod("{}/trusted.gpg.d/baz.gpg".format(apt_dir))
-        os.mknod("{}/trusted.gpg.d/bad.gpg~".format(apt_dir))
+        os.mkdir(f"{apt_dir}/trusted.gpg.d")
+        os.mknod(f"{apt_dir}/trusted.gpg.d/foo.gpg")
+        os.mknod(f"{apt_dir}/trusted.gpg.d/baz.gpg")
+        os.mknod(f"{apt_dir}/trusted.gpg.d/bad.gpg~")
 
         gpg_call = self.makeFile()
         fake_gpg = self.makeFile(

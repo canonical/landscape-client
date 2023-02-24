@@ -257,7 +257,7 @@ class DelayedCall:
                 li.append(
                     ", ".join(
                         [
-                            "%s=%s" % (k, reflect.safe_repr(v))
+                            "{}={}".format(k, reflect.safe_repr(v))
                             for (k, v) in iteritems(self.kw)
                         ],
                     ),

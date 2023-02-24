@@ -24,7 +24,7 @@ class PackageTypeError(Exception):
     """Raised when an unsupported package type is passed to build_skeleton."""
 
 
-class PackageSkeleton(object):
+class PackageSkeleton:
 
     section = None
     summary = None
@@ -86,7 +86,7 @@ def relation_to_string(relation_tuple):
     name, version, relation_type = relation_tuple
     relation_string = name
     if relation_type:
-        relation_string += " %s %s" % (relation_type, version)
+        relation_string += f" {relation_type} {version}"
     return relation_string
 
 
@@ -137,7 +137,7 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
     relations.add(
         (
             DEB_NAME_PROVIDES,
-            "%s = %s" % (version.package.name, version.version),
+            f"{version.package.name} = {version.version}",
         ),
     )
     relations.update(
@@ -158,7 +158,7 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
     )
 
     relations.add(
-        (DEB_UPGRADES, "%s < %s" % (version.package.name, version.version)),
+        (DEB_UPGRADES, f"{version.package.name} < {version.version}"),
     )
 
     relations.update(

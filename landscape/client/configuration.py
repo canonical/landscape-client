@@ -64,7 +64,7 @@ def prompt_yes_no(message, default=True):
     """Prompt for a yes/no question and return the answer as bool."""
     default_msg = "[Y/n]" if default else "[y/N]"
     while True:
-        value = input("{} {}: ".format(message, default_msg)).lower()
+        value = input(f"{message} {default_msg}: ").lower()
         if value:
             if value.startswith("n"):
                 return False
@@ -178,7 +178,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         """
         Specialize the parser, adding configure-specific options.
         """
-        parser = super(LandscapeSetupConfiguration, self).make_parser()
+        parser = super().make_parser()
 
         parser.add_option(
             "--import",
@@ -242,7 +242,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         return parser
 
 
-class LandscapeSetupScript(object):
+class LandscapeSetupScript:
     """
     An interactive procedure which manages the prompting and temporary storage
     of configuration parameters.
@@ -846,7 +846,7 @@ def is_registered(config):
     """Return whether the client is already registered."""
     persist_filename = os.path.join(
         config.data_path,
-        "{}.bpickle".format(BrokerService.service_name),
+        f"{BrokerService.service_name}.bpickle",
     )
     persist = Persist(filename=persist_filename)
     identity = Identity(config, persist)
@@ -872,7 +872,7 @@ def registration_info_text(config, registration_status):
         ),
     )
     if registration_status:
-        text += "\nAccount Name:  {}".format(config.account_name)
+        text += f"\nAccount Name:  {config.account_name}"
 
     return text
 

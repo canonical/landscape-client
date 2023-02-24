@@ -50,7 +50,7 @@ class BaseConfiguration(_BaseConfiguration):
     config_section = "client"
 
     def __init__(self):
-        super(BaseConfiguration, self).__init__()
+        super().__init__()
 
         self._command_line_defaults["config"] = None
 
@@ -62,7 +62,7 @@ class BaseConfiguration(_BaseConfiguration):
               - config
               - data_path
         """
-        return super(BaseConfiguration, self).make_parser(
+        return super().make_parser(
             cfgfile=self.default_config_filename,
             datadir=self.default_data_dir,
         )
@@ -90,7 +90,7 @@ class Configuration(BaseConfiguration):
               - C{ignore_sigint} (C{False})
               - C{stagger_launch} (C{0.1})
         """
-        parser = super(Configuration, self).make_parser()
+        parser = super().make_parser()
         logging.add_cli_options(parser, logdir="/var/log/landscape")
         parser.add_option(
             "-u",

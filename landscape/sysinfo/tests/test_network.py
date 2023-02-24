@@ -10,7 +10,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 class NetworkTest(TwistedTestCase, unittest.TestCase):
     def setUp(self):
-        super(NetworkTest, self).setUp()
+        super().setUp()
         self.result = []
         self.network = Network(lambda: self.result)
         self.sysinfo = SysInfoPluginRegistry()

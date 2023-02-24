@@ -5,7 +5,7 @@ from landscape.client.tests.helpers import LandscapeTest
 
 class MonitorConfigurationTest(LandscapeTest):
     def setUp(self):
-        super(MonitorConfigurationTest, self).setUp()
+        super().setUp()
         self.config = MonitorConfiguration()
 
     def test_plugin_factories(self):

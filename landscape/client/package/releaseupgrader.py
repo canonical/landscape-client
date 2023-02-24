@@ -213,14 +213,14 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         for label, content in [("output", out), ("error", err)]:
             if content:
-                buf.write("=== Standard %s ===\n\n%s\n\n" % (label, content))
+                buf.write(f"=== Standard {label} ===\n\n{content}\n\n")
 
         for basename in sorted(os.listdir(self.logs_directory)):
             if not basename.endswith(".log"):
                 continue
             filename = os.path.join(self.logs_directory, basename)
             content = read_text_file(filename, -self.logs_limit)
-            buf.write("=== %s ===\n\n%s\n\n" % (basename, content))
+            buf.write(f"=== {basename} ===\n\n{content}\n\n")
 
         return buf.getvalue()
 

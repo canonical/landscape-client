@@ -27,7 +27,7 @@ class KeystoneToken(DataWatcher):
         self._keystone_config_file = keystone_config_file
 
     def register(self, client):
-        super(KeystoneToken, self).register(client)
+        super().register(client)
         self._persist_filename = os.path.join(
             self.registry.config.data_path,
             "keystone.bpickle",

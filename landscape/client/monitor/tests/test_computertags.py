@@ -8,7 +8,7 @@ class ComputerTagsTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(ComputerTagsTest, self).setUp()
+        super().setUp()
         test_sys_args = ["hello.py"]
         self.plugin = ComputerTags(args=test_sys_args)
         self.monitor.add(self.plugin)
@@ -18,7 +18,7 @@ class ComputerTagsTest(LandscapeTest):
         Tags are read from the default config path
         """
         tags = "check,linode,profile-test"
-        file_text = "[client]\ntags = {}".format(tags)
+        file_text = f"[client]\ntags = {tags}"
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(file_text, path=config_filename)
         self.assertEqual(self.plugin.get_data(), tags)
@@ -28,7 +28,7 @@ class ComputerTagsTest(LandscapeTest):
         Tags are read from path specified in command line args
         """
         tags = "check,linode,profile-test"
-        file_text = "[client]\ntags = {}".format(tags)
+        file_text = f"[client]\ntags = {tags}"
         filename = self.makeFile(file_text)
         test_sys_args = ["hello.py", "--config", filename]
         self.plugin.args = test_sys_args
@@ -39,7 +39,7 @@ class ComputerTagsTest(LandscapeTest):
         Tags message is sent correctly
         """
         tags = "check,linode,profile-test"
-        file_text = "[client]\ntags = {}".format(tags)
+        file_text = f"[client]\ntags = {tags}"
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(file_text, path=config_filename)
 
@@ -53,7 +53,7 @@ class ComputerTagsTest(LandscapeTest):
         If invalid tag detected then message contents should be None
         """
         tags = "check,lin ode"
-        file_text = "[client]\ntags = {}".format(tags)
+        file_text = f"[client]\ntags = {tags}"
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(file_text, path=config_filename)
         self.assertEqual(self.plugin.get_data(), None)

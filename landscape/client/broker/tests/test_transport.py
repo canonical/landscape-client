@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 
 from twisted.internet import reactor
@@ -43,11 +42,11 @@ class HTTPTransportTest(LandscapeTest):
     helpers = [LogKeeperHelper]
 
     def setUp(self):
-        super(HTTPTransportTest, self).setUp()
+        super().setUp()
         self.ports = []
 
     def tearDown(self):
-        super(HTTPTransportTest, self).tearDown()
+        super().tearDown()
         for port in self.ports:
             port.stopListening()
 
@@ -84,7 +83,7 @@ class HTTPTransportTest(LandscapeTest):
             self.assertEqual(get_header("x-exchange-token"), ["abcd-efgh"])
             self.assertEqual(
                 get_header("user-agent"),
-                ["landscape-client/%s" % (VERSION,)],
+                [f"landscape-client/{VERSION}"],
             )
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), payload)
@@ -157,7 +156,7 @@ class HTTPTransportTest(LandscapeTest):
             self.assertEqual(get_header("x-computer-id"), ["34"])
             self.assertEqual(
                 get_header("user-agent"),
-                ["landscape-client/%s" % (VERSION,)],
+                [f"landscape-client/{VERSION}"],
             )
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), "HI")

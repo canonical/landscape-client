@@ -66,7 +66,7 @@ class UserMonitorTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(UserMonitorTest, self).setUp()
+        super().setUp()
         self.shadow_file = self.makeFile(
             "jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
             "psmith:!:13348:0:99999:7:::\n"
@@ -93,7 +93,7 @@ class UserMonitorTest(LandscapeTest):
         landscape.client.monitor.usermonitor.USER_UPDATE_FLAG_FILE = (
             self._original_USER_UPDATE_FLAG_FILE
         )
-        return super(UserMonitorTest, self).tearDown()
+        return super().tearDown()
 
     def test_constants(self):
         """
@@ -503,7 +503,7 @@ class UserMonitorTest(LandscapeTest):
         """
         self.monitor.add(self.plugin)
 
-        class FauxUserChanges(object):
+        class FauxUserChanges:
             cleared = False
 
             def __init__(self, *args):

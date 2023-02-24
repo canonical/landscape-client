@@ -155,7 +155,7 @@ class SQLitePatchTest(LandscapeTest):
         self.manager.initialize(self.cursor)
         self.assertEqual(
             self.manager.get_database_versions(self.cursor),
-            set([1, 3, 5]),
+            {1, 3, 5},
         )
 
     def test_decorated_upgraders_run(self):

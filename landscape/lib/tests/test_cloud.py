@@ -18,7 +18,7 @@ class CloudTest(
     unittest.TestCase,
 ):
     def setUp(self):
-        super(CloudTest, self).setUp()
+        super().setUp()
         self.query_results = {}
         self.kwargs = {}
 
@@ -41,7 +41,7 @@ class CloudTest(
         self.fetch_func. C{value} must be bytes or an Error as the original
         fetch returns bytes.
         """
-        url = "%s/meta-data/%s" % (EC2_API, name)
+        url = f"{EC2_API}/meta-data/{name}"
         self.query_results[url] = value
 
     def test_fetch_ec2_meta_data_error_on_any_item_error(self):

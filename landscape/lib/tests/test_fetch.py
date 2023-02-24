@@ -16,7 +16,7 @@ from landscape.lib.fetch import PyCurlError
 from landscape.lib.fetch import url_to_filename
 
 
-class CurlStub(object):
+class CurlStub:
     def __init__(self, result=None, infos=None, error=None):
         self.result = result
         self.infos = infos
@@ -47,7 +47,7 @@ class CurlStub(object):
         self.performed = True
 
 
-class CurlManyStub(object):
+class CurlManyStub:
     def __init__(self, url_results):
         self.curls = {}
         for url in url_results:
@@ -89,7 +89,7 @@ class CurlManyStub(object):
         self._local.current.perform()
 
 
-class Any(object):
+class Any:
     def __eq__(self, other):
         return True
 

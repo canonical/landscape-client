@@ -48,7 +48,7 @@ from landscape.lib.fetch import fetch
 from landscape.lib.log import log_failure
 
 
-class PingClient(object):
+class PingClient:
     """An HTTP client which knows how to talk to the ping server."""
 
     def __init__(self, reactor, get_page=None):
@@ -98,7 +98,7 @@ class PingClient(object):
             return True
 
 
-class Pinger(object):
+class Pinger:
     """
     A plugin which pings the Landscape server with HTTP requests to
     see if a full exchange should be initiated.
@@ -162,7 +162,7 @@ class Pinger(object):
     def _got_error(self, failure):
         log_failure(
             failure,
-            "Error contacting ping server at %s" % (self._ping_client.url,),
+            f"Error contacting ping server at {self._ping_client.url}",
         )
 
     def _schedule(self):
@@ -191,7 +191,7 @@ class Pinger(object):
             self._call_id = None
 
 
-class FakePinger(object):
+class FakePinger:
     def __init__(self, *args, **kwargs):
         pass
 

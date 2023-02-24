@@ -131,7 +131,7 @@ def is_device_removable(device):
     try:
         with open(path, "r") as f:
             contents = f.readline()
-    except IOError:
+    except OSError:
         return False
 
     if contents.strip() == "1":
