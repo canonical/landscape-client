@@ -1,7 +1,10 @@
-from landscape.lib.plugin import PluginConfigError
+from unittest.mock import ANY
+from unittest.mock import Mock
+
 from landscape.client.monitor.processorinfo import ProcessorInfo
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
-from mock import ANY, Mock
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.plugin import PluginConfigError
 
 
 # The extra blank line at the bottom of some sample data definitions
@@ -16,7 +19,8 @@ class ProcessorInfoTest(LandscapeTest):
     def test_unknown_machine_name(self):
         """Ensure a PluginConfigError is raised for unknown machines."""
         self.assertRaises(
-            PluginConfigError, lambda: ProcessorInfo(machine_name="wubble")
+            PluginConfigError,
+            lambda: ProcessorInfo(machine_name="wubble"),
         )
 
     def test_read_proc_cpuinfo(self):
@@ -38,7 +42,8 @@ class ProcessorInfoTest(LandscapeTest):
 
         self.remote.send_message = Mock()
         self.reactor.fire(
-            ("message-type-acceptance-changed", "processor-info"), True
+            ("message-type-acceptance-changed", "processor-info"),
+            True,
         )
         self.remote.send_message.assert_called_once_with(ANY, ANY, urgent=True)
 
@@ -128,7 +133,9 @@ pmac-generation : NewWorld
         """Test that one message is queued for duplicate G5 CPU info."""
         filename = self.makeFile(self.SMP_PPC_G5)
         plugin = ProcessorInfo(
-            delay=0.1, machine_name="ppc64", source_filename=filename
+            delay=0.1,
+            machine_name="ppc64",
+            source_filename=filename,
         )
         self.monitor.add(plugin)
         plugin.run()
@@ -267,7 +274,8 @@ Hardware        : Foundation-v8A
         processor_0 = message["processors"][0]
         self.assertEqual(len(processor_0), 2)
         self.assertEqual(
-            processor_0["model"], "ARMv6-compatible processor rev 2 (v6l)"
+            processor_0["model"],
+            "ARMv6-compatible processor rev 2 (v6l)",
         )
         self.assertEqual(processor_0["processor-id"], 0)
 
@@ -303,7 +311,8 @@ Hardware        : Foundation-v8A
         """Ensure the plugin can parse /proc/cpuinfo from a sample ARMv8."""
         filename = self.makeFile(self.ARMv8_64)
         plugin = ProcessorInfo(
-            machine_name="aarch64", source_filename=filename
+            machine_name="aarch64",
+            source_filename=filename,
         )
         message = plugin.create_message()
         self.assertEqual(message["type"], "processor-info")
@@ -312,7 +321,8 @@ Hardware        : Foundation-v8A
         processor_0 = message["processors"][0]
         self.assertEqual(len(processor_0), 2)
         self.assertEqual(
-            processor_0["model"], "AArch64 Processor rev 0 (aarch64)"
+            processor_0["model"],
+            "AArch64 Processor rev 0 (aarch64)",
         )
         self.assertEqual(processor_0["processor-id"], 0)
 
@@ -345,7 +355,8 @@ CPU1:           online
         """Ensure the plugin can parse /proc/cpuinfo from a dual UltraSparc."""
         filename = self.makeFile(self.SMP_SPARC)
         plugin = ProcessorInfo(
-            machine_name="sparc64", source_filename=filename
+            machine_name="sparc64",
+            source_filename=filename,
         )
         message = plugin.create_message()
         self.assertEqual(message["type"], "processor-info")
@@ -504,7 +515,9 @@ bogomips        : 1198.25
         """Test plugin manager integration."""
         filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(
-            delay=0.1, machine_name="i686", source_filename=filename
+            delay=0.1,
+            machine_name="i686",
+            source_filename=filename,
         )
         self.monitor.add(plugin)
         self.reactor.advance(0.5)
@@ -521,9 +534,9 @@ bogomips        : 1198.25
                             "model": "Intel(R) Pentium(R) M processor 1.50GHz",
                             "cache-size": 2048,
                             "processor-id": 0,
-                        }
+                        },
                     ],
-                }
+                },
             ],
         )
 
@@ -539,7 +552,8 @@ bogomips        : 1198.25
         self.assertEqual(len(processor), 4)
         self.assertEqual(processor["vendor"], "GenuineIntel")
         self.assertEqual(
-            processor["model"], "Intel(R) Pentium(R) M processor 1.50GHz"
+            processor["model"],
+            "Intel(R) Pentium(R) M processor 1.50GHz",
         )
         self.assertEqual(processor["cache-size"], 2048)
         self.assertEqual(processor["processor-id"], 0)
@@ -549,7 +563,9 @@ bogomips        : 1198.25
 
         filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(
-            delay=0.1, machine_name="i686", source_filename=filename
+            delay=0.1,
+            machine_name="i686",
+            source_filename=filename,
         )
         self.monitor.add(plugin)
         self.monitor.add(plugin)
@@ -567,7 +583,8 @@ bogomips        : 1198.25
         self.assertEqual(len(processor), 4)
         self.assertEqual(processor["vendor"], "GenuineIntel")
         self.assertEqual(
-            processor["model"], "Intel(R) Pentium(R) M processor 1.50GHz"
+            processor["model"],
+            "Intel(R) Pentium(R) M processor 1.50GHz",
         )
         self.assertEqual(processor["cache-size"], 2048)
         self.assertEqual(processor["processor-id"], 0)
@@ -575,7 +592,9 @@ bogomips        : 1198.25
     def test_unchanging_data(self):
         filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(
-            delay=0.1, machine_name="i686", source_filename=filename
+            delay=0.1,
+            machine_name="i686",
+            source_filename=filename,
         )
         self.monitor.add(plugin)
         plugin.run()
@@ -585,7 +604,9 @@ bogomips        : 1198.25
     def test_changing_data(self):
         filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(
-            delay=0.1, machine_name="i686", source_filename=filename
+            delay=0.1,
+            machine_name="i686",
+            source_filename=filename,
         )
         self.monitor.add(plugin)
         plugin.run()
@@ -602,7 +623,9 @@ bogomips        : 1198.25
         self.mstore.set_accepted_types([])
         filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(
-            delay=0.1, machine_name="i686", source_filename=filename
+            delay=0.1,
+            machine_name="i686",
+            source_filename=filename,
         )
         self.monitor.add(plugin)
 

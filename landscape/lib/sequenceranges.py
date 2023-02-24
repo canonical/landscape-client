@@ -50,8 +50,8 @@ class SequenceRanges(object):
         if index < len(self._ranges):
             test = self._ranges[index]
             if isinstance(test, tuple):
-                return (test[0] <= item <= test[1])
-            return (test == item)
+                return test[0] <= item <= test[1]
+            return test == item
         return False
 
     def add(self, item):
@@ -79,8 +79,9 @@ def sequence_to_ranges(sequence):
         else:
             if item is not None and item <= range_stop:
                 if item < range_stop:
-                    raise SequenceError("Sequence is unordered (%r < %r)" %
-                                        (item, range_stop))
+                    raise SequenceError(
+                        "Sequence is unordered (%r < %r)" % (item, range_stop),
+                    )
                 else:
                     raise SequenceError("Found duplicated item (%r)" % (item,))
             if range_stop == range_start:
@@ -185,9 +186,9 @@ def remove_from_ranges(ranges, item):
             if item >= range_start:
                 # Handle right side of the range (and replace original item).
                 if range_stop < item + 3:
-                    ranges[index:index + 1] = range(item + 1, range_stop + 1)
+                    ranges[index : index + 1] = range(item + 1, range_stop + 1)
                 else:
-                    ranges[index:index + 1] = ((item + 1, range_stop),)
+                    ranges[index : index + 1] = ((item + 1, range_stop),)
 
                 # Handle left side of the range.
                 if range_start > item - 3:

@@ -1,12 +1,11 @@
-from __future__ import absolute_import
-
 import logging
 import os
-from datetime import timedelta, datetime
+from datetime import datetime
+from datetime import timedelta
 
 from landscape.lib import sysstats
-from landscape.lib.timestamp import to_timestamp
 from landscape.lib.jiffies import detect_jiffies
+from landscape.lib.timestamp import to_timestamp
 
 
 class ProcessInformation(object):
@@ -19,7 +18,11 @@ class ProcessInformation(object):
     """
 
     def __init__(
-        self, proc_dir="/proc", jiffies=None, boot_time=None, uptime=None
+        self,
+        proc_dir="/proc",
+        jiffies=None,
+        boot_time=None,
+        uptime=None,
     ):
         if boot_time is None:
             boot_time = sysstats.BootTimes().get_last_boot_time()
@@ -110,17 +113,21 @@ class ProcessInformation(object):
                 stime = int(parts[14])
                 uptime = self._uptime or sysstats.get_uptime()
                 pcpu = calculate_pcpu(
-                    utime, stime, uptime, start_time, self._jiffies_per_sec
+                    utime,
+                    stime,
+                    uptime,
+                    start_time,
+                    self._jiffies_per_sec,
                 )
                 process_info["percent-cpu"] = pcpu
                 delta = timedelta(0, start_time // self._jiffies_per_sec)
                 if self._boot_time is None:
                     logging.warning(
-                        "Skipping process (PID %s) without boot time."
+                        "Skipping process (PID %s) without boot time.",
                     )
                     return None
                 process_info["start-time"] = to_timestamp(
-                    self._boot_time + delta
+                    self._boot_time + delta,
                 )
             finally:
                 file.close()

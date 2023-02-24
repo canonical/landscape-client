@@ -1,13 +1,10 @@
-import pwd
 import grp
-
-from landscape.client.user.provider import (
-    UserProvider,
-    UserNotFoundError,
-    GroupNotFoundError,
-)
+import pwd
 
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.user.provider import GroupNotFoundError
+from landscape.client.user.provider import UserNotFoundError
+from landscape.client.user.provider import UserProvider
 from landscape.client.user.tests.helpers import FakeUserProvider
 
 
@@ -19,7 +16,7 @@ class ProviderTest(LandscapeTest):
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
-"""
+""",
         )
 
         self.passwd_file = self.makeFile(
@@ -27,7 +24,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 root:x:0:0:root:/root:/bin/bash
 haldaemon:x:107:116:Hardware abstraction layer,,,:/home/haldaemon:/bin/false
 kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
-"""
+""",
         )
 
         self.group_file = self.makeFile(
@@ -35,7 +32,7 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 root:x:0:
 cdrom:x:24:haldaemon,kevin
 kevin:x:1000:
-"""
+""",
         )
 
     def test_get_uid(self):
@@ -65,7 +62,7 @@ kevin:x:1000:
                     "home-phone": None,
                     "work-phone": None,
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -84,7 +81,7 @@ kevin:x:1000:
                 "JD,Everywhere,7654321,123HOME,",
                 "/home/jdoe",
                 "/bin/zsh",
-            )
+            ),
         ]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
@@ -100,7 +97,7 @@ kevin:x:1000:
                     "home-phone": "123HOME",
                     "work-phone": "7654321",
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -115,7 +112,7 @@ kevin:x:1000:
                 "JD,Everywhere,7654321,123HOME",
                 "/home/jdoe",
                 "/bin/zsh",
-            )
+            ),
         ]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
@@ -131,7 +128,7 @@ kevin:x:1000:
                     "home-phone": "123HOME",
                     "work-phone": "7654321",
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -142,7 +139,7 @@ kevin:x:1000:
         this situation.
         """
         data = [
-            ("jdoe", "x", 1000, 1000, "John Doe", "/home/jdoe", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe", "/home/jdoe", "/bin/zsh"),
         ]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
@@ -158,7 +155,7 @@ kevin:x:1000:
                     "home-phone": None,
                     "work-phone": None,
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -176,7 +173,7 @@ kevin:x:1000:
                 "John Doe,Everywhere",
                 "/home/jdoe",
                 "/bin/zsh",
-            )
+            ),
         ]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
@@ -192,7 +189,7 @@ kevin:x:1000:
                     "home-phone": None,
                     "work-phone": None,
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -216,7 +213,7 @@ kevin:x:1000:
                     "home-phone": None,
                     "work-phone": None,
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -232,13 +229,14 @@ kevin:x:1000:
 jdoe:x:1000:1000:{}:/home/jdoe:/bin/zsh
 root:x:0:0:root:/root:/bin/bash
 """.format(
-            gecos
+            gecos,
         ).encode(
-            "utf-8"
+            "utf-8",
         )
         passwd_file = self.makeFile(utf8_content, mode="wb")
         provider = UserProvider(
-            passwd_file=passwd_file, group_file=self.group_file
+            passwd_file=passwd_file,
+            group_file=self.group_file,
         )
         users = provider.get_users()
         self.assertEqual(users[0]["name"], name)
@@ -259,7 +257,8 @@ root:x:0:0:root:/root:/bin/bash
             mode="wb",
         )
         provider = UserProvider(
-            passwd_file=passwd_file, group_file=self.group_file
+            passwd_file=passwd_file,
+            group_file=self.group_file,
         )
         unicode_unknown = "\N{REPLACEMENT CHARACTER}"
         provider = UserProvider(passwd_file=passwd_file, group_file=None)
@@ -280,10 +279,12 @@ root:x:0:0:root:/root:/bin/bash
                 "Peter Smith,,,,",
                 "/home/psmith",
                 "/bin/bash",
-            )
+            ),
         ]
         provider = FakeUserProvider(
-            users=data, shadow_file=self.shadow_file, locked_users=["psmith"]
+            users=data,
+            shadow_file=self.shadow_file,
+            locked_users=["psmith"],
         )
         users = provider.get_users()
         self.assertEqual(
@@ -298,7 +299,7 @@ root:x:0:0:root:/root:/bin/bash
                     "home-phone": None,
                     "work-phone": None,
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -317,7 +318,7 @@ root:x:0:0:root:/root:/bin/bash
         else:
             self.fail(
                 "The user %s (uid=0) was not found in the get_data "
-                "result." % (user_0.pw_name)
+                "result." % (user_0.pw_name),
             )
 
     def test_get_users_duplicate_usernames(self):
@@ -343,7 +344,7 @@ root:x:0:0:root:/root:/bin/bash
                     "home-phone": None,
                     "work-phone": None,
                     "primary-gid": 1000,
-                }
+                },
             ],
         )
 
@@ -391,7 +392,7 @@ root:x:0:0:root:/root:/bin/bash
         raises a L{UserProviderError} if a match isn't found.
         """
         data = [
-            ("johndoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")
+            ("johndoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh"),
         ]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
@@ -423,7 +424,9 @@ root:x:0:0:root:/root:/bin/bash
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         groups = [("sales", "x", 50, ["jdoe"])]
         provider = FakeUserProvider(
-            users=users, shadow_file=self.shadow_file, groups=groups
+            users=users,
+            shadow_file=self.shadow_file,
+            groups=groups,
         )
         self.assertEqual(
             provider.get_groups(),
@@ -439,7 +442,9 @@ root:x:0:0:root:/root:/bin/bash
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         groups = [("sales", "x", 50, ["jdoe", "kevin"])]
         provider = FakeUserProvider(
-            users=users, shadow_file=self.shadow_file, groups=groups
+            users=users,
+            shadow_file=self.shadow_file,
+            groups=groups,
         )
         self.assertEqual(
             provider.get_groups(),
@@ -456,7 +461,9 @@ root:x:0:0:root:/root:/bin/bash
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         groups = [("sales", "x", 50, ["jdoe", "jdoe"])]
         provider = FakeUserProvider(
-            users=users, shadow_file=self.shadow_file, groups=groups
+            users=users,
+            shadow_file=self.shadow_file,
+            groups=groups,
         )
         self.assertEqual(
             provider.get_groups(),
@@ -476,7 +483,9 @@ root:x:0:0:root:/root:/bin/bash
             ("sales", "x", 51, ["jdoe"]),
         ]
         provider = FakeUserProvider(
-            users=users, shadow_file=self.shadow_file, groups=groups
+            users=users,
+            shadow_file=self.shadow_file,
+            groups=groups,
         )
         self.assertEqual(
             provider.get_groups(),
@@ -500,17 +509,19 @@ root:x:0:0:root:/root:/bin/bash
         else:
             self.fail(
                 "The group %s (gid=0) was not found in the get_data "
-                "result." % (group_0.gr_name,)
+                "result." % (group_0.gr_name,),
             )
 
     def test_get_user_data(self):
         """This tests the functionality for parsing /etc/passwd style files."""
         provider = UserProvider(
-            passwd_file=self.passwd_file, group_file=self.group_file
+            passwd_file=self.passwd_file,
+            group_file=self.group_file,
         )
         users = provider.get_user_data()
         self.assertEqual(
-            users[0], ("root", "x", 0, 0, "root", "/root", "/bin/bash")
+            users[0],
+            ("root", "x", 0, 0, "root", "/root", "/bin/bash"),
         )
         self.assertEqual(
             users[1],
@@ -543,7 +554,8 @@ root:x:0:0:root:/root:/bin/bash
         information from the underlying user database into dictionaries.
         """
         provider = UserProvider(
-            passwd_file=self.passwd_file, group_file=self.group_file
+            passwd_file=self.passwd_file,
+            group_file=self.group_file,
         )
         users = provider.get_users()
         self.assertEqual(
@@ -589,7 +601,8 @@ root:x:0:0:root:/root:/bin/bash
     def test_get_group_data(self):
         """This tests the functionality for parsing /etc/group style files."""
         provider = UserProvider(
-            passwd_file=self.passwd_file, group_file=self.group_file
+            passwd_file=self.passwd_file,
+            group_file=self.group_file,
         )
         groups = provider.get_group_data()
         self.assertEqual(groups[0], ("root", "x", 0, [""]))
@@ -602,7 +615,8 @@ root:x:0:0:root:/root:/bin/bash
         from the underlying userdatabase into dictionaries.
         """
         provider = UserProvider(
-            passwd_file=self.passwd_file, group_file=self.group_file
+            passwd_file=self.passwd_file,
+            group_file=self.group_file,
         )
         groups = provider.get_groups()
         self.assertEqual(groups[0], {"name": "root", "gid": 0, "members": []})
@@ -611,7 +625,8 @@ root:x:0:0:root:/root:/bin/bash
             {"name": "cdrom", "gid": 24, "members": ["haldaemon", "kevin"]},
         )
         self.assertEqual(
-            groups[2], {"name": "kevin", "gid": 1000, "members": []}
+            groups[2],
+            {"name": "kevin", "gid": 1000, "members": []},
         )
 
     def test_get_users_incorrect_passwd_file(self):
@@ -629,11 +644,12 @@ haldaemon:x:107:Hardware abstraction layer,,,:/home/haldaemon:/bin/false
 kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 +::::::
 broken2
-"""
+""",
         )
 
         provider = UserProvider(
-            passwd_file=passwd_file, group_file=self.group_file
+            passwd_file=passwd_file,
+            group_file=self.group_file,
         )
         users = provider.get_users()
         self.assertEqual(
@@ -692,11 +708,12 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 +jkakar::::::
 -radix::::::
 +::::::
-"""
+""",
         )
 
         provider = UserProvider(
-            passwd_file=passwd_file, group_file=self.group_file
+            passwd_file=passwd_file,
+            group_file=self.group_file,
         )
         users = provider.get_users()
         self.assertTrue(len(users), 2)
@@ -741,15 +758,17 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 root:x:0:
 cdrom:x:24:
 kevin:x:kevin:
-"""
+""",
         )
         provider = UserProvider(
-            passwd_file=self.passwd_file, group_file=group_file
+            passwd_file=self.passwd_file,
+            group_file=group_file,
         )
         groups = provider.get_groups()
         self.assertEqual(groups[0], {"name": "root", "gid": 0, "members": []})
         self.assertEqual(
-            groups[1], {"name": "cdrom", "gid": 24, "members": []}
+            groups[1],
+            {"name": "cdrom", "gid": 24, "members": []},
         )
         log = (
             "WARNING: group file %s is incorrectly "
@@ -771,10 +790,11 @@ cdrom:x:24:
 +jkakar:::
 -radix:::
 +:::
-"""
+""",
         )
         provider = UserProvider(
-            passwd_file=self.passwd_file, group_file=group_file
+            passwd_file=self.passwd_file,
+            group_file=group_file,
         )
         groups = provider.get_groups()
         self.assertEqual(groups[0], {"name": "root", "gid": 0, "members": []})

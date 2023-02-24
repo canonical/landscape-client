@@ -1,8 +1,6 @@
 """
 Extend the regular Twisted reactor with event-handling features.
 """
-from __future__ import absolute_import
-
 import logging
 import time
 
@@ -85,21 +83,34 @@ class EventHandlingReactorMixin(object):
         handlers = list(self._event_handlers.get(event_type, ()))
         for handler, priority in handlers:
             try:
-                logging.debug("Calling %s for %s with priority %d.",
-                              format_object(handler), event_type, priority)
+                logging.debug(
+                    "Calling %s for %s with priority %d.",
+                    format_object(handler),
+                    event_type,
+                    priority,
+                )
                 results.append(handler(*args, **kwargs))
             except KeyboardInterrupt:
-                logging.exception("Keyboard interrupt while running event "
-                                  "handler %s for event type %r with "
-                                  "args %r %r.", format_object(handler),
-                                  event_type, args, kwargs)
+                logging.exception(
+                    "Keyboard interrupt while running event "
+                    "handler %s for event type %r with "
+                    "args %r %r.",
+                    format_object(handler),
+                    event_type,
+                    args,
+                    kwargs,
+                )
                 self.stop()
                 raise
             except Exception:
-                logging.exception("Error running event handler %s for "
-                                  "event type %r with args %r %r.",
-                                  format_object(handler), event_type,
-                                  args, kwargs)
+                logging.exception(
+                    "Error running event handler %s for "
+                    "event type %r with args %r %r.",
+                    format_object(handler),
+                    event_type,
+                    args,
+                    kwargs,
+                )
         logging.debug("Finished firing %s.", event_type)
         return results
 
@@ -115,7 +126,6 @@ class EventHandlingReactorMixin(object):
 
 
 class ReactorID(object):
-
     def __init__(self, timeout):
         self._timeout = timeout
 
@@ -131,6 +141,7 @@ class EventHandlingReactor(EventHandlingReactorMixin):
     def __init__(self):
         from twisted.internet import reactor
         from twisted.internet.task import LoopingCall
+
         self._LoopingCall = LoopingCall
         self._reactor = reactor
         self._cleanup()
@@ -208,6 +219,7 @@ class EventHandlingReactor(EventHandlingReactorMixin):
         @note: Both C{callback} and C{errback} will be executed in the
             the parent thread.
         """
+
         def on_success(result):
             if callback:
                 return callback(result)

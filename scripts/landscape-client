@@ -1,9 +1,12 @@
 #!/usr/bin/python3
-import sys, os
+import os
+import sys
+
 if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
 else:
     from landscape.lib.warning import hide_warnings
+
     hide_warnings()
 
 from landscape.lib.fd import clean_fds
@@ -12,7 +15,7 @@ from landscape.lib.fd import clean_fds
 # create a critical FD. Even before the reactor is installed!
 clean_fds()
 
-from landscape.client.watchdog import run
+from landscape.client.watchdog import run  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(run())

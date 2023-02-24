@@ -1,14 +1,10 @@
 import mock
 
+from landscape.client.broker.tests.helpers import RemoteBrokerHelper
+from landscape.client.broker.tests.helpers import RemoteClientHelper
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
+from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.amp import MethodCallError
-from landscape.client.tests.helpers import (
-    LandscapeTest,
-    DEFAULT_ACCEPTED_TYPES,
-)
-from landscape.client.broker.tests.helpers import (
-    RemoteBrokerHelper,
-    RemoteClientHelper,
-)
 
 
 class RemoteBrokerTest(LandscapeTest):
@@ -45,7 +41,7 @@ class RemoteBrokerTest(LandscapeTest):
 
         session_id = self.successResultOf(self.remote.get_session_id())
         message_id = self.successResultOf(
-            self.remote.send_message(message, session_id)
+            self.remote.send_message(message, session_id),
         )
 
         self.assertTrue(isinstance(message_id, int))
@@ -61,7 +57,7 @@ class RemoteBrokerTest(LandscapeTest):
         self.mstore.set_accepted_types(["test"])
         session_id = self.successResultOf(self.remote.get_session_id())
         message_id = self.successResultOf(
-            self.remote.send_message(message, session_id, urgent=True)
+            self.remote.send_message(message, session_id, urgent=True),
         )
         self.assertTrue(isinstance(message_id, int))
         self.assertTrue(self.exchanger.is_urgent())
@@ -101,7 +97,7 @@ class RemoteBrokerTest(LandscapeTest):
         """
         # This should make the registration succeed
         self.transport.responses.append(
-            [{"type": "set-id", "id": "abc", "insecure-id": "def"}]
+            [{"type": "set-id", "id": "abc", "insecure-id": "def"}],
         )
         result = self.remote.register()
         return self.assertSuccess(result, None)
@@ -192,7 +188,7 @@ class RemoteBrokerTest(LandscapeTest):
         callback1 = mock.Mock()
         callback2 = mock.Mock(return_value=123)
         deferred = self.remote.call_on_event(
-            {"event1": callback1, "event2": callback2}
+            {"event1": callback1, "event2": callback2},
         )
         self.reactor.call_later(0.05, self.reactor.fire, "event2")
         self.reactor.advance(0.05)
@@ -240,7 +236,8 @@ class RemoteClientTest(LandscapeTest):
         """
         handler = mock.Mock()
         with mock.patch.object(
-            self.client.broker, "register_client_accepted_message_type"
+            self.client.broker,
+            "register_client_accepted_message_type",
         ) as m:
             # We need to register a test message handler to let the dispatch
             # message method call succeed

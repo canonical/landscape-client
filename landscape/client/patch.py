@@ -22,8 +22,9 @@ class UpgradeManagerBase(object):
         """
         if version in self._upgraders:
             raise UpgraderConflict(
-                "%s is already registered as %s; not adding %s" %
-                (version, self._upgraders[version], function))
+                "%s is already registered as %s; not adding %s"
+                % (version, self._upgraders[version], function),
+            )
         self._upgraders[version] = function
 
     def get_version(self):
@@ -44,14 +45,15 @@ class UpgradeManagerBase(object):
         @param version: The version number that the function will be
             upgrading to.
         """
+
         def inner(function):
             self.register_upgrader(version, function)
             return function
+
         return inner
 
 
 class UpgradeManager(UpgradeManagerBase):
-
     def apply(self, persist):
         """Bring the database up-to-date.
 

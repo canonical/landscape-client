@@ -1,21 +1,21 @@
 import unittest
 
 from twisted.internet import reactor
-from twisted.internet.error import ConnectError, ConnectionDone
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.error import ConnectError
+from twisted.internet.error import ConnectionDone
 from twisted.internet.task import Clock
-from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from landscape.lib import testing
-from landscape.lib.amp import (
-    MethodCallError,
-    MethodCallServerProtocol,
-    MethodCallClientProtocol,
-    MethodCallServerFactory,
-    MethodCallClientFactory,
-    RemoteObject,
-    MethodCallSender,
-)
+from landscape.lib.amp import MethodCallClientFactory
+from landscape.lib.amp import MethodCallClientProtocol
+from landscape.lib.amp import MethodCallError
+from landscape.lib.amp import MethodCallSender
+from landscape.lib.amp import MethodCallServerFactory
+from landscape.lib.amp import MethodCallServerProtocol
+from landscape.lib.amp import RemoteObject
 
 
 class FakeTransport(object):
@@ -81,7 +81,8 @@ class FakeConnector(object):
 
     def connect(self):
         self.connection = FakeConnection(
-            self.client.buildProtocol(None), self.server.buildProtocol(None)
+            self.client.buildProtocol(None),
+            self.server.buildProtocol(None),
         )
 
         # XXX Let the client factory be aware of this fake connection, so
@@ -123,7 +124,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.methods.remove("method")
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         self.connection.flush()
         self.failureResultOf(deferred).trap(MethodCallError)
@@ -135,7 +138,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda: None
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         self.connection.flush()
         self.assertIs(None, self.successResultOf(deferred))
@@ -147,7 +152,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda: "Cool result"
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         self.connection.flush()
         self.assertEqual("Cool result", self.successResultOf(deferred))
@@ -159,7 +166,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda word: word.capitalize()
         deferred = self.sender.send_method_call(
-            method="method", args=["john"], kwargs={}
+            method="method",
+            args=["john"],
+            kwargs={},
         )
         self.connection.flush()
         self.assertEqual("John", self.successResultOf(deferred))
@@ -170,7 +179,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda word: len(word) < 3
         deferred = self.sender.send_method_call(
-            method="method", args=["hi"], kwargs={}
+            method="method",
+            args=["hi"],
+            kwargs={},
         )
         self.connection.flush()
         self.assertTrue(self.successResultOf(deferred))
@@ -181,7 +192,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda word1, word2: word1 + word2
         deferred = self.sender.send_method_call(
-            method="method", args=["We ", "rock"], kwargs={}
+            method="method",
+            args=["We ", "rock"],
+            kwargs={},
         )
         self.connection.flush()
         self.assertEqual("We rock", self.successResultOf(deferred))
@@ -193,7 +206,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda word, index=0: word[index:].lower()
         deferred = self.sender.send_method_call(
-            method="method", args=["OHH"], kwargs={}
+            method="method",
+            args=["OHH"],
+            kwargs={},
         )
         self.connection.flush()
         self.assertEqual("ohh", self.successResultOf(deferred))
@@ -206,7 +221,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda word, index=0: word[index:].lower()
         deferred = self.sender.send_method_call(
-            method="method", args=["ABC"], kwargs={"index": 2}
+            method="method",
+            args=["ABC"],
+            kwargs={"index": 2},
         )
         self.connection.flush()
         self.assertEqual("c", self.successResultOf(deferred))
@@ -217,10 +234,12 @@ class MethodCallTest(BaseTestCase):
         """
         # Sort the keys to ensure stable test outcome.
         self.object.method = lambda d: "".join(
-            sorted(d.keys()) * sum(d.values())
+            sorted(d.keys()) * sum(d.values()),
         )
         deferred = self.sender.send_method_call(
-            method="method", args=[{"foo": 1, "bar": 2}], kwargs={}
+            method="method",
+            args=[{"foo": 1, "bar": 2}],
+            kwargs={},
         )
         self.connection.flush()
         self.assertEqual("barfoobarfoobarfoo", self.successResultOf(deferred))
@@ -231,10 +250,12 @@ class MethodCallTest(BaseTestCase):
         """
         arg = {b"byte_key": 1}
         self.object.method = lambda d: ",".join(
-            [type(x).__name__ for x in d.keys()]
+            [type(x).__name__ for x in d.keys()],
         )
         deferred = self.sender.send_method_call(
-            method="method", args=[arg], kwargs={}
+            method="method",
+            args=[arg],
+            kwargs={},
         )
         self.connection.flush()
         # str under python2, bytes under python3
@@ -251,7 +272,9 @@ class MethodCallTest(BaseTestCase):
 
         self.object.method = lambda: Complex()
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         self.connection.flush()
         self.failureResultOf(deferred).trap(MethodCallError)
@@ -263,7 +286,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda word: len(word) == 65535
         deferred = self.sender.send_method_call(
-            method="method", args=["!" * 65535], kwargs={}
+            method="method",
+            args=["!" * 65535],
+            kwargs={},
         )
         self.connection.flush()
         self.assertTrue(self.successResultOf(deferred))
@@ -275,10 +300,14 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda word: len(word)
         deferred1 = self.sender.send_method_call(
-            method="method", args=["!" * 80000], kwargs={}
+            method="method",
+            args=["!" * 80000],
+            kwargs={},
         )
         deferred2 = self.sender.send_method_call(
-            method="method", args=["*" * 90000], kwargs={}
+            method="method",
+            args=["*" * 90000],
+            kwargs={},
         )
 
         self.connection.flush()
@@ -292,7 +321,9 @@ class MethodCallTest(BaseTestCase):
         """
         self.object.method = lambda a, b: a / b
         deferred = self.sender.send_method_call(
-            method="method", args=[1, 0], kwargs={}
+            method="method",
+            args=[1, 0],
+            kwargs={},
         )
         self.connection.flush()
         self.failureResultOf(deferred).trap(MethodCallError)
@@ -306,7 +337,9 @@ class MethodCallTest(BaseTestCase):
         self.object.method = lambda: self.object.deferred
         result = []
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         deferred.addCallback(result.append)
 
@@ -331,7 +364,9 @@ class MethodCallTest(BaseTestCase):
         self.object.method = lambda: self.object.deferred
         result = []
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         deferred.addErrback(result.append)
 
@@ -356,7 +391,9 @@ class MethodCallTest(BaseTestCase):
         self.object.method = lambda: Deferred()
         result = []
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         deferred.addErrback(result.append)
 
@@ -374,7 +411,9 @@ class MethodCallTest(BaseTestCase):
         self.object.method = lambda: self.object.deferred
         result = []
         deferred = self.sender.send_method_call(
-            method="method", args=[], kwargs={}
+            method="method",
+            args=[],
+            kwargs={},
         )
         deferred.addErrback(result.append)
 

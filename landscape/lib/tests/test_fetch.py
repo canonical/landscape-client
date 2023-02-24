@@ -1,22 +1,19 @@
 import os
-from threading import local
 import unittest
+from threading import local
 
 import pycurl
-
 from twisted.internet.defer import FirstError
 from twisted.python.compat import unicode
 
 from landscape.lib import testing
-from landscape.lib.fetch import (
-    fetch,
-    fetch_async,
-    fetch_many_async,
-    fetch_to_files,
-    url_to_filename,
-    HTTPCodeError,
-    PyCurlError,
-)
+from landscape.lib.fetch import fetch
+from landscape.lib.fetch import fetch_async
+from landscape.lib.fetch import fetch_many_async
+from landscape.lib.fetch import fetch_to_files
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
+from landscape.lib.fetch import url_to_filename
 
 
 class CurlStub(object):
@@ -62,7 +59,8 @@ class CurlManyStub(object):
                 body = result[0]
                 http_code = result[1]
             self.curls[url] = CurlStub(
-                result=body, infos={pycurl.HTTP_CODE: http_code}
+                result=body,
+                infos={pycurl.HTTP_CODE: http_code},
             )
 
         # Use thread local storage to keep the current CurlStub since
@@ -97,7 +95,9 @@ class Any(object):
 
 
 class FetchTest(
-    testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase
+    testing.FSTestCase,
+    testing.TwistedTestCase,
+    unittest.TestCase,
 ):
     def test_basic(self):
         curl = CurlStub(b"result")
@@ -194,7 +194,9 @@ class FetchTest(
     def test_headers(self):
         curl = CurlStub(b"result")
         result = fetch(
-            "http://example.com", headers={"a": "1", "b": "2"}, curl=curl
+            "http://example.com",
+            headers={"a": "1", "b": "2"},
+            curl=curl,
         )
         self.assertEqual(result, b"result")
         self.assertEqual(
@@ -262,12 +264,14 @@ class FetchTest(
 
     def test_http_error_str(self):
         self.assertEqual(
-            str(HTTPCodeError(501, "")), "Server returned HTTP code 501"
+            str(HTTPCodeError(501, "")),
+            "Server returned HTTP code 501",
         )
 
     def test_http_error_repr(self):
         self.assertEqual(
-            repr(HTTPCodeError(501, "")), "<HTTPCodeError http_code=501>"
+            repr(HTTPCodeError(501, "")),
+            "<HTTPCodeError http_code=501>",
         )
 
     def test_pycurl_error(self):
@@ -283,7 +287,9 @@ class FetchTest(
     def test_pycurl_insecure(self):
         curl = CurlStub(b"result")
         result = fetch(
-            "http://example.com/get-ca-cert", curl=curl, insecure=True
+            "http://example.com/get-ca-cert",
+            curl=curl,
+            insecure=True,
         )
         self.assertEqual(result, b"result")
         self.assertEqual(
@@ -305,7 +311,8 @@ class FetchTest(
 
     def test_pycurl_error_str(self):
         self.assertEqual(
-            str(PyCurlError(60, "pycurl error")), "Error 60: pycurl error"
+            str(PyCurlError(60, "pycurl error")),
+            "Error 60: pycurl error",
         )
 
     def test_pycurl_error_repr(self):
@@ -330,7 +337,9 @@ class FetchTest(
         """If provided, the user-agent is set in the request."""
         curl = CurlStub(b"result")
         result = fetch(
-            "http://example.com", curl=curl, user_agent="user-agent"
+            "http://example.com",
+            curl=curl,
+            user_agent="user-agent",
         )
         self.assertEqual(result, b"result")
         self.assertEqual(b"user-agent", curl.options[pycurl.USERAGENT])
@@ -411,7 +420,10 @@ class FetchTest(
 
         curl = CurlManyStub(url_results)
         d = fetch_many_async(
-            url_results.keys(), callback=callback, errback=errback, curl=curl
+            url_results.keys(),
+            callback=callback,
+            errback=errback,
+            curl=curl,
         )
 
         def completed(result):
@@ -439,12 +451,15 @@ class FetchTest(
         curl = CurlManyStub(url_results)
         urls = ["http://right/", "http://wrong/", "http://impossible/"]
         result = fetch_many_async(
-            urls, callback=None, errback=errback, curl=curl
+            urls,
+            callback=None,
+            errback=errback,
+            curl=curl,
         )
 
         def check_failure(failure):
             self.assertTrue(
-                isinstance(failure.subFailure.value, HTTPCodeError)
+                isinstance(failure.subFailure.value, HTTPCodeError),
             )
             self.assertEqual(failed_urls, ["http://wrong/"])
 
@@ -522,7 +537,10 @@ class FetchTest(
         curl = CurlManyStub(url_results)
 
         result = fetch_to_files(
-            url_results.keys(), directory, logger=logger, curl=curl
+            url_results.keys(),
+            directory,
+            logger=logger,
+            curl=curl,
         )
 
         def check_messages(failure):

@@ -1,9 +1,9 @@
+from landscape.client.monitor.config import ALL_PLUGINS
+from landscape.client.monitor.config import MonitorConfiguration
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.monitor.config import MonitorConfiguration, ALL_PLUGINS
 
 
 class MonitorConfigurationTest(LandscapeTest):
-
     def setUp(self):
         super(MonitorConfigurationTest, self).setUp()
         self.config = MonitorConfiguration()
@@ -21,7 +21,9 @@ class MonitorConfigurationTest(LandscapeTest):
         """
         self.config.load(["--monitor-plugins", "  ComputerInfo, LoadAverage "])
         self.assertEqual(
-            self.config.plugin_factories, ["ComputerInfo", "LoadAverage"])
+            self.config.plugin_factories,
+            ["ComputerInfo", "LoadAverage"],
+        )
 
     def test_flush_interval(self):
         """

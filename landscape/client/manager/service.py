@@ -1,10 +1,11 @@
 from twisted.python.reflect import namedClass
 
-from landscape.client.service import LandscapeService, run_landscape_service
-from landscape.client.manager.config import ManagerConfiguration
-from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.amp import ComponentPublisher
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.manager.config import ManagerConfiguration
 from landscape.client.manager.manager import Manager
+from landscape.client.service import LandscapeService
+from landscape.client.service import run_landscape_service
 
 
 class ManagerService(LandscapeService):
@@ -20,7 +21,9 @@ class ManagerService(LandscapeService):
         self.plugins = self.get_plugins()
         self.manager = Manager(self.reactor, self.config)
         self.publisher = ComponentPublisher(
-            self.manager, self.reactor, self.config
+            self.manager,
+            self.reactor,
+            self.config,
         )
 
     def get_plugins(self):
@@ -28,7 +31,7 @@ class ManagerService(LandscapeService):
         return [
             namedClass(
                 "landscape.client.manager.%s.%s"
-                % (plugin_name.lower(), plugin_name)
+                % (plugin_name.lower(), plugin_name),
             )()
             for plugin_name in self.config.plugin_factories
         ]

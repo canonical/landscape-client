@@ -3,12 +3,11 @@ import unittest
 import mock
 
 from landscape.lib.testing import TwistedTestCase
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
 class LoadTest(TwistedTestCase, unittest.TestCase):
-
     def setUp(self):
         super(LoadTest, self).setUp()
         self.load = Load()
@@ -23,5 +22,4 @@ class LoadTest(TwistedTestCase, unittest.TestCase):
         self.load.run()
 
         mock_getloadavg.assert_called_once_with()
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("System load", "1.5")])
+        self.assertEqual(self.sysinfo.get_headers(), [("System load", "1.5")])

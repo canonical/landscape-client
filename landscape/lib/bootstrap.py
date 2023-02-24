@@ -1,11 +1,10 @@
-from string import Template
-import pwd
 import grp
 import os
+import pwd
+from string import Template
 
 
 class BootstrapList(object):
-
     def __init__(self, bootstraps):
         self._bootstraps = bootstraps
 
@@ -15,7 +14,6 @@ class BootstrapList(object):
 
 
 class BootstrapPath(object):
-
     def __init__(self, path, username=None, group=None, mode=None):
         self.path = path
         self.username = username
@@ -48,13 +46,11 @@ class BootstrapPath(object):
 
 
 class BootstrapFile(BootstrapPath):
-
     def _create(self, path):
         open(path, "a").close()
 
 
 class BootstrapDirectory(BootstrapPath):
-
     def _create(self, path):
         try:
             os.makedirs(path)

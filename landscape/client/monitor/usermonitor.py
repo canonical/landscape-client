@@ -1,15 +1,15 @@
 import logging
-import os
 import os.path
 
 from twisted.internet.defer import maybeDeferred
 
-from landscape.lib.log import log_failure
-from landscape.client.amp import ComponentPublisher, ComponentConnector, remote
-
+from landscape.client.amp import ComponentConnector
+from landscape.client.amp import ComponentPublisher
+from landscape.client.amp import remote
 from landscape.client.monitor.plugin import MonitorPlugin
 from landscape.client.user.changes import UserChanges
 from landscape.client.user.provider import UserProvider
+from landscape.lib.log import log_failure
 
 
 # Part of bug 1048576 remediation:
@@ -38,7 +38,9 @@ class UserMonitor(MonitorPlugin):
         self.call_on_accepted("users", self._run_detect_changes, None)
 
         self._publisher = ComponentPublisher(
-            self, self.registry.reactor, self.registry.config
+            self,
+            self.registry.reactor,
+            self.registry.config,
         )
         self._publisher.start()
 
@@ -60,7 +62,9 @@ class UserMonitor(MonitorPlugin):
     @remote
     def detect_changes(self, operation_id=None):
         return self.registry.broker.call_if_accepted(
-            "users", self._run_detect_changes, operation_id
+            "users",
+            self._run_detect_changes,
+            operation_id,
         )
 
     run = detect_changes
@@ -78,7 +82,8 @@ class UserMonitor(MonitorPlugin):
         )
 
         user_manager_connector = RemoteUserManagerConnector(
-            self.registry.reactor, self.registry.config
+            self.registry.reactor,
+            self.registry.config,
         )
 
         # We'll skip checking the locked users if we're in monitor-only mode.
@@ -101,7 +106,10 @@ class UserMonitor(MonitorPlugin):
         return result
 
     def _detect_changes(
-        self, locked_users, operation_id=None, userchanges=UserChanges
+        self,
+        locked_users,
+        operation_id=None,
+        userchanges=UserChanges,
     ):
         def update_snapshot(result):
             changes.snapshot()
@@ -138,7 +146,9 @@ class UserMonitor(MonitorPlugin):
             if operation_id:
                 message["operation-id"] = operation_id
             result = self.registry.broker.send_message(
-                message, self._session_id, urgent=True
+                message,
+                self._session_id,
+                urgent=True,
             )
             result.addCallback(update_snapshot)
 
@@ -168,7 +178,8 @@ class UserMonitor(MonitorPlugin):
         This is part of the bug 1048576 remediation.
         """
         return os.path.join(
-            self.registry.config.data_path, USER_UPDATE_FLAG_FILE
+            self.registry.config.data_path,
+            USER_UPDATE_FLAG_FILE,
         )
 
 

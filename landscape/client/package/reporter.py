@@ -160,7 +160,7 @@ class PackageReporter(PackageTaskHandler):
             def fetch_error(failure):
                 exception = failure.value
                 logging.warning(
-                    "Couldn't download hash=>id database: %s" % str(exception)
+                    "Couldn't download hash=>id database: %s" % str(exception),
                 )
 
             if url.startswith("https"):
@@ -169,7 +169,9 @@ class PackageReporter(PackageTaskHandler):
                 proxy = self._config.get("http_proxy")
 
             result = fetch_async(
-                url, cainfo=self._config.get("ssl_public_key"), proxy=proxy
+                url,
+                cainfo=self._config.get("ssl_public_key"),
+                proxy=proxy,
             )
             result.addCallback(fetch_ok)
             result.addErrback(fetch_error)
@@ -193,7 +195,8 @@ class PackageReporter(PackageTaskHandler):
             # If config.url is http://host:123/path/to/message-system
             # then we'll use http://host:123/path/to/hash-id-databases
             base_url = urlparse.urljoin(
-                self._config.url.rstrip("/"), "hash-id-databases"
+                self._config.url.rstrip("/"),
+                "hash-id-databases",
             )
 
         return base_url.rstrip("/") + "/"
@@ -212,12 +215,12 @@ class PackageReporter(PackageTaskHandler):
                 [
                     os.path.join(self.sources_list_directory, filename)
                     for filename in os.listdir(self.sources_list_directory)
-                ]
+                ],
             )
 
         for filename in filenames:
             seconds_since_last_change = time.time() - os.path.getmtime(
-                filename
+                filename,
             )
             if seconds_since_last_change < PackageMonitor.run_interval:
                 return True
@@ -277,7 +280,7 @@ class PackageReporter(PackageTaskHandler):
                 and uid == UID_ROOT
             ):
                 logging.info(
-                    "Found ubuntu-release-upgrader running (pid: %s)" % (pid)
+                    "Found ubuntu-release-upgrader running (pid: %s)" % (pid),
                 )
                 return True
         return False
@@ -294,7 +297,7 @@ class PackageReporter(PackageTaskHandler):
             self._config.force_apt_update
             or self._apt_sources_have_changed()
             or self._apt_update_timeout_expired(
-                self._config.apt_update_interval
+                self._config.apt_update_interval,
             )
         ) and not self._is_release_upgrader_running():
 
@@ -306,7 +309,9 @@ class PackageReporter(PackageTaskHandler):
             for retry in range(len(LOCK_RETRY_DELAYS)):
                 deferred = Deferred()
                 self._reactor.call_later(
-                    LOCK_RETRY_DELAYS[retry], self._apt_update, deferred
+                    LOCK_RETRY_DELAYS[retry],
+                    self._apt_update,
+                    deferred,
                 )
                 out, err, code = yield deferred
                 out = out.decode("utf-8")
@@ -317,7 +322,7 @@ class PackageReporter(PackageTaskHandler):
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
                     "'%s' exited with status %d (out='%s', err='%s')"
-                    % (self.apt_update_filename, code, out, err)
+                    % (self.apt_update_filename, code, out, err),
                 )
 
                 if code != 0:
@@ -325,13 +330,13 @@ class PackageReporter(PackageTaskHandler):
                         if retry < len(LOCK_RETRY_DELAYS) - 1:
                             logging.warning(
                                 "Could not acquire the apt lock. Retrying in"
-                                " %s seconds." % LOCK_RETRY_DELAYS[retry + 1]
+                                " %s seconds." % LOCK_RETRY_DELAYS[retry + 1],
                             )
                             continue
 
                     logging.warning(
                         "'%s' exited with status %d (%s)"
-                        % (self.apt_update_filename, code, err)
+                        % (self.apt_update_filename, code, err),
                     )
 
                     # Errors caused by missing cache files are acceptable,
@@ -365,7 +370,7 @@ class PackageReporter(PackageTaskHandler):
         else:
             logging.debug(
                 "'%s' didn't run, conditions not met"
-                % self.apt_update_filename
+                % self.apt_update_filename,
             )
             yield returnValue(("", "", 0))
 
@@ -434,7 +439,7 @@ class PackageReporter(PackageTaskHandler):
 
         logging.info(
             "Received %d package hash => id translations, %d hashes "
-            "are unknown." % (len(hash_ids), len(unknown_hashes))
+            "are unknown." % (len(hash_ids), len(unknown_hashes)),
         )
 
         if unknown_hashes:
@@ -481,19 +486,20 @@ class PackageReporter(PackageTaskHandler):
                         "size": skeleton.size,
                         "installed-size": skeleton.installed_size,
                         "relations": skeleton.relations,
-                    }
+                    },
                 )
 
         if packages:
             logging.info(
                 "Queuing messages with data for %d packages to "
-                "exchange urgently." % len(packages)
+                "exchange urgently." % len(packages),
             )
 
             message = {"type": "add-packages", "packages": packages}
 
             result = self._send_message_with_hash_id_request(
-                message, added_hashes
+                message,
+                added_hashes,
             )
         else:
             result = succeed(None)
@@ -504,7 +510,8 @@ class PackageReporter(PackageTaskHandler):
         def _remove_it(hash_id_db_filename):
             if hash_id_db_filename and os.path.exists(hash_id_db_filename):
                 logging.warning(
-                    "Removing cached hash=>id database %s", hash_id_db_filename
+                    "Removing cached hash=>id database %s",
+                    hash_id_db_filename,
                 )
                 os.remove(hash_id_db_filename)
 
@@ -570,7 +577,7 @@ class PackageReporter(PackageTaskHandler):
 
             logging.info(
                 "Queuing request for package hash => id "
-                "translation on %d hash(es)." % len(unknown_hashes)
+                "translation on %d hash(es)." % len(unknown_hashes),
             )
 
             message = {
@@ -579,7 +586,8 @@ class PackageReporter(PackageTaskHandler):
             }
 
             result = self._send_message_with_hash_id_request(
-                message, unknown_hashes
+                message,
+                unknown_hashes,
             )
 
         return result
@@ -764,52 +772,52 @@ class PackageReporter(PackageTaskHandler):
         message = {}
         if new_installed:
             message["installed"] = list(
-                sequence_to_ranges(sorted(new_installed))
+                sequence_to_ranges(sorted(new_installed)),
             )
         if new_available:
             message["available"] = list(
-                sequence_to_ranges(sorted(new_available))
+                sequence_to_ranges(sorted(new_available)),
             )
         if new_upgrades:
             message["available-upgrades"] = list(
-                sequence_to_ranges(sorted(new_upgrades))
+                sequence_to_ranges(sorted(new_upgrades)),
             )
         if new_locked:
             message["locked"] = list(sequence_to_ranges(sorted(new_locked)))
 
         if new_autoremovable:
             message["autoremovable"] = list(
-                sequence_to_ranges(sorted(new_autoremovable))
+                sequence_to_ranges(sorted(new_autoremovable)),
             )
         if not_autoremovable:
             message["not-autoremovable"] = list(
-                sequence_to_ranges(sorted(not_autoremovable))
+                sequence_to_ranges(sorted(not_autoremovable)),
             )
 
         if new_security:
             message["security"] = list(
-                sequence_to_ranges(sorted(new_security))
+                sequence_to_ranges(sorted(new_security)),
             )
         if not_security:
             message["not-security"] = list(
-                sequence_to_ranges(sorted(not_security))
+                sequence_to_ranges(sorted(not_security)),
             )
 
         if not_installed:
             message["not-installed"] = list(
-                sequence_to_ranges(sorted(not_installed))
+                sequence_to_ranges(sorted(not_installed)),
             )
         if not_available:
             message["not-available"] = list(
-                sequence_to_ranges(sorted(not_available))
+                sequence_to_ranges(sorted(not_available)),
             )
         if not_upgrades:
             message["not-available-upgrades"] = list(
-                sequence_to_ranges(sorted(not_upgrades))
+                sequence_to_ranges(sorted(not_upgrades)),
             )
         if not_locked:
             message["not-locked"] = list(
-                sequence_to_ranges(sorted(not_locked))
+                sequence_to_ranges(sorted(not_locked)),
             )
 
         if not message:
@@ -941,7 +949,7 @@ class FakeReporter(PackageReporter):
                     got_type.add(message["type"])
                     sent.append(message_id)
                     deferred.addCallback(
-                        lambda x, message=message: self.send_message(message)
+                        lambda x, message=message: self.send_message(message),
                     )
             self._store.save_message_ids(sent)
         return deferred

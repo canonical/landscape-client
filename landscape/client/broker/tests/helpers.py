@@ -7,20 +7,21 @@ connected to remote test L{BrokerClient}.
 """
 import os
 
-from landscape.lib.persist import Persist
-from landscape.lib.testing import FakeReactor
-from landscape.client.watchdog import bootstrap_list
 from landscape.client.amp import ComponentPublisher
-from landscape.client.broker.transport import FakeTransport
-from landscape.client.broker.exchange import MessageExchange
-from landscape.client.broker.exchangestore import ExchangeStore
-from landscape.client.broker.store import get_default_message_store
-from landscape.client.broker.registration import Identity, RegistrationHandler
-from landscape.client.broker.ping import Pinger
-from landscape.client.broker.config import BrokerConfiguration
-from landscape.client.broker.server import BrokerServer
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.client import BrokerClient
+from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.broker.exchange import MessageExchange
+from landscape.client.broker.exchangestore import ExchangeStore
+from landscape.client.broker.ping import Pinger
+from landscape.client.broker.registration import Identity
+from landscape.client.broker.registration import RegistrationHandler
+from landscape.client.broker.server import BrokerServer
+from landscape.client.broker.store import get_default_message_store
+from landscape.client.broker.transport import FakeTransport
+from landscape.client.watchdog import bootstrap_list
+from landscape.lib.persist import Persist
+from landscape.lib.testing import FakeReactor
 
 
 class BrokerConfigurationHelper(object):
@@ -37,8 +38,10 @@ class BrokerConfigurationHelper(object):
     def set_up(self, test_case):
         data_path = test_case.makeDir()
         log_dir = test_case.makeDir()
-        test_case.config_filename = os.path.join(test_case.makeDir(),
-                                                 "client.conf")
+        test_case.config_filename = os.path.join(
+            test_case.makeDir(),
+            "client.conf",
+        )
 
         with open(test_case.config_filename, "w") as fh:
             fh.write(
@@ -48,7 +51,8 @@ class BrokerConfigurationHelper(object):
                 "account_name = some_account\n"
                 "ping_url = http://localhost:91910\n"
                 "data_path = %s\n"
-                "log_dir = %s\n" % (data_path, log_dir))
+                "log_dir = %s\n" % (data_path, log_dir),
+            )
 
         bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
 
@@ -91,16 +95,27 @@ class ExchangeHelper(BrokerConfigurationHelper):
         test_case.persist_filename = test_case.makePersistFile()
         test_case.persist = Persist(filename=test_case.persist_filename)
         test_case.mstore = get_default_message_store(
-            test_case.persist, test_case.config.message_store_path)
+            test_case.persist,
+            test_case.config.message_store_path,
+        )
         test_case.identity = Identity(test_case.config, test_case.persist)
-        test_case.transport = FakeTransport(None, test_case.config.url,
-                                            test_case.config.ssl_public_key)
+        test_case.transport = FakeTransport(
+            None,
+            test_case.config.url,
+            test_case.config.ssl_public_key,
+        )
         test_case.reactor = FakeReactor()
         test_case.exchange_store = ExchangeStore(
-            test_case.config.exchange_store_path)
+            test_case.config.exchange_store_path,
+        )
         test_case.exchanger = MessageExchange(
-            test_case.reactor, test_case.mstore, test_case.transport,
-            test_case.identity, test_case.exchange_store, test_case.config)
+            test_case.reactor,
+            test_case.mstore,
+            test_case.transport,
+            test_case.identity,
+            test_case.exchange_store,
+            test_case.config,
+        )
 
 
 class RegistrationHelper(ExchangeHelper):
@@ -117,15 +132,26 @@ class RegistrationHelper(ExchangeHelper):
 
     def set_up(self, test_case):
         super(RegistrationHelper, self).set_up(test_case)
-        test_case.pinger = Pinger(test_case.reactor, test_case.identity,
-                                  test_case.exchanger, test_case.config)
+        test_case.pinger = Pinger(
+            test_case.reactor,
+            test_case.identity,
+            test_case.exchanger,
+            test_case.config,
+        )
         test_case.config.cloud = getattr(test_case, "cloud", False)
         if hasattr(test_case, "juju_contents"):
             test_case.makeFile(
-                test_case.juju_contents, path=test_case.config.juju_filename)
+                test_case.juju_contents,
+                path=test_case.config.juju_filename,
+            )
         test_case.handler = RegistrationHandler(
-            test_case.config, test_case.identity, test_case.reactor,
-            test_case.exchanger, test_case.pinger, test_case.mstore)
+            test_case.config,
+            test_case.identity,
+            test_case.reactor,
+            test_case.exchanger,
+            test_case.pinger,
+            test_case.mstore,
+        )
 
 
 class BrokerServerHelper(RegistrationHelper):
@@ -140,9 +166,14 @@ class BrokerServerHelper(RegistrationHelper):
 
     def set_up(self, test_case):
         super(BrokerServerHelper, self).set_up(test_case)
-        test_case.broker = BrokerServer(test_case.config, test_case.reactor,
-                                        test_case.exchanger, test_case.handler,
-                                        test_case.mstore, test_case.pinger)
+        test_case.broker = BrokerServer(
+            test_case.config,
+            test_case.reactor,
+            test_case.exchanger,
+            test_case.handler,
+            test_case.mstore,
+            test_case.pinger,
+        )
 
 
 class RemoteBrokerHelper(BrokerServerHelper):
@@ -170,11 +201,15 @@ class RemoteBrokerHelper(BrokerServerHelper):
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
 
-        self._publisher = ComponentPublisher(test_case.broker,
-                                             test_case.reactor,
-                                             test_case.config)
-        self._connector = RemoteBrokerConnector(test_case.reactor,
-                                                test_case.config)
+        self._publisher = ComponentPublisher(
+            test_case.broker,
+            test_case.reactor,
+            test_case.config,
+        )
+        self._connector = RemoteBrokerConnector(
+            test_case.reactor,
+            test_case.config,
+        )
 
         self._publisher.start()
         deferred = self._connector.connect()
@@ -228,9 +263,11 @@ class RemoteClientHelper(BrokerClientHelper):
 
     def set_up(self, test_case):
         super(RemoteClientHelper, self).set_up(test_case)
-        self._client_publisher = ComponentPublisher(test_case.client,
-                                                    test_case.reactor,
-                                                    test_case.config)
+        self._client_publisher = ComponentPublisher(
+            test_case.client,
+            test_case.reactor,
+            test_case.config,
+        )
         self._client_publisher.start()
         test_case.remote.register_client("client")
         test_case.remote_client = test_case.broker.get_client("client")

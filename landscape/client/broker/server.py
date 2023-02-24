@@ -42,15 +42,14 @@ Diagram::
                                                       : exchange
 
 """
-
 import logging
 
 from twisted.internet.defer import Deferred
-from landscape.lib.compat import _PY3
 
-from landscape.lib.twisted_util import gather_results
 from landscape.client.amp import remote
 from landscape.client.manager.manager import FAILED
+from landscape.lib.compat import _PY3
+from landscape.lib.twisted_util import gather_results
 
 
 def event(method):
@@ -86,7 +85,13 @@ class BrokerServer(object):
     name = "broker"
 
     def __init__(
-        self, config, reactor, exchange, registration, message_store, pinger
+        self,
+        config,
+        reactor,
+        exchange,
+        registration,
+        message_store,
+        pinger,
     ):
         from landscape.client.broker.amp import get_component_registry
 
@@ -225,7 +230,7 @@ class BrokerServer(object):
 
         if session_id is None:
             raise RuntimeError(
-                "Session ID must be set before attempting to send a message"
+                "Session ID must be set before attempting to send a message",
             )
         if self._message_store.is_valid_session_id(session_id):
             return self._exchanger.send(message, urgent=urgent)

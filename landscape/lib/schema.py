@@ -1,14 +1,18 @@
 """A schema system. Yes. Another one!"""
-from twisted.python.compat import iteritems, unicode, long
+from twisted.python.compat import iteritems
+from twisted.python.compat import long
+from twisted.python.compat import unicode
 
 
 class InvalidError(Exception):
     """Raised when invalid input is received."""
+
     pass
 
 
 class Constant(object):
     """Something that must be equal to a constant value."""
+
     def __init__(self, value):
         self.value = value
 
@@ -29,6 +33,7 @@ class Any(object):
 
     @param schemas: Other schema objects.
     """
+
     def __init__(self, *schemas):
         self.schemas = schemas
 
@@ -42,12 +47,14 @@ class Any(object):
                 return schema.coerce(value)
             except InvalidError:
                 pass
-        raise InvalidError("%r did not match any schema in %s"
-                           % (value, self.schemas))
+        raise InvalidError(
+            "%r did not match any schema in %s" % (value, self.schemas),
+        )
 
 
 class Bool(object):
     """Something that must be a C{bool}."""
+
     def coerce(self, value):
         if not isinstance(value, bool):
             raise InvalidError("%r is not a bool" % (value,))
@@ -56,6 +63,7 @@ class Bool(object):
 
 class Int(object):
     """Something that must be an C{int} or C{long}."""
+
     def coerce(self, value):
         if not isinstance(value, (int, long)):
             raise InvalidError("%r isn't an int or long" % (value,))
@@ -64,6 +72,7 @@ class Int(object):
 
 class Float(object):
     """Something that must be an C{int}, C{long}, or C{float}."""
+
     def coerce(self, value):
         if not isinstance(value, (int, long, float)):
             raise InvalidError("%r isn't a float" % (value,))
@@ -76,6 +85,7 @@ class Bytes(object):
     If the value is a Python3 str (unicode), it will be automatically
     encoded.
     """
+
     def coerce(self, value):
         if isinstance(value, bytes):
             return value
@@ -113,6 +123,7 @@ class List(object):
 
     @param schema: The schema that all values of the list must match.
     """
+
     def __init__(self, schema):
         self.schema = schema
 
@@ -126,7 +137,8 @@ class List(object):
             except InvalidError as e:
                 raise InvalidError(
                     "%r could not coerce with %s: %s"
-                    % (subvalue, self.schema, e))
+                    % (subvalue, self.schema, e),
+                )
         return new_list
 
 
@@ -144,8 +156,10 @@ class Tuple(object):
         if not isinstance(value, tuple):
             raise InvalidError("%r is not a tuple" % (value,))
         if len(value) != len(self.schema):
-            raise InvalidError("Need %s items, got %s in %r"
-                               % (len(self.schema), len(value), value))
+            raise InvalidError(
+                "Need %s items, got %s in %r"
+                % (len(self.schema), len(value), value),
+            )
         new_value = []
         for schema, value in zip(self.schema, value):
             new_value.append(schema.coerce(value))
@@ -160,6 +174,7 @@ class KeyDict(object):
     @param schema: A dict mapping keys to schemas that the values of those
         keys must match.
     """
+
     def __init__(self, schema, optional=None):
         if optional is None:
             optional = []
@@ -172,14 +187,16 @@ class KeyDict(object):
             raise InvalidError("%r is not a dict." % (value,))
         for k, v in iteritems(value):
             if k not in self.schema:
-                raise InvalidError("%r is not a valid key as per %r"
-                                   % (k, self.schema))
+                raise InvalidError(
+                    "%r is not a valid key as per %r" % (k, self.schema),
+                )
             try:
                 new_dict[k] = self.schema[k].coerce(v)
             except InvalidError as e:
                 raise InvalidError(
                     "Value of %r key of dict %r could not coerce with %s: %s"
-                    % (k, value, self.schema[k], e))
+                    % (k, value, self.schema[k], e),
+                )
         new_keys = set(new_dict.keys())
         required_keys = set(self.schema.keys()) - self.optional
         missing = required_keys - new_keys

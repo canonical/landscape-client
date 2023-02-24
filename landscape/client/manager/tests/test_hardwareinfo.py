@@ -1,6 +1,6 @@
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
-
 from landscape.client.manager.hardwareinfo import HardwareInfo
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
 
 
 class HardwareInfoTests(LandscapeTest):
@@ -24,7 +24,8 @@ class HardwareInfoTests(LandscapeTest):
         def check(ignored):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"data": u"-xml -quiet\n", "type": "hardware-info"}])
+                [{"data": "-xml -quiet\n", "type": "hardware-info"}],
+            )
 
         return deferred.addCallback(check)
 
@@ -40,7 +41,8 @@ class HardwareInfoTests(LandscapeTest):
         def check(ignored):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"data": u"-xml -quiet\n", "type": "hardware-info"}])
+                [{"data": "-xml -quiet\n", "type": "hardware-info"}],
+            )
 
         return deferred.addCallback(check)
 
@@ -57,7 +59,8 @@ class HardwareInfoTests(LandscapeTest):
         def check(ignored):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"data": u"-xml -quiet\n", "type": "hardware-info"}])
+                [{"data": "-xml -quiet\n", "type": "hardware-info"}],
+            )
             self.assertEqual([], calls)
 
         return deferred.addCallback(check)

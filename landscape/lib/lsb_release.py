@@ -1,6 +1,7 @@
 """Get information from /usr/bin/lsb_release."""
 import os
-from subprocess import CalledProcessError, check_output
+from subprocess import CalledProcessError
+from subprocess import check_output
 
 LSB_RELEASE = "/usr/bin/lsb_release"
 LSB_RELEASE_FILENAME = "/etc/lsb_release"

@@ -74,10 +74,16 @@ class PingClient(object):
 
             def errback(type, value, tb):
                 page_deferred.errback(Failure(value, type, tb))
-            self._reactor.call_in_thread(page_deferred.callback, errback,
-                                         self.get_page, url,
-                                         post=True, data=data,
-                                         headers=headers)
+
+            self._reactor.call_in_thread(
+                page_deferred.callback,
+                errback,
+                self.get_page,
+                url,
+                post=True,
+                data=data,
+                headers=headers,
+            )
             page_deferred.addCallback(self._got_result)
             return page_deferred
         return defer.succeed(False)
@@ -107,8 +113,14 @@ class Pinger(object):
         scheduled ping.
     """
 
-    def __init__(self, reactor, identity, exchanger, config,
-                 ping_client_factory=PingClient):
+    def __init__(
+        self,
+        reactor,
+        identity,
+        exchanger,
+        config,
+        ping_client_factory=PingClient,
+    ):
         self._config = config
         self._identity = identity
         self._reactor = reactor
@@ -132,33 +144,42 @@ class Pinger(object):
     def ping(self):
         """Perform a ping; if there are messages, fire an exchange."""
         deferred = self._ping_client.ping(
-            self._config.ping_url, self._identity.insecure_id)
+            self._config.ping_url,
+            self._identity.insecure_id,
+        )
         deferred.addCallback(self._got_result)
         deferred.addErrback(self._got_error)
         deferred.addBoth(lambda _: self._schedule())
 
     def _got_result(self, exchange):
         if exchange:
-            info("Ping indicates message available. "
-                 "Scheduling an urgent exchange.")
+            info(
+                "Ping indicates message available. "
+                "Scheduling an urgent exchange.",
+            )
             self._exchanger.schedule_exchange(urgent=True)
 
     def _got_error(self, failure):
-        log_failure(failure,
-                    "Error contacting ping server at %s" %
-                    (self._ping_client.url,))
+        log_failure(
+            failure,
+            "Error contacting ping server at %s" % (self._ping_client.url,),
+        )
 
     def _schedule(self):
         """Schedule a new ping using the current ping interval."""
-        self._call_id = self._reactor.call_later(self._config.ping_interval,
-                                                 self.ping)
+        self._call_id = self._reactor.call_later(
+            self._config.ping_interval,
+            self.ping,
+        )
 
     def _handle_set_intervals(self, message):
         if message["type"] == "set-intervals" and "ping" in message:
             self._config.ping_interval = message["ping"]
             self._config.write()
-            info("Ping interval set to %d seconds." %
-                 self._config.ping_interval)
+            info(
+                "Ping interval set to %d seconds."
+                % self._config.ping_interval,
+            )
         if self._call_id is not None:
             self._reactor.cancel_call(self._call_id)
             self._schedule()
@@ -171,7 +192,6 @@ class Pinger(object):
 
 
 class FakePinger(object):
-
     def __init__(self, *args, **kwargs):
         pass
 

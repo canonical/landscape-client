@@ -1,8 +1,8 @@
-from grp import struct_group
-from pwd import struct_passwd
 import csv
 import logging
 import subprocess
+from grp import struct_group
+from pwd import struct_passwd
 
 from landscape.lib.compat import _PY3
 
@@ -57,7 +57,7 @@ class UserProviderBase(object):
                     "work-phone": work_phone,
                     "home-phone": home_phone,
                     "primary-gid": user.pw_gid,
-                }
+                },
             )
             found_usernames.add(user.pw_name)
         return users
@@ -82,7 +82,7 @@ class UserProviderBase(object):
                     "name": group.gr_name,
                     "gid": group.gr_gid,
                     "members": sorted(list(member_names)),
-                }
+                },
             )
             found_groupnames.add(group.gr_name)
         return groups
@@ -179,12 +179,12 @@ class UserProvider(UserProviderBase):
                             gecos,
                             row["home"],
                             row["shell"],
-                        )
+                        ),
                     )
                 except (ValueError, TypeError):
                     logging.warn(
                         "passwd file %s is incorrectly formatted: line %d."
-                        % (self._passwd_file, current_line)
+                        % (self._passwd_file, current_line),
                     )
         return user_data
 
@@ -215,12 +215,12 @@ class UserProvider(UserProviderBase):
                         row["passwd"],
                         int(row["gid"]),
                         row["members"].split(","),
-                    )
+                    ),
                 )
             except (AttributeError, ValueError):
                 logging.warn(
                     "group file %s is incorrectly formatted: "
-                    "line %d." % (self._group_file, current_line)
+                    "line %d." % (self._group_file, current_line),
                 )
         group_file.close()
         return group_data

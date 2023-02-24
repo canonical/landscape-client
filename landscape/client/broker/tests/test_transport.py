@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 import os
 
-from landscape import VERSION
-from landscape.client.broker.transport import HTTPTransport
-from landscape.lib import bpickle
-from landscape.lib.fetch import PyCurlError
-from landscape.lib.testing import LogKeeperHelper
-
-from landscape.client.tests.helpers import LandscapeTest
-
-from twisted.web import server, resource
 from twisted.internet import reactor
 from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.internet.threads import deferToThread
+from twisted.web import resource
+from twisted.web import server
+
+from landscape import VERSION
+from landscape.client.broker.transport import HTTPTransport
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib import bpickle
+from landscape.lib.fetch import PyCurlError
+from landscape.lib.testing import LogKeeperHelper
 
 
 def sibpath(path):
@@ -54,11 +54,14 @@ class HTTPTransportTest(LandscapeTest):
     def request_with_payload(self, payload):
         resource = DataCollectingResource()
         port = reactor.listenTCP(
-            0, server.Site(resource), interface="127.0.0.1"
+            0,
+            server.Site(resource),
+            interface="127.0.0.1",
         )
         self.ports.append(port)
         transport = HTTPTransport(
-            None, "http://localhost:%d/" % (port.getHost().port,)
+            None,
+            "http://localhost:%d/" % (port.getHost().port,),
         )
         result = deferToThread(
             transport.exchange,
@@ -80,7 +83,8 @@ class HTTPTransportTest(LandscapeTest):
             self.assertEqual(get_header("x-computer-id"), ["34"])
             self.assertEqual(get_header("x-exchange-token"), ["abcd-efgh"])
             self.assertEqual(
-                get_header("user-agent"), ["landscape-client/%s" % (VERSION,)]
+                get_header("user-agent"),
+                ["landscape-client/%s" % (VERSION,)],
             )
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), payload)
@@ -123,14 +127,22 @@ class HTTPTransportTest(LandscapeTest):
         resource = DataCollectingResource()
         context_factory = DefaultOpenSSLContextFactory(PRIVKEY, PUBKEY)
         port = reactor.listenSSL(
-            0, server.Site(resource), context_factory, interface="127.0.0.1"
+            0,
+            server.Site(resource),
+            context_factory,
+            interface="127.0.0.1",
         )
         self.ports.append(port)
         transport = HTTPTransport(
-            None, "https://localhost:%d/" % (port.getHost().port,), PUBKEY
+            None,
+            "https://localhost:%d/" % (port.getHost().port,),
+            PUBKEY,
         )
         result = deferToThread(
-            transport.exchange, "HI", computer_id="34", message_api="X.Y"
+            transport.exchange,
+            "HI",
+            computer_id="34",
+            message_api="X.Y",
         )
 
         def got_result(ignored):
@@ -144,7 +156,8 @@ class HTTPTransportTest(LandscapeTest):
 
             self.assertEqual(get_header("x-computer-id"), ["34"])
             self.assertEqual(
-                get_header("user-agent"), ["landscape-client/%s" % (VERSION,)]
+                get_header("user-agent"),
+                ["landscape-client/%s" % (VERSION,)],
             )
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), "HI")
@@ -162,7 +175,10 @@ class HTTPTransportTest(LandscapeTest):
         r = DataCollectingResource()
         context_factory = DefaultOpenSSLContextFactory(BADPRIVKEY, BADPUBKEY)
         port = reactor.listenSSL(
-            0, server.Site(r), context_factory, interface="127.0.0.1"
+            0,
+            server.Site(r),
+            context_factory,
+            interface="127.0.0.1",
         )
         self.ports.append(port)
         transport = HTTPTransport(
@@ -172,7 +188,10 @@ class HTTPTransportTest(LandscapeTest):
         )
 
         result = deferToThread(
-            transport.exchange, "HI", computer_id="34", message_api="X.Y"
+            transport.exchange,
+            "HI",
+            computer_id="34",
+            message_api="X.Y",
         )
 
         def got_result(ignored):
@@ -180,7 +199,7 @@ class HTTPTransportTest(LandscapeTest):
             self.assertIs(r.content, None)
             self.assertTrue(
                 "server certificate verification failed"
-                in self.logfile.getvalue()
+                in self.logfile.getvalue(),
             )
 
         result.addErrback(got_result)

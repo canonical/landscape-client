@@ -1,10 +1,12 @@
-import mock
 import os
 import tempfile
 
+import mock
+
 from landscape.client.monitor.temperature import Temperature
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 from landscape.lib.tests.test_sysstats import ThermalZoneTest
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
@@ -47,8 +49,10 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         creates messages with changes reported correctly.
         """
         self.write_thermal_zone("ZONE2", "50000")
-        plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
-                             create_time=self.reactor.time)
+        plugin = Temperature(
+            thermal_zone_path=self.thermal_zone_path,
+            create_time=self.reactor.time,
+        )
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
@@ -62,17 +66,13 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
 
         self.assertEqual(messages[0]["thermal-zone"], "ZONE1")
         self.assertEqual(len(messages[0]["temperatures"]), 2)
-        self.assertEqual(messages[0]["temperatures"][0],
-                         (step_size, 50.0))
-        self.assertEqual(messages[0]["temperatures"][1],
-                         (step_size * 2, 50.0))
+        self.assertEqual(messages[0]["temperatures"][0], (step_size, 50.0))
+        self.assertEqual(messages[0]["temperatures"][1], (step_size * 2, 50.0))
 
         self.assertEqual(messages[1]["thermal-zone"], "ZONE2")
         self.assertEqual(len(messages[1]["temperatures"]), 2)
-        self.assertEqual(messages[1]["temperatures"][0],
-                         (step_size, 50.0))
-        self.assertEqual(messages[1]["temperatures"][1],
-                         (step_size * 2, 56.0))
+        self.assertEqual(messages[1]["temperatures"][0], (step_size, 50.0))
+        self.assertEqual(messages[1]["temperatures"][1], (step_size * 2, 56.0))
 
     def test_messaging_flushes(self):
         """
@@ -80,8 +80,10 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         available, a message with an empty C{temperatures} list is
         expected.
         """
-        plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
-                             create_time=self.reactor.time)
+        plugin = Temperature(
+            thermal_zone_path=self.thermal_zone_path,
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -99,8 +101,10 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         should not be queued.
         """
         self.write_thermal_zone("ZONE2", "50000")
-        plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
-                             create_time=self.reactor.time)
+        plugin = Temperature(
+            thermal_zone_path=self.thermal_zone_path,
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
         self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
@@ -112,20 +116,30 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         delivered in a single message.
         """
         self.write_thermal_zone("ZONE2", "50000")
-        plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
-                             create_time=self.reactor.time)
+        plugin = Temperature(
+            thermal_zone_path=self.thermal_zone_path,
+            create_time=self.reactor.time,
+        )
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
         self.reactor.advance(step_size)
         self.monitor.exchange()
 
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "temperature",
-                              "thermal-zone": "ZONE1",
-                              "temperatures": [(step_size, 50.0)]},
-                             {"type": "temperature",
-                              "thermal-zone": "ZONE2",
-                              "temperatures": [(step_size, 50.0)]}])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [
+                {
+                    "type": "temperature",
+                    "thermal-zone": "ZONE1",
+                    "temperatures": [(step_size, 50.0)],
+                },
+                {
+                    "type": "temperature",
+                    "thermal-zone": "ZONE2",
+                    "temperatures": [(step_size, 50.0)],
+                },
+            ],
+        )
 
     def test_no_messages_on_bad_values(self):
         """
@@ -133,8 +147,10 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         break and no messages are sent.
         """
         self.write_thermal_zone("ZONE1", "UNKNOWN C")
-        plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
-                             create_time=self.reactor.time)
+        plugin = Temperature(
+            thermal_zone_path=self.thermal_zone_path,
+            create_time=self.reactor.time,
+        )
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
         self.reactor.advance(step_size)
@@ -143,17 +159,24 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         self.assertMessages(self.mstore.get_pending_messages(), [])
 
     def test_call_on_accepted(self):
-        plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
-                             create_time=self.reactor.time)
+        plugin = Temperature(
+            thermal_zone_path=self.thermal_zone_path,
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(plugin.registry.step_size)
 
         with mock.patch.object(self.remote, "send_message"):
-            self.reactor.fire(("message-type-acceptance-changed",
-                               "temperature"), True)
+            self.reactor.fire(
+                ("message-type-acceptance-changed", "temperature"),
+                True,
+            )
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY, urgent=True)
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
+            )
 
     def test_no_message_if_not_accepted(self):
         """
@@ -161,8 +184,10 @@ class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
         accepting their type.
         """
         self.mstore.set_accepted_types([])
-        plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
-                             create_time=self.reactor.time)
+        plugin = Temperature(
+            thermal_zone_path=self.thermal_zone_path,
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
         self.reactor.advance(self.monitor.step_size * 2)
         self.monitor.exchange()

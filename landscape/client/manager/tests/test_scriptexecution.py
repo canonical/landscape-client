@@ -1,30 +1,37 @@
-import pwd
 import os
+import pwd
+import stat
 import sys
 import tempfile
-import stat
 
 import mock
-
-from twisted.internet.defer import gatherResults, succeed, fail
+from twisted.internet.defer import fail
+from twisted.internet.defer import gatherResults
+from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
 from landscape import VERSION
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.persist import Persist
-from landscape.lib.testing import StubProcessFactory, DummyProcess
-from landscape.lib.user import get_user_info, UnknownUserError
+from landscape.client.manager.manager import FAILED
+from landscape.client.manager.manager import SUCCEEDED
 from landscape.client.manager.scriptexecution import (
-    ScriptExecutionPlugin,
-    ProcessTimeLimitReachedError,
-    PROCESS_FAILED_RESULT,
-    UBUNTU_PATH,
-    UnknownInterpreterError,
     FETCH_ATTACHMENTS_FAILED_RESULT,
 )
-from landscape.client.manager.manager import SUCCEEDED, FAILED
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.manager.scriptexecution import PROCESS_FAILED_RESULT
+from landscape.client.manager.scriptexecution import (
+    ProcessTimeLimitReachedError,
+)
+from landscape.client.manager.scriptexecution import ScriptExecutionPlugin
+from landscape.client.manager.scriptexecution import UBUNTU_PATH
+from landscape.client.manager.scriptexecution import UnknownInterpreterError
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.persist import Persist
+from landscape.lib.testing import DummyProcess
+from landscape.lib.testing import StubProcessFactory
+from landscape.lib.user import get_user_info
+from landscape.lib.user import UnknownUserError
 
 
 def get_default_environment():
@@ -84,7 +91,8 @@ class RunScriptTests(LandscapeTest):
         need to check that other interpreters have environment variables set.
         """
         result = self.plugin.run_script(
-            sys.executable, "import os\nprint(os.environ)"
+            sys.executable,
+            "import os\nprint(os.environ)",
         )
 
         def check_environment(results):
@@ -123,7 +131,8 @@ class RunScriptTests(LandscapeTest):
         (encoding from Python's sys.getfilesystemencoding).
         """
         patch_fs_encoding = mock.patch(
-            "sys.getfilesystemencoding", return_value="UTF-8"
+            "sys.getfilesystemencoding",
+            return_value="UTF-8",
         )
         patch_fs_encoding.start()
 
@@ -132,7 +141,9 @@ class RunScriptTests(LandscapeTest):
             # Somehow it's just not as cool...
         }
         result = self.plugin.run_script(
-            "/bin/sh", "echo $LEMMY", server_supplied_env=server_supplied_env
+            "/bin/sh",
+            "echo $LEMMY",
+            server_supplied_env=server_supplied_env,
         )
 
         def check_environment(results):
@@ -192,7 +203,8 @@ class RunScriptTests(LandscapeTest):
         """
         accented_content = "\N{LATIN SMALL LETTER E WITH ACUTE}"
         result = self.plugin.run_script(
-            "/bin/sh", "echo %s" % (accented_content,)
+            "/bin/sh",
+            "echo %s" % (accented_content,),
         )
         # self.assertEqual gets the result as first argument and that's what we
         # compare against.
@@ -205,7 +217,8 @@ class RunScriptTests(LandscapeTest):
         """
         accented_content = "\N{LATIN SMALL LETTER E WITH ACUTE}"
         result = self.plugin.run_script(
-            "/bin/echo %s" % (accented_content,), ""
+            "/bin/echo %s" % (accented_content,),
+            "",
         )
 
         def check(result):
@@ -231,7 +244,7 @@ class RunScriptTests(LandscapeTest):
         def check(result):
             self.assertEqual("%04o\n" % old_umask, result)
             mock_umask.assert_has_calls(
-                [mock.call(0o22), mock.call(old_umask)]
+                [mock.call(0o22), mock.call(old_umask)],
             )
 
         result.addCallback(check)
@@ -246,12 +259,15 @@ class RunScriptTests(LandscapeTest):
         mock_umask = patch_umask.start()
 
         patch_mkdtemp = mock.patch(
-            "tempfile.mkdtemp", side_effect=OSError("Fail!")
+            "tempfile.mkdtemp",
+            side_effect=OSError("Fail!"),
         )
         mock_mkdtemp = patch_mkdtemp.start()
 
         result = self.plugin.run_script(
-            "/bin/sh", "umask", attachments={"file1": "some data"}
+            "/bin/sh",
+            "umask",
+            attachments={"file1": "some data"},
         )
 
         def check(error):
@@ -288,14 +304,14 @@ class RunScriptTests(LandscapeTest):
         """
         self.manager.config.url = "https://localhost/message-system"
         persist = Persist(
-            filename=os.path.join(self.config.data_path, "broker.bpickle")
+            filename=os.path.join(self.config.data_path, "broker.bpickle"),
         )
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
         persist.save()
 
         patch_fetch = mock.patch(
-            "landscape.client.manager.scriptexecution.fetch_async"
+            "landscape.client.manager.scriptexecution.fetch_async",
         )
         mock_fetch = patch_fetch.start()
         mock_fetch.return_value = succeed(b"some other data")
@@ -315,7 +331,9 @@ class RunScriptTests(LandscapeTest):
         def check(result):
             self.assertEqual(result, "file1\nsome other data")
             mock_fetch.assert_called_with(
-                "https://localhost/attachment/14", headers=headers, cainfo=None
+                "https://localhost/attachment/14",
+                headers=headers,
+                cainfo=None,
             )
 
         def cleanup(result):
@@ -333,14 +351,14 @@ class RunScriptTests(LandscapeTest):
         self.manager.config.url = "https://localhost/message-system"
         self.manager.config.ssl_public_key = "/some/key"
         persist = Persist(
-            filename=os.path.join(self.config.data_path, "broker.bpickle")
+            filename=os.path.join(self.config.data_path, "broker.bpickle"),
         )
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", b"secure_id")
         persist.save()
 
         patch_fetch = mock.patch(
-            "landscape.client.manager.scriptexecution.fetch_async"
+            "landscape.client.manager.scriptexecution.fetch_async",
         )
         mock_fetch = patch_fetch.start()
         mock_fetch.return_value = succeed(b"some other data")
@@ -510,7 +528,7 @@ class RunScriptTests(LandscapeTest):
             self.assertEqual(data, "foobar")
             self.assertFalse(os.path.exists(attachment_dir))
             mock_chown.assert_has_calls(
-                [mock.call(mock.ANY, uid, gid) for x in range(3)]
+                [mock.call(mock.ANY, uid, gid) for x in range(3)],
             )
 
         def cleanup(result):
@@ -529,7 +547,8 @@ class RunScriptTests(LandscapeTest):
         # Ultimately we assert that the resulting output is limited to
         # 1024 bytes and indicates its truncation.
         result.addCallback(
-            self.assertEqual, ("x" * (1024 - 21)) + "\n**OUTPUT TRUNCATED**"
+            self.assertEqual,
+            ("x" * (1024 - 21)) + "\n**OUTPUT TRUNCATED**",
         )
 
         protocol = factory.spawns[0][0]
@@ -553,7 +572,8 @@ class RunScriptTests(LandscapeTest):
         # Ultimately we assert that the resulting output is limited to
         # 1024 bytes and indicates its truncation.
         result.addCallback(
-            self.assertEqual, ("x" * (1024 - 21)) + "\n**OUTPUT TRUNCATED**"
+            self.assertEqual,
+            ("x" * (1024 - 21)) + "\n**OUTPUT TRUNCATED**",
         )
         protocol = factory.spawns[0][0]
 
@@ -640,7 +660,11 @@ class RunScriptTests(LandscapeTest):
     @mock.patch("tempfile.mkstemp")
     @mock.patch("os.fdopen")
     def test_script_is_owned_by_user(
-        self, mock_fdopen, mock_mkstemp, mock_chmod, mock_chown
+        self,
+        mock_fdopen,
+        mock_mkstemp,
+        mock_chmod,
+        mock_chown,
     ):
         """
         This is a very white-box test. When a script is generated, it must be
@@ -671,7 +695,13 @@ class RunScriptTests(LandscapeTest):
         mock_fdopen.side_effect = mock_fdopen_side_effect
 
         def spawnProcess(  # noqa: N802
-            protocol, filename, args, env, path, uid, gid
+            protocol,
+            filename,
+            args,
+            env,
+            path,
+            uid,
+            gid,
         ):
             self.assertIsNone(uid)
             self.assertIsNone(gid)
@@ -683,7 +713,9 @@ class RunScriptTests(LandscapeTest):
         self.plugin.process_factory = process_factory
 
         result = self.plugin.run_script(
-            "/bin/sh", "code", user=pwd.getpwuid(uid)[0]
+            "/bin/sh",
+            "code",
+            user=pwd.getpwuid(uid)[0],
         )
 
         def check(_):
@@ -709,7 +741,7 @@ class RunScriptTests(LandscapeTest):
             mock_mkstemp.return_value = (fd, filename)
             d = self.plugin.run_script("/bin/sh", "true")
             return d.addCallback(
-                lambda _: self.assertFalse(os.path.exists(filename))
+                lambda _: self.assertFalse(os.path.exists(filename)),
             )
 
     def test_unknown_interpreter(self):
@@ -725,7 +757,8 @@ class RunScriptTests(LandscapeTest):
         def eb(failure):
             failure.trap(UnknownInterpreterError)
             self.assertEqual(
-                failure.value.interpreter, "/bin/cantpossiblyexist"
+                failure.value.interpreter,
+                "/bin/cantpossiblyexist",
             )
 
         return d.addCallback(cb).addErrback(eb)
@@ -737,7 +770,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
     def setUp(self):
         super(ScriptExecutionMessageTests, self).setUp()
         self.broker_service.message_store.set_accepted_types(
-            ["operation-result"]
+            ["operation-result"],
         )
         self.manager.config.script_users = "ALL"
 
@@ -788,7 +821,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
         self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(), []
+            self.broker_service.message_store.get_pending_messages(),
+            [],
         )
 
         # Now let's simulate the completion of the process
@@ -804,7 +838,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "operation-id": 123,
                         "status": SUCCEEDED,
                         "result-text": "hi!\n",
-                    }
+                    },
                 ],
             )
 
@@ -824,7 +858,9 @@ class ScriptExecutionMessageTests(LandscapeTest):
         self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
         result = self._send_script(
-            sys.executable, "print 'hi'", server_supplied_env={"Dog": "Woof"}
+            sys.executable,
+            "print 'hi'",
+            server_supplied_env={"Dog": "Woof"},
         )
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
@@ -836,7 +872,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         self.assertEqual(b"Woof", factory.spawns[0][3]["Dog"])
 
         self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(), []
+            self.broker_service.message_store.get_pending_messages(),
+            [],
         )
 
         # Now let's simulate the completion of the process
@@ -852,7 +889,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "operation-id": 123,
                         "status": SUCCEEDED,
                         "result-text": "Woof\n",
-                    }
+                    },
                 ],
             )
 
@@ -865,7 +902,13 @@ class ScriptExecutionMessageTests(LandscapeTest):
         uid, gid, home = get_user_info(username)
 
         def spawnProcess(  # noqa: N802
-            protocol, filename, args, env, path, uid, gid
+            protocol,
+            filename,
+            args,
+            env,
+            path,
+            uid,
+            gid,
         ):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
@@ -874,7 +917,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         process_factory = mock.Mock()
         process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
         self.manager.add(
-            ScriptExecutionPlugin(process_factory=process_factory)
+            ScriptExecutionPlugin(process_factory=process_factory),
         )
 
         result = self._send_script(sys.executable, "print 'hi'", user=username)
@@ -915,7 +958,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                     "result-text": "UnknownUserError: Unknown user '%s'"
                     % username,
                     "status": FAILED,
-                }
+                },
             ],
         )
 
@@ -946,7 +989,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "status": FAILED,
                         "result-text": "ONOEZ",
                         "result-code": 102,
-                    }
+                    },
                 ],
             )
 
@@ -973,7 +1016,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "result-text": (
                             "Scripts cannot be run as user whatever."
                         ),
-                    }
+                    },
                 ],
             )
 
@@ -984,7 +1027,13 @@ class ScriptExecutionMessageTests(LandscapeTest):
         """Responses to script execution messages are urgent."""
 
         def spawnProcess(  # noqa: N802
-            protocol, filename, args, env, path, uid, gid
+            protocol,
+            filename,
+            args,
+            env,
+            path,
+            uid,
+            gid,
         ):
             protocol.childDataReceived(1, b"hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
@@ -994,7 +1043,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
 
         self.manager.add(
-            ScriptExecutionPlugin(process_factory=process_factory)
+            ScriptExecutionPlugin(process_factory=process_factory),
         )
 
         def got_result(r):
@@ -1007,7 +1056,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "operation-id": 123,
                         "result-text": "hi!\n",
                         "status": SUCCEEDED,
-                    }
+                    },
                 ],
             )
             process_factory.spawnProcess.assert_called_with(
@@ -1030,10 +1079,17 @@ class ScriptExecutionMessageTests(LandscapeTest):
         """
 
         def spawnProcess(  # noqa: N802
-            protocol, filename, args, env, path, uid, gid
+            protocol,
+            filename,
+            args,
+            env,
+            path,
+            uid,
+            gid,
         ):
             protocol.childDataReceived(
-                1, b"\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01"
+                1,
+                b"\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01",
             )
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
@@ -1042,13 +1098,13 @@ class ScriptExecutionMessageTests(LandscapeTest):
         process_factory.spawnProcess = mock.Mock(side_effect=spawnProcess)
 
         self.manager.add(
-            ScriptExecutionPlugin(process_factory=process_factory)
+            ScriptExecutionPlugin(process_factory=process_factory),
         )
 
         def got_result(r):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             [
-                message
+                message,
             ] = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(
                 message["result-text"],
@@ -1076,7 +1132,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         self.manager.add(ScriptExecutionPlugin())
 
         self.manager.dispatch_message(
-            {"type": "execute-script", "operation-id": 444}
+            {"type": "execute-script", "operation-id": 444},
         )
 
         expected_message = [
@@ -1085,7 +1141,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                 "operation-id": 444,
                 "result-text": "KeyError: username",
                 "status": FAILED,
-            }
+            },
         ]
 
         self.assertMessages(
@@ -1113,7 +1169,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "result-text": "hi\n",
                         "result-code": PROCESS_FAILED_RESULT,
                         "status": FAILED,
-                    }
+                    },
                 ],
             )
 
@@ -1133,7 +1189,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
         self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
         self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(), []
+            self.broker_service.message_store.get_pending_messages(),
+            [],
         )
 
         failure = Failure(RuntimeError("Oh noes!"))
@@ -1148,7 +1205,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "operation-id": 123,
                         "status": FAILED,
                         "result-text": str(failure),
-                    }
+                    },
                 ],
             )
 
@@ -1163,7 +1220,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         """
         self.manager.config.url = "https://localhost/message-system"
         persist = Persist(
-            filename=os.path.join(self.config.data_path, "broker.bpickle")
+            filename=os.path.join(self.config.data_path, "broker.bpickle"),
         )
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
@@ -1178,7 +1235,9 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
         self.manager.add(ScriptExecutionPlugin())
         result = self._send_script(
-            "/bin/sh", "echo hi", attachments={"file1": 14}
+            "/bin/sh",
+            "echo hi",
+            attachments={"file1": 14},
         )
 
         def got_result(ignored):
@@ -1191,11 +1250,13 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "result-text": "Server returned HTTP code 404",
                         "result-code": FETCH_ATTACHMENTS_FAILED_RESULT,
                         "status": FAILED,
-                    }
+                    },
                 ],
             )
             mock_fetch.assert_called_with(
-                "https://localhost/attachment/14", headers=headers, cainfo=None
+                "https://localhost/attachment/14",
+                headers=headers,
+                cainfo=None,
             )
 
         return result.addCallback(got_result)

@@ -1,17 +1,17 @@
+import logging
 import os
 import pwd
-import logging
 
 import mock
-
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
 from landscape.client.manager.customgraph import CustomGraphPlugin
 from landscape.client.manager.store import ManagerStore
-
-from landscape.lib.testing import StubProcessFactory, DummyProcess
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
+from landscape.lib.testing import DummyProcess
+from landscape.lib.testing import StubProcessFactory
 
 
 class CustomGraphManagerTests(LandscapeTest):
@@ -28,7 +28,7 @@ class CustomGraphManagerTests(LandscapeTest):
         os.makedirs(os.path.join(self.data_path, "custom-graph-scripts"))
         self.manager.config.script_users = "ALL"
         self.graph_manager = CustomGraphPlugin(
-            create_time=list(range(1500, 0, -300)).pop
+            create_time=list(range(1500, 0, -300)).pop,
         )
         self.manager.add(self.graph_manager)
 
@@ -49,7 +49,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo hi!",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
 
         self.assertEqual(
@@ -58,10 +58,12 @@ class CustomGraphManagerTests(LandscapeTest):
                 (
                     123,
                     os.path.join(
-                        self.data_path, "custom-graph-scripts", "graph-123"
+                        self.data_path,
+                        "custom-graph-scripts",
+                        "graph-123",
                     ),
                     username,
-                )
+                ),
             ],
         )
 
@@ -84,7 +86,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo hi!",
                 "username": "foo",
                 "graph-id": 123,
-            }
+            },
         )
         graph = self.store.get_graph(123)
         self.assertEqual(graph[0], 123)
@@ -110,7 +112,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo hi!",
                 "username": "bar",
                 "graph-id": 123,
-            }
+            },
         )
         self.assertEqual(
             self.store.get_graphs(),
@@ -118,10 +120,12 @@ class CustomGraphManagerTests(LandscapeTest):
                 (
                     123,
                     os.path.join(
-                        self.data_path, "custom-graph-scripts", "graph-123"
+                        self.data_path,
+                        "custom-graph-scripts",
+                        "graph-123",
                     ),
                     "bar",
-                )
+                ),
             ],
         )
 
@@ -131,14 +135,14 @@ class CustomGraphManagerTests(LandscapeTest):
 
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(
-            {"type": "custom-graph-remove", "graph-id": 123}
+            {"type": "custom-graph-remove", "graph-id": 123},
         )
 
     def test_remove_graph(self):
         filename = self.makeFile(content="foo")
         self.store.add_graph(123, filename, "user")
         self.manager.dispatch_message(
-            {"type": "custom-graph-remove", "graph-id": 123}
+            {"type": "custom-graph-remove", "graph-id": 123},
         )
         self.assertFalse(os.path.exists(filename))
 
@@ -159,10 +163,10 @@ class CustomGraphManagerTests(LandscapeTest):
                                 "error": "",
                                 "values": [(300, 1.0)],
                                 "script-hash": script_hash,
-                            }
+                            },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -200,7 +204,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -224,10 +228,10 @@ class CustomGraphManagerTests(LandscapeTest):
                                 "script-hash": (
                                     b"eaca3ba1a3bf1948876eba320148c5e9"
                                 ),
-                            }
+                            },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -265,7 +269,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -303,7 +307,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -350,7 +354,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -400,7 +404,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -467,7 +471,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -502,7 +506,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
             mock_getpwnam.assert_called_with("foo")
@@ -543,7 +547,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -567,10 +571,10 @@ class CustomGraphManagerTests(LandscapeTest):
             [
                 {
                     "data": {
-                        123: {"error": "", "script-hash": b"", "values": []}
+                        123: {"error": "", "script-hash": b"", "values": []},
                     },
                     "type": "custom-graph",
-                }
+                },
             ],
         )
 
@@ -589,7 +593,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo hi!",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
         self.graph_manager.exchange()
         self.assertMessages(
@@ -602,11 +606,11 @@ class CustomGraphManagerTests(LandscapeTest):
                             "error": "",
                             "script-hash": b"e00a2f44dbc7b6710ce32af2348aec9b",
                             "values": [],
-                        }
+                        },
                     },
                     "timestamp": 0,
                     "type": "custom-graph",
-                }
+                },
             ],
         )
 
@@ -622,7 +626,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo hi!",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
         filename = self.store.get_graph(123)[1]
         os.unlink(filename)
@@ -635,7 +639,7 @@ class CustomGraphManagerTests(LandscapeTest):
                     "data": {},
                     "timestamp": 0,
                     "type": "custom-graph",
-                }
+                },
             ],
         )
 
@@ -654,7 +658,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo hi!",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
         self.graph_manager.exchange()
         self.graph_manager._get_script_hash = lambda x: 1 / 0
@@ -670,7 +674,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             "error": "",
                             "script-hash": b"e00a2f44dbc7b6710ce32af2348aec9b",
                             "values": [],
-                        }
+                        },
                     },
                     "timestamp": 0,
                     "type": "custom-graph",
@@ -682,7 +686,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             "error": "",
                             "script-hash": b"e00a2f44dbc7b6710ce32af2348aec9b",
                             "values": [],
-                        }
+                        },
                     },
                     "timestamp": 0,
                     "type": "custom-graph",
@@ -701,7 +705,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo hi!",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
         self.graph_manager.exchange()
         self.manager.dispatch_message(
@@ -711,7 +715,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo bye!",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
         self.graph_manager.do_send = True
         self.graph_manager.exchange()
@@ -725,7 +729,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             "error": "",
                             "script-hash": b"e00a2f44dbc7b6710ce32af2348aec9b",
                             "values": [],
-                        }
+                        },
                     },
                     "timestamp": 0,
                     "type": "custom-graph",
@@ -737,7 +741,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             "error": "",
                             "script-hash": b"d483816dc0fbb51ede42502a709b0e2a",
                             "values": [],
-                        }
+                        },
                     },
                     "timestamp": 0,
                     "type": "custom-graph",
@@ -761,7 +765,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo 1.0",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
 
         factory = StubProcessFactory()
@@ -778,7 +782,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo 2.0",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
 
         self._exit_process_protocol(spawn[0], b"1.0")
@@ -797,11 +801,11 @@ class CustomGraphManagerTests(LandscapeTest):
                                     b"991e15a81929c79fe1d243b2afd99c62"
                                 ),
                                 "values": [],
-                            }
+                            },
                         },
                         "timestamp": 0,
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -822,7 +826,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo 1.0",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
 
         factory = StubProcessFactory()
@@ -833,7 +837,7 @@ class CustomGraphManagerTests(LandscapeTest):
         spawn = factory.spawns[0]
 
         self.manager.dispatch_message(
-            {"type": "custom-graph-remove", "graph-id": 123}
+            {"type": "custom-graph-remove", "graph-id": 123},
         )
 
         self._exit_process_protocol(spawn[0], b"1.0")
@@ -848,7 +852,7 @@ class CustomGraphManagerTests(LandscapeTest):
                         "data": {},
                         "timestamp": 0,
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 
@@ -871,7 +875,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 "code": "echo 1.0",
                 "username": username,
                 "graph-id": 123,
-            }
+            },
         )
 
         factory = StubProcessFactory()
@@ -930,10 +934,10 @@ class CustomGraphManagerTests(LandscapeTest):
                                     b"9893532233caff98cd083a116b013c0b"
                                 ),
                                 "values": [],
-                            }
+                            },
                         },
                         "type": "custom-graph",
-                    }
+                    },
                 ],
             )
 

@@ -1,10 +1,19 @@
 import unittest
 
-from landscape.lib.schema import (
-    InvalidError, Constant, Bool, Int, Float, Bytes, Unicode, List, KeyDict,
-    Dict, Tuple, Any)
-
 from twisted.python.compat import long
+
+from landscape.lib.schema import Any
+from landscape.lib.schema import Bool
+from landscape.lib.schema import Bytes
+from landscape.lib.schema import Constant
+from landscape.lib.schema import Dict
+from landscape.lib.schema import Float
+from landscape.lib.schema import Int
+from landscape.lib.schema import InvalidError
+from landscape.lib.schema import KeyDict
+from landscape.lib.schema import List
+from landscape.lib.schema import Tuple
+from landscape.lib.schema import Unicode
 
 
 class DummySchema(object):
@@ -13,11 +22,10 @@ class DummySchema(object):
 
 
 class BasicTypesTest(unittest.TestCase):
-
     def test_any(self):
         schema = Any(Constant(None), Unicode())
         self.assertEqual(schema.coerce(None), None)
-        self.assertEqual(schema.coerce(u"foo"), u"foo")
+        self.assertEqual(schema.coerce("foo"), "foo")
 
     def test_any_bad(self):
         schema = Any(Constant(None), Unicode())
@@ -70,13 +78,13 @@ class BasicTypesTest(unittest.TestCase):
         self.assertEqual(Bytes().coerce(b"foo"), b"foo")
 
     def test_string_unicode(self):
-        self.assertEqual(Bytes().coerce(u"foo"), b"foo")
+        self.assertEqual(Bytes().coerce("foo"), b"foo")
 
     def test_string_bad_anything(self):
         self.assertRaises(InvalidError, Bytes().coerce, object())
 
     def test_unicode(self):
-        self.assertEqual(Unicode().coerce(u"foo"), u"foo")
+        self.assertEqual(Unicode().coerce("foo"), "foo")
 
     def test_unicode_bad_value(self):
         """Invalid values raise an errors."""
@@ -84,16 +92,17 @@ class BasicTypesTest(unittest.TestCase):
 
     def test_unicode_with_str(self):
         """Unicode accept byte strings and return a unicode."""
-        self.assertEqual(Unicode().coerce(b"foo"), u"foo")
+        self.assertEqual(Unicode().coerce(b"foo"), "foo")
 
     def test_unicode_decodes(self):
         """Unicode should decode plain strings."""
-        a = u"\N{HIRAGANA LETTER A}"
+        a = "\N{HIRAGANA LETTER A}"
         self.assertEqual(Unicode().coerce(a.encode("utf-8")), a)
-        letter = u"\N{LATIN SMALL LETTER A WITH GRAVE}"
+        letter = "\N{LATIN SMALL LETTER A WITH GRAVE}"
         self.assertEqual(
             Unicode(encoding="latin-1").coerce(letter.encode("latin-1")),
-            letter)
+            letter,
+        )
 
     def test_unicode_or_str_bad_encoding(self):
         """Decoding errors should be converted to InvalidErrors."""
@@ -112,7 +121,7 @@ class BasicTypesTest(unittest.TestCase):
         self.assertRaises(InvalidError, List(Int()).coerce, ["hello"])
 
     def test_list_multiple_items(self):
-        a = u"\N{HIRAGANA LETTER A}"
+        a = "\N{HIRAGANA LETTER A}"
         schema = List(Unicode())
         self.assertEqual(schema.coerce([a, a.encode("utf-8")]), [a, a])
 
@@ -120,8 +129,10 @@ class BasicTypesTest(unittest.TestCase):
         self.assertEqual(Tuple(Int()).coerce((1,)), (1,))
 
     def test_tuple_coerces(self):
-        self.assertEqual(Tuple(Int(), DummySchema()).coerce((23, object())),
-                         (23, "hello!"))
+        self.assertEqual(
+            Tuple(Int(), DummySchema()).coerce((23, object())),
+            (23, "hello!"),
+        )
 
     def test_tuple_bad(self):
         self.assertRaises(InvalidError, Tuple().coerce, object())
@@ -136,16 +147,23 @@ class BasicTypesTest(unittest.TestCase):
         self.assertRaises(InvalidError, Tuple(Int()).coerce, (1, 2))
 
     def test_key_dict(self):
-        self.assertEqual(KeyDict({"foo": Int()}).coerce({"foo": 1}),
-                         {"foo": 1})
+        self.assertEqual(
+            KeyDict({"foo": Int()}).coerce({"foo": 1}),
+            {"foo": 1},
+        )
 
     def test_key_dict_coerces(self):
-        self.assertEqual(KeyDict({"foo": DummySchema()}).coerce({"foo": 3}),
-                         {"foo": "hello!"})
+        self.assertEqual(
+            KeyDict({"foo": DummySchema()}).coerce({"foo": 3}),
+            {"foo": "hello!"},
+        )
 
     def test_key_dict_bad_inner_schema(self):
-        self.assertRaises(InvalidError, KeyDict({"foo": Int()}).coerce,
-                          {"foo": "hello"})
+        self.assertRaises(
+            InvalidError,
+            KeyDict({"foo": Int()}).coerce,
+            {"foo": "hello"},
+        )
 
     def test_key_dict_unknown_key(self):
         self.assertRaises(InvalidError, KeyDict({}).coerce, {"foo": 1})
@@ -156,8 +174,7 @@ class BasicTypesTest(unittest.TestCase):
     def test_key_dict_multiple_items(self):
         schema = KeyDict({"one": Int(), "two": List(Float())})
         input = {"one": 32, "two": [1.5, 2.3]}
-        self.assertEqual(schema.coerce(input),
-                         {"one": 32, "two": [1.5, 2.3]})
+        self.assertEqual(schema.coerce(input), {"one": 32, "two": [1.5, 2.3]})
 
     def test_key_dict_arbitrary_keys(self):
         """
@@ -176,25 +193,26 @@ class BasicTypesTest(unittest.TestCase):
         self.assertRaises(InvalidError, schema.coerce, {})
 
     def test_key_dict_optional_keys(self):
-        """KeyDict allows certain keys to be optional.
-        """
+        """KeyDict allows certain keys to be optional."""
         schema = KeyDict({"foo": Int(), "bar": Int()}, optional=["bar"])
         self.assertEqual(schema.coerce({"foo": 32}), {"foo": 32})
 
     def test_pass_optional_key(self):
-        """Regression test. It should be possible to pass an optional key.
-        """
+        """Regression test. It should be possible to pass an optional key."""
         schema = KeyDict({"foo": Int()}, optional=["foo"])
         self.assertEqual(schema.coerce({"foo": 32}), {"foo": 32})
 
     def test_dict(self):
-        self.assertEqual(Dict(Int(), Bytes()).coerce({32: b"hello."}),
-                         {32: b"hello."})
+        self.assertEqual(
+            Dict(Int(), Bytes()).coerce({32: b"hello."}),
+            {32: b"hello."},
+        )
 
     def test_dict_coerces(self):
         self.assertEqual(
             Dict(DummySchema(), DummySchema()).coerce({32: object()}),
-            {"hello!": "hello!"})
+            {"hello!": "hello!"},
+        )
 
     def test_dict_inner_bad(self):
         self.assertRaises(InvalidError, Dict(Int(), Int()).coerce, {"32": 32})

@@ -1,11 +1,14 @@
 import io
 
-from twisted.internet.defer import DeferredList, Deferred
-from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.process import Process, ProcessReader
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import DeferredList
+from twisted.internet.process import Process
+from twisted.internet.process import ProcessReader
+from twisted.internet.protocol import ProcessProtocol
+from twisted.python.compat import itervalues
+from twisted.python.compat import networkString
 from twisted.python.failure import Failure
-from twisted.python.compat import itervalues, networkString
 
 from landscape.lib.encoding import encode_values
 
@@ -16,7 +19,9 @@ class SignalError(Exception):
 
 def gather_results(deferreds, consume_errors=False):
     d = DeferredList(
-        deferreds, fireOnOneErrback=1, consumeErrors=consume_errors
+        deferreds,
+        fireOnOneErrback=1,
+        consumeErrors=consume_errors,
     )
     d.addCallback(lambda r: [x[1] for x in r])
     d.addErrback(lambda f: f.value.subFailure)
@@ -103,7 +108,9 @@ def spawn_process(
 
     result = Deferred()
     protocol = AllOutputProcessProtocol(
-        result, stdin=stdin, line_received=line_received
+        result,
+        stdin=stdin,
+        line_received=line_received,
     )
     env = encode_values(env)
     process = reactor.spawnProcess(

@@ -91,7 +91,6 @@ See L{MessageStore} for details about how messages are stored on the file
 system and L{landscape.lib.message.got_next_expected} to check how the
 strategy for updating the pending offset and the sequence is implemented.
 """
-
 import itertools
 import logging
 import os
@@ -101,8 +100,10 @@ from twisted.python.compat import iteritems
 
 from landscape import DEFAULT_SERVER_API
 from landscape.lib import bpickle
-from landscape.lib.fs import create_binary_file, read_binary_file
-from landscape.lib.versioning import sort_versions, is_version_higher
+from landscape.lib.fs import create_binary_file
+from landscape.lib.fs import read_binary_file
+from landscape.lib.versioning import is_version_higher
+from landscape.lib.versioning import sort_versions
 
 
 HELD = "h"
@@ -330,7 +331,7 @@ class MessageStore(object):
         for filename in self._walk_messages(exclude=BROKEN):
             flags = self._get_flags(filename)
             if (HELD in flags or i >= pending_offset) and os.stat(
-                filename
+                filename,
             ).st_ino == message_id:
                 return True
             if BROKEN not in flags and HELD not in flags:
@@ -350,7 +351,7 @@ class MessageStore(object):
         if not self._persist.has("first-failure-time"):
             self._persist.set("first-failure-time", timestamp)
         continued_failure_time = timestamp - self._persist.get(
-            "first-failure-time"
+            "first-failure-time",
         )
         if self._persist.get("blackhole-messages"):
             # Already added the resync message
@@ -361,7 +362,7 @@ class MessageStore(object):
             self._persist.set("blackhole-messages", True)
             logging.warning(
                 "Unable to succesfully communicate with Landscape server "
-                "for more than a week. Waiting for resync."
+                "for more than a week. Waiting for resync.",
             )
 
     def add(self, message):
@@ -437,7 +438,7 @@ class MessageStore(object):
         """Walk the files which are definitely pending."""
         pending_offset = self.get_pending_offset()
         for i, filename in enumerate(
-            self._walk_messages(exclude=HELD + BROKEN)
+            self._walk_messages(exclude=HELD + BROKEN),
         ):
             if i >= pending_offset:
                 yield filename

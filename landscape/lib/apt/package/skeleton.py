@@ -1,7 +1,8 @@
-from landscape.lib.compat import unicode, _PY3
-from landscape.lib.hashlib import sha1
-
 import apt_pkg
+
+from landscape.lib.compat import _PY3
+from landscape.lib.compat import unicode
+from landscape.lib.hashlib import sha1
 
 
 PACKAGE = 1 << 0
@@ -90,7 +91,10 @@ def relation_to_string(relation_tuple):
 
 
 def parse_record_field(
-    record, record_field, relation_type, or_relation_type=None
+    record,
+    record_field,
+    relation_type,
+    or_relation_type=None,
 ):
     """Parse an apt C{Record} field and return skeleton relations
 
@@ -128,34 +132,40 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
     skeleton = PackageSkeleton(DEB_PACKAGE, name, version_string)
     relations = set()
     relations.update(
-        parse_record_field(version.record, "Provides", DEB_PROVIDES)
+        parse_record_field(version.record, "Provides", DEB_PROVIDES),
     )
     relations.add(
         (
             DEB_NAME_PROVIDES,
             "%s = %s" % (version.package.name, version.version),
-        )
+        ),
     )
     relations.update(
         parse_record_field(
-            version.record, "Pre-Depends", DEB_REQUIRES, DEB_OR_REQUIRES
-        )
+            version.record,
+            "Pre-Depends",
+            DEB_REQUIRES,
+            DEB_OR_REQUIRES,
+        ),
     )
     relations.update(
         parse_record_field(
-            version.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES
-        )
+            version.record,
+            "Depends",
+            DEB_REQUIRES,
+            DEB_OR_REQUIRES,
+        ),
     )
 
     relations.add(
-        (DEB_UPGRADES, "%s < %s" % (version.package.name, version.version))
+        (DEB_UPGRADES, "%s < %s" % (version.package.name, version.version)),
     )
 
     relations.update(
-        parse_record_field(version.record, "Conflicts", DEB_CONFLICTS)
+        parse_record_field(version.record, "Conflicts", DEB_CONFLICTS),
     )
     relations.update(
-        parse_record_field(version.record, "Breaks", DEB_CONFLICTS)
+        parse_record_field(version.record, "Breaks", DEB_CONFLICTS),
     )
     skeleton.relations = sorted(relations)
 

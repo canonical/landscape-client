@@ -1,5 +1,4 @@
 """The Landscape monitor plugin system."""
-
 import os
 
 from landscape.client.broker.client import BrokerClient
@@ -10,8 +9,14 @@ class Monitor(BrokerClient):
 
     name = "monitor"
 
-    def __init__(self, reactor, config, persist, persist_filename=None,
-                 step_size=5 * 60):
+    def __init__(
+        self,
+        reactor,
+        config,
+        persist,
+        persist_filename=None,
+        step_size=5 * 60,
+    ):
         super(Monitor, self).__init__(reactor, config)
         self.reactor = reactor
         self.config = config

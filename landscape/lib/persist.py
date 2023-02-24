@@ -18,10 +18,10 @@
 # along with this Python module; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-import os
-import sys
 import copy
+import os
 import re
+import sys
 
 from twisted.python.compat import StringType  # Py2: basestring, Py3: str
 
@@ -129,7 +129,7 @@ class Persist(object):
                     self._hardmap = self._backend.load(filepathold)
                 except Exception:
                     raise PersistError(
-                        "Broken configuration file at %s" % filepathold
+                        "Broken configuration file at %s" % filepathold,
                     )
                 return True
             return False
@@ -185,7 +185,7 @@ class Persist(object):
                     path = path[: -len(queue)]
                 raise PersistError(
                     "Can't traverse %r (%r): %r"
-                    % (type(obj), path_tuple_to_string(path), str(obj))
+                    % (type(obj), path_tuple_to_string(path), str(obj)),
                 )
             if newobj is marker:
                 break
@@ -208,7 +208,7 @@ class Persist(object):
                     if newobj is NotImplemented:
                         raise PersistError(
                             "Can't traverse %r with %r"
-                            % (type(obj), type(elem))
+                            % (type(obj), type(elem)),
                         )
                     if not queue:
                         break
@@ -321,7 +321,7 @@ class Persist(object):
                 result = self._backend.remove(obj, elem, isvalue)
                 if result is NotImplemented:
                     raise PersistError(
-                        "Can't remove %r from %r" % (elem, type(obj))
+                        "Can't remove %r from %r" % (elem, type(obj)),
                     )
             if self._backend.empty(obj):
                 if value is not marker:
@@ -422,7 +422,10 @@ class RootedPersist(object):
         if isinstance(newpath, StringType):
             newpath = path_string_to_tuple(newpath)
         return self.parent.move(
-            self.root + oldpath, self.root + newpath, soft, weak
+            self.root + oldpath,
+            self.root + newpath,
+            soft,
+            weak,
         )
 
     def root_at(self, path):

@@ -1,12 +1,16 @@
-from twisted.internet.defer import maybeDeferred, execute, succeed
+from twisted.internet.defer import execute
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
 from twisted.python.compat import iteritems
 
-from landscape.lib.amp import RemoteObject, MethodCallArgument
-from landscape.client.amp import ComponentConnector, get_remote_methods
-from landscape.client.broker.server import BrokerServer
+from landscape.client.amp import ComponentConnector
+from landscape.client.amp import get_remote_methods
 from landscape.client.broker.client import BrokerClient
-from landscape.client.monitor.monitor import Monitor
+from landscape.client.broker.server import BrokerServer
 from landscape.client.manager.manager import Manager
+from landscape.client.monitor.monitor import Monitor
+from landscape.lib.amp import MethodCallArgument
+from landscape.lib.amp import RemoteObject
 
 
 class RemoteBroker(RemoteObject):

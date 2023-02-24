@@ -1,14 +1,14 @@
 """Deployment code for the monitor."""
-
 import os
 
 from twisted.python.reflect import namedClass
 
-from landscape.client.service import LandscapeService, run_landscape_service
+from landscape.client.amp import ComponentPublisher
+from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.monitor.config import MonitorConfiguration
 from landscape.client.monitor.monitor import Monitor
-from landscape.client.broker.amp import RemoteBrokerConnector
-from landscape.client.amp import ComponentPublisher
+from landscape.client.service import LandscapeService
+from landscape.client.service import run_landscape_service
 
 
 class MonitorService(LandscapeService):
@@ -21,7 +21,8 @@ class MonitorService(LandscapeService):
 
     def __init__(self, config):
         self.persist_filename = os.path.join(
-            config.data_path, "%s.bpickle" % self.service_name
+            config.data_path,
+            "%s.bpickle" % self.service_name,
         )
         super(MonitorService, self).__init__(config)
         self.plugins = self.get_plugins()
@@ -32,14 +33,16 @@ class MonitorService(LandscapeService):
             persist_filename=self.persist_filename,
         )
         self.publisher = ComponentPublisher(
-            self.monitor, self.reactor, self.config
+            self.monitor,
+            self.reactor,
+            self.config,
         )
 
     def get_plugins(self):
         return [
             namedClass(
                 "landscape.client.monitor.%s.%s"
-                % (plugin_name.lower(), plugin_name)
+                % (plugin_name.lower(), plugin_name),
             )()
             for plugin_name in self.config.plugin_factories
         ]

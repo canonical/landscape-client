@@ -1,10 +1,12 @@
-import mock
 import os
 import unittest
 
+import mock
+
 from landscape.lib import testing
-from landscape.lib.process import calculate_pcpu, ProcessInformation
 from landscape.lib.fs import create_text_file
+from landscape.lib.process import calculate_pcpu
+from landscape.lib.process import ProcessInformation
 
 
 class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
@@ -33,7 +35,7 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
                 "Gid: 2000",
                 "VmSize: 3000",
                 "Ignored: value",
-            ]
+            ],
         )
         create_text_file(os.path.join(process_dir, "status"), status)
 
@@ -45,7 +47,10 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
     @mock.patch("os.listdir")
     @mock.patch("landscape.lib.sysstats.get_uptime")
     def test_missing_process_race(
-        self, get_uptime_mock, list_dir_mock, jiffies_mock
+        self,
+        get_uptime_mock,
+        list_dir_mock,
+        jiffies_mock,
     ):
         """
         We use os.listdir("/proc") to get the list of active processes, if a
@@ -151,7 +156,8 @@ class CalculatePCPUTest(unittest.TestCase):
 
     def test_calculate_pcpu_real_data(self):
         self.assertEqual(
-            calculate_pcpu(51286, 5000, 19000.07, 9281.0, 100), 3.0
+            calculate_pcpu(51286, 5000, 19000.07, 9281.0, 100),
+            3.0,
         )
 
     def test_calculate_pcpu(self):

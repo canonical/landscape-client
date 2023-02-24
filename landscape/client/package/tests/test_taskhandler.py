@@ -1,23 +1,29 @@
 import os
 from subprocess import CalledProcessError
+from unittest.mock import ANY
+from unittest.mock import Mock
+from unittest.mock import patch
 
-from mock import patch, Mock, ANY
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
 
-from twisted.internet.defer import Deferred, fail, succeed
-
-from landscape.lib.apt.package.facade import AptFacade
-from landscape.lib.apt.package.store import HashIdStore, PackageStore
-from landscape.lib.apt.package.testing import AptFacadeHelper
-from landscape.lib.lock import lock_path
-from landscape.lib.testing import EnvironSaverHelper, FakeReactor
 from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.package.taskhandler import LazyRemoteBroker
+from landscape.client.package.taskhandler import PackageTaskHandler
 from landscape.client.package.taskhandler import (
     PackageTaskHandlerConfiguration,
-    PackageTaskHandler,
-    run_task_handler,
-    LazyRemoteBroker,
 )
-from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.client.package.taskhandler import run_task_handler
+from landscape.client.tests.helpers import BrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.apt.package.facade import AptFacade
+from landscape.lib.apt.package.store import HashIdStore
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.apt.package.testing import AptFacadeHelper
+from landscape.lib.lock import lock_path
+from landscape.lib.testing import EnvironSaverHelper
+from landscape.lib.testing import FakeReactor
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -46,7 +52,11 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.store = PackageStore(self.makeFile())
         self.reactor = FakeReactor()
         self.handler = PackageTaskHandler(
-            self.store, self.facade, self.remote, self.config, self.reactor
+            self.store,
+            self.facade,
+            self.remote,
+            self.config,
+            self.reactor,
         )
 
     def test_use_hash_id_db(self):
@@ -58,7 +68,10 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
         hash_id_db_filename = os.path.join(
-            self.config.data_path, "package", "hash-id", "uuid_codename_arch"
+            self.config.data_path,
+            "package",
+            "hash-id",
+            "uuid_codename_arch",
         )
         HashIdStore(hash_id_db_filename).set_hash_ids({b"hash": 123})
 
@@ -95,7 +108,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "missing code-name key in %s" % self.handler.lsb_release_filename
+            "missing code-name key in %s" % self.handler.lsb_release_filename,
         )
 
         return result
@@ -119,7 +132,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
             "[Errno 2] No such file or directory: '%s'"
-            % self.handler.lsb_release_filename
+            % self.handler.lsb_release_filename,
         )
 
         return result
@@ -153,7 +166,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "server UUID not available"
+            "server UUID not available",
         )
 
         def callback(ignore):
@@ -191,7 +204,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "unknown dpkg architecture"
+            "unknown dpkg architecture",
         )
 
         return result
@@ -225,7 +238,10 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
         hash_id_db_filename = os.path.join(
-            self.config.data_path, "package", "hash-id", "uuid_codename_arch"
+            self.config.data_path,
+            "package",
+            "hash-id",
+            "uuid_codename_arch",
         )
         open(hash_id_db_filename, "w").write("junk")
 
@@ -240,7 +256,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         # The failure should be properly logged
         logging_mock.assert_called_with(
-            "Invalid hash=>id database %s" % hash_id_db_filename
+            "Invalid hash=>id database %s" % hash_id_db_filename,
         )
 
         # We remove the broken hash=>id database and go on without it
@@ -402,8 +418,8 @@ class PackageTaskHandlerTest(LandscapeTest):
             # Check the hash=>id database directory as well
             self.assertTrue(
                 os.path.exists(
-                    os.path.join(self.data_path, "package", "hash-id")
-                )
+                    os.path.join(self.data_path, "package", "hash-id"),
+                ),
             )
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
@@ -412,7 +428,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # never have two instances running in parallel.  The 'default'
         # below comes from the queue_name attribute.
         lock_path_mock.assert_called_once_with(
-            os.path.join(self.data_path, "package", "default.lock")
+            os.path.join(self.data_path, "package", "default.lock"),
         )
 
         # Once locking is done, it's safe to start logging without
@@ -445,7 +461,8 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         try:
             run_task_handler(
-                PackageTaskHandler, ["-c", self.config_filename, "--quiet"]
+                PackageTaskHandler,
+                ["-c", self.config_filename, "--quiet"],
             )
         except SystemExit as e:
             self.assertEqual(str(e), "")
@@ -470,7 +487,9 @@ class PackageTaskHandlerTest(LandscapeTest):
             init_logging_mock.assert_called_once_with(ANY, "handler-mock")
 
         result = run_task_handler(
-            HandlerMock, ["-c", self.config_filename], reactor=FakeReactor()
+            HandlerMock,
+            ["-c", self.config_filename],
+            reactor=FakeReactor(),
         )
 
         return result.addCallback(assert_log)

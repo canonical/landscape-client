@@ -1,16 +1,15 @@
-import mock
 import sqlite3
 import threading
 import time
 import unittest
 
+import mock
+
 from landscape.lib import testing
-from landscape.lib.apt.package.store import (
-    HashIdStore,
-    PackageStore,
-    UnknownHashIDRequest,
-    InvalidHashIdDb,
-)
+from landscape.lib.apt.package.store import HashIdStore
+from landscape.lib.apt.package.store import InvalidHashIdDb
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.apt.package.store import UnknownHashIDRequest
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -121,7 +120,8 @@ class HashIdStoreTest(BaseTestCase):
         db = sqlite3.connect(store_filename)
         cursor = db.cursor()
         cursor.execute(
-            "CREATE TABLE hash" " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)"
+            "CREATE TABLE hash"
+            " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
         )
         cursor.close()
         db.commit()
@@ -173,7 +173,7 @@ class PackageStoreTest(BaseTestCase):
             cursor = db.cursor()
             cursor.execute(
                 "CREATE TABLE hash"
-                " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)"
+                " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
             )
             cursor.close()
             db.commit()
@@ -202,10 +202,10 @@ class PackageStoreTest(BaseTestCase):
 
         # Add a couple of hash=>id dbs
         self.store1.add_hash_id_db(
-            self.hash_id_db_factory({b"hash1": 2, b"hash2": 3})
+            self.hash_id_db_factory({b"hash1": 2, b"hash2": 3}),
         )
         self.store1.add_hash_id_db(
-            self.hash_id_db_factory({b"hash2": 4, b"ha\x00sh1": 5})
+            self.hash_id_db_factory({b"hash2": 4, b"ha\x00sh1": 5}),
         )
 
         # Check look-up priorities and binary hashes
@@ -221,7 +221,7 @@ class PackageStoreTest(BaseTestCase):
         """
         self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash1": 123}))
         self.store1.add_hash_id_db(
-            self.hash_id_db_factory({b"hash1": 999, b"hash2": 456})
+            self.hash_id_db_factory({b"hash1": 999, b"hash2": 456}),
         )
         self.store1.set_hash_ids({b"hash3": 789})
         self.assertEqual(self.store1.get_id_hash(123), b"hash1")
@@ -351,18 +351,18 @@ class PackageStoreTest(BaseTestCase):
         cursor = database.cursor()
         cursor.execute("CREATE TABLE available" " (id INTEGER PRIMARY KEY)")
         cursor.execute(
-            "CREATE TABLE available_upgrade" " (id INTEGER PRIMARY KEY)"
+            "CREATE TABLE available_upgrade" " (id INTEGER PRIMARY KEY)",
         )
         cursor.execute("CREATE TABLE installed" " (id INTEGER PRIMARY KEY)")
         cursor.execute(
             "CREATE TABLE hash_id_request"
             " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
-            " message_id INTEGER, hashes BLOB)"
+            " message_id INTEGER, hashes BLOB)",
         )
         cursor.execute(
             "CREATE TABLE task"
             " (id INTEGER PRIMARY KEY, queue TEXT,"
-            " timestamp TIMESTAMP, data BLOB)"
+            " timestamp TIMESTAMP, data BLOB)",
         )
         cursor.close()
         database.commit()
@@ -467,14 +467,18 @@ class PackageStoreTest(BaseTestCase):
 
     def test_get_hash_id_request_with_unknown_request_id(self):
         self.assertRaises(
-            UnknownHashIDRequest, self.store1.get_hash_id_request, 123
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            123,
         )
 
     def test_remove_hash_id_request(self):
         request = self.store1.add_hash_id_request(["hash1"])
         request.remove()
         self.assertRaises(
-            UnknownHashIDRequest, self.store1.get_hash_id_request, request.id
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            request.id,
         )
 
     def test_add_task(self):
@@ -538,10 +542,14 @@ class PackageStoreTest(BaseTestCase):
         request2 = self.store1.add_hash_id_request(["hash2"])
         self.store1.clear_hash_id_requests()
         self.assertRaises(
-            UnknownHashIDRequest, self.store1.get_hash_id_request, request1.id
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            request1.id,
         )
         self.assertRaises(
-            UnknownHashIDRequest, self.store1.get_hash_id_request, request2.id
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            request2.id,
         )
 
     def test_clear_tasks(self):

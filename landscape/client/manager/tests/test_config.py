@@ -1,20 +1,28 @@
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.manager.config import ManagerConfiguration, ALL_PLUGINS
+from landscape.client.manager.config import ALL_PLUGINS
+from landscape.client.manager.config import ManagerConfiguration
 from landscape.client.manager.scriptexecution import ALL_USERS
+from landscape.client.tests.helpers import LandscapeTest
 
 
 class ManagerConfigurationTest(LandscapeTest):
-
     def setUp(self):
         super(ManagerConfigurationTest, self).setUp()
         self.config = ManagerConfiguration()
 
     def test_plugin_factories(self):
         """By default all plugins are enabled."""
-        self.assertEqual(["ProcessKiller", "PackageManager", "UserManager",
-                          "ShutdownManager", "AptSources", "HardwareInfo",
-                          "KeystoneToken"],
-                         ALL_PLUGINS)
+        self.assertEqual(
+            [
+                "ProcessKiller",
+                "PackageManager",
+                "UserManager",
+                "ShutdownManager",
+                "AptSources",
+                "HardwareInfo",
+                "KeystoneToken",
+            ],
+            ALL_PLUGINS,
+        )
         self.assertEqual(ALL_PLUGINS, self.config.plugin_factories)
 
     def test_plugin_factories_with_manager_plugins(self):
@@ -31,9 +39,11 @@ class ManagerConfigurationTest(LandscapeTest):
         command line option.
         """
         self.config.load(["--include-manager-plugins", "ScriptExecution"])
-        self.assertEqual(len(self.config.plugin_factories),
-                         len(ALL_PLUGINS) + 1)
-        self.assertTrue('ScriptExecution' in self.config.plugin_factories)
+        self.assertEqual(
+            len(self.config.plugin_factories),
+            len(ALL_PLUGINS) + 1,
+        )
+        self.assertTrue("ScriptExecution" in self.config.plugin_factories)
 
     def test_get_allowed_script_users(self):
         """
@@ -55,5 +65,7 @@ class ManagerConfigurationTest(LandscapeTest):
         as.
         """
         self.config.load(["--script-users", "foo, bar,baz"])
-        self.assertEqual(self.config.get_allowed_script_users(),
-                         ["foo", "bar", "baz"])
+        self.assertEqual(
+            self.config.get_allowed_script_users(),
+            ["foo", "bar", "baz"],
+        )

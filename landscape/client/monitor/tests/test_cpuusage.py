@@ -1,5 +1,7 @@
-from landscape.client.monitor.cpuusage import CPUUsage, LAST_MESURE_KEY
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.cpuusage import CPUUsage
+from landscape.client.monitor.cpuusage import LAST_MESURE_KEY
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 
 
 class CPUUsagePluginTest(LandscapeTest):
@@ -267,5 +269,6 @@ class CPUUsagePluginTest(LandscapeTest):
         plugin._get_cpu_usage = fake_get_cpu_usage
         self.reactor.advance(self.monitor.step_size)
         self.assertEqual(
-            [(300, 1.0), (600, 1.0), (900, 1.0)], plugin._cpu_usage_points
+            [(300, 1.0), (600, 1.0), (900, 1.0)],
+            plugin._cpu_usage_points,
         )

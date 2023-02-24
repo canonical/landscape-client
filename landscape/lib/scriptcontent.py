@@ -5,7 +5,7 @@ def build_script(interpreter, code):
     """
     Concatenates a interpreter and script into an executable script.
     """
-    return u"#!{}\n{}".format(interpreter or u"", code or u"")
+    return "#!{}\n{}".format(interpreter or "", code or "")
 
 
 def generate_script_hash(script):

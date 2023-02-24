@@ -1,45 +1,46 @@
 # -*- encoding: utf-8 -*-
-import time
-import sys
 import os
+import sys
+import time
+from unittest.mock import call
+from unittest.mock import Mock
+from unittest.mock import patch
 
 from twisted.internet.defer import Deferred
+from twisted.internet.error import ProcessDone
+from twisted.internet.error import ProcessTerminated
 from twisted.python.failure import Failure
-from twisted.internet.error import ProcessTerminated, ProcessDone
 
-from mock import patch, Mock, call
-
-from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.apt.package.facade import DependencyError, TransactionError
-from landscape.lib.apt.package.testing import (
-    HASH1,
-    HASH2,
-    HASH3,
-    PKGDEB1,
-    PKGDEB2,
-    AptFacadeHelper,
-    SimpleRepositoryHelper,
-)
-from landscape.lib import base64
-from landscape.lib.fs import create_text_file, read_text_file, touch_file
-from landscape.lib.testing import StubProcessFactory, FakeReactor
-from landscape.client.package.changer import (
-    PackageChanger,
-    main,
-    UNKNOWN_PACKAGE_DATA_TIMEOUT,
-    SUCCESS_RESULT,
-    DEPENDENCY_ERROR_RESULT,
-    POLICY_ALLOW_INSTALLS,
-    POLICY_ALLOW_ALL_CHANGES,
-    ERROR_RESULT,
-)
-from landscape.client.package.changer import (
-    PackageChangerConfiguration,
-    ChangePackagesResult,
-)
-from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.shutdownmanager import ShutdownFailedError
+from landscape.client.package.changer import ChangePackagesResult
+from landscape.client.package.changer import DEPENDENCY_ERROR_RESULT
+from landscape.client.package.changer import ERROR_RESULT
+from landscape.client.package.changer import main
+from landscape.client.package.changer import PackageChanger
+from landscape.client.package.changer import PackageChangerConfiguration
+from landscape.client.package.changer import POLICY_ALLOW_ALL_CHANGES
+from landscape.client.package.changer import POLICY_ALLOW_INSTALLS
+from landscape.client.package.changer import SUCCESS_RESULT
+from landscape.client.package.changer import UNKNOWN_PACKAGE_DATA_TIMEOUT
+from landscape.client.tests.helpers import BrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib import base64
+from landscape.lib.apt.package.facade import DependencyError
+from landscape.lib.apt.package.facade import TransactionError
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.apt.package.testing import AptFacadeHelper
+from landscape.lib.apt.package.testing import HASH1
+from landscape.lib.apt.package.testing import HASH2
+from landscape.lib.apt.package.testing import HASH3
+from landscape.lib.apt.package.testing import PKGDEB1
+from landscape.lib.apt.package.testing import PKGDEB2
+from landscape.lib.apt.package.testing import SimpleRepositoryHelper
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_text_file
+from landscape.lib.fs import touch_file
+from landscape.lib.testing import FakeReactor
+from landscape.lib.testing import StubProcessFactory
 
 
 class AptPackageChangerTest(LandscapeTest):
@@ -70,7 +71,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer.get_session_id()
         service = self.broker_service
         service.message_store.set_accepted_types(
-            ["change-packages-result", "operation-result"]
+            ["change-packages-result", "operation-result"],
         )
 
     def set_pkg1_installed(self):
@@ -93,7 +94,9 @@ class AptPackageChangerTest(LandscapeTest):
         Return the hashes of the two packages.
         """
         self._add_package_to_deb_dir(
-            self.repository_dir, "foo", control_fields={"Depends": "bar"}
+            self.repository_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self._add_package_to_deb_dir(self.repository_dir, "bar")
         self.facade.reload_channels()
@@ -127,7 +130,7 @@ class AptPackageChangerTest(LandscapeTest):
                 stanza
                 for stanza in packages_contents.split("\n\n")
                 if "Package: name2" not in stanza
-            ]
+            ],
         )
         create_text_file(packages_file, packages_contents)
 
@@ -139,7 +142,7 @@ class AptPackageChangerTest(LandscapeTest):
                 "components": "",
                 "distribution": "./",
                 "type": "deb",
-            }
+            },
         ]
 
     def get_package_name(self, version):
@@ -205,7 +208,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-code": 101,
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -352,7 +355,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-code": 101,
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -401,7 +404,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-code": 101,
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -417,7 +420,7 @@ class AptPackageChangerTest(LandscapeTest):
         [package1] = self.facade.get_packages_by_name("name1")
 
         self.facade.perform_changes = Mock(
-            side_effect=[DependencyError([package1]), "success"]
+            side_effect=[DependencyError([package1]), "success"],
         )
 
         self.facade.mark_install = Mock()
@@ -445,7 +448,7 @@ class AptPackageChangerTest(LandscapeTest):
         [package2] = self.facade.get_packages_by_name("name2")
 
         self.facade.perform_changes = Mock(
-            side_effect=DependencyError([package1, package2])
+            side_effect=DependencyError([package1, package2]),
         )
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
@@ -473,7 +476,7 @@ class AptPackageChangerTest(LandscapeTest):
             side_effect=[
                 DependencyError([package1]),
                 DependencyError([package2]),
-            ]
+            ],
         )
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
@@ -510,7 +513,7 @@ class AptPackageChangerTest(LandscapeTest):
 
         self.successResultOf(self.changer.handle_tasks())
         self.changer.change_packages.assert_called_once_with(
-            POLICY_ALLOW_INSTALLS
+            POLICY_ALLOW_INSTALLS,
         )
 
     def test_perform_changes_with_policy_allow_all_changes(self):
@@ -526,7 +529,7 @@ class AptPackageChangerTest(LandscapeTest):
         [package2] = self.facade.get_packages_by_name("name2")
 
         self.facade.perform_changes = Mock(
-            side_effect=[DependencyError([package1, package2]), "success"]
+            side_effect=[DependencyError([package1, package2]), "success"],
         )
         self.facade.mark_install = Mock()
         self.facade.mark_remove = Mock()
@@ -565,7 +568,8 @@ class AptPackageChangerTest(LandscapeTest):
             self.assertEqual(message["operation-id"], 123)
             self.assertEqual(message["result-code"], 100)
             self.assertIn(
-                "packages have unmet dependencies", message["result-text"]
+                "packages have unmet dependencies",
+                message["result-text"],
             )
             self.assertEqual(message["type"], "change-packages-result")
 
@@ -679,7 +683,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-text": "Yeah, I did whatever you've "
                         "asked for!",
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -719,7 +723,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-text": "Yeah, I did whatever you've "
                         "asked for!",
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -755,7 +759,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "must-remove": [1],
                         "result-code": 101,
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -784,7 +788,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-text": "No changes required; all changes "
                         "already performed",
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -813,13 +817,14 @@ class AptPackageChangerTest(LandscapeTest):
         # answer.  The reporter is only spawned if at least one
         # task was handled.
         self.store.add_task(
-            "changer", {"type": "change-packages", "operation-id": 123}
+            "changer",
+            {"type": "change-packages", "operation-id": 123},
         )
 
         self.successResultOf(self.changer.run())
 
         system_mock.assert_called_once_with(
-            "/fake/bin/landscape-package-reporter"
+            "/fake/bin/landscape-package-reporter",
         )
 
     @patch("os.system")
@@ -832,12 +837,13 @@ class AptPackageChangerTest(LandscapeTest):
         # answer.  The reporter is only spawned if at least one
         # task was handled.
         self.store.add_task(
-            "changer", {"type": "change-packages", "operation-id": 123}
+            "changer",
+            {"type": "change-packages", "operation-id": 123},
         )
         self.successResultOf(self.changer.run())
 
         system_mock.assert_called_once_with(
-            "/fake/bin/landscape-package-reporter -c test.conf"
+            "/fake/bin/landscape-package-reporter -c test.conf",
         )
 
     @patch("os.getuid", return_value=0)
@@ -845,7 +851,11 @@ class AptPackageChangerTest(LandscapeTest):
     @patch("os.setuid")
     @patch("os.system")
     def test_set_effective_uid_and_gid_when_running_as_root(
-        self, system_mock, setuid_mock, setgid_mock, getuid_mock
+        self,
+        system_mock,
+        setuid_mock,
+        setgid_mock,
+        getuid_mock,
     ):
         """
         After the package changer has run, we want the package-reporter to run
@@ -867,7 +877,8 @@ class AptPackageChangerTest(LandscapeTest):
                 # answer.  The reporter is only spawned if at least
                 # one task was handled.
                 self.store.add_task(
-                    "changer", {"type": "change-packages", "operation-id": 123}
+                    "changer",
+                    {"type": "change-packages", "operation-id": 123},
                 )
                 self.successResultOf(self.changer.run())
 
@@ -876,7 +887,7 @@ class AptPackageChangerTest(LandscapeTest):
         pwnam_mock.assert_called_once_with("landscape")
         setuid_mock.assert_called_once_with(199)
         system_mock.assert_called_once_with(
-            "/fake/bin/landscape-package-reporter"
+            "/fake/bin/landscape-package-reporter",
         )
 
     def test_run(self):
@@ -897,7 +908,8 @@ class AptPackageChangerTest(LandscapeTest):
 
     @patch("os.system")
     def test_dont_spawn_reporter_after_running_if_nothing_done(
-        self, system_mock
+        self,
+        system_mock,
     ):
         self.successResultOf(self.changer.run())
         system_mock.assert_not_called()
@@ -970,7 +982,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-code": 100,
                         "result-text": "áéíóú",
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -1014,10 +1026,12 @@ class AptPackageChangerTest(LandscapeTest):
 
         binaries_path = self.config.binaries_path
         self.assertFileContent(
-            os.path.join(binaries_path, "111.deb"), base64.decodebytes(PKGDEB1)
+            os.path.join(binaries_path, "111.deb"),
+            base64.decodebytes(PKGDEB1),
         )
         self.assertFileContent(
-            os.path.join(binaries_path, "222.deb"), base64.decodebytes(PKGDEB2)
+            os.path.join(binaries_path, "222.deb"),
+            base64.decodebytes(PKGDEB2),
         )
         self.assertEqual(
             self.facade.get_channels(),
@@ -1028,7 +1042,8 @@ class AptPackageChangerTest(LandscapeTest):
 
         self.facade.ensure_channels_reloaded()
         [pkg1, pkg2] = sorted(
-            self.facade.get_packages(), key=self.get_package_name
+            self.facade.get_packages(),
+            key=self.get_package_name,
         )
         self.assertEqual(self.facade.get_package_hash(pkg1), HASH1)
         self.assertEqual(self.facade.get_package_hash(pkg2), HASH2)
@@ -1130,7 +1145,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-text": "Package holds successfully changed.",
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
 
@@ -1236,7 +1251,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-text": "Package holds successfully changed.",
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
 
@@ -1265,7 +1280,7 @@ class AptPackageChangerTest(LandscapeTest):
                 self.facade.get_package_hash(foo2): 2,
                 self.facade.get_package_hash(bar1): 3,
                 self.facade.get_package_hash(bar2): 4,
-            }
+            },
         )
         self.facade.reload_channels()
         self.store.add_task(
@@ -1290,7 +1305,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-text": "Cannot perform the changes, since the"
                         + " following packages are not installed: foo",
                         "result-code": 100,
-                    }
+                    },
                 ],
             )
 
@@ -1344,7 +1359,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "%s, %s"
                         % tuple(sorted([bar.package.name, baz.package.name])),
                         "result-code": 100,
-                    }
+                    },
                 ],
             )
 
@@ -1423,7 +1438,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-text": "Package holds successfully changed.",
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
 
@@ -1445,7 +1460,7 @@ class AptPackageChangerTest(LandscapeTest):
             {
                 self.facade.get_package_hash(foo1): 1,
                 self.facade.get_package_hash(foo2): 2,
-            }
+            },
         )
         self.facade.mark_install(foo1)
         self.facade.mark_hold(foo1)
@@ -1476,7 +1491,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-text": "Package holds successfully changed.",
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
 
@@ -1519,7 +1534,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-text": "Package holds successfully changed.",
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
 
@@ -1554,7 +1569,7 @@ class AptPackageChangerTest(LandscapeTest):
                             "This client doesn't support package locks."
                         ),
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
 
@@ -1593,12 +1608,12 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-text": "Yeah, I did whatever you've "
                         "asked for!",
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
             self.assertEqual([], os.listdir(self.config.binaries_path))
             self.assertFalse(
-                os.path.exists(self.facade._get_internal_sources_list())
+                os.path.exists(self.facade._get_internal_sources_list()),
             )
 
         return result.addCallback(got_result)
@@ -1629,7 +1644,8 @@ class AptPackageChangerTest(LandscapeTest):
 
         def got_result(result):
             self.assertIn(
-                "Landscape is rebooting the system", self.logfile.getvalue()
+                "Landscape is rebooting the system",
+                self.logfile.getvalue(),
             )
             self.assertMessages(
                 self.get_pending_messages(),
@@ -1640,7 +1656,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-text": "Yeah, I did whatever you've "
                         "asked for!",
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
 
@@ -1686,7 +1702,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "result-text": "Yeah, I did whatever you've "
                         "asked for!",
                         "type": "change-packages-result",
-                    }
+                    },
                 ],
             )
             self.log_helper.ignore_errors(ShutdownFailedError)

@@ -132,14 +132,16 @@ class TestProtocolServer(object):
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
             self.client.addfailure(
-                self._current_test, RemoteError(self._message)
+                self._current_test,
+                RemoteError(self._message),
             )
             self.client.stopTest(self._current_test)
         elif self.state == TestProtocolServer.READING_ERROR:
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
             self.client.adderror(
-                self._current_test, RemoteError(self._message)
+                self._current_test,
+                RemoteError(self._message),
             )
             self.client.stopTest(self._current_test)
         else:
@@ -180,7 +182,7 @@ class TestProtocolServer(object):
                 self._current_test,
                 RemoteError(
                     "lost connection during test '%s'"
-                    % self.current_test_description
+                    % self.current_test_description,
                 ),
             )
             self.client.stopTest(self._current_test)
@@ -190,7 +192,7 @@ class TestProtocolServer(object):
                 RemoteError(
                     "lost connection during "
                     "error report of test "
-                    "'%s'" % self.current_test_description
+                    "'%s'" % self.current_test_description,
                 ),
             )
             self.client.stopTest(self._current_test)
@@ -200,7 +202,7 @@ class TestProtocolServer(object):
                 RemoteError(
                     "lost connection during "
                     "failure report of test "
-                    "'%s'" % self.current_test_description
+                    "'%s'" % self.current_test_description,
                 ),
             )
             self.client.stopTest(self._current_test)
@@ -285,7 +287,7 @@ class RemotedTestCase(unittest.TestCase):
 
     def error(self, label):
         raise NotImplementedError(
-            "%s on RemotedTestCases is not permitted." % label
+            "%s on RemotedTestCases is not permitted." % label,
         )
 
     def setUp(self):
@@ -329,7 +331,8 @@ class ExecTestCase(unittest.TestCase):
         unittest.TestCase.__init__(self, methodName)
         testmethod = getattr(self, methodName)
         self.script = join_dir(
-            sys.modules[self.__class__.__module__].__file__, testmethod.__doc__
+            sys.modules[self.__class__.__module__].__file__,
+            testmethod.__doc__,
         )
 
     def countTestCases(self):  # noqa: N802
@@ -347,7 +350,8 @@ class ExecTestCase(unittest.TestCase):
     def _run(self, result):
         protocol = TestProtocolServer(result)
         output = subprocess.Popen(
-            [self.script], stdout=subprocess.PIPE
+            [self.script],
+            stdout=subprocess.PIPE,
         ).communicate()[0]
         protocol.readfrom(StringIO(output))
 

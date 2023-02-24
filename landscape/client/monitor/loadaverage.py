@@ -2,8 +2,8 @@ import os
 import time
 
 from landscape.client.accumulate import Accumulator
-from landscape.lib.monitor import CoverageMonitor
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.monitor import CoverageMonitor
 
 
 class LoadAverage(MonitorPlugin):
@@ -40,7 +40,8 @@ class LoadAverage(MonitorPlugin):
             create_time=self._create_time,
         )
         self.registry.reactor.call_every(
-            self._monitor_interval, self._monitor.log
+            self._monitor_interval,
+            self._monitor.log,
         )
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
         self.call_on_accepted("load-average", self.send_message, True)
@@ -52,14 +53,18 @@ class LoadAverage(MonitorPlugin):
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "load-average", self.send_message, urgent
+            "load-average",
+            self.send_message,
+            urgent,
         )
 
     def send_message(self, urgent=False):
         message = self.create_message()
         if len(message["load-averages"]):
             self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent
+                message,
+                self._session_id,
+                urgent=urgent,
             )
 
     def run(self):
@@ -67,7 +72,9 @@ class LoadAverage(MonitorPlugin):
         new_timestamp = int(self._create_time())
         new_load_average = self._get_load_average()[0]
         step_data = self._accumulate(
-            new_timestamp, new_load_average, "accumulate"
+            new_timestamp,
+            new_load_average,
+            "accumulate",
         )
         if step_data:
             self._load_averages.append(step_data)

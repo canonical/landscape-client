@@ -1,19 +1,16 @@
 import random
+from unittest.mock import Mock
 
 from configobj import ConfigObj
-from mock import Mock
-from twisted.internet.defer import succeed, fail
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
 
-from landscape.client.manager.manager import FAILED
-from landscape.client.tests.helpers import (
-    LandscapeTest,
-    DEFAULT_ACCEPTED_TYPES,
-)
-from landscape.client.broker.tests.helpers import (
-    BrokerServerHelper,
-    RemoteClientHelper,
-)
+from landscape.client.broker.tests.helpers import BrokerServerHelper
+from landscape.client.broker.tests.helpers import RemoteClientHelper
 from landscape.client.broker.tests.test_ping import FakePageGetter
+from landscape.client.manager.manager import FAILED
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
+from landscape.client.tests.helpers import LandscapeTest
 
 
 class FakeClient(object):
@@ -108,7 +105,10 @@ class BrokerServerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.assertRaises(
-            RuntimeError, self.broker.send_message, message, None
+            RuntimeError,
+            self.broker.send_message,
+            message,
+            None,
         )
 
     def test_send_message_with_old_release_upgrader(self):
@@ -154,7 +154,7 @@ class BrokerServerTest(LandscapeTest):
                 "type": "change-packages-result",
                 "operation-id": 99,
                 "result-code": 123,
-            }
+            },
         ]
         self.assertMessages(self.mstore.get_pending_messages(), expected)
         self.assertTrue(self.exchanger.is_urgent())
@@ -186,10 +186,10 @@ class BrokerServerTest(LandscapeTest):
             self.assertEqual(len(self.broker.get_clients()), 1)
             self.assertEqual(len(self.broker.get_connectors()), 1)
             self.assertTrue(
-                isinstance(self.broker.get_client("test"), FakeClient)
+                isinstance(self.broker.get_client("test"), FakeClient),
             )
             self.assertTrue(
-                isinstance(self.broker.get_connector("test"), FakeCreator)
+                isinstance(self.broker.get_connector("test"), FakeCreator),
             )
 
         self.broker.connectors_registry = {"test": FakeCreator}
@@ -238,7 +238,10 @@ class BrokerServerTest(LandscapeTest):
         config_obj.write()
         result = self.broker.reload_configuration()
         result.addCallback(
-            lambda x: self.assertEqual(self.config.computer_title, "New Title")
+            lambda x: self.assertEqual(
+                self.config.computer_title,
+                "New Title",
+            ),
         )
         return result
 
@@ -265,7 +268,7 @@ class BrokerServerTest(LandscapeTest):
         registered = self.broker.register()
         # This should callback the deferred.
         self.exchanger.handle_message(
-            {"type": "set-id", "id": "abc", "insecure-id": "def"}
+            {"type": "set-id", "id": "abc", "insecure-id": "def"},
         )
         return self.assertSuccess(registered)
 
@@ -284,7 +287,8 @@ class BrokerServerTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["foo", "bar"])
         self.assertEqual(
-            sorted(self.broker.get_accepted_message_types()), ["bar", "foo"]
+            sorted(self.broker.get_accepted_message_types()),
+            ["bar", "foo"],
         )
 
     def test_get_server_uuid_with_unset_uuid(self):
@@ -456,7 +460,8 @@ class EventTest(LandscapeTest):
         callback = Mock(return_value="foo")
         self.client_reactor.call_on("resynchronize", callback)
         return self.assertSuccess(
-            self.broker.resynchronize(["foo"]), [["foo"]]
+            self.broker.resynchronize(["foo"]),
+            [["foo"]],
         )
 
     def test_impending_exchange(self):
@@ -474,7 +479,8 @@ class EventTest(LandscapeTest):
             plugin.exchange.assert_called_once_with()
 
         deferred = self.assertSuccess(
-            self.broker.impending_exchange(), [[None]]
+            self.broker.impending_exchange(),
+            [[None]],
         )
         deferred.addCallback(assert_called)
         return deferred
@@ -492,12 +498,13 @@ class EventTest(LandscapeTest):
 
             def assert_called_made(ignored):
                 self.remote.register_client_accepted_message_type.assert_called_once_with(  # noqa: E501
-                    "type"
+                    "type",
                 )
                 self.remote.register_client.assert_called_once_with("client")
 
             deferred = self.assertSuccess(
-                self.broker.broker_reconnect(), [[None]]
+                self.broker.broker_reconnect(),
+                [[None]],
             )
             return deferred.addCallback(assert_called_made)
 
@@ -517,7 +524,8 @@ class EventTest(LandscapeTest):
 
         self.client_reactor.call_on("server-uuid-changed", callback)
         deferred = self.assertSuccess(
-            self.broker.server_uuid_changed(None, "abc"), [[return_value]]
+            self.broker.server_uuid_changed(None, "abc"),
+            [[return_value]],
         )
         return deferred.addCallback(assert_called)
 
@@ -529,7 +537,8 @@ class EventTest(LandscapeTest):
         return_value = random.randint(1, 100)
         callback = Mock(return_value=return_value)
         self.client_reactor.call_on(
-            ("message-type-acceptance-changed", "type"), callback
+            ("message-type-acceptance-changed", "type"),
+            callback,
         )
         result = self.broker.message_type_acceptance_changed("type", True)
         return self.assertSuccess(result, [[return_value]])
@@ -543,7 +552,8 @@ class EventTest(LandscapeTest):
         callback = Mock(return_value=return_value)
         self.client_reactor.call_on("package-data-changed", callback)
         return self.assertSuccess(
-            self.broker.package_data_changed(), [[return_value]]
+            self.broker.package_data_changed(),
+            [[return_value]],
         )
 
 
@@ -584,7 +594,7 @@ class HandlersTest(LandscapeTest):
         class StartsWith(object):
             def __eq__(self, other):
                 return other.startswith(
-                    "Landscape client failed to handle this request (foobar)"
+                    "Landscape client failed to handle this request (foobar)",
                 )
 
         def broadcasted(ignored):
@@ -597,7 +607,7 @@ class HandlersTest(LandscapeTest):
                         "status": FAILED,
                         "result-text": StartsWith(),
                         "operation-id": 4,
-                    }
+                    },
                 ],
             )
 
@@ -621,7 +631,9 @@ class HandlersTest(LandscapeTest):
         self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("message-type-acceptance-changed", "test", True)
         self.client.fire_event.assert_called_once_with(
-            "message-type-acceptance-changed", "test", True
+            "message-type-acceptance-changed",
+            "test",
+            True,
         )
 
     def test_server_uuid_changed(self):
@@ -632,7 +644,9 @@ class HandlersTest(LandscapeTest):
         self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("server-uuid-changed", None, 123)
         self.client.fire_event.assert_called_once_with(
-            "server-uuid-changed", None, 123
+            "server-uuid-changed",
+            None,
+            123,
         )
 
     def test_package_data_changed(self):

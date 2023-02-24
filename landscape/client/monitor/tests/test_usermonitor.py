@@ -1,17 +1,17 @@
 import os
+from unittest.mock import ANY
+from unittest.mock import Mock
 
-from mock import Mock, ANY
 from twisted.internet.defer import fail
 
-from landscape.client.amp import ComponentPublisher
-from landscape.client.monitor.usermonitor import (
-    UserMonitor,
-    RemoteUserMonitorConnector,
-)
-from landscape.client.manager.usermanager import UserManager
-from landscape.client.user.tests.helpers import FakeUserProvider
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 import landscape.client.monitor.usermonitor
+from landscape.client.amp import ComponentPublisher
+from landscape.client.manager.usermanager import UserManager
+from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector
+from landscape.client.monitor.usermonitor import UserMonitor
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.user.tests.helpers import FakeUserProvider
 
 
 class UserMonitorNoManagerTest(LandscapeTest):
@@ -42,10 +42,10 @@ class UserMonitorNoManagerTest(LandscapeTest):
                                 "uid": 1000,
                                 "username": "jdoe",
                                 "work-phone": None,
-                            }
+                            },
                         ],
                         "type": "users",
-                    }
+                    },
                 ],
             )
             plugin.stop()
@@ -70,11 +70,13 @@ class UserMonitorTest(LandscapeTest):
         self.shadow_file = self.makeFile(
             "jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
             "psmith:!:13348:0:99999:7:::\n"
-            "sam:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n"
+            "sam:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n",
         )
         self.user_manager = UserManager(shadow_file=self.shadow_file)
         self.publisher = ComponentPublisher(
-            self.user_manager, self.reactor, self.config
+            self.user_manager,
+            self.reactor,
+            self.config,
         )
         self.publisher.start()
         self.provider = FakeUserProvider()
@@ -109,7 +111,7 @@ class UserMonitorTest(LandscapeTest):
         generated.
         """
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.broker_service.message_store.set_accepted_types(["users"])
@@ -134,15 +136,16 @@ class UserMonitorTest(LandscapeTest):
                             "uid": 1000,
                             "username": "jdoe",
                             "work-phone": None,
-                        }
+                        },
                     ],
                     "type": "users",
-                }
+                },
             ],
         )
         self.broker_service.message_store.delete_all_messages()
         deferred = self.monitor.reactor.fire(
-            "resynchronize", scopes=["users"]
+            "resynchronize",
+            scopes=["users"],
         )[0]
         self.successResultOf(deferred)
         self.assertMessages(
@@ -161,10 +164,10 @@ class UserMonitorTest(LandscapeTest):
                             "uid": 1000,
                             "username": "jdoe",
                             "work-phone": None,
-                        }
+                        },
                     ],
                     "type": "users",
-                }
+                },
             ],
         )
 
@@ -174,7 +177,7 @@ class UserMonitorTest(LandscapeTest):
         created and the UserMonitor creates a new message.
         """
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.broker_service.message_store.set_accepted_types(["users"])
@@ -198,10 +201,10 @@ class UserMonitorTest(LandscapeTest):
                             "uid": 1000,
                             "username": "jdoe",
                             "work-phone": None,
-                        }
+                        },
                     ],
                     "type": "users",
-                }
+                },
             ],
         )
 
@@ -211,7 +214,7 @@ class UserMonitorTest(LandscapeTest):
         as if it had 'users' scope.
         """
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.broker_service.message_store.set_accepted_types(["users"])
@@ -236,10 +239,10 @@ class UserMonitorTest(LandscapeTest):
                             "uid": 1000,
                             "username": "jdoe",
                             "work-phone": None,
-                        }
+                        },
                     ],
                     "type": "users",
-                }
+                },
             ],
         )
         self.broker_service.message_store.delete_all_messages()
@@ -261,10 +264,10 @@ class UserMonitorTest(LandscapeTest):
                             "uid": 1000,
                             "username": "jdoe",
                             "work-phone": None,
-                        }
+                        },
                     ],
                     "type": "users",
-                }
+                },
             ],
         )
 
@@ -274,7 +277,7 @@ class UserMonitorTest(LandscapeTest):
         nothing.
         """
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.broker_service.message_store.set_accepted_types(["users"])
@@ -299,16 +302,17 @@ class UserMonitorTest(LandscapeTest):
                             "uid": 1000,
                             "username": "jdoe",
                             "work-phone": None,
-                        }
+                        },
                     ],
                     "type": "users",
-                }
+                },
             ],
         )
         self.broker_service.message_store.delete_all_messages()
         self.monitor.reactor.fire("resynchronize", scopes=["disk"])[0]
         self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(), []
+            self.broker_service.message_store.get_pending_messages(),
+            [],
         )
 
     def test_run(self):
@@ -335,15 +339,15 @@ class UserMonitorTest(LandscapeTest):
                                 "uid": 1000,
                                 "username": "jdoe",
                                 "work-phone": None,
-                            }
+                            },
                         ],
                         "type": "users",
-                    }
+                    },
                 ],
             )
 
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.broker_service.message_store.set_accepted_types(["users"])
@@ -390,16 +394,16 @@ class UserMonitorTest(LandscapeTest):
                                 "uid": 1000,
                                 "username": "jdoe",
                                 "work-phone": None,
-                            }
+                            },
                         ],
                         "operation-id": 1001,
                         "type": "users",
-                    }
+                    },
                 ],
             )
 
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
@@ -426,16 +430,16 @@ class UserMonitorTest(LandscapeTest):
                                 "uid": 1000,
                                 "username": "jdoe",
                                 "work-phone": None,
-                            }
+                            },
                         ],
                         "type": "users",
-                    }
+                    },
                 ],
             )
 
         self.broker_service.message_store.set_accepted_types(["users"])
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
 
@@ -470,17 +474,17 @@ class UserMonitorTest(LandscapeTest):
                                 "uid": 1000,
                                 "username": "jdoe",
                                 "work-phone": None,
-                            }
+                            },
                         ],
                         "operation-id": 1001,
                         "type": "users",
-                    }
+                    },
                 ],
             )
 
         self.broker_service.message_store.set_accepted_types(["users"])
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
@@ -541,7 +545,7 @@ class UserMonitorTest(LandscapeTest):
 
         self.broker_service.message_store.set_accepted_types(["users"])
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = []
 
@@ -567,7 +571,7 @@ class UserMonitorTest(LandscapeTest):
 
         self.broker_service.message_store.set_accepted_types([])
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
@@ -597,22 +601,23 @@ class UserMonitorTest(LandscapeTest):
                                 "uid": 1000,
                                 "username": "jdoe",
                                 "work-phone": None,
-                            }
+                            },
                         ],
                         "type": "users",
-                    }
+                    },
                 ],
             )
 
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
 
         self.broker_service.message_store.set_accepted_types(["users"])
         result = self.reactor.fire(
-            ("message-type-acceptance-changed", "users"), True
+            ("message-type-acceptance-changed", "users"),
+            True,
         )
         result = [x for x in result if x][0]
         result.addCallback(got_result)
@@ -637,11 +642,11 @@ class UserMonitorTest(LandscapeTest):
         self.broker_service.message_store.set_accepted_types(["users"])
 
         self.monitor.broker.send_message = Mock(
-            return_value=fail(RuntimeError())
+            return_value=fail(RuntimeError()),
         )
 
         self.provider.users = [
-            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
         ]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
@@ -651,5 +656,7 @@ class UserMonitorTest(LandscapeTest):
         result.addCallback(got_result)
         result.addCallback(lambda x: connector.disconnect())
         self.monitor.broker.send_message.assert_called_once_with(
-            ANY, ANY, urgent=True
+            ANY,
+            ANY,
+            urgent=True,
         )

@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
 import os
-from mock import Mock
+from unittest.mock import Mock
 
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.usermanager import RemoteUserManagerConnector
+from landscape.client.manager.usermanager import UserManager
+from landscape.client.monitor.usermonitor import UserMonitor
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.user.provider import UserManagementError
+from landscape.client.user.tests.helpers import FakeUserManagement
+from landscape.client.user.tests.helpers import FakeUserProvider
 from landscape.lib.persist import Persist
 from landscape.lib.twisted_util import gather_results
-from landscape.client.manager.plugin import SUCCEEDED, FAILED
-from landscape.client.monitor.usermonitor import UserMonitor
-from landscape.client.manager.usermanager import (
-    UserManager,
-    RemoteUserManagerConnector,
-)
-from landscape.client.user.tests.helpers import (
-    FakeUserProvider,
-    FakeUserManagement,
-)
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.client.user.provider import UserManagementError
 
 
 class UserGroupTestBase(LandscapeTest):
@@ -29,7 +27,7 @@ class UserGroupTestBase(LandscapeTest):
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
-"""
+""",
         )
         accepted_types = ["operation-result", "users"]
         self.broker_service.message_store.set_accepted_types(accepted_types)
@@ -41,12 +39,15 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
     def setup_environment(self, users, groups, shadow_file):
         provider = FakeUserProvider(
-            users=users, groups=groups, shadow_file=shadow_file
+            users=users,
+            groups=groups,
+            shadow_file=shadow_file,
         )
         user_monitor = UserMonitor(provider=provider)
         management = FakeUserManagement(provider=provider)
         user_manager = UserManager(
-            management=management, shadow_file=shadow_file
+            management=management,
+            shadow_file=shadow_file,
         )
         self.manager.persist = Persist()
         user_monitor.register(self.manager)
@@ -90,7 +91,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": "+12345",
                                 "name": "John Doe",
                                 "primary-gid": 1000,
-                            }
+                            },
                         ],
                     },
                 ],
@@ -110,7 +111,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "work-number": "+12345",
                 "home-number": None,
                 "type": "add-user",
-            }
+            },
         )
 
         result.addCallback(handle_callback)
@@ -148,7 +149,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": "+12345",
                                 "name": "請不要刪除",
                                 "primary-gid": 1000,
-                            }
+                            },
                         ],
                     },
                 ],
@@ -168,7 +169,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "work-number": "+12345",
                 "home-number": None,
                 "type": "add-user",
-            }
+            },
         )
 
         result.addCallback(handle_callback)
@@ -207,7 +208,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": "請不要刪除",
                                 "name": "請不要刪除",
                                 "primary-gid": 1000,
-                            }
+                            },
                         ],
                     },
                 ],
@@ -227,7 +228,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "type": "add-user",
                 "primary-group-name": "\u8acb\u4e0d\u8981\u522a\u9664",
                 "location": "\u8acb\u4e0d\u8981\u522a\u9664",
-            }
+            },
         )
 
         result.addCallback(handle_callback)
@@ -252,7 +253,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                         "operation-id": 123,
                         "timestamp": 0,
                         "result-text": "KeyError: 'username'",
-                    }
+                    },
                 ],
             )
 
@@ -265,7 +266,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "operation-id": 123,
                 "require-password-reset": False,
                 "type": "add-user",
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -304,7 +305,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "location": None,
                 "home-number": "+123456",
                 "work-number": None,
-            }
+            },
         )
 
         result.addCallback(handle_callback1)
@@ -337,7 +338,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "location": None,
                                 "primary-gid": 1000,
                                 "work-phone": None,
-                            }
+                            },
                         ],
                     },
                     {
@@ -353,7 +354,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "name": "John Doe",
                                 "primary-gid": 1001,
-                            }
+                            },
                         ],
                     },
                 ],
@@ -373,7 +374,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "location": None,
                 "work-number": None,
                 "home-number": "+123456",
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -411,7 +412,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "location": "Everywhere",
                                 "name": "John Doe",
                                 "primary-gid": 1001,
-                            }
+                            },
                         ],
                         "timestamp": 0,
                         "type": "users",
@@ -421,7 +422,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             )
 
         users = [
-            ("jdoe", "x", 1001, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1001, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         groups = [("users", "x", 1001, [])]
         self.setup_environment(users, groups, None)
@@ -437,7 +438,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "operation-id": 99,
                 "primary-group-name": "users",
                 "type": "edit-user",
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -463,7 +464,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             return result
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         plugin = self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
@@ -477,7 +478,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "primary-group-name": None,
                 "type": "edit-user",
                 "operation-id": 99,
-            }
+            },
         )
         result.addCallback(handle_callback1)
         return result
@@ -510,7 +511,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "location": None,
                                 "name": "John Doe",
                                 "primary-gid": 1000,
-                            }
+                            },
                         ],
                     },
                     {
@@ -526,14 +527,14 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "location": "Everywhere",
                                 "primary-gid": 1001,
                                 "name": "John Doe",
-                            }
+                            },
                         ],
                     },
                 ],
             )
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         groups = [("users", "x", 1001, ["jdoe"])]
         self.setup_environment(users, groups, None)
@@ -548,7 +549,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "primary-group-name": "users",
                 "type": "edit-user",
                 "operation-id": 99,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -587,7 +588,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             )
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
@@ -596,7 +597,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "delete-home": True,
                 "type": "remove-user",
                 "operation-id": 39,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -647,8 +648,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                     "delete-home": True,
                     "type": "remove-user",
                     "operation-id": 39,
-                }
-            )
+                },
+            ),
         )
         results.append(
             self.manager.dispatch_message(
@@ -657,8 +658,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                     "delete-home": True,
                     "type": "remove-user",
                     "operation-id": 40,
-                }
-            )
+                },
+            ),
         )
         return gather_results(results).addCallback(handle_callback)
 
@@ -682,7 +683,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                         "operation-id": 39,
                         "timestamp": 0,
                         "result-text": failure_string,
-                    }
+                    },
                 ],
             )
 
@@ -693,7 +694,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "delete-home": True,
                 "type": "remove-user",
                 "operation-id": 39,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -732,7 +733,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             )
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
@@ -741,7 +742,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "delete-home": False,
                 "type": "remove-user",
                 "operation-id": 39,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -767,7 +768,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(messages, new_messages)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         plugin = self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
@@ -776,7 +777,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "delete-home": True,
                 "type": "remove-user",
                 "operation-id": 39,
-            }
+            },
         )
         result.addCallback(handle_callback1)
         return result
@@ -808,7 +809,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "primary-gid": 1000,
                                 "name": "John Doe",
-                            }
+                            },
                         ],
                     },
                     {
@@ -820,7 +821,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             )
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
@@ -829,7 +830,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "delete-home": True,
                 "type": "remove-user",
                 "operation-id": 39,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -864,7 +865,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "primary-gid": 1000,
                                 "name": "John Doe",
-                            }
+                            },
                         ],
                     },
                     {
@@ -878,11 +879,11 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             )
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "operation-id": 99, "type": "lock-user"}
+            {"username": "jdoe", "operation-id": 99, "type": "lock-user"},
         )
         result.addCallback(handle_callback)
         return result
@@ -908,13 +909,13 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                         "operation-id": 99,
                         "timestamp": 0,
                         "result-text": failure_string,
-                    }
+                    },
                 ],
             )
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "operation-id": 99, "type": "lock-user"}
+            {"username": "jdoe", "operation-id": 99, "type": "lock-user"},
         )
         result.addCallback(handle_callback)
         return result
@@ -940,11 +941,11 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(messages, new_messages)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         plugin = self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "type": "lock-user", "operation-id": 99}
+            {"username": "jdoe", "type": "lock-user", "operation-id": 99},
         )
         result.addCallback(handle_callback1)
         return result
@@ -975,7 +976,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "primary-gid": 1000,
                                 "name": "John Doe",
-                            }
+                            },
                         ],
                     },
                     {
@@ -991,18 +992,18 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "primary-gid": 1000,
                                 "name": "John Doe",
-                            }
+                            },
                         ],
                     },
                 ],
             )
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
         ]
         self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "type": "lock-user", "operation-id": 99}
+            {"username": "jdoe", "type": "lock-user", "operation-id": 99},
         )
         result.addCallback(handle_callback)
         return result
@@ -1036,7 +1037,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "primary-gid": 1000,
                                 "name": "Paul Smith",
-                            }
+                            },
                         ],
                     },
                     {
@@ -1058,12 +1059,12 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "Paul Smith,,,,",
                 "/home/psmith",
                 "/bin/zsh",
-            )
+            ),
         ]
         self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
-            {"username": "psmith", "type": "unlock-user", "operation-id": 99}
+            {"username": "psmith", "type": "unlock-user", "operation-id": 99},
         )
         result.addCallback(handle_callback)
         return result
@@ -1089,13 +1090,13 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                         "operation-id": 99,
                         "timestamp": 0,
                         "result-text": failure_string,
-                    }
+                    },
                 ],
             )
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "operation-id": 99, "type": "unlock-user"}
+            {"username": "jdoe", "operation-id": 99, "type": "unlock-user"},
         )
         result.addCallback(handle_callback)
         return result
@@ -1130,12 +1131,12 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "Paul Smith,,,,",
                 "/home/psmith",
                 "/bin/zsh",
-            )
+            ),
         ]
         plugin = self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
-            {"username": "psmith", "operation-id": 99, "type": "unlock-user"}
+            {"username": "psmith", "operation-id": 99, "type": "unlock-user"},
         )
         result.addCallback(handle_callback)
         return result
@@ -1167,7 +1168,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "primary-gid": 1000,
                                 "name": "Paul Smith",
-                            }
+                            },
                         ],
                     },
                     {
@@ -1183,7 +1184,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                 "work-phone": None,
                                 "primary-gid": 1000,
                                 "name": "Paul Smith",
-                            }
+                            },
                         ],
                     },
                 ],
@@ -1198,12 +1199,12 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "Paul Smith,,,,",
                 "/home/psmith",
                 "/bin/zsh",
-            )
+            ),
         ]
         self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
-            {"username": "psmith", "operation-id": 99, "type": "unlock-user"}
+            {"username": "psmith", "operation-id": 99, "type": "unlock-user"},
         )
         result.addCallback(handle_callback)
         return result
@@ -1243,7 +1244,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"groupname": "bizdev", "type": "add-group", "operation-id": 123}
+            {"groupname": "bizdev", "type": "add-group", "operation-id": 123},
         )
         result.addCallback(handle_callback)
         return result
@@ -1270,7 +1271,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
         plugin = self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"groupname": "bizdev", "operation-id": 123, "type": "add-group"}
+            {"groupname": "bizdev", "operation-id": 123, "type": "add-group"},
         )
         result.addCallback(handle_callback1)
         return result
@@ -1305,7 +1306,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         groups = [("sales", "x", 1001, [])]
         self.setup_environment([], groups, None)
         result = self.manager.dispatch_message(
-            {"groupname": "bizdev", "type": "add-group", "operation-id": 123}
+            {"groupname": "bizdev", "type": "add-group", "operation-id": 123},
         )
         result.addCallback(handle_callback)
         return result
@@ -1356,7 +1357,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "new-name": "bizdev",
                 "type": "edit-group",
                 "operation-id": 123,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -1390,7 +1391,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "new-name": "bizdev",
                 "operation-id": 123,
                 "type": "edit-group",
-            }
+            },
         )
         result.addCallback(handle_callback1)
         return result
@@ -1411,7 +1412,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                     "new-name": "webdev",
                     "operation-id": 123,
                     "type": "edit-group",
-                }
+                },
             )
 
             result.addCallback(handle_callback2)
@@ -1475,7 +1476,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertMessages([messages[2], messages[1]], expected)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
         ]
         groups = [("bizdev", "x", 1001, [])]
         self.setup_environment(users, groups, None)
@@ -1485,7 +1486,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "groupname": "bizdev",
                 "operation-id": 123,
                 "type": "add-group-member",
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -1523,7 +1524,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertMessages([messages[2], messages[1]], expected)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
         ]
         groups = [("bizdev", "x", 1001, [])]
         self.setup_environment(users, groups, None)
@@ -1533,7 +1534,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "groupname": "bizdev",
                 "type": "add-group-member",
                 "operation-id": 123,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -1560,7 +1561,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(messages, new_messages)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
         ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         plugin = self.setup_environment(users, groups, None)
@@ -1570,7 +1571,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "groupname": "bizdev",
                 "type": "add-group-member",
                 "operation-id": 123,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -1600,7 +1601,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                             "work-phone": None,
                             "primary-gid": 1000,
                             "name": "John Doe",
-                        }
+                        },
                     ],
                     "create-groups": [{"gid": 1001, "name": "bizdev"}],
                 },
@@ -1613,7 +1614,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertMessages([messages[0], messages[2]], expected)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
         ]
         groups = [("bizdev", "x", 1001, [])]
         self.setup_environment(users, groups, None)
@@ -1623,7 +1624,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "groupname": "bizdev",
                 "type": "add-group-member",
                 "operation-id": 123,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -1661,7 +1662,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             )
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
         ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         self.setup_environment(users, groups, None)
@@ -1671,7 +1672,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "groupname": "bizdev",
                 "type": "remove-group-member",
                 "operation-id": 123,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -1697,7 +1698,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(messages, new_messages)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
         ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         plugin = self.setup_environment(users, groups, None)
@@ -1707,7 +1708,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "groupname": "bizdev",
                 "type": "remove-group-member",
                 "operation-id": 123,
-            }
+            },
         )
         result.addCallback(handle_callback1)
         return result
@@ -1738,7 +1739,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                             "work-phone": None,
                             "primary-gid": 1000,
                             "name": "John Doe",
-                        }
+                        },
                     ],
                     "create-groups": [{"gid": 1001, "name": "bizdev"}],
                     "create-group-members": {"bizdev": ["jdoe"]},
@@ -1752,7 +1753,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertMessages([messages[0], messages[2]], expected)
 
         users = [
-            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe")
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
         ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         self.setup_environment(users, groups, None)
@@ -1762,7 +1763,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                 "username": "jdoe",
                 "type": "remove-group-member",
                 "operation-id": 123,
-            }
+            },
         )
         result.addCallback(handle_callback)
         return result
@@ -1782,7 +1783,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                     "groupname": "sales",
                     "type": "remove-group",
                     "operation-id": 123,
-                }
+                },
             )
 
             result.addCallback(handle_callback2)
@@ -1843,7 +1844,11 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         groups = [("sales", "x", 50, [])]
         plugin = self.setup_environment([], groups, None)
         result = self.manager.dispatch_message(
-            {"groupname": "sales", "operation-id": 123, "type": "remove-group"}
+            {
+                "groupname": "sales",
+                "operation-id": 123,
+                "type": "remove-group",
+            },
         )
         result.addCallback(handle_callback1)
         return result
@@ -1863,7 +1868,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                     "groupname": "sales",
                     "operation-id": 123,
                     "type": "remove-group",
-                }
+                },
             )
             result.addCallback(handle_callback2)
             return result
@@ -1909,7 +1914,7 @@ class UserManagerTest(LandscapeTest):
         fd.write(
             "jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
             "psmith:!:13348:0:99999:7:::\n"
-            "yo:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n"
+            "yo:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n",
         )
         fd.close()
         self.assertEqual(self.user_manager.get_locked_usernames(), ["psmith"])
@@ -1952,7 +1957,8 @@ class RemoteUserManagerTest(LandscapeTest):
         self.shadow_file = self.makeFile()
         self.user_manager = UserManager(shadow_file=self.shadow_file)
         self.user_manager_connector = RemoteUserManagerConnector(
-            self.reactor, self.config
+            self.reactor,
+            self.config,
         )
         self.user_manager.register(self.manager)
         connected = self.user_manager_connector.connect()

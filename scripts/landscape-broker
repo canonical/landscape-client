@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-import sys, os
+import os
+import sys
+
 if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
 

@@ -1,42 +1,39 @@
-from collections import namedtuple
 import os
 import sys
-import textwrap
 import tempfile
+import textwrap
 import unittest
 import weakref
+from collections import namedtuple
 
 import apt
 import apt_pkg
+import mock
+from apt.cache import LockFailedException
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
-from apt.cache import LockFailedException
-import mock
 from twisted.python.compat import unicode
 
-from landscape.lib.fs import read_text_file, create_text_file
 from landscape.lib import testing
-from landscape.lib.apt.package.testing import (
-    HASH1,
-    HASH2,
-    HASH3,
-    PKGNAME1,
-    PKGNAME2,
-    PKGNAME3,
-    PKGDEB1,
-    PKGNAME_MINIMAL,
-    PKGDEB_MINIMAL,
-    create_deb,
-    AptFacadeHelper,
-    create_simple_repository,
-)
-from landscape.lib.apt.package.facade import (
-    TransactionError,
-    DependencyError,
-    ChannelError,
-    AptFacade,
-    LandscapeInstallProgress,
-)
+from landscape.lib.apt.package.facade import AptFacade
+from landscape.lib.apt.package.facade import ChannelError
+from landscape.lib.apt.package.facade import DependencyError
+from landscape.lib.apt.package.facade import LandscapeInstallProgress
+from landscape.lib.apt.package.facade import TransactionError
+from landscape.lib.apt.package.testing import AptFacadeHelper
+from landscape.lib.apt.package.testing import create_deb
+from landscape.lib.apt.package.testing import create_simple_repository
+from landscape.lib.apt.package.testing import HASH1
+from landscape.lib.apt.package.testing import HASH2
+from landscape.lib.apt.package.testing import HASH3
+from landscape.lib.apt.package.testing import PKGDEB1
+from landscape.lib.apt.package.testing import PKGDEB_MINIMAL
+from landscape.lib.apt.package.testing import PKGNAME1
+from landscape.lib.apt.package.testing import PKGNAME2
+from landscape.lib.apt.package.testing import PKGNAME3
+from landscape.lib.apt.package.testing import PKGNAME_MINIMAL
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_text_file
 
 
 def _normalize_field(f):
@@ -128,7 +125,9 @@ class TestCache(apt.cache.Cache):
 
 
 class AptFacadeTest(
-    testing.HelperTestCase, testing.FSTestCase, unittest.TestCase
+    testing.HelperTestCase,
+    testing.FSTestCase,
+    unittest.TestCase,
 ):
 
     helpers = [AptFacadeHelper, testing.EnvironSaverHelper]
@@ -177,22 +176,27 @@ class AptFacadeTest(
         AptFacade(root=root)
         self.assertTrue(os.path.exists(os.path.join(root, "etc", "apt")))
         self.assertTrue(
-            os.path.exists(os.path.join(root, "etc", "apt", "sources.list.d"))
+            os.path.exists(os.path.join(root, "etc", "apt", "sources.list.d")),
         )
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    root, "var", "cache", "apt", "archives", "partial"
-                )
-            )
+                    root,
+                    "var",
+                    "cache",
+                    "apt",
+                    "archives",
+                    "partial",
+                ),
+            ),
         )
         self.assertTrue(
             os.path.exists(
-                os.path.join(root, "var", "lib", "apt", "lists", "partial")
-            )
+                os.path.join(root, "var", "lib", "apt", "lists", "partial"),
+            ),
         )
         self.assertTrue(
-            os.path.exists(os.path.join(root, "var", "lib", "dpkg", "status"))
+            os.path.exists(os.path.join(root, "var", "lib", "dpkg", "status")),
         )
 
     def test_no_system_packages(self):
@@ -227,7 +231,9 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         self.assertEqual(
@@ -274,7 +280,8 @@ class AptFacadeTest(
         )
         sources_contents = read_text_file(list_filename)
         self.assertEqual(
-            "deb http://example.com/ubuntu lucid\n", sources_contents
+            "deb http://example.com/ubuntu lucid\n",
+            sources_contents,
         )
 
     def test_add_channel_apt_deb_no_duplicate(self):
@@ -291,7 +298,8 @@ class AptFacadeTest(
         )
         sources_contents = read_text_file(list_filename)
         self.assertEqual(
-            "deb http://example.com/ubuntu lucid\n", sources_contents
+            "deb http://example.com/ubuntu lucid\n",
+            sources_contents,
         )
 
     def test_add_channel_apt_deb_with_components(self):
@@ -302,7 +310,9 @@ class AptFacadeTest(
         If components are given, they are included after the dist.
         """
         self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "lucid", ["main", "restricted"]
+            "http://example.com/ubuntu",
+            "lucid",
+            ["main", "restricted"],
         )
         list_filename = (
             self.apt_root
@@ -318,19 +328,31 @@ class AptFacadeTest(
         """add_channel_apt_deb sets trusted option if trusted and local."""
         # Don't override trust on unsigned/signed remotes.
         self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "unsigned", ["main"], trusted=True
+            "http://example.com/ubuntu",
+            "unsigned",
+            ["main"],
+            trusted=True,
         )
         self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "signed", ["main"], trusted=False
+            "http://example.com/ubuntu",
+            "signed",
+            ["main"],
+            trusted=False,
         )
 
         # We explicitly trust local
         self.facade.add_channel_apt_deb(
-            "file://opt/spam", "unsigned", ["main"], trusted=True
+            "file://opt/spam",
+            "unsigned",
+            ["main"],
+            trusted=True,
         )
         # We explicitly distrust local (thus check gpg signatures)
         self.facade.add_channel_apt_deb(
-            "file://opt/spam", "signed", ["main"], trusted=False
+            "file://opt/spam",
+            "signed",
+            ["main"],
+            trusted=False,
         )
         # apt defaults (which is to check signatures on >xenial)
         self.facade.add_channel_apt_deb("file://opt/spam", "default", ["main"])
@@ -348,7 +370,7 @@ class AptFacadeTest(
             deb [ trusted=yes ] file://opt/spam unsigned main
             deb [ trusted=no ] file://opt/spam signed main
             deb file://opt/spam default main
-            """
+            """,
             ),
             sources_contents,
         )
@@ -369,7 +391,7 @@ class AptFacadeTest(
                     "distribution": "./",
                     "components": "",
                     "type": "deb",
-                }
+                },
             ],
             self.facade.get_channels(),
         )
@@ -385,7 +407,7 @@ class AptFacadeTest(
         self.facade.clear_channels()
         self.assertEqual([], self.facade.get_channels())
         self.assertFalse(
-            os.path.exists(self.facade._get_internal_sources_list())
+            os.path.exists(self.facade._get_internal_sources_list()),
         )
 
     def test_clear_channels_no_channels(self):
@@ -403,13 +425,16 @@ class AptFacadeTest(
         """
         sources_list_file = apt_pkg.config.find_file("Dir::Etc::sourcelist")
         sources_list_d_file = os.path.join(
-            apt_pkg.config.find_dir("Dir::Etc::sourceparts"), "example.list"
+            apt_pkg.config.find_dir("Dir::Etc::sourceparts"),
+            "example.list",
         )
         create_text_file(
-            sources_list_file, "deb http://example1.com/ubuntu lucid main"
+            sources_list_file,
+            "deb http://example1.com/ubuntu lucid main",
         )
         create_text_file(
-            sources_list_d_file, "deb http://example2.com/ubuntu lucid main"
+            sources_list_d_file,
+            "deb http://example2.com/ubuntu lucid main",
         )
 
         self.facade.clear_channels()
@@ -467,7 +492,7 @@ class AptFacadeTest(
             SHA256: {sha256}
             Description: Summary1
              Description1
-            """
+            """,
         )
         expected = _parse_deb_stanza(expected)
         stanza = _parse_deb_stanza(open(packages_file).read())
@@ -486,7 +511,8 @@ class AptFacadeTest(
         for pkg_name in [PKGNAME1, PKGNAME2, PKGNAME3]:
             with open(self.makeFile(), "wb+", 0) as tmp:
                 self.facade.write_package_stanza(
-                    os.path.join(deb_dir, pkg_name), tmp
+                    os.path.join(deb_dir, pkg_name),
+                    tmp,
                 )
                 tmp.seek(0)
                 stanzas.append(tmp.read().decode("utf-8"))
@@ -522,7 +548,9 @@ class AptFacadeTest(
         information about the channels.
         """
         self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "lucid", ["main", "restricted"]
+            "http://example.com/ubuntu",
+            "lucid",
+            ["main", "restricted"],
         )
         self.assertEqual(
             [
@@ -531,7 +559,7 @@ class AptFacadeTest(
                     "distribution": "lucid",
                     "components": "main restricted",
                     "type": "deb",
-                }
+                },
             ],
             self.facade.get_channels(),
         )
@@ -541,10 +569,14 @@ class AptFacadeTest(
         C{get_channels()} doesn't return disabled deb URLs.
         """
         self.facade.add_channel_apt_deb(
-            "http://enabled.example.com/ubuntu", "lucid", ["main"]
+            "http://enabled.example.com/ubuntu",
+            "lucid",
+            ["main"],
         )
         self.facade.add_channel_apt_deb(
-            "http://disabled.example.com/ubuntu", "lucid", ["main"]
+            "http://disabled.example.com/ubuntu",
+            "lucid",
+            ["main"],
         )
         sources_list = SourcesList()
         for entry in sources_list:
@@ -558,7 +590,7 @@ class AptFacadeTest(
                     "distribution": "lucid",
                     "components": "main",
                     "type": "deb",
-                }
+                },
             ],
             self.facade.get_channels(),
         )
@@ -568,10 +600,14 @@ class AptFacadeTest(
         C{reset_channels()} disables all the configured deb URLs.
         """
         self.facade.add_channel_apt_deb(
-            "http://1.example.com/ubuntu", "lucid", ["main", "restricted"]
+            "http://1.example.com/ubuntu",
+            "lucid",
+            ["main", "restricted"],
         )
         self.facade.add_channel_apt_deb(
-            "http://2.example.com/ubuntu", "lucid", ["main", "restricted"]
+            "http://2.example.com/ubuntu",
+            "lucid",
+            ["main", "restricted"],
         )
         self.facade.reset_channels()
         self.assertEqual([], self.facade.get_channels())
@@ -585,7 +621,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         self.assertEqual(
@@ -604,7 +642,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         new_facade = AptFacade(root=self.apt_root)
@@ -628,7 +668,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         new_facade = AptFacade(root=self.apt_root)
@@ -648,7 +690,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         self._add_package_to_deb_dir(deb_dir, "bar")
@@ -704,7 +748,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.refetch_package_index = True
         self.facade._cache.update = new_apt_update
@@ -727,13 +773,16 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.refetch_package_index = False
         self.facade._cache.update = new_apt_update
         self.facade.reload_channels(force_reload_binaries=True)
         self.assertEqual(
-            [self.facade._get_internal_sources_list()], passed_in_lists
+            [self.facade._get_internal_sources_list()],
+            passed_in_lists,
         )
 
     def test_reload_channels_force_reload_binaries_old_apt(self):
@@ -751,7 +800,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.refetch_package_index = False
         self.facade._cache.update = old_apt_update
@@ -966,7 +1017,7 @@ class AptFacadeTest(
                 [
                     version.package.name
                     for version in self.facade.get_packages()
-                ]
+                ],
             ),
             ["name2", "name3"],
         )
@@ -986,10 +1037,10 @@ class AptFacadeTest(
         # object.
         new_pkgs = [version.package for version in self.facade.get_packages()]
         self.assertTrue(
-            self.facade.get_package_by_hash(HASH2).package in new_pkgs
+            self.facade.get_package_by_hash(HASH2).package in new_pkgs,
         )
         self.assertTrue(
-            self.facade.get_package_by_hash(HASH3).package in new_pkgs
+            self.facade.get_package_by_hash(HASH3).package in new_pkgs,
         )
 
     def test_is_package_installed_in_channel_not_installed(self):
@@ -1026,15 +1077,19 @@ class AptFacadeTest(
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
         self._add_package_to_deb_dir(
-            deb_dir, "name1", version="version0-release0"
+            deb_dir,
+            "name1",
+            version="version0-release0",
         )
         self._add_package_to_deb_dir(
-            deb_dir, "name1", version="version2-release2"
+            deb_dir,
+            "name1",
+            version="version2-release2",
         )
         self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
         self.facade.reload_channels()
         [version0, version1, version2] = sorted(
-            self.facade.get_packages_by_name("name1")
+            self.facade.get_packages_by_name("name1"),
         )
         self.assertEqual("version0-release0", version0.version)
         self.assertFalse(self.facade.is_package_installed(version0))
@@ -1112,7 +1167,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [package] = self.facade.get_packages()
@@ -1127,7 +1184,9 @@ class AptFacadeTest(
         self._add_system_package("foo", version="0.5")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [version_05, version_10] = sorted(self.facade.get_packages())
@@ -1143,7 +1202,9 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.5")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [version_10, version_15] = sorted(self.facade.get_packages())
@@ -1160,7 +1221,9 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [package] = self.facade.get_packages()
@@ -1192,7 +1255,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [version_05, version_10] = sorted(self.facade.get_packages())
@@ -1216,7 +1281,9 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         self.assertEqual(
@@ -1225,7 +1292,7 @@ class AptFacadeTest(
                 [
                     (version.package.name, version.version)
                     for version in self.facade.get_packages_by_name("foo")
-                ]
+                ],
             ),
         )
 
@@ -1239,7 +1306,8 @@ class AptFacadeTest(
         self.assertEqual("none", os.environ["APT_LISTBUGS_FRONTEND"])
         self.assertEqual("noninteractive", os.environ["DEBIAN_FRONTEND"])
         self.assertEqual(
-            ["--force-confold"], apt_pkg.config.value_list("DPkg::options")
+            ["--force-confold"],
+            apt_pkg.config.value_list("DPkg::options"),
         )
 
     def test_perform_changes_with_path(self):
@@ -1258,13 +1326,16 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
         fetch_item = FakeFetchItem(
-            FakeOwner(1234, error_text="Some error"), "foo package"
+            FakeOwner(1234, error_text="Some error"),
+            "foo package",
         )
 
         def output_progress(fetch_progress, install_progress):
@@ -1294,7 +1365,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1312,7 +1385,8 @@ class AptFacadeTest(
             if line.strip()
         ]
         self.assertEqual(
-            ["Stdout output", "Stderr output", "Stdout output again"], output
+            ["Stdout output", "Stderr output", "Stdout output again"],
+            output,
         )
 
     def test_perform_changes_dpkg_output_error(self):
@@ -1323,7 +1397,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1362,7 +1438,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1394,7 +1472,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1458,11 +1538,13 @@ class AptFacadeTest(
         progress = LandscapeInstallProgress()
         progress.old_excepthook = (
             lambda exc_type, exc_value, exc_tb: hook_calls.append(
-                (exc_type, exc_value, exc_tb)
+                (exc_type, exc_value, exc_tb),
             )
         )
         progress._prevent_dpkg_apport_error(
-            SystemError, SystemError("error"), object()
+            SystemError,
+            SystemError("error"),
+            object(),
         )
         self.assertEqual([], hook_calls)
 
@@ -1491,7 +1573,7 @@ class AptFacadeTest(
         progress = LandscapeInstallProgress()
         progress.old_excepthook = (
             lambda exc_type, exc_value, exc_tb: hook_calls.append(
-                (exc_type, exc_value, exc_tb)
+                (exc_type, exc_value, exc_tb),
             )
         )
         error = object()
@@ -1507,7 +1589,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
@@ -1558,7 +1642,9 @@ class AptFacadeTest(
             },
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1602,10 +1688,14 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         self.assertEqual(set(), self.facade._get_broken_packages())
@@ -1619,10 +1709,14 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1630,7 +1724,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1648,10 +1743,14 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Pre-Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Pre-Depends": "bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1659,7 +1758,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1677,10 +1777,14 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar (>= 1.0)"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar (>= 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1688,7 +1792,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1708,10 +1813,14 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="0.5")
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar (>= 1.0)"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar (>= 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1721,7 +1830,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1741,11 +1851,15 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_system_package("bar", version="1.0")
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar (>= 3.0)"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar (>= 3.0)"},
         )
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1755,7 +1869,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1775,11 +1890,15 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_system_package("bar", version="1.0")
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar (>= 3.0)"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar (>= 3.0)"},
         )
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1791,7 +1910,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1811,11 +1931,15 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_system_package("bar", version="2.0")
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar (>= 3.0)"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar (>= 3.0)"},
         )
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1827,7 +1951,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1845,10 +1970,14 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar | baz (>= 1.0)"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar | baz (>= 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1856,7 +1985,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1876,10 +2006,14 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_system_package("foo")
         self._add_package_to_deb_dir(
-            deb_dir, "bar", control_fields={"Conflicts": "foo"}
+            deb_dir,
+            "bar",
+            control_fields={"Conflicts": "foo"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1890,7 +2024,8 @@ class AptFacadeTest(
         self.facade._preprocess_package_changes()
         foo.package.mark_keep()
         self.assertEqual(
-            set([bar.package]), self.facade._get_broken_packages()
+            set([bar.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1908,13 +2043,19 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self._add_package_to_deb_dir(
-            deb_dir, "bar", control_fields={"Breaks": "foo"}
+            deb_dir,
+            "bar",
+            control_fields={"Breaks": "foo"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1923,7 +2064,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1948,7 +2090,9 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1959,7 +2103,8 @@ class AptFacadeTest(
         # removed by the resolver.
         foo.package.mark_keep()
         self.assertEqual(
-            set([bar.package]), self.facade._get_broken_packages()
+            set([bar.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -1985,7 +2130,9 @@ class AptFacadeTest(
         )
         self._add_system_package("baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -1998,7 +2145,8 @@ class AptFacadeTest(
         # removed by the resolver.
         foo.package.mark_keep()
         self.assertEqual(
-            set([bar.package]), self.facade._get_broken_packages()
+            set([bar.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -2024,7 +2172,9 @@ class AptFacadeTest(
             control_fields={"Depends": "there1, missing1, there2 | missing2"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2032,7 +2182,8 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError):
             self.facade._preprocess_package_changes()
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
         self.assertEqual(
             [
@@ -2049,13 +2200,19 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self._add_package_to_deb_dir(
-            deb_dir, "another-foo", control_fields={"Depends": "another-bar"}
+            deb_dir,
+            "another-foo",
+            control_fields={"Depends": "another-bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2129,7 +2286,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2151,7 +2310,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2181,7 +2342,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
         self._add_system_package("baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self._add_system_package("quux", version="1.0")
         self._add_system_package("wibble", version="1.0")
@@ -2210,11 +2373,15 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2249,7 +2416,9 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
@@ -2278,7 +2447,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
@@ -2312,7 +2483,9 @@ class AptFacadeTest(
             control_fields={"Multi-Arch": "same"},
         )
         self._add_system_package(
-            "single-arch", architecture="amd64", version="1.0"
+            "single-arch",
+            architecture="amd64",
+            version="1.0",
         )
         self._add_package_to_deb_dir(
             deb_dir,
@@ -2329,21 +2502,29 @@ class AptFacadeTest(
             control_fields={"Multi-Arch": "same"},
         )
         self._add_package_to_deb_dir(
-            deb_dir, "single-arch", architecture="amd64", version="2.0"
+            deb_dir,
+            "single-arch",
+            architecture="amd64",
+            version="2.0",
         )
         self._add_package_to_deb_dir(
-            deb_dir, "single-arch", architecture="i386", version="2.0"
+            deb_dir,
+            "single-arch",
+            architecture="i386",
+            version="2.0",
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
 
         multi_arch1, multi_arch2 = sorted(
-            self.facade.get_packages_by_name("multi-arch")
+            self.facade.get_packages_by_name("multi-arch"),
         )
         single_arch1, single_arch2 = sorted(
-            self.facade.get_packages_by_name("single-arch")
+            self.facade.get_packages_by_name("single-arch"),
         )
         self.facade.mark_remove(multi_arch1)
         self.facade.mark_install(multi_arch2)
@@ -2403,19 +2584,22 @@ class AptFacadeTest(
             control_fields={"Multi-Arch": "same"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
 
         multi_arch1, multi_arch2 = sorted(
-            self.facade.get_packages_by_name("multi-arch")
+            self.facade.get_packages_by_name("multi-arch"),
         )
         self.facade.mark_global_upgrade()
         self.patch_cache_commit()
         with self.assertRaises(DependencyError) as cm:
             self.facade.perform_changes()
         self.assertEqual(
-            sorted([multi_arch1, multi_arch2]), sorted(cm.exception.packages)
+            sorted([multi_arch1, multi_arch2]),
+            sorted(cm.exception.packages),
         )
         changes = [
             (pkg.name, pkg.candidate.version)
@@ -2439,7 +2623,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._add_package_to_deb_dir(deb_dir, "baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
@@ -2461,7 +2647,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="3.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
@@ -2482,7 +2670,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo3 = sorted(self.facade.get_packages_by_name("foo"))[-1]
@@ -2500,7 +2690,9 @@ class AptFacadeTest(
         self._add_system_package("noauto", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "noauto", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         auto1, auto2 = sorted(self.facade.get_packages_by_name("auto"))
@@ -2558,12 +2750,15 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_system_package(
-            "broken", control_fields={"Depends": "missing"}
+            "broken",
+            control_fields={"Depends": "missing"},
         )
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2580,15 +2775,20 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_system_package(
-            "broken", control_fields={"Depends": "missing"}
+            "broken",
+            control_fields={"Depends": "missing"},
         )
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self._add_package_to_deb_dir(deb_dir, "bar")
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2606,12 +2806,15 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_system_package(
-            "broken", control_fields={"Depends": "missing"}
+            "broken",
+            control_fields={"Depends": "missing"},
         )
         self._add_system_package("foo")
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2632,21 +2835,27 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_system_package(
-            "broken", control_fields={"Depends": "missing"}
+            "broken",
+            control_fields={"Depends": "missing"},
         )
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "really-missing"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "really-missing"},
         )
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [broken] = self.facade.get_packages_by_name("broken")
         [foo] = self.facade.get_packages_by_name("foo")
         [missing] = self.facade.get_packages_by_name("missing")
         self.assertEqual(
-            set([broken.package]), self.facade._get_broken_packages()
+            set([broken.package]),
+            self.facade._get_broken_packages(),
         )
         self.facade.mark_install(foo)
         self.facade.mark_install(missing)
@@ -2658,7 +2867,8 @@ class AptFacadeTest(
             cm.exception.args[0],
         )
         self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages()
+            set([foo.package]),
+            self.facade._get_broken_packages(),
         )
 
     def test_wb_perform_changes_commit_error(self):
@@ -2676,7 +2886,8 @@ class AptFacadeTest(
             with self.assertRaises(TransactionError) as cm:
                 self.facade.perform_changes()
             mock_commit.assert_called_with(
-                fetch_progress=mock.ANY, install_progress=mock.ANY
+                fetch_progress=mock.ANY,
+                install_progress=mock.ANY,
             )
         self.assertIn("Something went wrong.", cm.exception.args[0])
 
@@ -2713,11 +2924,15 @@ class AptFacadeTest(
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
         )
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2737,7 +2952,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
@@ -2763,7 +2980,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
@@ -2807,7 +3026,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
@@ -2832,7 +3053,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
@@ -2858,7 +3081,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="3.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))[:2]
@@ -2883,11 +3108,16 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(
-            deb_dir, "foo", version="1.5", control_fields={"Depends": "bar"}
+            deb_dir,
+            "foo",
+            version="1.5",
+            control_fields={"Depends": "bar"},
         )
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo_10, foo_15 = sorted(self.facade.get_packages_by_name("foo"))
@@ -2921,10 +3151,12 @@ class AptFacadeTest(
         C{TransactionError} is raised by C{perform_changes}.
         """
         self._add_system_package(
-            "foo", control_fields={"Status": "hold ok installed"}
+            "foo",
+            control_fields={"Status": "hold ok installed"},
         )
         self._add_system_package(
-            "bar", control_fields={"Status": "hold ok installed"}
+            "bar",
+            control_fields={"Status": "hold ok installed"},
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -2953,7 +3185,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
@@ -2974,7 +3208,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
@@ -2998,7 +3234,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
@@ -3019,7 +3257,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         (bar_2,) = self.facade.get_packages_by_name("bar")
@@ -3045,7 +3285,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo_10, foo_15] = sorted(self.facade.get_packages_by_name("foo"))
@@ -3065,7 +3307,9 @@ class AptFacadeTest(
             control_fields={"Status": "hold ok installed"},
         )
         self._add_system_package(
-            "bar", version="1.0", control_fields={"Depends": "foo"}
+            "bar",
+            version="1.0",
+            control_fields={"Depends": "foo"},
         )
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
@@ -3076,7 +3320,9 @@ class AptFacadeTest(
             control_fields={"Depends": "foo (>> 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [foo_1, foo_2] = sorted(self.facade.get_packages_by_name("foo"))
@@ -3096,7 +3342,8 @@ class AptFacadeTest(
         those packages to a newer version.
         """
         self._add_system_package(
-            "foo", control_fields={"Status": "hold ok installed"}
+            "foo",
+            control_fields={"Status": "hold ok installed"},
         )
         self._add_system_package("bar")
         self.facade.reload_channels()
@@ -3118,7 +3365,9 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
@@ -3133,10 +3382,14 @@ class AptFacadeTest(
         """
         self._add_system_package("foo", version="1.0")
         self._add_system_package(
-            "bar", version="1.0", control_fields={"Depends": "foo"}
+            "bar",
+            version="1.0",
+            control_fields={"Depends": "foo"},
         )
         self._add_system_package(
-            "baz", version="1.0", control_fields={"Depends": "foo"}
+            "baz",
+            version="1.0",
+            control_fields={"Depends": "foo"},
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -3166,18 +3419,21 @@ class AptFacadeTest(
         the name of the packages that are held.
         """
         self._add_system_package(
-            "foo", control_fields={"Status": "hold ok installed"}
+            "foo",
+            control_fields={"Status": "hold ok installed"},
         )
         self._add_system_package("bar")
         self._add_system_package(
-            "baz", control_fields={"Status": "hold ok installed"}
+            "baz",
+            control_fields={"Status": "hold ok installed"},
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         [baz] = self.facade.get_packages_by_name("baz")
 
         self.assertEqual(
-            ["baz", "foo"], sorted(self.facade.get_package_holds())
+            ["baz", "foo"],
+            sorted(self.facade.get_package_holds()),
         )
 
     def test_mark_hold_and_perform_hold_changes(self):
@@ -3229,7 +3485,8 @@ class AptFacadeTest(
         C{perform_changes} won't return an error.
         """
         self._add_system_package(
-            "foo", control_fields={"Status": "hold ok installed"}
+            "foo",
+            control_fields={"Status": "hold ok installed"},
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -3244,7 +3501,8 @@ class AptFacadeTest(
         C{mark_remove_hold} marks a package as not held.
         """
         self._add_system_package(
-            "foo", control_fields={"Status": "hold ok installed"}
+            "foo",
+            control_fields={"Status": "hold ok installed"},
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -3264,7 +3522,9 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir, "./", trusted=True
+            "file://%s" % deb_dir,
+            "./",
+            trusted=True,
         )
         self.facade.reload_channels()
         [bar] = self.facade.get_packages_by_name("bar")
@@ -3280,7 +3540,8 @@ class AptFacadeTest(
         C{mark_remove_hold} and C{perform_changes} are called.
         """
         self._add_system_package(
-            "foo", control_fields={"Status": "deinstall ok installed"}
+            "foo",
+            control_fields={"Status": "deinstall ok installed"},
         )
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
@@ -3291,7 +3552,8 @@ class AptFacadeTest(
         self.assertEqual([], self.facade.get_package_holds())
         [foo] = self.facade.get_packages_by_name("foo")
         self.assertEqual(
-            apt_pkg.SELSTATE_DEINSTALL, foo.package._pkg.selected_state
+            apt_pkg.SELSTATE_DEINSTALL,
+            foo.package._pkg.selected_state,
         )
 
     def test_creation_of_key_ring(self):

@@ -3,30 +3,30 @@ Functionality for running arbitrary shell scripts.
 
 @var ALL_USERS: A token indicating all users should be allowed.
 """
-import os
-import sys
 import os.path
-import tempfile
 import shutil
+import sys
+import tempfile
 
-from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.defer import (
-    Deferred,
-    fail,
-    inlineCallbacks,
-    returnValue,
-    succeed,
-)
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import returnValue
+from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
+from twisted.internet.protocol import ProcessProtocol
 from twisted.python.compat import unicode
 
 from landscape import VERSION
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.plugin import SUCCEEDED
 from landscape.constants import UBUNTU_PATH
-from landscape.lib.fetch import fetch_async, HTTPCodeError
+from landscape.lib.fetch import fetch_async
+from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.persist import Persist
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.user import get_user_info
-from landscape.client.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 ALL_USERS = object()
@@ -127,7 +127,13 @@ class ScriptRunnerMixin(object):
         )
         args = (filename,)
         self.process_factory.spawnProcess(
-            pp, filename, args=args, uid=uid, gid=gid, path=path, env=env
+            pp,
+            filename,
+            args=args,
+            uid=uid,
+            gid=gid,
+            path=path,
+            env=env,
         )
         if time_limit is not None:
             pp.schedule_cancel(time_limit)
@@ -140,7 +146,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     def register(self, registry):
         super(ScriptExecutionPlugin, self).register(registry)
         registry.register_message(
-            "execute-script", self._handle_execute_script
+            "execute-script",
+            self._handle_execute_script,
         )
 
     def _respond(self, status, data, opid, result_code=None):
@@ -157,7 +164,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         if result_code:
             message["result-code"] = result_code
         return self.registry.broker.send_message(
-            message, self._session_id, True
+            message,
+            self._session_id,
+            True,
         )
 
     def _handle_execute_script(self, message):
@@ -166,7 +175,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             user = message["username"]
             if not self.is_user_allowed(user):
                 return self._respond(
-                    FAILED, "Scripts cannot be run as user %s." % (user,), opid
+                    FAILED,
+                    "Scripts cannot be run as user %s." % (user,),
+                    opid,
                 )
             server_supplied_env = message.get("env", None)
 
@@ -295,8 +306,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         if attachments:
             persist = Persist(
                 filename=os.path.join(
-                    self.registry.config.data_path, "broker.bpickle"
-                )
+                    self.registry.config.data_path,
+                    "broker.bpickle",
+                ),
             )
             persist = persist.root_at("registration")
             computer_id = persist.get("secure-id")
@@ -349,7 +361,8 @@ class ProcessAccumulationProtocol(ProcessProtocol):
 
     def schedule_cancel(self, time_limit):
         self._scheduled_cancel = self.reactor.call_later(
-            time_limit, self._cancel
+            time_limit,
+            self._cancel,
         )
 
     def childDataReceived(self, fd, data):  # noqa: N802
@@ -393,7 +406,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
                 self.result_deferred.callback(data)
             else:
                 self.result_deferred.errback(
-                    ProcessFailedError(data, exit_code)
+                    ProcessFailedError(data, exit_code),
                 )
 
     def _cancel(self):

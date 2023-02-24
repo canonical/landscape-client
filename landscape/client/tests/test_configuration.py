@@ -1,59 +1,55 @@
-from __future__ import print_function
-
-import mock
-from functools import partial
 import os
 import sys
 import textwrap
 import unittest
+from functools import partial
 
-from twisted.internet.defer import succeed, fail, Deferred
+import mock
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
 from twisted.python.compat import iteritems
 
+from landscape.client.broker.registration import Identity
+from landscape.client.broker.registration import RegistrationError
+from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
+from landscape.client.broker.tests.helpers import RemoteBrokerHelper
+from landscape.client.configuration import bootstrap_tree
+from landscape.client.configuration import ConfigurationError
+from landscape.client.configuration import determine_exit_code
+from landscape.client.configuration import done
+from landscape.client.configuration import exchange_failure
+from landscape.client.configuration import EXIT_NOT_REGISTERED
+from landscape.client.configuration import failure
+from landscape.client.configuration import got_connection
+from landscape.client.configuration import got_error
+from landscape.client.configuration import handle_registration_errors
+from landscape.client.configuration import ImportOptionError
+from landscape.client.configuration import is_registered
+from landscape.client.configuration import LandscapeSetupConfiguration
+from landscape.client.configuration import LandscapeSetupScript
+from landscape.client.configuration import main
+from landscape.client.configuration import print_text
+from landscape.client.configuration import prompt_yes_no
+from landscape.client.configuration import register
+from landscape.client.configuration import registration_info_text
+from landscape.client.configuration import report_registration_outcome
+from landscape.client.configuration import setup
+from landscape.client.configuration import setup_init_script_and_start_client
+from landscape.client.configuration import show_help
+from landscape.client.configuration import store_public_key_data
+from landscape.client.configuration import success
+from landscape.client.sysvconfig import ProcessError
+from landscape.client.tests.helpers import FakeBrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.amp import MethodCallError
 from landscape.lib.compat import ConfigParser
 from landscape.lib.compat import StringIO
-from landscape.client.broker.registration import RegistrationError, Identity
-from landscape.client.broker.tests.helpers import (
-    RemoteBrokerHelper,
-    BrokerConfigurationHelper,
-)
-from landscape.client.configuration import (
-    print_text,
-    LandscapeSetupScript,
-    LandscapeSetupConfiguration,
-    register,
-    setup,
-    main,
-    setup_init_script_and_start_client,
-    ConfigurationError,
-    prompt_yes_no,
-    show_help,
-    ImportOptionError,
-    store_public_key_data,
-    bootstrap_tree,
-    got_connection,
-    success,
-    failure,
-    exchange_failure,
-    handle_registration_errors,
-    done,
-    got_error,
-    report_registration_outcome,
-    determine_exit_code,
-    is_registered,
-    registration_info_text,
-    EXIT_NOT_REGISTERED,
-)
-from landscape.lib.amp import MethodCallError
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
 from landscape.lib.testing import EnvironSaverHelper
-from landscape.client.sysvconfig import ProcessError
-from landscape.client.tests.helpers import (
-    LandscapeTest,
-    FakeBrokerServiceHelper,
-)
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -66,7 +62,7 @@ class LandscapeConfigurationTest(LandscapeTest):
                 """
 [client]
 url = https://landscape.canonical.com/message-system
-"""
+""",
             )
             args.extend(["--config", filename, "--data-path", data_path])
         config = LandscapeSetupConfiguration()
@@ -96,7 +92,8 @@ class ExchangeFailureTests(unittest.TestCase):
         involved SSL or not and returns non-zero."""
         results = []
         self.assertNotEqual(
-            0, exchange_failure(results.append, ssl_error=True)
+            0,
+            exchange_failure(results.append, ssl_error=True),
         )
         self.assertEqual(["ssl-error"], results)
 
@@ -107,7 +104,8 @@ class ExchangeFailureTests(unittest.TestCase):
         """
         results = []
         self.assertNotEqual(
-            0, exchange_failure(results.append, ssl_error=False)
+            0,
+            exchange_failure(results.append, ssl_error=False),
         )
         self.assertEqual(["non-ssl-error"], results)
 
@@ -132,7 +130,9 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         self.assertNotEqual(
             0,
             handle_registration_errors(
-                add_result, faux_failure, faux_connector
+                add_result,
+                faux_failure,
+                faux_connector,
             ),
         )
         self.assertTrue(
@@ -159,7 +159,9 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         self.assertNotEqual(
             0,
             handle_registration_errors(
-                add_result, faux_failure, faux_connector
+                add_result,
+                faux_failure,
+                faux_connector,
             ),
         )
         self.assertTrue(faux_connector.was_disconnected)
@@ -184,7 +186,8 @@ class HandleRegistrationErrorsTests(unittest.TestCase):
         deferred = Deferred()
         deferred.addCallback(i_raise)
         deferred.addErrback(
-            partial(handle_registration_errors, add_result), faux_connector
+            partial(handle_registration_errors, add_result),
+            faux_connector,
         )
         deferred.callback("")  # This kicks off the callback chain.
 
@@ -332,13 +335,14 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEqual(self.config.computer_title, "default")
 
     @mock.patch(
-        "landscape.client.configuration.input", side_effect=("", "Desktop")
+        "landscape.client.configuration.input",
+        side_effect=("", "Desktop"),
     )
     @mock.patch("landscape.client.configuration.show_help")
     def test_prompt_with_required(self, mock_show_help, mock_input):
         self.script.prompt("computer_title", "Message", True)
         mock_show_help.assert_called_once_with(
-            "This option is required to configure Landscape."
+            "This option is required to configure Landscape.",
         )
 
         calls = [mock.call("Message: "), mock.call("Message: ")]
@@ -381,7 +385,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         side_effect=("password", "", "password", "password"),
     )
     def test_password_prompt_simple_non_matching(
-        self, mock_getpass, mock_show_help
+        self,
+        mock_getpass,
+        mock_show_help,
     ):
         self.script.password_prompt("registration_key", "Password")
 
@@ -401,7 +407,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         side_effect=("", "password", "password"),
     )
     def test_password_prompt_simple_matching_required(
-        self, mock_getpass, mock_show_help
+        self,
+        mock_getpass,
+        mock_show_help,
     ):
         self.script.password_prompt("registration_key", "Password", True)
 
@@ -412,7 +420,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         ]
         mock_getpass.assert_has_calls(calls)
         mock_show_help.assert_called_once_with(
-            "This option is required to configure Landscape."
+            "This option is required to configure Landscape.",
         )
         self.assertEqual(self.config.registration_key, "password")
 
@@ -422,7 +430,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.prompt = mock.Mock()
         self.script.query_computer_title()
         self.script.prompt.assert_called_once_with(
-            "computer_title", "This computer's title", True
+            "computer_title",
+            "This computer's title",
+            True,
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
@@ -439,7 +449,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.prompt = mock.Mock()
         self.script.query_account_name()
         self.script.prompt.assert_called_once_with(
-            "account_name", "Account name", True
+            "account_name",
+            "Account name",
+            True,
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
@@ -458,14 +470,16 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.password_prompt = mock.Mock()
         self.script.query_registration_key()
         self.script.password_prompt.assert_called_once_with(
-            "registration_key", "Account registration key"
+            "registration_key",
+            "Account registration key",
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("landscape.client.configuration.getpass.getpass")
     def test_query_registration_key_defined_on_command_line(
-        self, mock_getpass
+        self,
+        mock_getpass,
     ):
         self.config.load_command_line(["-p", "shared-secret"])
         self.script.query_registration_key()
@@ -493,7 +507,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
                 "localhost:8080",
                 "--https-proxy",
                 "localhost:8443",
-            ]
+            ],
         )
         self.script.query_proxies()
         mock_input.assert_not_called()
@@ -515,14 +529,16 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.load_command_line(["--https-proxy", "localhost:8443"])
         self.script.query_proxies()
         self.script.prompt.assert_called_once_with(
-            "http_proxy", "HTTP proxy URL"
+            "http_proxy",
+            "HTTP proxy URL",
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=False
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=False,
     )
     def test_query_script_plugin_no(self, mock_prompt_yes_no, mock_show_help):
         help_snippet = "Landscape has a feature which enables administrators"
@@ -530,14 +546,16 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_script_plugin()
         self.assertEqual(self.config.include_manager_plugins, "")
         mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?", default=False
+            "Enable script execution?",
+            default=False,
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=True
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
     )
     def test_query_script_plugin_yes(self, mock_prompt_yes_no, mock_show_help):
         """
@@ -549,26 +567,30 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.script.query_script_plugin()
         mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?", default=False
+            "Enable script execution?",
+            default=False,
         )
         first_call, second_call = mock_show_help.mock_calls
         self.assertTrue(first_call.strip().startswith(help_snippet))
         self.assertTrue(
             second_call.strip().startswith(
-                "By default, scripts are restricted"
-            )
+                "By default, scripts are restricted",
+            ),
         )
 
         self.script.prompt.assert_called_once_with(
-            "script_users", "Script users"
+            "script_users",
+            "Script users",
         )
         self.assertEqual(
-            self.config.include_manager_plugins, "ScriptExecution"
+            self.config.include_manager_plugins,
+            "ScriptExecution",
         )
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=False
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=False,
     )
     def test_disable_script_plugin(self, mock_prompt_yes_no, mock_show_help):
         """
@@ -580,7 +602,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.script.query_script_plugin()
         mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?", default=True
+            "Enable script execution?",
+            default=True,
         )
         self.assertEqual(self.config.include_manager_plugins, "")
         [call] = mock_show_help.mock_calls
@@ -588,10 +611,13 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=False
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=False,
     )
     def test_disabling_script_plugin_leaves_existing_inclusions(
-        self, mock_prompt_yes_no, mock_show_help
+        self,
+        mock_prompt_yes_no,
+        mock_show_help,
     ):
         """
         Disabling the script execution plugin doesn't remove other included
@@ -601,17 +627,21 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.script.query_script_plugin()
         mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?", default=True
+            "Enable script execution?",
+            default=True,
         )
         self.assertEqual(self.config.include_manager_plugins, "FooPlugin")
         mock_show_help.assert_called_once_with(mock.ANY)
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=True
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
     )
     def test_enabling_script_plugin_leaves_existing_inclusions(
-        self, mock_prompt_yes_no, mock_show_help
+        self,
+        mock_prompt_yes_no,
+        mock_show_help,
     ):
         """
         Enabling the script execution plugin doesn't remove other included
@@ -623,15 +653,18 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.script.query_script_plugin()
         mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?", default=False
+            "Enable script execution?",
+            default=False,
         )
 
         self.script.prompt.assert_called_once_with(
-            "script_users", "Script users"
+            "script_users",
+            "Script users",
         )
         self.assertEqual(2, mock_show_help.call_count)
         self.assertEqual(
-            self.config.include_manager_plugins, "FooPlugin, ScriptExecution"
+            self.config.include_manager_plugins,
+            "FooPlugin, ScriptExecution",
         )
 
     @mock.patch("landscape.client.configuration.input")
@@ -642,45 +675,56 @@ class LandscapeSetupScriptTest(LandscapeTest):
                 "ScriptExecution",
                 "--script-users",
                 "root, nobody",
-            ]
+            ],
         )
         self.script.query_script_plugin()
         mock_input.assert_not_called()
         self.assertEqual(
-            self.config.include_manager_plugins, "ScriptExecution"
+            self.config.include_manager_plugins,
+            "ScriptExecution",
         )
         self.assertEqual(self.config.script_users, "root, nobody")
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=True
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
     )
     def test_query_script_manager_plugins_defined_on_command_line(
-        self, mock_prompt_yes_no, mock_show_help
+        self,
+        mock_prompt_yes_no,
+        mock_show_help,
     ):
         self.script.prompt = mock.Mock()
 
         self.config.load_command_line(
-            ["--include-manager-plugins", "FooPlugin, ScriptExecution"]
+            ["--include-manager-plugins", "FooPlugin, ScriptExecution"],
         )
         self.script.query_script_plugin()
         self.script.prompt.assert_called_once_with(
-            "script_users", "Script users"
+            "script_users",
+            "Script users",
         )
         self.assertEqual(2, mock_show_help.call_count)
         self.assertEqual(
-            self.config.include_manager_plugins, "FooPlugin, ScriptExecution"
+            self.config.include_manager_plugins,
+            "FooPlugin, ScriptExecution",
         )
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=True
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
     )
     @mock.patch(
-        "landscape.client.configuration.pwd.getpwnam", return_value=None
+        "landscape.client.configuration.pwd.getpwnam",
+        return_value=None,
     )
     def test_query_script_users_defined_on_command_line(
-        self, mock_getpwnam, mock_prompt_yes_no, mock_show_help
+        self,
+        mock_getpwnam,
+        mock_prompt_yes_no,
+        mock_show_help,
     ):
         """
         Confirm with the user for users specified for the ScriptPlugin.
@@ -690,16 +734,18 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.include_manager_plugins = "FooPlugin"
 
         self.config.load_command_line(
-            ["--script-users", "root, nobody, landscape"]
+            ["--script-users", "root, nobody, landscape"],
         )
         self.script.query_script_plugin()
 
         mock_getpwnam.assert_called_with("landscape")
         mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?", default=False
+            "Enable script execution?",
+            default=False,
         )
         self.script.prompt_get_input.assert_called_once_with(
-            "Script users [root, nobody, landscape]: ", False
+            "Script users [root, nobody, landscape]: ",
+            False,
         )
         self.assertEqual(2, mock_show_help.call_count)
         self.assertEqual(self.config.script_users, "root, nobody, landscape")
@@ -709,7 +755,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         side_effect=(None, None, None, KeyError()),
     )
     def test_query_script_users_on_command_line_with_unknown_user(
-        self, mock_getpwnam
+        self,
+        mock_getpwnam,
     ):
         """
         If several users are provided on the command line, we verify the users
@@ -721,7 +768,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
                 "root, nobody, landscape, unknown",
                 "--include-manager-plugins",
                 "ScriptPlugin",
-            ]
+            ],
         )
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
         calls = [
@@ -742,7 +789,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
                 "all",
                 "--include-manager-plugins",
                 "ScriptPlugin",
-            ]
+            ],
         )
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
@@ -758,7 +805,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
                 "ALL",
                 "--include-manager-plugins",
                 "ScriptPlugin",
-            ]
+            ],
         )
         self.script.query_script_plugin()
         self.assertEqual(self.config.script_users, "ALL")
@@ -776,16 +823,19 @@ class LandscapeSetupScriptTest(LandscapeTest):
                 "ALL, kevin",
                 "--include-manager-plugins",
                 "ScriptPlugin",
-            ]
+            ],
         )
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch(
-        "landscape.client.configuration.prompt_yes_no", return_value=True
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
     )
     def test_invalid_user_entered_by_user(
-        self, mock_prompt_yes_no, mock_show_help
+        self,
+        mock_prompt_yes_no,
+        mock_show_help,
     ):
         """
         If an invalid user is entered on the command line the user should be
@@ -793,7 +843,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         help_snippet = "Landscape has a feature which enables administrators"
         self.script.prompt_get_input = mock.Mock(
-            side_effect=("nonexistent", "root")
+            side_effect=("nonexistent", "root"),
         )
 
         self.script.query_script_plugin()
@@ -802,11 +852,13 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertTrue(first_call.strip().startswith(help_snippet))
         self.assertTrue(
             second_call.strip().startswith(
-                "By default, scripts are restricted"
-            )
+                "By default, scripts are restricted",
+            ),
         )
         self.assertTrue(
-            third_call.strip().startswith("Unknown system users: nonexistsent")
+            third_call.strip().startswith(
+                "Unknown system users: nonexistsent",
+            ),
         )
 
     @mock.patch("landscape.client.configuration.show_help")
@@ -827,7 +879,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
     @mock.patch("landscape.client.configuration.show_help")
     @mock.patch("landscape.client.configuration.prompt_yes_no")
     def test_invalid_tags_entered_by_user(
-        self, mock_prompt_yes_no, mock_show_help
+        self,
+        mock_prompt_yes_no,
+        mock_show_help,
     ):
         """
         If tags are not provided, the user should be prompted for them, and
@@ -835,7 +889,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         again.
         """
         self.script.prompt_get_input = mock.Mock(
-            side_effect=("<script>alert();</script>", "london")
+            side_effect=("<script>alert();</script>", "london"),
         )
 
         self.script.query_tags()
@@ -843,13 +897,13 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertTrue(
             first_call.strip().startswith(
                 "You may provide tags for this "
-                "computer e.g. server,precise."
-            )
+                "computer e.g. server,precise.",
+            ),
         )
         self.assertTrue(
             second_call.strip().startswith(
-                "Tag names may only contain " "alphanumeric characters."
-            )
+                "Tag names may only contain " "alphanumeric characters.",
+            ),
         )
         calls = [("Tags: ", False), ("Tags: ", False)]
         self.script.prompt_get_input.has_calls(calls)
@@ -866,7 +920,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
     @mock.patch("landscape.client.configuration.input")
     def test_invalid_tags_defined_on_command_line_raises_error(
-        self, mock_input
+        self,
+        mock_input,
     ):
         """
         Invalid tags on the command line raises a ConfigurationError.
@@ -966,7 +1021,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         super(ConfigurationFunctionsTest, self).setUp()
         getuid_patcher = mock.patch("os.getuid", return_value=0)
         bootstrap_tree_patcher = mock.patch(
-            "landscape.client.configuration.bootstrap_tree"
+            "landscape.client.configuration.bootstrap_tree",
         )
         self.mock_getuid = getuid_patcher.start()
         self.mock_bootstrap_tree = bootstrap_tree_patcher.start()
@@ -1002,7 +1057,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
             "url = http://url\n"
             "include_manager_plugins = ScriptExecution\n"
             "access_group = webservers\n"
-            "tags = london, server"
+            "tags = london, server",
         )
 
         def side_effect_input(prompt):
@@ -1091,7 +1146,8 @@ url = https://landscape.canonical.com/message-system
 
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_silent_setup_no_register_with_default_preseed_params(
-        self, mock_sysvconfig
+        self,
+        mock_sysvconfig,
     ):
         """
         Make sure that the configuration can be used to write the
@@ -1158,7 +1214,9 @@ url = https://landscape.canonical.com/message-system
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_silent_script_users_imply_script_execution_plugin(
-        self, mock_sysvconfig, mock_input
+        self,
+        mock_sysvconfig,
+        mock_input,
     ):
         """
         If C{--script-users} is specified, without C{ScriptExecution} in the
@@ -1169,7 +1227,7 @@ url = https://landscape.canonical.com/message-system
 [client]
 url = https://localhost:8080/message-system
 bus = session
-"""
+""",
         )
 
         config = self.get_config(
@@ -1183,7 +1241,7 @@ bus = session
                 "rex",
                 "--script-users",
                 "root, nobody",
-            ]
+            ],
         )
         mock_sysvconfig().restart_landscape.return_value = True
         setup(config)
@@ -1221,7 +1279,7 @@ bus = session
                 "-t",
                 "rex",
                 "--silent",
-            ]
+            ],
         )
         self.assertRaises(ConfigurationError, setup, config)
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
@@ -1236,7 +1294,7 @@ ping_url = http://landscape.canonical.com/ping
 registration_key = shared-secret
 log_level = debug
 random_key = random_value
-"""
+""",
         )
 
         config = self.get_config(
@@ -1250,7 +1308,7 @@ random_key = random_value
                 "rex",
                 "--ping-url",
                 "http://localhost/ping",
-            ]
+            ],
         )
         setup(config)
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
@@ -1301,10 +1359,10 @@ random_key = random_value
             """
 [client]
 registration_key = shared-secret
-"""
+""",
         )
         config = self.get_config(
-            ["--config", filename, "--silent", "-a", "account", "-t", "rex"]
+            ["--config", filename, "--silent", "-a", "account", "-t", "rex"],
         )
         setup(config)
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
@@ -1324,7 +1382,8 @@ registration_key = shared-secret
 
     @mock.patch("landscape.client.configuration.LandscapeSetupScript")
     def test_setup_prefers_proxies_from_config_over_environment(
-        self, mock_setup_script
+        self,
+        mock_setup_script,
     ):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
@@ -1333,7 +1392,7 @@ registration_key = shared-secret
             "[client]\n"
             "http_proxy = http://config\n"
             "https_proxy = https://config\n"
-            "url = http://url\n"
+            "url = http://url\n",
         )
 
         config = self.get_config(["--no-start", "--config", filename])
@@ -1353,11 +1412,12 @@ registration_key = shared-secret
         main(["-c", self.make_working_config()], print=noop_print)
         mock_register.assert_not_called()
         mock_input.assert_called_once_with(
-            "\nRequest a new registration for this computer now? [Y/n]: "
+            "\nRequest a new registration for this computer now? [Y/n]: ",
         )
 
     @mock.patch(
-        "landscape.client.configuration.register", return_value="success"
+        "landscape.client.configuration.register",
+        return_value="success",
     )
     @mock.patch("landscape.client.configuration.setup")
     def test_main_silent(self, mock_setup, mock_register):
@@ -1369,7 +1429,7 @@ registration_key = shared-secret
             "[client]\n"
             "computer_title = Old Title\n"
             "account_name = Old Name\n"
-            "registration_key = Old Password\n"
+            "registration_key = Old Password\n",
         )
 
         exception = self.assertRaises(
@@ -1384,11 +1444,15 @@ registration_key = shared-secret
 
     @mock.patch("landscape.client.configuration.input", return_value="y")
     @mock.patch(
-        "landscape.client.configuration.register", return_value="success"
+        "landscape.client.configuration.register",
+        return_value="success",
     )
     @mock.patch("landscape.client.configuration.setup")
     def test_main_user_interaction_success(
-        self, mock_setup, mock_register, mock_input
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
     ):
         """The successful result of register() is communicated to the user."""
         printed = []
@@ -1406,7 +1470,7 @@ registration_key = shared-secret
         mock_setup.assert_called_once_with(mock.ANY)
         mock_register.assert_called_once_with(mock.ANY, mock.ANY)
         mock_input.assert_called_once_with(
-            "\nRequest a new registration for this computer now? [Y/n]: "
+            "\nRequest a new registration for this computer now? [Y/n]: ",
         )
         self.assertEqual(
             [
@@ -1423,7 +1487,10 @@ registration_key = shared-secret
     )
     @mock.patch("landscape.client.configuration.setup")
     def test_main_user_interaction_failure(
-        self, mock_setup, mock_register, mock_input
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
     ):
         """The failed result of register() is communicated to the user."""
         printed = []
@@ -1441,7 +1508,7 @@ registration_key = shared-secret
         mock_setup.assert_called_once_with(mock.ANY)
         mock_register.assert_called_once_with(mock.ANY, mock.ANY)
         mock_input.assert_called_once_with(
-            "\nRequest a new registration for this computer now? [Y/n]: "
+            "\nRequest a new registration for this computer now? [Y/n]: ",
         )
 
         # Note that the error is output via sys.stderr.
@@ -1455,11 +1522,15 @@ registration_key = shared-secret
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch(
-        "landscape.client.configuration.register", return_value="success"
+        "landscape.client.configuration.register",
+        return_value="success",
     )
     @mock.patch("landscape.client.configuration.setup")
     def test_main_user_interaction_success_silent(
-        self, mock_setup, mock_register, mock_input
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
     ):
         """Successful result is communicated to the user even with --silent."""
         printed = []
@@ -1493,7 +1564,10 @@ registration_key = shared-secret
     )
     @mock.patch("landscape.client.configuration.setup")
     def test_main_user_interaction_failure_silent(
-        self, mock_setup, mock_register, mock_input
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
     ):
         """
         A failure result is communicated to the user even with --silent.
@@ -1532,7 +1606,7 @@ registration_key = shared-secret
             "http_proxy = http://old.proxy\n"
             "https_proxy = https://old.proxy\n"
             "data_path = {}\n"
-            "url = http://url\n".format(data_path)
+            "url = http://url\n".format(data_path),
         )
 
     @mock.patch("landscape.client.configuration.input", return_value="")
@@ -1540,7 +1614,11 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.LandscapeSetupScript")
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_register(
-        self, mock_sysvconfig, mock_setup_script, mock_register, mock_input
+        self,
+        mock_sysvconfig,
+        mock_setup_script,
+        mock_register,
+        mock_input,
     ):
         mock_sysvconfig().is_configured_to_run.return_value = False
         self.assertRaises(
@@ -1557,16 +1635,18 @@ registration_key = shared-secret
         mock_input.assert_any_call(
             "\nThe Landscape client must be started "
             "on boot to operate correctly.\n\n"
-            "Start Landscape client on boot? [Y/n]: "
+            "Start Landscape client on boot? [Y/n]: ",
         )
         mock_input.assert_called_with(
-            "\nRequest a new registration for this computer now? [Y/n]: "
+            "\nRequest a new registration for this computer now? [Y/n]: ",
         )
 
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_errors_from_restart_landscape(
-        self, mock_sysvconfig, mock_print_text
+        self,
+        mock_sysvconfig,
+        mock_print_text,
     ):
         """
         If a ProcessError exception is raised from restart_landscape (because
@@ -1581,7 +1661,8 @@ registration_key = shared-secret
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
         mock_sysvconfig().restart_landscape.assert_called_once_with()
         mock_print_text.assert_any_call(
-            "Couldn't restart the Landscape client.", error=True
+            "Couldn't restart the Landscape client.",
+            error=True,
         )
         mock_print_text.assert_called_with(
             "This machine will be registered with the provided details when "
@@ -1592,7 +1673,9 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_errors_from_restart_landscape_ok_no_register(
-        self, mock_sysvconfig, mock_print_text
+        self,
+        mock_sysvconfig,
+        mock_print_text,
     ):
         """
         Exit code 0 will be returned if the client fails to be restarted and
@@ -1601,14 +1684,15 @@ registration_key = shared-secret
         mock_sysvconfig().restart_landscape.side_effect = ProcessError()
 
         config = self.get_config(
-            ["--silent", "-a", "account", "-t", "rex", "--ok-no-register"]
+            ["--silent", "-a", "account", "-t", "rex", "--ok-no-register"],
         )
         system_exit = self.assertRaises(SystemExit, setup, config)
         self.assertEqual(system_exit.code, 0)
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
         mock_sysvconfig().restart_landscape.assert_called_once_with()
         mock_print_text.assert_any_call(
-            "Couldn't restart the Landscape client.", error=True
+            "Couldn't restart the Landscape client.",
+            error=True,
         )
         mock_print_text.assert_called_with(
             "This machine will be registered with the provided details when "
@@ -1629,7 +1713,7 @@ registration_key = shared-secret
         mock_setup.assert_called_once_with(mock.ANY)
         mock_register.assert_called_once_with(mock.ANY, mock.ANY)
         mock_input.assert_called_once_with(
-            "\nRequest a new registration for this computer now? [Y/n]: "
+            "\nRequest a new registration for this computer now? [Y/n]: ",
         )
 
     @mock.patch("landscape.client.configuration.SysVConfig")
@@ -1640,7 +1724,9 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_setup_init_script_and_start_client_silent(
-        self, mock_sysvconfig, mock_input
+        self,
+        mock_sysvconfig,
+        mock_input,
     ):
         setup_init_script_and_start_client()
         mock_input.assert_not_called()
@@ -1667,7 +1753,7 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.register")
     @mock.patch(
-        "landscape.client.configuration.stop_client_and_disable_init_script"
+        "landscape.client.configuration.stop_client_and_disable_init_script",
     )
     def test_disable(self, mock_stop_client, mock_register, mock_input):
         main(["--disable", "-c", self.make_working_config()])
@@ -1684,7 +1770,9 @@ registration_key = shared-secret
     def test_non_root(self):
         self.mock_getuid.return_value = 1000
         sys_exit = self.assertRaises(
-            SystemExit, main, ["-c", self.make_working_config()]
+            SystemExit,
+            main,
+            ["-c", self.make_working_config()],
         )
         self.mock_getuid.assert_called_once_with()
         self.assertIn("landscape-config must be run as root", str(sys_exit))
@@ -1695,7 +1783,8 @@ registration_key = shared-secret
         self.mock_getuid.return_value = 1000
         self.assertRaises(SystemExit, main, ["--help"])
         self.assertIn(
-            "show this help message and exit", mock_stdout.getvalue()
+            "show this help message and exit",
+            mock_stdout.getvalue(),
         )
 
     @mock.patch("sys.stdout", new_callable=StringIO)
@@ -1704,7 +1793,8 @@ registration_key = shared-secret
         self.mock_getuid.return_value = 1000
         self.assertRaises(SystemExit, main, ["-h"])
         self.assertIn(
-            "show this help message and exit", mock_stdout.getvalue()
+            "show this help message and exit",
+            mock_stdout.getvalue(),
         )
 
     @mock.patch("landscape.client.configuration.SysVConfig")
@@ -1720,7 +1810,8 @@ registration_key = shared-secret
         )
 
         import_filename = self.makeFile(
-            configuration, basename="import_config"
+            configuration,
+            basename="import_config",
         )
         config_filename = self.makeFile("", basename="final_config")
 
@@ -1731,7 +1822,7 @@ registration_key = shared-secret
                 "--silent",
                 "--import",
                 import_filename,
-            ]
+            ],
         )
         setup(config)
 
@@ -1766,11 +1857,12 @@ registration_key = shared-secret
                     "--silent",
                     "--import",
                     import_filename,
-                ]
+                ],
             )
         except ImportOptionError as error:
             self.assertEqual(
-                str(error), "Nothing to import at %s." % import_filename
+                str(error),
+                "Nothing to import at %s." % import_filename,
             )
         else:
             self.fail("ImportOptionError not raised")
@@ -1788,11 +1880,12 @@ registration_key = shared-secret
                     "--silent",
                     "--import",
                     import_filename,
-                ]
+                ],
             )
         except ImportOptionError as error:
             self.assertEqual(
-                str(error), "File %s doesn't exist." % import_filename
+                str(error),
+                "File %s doesn't exist." % import_filename,
             )
         else:
             self.fail("ImportOptionError not raised")
@@ -1801,7 +1894,9 @@ registration_key = shared-secret
         old_configuration = "[client]\n"
 
         config_filename = self.makeFile(
-            "", old_configuration, basename="final_config"
+            "",
+            old_configuration,
+            basename="final_config",
         )
         import_filename = self.makeFile("", basename="import_config")
 
@@ -1814,11 +1909,12 @@ registration_key = shared-secret
                     "--silent",
                     "--import",
                     import_filename,
-                ]
+                ],
             )
         except ImportOptionError as error:
             self.assertEqual(
-                str(error), "Nothing to import at %s." % import_filename
+                str(error),
+                "Nothing to import at %s." % import_filename,
             )
         else:
             self.fail("ImportOptionError not raised")
@@ -1826,7 +1922,8 @@ registration_key = shared-secret
     def test_import_from_bogus_file(self):
         config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile(
-            "<strong>BOGUS!</strong>", basename="import_config"
+            "<strong>BOGUS!</strong>",
+            basename="import_config",
         )
 
         # Use a command line option as well to test the precedence.
@@ -1838,11 +1935,12 @@ registration_key = shared-secret
                     "--silent",
                     "--import",
                     import_filename,
-                ]
+                ],
             )
         except ImportOptionError as error:
             self.assertIn(
-                "Nothing to import at %s" % import_filename, str(error)
+                "Nothing to import at %s" % import_filename,
+                str(error),
             )
         else:
             self.fail("ImportOptionError not raised")
@@ -1853,12 +1951,15 @@ registration_key = shared-secret
         specified file.
         """
         import_filename = self.makeFile(
-            "[client]\nfoo=bar", basename="import_config"
+            "[client]\nfoo=bar",
+            basename="import_config",
         )
         # Remove read permissions
         os.chmod(import_filename, os.stat(import_filename).st_mode - 0o444)
         error = self.assertRaises(
-            ImportOptionError, self.get_config, ["--import", import_filename]
+            ImportOptionError,
+            self.get_config,
+            ["--import", import_filename],
         )
         expected_message = (
             "Couldn't read configuration from %s." % import_filename
@@ -1885,10 +1986,12 @@ registration_key = shared-secret
         )
 
         config_filename = self.makeFile(
-            old_configuration, basename="final_config"
+            old_configuration,
+            basename="final_config",
         )
         import_filename = self.makeFile(
-            new_configuration, basename="import_config"
+            new_configuration,
+            basename="import_config",
         )
 
         # Use a command line option as well to test the precedence.
@@ -1901,7 +2004,7 @@ registration_key = shared-secret
                 import_filename,
                 "-p",
                 "Command Line Password",
-            ]
+            ],
         )
         setup(config)
 
@@ -1940,10 +2043,12 @@ registration_key = shared-secret
         new_configuration = "[client]\n" "registration_key =\n"
 
         config_filename = self.makeFile(
-            old_configuration, basename="final_config"
+            old_configuration,
+            basename="final_config",
         )
         import_filename = self.makeFile(
-            new_configuration, basename="import_config"
+            new_configuration,
+            basename="import_config",
         )
 
         config = self.get_config(
@@ -1953,7 +2058,7 @@ registration_key = shared-secret
                 "--silent",
                 "--import",
                 import_filename,
-            ]
+            ],
         )
         setup(config)
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
@@ -1976,7 +2081,10 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.fetch")
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_import_from_url(
-        self, mock_sysvconfig, mock_fetch, mock_print_text
+        self,
+        mock_sysvconfig,
+        mock_fetch,
+        mock_print_text,
     ):
         mock_sysvconfig().restart_landscape.return_value = True
         configuration = (
@@ -2000,12 +2108,12 @@ registration_key = shared-secret
                 "--silent",
                 "--import",
                 "https://config.url",
-            ]
+            ],
         )
         setup(config)
         mock_fetch.assert_called_once_with("https://config.url")
         mock_print_text.assert_called_once_with(
-            "Fetching configuration from https://config.url..."
+            "Fetching configuration from https://config.url...",
         )
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
         mock_sysvconfig().restart_landscape.assert_called_once_with()
@@ -2028,7 +2136,9 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.fetch")
     def test_import_from_url_with_http_code_fetch_error(
-        self, mock_fetch, mock_print_text
+        self,
+        mock_fetch,
+        mock_print_text,
     ):
         mock_fetch.side_effect = HTTPCodeError(501, "")
         config_filename = self.makeFile("", basename="final_config")
@@ -2041,7 +2151,7 @@ registration_key = shared-secret
                     "--silent",
                     "--import",
                     "https://config.url",
-                ]
+                ],
             )
         except ImportOptionError as error:
             self.assertEqual(
@@ -2054,13 +2164,15 @@ registration_key = shared-secret
             self.fail("ImportOptionError not raised")
         mock_fetch.assert_called_once_with("https://config.url")
         mock_print_text.assert_called_once_with(
-            "Fetching configuration from https://config.url..."
+            "Fetching configuration from https://config.url...",
         )
 
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.fetch")
     def test_import_from_url_with_pycurl_error(
-        self, mock_fetch, mock_print_text
+        self,
+        mock_fetch,
+        mock_print_text,
     ):
         mock_fetch.side_effect = PyCurlError(60, "pycurl message")
 
@@ -2074,7 +2186,7 @@ registration_key = shared-secret
                     "--silent",
                     "--import",
                     "https://config.url",
-                ]
+                ],
             )
         except ImportOptionError as error:
             self.assertEqual(
@@ -2086,26 +2198,29 @@ registration_key = shared-secret
             self.fail("ImportOptionError not raised")
         mock_fetch.assert_called_once_with("https://config.url")
         mock_print_text.assert_called_once_with(
-            "Fetching configuration from https://config.url..."
+            "Fetching configuration from https://config.url...",
         )
 
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.fetch", return_value=b"")
     def test_import_from_url_with_empty_content(
-        self, mock_fetch, mock_print_text
+        self,
+        mock_fetch,
+        mock_print_text,
     ):
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError as error:
             self.assertEqual(
-                str(error), "Nothing to import at https://config.url."
+                str(error),
+                "Nothing to import at https://config.url.",
             )
         else:
             self.fail("ImportOptionError not raised")
         mock_fetch.assert_called_once_with("https://config.url")
         mock_print_text.assert_called_once_with(
-            "Fetching configuration from https://config.url..."
+            "Fetching configuration from https://config.url...",
         )
 
     @mock.patch("landscape.client.configuration.print_text")
@@ -2114,20 +2229,23 @@ registration_key = shared-secret
         return_value=b"<strong>BOGUS!</strong>",
     )
     def test_import_from_url_with_bogus_content(
-        self, mock_fetch, mock_print_text
+        self,
+        mock_fetch,
+        mock_print_text,
     ):
         # Use a command line option as well to test the precedence.
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError as error:
             self.assertEqual(
-                "Nothing to import at https://config.url.", str(error)
+                "Nothing to import at https://config.url.",
+                str(error),
             )
         else:
             self.fail("ImportOptionError not raised")
         mock_fetch.assert_called_once_with("https://config.url")
         mock_print_text.assert_called_once_with(
-            "Fetching configuration from https://config.url..."
+            "Fetching configuration from https://config.url...",
         )
 
     @mock.patch("landscape.client.configuration.print_text")
@@ -2136,15 +2254,19 @@ registration_key = shared-secret
         side_effect=HTTPCodeError(404, ""),
     )
     def test_import_error_is_handled_nicely_by_main(
-        self, mock_fetch, mock_print_text
+        self,
+        mock_fetch,
+        mock_print_text,
     ):
         system_exit = self.assertRaises(
-            SystemExit, main, ["--import", "https://config.url"]
+            SystemExit,
+            main,
+            ["--import", "https://config.url"],
         )
         self.assertEqual(system_exit.code, 1)
         mock_fetch.assert_called_once_with("https://config.url")
         mock_print_text.assert_any_call(
-            "Fetching configuration from https://config.url..."
+            "Fetching configuration from https://config.url...",
         )
         mock_print_text.assert_called_with(
             "Couldn't download configuration from https://config.url: "
@@ -2155,13 +2277,16 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_base64_ssl_public_key_is_exported_to_file(
-        self, mock_sysvconfig, mock_print_text
+        self,
+        mock_sysvconfig,
+        mock_print_text,
     ):
         mock_sysvconfig().restart_landscape.return_value = True
         data_path = self.makeDir()
         config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
         key_filename = os.path.join(
-            data_path, os.path.basename(config_filename) + ".ssl_public_key"
+            data_path,
+            os.path.basename(config_filename) + ".ssl_public_key",
         )
 
         config = self.get_config(
@@ -2177,7 +2302,7 @@ registration_key = shared-secret
                 "title",
                 "--ssl-public-key",
                 "base64:SGkgdGhlcmUh",
-            ]
+            ],
         )
         config.data_path = data_path
         setup(config)
@@ -2185,7 +2310,7 @@ registration_key = shared-secret
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
         mock_sysvconfig().restart_landscape.assert_called_once_with()
         mock_print_text.assert_called_once_with(
-            "Writing SSL CA certificate to %s..." % key_filename
+            "Writing SSL CA certificate to %s..." % key_filename,
         )
         self.assertEqual("Hi there!", open(key_filename, "r").read())
 
@@ -2195,7 +2320,8 @@ registration_key = shared-secret
 
     @mock.patch("landscape.client.configuration.SysVConfig")
     def test_normal_ssl_public_key_is_not_exported_to_file(
-        self, mock_sysvconfig
+        self,
+        mock_sysvconfig,
     ):
         mock_sysvconfig().restart_landscape.return_value = True
         config_filename = self.makeFile("")
@@ -2213,7 +2339,7 @@ registration_key = shared-secret
                 "title",
                 "--ssl-public-key",
                 "/some/filename",
-            ]
+            ],
         )
         setup(config)
 
@@ -2225,30 +2351,42 @@ registration_key = shared-secret
         options = ConfigParser()
         options.read(config_filename)
         self.assertEqual(
-            options.get("client", "ssl_public_key"), "/some/filename"
+            options.get("client", "ssl_public_key"),
+            "/some/filename",
         )
 
     # We test them individually since they must work individually.
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.fetch")
     def test_import_from_url_honors_http_proxy(
-        self, mock_fetch, mock_print_text
+        self,
+        mock_fetch,
+        mock_print_text,
     ):
         self.ensure_import_from_url_honors_proxy_options(
-            "http_proxy", mock_fetch, mock_print_text
+            "http_proxy",
+            mock_fetch,
+            mock_print_text,
         )
 
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.fetch")
     def test_import_from_url_honors_https_proxy(
-        self, mock_fetch, mock_print_text
+        self,
+        mock_fetch,
+        mock_print_text,
     ):
         self.ensure_import_from_url_honors_proxy_options(
-            "https_proxy", mock_fetch, mock_print_text
+            "https_proxy",
+            mock_fetch,
+            mock_print_text,
         )
 
     def ensure_import_from_url_honors_proxy_options(
-        self, proxy_option, mock_fetch, mock_print_text
+        self,
+        proxy_option,
+        mock_fetch,
+        mock_print_text,
     ):
         def check_proxy(url):
             self.assertEqual("https://config.url", url)
@@ -2270,14 +2408,14 @@ registration_key = shared-secret
                     "http://proxy",
                     "--import",
                     "https://config.url",
-                ]
+                ],
             )
         except ImportOptionError:
             # The returned content is empty.  We don't really care for
             # this test.
             pass
         mock_print_text.assert_called_once_with(
-            "Fetching configuration from https://config.url..."
+            "Fetching configuration from https://config.url...",
         )
 
 
@@ -2310,7 +2448,10 @@ class RegisterRealFunctionTest(LandscapeConfigurationTest):
         self.reactor.call_later(0, self.reactor.fire, "registration-done")
         connector_factory = FakeConnectorFactory(self.remote)
         result = register(
-            self.config, self.reactor, connector_factory, max_retries=99
+            self.config,
+            self.reactor,
+            connector_factory,
+            max_retries=99,
         )
         self.assertEqual("success", result)
 
@@ -2407,12 +2548,14 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         # connection is established.
         self.assertTrue(1, len(connector.connection.callbacks))
         self.assertEqual(
-            "got_connection", connector.connection.callbacks[0].func.__name__
+            "got_connection",
+            connector.connection.callbacks[0].func.__name__,
         )
         # Should something go wrong, there is an error handler registered.
         self.assertTrue(1, len(connector.connection.errbacks))
         self.assertEqual(
-            "got_error", connector.connection.errbacks[0].func.__name__
+            "got_error",
+            connector.connection.errbacks[0].func.__name__,
         )
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
@@ -2497,7 +2640,10 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         status_results = []
         faux_remote = FauxRemote()
         results = got_connection(
-            status_results.append, faux_connector, self.reactor, faux_remote
+            status_results.append,
+            faux_connector,
+            self.reactor,
+            faux_remote,
         )
         # We set up two deferreds, one for the RPC call and one for event
         # handlers.
@@ -2601,11 +2747,12 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         )
 
         self.assertEqual(
-            key_filename, store_public_key_data(config, b"123456789")
+            key_filename,
+            store_public_key_data(config, b"123456789"),
         )
         self.assertEqual(b"123456789", read_binary_file(key_filename))
         mock_print_text.assert_called_once_with(
-            "Writing SSL CA certificate to %s..." % key_filename
+            "Writing SSL CA certificate to %s..." % key_filename,
         )
 
 
@@ -2629,7 +2776,8 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         returned.
         """
         report_registration_outcome(
-            "unknown-account", print=self.record_result
+            "unknown-account",
+            print=self.record_result,
         )
         self.assertIn("Invalid account name or registration key.", self.result)
         self.assertIn(sys.stderr.name, self.output)
@@ -2640,7 +2788,8 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         returned.
         """
         report_registration_outcome(
-            "max-pending-computers", print=self.record_result
+            "max-pending-computers",
+            print=self.record_result,
         )
         messages = (
             "Maximum number of computers pending approval reached. ",
@@ -2742,8 +2891,9 @@ class RegistrationInfoTest(LandscapeTest):
             account_name = {}
             data_path = {}
         """.format(
-                self.account_name, self.data_path
-            )
+                self.account_name,
+                self.data_path,
+            ),
         )
 
     def test_not_registered(self):
@@ -2787,13 +2937,19 @@ class RegistrationInfoTest(LandscapeTest):
         """Returns exit code zero when client is registered"""
         Identity.secure_id = "test"  # Simulate successful registration
         exception = self.assertRaises(
-            SystemExit, main, ["--is-registered", "--silent"], print=noop_print
+            SystemExit,
+            main,
+            ["--is-registered", "--silent"],
+            print=noop_print,
         )
         self.assertEqual(0, exception.code)
 
     def test_not_registered_exit_code(self):
         """Returns special return code when client is not registered"""
         exception = self.assertRaises(
-            SystemExit, main, ["--is-registered", "--silent"], print=noop_print
+            SystemExit,
+            main,
+            ["--is-registered", "--silent"],
+            print=noop_print,
         )
         self.assertEqual(EXIT_NOT_REGISTERED, exception.code)

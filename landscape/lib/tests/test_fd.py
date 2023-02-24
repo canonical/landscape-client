@@ -1,9 +1,8 @@
 """Tests for L{landscape.lib.fd}"""
-
-import unittest
-
 import resource
-from mock import patch, call
+import unittest
+from unittest.mock import call
+from unittest.mock import patch
 
 from landscape.lib.fd import clean_fds
 

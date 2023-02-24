@@ -4,7 +4,6 @@ from landscape.lib.process import ProcessInformation
 
 
 class Processes(object):
-
     def __init__(self, proc_dir="/proc"):
         self._proc_dir = proc_dir
 

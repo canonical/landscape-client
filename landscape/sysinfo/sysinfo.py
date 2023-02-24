@@ -1,7 +1,7 @@
-import textwrap
-from logging import getLogger
 import math
 import os
+import textwrap
+from logging import getLogger
 
 from twisted.python.failure import Failure
 
@@ -117,7 +117,7 @@ class SysInfoPluginRegistry(PluginRegistry):
             path = os.path.join(get_landscape_log_directory(), "sysinfo.log")
             self.add_note(
                 "There were exceptions while processing one or more plugins. "
-                "See %s for more information." % path
+                "See %s for more information." % path,
             )
         return result
 
@@ -161,10 +161,11 @@ def format_sysinfo(
     min_length = width
     for header, value in headers:
         min_length = min(
-            min_length, len(header) + len(value) + 2
+            min_length,
+            len(header) + len(value) + 2,
         )  # 2 for ": "
     columns = int(
-        math.ceil(float(width) / (min_length + len(column_separator)))
+        math.ceil(float(width) / (min_length + len(column_separator))),
     )
 
     # Okay, we've got a base for the number of columns.  Now, since
@@ -262,7 +263,7 @@ def format_sysinfo(
                     initial_indent=initial_indent,
                     subsequent_indent=" " * len(initial_indent),
                     width=width,
-                )
+                ),
             )
 
     if footnotes:

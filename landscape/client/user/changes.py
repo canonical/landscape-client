@@ -1,4 +1,5 @@
-from twisted.python.compat import iteritems, itervalues
+from twisted.python.compat import iteritems
+from twisted.python.compat import itervalues
 
 from landscape.client.diff import diff
 
@@ -27,9 +28,13 @@ class UserChanges(object):
         self._old_users = self._persist.get("users", {})
         self._old_groups = self._persist.get("groups", {})
         self._new_users = self._create_index(
-            "username", self._provider.get_users())
+            "username",
+            self._provider.get_users(),
+        )
         self._new_groups = self._create_index(
-            "name", self._provider.get_groups())
+            "name",
+            self._provider.get_groups(),
+        )
 
     def snapshot(self):
         """Save the current state and use it as a comparison snapshot."""
@@ -123,8 +128,9 @@ class UserChanges(object):
                 if removed:
                     remove_members[groupname] = sorted(removed)
                 if old_data["gid"] != new_data["gid"]:
-                    update_groups.append({"name": groupname,
-                                          "gid": new_data["gid"]})
+                    update_groups.append(
+                        {"name": groupname, "gid": new_data["gid"]},
+                    )
             if create_members:
                 members = changes.setdefault("create-group-members", {})
                 members.update(create_members)

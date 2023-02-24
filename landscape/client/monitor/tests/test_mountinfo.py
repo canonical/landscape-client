@@ -1,13 +1,14 @@
-import mock
 import os
 import tempfile
 
-from twisted.python.compat import StringType
+import mock
 from twisted.python.compat import long
+from twisted.python.compat import StringType
 
-from landscape.lib.testing import mock_counter
 from landscape.client.monitor.mountinfo import MountInfo
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.testing import mock_counter
 
 
 def mb(x):
@@ -36,7 +37,7 @@ class MountInfoTest(LandscapeTest):
             kwargs["mtab_file"] = self.makeFile("/dev/hda1 / ext3 rw 0 0\n")
         if "statvfs" not in kwargs:
             kwargs["statvfs"] = lambda path: os.statvfs_result(
-                (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                (0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             )
         plugin = MountInfo(*args, **kwargs)
         # To make sure tests are isolated from the real system by default.
@@ -80,11 +81,11 @@ class MountInfoTest(LandscapeTest):
         def statvfs(path):
             if path == "/":
                 return os.statvfs_result(
-                    (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0)
+                    (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0),
                 )
             else:
                 return os.statvfs_result(
-                    (4096, 0, mb(10000), mb(1000), 0, 0, 0, 0, 0, 0)
+                    (4096, 0, mb(10000), mb(1000), 0, 0, 0, 0, 0, 0),
                 )
 
         filename = self.makeFile(
@@ -102,7 +103,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 /dev/hde1 /mnt/hde1 reiserfs rw 0 0
 /dev/hde1 /mnt/bind reiserfs rw 0 0
 /dev/sdb2 /media/Boot\\040OSX hfsplus nls=utf8 0 0
-"""
+""",
         )
 
         mtab_filename = self.makeFile(
@@ -120,7 +121,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 /dev/hde1 /mnt/hde1 reiserfs rw 0 0
 /dev/hde1 /mnt/bind none rw,bind 0 0
 /dev/sdb2 /media/Boot\\040OSX hfsplus rw 0 0
-"""
+""",
         )
         plugin = self.get_mount_info(
             mounts_file=filename,
@@ -183,7 +184,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 
         def statvfs(path, multiplier=lambda: next(counter)):
             return os.statvfs_result(
-                (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0, 0)
+                (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0, 0),
             )
 
         plugin = self.get_mount_info(
@@ -201,7 +202,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 
         for i, total_space in enumerate([4096000, 8192000]):
             self.assertEqual(
-                mount_info[i][0], (i + 1) * self.monitor.step_size
+                mount_info[i][0],
+                (i + 1) * self.monitor.step_size,
             )
             self.assertEqual(
                 mount_info[i][1],
@@ -228,17 +230,17 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path, multiplier=lambda: next(counter)):
             if path == "/":
                 return os.statvfs_result(
-                    (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0)
+                    (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0, 0),
                 )
             return os.statvfs_result(
-                (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0, 0)
+                (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0, 0),
             )
 
         filename = self.makeFile(
             """\
 /dev/hda1 / ext3 rw 0 0
 /dev/hde1 /mnt/hde1 ext3 rw 0 0
-"""
+""",
         )
         plugin = self.get_mount_info(
             mounts_file=filename,
@@ -298,7 +300,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         delivered in a single message.
         """
         plugin = self.get_mount_info(
-            statvfs=statvfs_result_fixture, create_time=self.reactor.time
+            statvfs=statvfs_result_fixture,
+            create_time=self.reactor.time,
         )
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
@@ -327,7 +330,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         available, None will be returned when messages are created.
         """
         plugin = self.get_mount_info(
-            statvfs=statvfs_result_fixture, create_time=self.reactor.time
+            statvfs=statvfs_result_fixture,
+            create_time=self.reactor.time,
         )
         self.monitor.add(plugin)
 
@@ -352,7 +356,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 /mm/ubuntu-mirror /home/dchroot/warty/mirror none bind 0 0
 /mm/ubuntu-mirror /home/dchroot/hoary/mirror none bind 0 0
 /mm/ubuntu-mirror /home/dchroot/breezy/mirror none bind 0 0
-"""
+""",
         )
         plugin = self.get_mount_info(
             mounts_file=filename,
@@ -392,7 +396,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
             """\
 ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,\
 addr=ennui 0 0
-"""
+""",
         )
         plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
         self.monitor.add(plugin)
@@ -420,11 +424,12 @@ addr=ennui 0 0
 
         def statvfs(path, multiplier=lambda: next(counter)):
             return os.statvfs_result(
-                (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0, 0)
+                (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0, 0),
             )
 
         plugin = self.get_mount_info(
-            statvfs=statvfs, create_time=self.reactor.time
+            statvfs=statvfs,
+            create_time=self.reactor.time,
         )
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
@@ -460,7 +465,7 @@ addr=ennui 0 0
         filename = self.makeFile(
             """\
 /dev/hda2 / xfs rw 0 0
-"""
+""",
         )
         plugin = self.get_mount_info(
             mounts_file=filename,
@@ -487,14 +492,15 @@ addr=ennui 0 0
                         "filesystem": "xfs",
                         "total-space": 4096000,
                     },
-                )
+                ),
             ],
         )
         self.assertEqual(
-            messages[1].get("free-space"), [(step_size, "/", 409600)]
+            messages[1].get("free-space"),
+            [(step_size, "/", 409600)],
         )
         self.assertTrue(
-            isinstance(messages[1]["free-space"][0][2], (int, long))
+            isinstance(messages[1]["free-space"][0][2], (int, long)),
         )
 
     def test_resynchronize(self):
@@ -503,7 +509,8 @@ addr=ennui 0 0
         should be sent.
         """
         plugin = self.get_mount_info(
-            create_time=self.reactor.time, statvfs=statvfs_result_fixture
+            create_time=self.reactor.time,
+            statvfs=statvfs_result_fixture,
         )
         self.monitor.add(plugin)
 
@@ -527,7 +534,7 @@ addr=ennui 0 0
                         "total-space": 4096000,
                         "filesystem": "ext3",
                     },
-                )
+                ),
             ],
         }
         self.assertMessages(messages, [expected_message, expected_message])
@@ -547,7 +554,7 @@ addr=ennui 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /media/Boot\\040OSX hfsplus rw 0 0
-"""
+""",
         )
 
         mtab_filename = self.makeFile(
@@ -556,7 +563,7 @@ addr=ennui 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /opt /mnt none rw,bind 0 0
 /opt /media/Boot\\040OSX none rw,bind 0 0
-"""
+""",
         )
         plugin = MountInfo(
             mounts_file=filename,
@@ -605,7 +612,7 @@ addr=ennui 0 0
 /dev/devices/by-uuid/12345567 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
-"""
+""",
         )
         # mktemp isn't normally secure, due to race conditions, but in this
         # case, we don't actually create the file at all.
@@ -665,7 +672,7 @@ addr=ennui 0 0
 /dev/devices/by-uuid/12345567 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
-"""
+""",
         )
 
         mtab_filename = self.makeFile(
@@ -673,7 +680,7 @@ addr=ennui 0 0
 /dev/hda1 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /opt /mnt none rw,bind 0 0
-"""
+""",
         )
 
         plugin = MountInfo(
@@ -697,10 +704,13 @@ addr=ennui 0 0
 
         with mock.patch.object(self.remote, "send_message"):
             self.reactor.fire(
-                ("message-type-acceptance-changed", "mount-info"), True
+                ("message-type-acceptance-changed", "mount-info"),
+                True,
             )
             self.remote.send_message.assert_called_with(
-                mock.ANY, mock.ANY, urgent=True
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
             )
             self.assertEqual(self.remote.send_message.call_count, 2)
 
@@ -715,7 +725,7 @@ addr=ennui 0 0
         filename = self.makeFile(
             """\
 /dev/hda1 / ext3 rw 0 0
-"""
+""",
         )
         plugin = MountInfo(
             mounts_file=filename,
@@ -737,7 +747,7 @@ addr=ennui 0 0
                         "mount-point": "/",
                         "total-space": 4096000,
                     },
-                )
+                ),
             ],
         )
         plugin.run()
@@ -753,7 +763,7 @@ addr=ennui 0 0
                         "mount-point": "/",
                         "total-space": 4096000,
                     },
-                )
+                ),
             ],
         )
         # Run again, calling create_mount_info_message purge the information
@@ -769,7 +779,8 @@ addr=ennui 0 0
         exchange of free-space messages.
         """
         plugin = self.get_mount_info(
-            statvfs=statvfs_result_fixture, create_time=self.reactor.time
+            statvfs=statvfs_result_fixture,
+            create_time=self.reactor.time,
         )
         # Limit the test exchange to 5 items.
         plugin.max_free_space_items_to_exchange = 5

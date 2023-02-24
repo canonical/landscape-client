@@ -342,20 +342,25 @@ Diagram::
   14. Schedule exchange
 
 """
-import time
 import logging
-from landscape.lib.hashlib import md5
+import time
 
-from twisted.internet.defer import Deferred, succeed
-from landscape.lib.compat import _PY3
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import succeed
 
+from landscape import CLIENT_API
+from landscape import DEFAULT_SERVER_API
+from landscape import SERVER_API
 from landscape.lib.backoff import ExponentialBackoff
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.compat import _PY3
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
 from landscape.lib.format import format_delta
-from landscape.lib.message import got_next_expected, RESYNC
-from landscape.lib.versioning import is_version_higher, sort_versions
-
-from landscape import DEFAULT_SERVER_API, SERVER_API, CLIENT_API
+from landscape.lib.hashlib import md5
+from landscape.lib.message import got_next_expected
+from landscape.lib.message import RESYNC
+from landscape.lib.versioning import is_version_higher
+from landscape.lib.versioning import sort_versions
 
 
 class MessageExchange(object):
@@ -437,7 +442,7 @@ class MessageExchange(object):
         if context is None:
             logging.warning(
                 "No message context for message with operation-id: %s"
-                % operation_id
+                % operation_id,
             )
             return False
 
@@ -474,7 +479,7 @@ class MessageExchange(object):
             logging.info(
                 "Response message with operation-id %s was discarded "
                 "because the client's secure ID has changed in the meantime"
-                % message.get("operation-id")
+                % message.get("operation-id"),
             )
             return None
 
@@ -547,13 +552,13 @@ class MessageExchange(object):
             self._config.exchange_interval = message["exchange"]
             logging.info(
                 "Exchange interval set to %d seconds."
-                % self._config.exchange_interval
+                % self._config.exchange_interval,
             )
         if "urgent-exchange" in message:
             self._config.urgent_exchange_interval = message["urgent-exchange"]
             logging.info(
                 "Urgent exchange interval set to %d seconds."
-                % self._config.urgent_exchange_interval
+                % self._config.urgent_exchange_interval,
             )
         self._config.write()
 
@@ -581,12 +586,12 @@ class MessageExchange(object):
         if self._urgent_exchange:
             logging.info(
                 "Starting urgent message exchange with %s."
-                % self._transport.get_url()
+                % self._transport.get_url(),
             )
         else:
             logging.info(
                 "Starting message exchange with %s."
-                % self._transport.get_url()
+                % self._transport.get_url(),
             )
 
         deferred = Deferred()
@@ -708,7 +713,7 @@ class MessageExchange(object):
             if backoff_delay:
                 logging.warning(
                     "Server is busy. Backing off client for {} "
-                    "seconds".format(backoff_delay)
+                    "seconds".format(backoff_delay),
                 )
                 interval += backoff_delay
 
@@ -716,11 +721,13 @@ class MessageExchange(object):
                 self._reactor.cancel_call(self._notification_id)
             notification_interval = interval - 10
             self._notification_id = self._reactor.call_later(
-                notification_interval, self._notify_impending_exchange
+                notification_interval,
+                self._notify_impending_exchange,
             )
 
             self._exchange_id = self._reactor.call_later(
-                interval, self.exchange
+                interval,
+                self.exchange,
             )
 
     def _get_exchange_token(self):
@@ -808,7 +815,7 @@ class MessageExchange(object):
         """
         message_store = self._message_store
         self._client_accepted_types_hash = result.get(
-            "client-accepted-types-hash"
+            "client-accepted-types-hash",
         )
         next_expected = result.get("next-expected-sequence")
         old_sequence = message_store.get_sequence()
@@ -828,7 +835,7 @@ class MessageExchange(object):
             # up-to-date data.
             logging.info(
                 "Server asked for ancient data: resynchronizing all "
-                "state with the server."
+                "state with the server.",
             )
             self.send({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
@@ -844,7 +851,7 @@ class MessageExchange(object):
             new_uuid = new_uuid.decode("ascii")
         if new_uuid != old_uuid:
             logging.info(
-                "Server UUID changed (old=%s, new=%s)." % (old_uuid, new_uuid)
+                "Server UUID changed (old=%s, new=%s)." % (old_uuid, new_uuid),
             )
             self._reactor.fire("server-uuid-changed", old_uuid, new_uuid)
             message_store.set_server_uuid(new_uuid)

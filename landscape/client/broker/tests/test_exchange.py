@@ -1,26 +1,23 @@
 import mock
 
 from landscape import CLIENT_API
-from landscape.lib.persist import Persist
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
-from landscape.lib.hashlib import md5
-from landscape.lib.schema import Int
-from landscape.message_schemas.message import Message
 from landscape.client.broker.config import BrokerConfiguration
-from landscape.client.broker.exchange import (
-    get_accepted_types_diff,
-    MessageExchange,
-)
-from landscape.client.broker.transport import FakeTransport
-from landscape.client.broker.store import MessageStore
+from landscape.client.broker.exchange import get_accepted_types_diff
+from landscape.client.broker.exchange import MessageExchange
 from landscape.client.broker.ping import Pinger
 from landscape.client.broker.registration import RegistrationHandler
-from landscape.client.tests.helpers import (
-    LandscapeTest,
-    DEFAULT_ACCEPTED_TYPES,
-)
-from landscape.client.broker.tests.helpers import ExchangeHelper
 from landscape.client.broker.server import BrokerServer
+from landscape.client.broker.store import MessageStore
+from landscape.client.broker.tests.helpers import ExchangeHelper
+from landscape.client.broker.transport import FakeTransport
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
+from landscape.lib.hashlib import md5
+from landscape.lib.persist import Persist
+from landscape.lib.schema import Int
+from landscape.message_schemas.message import Message
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -57,7 +54,12 @@ class MessageExchangeTest(LandscapeTest):
         will be discarded.
         """
         broker = BrokerServer(
-            self.config, self.reactor, self.exchanger, None, self.mstore, None
+            self.config,
+            self.reactor,
+            self.exchanger,
+            None,
+            self.mstore,
+            None,
         )
 
         disk_session_id = self.mstore.get_session_id(scope="disk")
@@ -77,7 +79,12 @@ class MessageExchangeTest(LandscapeTest):
         for that scope are expired, all other session IDs are unaffected.
         """
         broker = BrokerServer(
-            self.config, self.reactor, self.exchanger, None, self.mstore, None
+            self.config,
+            self.reactor,
+            self.exchanger,
+            None,
+            self.mstore,
+            None,
         )
 
         disk_session_id = self.mstore.get_session_id(scope="disk")
@@ -110,7 +117,8 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(len(self.transport.payloads), 1)
         messages = self.transport.payloads[0]["messages"]
         self.assertEqual(
-            messages, [{"type": "empty", "timestamp": 0, "api": b"3.2"}]
+            messages,
+            [{"type": "empty", "timestamp": 0, "api": b"3.2"}],
         )
 
     def test_send_urgent(self):
@@ -123,7 +131,8 @@ class MessageExchangeTest(LandscapeTest):
         self.wait_for_exchange(urgent=True)
         self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(
-            self.transport.payloads[0]["messages"], [{"type": "empty"}]
+            self.transport.payloads[0]["messages"],
+            [{"type": "empty"}],
         )
 
     def test_send_urgent_wont_reschedule(self):
@@ -159,7 +168,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.set_accepted_types(["package-reporter-result"])
         self.exchanger._max_log_text_bytes = 5
         self.exchanger.send(
-            {"type": "package-reporter-result", "err": "E" * 10, "code": 0}
+            {"type": "package-reporter-result", "err": "E" * 10, "code": 0},
         )
         self.exchanger.exchange()
         self.assertEqual(len(self.transport.payloads), 1)
@@ -181,7 +190,7 @@ class MessageExchangeTest(LandscapeTest):
                 "code": 0,
                 "status": 0,
                 "operation-id": 0,
-            }
+            },
         )
         self.exchanger.exchange()
         self.assertEqual(len(self.transport.payloads), 1)
@@ -197,7 +206,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.set_accepted_types(["package-reporter-result"])
         self.exchanger._max_log_text_bytes = 4
         self.exchanger.send(
-            {"type": "package-reporter-result", "err": "E" * 4, "code": 0}
+            {"type": "package-reporter-result", "err": "E" * 4, "code": 0},
         )
         self.exchanger.exchange()
         self.assertEqual(len(self.transport.payloads), 1)
@@ -220,7 +229,7 @@ class MessageExchangeTest(LandscapeTest):
         types.
         """
         self.exchanger.handle_message(
-            {"type": "accepted-types", "types": ["foo"]}
+            {"type": "accepted-types", "types": ["foo"]},
         )
         self.assertEqual(self.mstore.get_accepted_types(), ["foo"])
 
@@ -232,13 +241,14 @@ class MessageExchangeTest(LandscapeTest):
 
         self.reactor.call_on("message-type-acceptance-changed", callback)
         self.exchanger.handle_message(
-            {"type": "accepted-types", "types": ["a", "b"]}
+            {"type": "accepted-types", "types": ["a", "b"]},
         )
         self.exchanger.handle_message(
-            {"type": "accepted-types", "types": ["b", "c"]}
+            {"type": "accepted-types", "types": ["b", "c"]},
         )
         self.assertCountEqual(
-            stash, [("a", True), ("b", True), ("a", False), ("c", True)]
+            stash,
+            [("a", True), ("b", True), ("a", False), ("c", True)],
         )
 
     def test_wb_accepted_types_roundtrip(self):
@@ -247,7 +257,7 @@ class MessageExchangeTest(LandscapeTest):
         should affect its future payloads.
         """
         self.exchanger.handle_message(
-            {"type": "accepted-types", "types": ["ack", "bar"]}
+            {"type": "accepted-types", "types": ["ack", "bar"]},
         )
         payload = self.exchanger._make_payload()
         self.assertIn("accepted-types", payload)
@@ -261,12 +271,13 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.send({"type": "holdme"})
         self.assertEqual(self.mstore.get_pending_messages(), [])
         self.exchanger.handle_message(
-            {"type": "accepted-types", "types": ["holdme"]}
+            {"type": "accepted-types", "types": ["holdme"]},
         )
         self.wait_for_exchange(urgent=True)
         self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(
-            self.transport.payloads[0]["messages"], [{"type": "holdme"}]
+            self.transport.payloads[0]["messages"],
+            [{"type": "holdme"}],
         )
 
     def test_accepted_types_no_urgent_without_held(self):
@@ -277,7 +288,8 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.send({"type": "holdme"})
         self.assertEqual(self.transport.payloads, [])
         self.reactor.fire(
-            "message", {"type": "accepted-types", "types": ["irrelevant"]}
+            "message",
+            {"type": "accepted-types", "types": ["irrelevant"]},
         )
         self.assertEqual(len(self.transport.payloads), 0)
 
@@ -348,7 +360,8 @@ class MessageExchangeTest(LandscapeTest):
 
         self.assertEqual(len(self.transport.payloads), 2)
         self.assertMessages(
-            self.transport.payloads[1]["messages"], [{"type": "empty"}]
+            self.transport.payloads[1]["messages"],
+            [{"type": "empty"}],
         )
 
     def test_server_expects_older_messages(self):
@@ -397,10 +410,11 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(payload["next-expected-sequence"], 0)
 
     @mock.patch(
-        "landscape.client.broker.store.MessageStore" ".delete_old_messages"
+        "landscape.client.broker.store.MessageStore" ".delete_old_messages",
     )
     def test_pending_offset_when_next_expected_too_high(
-        self, mock_rm_all_messages
+        self,
+        mock_rm_all_messages,
     ):
         """
         When next expected sequence received from server is too high, then the
@@ -477,7 +491,8 @@ class MessageExchangeTest(LandscapeTest):
 
         self.exchanger.exchange()
         self.assertMessage(
-            self.mstore.get_pending_messages()[-1], {"type": "resynchronize"}
+            self.mstore.get_pending_messages()[-1],
+            {"type": "resynchronize"},
         )
 
     def test_start_with_urgent_exchange(self):
@@ -599,7 +614,7 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.call_on("resynchronize-clients", resynchronized)
 
         self.transport.responses.append(
-            [{"type": "resynchronize", "operation-id": 123}]
+            [{"type": "resynchronize", "operation-id": 123}],
         )
         self.exchanger.exchange()
         self.assertMessages(
@@ -629,8 +644,8 @@ class MessageExchangeTest(LandscapeTest):
                     "type": "resynchronize",
                     "operation-id": 123,
                     "scopes": ["disk", "users"],
-                }
-            ]
+                },
+            ],
         )
         self.exchanger.exchange()
         self.assertEqual(["disk", "users"], fired_scopes)
@@ -678,7 +693,8 @@ class MessageExchangeTest(LandscapeTest):
     def test_old_sequence_id_does_not_cause_resynchronize(self):
         resynchronized = []
         self.reactor.call_on(
-            "resynchronize", lambda: resynchronized.append(True)
+            "resynchronize",
+            lambda: resynchronized.append(True),
         )
 
         self.mstore.set_accepted_types(["empty"])
@@ -884,7 +900,7 @@ class MessageExchangeTest(LandscapeTest):
         TIME_UNTIL_NOTIFY = 10  # noqa: N806
         TIME_ADVANCED = 20  # time that we've already advanced # noqa: N806
         self.reactor.advance(
-            TIME_UNTIL_EXCHANGE - (TIME_UNTIL_NOTIFY + TIME_ADVANCED)
+            TIME_UNTIL_EXCHANGE - (TIME_UNTIL_NOTIFY + TIME_ADVANCED),
         )
         self.assertEqual(events, [True])
         # Ok, so no new events means that the original call was
@@ -957,7 +973,7 @@ class MessageExchangeTest(LandscapeTest):
                 "type": "set-intervals",
                 "urgent-exchange": 1234,
                 "exchange": 5678,
-            }
+            },
         ]
         self.transport.responses.append(server_message)
 
@@ -1150,7 +1166,7 @@ class MessageExchangeTest(LandscapeTest):
             self.exchange_store.get_message_context(message["operation-id"]),
         )
         message_context = self.exchange_store.get_message_context(
-            message["operation-id"]
+            message["operation-id"],
         )
         self.assertEqual(message_context.operation_id, 123456)
         self.assertEqual(message_context.message_type, "type-R")
@@ -1190,7 +1206,7 @@ class MessageExchangeTest(LandscapeTest):
 
         self.mstore.set_accepted_types(["resynchronize"])
         message_id = self.exchanger.send(
-            {"type": "resynchronize", "operation-id": 234567}
+            {"type": "resynchronize", "operation-id": 234567},
         )
         self.exchanger.exchange()
         self.assertEqual(2, len(self.transport.payloads))
@@ -1229,7 +1245,7 @@ class MessageExchangeTest(LandscapeTest):
         event should be fired with the optional "ssl_error" flag set to True.
         """
         self.log_helper.ignore_errors(
-            "Message exchange failed: Failed to " "communicate."
+            "Message exchange failed: Failed to " "communicate.",
         )
         events = []
 
@@ -1239,7 +1255,7 @@ class MessageExchangeTest(LandscapeTest):
 
         self.reactor.call_on("exchange-failed", failed_exchange)
         self.transport.responses.append(
-            PyCurlError(60, "Failed to communicate.")
+            PyCurlError(60, "Failed to communicate."),
         )
         self.exchanger.exchange()
         self.assertEqual([None], events)
@@ -1258,7 +1274,7 @@ class MessageExchangeTest(LandscapeTest):
 
         self.reactor.call_on("exchange-failed", failed_exchange)
         self.transport.responses.append(
-            PyCurlError(10, "Failed to communicate.")  # Not 60
+            PyCurlError(10, "Failed to communicate."),  # Not 60
         )
         self.exchanger.exchange()
         self.assertEqual([None], events)
@@ -1371,7 +1387,10 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
     def setUp(self):
         super(AcceptedTypesMessageExchangeTest, self).setUp()
         self.pinger = Pinger(
-            self.reactor, self.identity, self.exchanger, self.config
+            self.reactor,
+            self.identity,
+            self.exchanger,
+            self.config,
         )
         # The __init__ method of RegistrationHandler registers a few default
         # message types that we want to catch as well

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import hashlib
 import logging
 import os
@@ -7,23 +5,23 @@ import subprocess
 import sys
 import tempfile
 import time
-
 from operator import attrgetter
 
 import apt
 import apt_inst
 import apt_pkg
-
-from aptsources.sourceslist import SourcesList
-from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
+from apt.progress.text import AcquireProgress
+from aptsources.sourceslist import SourcesList
 from twisted.python.compat import itervalues
 
-
-from landscape.lib.compat import StringIO
-from landscape.lib.fs import append_text_file, create_text_file
-from landscape.lib.fs import read_text_file, read_binary_file, touch_file
 from .skeleton import build_skeleton_apt
+from landscape.lib.compat import StringIO
+from landscape.lib.fs import append_text_file
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_binary_file
+from landscape.lib.fs import read_text_file
+from landscape.lib.fs import touch_file
 
 
 class TransactionError(Exception):
@@ -38,7 +36,7 @@ class DependencyError(Exception):
 
     def __str__(self):
         return "Missing dependencies: %s" % ", ".join(
-            [str(package) for package in self.packages]
+            [str(package) for package in self.packages],
         )
 
 
@@ -197,7 +195,7 @@ class AptFacade(object):
     def get_package_holds(self):
         """Return the name of all the packages that are on hold."""
         return sorted(
-            [version.package.name for version in self.get_locked_packages()]
+            [version.package.name for version in self.get_locked_packages()],
         )
 
     def _set_dpkg_selections(self, selection):
@@ -225,7 +223,7 @@ class AptFacade(object):
         @param version: The version of the package to unhold.
         """
         if not self.is_package_installed(version) or not self._is_package_held(
-            version.package
+            version.package,
         ):
             return
         self._set_dpkg_selections(version.package.name + " install")
@@ -256,7 +254,7 @@ class AptFacade(object):
             except apt.cache.FetchFailedException:
                 raise ChannelError(
                     "Apt failed to reload channels (%r)"
-                    % (self.get_channels())
+                    % (self.get_channels()),
                 )
             self._cache.open(None)
 
@@ -267,7 +265,8 @@ class AptFacade(object):
                 continue
             for version in package.versions:
                 hash = self.get_package_skeleton(
-                    version, with_info=False
+                    version,
+                    with_info=False,
                 ).get_hash()
                 # Use a tuple including the package, since the Version
                 # objects of two different packages can have the same
@@ -288,7 +287,11 @@ class AptFacade(object):
         return os.path.join(sources_dir, "_landscape-internal-facade.list")
 
     def add_channel_apt_deb(
-        self, url, codename, components=None, trusted=None
+        self,
+        url,
+        codename,
+        components=None,
+        trusted=None,
     ):
         """Add a deb URL which points to a repository.
 
@@ -405,7 +408,9 @@ class AptFacade(object):
         except AttributeError:
             # support for python-apt < 1.9
             section = apt_pkg.rewrite_section(
-                tag_section, apt_pkg.REWRITE_PACKAGE_ORDER, new_tags
+                tag_section,
+                apt_pkg.REWRITE_PACKAGE_ORDER,
+                new_tags,
             )
             dest.write(section.encode("utf-8"))
 
@@ -579,7 +584,7 @@ class AptFacade(object):
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
-                [version for package, version in dependencies]
+                [version for package, version in dependencies],
             )
         return len(versions_to_be_changed) > 0
 
@@ -652,7 +657,7 @@ class AptFacade(object):
                     relation_infos = []
                     for dep_relation in dependency:
                         relation_infos.append(
-                            self._get_unmet_relation_info(dep_relation)
+                            self._get_unmet_relation_info(dep_relation),
                         )
                     info = "  %s: %s: " % (package.name, dep_type)
                     or_divider = " or\n" + " " * len(info)
@@ -660,7 +665,7 @@ class AptFacade(object):
                     found_dependency_error = True
             if not found_dependency_error:
                 all_info.append(
-                    "  %s: %s" % (package.name, "Unknown dependency error")
+                    "  %s: %s" % (package.name, "Unknown dependency error"),
                 )
         return "\n".join(all_info)
 
@@ -700,8 +705,11 @@ class AptFacade(object):
                 "Cannot perform the changes, since the following "
                 + "packages are not installed: %s"
                 % ", ".join(
-                    [version.package.name for version in sorted(not_installed)]
-                )
+                    [
+                        version.package.name
+                        for version in sorted(not_installed)
+                    ],
+                ),
             )
 
         for version in self._version_hold_creations:
@@ -744,7 +752,7 @@ class AptFacade(object):
                     logging.warning(
                         "dpkg process might be in use. "
                         "Retrying package changes. %d retries remaining."
-                        % (self.max_dpkg_retries - dpkg_tries)
+                        % (self.max_dpkg_retries - dpkg_tries),
                     )
                 dpkg_tries += 1
                 try:
@@ -756,28 +764,28 @@ class AptFacade(object):
                         raise SystemError("dpkg didn't exit cleanly.")
                 except SystemError as exc:
                     result_text = fetch_output.getvalue() + read_text_file(
-                        install_output_path
+                        install_output_path,
                     )
                     error = TransactionError(
                         exc.args[0]
                         + "\n\nPackage operation log:\n"
-                        + result_text
+                        + result_text,
                     )
                     # No need to retry SystemError, since it's most
                     # likely a permanent error.
                     break
                 except apt.cache.LockFailedException as exception:
                     result_text = fetch_output.getvalue() + read_text_file(
-                        install_output_path
+                        install_output_path,
                     )
                     error = TransactionError(
                         exception.args[0]
                         + "\n\nPackage operation log:\n"
-                        + result_text
+                        + result_text,
                     )
                 else:
                     result_text = fetch_output.getvalue() + read_text_file(
-                        install_output_path
+                        install_output_path,
                     )
                     break
             if error is not None:
@@ -852,7 +860,7 @@ class AptFacade(object):
         if held_package_names:
             raise TransactionError(
                 "Can't perform the changes, since the following packages"
-                + " are held: %s" % ", ".join(sorted(held_package_names))
+                + " are held: %s" % ", ".join(sorted(held_package_names)),
             )
 
     def _preprocess_global_upgrade(self):
@@ -869,7 +877,7 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError as error:
                 raise TransactionError(
-                    error.args[0] + "\n" + self._get_unmet_dependency_info()
+                    error.args[0] + "\n" + self._get_unmet_dependency_info(),
                 )
             else:
                 now_broken_packages = self._get_broken_packages()

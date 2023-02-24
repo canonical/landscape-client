@@ -1,15 +1,18 @@
 import operator
 import os
 import shutil
-import tempfile
 import subprocess
+import tempfile
+from unittest.mock import ANY
+from unittest.mock import Mock
+from unittest.mock import patch
 
 from twisted.internet.defer import fail
 
-from landscape.lib.testing import ProcessDataBuilder
 from landscape.client.monitor.activeprocessinfo import ActiveProcessInfo
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
-from mock import ANY, Mock, patch
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.testing import ProcessDataBuilder
 
 
 class ActiveProcessInfoTest(LandscapeTest):
@@ -134,7 +137,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         plugin.exchange()
@@ -195,7 +201,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue(os.path.isdir(directory))
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         plugin.exchange()
@@ -228,7 +237,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         self.monitor.exchange()
@@ -249,9 +261,9 @@ class ActiveProcessInfoTest(LandscapeTest):
                             "gid": 0,
                             "start-time": 110,
                             "percent-cpu": 0.0,
-                        }
+                        },
                     ],
-                }
+                },
             ],
         )
 
@@ -284,7 +296,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         plugin.exchange()
@@ -520,12 +535,16 @@ class ActiveProcessInfoTest(LandscapeTest):
         when a message type becomes accepted.
         """
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
         )
         self.monitor.add(plugin)
         self.assertEqual(len(self.mstore.get_pending_messages()), 0)
         result = self.monitor.fire_event(
-            "message-type-acceptance-changed", "active-process-info", True
+            "message-type-acceptance-changed",
+            "active-process-info",
+            True,
         )
 
         def assert_messages(ignored):
@@ -565,7 +584,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
 
@@ -608,7 +630,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                 ],
                 "kill-all-processes": True,
                 "type": "active-process-info",
-            }
+            },
         ]
 
         self.assertMessages(messages, expected_messages)
@@ -633,7 +655,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         that future messages can be sent.
         """
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         session_id = plugin._session_id
@@ -657,7 +682,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
 
@@ -676,11 +704,11 @@ class ActiveProcessInfoTest(LandscapeTest):
                         "uid": 1000,
                         "vm-size": 11676,
                         "percent-cpu": 0.0,
-                    }
+                    },
                 ],
                 "kill-all-processes": True,
                 "type": "active-process-info",
-            }
+            },
         ]
 
         self.assertMessages(messages, expected_messages)
@@ -713,7 +741,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
 
@@ -732,11 +763,11 @@ class ActiveProcessInfoTest(LandscapeTest):
                         "uid": 1000,
                         "vm-size": 11676,
                         "percent-cpu": 0.0,
-                    }
+                    },
                 ],
                 "kill-all-processes": True,
                 "type": "active-process-info",
-            }
+            },
         ]
 
         self.assertMessages(messages, expected_messages)
@@ -779,7 +810,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.monitor.add(plugin)
 
         self.monitor.broker.send_message = Mock(
-            return_value=fail(MyException())
+            return_value=fail(MyException()),
         )
 
         message = plugin.get_message()
@@ -790,7 +821,9 @@ class ActiveProcessInfoTest(LandscapeTest):
         result = plugin.exchange()
         result.addCallback(assert_message)
         self.monitor.broker.send_message.assert_called_once_with(
-            ANY, ANY, urgent=ANY
+            ANY,
+            ANY,
+            urgent=ANY,
         )
         return result
 
@@ -806,7 +839,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
 
@@ -852,7 +888,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                             "gid": 0,
                             "vm-size": 11676,
                             "uid": 0,
-                        }
+                        },
                     ],
                 },
                 {
@@ -869,7 +905,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                             "gid": 0,
                             "vm-size": 20000,
                             "uid": 0,
-                        }
+                        },
                     ],
                 },
             ],
@@ -885,7 +921,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.sample_dir = self.makeDir()
         self.builder = ProcessDataBuilder(self.sample_dir)
         self.mstore.set_accepted_types(
-            ["active-process-info", "operation-result"]
+            ["active-process-info", "operation-result"],
         )
 
     def get_missing_pid(self):
@@ -913,7 +949,10 @@ class PluginManagerIntegrationTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=2000, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=2000,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         plugin.exchange()
@@ -945,13 +984,16 @@ class PluginManagerIntegrationTest(LandscapeTest):
             process_name=" postgres: writer process     ",
         )
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
         )
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(
-            message["add-processes"][0]["name"], "postgres: writer process"
+            message["add-processes"][0]["name"],
+            "postgres: writer process",
         )
 
     def test_read_process_with_no_cmdline(self):
@@ -967,7 +1009,10 @@ class PluginManagerIntegrationTest(LandscapeTest):
         )
 
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=100, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=100,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         plugin.exchange()
@@ -1010,7 +1055,10 @@ class PluginManagerIntegrationTest(LandscapeTest):
             stat_data=stat_data,
         )
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=400, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=400,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         plugin.exchange()
@@ -1055,7 +1103,10 @@ class PluginManagerIntegrationTest(LandscapeTest):
             stat_data=stat_data,
         )
         plugin = ActiveProcessInfo(
-            proc_dir=self.sample_dir, uptime=400, jiffies=10, boot_time=0
+            proc_dir=self.sample_dir,
+            uptime=400,
+            jiffies=10,
+            boot_time=0,
         )
         self.monitor.add(plugin)
         plugin.exchange()

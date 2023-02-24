@@ -1,8 +1,6 @@
-from __future__ import division
-
+import codecs
 import os
 import re
-import codecs
 
 from landscape.lib.compat import _PY3
 
@@ -28,7 +26,7 @@ STABLE_FILESYSTEMS = frozenset(
         "simfs",
         "drvfs",
         "lxfs",
-    ]
+    ],
 )
 
 
@@ -36,7 +34,9 @@ EXTRACT_DEVICE = re.compile("([a-z]+)[0-9]*")
 
 
 def get_mount_info(
-    mounts_file, statvfs_, filesystems_whitelist=STABLE_FILESYSTEMS
+    mounts_file,
+    statvfs_,
+    filesystems_whitelist=STABLE_FILESYSTEMS,
 ):
     """
     This is a generator that yields information about mounted filesystems.

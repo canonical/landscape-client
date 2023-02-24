@@ -1,17 +1,16 @@
 import glob
+import grp
 import os
 import pwd
-import grp
 import shutil
 import tempfile
 import uuid
 
 from twisted.internet.defer import succeed
 
-from landscape.lib.twisted_util import spawn_process
-
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.package.reporter import find_reporter_command
+from landscape.lib.twisted_util import spawn_process
 
 
 class ProcessError(Exception):
@@ -27,8 +26,10 @@ class AptSources(ManagerPlugin):
 
     def register(self, registry):
         super(AptSources, self).register(registry)
-        registry.register_message("apt-sources-replace",
-                                  self._handle_repositories)
+        registry.register_message(
+            "apt-sources-replace",
+            self._handle_repositories,
+        )
 
     def _run_process(self, command, args, uid=None, gid=None):
         """
@@ -85,9 +86,9 @@ class AptSources(ManagerPlugin):
                       "-----END PGP PUBLIC KEY BLOCK-----"]}
         """
         deferred = succeed(None)
-        prefix = 'landscape-server-'
+        prefix = "landscape-server-"
         for key in message["gpg-keys"]:
-            filename = prefix + str(uuid.uuid4()) + '.asc'
+            filename = prefix + str(uuid.uuid4()) + ".asc"
             key_path = os.path.join(self.TRUSTED_GPG_D, filename)
             with open(key_path, "w") as key_file:
                 key_file.write(key)
@@ -106,15 +107,19 @@ class AptSources(ManagerPlugin):
                 new_sources.write(
                     "# Landscape manages repositories for this computer\n"
                     "# Original content of sources.list can be found in "
-                    "sources.list.save\n")
+                    "sources.list.save\n",
+                )
 
             original_stat = os.stat(self.SOURCES_LIST)
             if not os.path.isfile(saved_sources):
                 shutil.move(self.SOURCES_LIST, saved_sources)
             shutil.move(path, self.SOURCES_LIST)
             os.chmod(self.SOURCES_LIST, original_stat.st_mode)
-            os.chown(self.SOURCES_LIST, original_stat.st_uid,
-                     original_stat.st_gid)
+            os.chown(
+                self.SOURCES_LIST,
+                original_stat.st_uid,
+                original_stat.st_gid,
+            )
         else:
             # Re-instate original sources
             if os.path.isfile(saved_sources):
@@ -124,11 +129,13 @@ class AptSources(ManagerPlugin):
             shutil.move(filename, "%s.save" % filename)
 
         for source in sources:
-            filename = os.path.join(self.SOURCES_LIST_D,
-                                    "landscape-%s.list" % source["name"])
+            filename = os.path.join(
+                self.SOURCES_LIST_D,
+                "landscape-%s.list" % source["name"],
+            )
             # Servers send unicode, but an upgrade from python2 can get bytes
             # from stored messages, so we need to handle both.
-            is_unicode = isinstance(source["content"], type(u""))
+            is_unicode = isinstance(source["content"], type(""))
             with open(filename, ("w" if is_unicode else "wb")) as sources_file:
                 sources_file.write(source["content"])
             os.chmod(filename, 0o644)

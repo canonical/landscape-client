@@ -1,36 +1,34 @@
+import grp
 import logging
-import time
 import os
 import pwd
-import grp
+import time
 
-from twisted.internet.defer import maybeDeferred, succeed
 from twisted.internet import reactor
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
 
-from landscape.constants import (
-    SUCCESS_RESULT,
-    ERROR_RESULT,
-    DEPENDENCY_ERROR_RESULT,
-    POLICY_STRICT,
-    POLICY_ALLOW_INSTALLS,
-    POLICY_ALLOW_ALL_CHANGES,
-    UNKNOWN_PACKAGE_DATA_TIMEOUT,
-)
-
-from landscape.lib.config import get_bindir
-from landscape.lib import base64
-from landscape.lib.fs import create_binary_file
-from landscape.lib.log import log_failure
-from landscape.client.package.reporter import find_reporter_command
-from landscape.client.package.taskhandler import (
-    PackageTaskHandler,
-    PackageTaskHandlerConfiguration,
-    PackageTaskError,
-    run_task_handler,
-)
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.shutdownmanager import ShutdownProcessProtocol
 from landscape.client.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
+from landscape.client.package.reporter import find_reporter_command
+from landscape.client.package.taskhandler import PackageTaskError
+from landscape.client.package.taskhandler import PackageTaskHandler
+from landscape.client.package.taskhandler import (
+    PackageTaskHandlerConfiguration,
+)
+from landscape.client.package.taskhandler import run_task_handler
+from landscape.constants import DEPENDENCY_ERROR_RESULT
+from landscape.constants import ERROR_RESULT
+from landscape.constants import POLICY_ALLOW_ALL_CHANGES
+from landscape.constants import POLICY_ALLOW_INSTALLS
+from landscape.constants import POLICY_STRICT
+from landscape.constants import SUCCESS_RESULT
+from landscape.constants import UNKNOWN_PACKAGE_DATA_TIMEOUT
+from landscape.lib import base64
+from landscape.lib.config import get_bindir
+from landscape.lib.fs import create_binary_file
+from landscape.lib.log import log_failure
 
 
 class UnknownPackageData(Exception):
@@ -82,7 +80,11 @@ class PackageChanger(PackageTaskHandler):
         reboot_required_filename=REBOOT_REQUIRED_FILENAME,
     ):
         super(PackageChanger, self).__init__(
-            store, facade, remote, config, landscape_reactor
+            store,
+            facade,
+            remote,
+            config,
+            landscape_reactor,
         )
         self._process_factory = process_factory
         if landscape_reactor is None:  # For testing purposes.
@@ -148,7 +150,7 @@ class PackageChanger(PackageTaskHandler):
         failure.trap(UnknownPackageData)
         logging.warning(
             "Package data not yet synchronized with server (%r)"
-            % failure.value.args[0]
+            % failure.value.args[0],
         )
         if task.timestamp < time.time() - UNKNOWN_PACKAGE_DATA_TIMEOUT:
             message = {
@@ -167,7 +169,7 @@ class PackageChanger(PackageTaskHandler):
         Return a boolean indicating if the update-stamp stamp file exists.
         """
         return os.path.exists(
-            self._config.update_stamp_filename
+            self._config.update_stamp_filename,
         ) or os.path.exists(self.update_notifier_stamp)
 
     def _clear_binaries(self):
@@ -336,12 +338,15 @@ class PackageChanger(PackageTaskHandler):
         self._clear_binaries()
 
         needs_reboot = message.get("reboot-if-necessary") and os.path.exists(
-            self.reboot_required_filename
+            self.reboot_required_filename,
         )
         stop_exchanger = needs_reboot
 
         deferred = self._send_response(
-            None, message, result, stop_exchanger=stop_exchanger
+            None,
+            message,
+            result,
+            stop_exchanger=stop_exchanger,
         )
         if needs_reboot:
             # Reboot the system after a short delay after the response has been
@@ -375,14 +380,16 @@ class PackageChanger(PackageTaskHandler):
             "Landscape is rebooting the system",
         ]
         self._process_factory.spawnProcess(
-            protocol, "/sbin/shutdown", args=args
+            protocol,
+            "/sbin/shutdown",
+            args=args,
         )
         return protocol.result
 
     def _log_reboot(self, result, minutes):
         """Log the reboot."""
         logging.warning(
-            "Landscape is rebooting the system in %s minutes" % minutes
+            "Landscape is rebooting the system in %s minutes" % minutes,
         )
 
     def _send_response(
@@ -410,7 +417,7 @@ class PackageChanger(PackageTaskHandler):
 
         logging.info(
             "Queuing response with change package results to "
-            "exchange urgently."
+            "exchange urgently.",
         )
 
         deferred = self._broker.send_message(response, self._session_id, True)

@@ -4,41 +4,41 @@ The WatchDog must run as root, because it spawns the Landscape Manager.
 
 The main C{landscape-client} program uses this watchdog.
 """
-
-import os
 import errno
-import sys
+import os
 import pwd
 import signal
+import sys
 import time
+from logging import error
+from logging import info
+from logging import warning
+from resource import RLIMIT_NOFILE
+from resource import setrlimit
 
-from logging import warning, info, error
-from resource import setrlimit, RLIMIT_NOFILE
-
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred, succeed
-from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.error import ProcessExitedAlready
-from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
+from twisted.application.service import Application
+from twisted.application.service import Service
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import succeed
+from twisted.internet.error import ProcessExitedAlready
+from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client.deployment import init_logging, Configuration
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.broker.amp import RemoteManagerConnector
+from landscape.client.broker.amp import RemoteMonitorConnector
+from landscape.client.deployment import Configuration
+from landscape.client.deployment import init_logging
+from landscape.client.reactor import LandscapeReactor
+from landscape.lib.bootstrap import BootstrapDirectory
+from landscape.lib.bootstrap import BootstrapFile
+from landscape.lib.bootstrap import BootstrapList
 from landscape.lib.config import get_bindir
 from landscape.lib.encoding import encode_values
-from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.logging import rotate_logs
-from landscape.lib.bootstrap import (
-    BootstrapList,
-    BootstrapFile,
-    BootstrapDirectory,
-)
-from landscape.client.broker.amp import (
-    RemoteBrokerConnector,
-    RemoteMonitorConnector,
-    RemoteManagerConnector,
-)
-from landscape.client.reactor import LandscapeReactor
+from landscape.lib.twisted_util import gather_results
 
 GRACEFUL_WAIT_PERIOD = 10
 MAXIMUM_CONSECUTIVE_RESTARTS = 5
@@ -186,7 +186,9 @@ class Daemon(object):
             return True
 
         connected = self._connector.connect(
-            self.max_retries, self.factor, quiet=True
+            self.max_retries,
+            self.factor,
+            quiet=True,
         )
         connected.addCallback(lambda remote: getattr(remote, name)())
         connected.addCallback(disconnect)
@@ -271,7 +273,7 @@ class WatchedProcessProtocol(ProcessProtocol):
         if self.transport is not None:
             if warn:
                 warning(
-                    "%s didn't exit. Sending SIGTERM" % (self.daemon.program,)
+                    "%s didn't exit. Sending SIGTERM" % (self.daemon.program,),
                 )
             try:
                 self.transport.signalProcess(signal.SIGTERM)
@@ -306,7 +308,9 @@ class WatchedProcessProtocol(ProcessProtocol):
 
     def wait_or_die(self):
         self._delayed_terminate = reactor.callLater(
-            GRACEFUL_WAIT_PERIOD, self._terminate, warn=True
+            GRACEFUL_WAIT_PERIOD,
+            self._terminate,
+            warn=True,
         )
         return self.wait()
 
@@ -384,7 +388,7 @@ class WatchDog(object):
         signal.signal(
             signal.SIGUSR1,
             lambda signal, frame: reactor.callFromThread(
-                self._notify_rotate_logs
+                self._notify_rotate_logs,
             ),
         )
         if config is not None and config.clones > 0:
@@ -485,7 +489,7 @@ class WatchDog(object):
                 # immediately.
                 error(
                     "Couldn't request that broker gracefully shut down; "
-                    "killing forcefully."
+                    "killing forcefully.",
                 )
                 results = [x.stop() for x in self.daemons]
             return gather_results(results)
@@ -508,7 +512,9 @@ class WatchDogConfiguration(Configuration):
             help="Fork and run in the background.",
         )
         parser.add_option(
-            "--pid-file", type="str", help="The file to write the PID to."
+            "--pid-file",
+            type="str",
+            help="The file to write the PID to.",
         )
         parser.add_option(
             "--monitor-only",
@@ -558,7 +564,8 @@ class WatchDogService(Service):
     def startService(self):  # noqa: N802
         Service.startService(self)
         bootstrap_list.bootstrap(
-            data_path=self._config.data_path, log_dir=self._config.log_dir
+            data_path=self._config.data_path,
+            log_dir=self._config.log_dir,
         )
         if self._config.clones > 0:
 
@@ -590,7 +597,7 @@ class WatchDogService(Service):
             if running_daemons:
                 error(
                     "ERROR: The following daemons are already running: %s"
-                    % (", ".join(x.program for x in running_daemons))
+                    % (", ".join(x.program for x in running_daemons)),
                 )
                 self.exit_code = 1
                 reactor.crash()  # so stopService isn't called.
@@ -643,24 +650,39 @@ bootstrap_list = BootstrapList(
         BootstrapDirectory("$data_path", "landscape", "root", 0o755),
         BootstrapDirectory("$data_path/package", "landscape", "root", 0o755),
         BootstrapDirectory(
-            "$data_path/package/hash-id", "landscape", "root", 0o755
+            "$data_path/package/hash-id",
+            "landscape",
+            "root",
+            0o755,
         ),
         BootstrapDirectory(
-            "$data_path/package/binaries", "landscape", "root", 0o755
+            "$data_path/package/binaries",
+            "landscape",
+            "root",
+            0o755,
         ),
         BootstrapDirectory(
-            "$data_path/package/upgrade-tool", "landscape", "root", 0o755
+            "$data_path/package/upgrade-tool",
+            "landscape",
+            "root",
+            0o755,
         ),
         BootstrapDirectory("$data_path/messages", "landscape", "root", 0o755),
         BootstrapDirectory("$data_path/sockets", "landscape", "root", 0o750),
         BootstrapDirectory(
-            "$data_path/custom-graph-scripts", "landscape", "root", 0o755
+            "$data_path/custom-graph-scripts",
+            "landscape",
+            "root",
+            0o755,
         ),
         BootstrapDirectory("$log_dir", "landscape", "root", 0o755),
         BootstrapFile(
-            "$data_path/package/database", "landscape", "root", 0o644
+            "$data_path/package/database",
+            "landscape",
+            "root",
+            0o644,
         ),
-    ]
+    ],
 )
 
 

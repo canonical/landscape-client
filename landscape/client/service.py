@@ -1,12 +1,14 @@
 import logging
 import signal
 
-from twisted.application.service import Application, Service
 from twisted.application.app import startApplication
+from twisted.application.service import Application
+from twisted.application.service import Service
 
-from landscape.lib.logging import rotate_logs
+from landscape.client.deployment import get_versioned_persist
+from landscape.client.deployment import init_logging
 from landscape.client.reactor import LandscapeReactor
-from landscape.client.deployment import get_versioned_persist, init_logging
+from landscape.lib.logging import rotate_logs
 
 
 class LandscapeService(Service, object):
@@ -46,7 +48,7 @@ class LandscapeService(Service, object):
             % (
                 self.service_name.capitalize(),
                 self.config.get_config_filename(),
-            )
+            ),
         )
 
     def stopService(self):  # noqa: N802
@@ -58,7 +60,7 @@ class LandscapeService(Service, object):
             % (
                 self.service_name.capitalize(),
                 self.config.get_config_filename(),
-            )
+            ),
         )
 
 

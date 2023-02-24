@@ -1,5 +1,4 @@
 # Copyright (c) 2001-2007 Twisted Matrix Laboratories.
-
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -7,10 +6,8 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -18,7 +15,6 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 """
 Copies of certain classes from Twisted 2.5, so that we can use the
 functionality they provide with Twisted 2.2 and up. These should
@@ -30,12 +26,12 @@ Currently:
  * L{twisted.internet.base.DelayedCall}, which didn't grow its
    C{seconds} argument until after Twisted 2.2.
 """
+import traceback
+
 from twisted.internet import error
-from twisted.python.runtime import seconds as runtimeseconds
 from twisted.python import reflect
 from twisted.python.compat import iteritems
-
-import traceback
+from twisted.python.runtime import seconds as runtimeseconds
 
 
 class Clock:
@@ -74,7 +70,7 @@ class Clock:
                 self.calls.remove,
                 (lambda c: None),
                 self.seconds,
-            )
+            ),
         )
         self.calls.sort(key=lambda a: a.getTime())
         return self.calls[-1]
@@ -112,7 +108,14 @@ class DelayedCall:
     _str = None
 
     def __init__(
-        self, time, func, args, kw, cancel, reset, seconds=runtimeseconds
+        self,
+        time,
+        func,
+        args,
+        kw,
+        cancel,
+        reset,
+        seconds=runtimeseconds,
     ):
         """
         @param time: Seconds from the epoch at which to call C{func}.
@@ -242,7 +245,7 @@ class DelayedCall:
         now = self.seconds()
         li = [
             "<DelayedCall %s [%ss] called=%s cancelled=%s"
-            % (id(self), self.time - now, self.called, self.cancelled)
+            % (id(self), self.time - now, self.called, self.cancelled),
         ]
         if func is not None:
             li.extend((" ", func, "("))
@@ -256,15 +259,15 @@ class DelayedCall:
                         [
                             "%s=%s" % (k, reflect.safe_repr(v))
                             for (k, v) in iteritems(self.kw)
-                        ]
-                    )
+                        ],
+                    ),
                 )
             li.append(")")
 
         if self.debug:
             li.append(
                 ("\n\ntraceback at creation: \n\n%s")
-                % ("    ".join(self.creator))
+                % ("    ".join(self.creator)),
             )
         li.append(">")
 

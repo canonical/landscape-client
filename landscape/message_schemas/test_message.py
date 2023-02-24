@@ -1,6 +1,7 @@
 import unittest
 
-from landscape.lib.schema import Constant, Int
+from landscape.lib.schema import Constant
+from landscape.lib.schema import Int
 from landscape.message_schemas.message import Message
 
 
@@ -61,5 +62,6 @@ class MessageTest(unittest.TestCase):
         """
         schema = Message("foo", {})
         self.assertEqual(
-            {"type": "foo"}, schema.coerce({"type": "foo", "crap": 123})
+            {"type": "foo"},
+            schema.coerce({"type": "foo", "crap": 123}),
         )

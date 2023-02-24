@@ -1,13 +1,16 @@
-import os
 import logging
-from twisted.internet.defer import inlineCallbacks, returnValue
+import os
 
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import returnValue
+
+from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_text_file
-from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
-from landscape.lib.cloud import fetch_ec2_meta_data
+from landscape.lib.lsb_release import LSB_RELEASE_FILENAME
+from landscape.lib.lsb_release import parse_lsb_release
 from landscape.lib.network import get_fqdn
-from landscape.client.monitor.plugin import MonitorPlugin
 
 METADATA_RETRY_MAX = 3  # Number of retries to get EC2 meta-data
 
@@ -42,10 +45,14 @@ class ComputerInfo(MonitorPlugin):
         super(ComputerInfo, self).register(registry)
         self._annotations_path = registry.config.annotations_path
         self.call_on_accepted(
-            "computer-info", self.send_computer_message, True
+            "computer-info",
+            self.send_computer_message,
+            True,
         )
         self.call_on_accepted(
-            "distribution-info", self.send_distribution_message, True
+            "distribution-info",
+            self.send_distribution_message,
+            True,
         )
         self.call_on_accepted(
             "cloud-instance-metadata",
@@ -59,7 +66,9 @@ class ComputerInfo(MonitorPlugin):
             message["type"] = "computer-info"
             logging.info("Queueing message with updated computer info.")
             self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent
+                message,
+                self._session_id,
+                urgent=urgent,
             )
 
     def send_distribution_message(self, urgent=False):
@@ -68,7 +77,9 @@ class ComputerInfo(MonitorPlugin):
             message["type"] = "distribution-info"
             logging.info("Queueing message with updated distribution info.")
             self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent
+                message,
+                self._session_id,
+                urgent=urgent,
             )
 
     @inlineCallbacks
@@ -77,19 +88,25 @@ class ComputerInfo(MonitorPlugin):
         if message:
             message["type"] = "cloud-instance-metadata"
             logging.info(
-                "Queueing message with updated cloud instance " "metadata."
+                "Queueing message with updated cloud instance " "metadata.",
             )
             self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent
+                message,
+                self._session_id,
+                urgent=urgent,
             )
 
     def exchange(self, urgent=False):
         broker = self.registry.broker
         broker.call_if_accepted(
-            "computer-info", self.send_computer_message, urgent
+            "computer-info",
+            self.send_computer_message,
+            urgent,
         )
         broker.call_if_accepted(
-            "distribution-info", self.send_distribution_message, urgent
+            "distribution-info",
+            self.send_distribution_message,
+            urgent,
         )
         broker.call_if_accepted(
             "cloud-instance-metadata",
@@ -107,7 +124,7 @@ class ComputerInfo(MonitorPlugin):
         if os.path.exists(self._annotations_path):
             for key in os.listdir(self._annotations_path):
                 annotations[key] = read_text_file(
-                    os.path.join(self._annotations_path, key)
+                    os.path.join(self._annotations_path, key),
                 )
 
         if annotations:
@@ -170,7 +187,7 @@ class ComputerInfo(MonitorPlugin):
             if self._cloud_retries >= METADATA_RETRY_MAX:
                 logging.info(
                     "No cloud meta-data available. %s"
-                    % error.getErrorMessage()
+                    % error.getErrorMessage(),
                 )
 
         def log_success(result):

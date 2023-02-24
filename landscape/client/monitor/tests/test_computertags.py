@@ -1,5 +1,6 @@
 from landscape.client.monitor.computertags import ComputerTags
-from landscape.client.tests.helpers import MonitorHelper, LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 
 
 class ComputerTagsTest(LandscapeTest):
@@ -8,7 +9,7 @@ class ComputerTagsTest(LandscapeTest):
 
     def setUp(self):
         super(ComputerTagsTest, self).setUp()
-        test_sys_args = ['hello.py']
+        test_sys_args = ["hello.py"]
         self.plugin = ComputerTags(args=test_sys_args)
         self.monitor.add(self.plugin)
 
@@ -16,7 +17,7 @@ class ComputerTagsTest(LandscapeTest):
         """
         Tags are read from the default config path
         """
-        tags = 'check,linode,profile-test'
+        tags = "check,linode,profile-test"
         file_text = "[client]\ntags = {}".format(tags)
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(file_text, path=config_filename)
@@ -26,10 +27,10 @@ class ComputerTagsTest(LandscapeTest):
         """
         Tags are read from path specified in command line args
         """
-        tags = 'check,linode,profile-test'
+        tags = "check,linode,profile-test"
         file_text = "[client]\ntags = {}".format(tags)
         filename = self.makeFile(file_text)
-        test_sys_args = ['hello.py', '--config', filename]
+        test_sys_args = ["hello.py", "--config", filename]
         self.plugin.args = test_sys_args
         self.assertEqual(self.plugin.get_data(), tags)
 
@@ -37,7 +38,7 @@ class ComputerTagsTest(LandscapeTest):
         """
         Tags message is sent correctly
         """
-        tags = 'check,linode,profile-test'
+        tags = "check,linode,profile-test"
         file_text = "[client]\ntags = {}".format(tags)
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(file_text, path=config_filename)
@@ -45,13 +46,13 @@ class ComputerTagsTest(LandscapeTest):
         self.mstore.set_accepted_types(["computer-tags"])
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEqual(messages[0]['tags'], tags)
+        self.assertEqual(messages[0]["tags"], tags)
 
     def test_invalid_tags(self):
         """
         If invalid tag detected then message contents should be None
         """
-        tags = 'check,lin ode'
+        tags = "check,lin ode"
         file_text = "[client]\ntags = {}".format(tags)
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(file_text, path=config_filename)

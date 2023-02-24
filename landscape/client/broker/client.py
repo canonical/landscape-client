@@ -1,12 +1,16 @@
-from logging import info, exception, error, debug
-import sys
 import random
+import sys
+from logging import debug
+from logging import error
+from logging import exception
+from logging import info
 
-from twisted.internet.defer import maybeDeferred, succeed
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
 
+from landscape.client.amp import remote
 from landscape.lib.format import format_object
 from landscape.lib.twisted_util import gather_results
-from landscape.client.amp import remote
 
 
 class HandlerNotFoundError(Exception):
@@ -60,7 +64,8 @@ class BrokerClientPlugin(object):
                 return callable(*args, **kwargs)
 
         self.client.reactor.call_on(
-            ("message-type-acceptance-changed", type), acceptance_changed
+            ("message-type-acceptance-changed", type),
+            acceptance_changed,
         )
 
     def _resynchronize(self, scopes=None):
@@ -119,13 +124,15 @@ class BrokerClientPlugin(object):
                     delay,
                 )
                 self._loop = self.client.reactor.call_later(
-                    delay, self._start_loop
+                    delay,
+                    self._start_loop,
                 )
 
     def _start_loop(self):
         """Launch the client loop."""
         self._loop = self.client.reactor.call_every(
-            self.run_interval, self._run_with_error_log
+            self.run_interval,
+            self._run_with_error_log,
         )
 
     def _run_with_error_log(self):
@@ -229,7 +236,7 @@ class BrokerClient(object):
         except Exception:
             exception(
                 "Error running message handler for type %r: %r"
-                % (type, handler)
+                % (type, handler),
             )
 
     @remote
@@ -272,7 +279,7 @@ class BrokerClient(object):
         else:
             results = self.reactor.fire(event_type, *args, **kwargs)
         return gather_results(
-            [maybeDeferred(lambda x: x, result) for result in results]
+            [maybeDeferred(lambda x: x, result) for result in results],
         )
 
     def handle_reconnect(self):

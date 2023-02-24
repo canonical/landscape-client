@@ -1,10 +1,12 @@
 import logging
 
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.error import ProcessDone
+from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.plugin import SUCCEEDED
 
 
 class ShutdownFailedError(Exception):
@@ -67,9 +69,9 @@ class ShutdownManager(ManagerPlugin):
                 "still mark this activity as having failed. It is recommended "
                 "you check the state of the machine manually to determine "
                 "whether {operation} succeeded.".format(
-                    operation="reboot" if reboot else "shutdown"
+                    operation="reboot" if reboot else "shutdown",
                 ),
-            ]
+            ],
         )
         deferred = self._respond(FAILED, failure_report, operation_id)
         # Add another callback spawning the poweroff or reboot command (which
@@ -82,8 +84,10 @@ class ShutdownManager(ManagerPlugin):
         command, args = self._get_command_and_args(protocol, reboot, True)
         deferred.addCallback(
             lambda _: self._process_factory.spawnProcess(
-                protocol, command, args=args
-            )
+                protocol,
+                command,
+                args=args,
+            ),
         )
         return deferred
 
@@ -95,7 +99,9 @@ class ShutdownManager(ManagerPlugin):
             "operation-id": operation_id,
         }
         return self.registry.broker.send_message(
-            message, self._session_id, True
+            message,
+            self._session_id,
+            True,
         )
 
     def _get_command_and_args(self, protocol, reboot, force=False):

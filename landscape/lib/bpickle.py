@@ -31,8 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
-
-from landscape.lib.compat import long, _PY3
+from landscape.lib.compat import _PY3
+from landscape.lib.compat import long
 
 dumps_table = {}
 loads_table = {}
@@ -184,7 +184,7 @@ dumps_table.update(
         dict: dumps_dict,
         type(None): dumps_none,
         bytes: dumps_bytes,
-    }
+    },
 )
 
 
@@ -199,7 +199,7 @@ loads_table.update(
         b"n": loads_none,
         b"s": loads_bytes,
         b"u": loads_unicode,
-    }
+    },
 )
 
 
@@ -210,12 +210,12 @@ if bytes is str:
         {
             unicode: dumps_unicode,  # noqa
             long: dumps_int,  # noqa
-        }
+        },
     )
 else:
     # Python 3.x: We need to map internal strings to UTF-8 encoded strings.
     dumps_table.update(
         {
             str: dumps_unicode,
-        }
+        },
     )

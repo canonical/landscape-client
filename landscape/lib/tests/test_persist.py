@@ -3,15 +3,13 @@ import pprint
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.persist import (
-    path_string_to_tuple,
-    path_tuple_to_string,
-    Persist,
-    RootedPersist,
-    PickleBackend,
-    PersistError,
-    PersistReadOnlyError,
-)
+from landscape.lib.persist import path_string_to_tuple
+from landscape.lib.persist import path_tuple_to_string
+from landscape.lib.persist import Persist
+from landscape.lib.persist import PersistError
+from landscape.lib.persist import PersistReadOnlyError
+from landscape.lib.persist import PickleBackend
+from landscape.lib.persist import RootedPersist
 
 
 class PersistHelpersTest(unittest.TestCase):
@@ -132,7 +130,9 @@ class GeneralPersistTest(BasePersistTest):
             self.persist.set(path, value)
         result = self.persist.get((), hard=True)
         self.assertEqual(
-            result, self.set_result, self.format(result, self.set_result)
+            result,
+            self.set_result,
+            self.format(result, self.set_result),
         )
 
     def test_set_tuple_paths(self):
@@ -140,7 +140,9 @@ class GeneralPersistTest(BasePersistTest):
             self.persist.set(path_string_to_tuple(path), value)
         result = self.persist.get((), hard=True)
         self.assertEqual(
-            result, self.set_result, self.format(result, self.set_result)
+            result,
+            self.set_result,
+            self.format(result, self.set_result),
         )
 
     def test_set_from_result(self):
@@ -148,7 +150,9 @@ class GeneralPersistTest(BasePersistTest):
             self.persist.set(path, self.set_result[path])
         result = self.persist.get((), hard=True)
         self.assertEqual(
-            result, self.set_result, self.format(result, self.set_result)
+            result,
+            self.set_result,
+            self.format(result, self.set_result),
         )
 
     def test_get(self):
@@ -168,7 +172,9 @@ class GeneralPersistTest(BasePersistTest):
             self.persist.add(path, value)
         result = self.persist.get((), hard=True)
         self.assertEqual(
-            result, self.add_result, self.format(result, self.add_result)
+            result,
+            self.add_result,
+            self.format(result, self.add_result),
         )
 
     def test_add_unique(self):
@@ -344,7 +350,9 @@ class SaveLoadPersistTest(testing.FSTestCase, BasePersistTest):
 
         result = persist.get((), hard=True)
         self.assertEqual(
-            result, self.set_result, self.format(result, self.set_result)
+            result,
+            self.set_result,
+            self.format(result, self.set_result),
         )
 
     def test_save_on_unexistent_dir(self):
@@ -463,7 +471,11 @@ class RootedPersistTest(GeneralPersistTest):
     def test_readonly(self):
         self.assertFalse(self.persist.readonly)
         self.assertRaises(
-            AttributeError, setattr, self.persist, "readonly", True
+            AttributeError,
+            setattr,
+            self.persist,
+            "readonly",
+            True,
         )
         self.persist.parent.readonly = True
         self.assertTrue(self.persist.readonly)

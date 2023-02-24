@@ -1,24 +1,21 @@
 import pprint
 import unittest
 
-from landscape.client.tests.subunit import run_isolated
-from landscape.client.watchdog import bootstrap_list
-
-from landscape.lib.persist import Persist
-from landscape.lib.testing import FakeReactor
-
+from landscape.client.broker.amp import FakeRemoteBroker
+from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
-from landscape.client.broker.transport import FakeTransport
-from landscape.client.monitor.config import MonitorConfiguration
-from landscape.client.monitor.monitor import Monitor
-from landscape.client.manager.manager import Manager
-
 from landscape.client.broker.service import BrokerService
-from landscape.client.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
+from landscape.client.broker.transport import FakeTransport
 from landscape.client.deployment import BaseConfiguration
 from landscape.client.manager.config import ManagerConfiguration
-
+from landscape.client.manager.manager import Manager
+from landscape.client.monitor.config import MonitorConfiguration
+from landscape.client.monitor.monitor import Monitor
+from landscape.client.tests.subunit import run_isolated
+from landscape.client.watchdog import bootstrap_list
 from landscape.lib import testing
+from landscape.lib.persist import Persist
+from landscape.lib.testing import FakeReactor
 
 
 DEFAULT_ACCEPTED_TYPES = [
@@ -41,7 +38,7 @@ class MessageTestCase(unittest.TestCase):
             raise self.failureException(
                 "Messages don't match.\n"
                 "Expected:\n%s\nObtained:\n%s\n"
-                % (pprint.pformat(expected), pprint.pformat(obtained))
+                % (pprint.pformat(expected), pprint.pformat(obtained)),
             )
 
     def assertMessages(self, obtained, expected):  # noqa: N802
@@ -56,12 +53,12 @@ class MessageTestCase(unittest.TestCase):
             extra = pprint.pformat(expected[-diff:])
             raise self.failureException(
                 "Expected the following %d additional "
-                "messages:\n%s" % (diff, extra)
+                "messages:\n%s" % (diff, extra),
             )
         elif expected_len < obtained_len:
             extra = pprint.pformat(obtained[-diff:])
             raise self.failureException(
-                "Got %d more messages than expected:\n" "%s" % (diff, extra)
+                "Got %d more messages than expected:\n" "%s" % (diff, extra),
             )
 
 
@@ -133,11 +130,12 @@ class FakeBrokerServiceHelper(object):
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
             "data_path = %s\n"
-            "log_dir = %s\n" % (test_case.data_path, log_dir)
+            "log_dir = %s\n" % (test_case.data_path, log_dir),
         )
 
         bootstrap_list.bootstrap(
-            data_path=test_case.data_path, log_dir=log_dir
+            data_path=test_case.data_path,
+            log_dir=log_dir,
         )
 
         config = BrokerConfiguration()
@@ -170,7 +168,8 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
         test_case.broker_service.startService()
         # Use different reactor to simulate separate processes
         self._connector = RemoteBrokerConnector(
-            FakeReactor(), test_case.broker_service.config
+            FakeReactor(),
+            test_case.broker_service.config,
         )
         deferred = self._connector.connect()
         test_case.remote = test_case.successResultOf(deferred)
@@ -195,7 +194,10 @@ class MonitorHelper(FakeBrokerServiceHelper):
         test_case.config.stagger_launch = 0  # let's keep tests deterministic
         test_case.reactor = FakeReactor()
         test_case.monitor = Monitor(
-            test_case.reactor, test_case.config, persist, persist_filename
+            test_case.reactor,
+            test_case.config,
+            persist,
+            persist_filename,
         )
         test_case.monitor.broker = test_case.remote
         test_case.mstore = test_case.broker_service.message_store

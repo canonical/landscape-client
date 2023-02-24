@@ -46,20 +46,20 @@ for more details about the Twisted AMP protocol.
 """
 from uuid import uuid4
 
-from twisted.internet.defer import Deferred, maybeDeferred, succeed
-from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
-from twisted.python.failure import Failure
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
+from twisted.internet.protocol import ReconnectingClientFactory
+from twisted.internet.protocol import ServerFactory
+from twisted.protocols.amp import AMP
+from twisted.protocols.amp import Argument
+from twisted.protocols.amp import Command
+from twisted.protocols.amp import CommandLocator
+from twisted.protocols.amp import Integer
+from twisted.protocols.amp import MAX_VALUE_LENGTH
+from twisted.protocols.amp import String
 from twisted.python.compat import xrange
-
-from twisted.protocols.amp import (
-    Argument,
-    String,
-    Integer,
-    Command,
-    AMP,
-    MAX_VALUE_LENGTH,
-    CommandLocator,
-)
+from twisted.python.failure import Failure
 
 from landscape.lib import bpickle
 
@@ -293,7 +293,9 @@ class MethodCallSender(object):
                 def create_send_chunk(sequence, chunk):
                     def send_chunk(x):
                         return self._protocol.callRemote(
-                            MethodCallChunk, sequence=sequence, chunk=chunk
+                            MethodCallChunk,
+                            sequence=sequence,
+                            chunk=chunk,
                         )
 
                     return send_chunk
@@ -303,7 +305,10 @@ class MethodCallSender(object):
         def send_last_chunk(ignored):
             chunk = chunks[-1]
             return self._call_remote_with_timeout(
-                MethodCall, sequence=sequence, method=method, arguments=chunk
+                MethodCall,
+                sequence=sequence,
+                method=method,
+                arguments=chunk,
             )
 
         result.addCallback(send_last_chunk)
@@ -368,11 +373,18 @@ class RemoteObject(object):
     def _send_method_call(self, method, args, kwargs, deferred, call=None):
         """Send a L{MethodCall} command, adding callbacks to handle retries."""
         result = self._sender.send_method_call(
-            method=method, args=args, kwargs=kwargs
+            method=method,
+            args=args,
+            kwargs=kwargs,
         )
         result.addCallback(self._handle_result, deferred, call=call)
         result.addErrback(
-            self._handle_failure, method, args, kwargs, deferred, call=call
+            self._handle_failure,
+            method,
+            args,
+            kwargs,
+            deferred,
+            call=call,
         )
 
         if self._factory.fake_connection is not None:
@@ -395,7 +407,13 @@ class RemoteObject(object):
         deferred.callback(result)
 
     def _handle_failure(
-        self, failure, method, args, kwargs, deferred, call=None
+        self,
+        failure,
+        method,
+        args,
+        kwargs,
+        deferred,
+        call=None,
     ):
         """Called when a L{MethodCall} command fails.
 
@@ -571,7 +589,9 @@ class MethodCallClientFactory(ReconnectingClientFactory):
     def clientConnectionFailed(self, connector, reason):  # noqa: N802
         """Try to connect again or errback pending request."""
         ReconnectingClientFactory.clientConnectionFailed(
-            self, connector, reason
+            self,
+            connector,
+            reason,
         )
         if self._callID is None:
             # The factory won't retry to connect, so notify that we failed

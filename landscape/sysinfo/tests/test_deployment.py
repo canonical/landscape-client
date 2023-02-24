@@ -1,30 +1,25 @@
-from logging.handlers import RotatingFileHandler
-from logging import getLogger
 import os
 import unittest
+from logging import getLogger
+from logging.handlers import RotatingFileHandler
 
 import mock
 from twisted.internet.defer import Deferred
 
 from landscape.lib.fs import create_text_file
-from landscape.lib.testing import (
-    ConfigTestCase,
-    TwistedTestCase,
-    HelperTestCase,
-    StandardIOHelper,
-)
-
-from landscape.sysinfo.deployment import (
-    SysInfoConfiguration,
-    ALL_PLUGINS,
-    run,
-    setup_logging,
-    get_landscape_log_directory,
-)
-from landscape.sysinfo.testplugin import TestPlugin
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
-from landscape.sysinfo.load import Load
+from landscape.lib.testing import ConfigTestCase
+from landscape.lib.testing import HelperTestCase
+from landscape.lib.testing import StandardIOHelper
+from landscape.lib.testing import TwistedTestCase
+from landscape.sysinfo.deployment import ALL_PLUGINS
+from landscape.sysinfo.deployment import get_landscape_log_directory
+from landscape.sysinfo.deployment import run
+from landscape.sysinfo.deployment import setup_logging
+from landscape.sysinfo.deployment import SysInfoConfiguration
 from landscape.sysinfo.landscapelink import LandscapeLink
+from landscape.sysinfo.load import Load
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
+from landscape.sysinfo.testplugin import TestPlugin
 
 
 class DeploymentTest(ConfigTestCase, unittest.TestCase):
@@ -38,7 +33,7 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
 
     def test_get_plugins(self):
         self.configuration.load(
-            ["--sysinfo-plugins", "Load,TestPlugin", "-d", self.makeDir()]
+            ["--sysinfo-plugins", "Load,TestPlugin", "-d", self.makeDir()],
         )
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 2)
@@ -59,7 +54,7 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
         self.configuration.load(
-            ["--exclude-sysinfo-plugins", exclude, "-d", self.makeDir()]
+            ["--exclude-sysinfo-plugins", exclude, "-d", self.makeDir()],
         )
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 1)
@@ -98,7 +93,10 @@ class FakeReactor(object):
 
 
 class RunTest(
-    HelperTestCase, ConfigTestCase, TwistedTestCase, unittest.TestCase
+    HelperTestCase,
+    ConfigTestCase,
+    TwistedTestCase,
+    unittest.TestCase,
 ):
 
     helpers = [StandardIOHelper]
@@ -123,7 +121,8 @@ class RunTest(
         self.assertEqual(current_instance.has_run, True)
         sysinfo = current_instance.sysinfo
         self.assertEqual(
-            sysinfo.get_headers(), [("Test header", "Test value")]
+            sysinfo.get_headers(),
+            [("Test header", "Test value")],
         )
         self.assertEqual(sysinfo.get_notes(), ["Test note"])
         self.assertEqual(sysinfo.get_footnotes(), ["Test footnote"])
@@ -250,7 +249,8 @@ class RunTest(
         log directory is stored in their home directory.
         """
         self.assertEqual(
-            get_landscape_log_directory(), os.path.expanduser("~/.landscape")
+            get_landscape_log_directory(),
+            os.path.expanduser("~/.landscape"),
         )
 
     def test_get_landscape_log_directory_privileged(self):
@@ -260,7 +260,8 @@ class RunTest(
         """
         with mock.patch("os.getuid", return_value=0) as uid_mock:
             self.assertEqual(
-                get_landscape_log_directory(), "/var/log/landscape"
+                get_landscape_log_directory(),
+                "/var/log/landscape",
             )
             uid_mock.assert_called_once_with()
 
@@ -283,13 +284,19 @@ class RunTest(
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
         with mock.patch.object(
-            os, "getuid", return_value=0
+            os,
+            "getuid",
+            return_value=0,
         ) as mock_getuid, mock.patch.object(
-            os.path, "isdir", return_value=False
+            os.path,
+            "isdir",
+            return_value=False,
         ) as mock_isdir, mock.patch.object(
-            os, "mkdir"
+            os,
+            "mkdir",
         ) as mock_mkdir, mock.patch(
-            "logging.open", create=True
+            "logging.open",
+            create=True,
         ) as mock_open:
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
@@ -306,7 +313,8 @@ class RunTest(
         handler = logger.handlers[0]
         self.assertTrue(isinstance(handler, RotatingFileHandler))
         self.assertEqual(
-            handler.baseFilename, "/var/log/landscape/sysinfo.log"
+            handler.baseFilename,
+            "/var/log/landscape/sysinfo.log",
         )
 
     def test_create_log_dir(self):
@@ -317,7 +325,7 @@ class RunTest(
 
     def test_run_sets_up_logging(self):
         with mock.patch(
-            "landscape.sysinfo.deployment" ".setup_logging"
+            "landscape.sysinfo.deployment" ".setup_logging",
         ) as setup_logging_mock:
             run(["--sysinfo-plugins", "TestPlugin"])
         setup_logging_mock.assert_called_once_with()
@@ -325,11 +333,15 @@ class RunTest(
     def test_run_setup_logging_exits_gracefully(self):
         io_error = IOError("Read-only filesystem.")
         with mock.patch(
-            "landscape.sysinfo.deployment.setup_logging", side_effect=io_error
+            "landscape.sysinfo.deployment.setup_logging",
+            side_effect=io_error,
         ):
             error = self.assertRaises(
-                SystemExit, run, ["--sysinfo-plugins", "TestPlugin"]
+                SystemExit,
+                run,
+                ["--sysinfo-plugins", "TestPlugin"],
             )
         self.assertEqual(
-            error.code, "Unable to setup logging. Read-only filesystem."
+            error.code,
+            "Unable to setup logging. Read-only filesystem.",
         )

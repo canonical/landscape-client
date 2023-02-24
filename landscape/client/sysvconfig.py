@@ -3,7 +3,7 @@ from subprocess import Popen
 
 
 class ProcessError(Exception):
-    """ Error running a process with os.system. """
+    """Error running a process with os.system."""
 
 
 class SystemdConfig(object):

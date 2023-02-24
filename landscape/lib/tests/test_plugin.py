@@ -34,9 +34,11 @@ class ExchangePlugin(SamplePlugin):
             self.waiter.callback(None)
 
 
-class PluginTest(testing.FSTestCase, testing.TwistedTestCase,
-                 unittest.TestCase):
-
+class PluginTest(
+    testing.FSTestCase,
+    testing.TwistedTestCase,
+    unittest.TestCase,
+):
     def setUp(self):
         super(PluginTest, self).setUp()
         self.registry = PluginRegistry()

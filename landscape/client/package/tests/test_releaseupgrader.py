@@ -1,23 +1,28 @@
-import mock
 import os
 import signal
 import tarfile
 import unittest
 
+import mock
 from twisted.internet import reactor
-from twisted.internet.defer import succeed, fail, Deferred
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
 
-from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.gpg import InvalidGPGSignature
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.testing import LogKeeperHelper, EnvironSaverHelper
+from landscape.client.manager.manager import FAILED
+from landscape.client.manager.manager import SUCCEEDED
+from landscape.client.package.releaseupgrader import main
+from landscape.client.package.releaseupgrader import ReleaseUpgrader
 from landscape.client.package.releaseupgrader import (
-    ReleaseUpgrader,
     ReleaseUpgraderConfiguration,
-    main,
 )
-from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
-from landscape.client.manager.manager import SUCCEEDED, FAILED
+from landscape.client.tests.helpers import BrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.gpg import InvalidGPGSignature
+from landscape.lib.testing import EnvironSaverHelper
+from landscape.lib.testing import LogKeeperHelper
 
 
 class ReleaseUpgraderConfigurationTest(unittest.TestCase):
@@ -45,7 +50,11 @@ class ReleaseUpgraderTest(LandscapeTest):
         os.mkdir(self.config.upgrade_tool_directory)
         self.store = PackageStore(self.makeFile())
         self.upgrader = ReleaseUpgrader(
-            self.store, None, self.remote, self.config, None
+            self.store,
+            None,
+            self.remote,
+            self.config,
+            None,
         )
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
@@ -78,10 +87,12 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             directory = self.config.upgrade_tool_directory
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz"), b"tarball"
+                os.path.join(directory, "karmic.tar.gz"),
+                b"tarball",
             )
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz.gpg"), b"signature"
+                os.path.join(directory, "karmic.tar.gz.gpg"),
+                b"signature",
             )
             self.assertIn(
                 "INFO: Successfully fetched upgrade-tool files",
@@ -151,7 +162,8 @@ class ReleaseUpgraderTest(LandscapeTest):
                 self.logfile.getvalue(),
             )
             gpg_mock.assert_called_once_with(
-                tarball_filename, signature_filename
+                tarball_filename,
+                signature_filename,
             )
 
         result.addCallback(check_result)
@@ -176,7 +188,8 @@ class ReleaseUpgraderTest(LandscapeTest):
                 self.logfile.getvalue(),
             )
             gpg_mock.assert_called_once_with(
-                tarball_filename, signature_filename
+                tarball_filename,
+                signature_filename,
             )
 
         result.addCallback(self.fail)
@@ -210,10 +223,12 @@ class ReleaseUpgraderTest(LandscapeTest):
         to the list of available mirrors.
         """
         mirrors_filename = os.path.join(
-            self.config.upgrade_tool_directory, "mirrors.cfg"
+            self.config.upgrade_tool_directory,
+            "mirrors.cfg",
         )
         self.makeFile(
-            path=mirrors_filename, content="ftp://ftp.lug.ro/ubuntu/\n"
+            path=mirrors_filename,
+            content="ftp://ftp.lug.ro/ubuntu/\n",
         )
 
         def check_result(ignored):
@@ -332,7 +347,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             "echo $@\n"
             "echo FOO=$FOO\n"
             "echo PWD=$PWD\n"
-            "echo out\n"
+            "echo out\n",
         )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
@@ -366,7 +381,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                             "status": SUCCEEDED,
                             "result-text": result_text,
                             "result-code": 0,
-                        }
+                        },
                     ],
                 )
 
@@ -394,7 +409,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             "#!/bin/sh\n"
             "echo DEBUG_UPDATE_MANAGER=$DEBUG_UPDATE_MANAGER\n"
             "echo RELEASE_UPRADER_ALLOW_THIRD_PARTY="
-            "$RELEASE_UPRADER_ALLOW_THIRD_PARTY\n"
+            "$RELEASE_UPRADER_ALLOW_THIRD_PARTY\n",
         )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
@@ -405,7 +420,10 @@ class ReleaseUpgraderTest(LandscapeTest):
         def do_test():
 
             result = self.upgrader.upgrade(
-                "karmic", 100, allow_third_party=True, debug=True
+                "karmic",
+                100,
+                allow_third_party=True,
+                debug=True,
             )
 
             def check_result(ignored):
@@ -423,7 +441,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                             "status": SUCCEEDED,
                             "result-text": result_text,
                             "result-code": 0,
-                        }
+                        },
                     ],
                 )
 
@@ -471,7 +489,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                             "status": FAILED,
                             "result-text": result_text,
                             "result-code": 3,
-                        }
+                        },
                     ],
                 )
 
@@ -511,7 +529,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             "        fd.close()\n"
             "        sys.exit(0)\n"
             "    while True:\n"
-            "        time.sleep(2)\n" % child_pid_filename
+            "        time.sleep(2)\n" % child_pid_filename,
         )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
@@ -652,7 +670,9 @@ class ReleaseUpgraderTest(LandscapeTest):
         configuration file the release-upgrader was called with.
         """
         self.write_script(
-            self.config, "landscape-package-reporter", "#!/bin/sh\necho $@\n"
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\necho $@\n",
         )
         self.config.config = "/some/config"
 
@@ -664,7 +684,8 @@ class ReleaseUpgraderTest(LandscapeTest):
             def check_result(args):
                 out, err, code = args
                 self.assertEqual(
-                    out, b"--force-apt-update " b"--config=/some/config\n"
+                    out,
+                    b"--force-apt-update " b"--config=/some/config\n",
                 )
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
@@ -736,7 +757,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.upgrader.finish = finish
 
         self.upgrader.lsb_release_filename = self.makeFile(
-            "DISTRIB_CODENAME=jaunty\n"
+            "DISTRIB_CODENAME=jaunty\n",
         )
 
         message = {
@@ -765,7 +786,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         failure if the system is already running the desired release.
         """
         self.upgrader.lsb_release_filename = self.makeFile(
-            "DISTRIB_CODENAME=karmic\n"
+            "DISTRIB_CODENAME=karmic\n",
         )
 
         message = {
@@ -792,7 +813,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                         "result-text": "The system is already "
                         "running karmic.",
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
 
@@ -805,7 +826,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         failure if any of the helper method errbacks.
         """
         self.upgrader.lsb_release_filename = self.makeFile(
-            "DISTRIB_CODENAME=jaunty\n"
+            "DISTRIB_CODENAME=jaunty\n",
         )
 
         calls = []
@@ -862,7 +883,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                         "status": FAILED,
                         "result-text": "failure",
                         "result-code": 1,
-                    }
+                    },
                 ],
             )
             self.assertEqual(calls, ["fetch", "verify"])

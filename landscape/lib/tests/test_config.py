@@ -1,20 +1,19 @@
-from optparse import OptionParser
-from textwrap import dedent
 import io
-import mock
-import os
 import os.path
 import sys
 import unittest
+from optparse import OptionParser
+from textwrap import dedent
 
-from landscape.lib.fs import read_text_file, create_text_file
-from landscape.lib.testing import (
-    HelperTestCase,
-    ConfigTestCase,
-    LogKeeperHelper,
-)
+import mock
 
-from landscape.lib.config import BaseConfiguration, get_bindir
+from landscape.lib.config import BaseConfiguration
+from landscape.lib.config import get_bindir
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_text_file
+from landscape.lib.testing import ConfigTestCase
+from landscape.lib.testing import HelperTestCase
+from landscape.lib.testing import LogKeeperHelper
 
 
 class BabbleConfiguration(BaseConfiguration):
@@ -57,11 +56,12 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
     def write_config_file(self, **kwargs):
         section_name = kwargs.pop(
-            "section_name", self.config_class.config_section
+            "section_name",
+            self.config_class.config_section,
         )
         config = "\n".join(
             ["[%s]" % (section_name,)]
-            + ["%s = %s" % pair for pair in kwargs.items()]
+            + ["%s = %s" % pair for pair in kwargs.items()],
         )
         self.config_filename = self.makeFile(config)
         self.config.default_config_filenames[:] = [self.config_filename]
@@ -169,7 +169,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         """
         config_obj = self.config._get_config_object()
         self.assertEqual(
-            self.config.get_config_filename(), config_obj.filename
+            self.config.get_config_filename(),
+            config_obj.filename,
         )
         self.assertFalse(config_obj.list_values)
 
@@ -180,7 +181,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         get_config_filename.
         """
         config_obj = self.config._get_config_object(
-            alternative_config=io.StringIO("[my-config]\nwhatever = error\n")
+            alternative_config=io.StringIO("[my-config]\nwhatever = error\n"),
         )
         self.assertEqual(None, config_obj.filename)
 
@@ -263,7 +264,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
     def test_data_directory_option(self):
         """Ensure options.data_path option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--data-path", "/opt/hoojy/var/run"]
+            ["--data-path", "/opt/hoojy/var/run"],
         )[0]
         self.assertEqual(options.data_path, "/opt/hoojy/var/run")
 
@@ -343,8 +344,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         computer_title = frog
         computer_title = flag
         whatever = spam
-        """
-            )
+        """,
+            ),
         )
         self.config.load_configuration_file(filename)
         self.assertEqual(self.config.whatever, "spam")
@@ -363,7 +364,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         [my-config]
         computer_title = frog
         computer_title = flag
-        """
+        """,
         )
         filename = self.makeFile(config)
         self.config.load_configuration_file(filename)
@@ -384,7 +385,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         computer_title = frog
         computer_title = flag
         computer_title = flop
-        """
+        """,
         )
         filename = self.makeFile(config)
         self.config.load_configuration_file(filename)
@@ -425,10 +426,12 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         filename = "/not/here"
         with self.assertRaises(SystemExit) as cm:
             config.load(
-                ["--config", filename], accept_nonexistent_default_config=True
+                ["--config", filename],
+                accept_nonexistent_default_config=True,
             )
         self.assertEqual(
-            str(cm.exception), "error: config file %s can't be read" % filename
+            str(cm.exception),
+            "error: config file %s can't be read" % filename,
         )
 
     def test_load_cannot_read(self):
@@ -441,7 +444,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             self.config.load(["--config", filename])
         self.assertEqual(
-            str(cm.exception), "error: config file %s can't be read" % filename
+            str(cm.exception),
+            "error: config file %s can't be read" % filename,
         )
 
     def test_load_not_found(self):
@@ -453,7 +457,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             self.config.load(["--config", filename])
         self.assertEqual(
-            str(cm.exception), "error: config file %s can't be read" % filename
+            str(cm.exception),
+            "error: config file %s can't be read" % filename,
         )
 
     def test_load_cannot_read_default(self):
@@ -467,7 +472,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             self.config.load([])
         self.assertEqual(
-            str(cm.exception), "error: config file %s can't be read" % default
+            str(cm.exception),
+            "error: config file %s can't be read" % default,
         )
 
     def test_load_not_found_default(self):
@@ -479,7 +485,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             self.config.load([])
         self.assertEqual(
-            str(cm.exception), "error: config file %s can't be read" % default
+            str(cm.exception),
+            "error: config file %s can't be read" % default,
         )
 
     def test_load_cannot_read_many_defaults(self):
@@ -496,7 +503,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             self.config.load([])
         self.assertEqual(
-            str(cm.exception), "error: no config file could be read"
+            str(cm.exception),
+            "error: no config file could be read",
         )
 
     # saving
@@ -520,7 +528,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
     def test_write_existing_file(self):
         self.config_filename = self.makeFile(
-            "\n[other]\nfoo = bar\n[again]\nx = y\n"
+            "\n[other]\nfoo = bar\n[again]\nx = y\n",
         )
         self.config.default_config_filenames[:] = [self.config_filename]
         self.config.whatever = "eggs"
@@ -562,7 +570,8 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.config.write()
         data = read_text_file(config_filename)
         self.assertConfigEqual(
-            data, "[my-config]\nwhatever = boo\n\n[goojy]\nunrelated = yes"
+            data,
+            "[my-config]\nwhatever = boo\n\n[goojy]\nunrelated = yes",
         )
 
     def test_write_on_the_right_default_config_file(self):

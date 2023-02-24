@@ -1,15 +1,14 @@
 import os.path
 import sys
-
 from optparse import SUPPRESS_HELP
+
 from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
+from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging
 from landscape.lib.config import BaseConfiguration as _BaseConfiguration
 from landscape.lib.persist import Persist
-
-from landscape.client.upgraders import UPGRADE_MANAGERS
 
 
 def init_logging(configuration, program_name):
@@ -23,7 +22,9 @@ def init_logging(configuration, program_name):
     # Initialize twisted logging, even if we don't explicitly use it,
     # because of leaky logs https://twistedmatrix.com/trac/ticket/8164
     globalLogBeginner.beginLoggingTo(
-        [lambda _: None], redirectStandardIO=False, discardBuffer=True
+        [lambda _: None],
+        redirectStandardIO=False,
+        discardBuffer=True,
     )
 
 

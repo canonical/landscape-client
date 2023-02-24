@@ -1,11 +1,11 @@
-from twisted.python.compat import iteritems, itervalues
+from twisted.python.compat import iteritems
+from twisted.python.compat import itervalues
 
 from landscape.client.user.management import UserManagementError
 from landscape.client.user.provider import UserProviderBase
 
 
 class FakeUserManagement(object):
-
     def __init__(self, provider=None):
         self.shadow_file = getattr(provider, "shadow_file", None)
         self.provider = provider
@@ -26,8 +26,17 @@ class FakeUserManagement(object):
             shadow_file.write(entry % (user, "qweqweqeqweqw"))
         shadow_file.close()
 
-    def add_user(self, username, name, password, require_password_reset,
-                 primary_group_name, location, work_phone, home_phone):
+    def add_user(
+        self,
+        username,
+        name,
+        password,
+        require_password_reset,
+        primary_group_name,
+        location,
+        work_phone,
+        home_phone,
+    ):
         try:
             uid = 1000
             if self._users:
@@ -36,15 +45,31 @@ class FakeUserManagement(object):
                 primary_gid = self.get_gid(primary_group_name)
             else:
                 primary_gid = uid
-            self._users[uid] = {"username": username, "name": name,
-                                "uid": uid, "enabled": True,
-                                "location": location, "work-phone": work_phone,
-                                "home-phone": home_phone,
-                                "primary-gid": primary_gid}
-            gecos_string = "%s,%s,%s,%s" % (name, location or "",
-                                            work_phone or "", home_phone or "")
-            userdata = (username, "x", uid, primary_gid, gecos_string,
-                        "/bin/sh", "/home/user")
+            self._users[uid] = {
+                "username": username,
+                "name": name,
+                "uid": uid,
+                "enabled": True,
+                "location": location,
+                "work-phone": work_phone,
+                "home-phone": home_phone,
+                "primary-gid": primary_gid,
+            }
+            gecos_string = "%s,%s,%s,%s" % (
+                name,
+                location or "",
+                work_phone or "",
+                home_phone or "",
+            )
+            userdata = (
+                username,
+                "x",
+                uid,
+                primary_gid,
+                gecos_string,
+                "/bin/sh",
+                "/home/user",
+            )
             self.provider.users.append(userdata)
         except KeyError:
             raise UserManagementError("add_user failed")
@@ -81,25 +106,38 @@ class FakeUserManagement(object):
         self.provider.users = remaining_users
         return "remove_user succeeded"
 
-    def set_user_details(self, username, password=None, name=None,
-                         location=None, work_number=None, home_number=None,
-                         primary_group_name=None):
+    def set_user_details(
+        self,
+        username,
+        password=None,
+        name=None,
+        location=None,
+        work_number=None,
+        home_number=None,
+        primary_group_name=None,
+    ):
         data = self._users.setdefault(username, {})
-        for key, value in [("name", name),
-                           ("location", location),
-                           ("work-phone", work_number),
-                           ("home-phone", home_number),
-                           ]:
+        for key, value in [
+            ("name", name),
+            ("location", location),
+            ("work-phone", work_number),
+            ("home-phone", home_number),
+        ]:
             if value:
                 data[key] = value
         if primary_group_name:
             data["primary-gid"] = self.get_gid(primary_group_name)
         else:
             data["primary-gid"] = None
-        userdata = (username, "x", data["uid"], data["primary-gid"],
-                    "%s,%s,%s,%s," % (name, location, work_number,
-                                      home_number),
-                    "/bin/sh", "/home/user")
+        userdata = (
+            username,
+            "x",
+            data["uid"],
+            data["primary-gid"],
+            "%s,%s,%s,%s," % (name, location, work_number, home_number),
+            "/bin/sh",
+            "/home/user",
+        )
         self.provider.users = [userdata]
         return "set_user_details succeeded"
 
@@ -154,9 +192,14 @@ class FakeUserManagement(object):
 
 
 class FakeUserProvider(UserProviderBase):
-
-    def __init__(self, users=None, groups=None, popen=None, shadow_file=None,
-                 locked_users=None):
+    def __init__(
+        self,
+        users=None,
+        groups=None,
+        popen=None,
+        shadow_file=None,
+        locked_users=None,
+    ):
         self.users = users
         self.groups = groups
         if popen:

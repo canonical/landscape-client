@@ -1,12 +1,10 @@
-from __future__ import absolute_import
-
-from logging import getLogger
-from optparse import OptionParser
-import os
 import os.path
 import sys
+from logging import getLogger
+from optparse import OptionParser
 
-from configobj import ConfigObj, ConfigObjError
+from configobj import ConfigObj
+from configobj import ConfigObjError
 from twisted.python.compat import StringType
 
 from landscape.lib import cli
@@ -21,7 +19,11 @@ def add_cli_options(parser, filename=None):
     if filename is not None:
         cfgfilehelp += " (default: {!r})".format(filename)
     parser.add_option(
-        "-c", "--config", metavar="FILE", default=filename, help=cfgfilehelp
+        "-c",
+        "--config",
+        metavar="FILE",
+        default=filename,
+        help=cfgfilehelp,
     )
 
 
@@ -164,7 +166,8 @@ class BaseConfiguration(object):
         # Parse configuration file, if found.
         for config_filename in config_filenames:
             if os.path.isfile(config_filename) and os.access(
-                config_filename, os.R_OK
+                config_filename,
+                os.R_OK,
             ):
 
                 self.load_configuration_file(config_filename)
@@ -189,7 +192,7 @@ class BaseConfiguration(object):
                 sys.exit(
                     "error: must specify --%s "
                     "or the '%s' directive in the config file."
-                    % (option.replace("_", "-"), option)
+                    % (option.replace("_", "-"), option),
                 )
 
     def _load_external_options(self):

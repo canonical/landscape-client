@@ -16,10 +16,11 @@ from twisted.internet.defer import Deferred
 from landscape.client.broker.exchange import maybe_bytes
 from landscape.client.monitor.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.lib.juju import get_juju_info
-from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
-from landscape.lib.vm_info import get_vm_info, get_container_info
+from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.versioning import is_version_higher
+from landscape.lib.vm_info import get_container_info
+from landscape.lib.vm_info import get_vm_info
 
 
 class RegistrationError(Exception):
@@ -111,7 +112,8 @@ class RegistrationHandler(object):
         self._exchange.register_message("set-id", self._handle_set_id)
         self._exchange.register_message("unknown-id", self._handle_unknown_id)
         self._exchange.register_message(
-            "registration", self._handle_registration
+            "registration",
+            self._handle_registration,
         )
         self._should_register = None
         self._fetch_async = fetch_async
@@ -126,7 +128,7 @@ class RegistrationHandler(object):
         return bool(
             id.computer_title
             and id.account_name
-            and self._message_store.accepts("register")
+            and self._message_store.accepts("register"),
         )
 
     def register(self):
@@ -239,7 +241,8 @@ class RegistrationHandler(object):
 
         logging.info(
             "Queueing message to register with account %r %s%s"
-            "%s a password." % (account_name, with_group, with_tags, with_word)
+            "%s a password."
+            % (account_name, with_group, with_tags, with_word),
         )
         self._exchange.send(message)
 
@@ -277,7 +280,7 @@ class RegistrationHandler(object):
         if clone is None:
             logging.info(
                 "Client has unknown secure-id for account %s."
-                % id.account_name
+                % id.account_name,
             )
         else:  # Save the secure id as the clone, and clear it so it's renewed
             logging.info("Client is clone of computer %s" % clone)

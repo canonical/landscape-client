@@ -1,17 +1,18 @@
 """Low-level server communication."""
-import time
 import logging
 import pprint
+import time
 import uuid
 
 import pycurl
 
-from landscape.lib.compat import unicode, _PY3
-
+from landscape import SERVER_API
+from landscape import VERSION
 from landscape.lib import bpickle
+from landscape.lib.compat import _PY3
+from landscape.lib.compat import unicode
 from landscape.lib.fetch import fetch
 from landscape.lib.format import format_delta
-from landscape import SERVER_API, VERSION
 
 
 class HTTPTransport(object):
@@ -40,9 +41,11 @@ class HTTPTransport(object):
         # assigning them to the headers.
         if _PY3 and isinstance(message_api, bytes):
             message_api = message_api.decode("ascii")
-        headers = {"X-Message-API": message_api,
-                   "User-Agent": "landscape-client/%s" % VERSION,
-                   "Content-Type": "application/octet-stream"}
+        headers = {
+            "X-Message-API": message_api,
+            "User-Agent": "landscape-client/%s" % VERSION,
+            "Content-Type": "application/octet-stream",
+        }
         if computer_id:
             if _PY3 and isinstance(computer_id, bytes):
                 computer_id = computer_id.decode("ascii")
@@ -52,11 +55,25 @@ class HTTPTransport(object):
                 exchange_token = exchange_token.decode("ascii")
             headers["X-Exchange-Token"] = str(exchange_token)
         curl = pycurl.Curl()
-        return (curl, fetch(self._url, post=True, data=payload,
-                            headers=headers, cainfo=self._pubkey, curl=curl))
+        return (
+            curl,
+            fetch(
+                self._url,
+                post=True,
+                data=payload,
+                headers=headers,
+                cainfo=self._pubkey,
+                curl=curl,
+            ),
+        )
 
-    def exchange(self, payload, computer_id=None, exchange_token=None,
-                 message_api=SERVER_API):
+    def exchange(
+        self,
+        payload,
+        computer_id=None,
+        exchange_token=None,
+        message_api=SERVER_API,
+    ):
         """Exchange message data with the server.
 
         @param payload: The object to send, it must be L{bpickle}-compatible.
@@ -78,15 +95,22 @@ class HTTPTransport(object):
         if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
             logging.debug("Sending payload:\n%s", pprint.pformat(payload))
         try:
-            curly, data = self._curl(spayload, computer_id, exchange_token,
-                                     message_api)
+            curly, data = self._curl(
+                spayload,
+                computer_id,
+                exchange_token,
+                message_api,
+            )
         except Exception:
             logging.exception("Error contacting the server at %s." % self._url)
             raise
         else:
-            logging.info("Sent %d bytes and received %d bytes in %s.",
-                         len(spayload), len(data),
-                         format_delta(time.time() - start_time))
+            logging.info(
+                "Sent %d bytes and received %d bytes in %s.",
+                len(spayload),
+                len(data),
+                format_delta(time.time() - start_time),
+            )
 
         try:
             response = bpickle.loads(data)
@@ -96,7 +120,9 @@ class HTTPTransport(object):
         else:
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
                 logging.debug(
-                    "Received payload:\n%s", pprint.pformat(response))
+                    "Received payload:\n%s",
+                    pprint.pformat(response),
+                )
 
         return response
 
@@ -123,8 +149,13 @@ class FakeTransport(object):
     def set_url(self, url):
         self._url = url
 
-    def exchange(self, payload, computer_id=None, exchange_token=None,
-                 message_api=SERVER_API):
+    def exchange(
+        self,
+        payload,
+        computer_id=None,
+        exchange_token=None,
+        message_api=SERVER_API,
+    ):
         self.payloads.append(payload)
         self.computer_id = computer_id
         self.exchange_token = exchange_token
@@ -140,8 +171,10 @@ class FakeTransport(object):
         if isinstance(response, Exception):
             raise response
 
-        result = {"next-expected-sequence": self.next_expected_sequence,
-                  "next-exchange-token": unicode(uuid.uuid4()),
-                  "messages": response}
+        result = {
+            "next-expected-sequence": self.next_expected_sequence,
+            "next-exchange-token": unicode(uuid.uuid4()),
+            "messages": response,
+        }
         result.update(self.extra)
         return result

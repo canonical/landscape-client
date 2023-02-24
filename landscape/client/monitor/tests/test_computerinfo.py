@@ -1,16 +1,18 @@
-import mock
 import os
 import re
 
-from twisted.internet.defer import succeed, fail, inlineCallbacks
+import mock
+from twisted.internet.defer import fail
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import succeed
 
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.client.monitor.computerinfo import ComputerInfo
+from landscape.client.monitor.computerinfo import METADATA_RETRY_MAX
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import create_text_file
-from landscape.client.monitor.computerinfo import (
-    ComputerInfo,
-    METADATA_RETRY_MAX,
-)
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 SAMPLE_LSB_RELEASE = (
     "DISTRIB_ID=Ubuntu\n"
@@ -122,7 +124,8 @@ VmallocChunk:   107432 kB
         self.mstore.set_accepted_types(["computer-info"])
         hostname_fact = hostname_factory()
         plugin = ComputerInfo(
-            get_fqdn=lambda: next(hostname_fact), fetch_async=self.fetch_func
+            get_fqdn=lambda: next(hostname_fact),
+            fetch_async=self.fetch_func,
         )
         self.monitor.add(plugin)
 
@@ -140,7 +143,8 @@ VmallocChunk:   107432 kB
         self.mstore.set_accepted_types(["computer-info"])
         meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo(
-            meminfo_filename=meminfo_filename, fetch_async=self.fetch_func
+            meminfo_filename=meminfo_filename,
+            fetch_async=self.fetch_func,
         )
         self.monitor.add(plugin)
         plugin.exchange()
@@ -271,7 +275,7 @@ DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
 DISTRIB_DESCRIPTION="Ubuntu 6.10"
-"""
+""",
         )
         plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
@@ -290,7 +294,7 @@ DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
 DISTRIB_DESCRIPTION="Ubuntu 6.10"
 DISTRIB_NEW_UNEXPECTED_KEY=ooga
-"""
+""",
         )
         plugin = ComputerInfo(lsb_release_filename=lsb_release_filename)
         self.monitor.add(plugin)
@@ -348,10 +352,13 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         with mock.patch.object(self.remote, "send_message"):
             self.reactor.fire(
-                ("message-type-acceptance-changed", "computer-info"), True
+                ("message-type-acceptance-changed", "computer-info"),
+                True,
             )
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY, urgent=True
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
             )
 
     def test_distribution_info_call_on_accepted(self):
@@ -362,10 +369,13 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         with mock.patch.object(self.remote, "send_message"):
             self.reactor.fire(
-                ("message-type-acceptance-changed", "distribution-info"), True
+                ("message-type-acceptance-changed", "distribution-info"),
+                True,
             )
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY, urgent=True
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
             )
 
     def test_message_if_not_accepted(self):
@@ -395,10 +405,12 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         annotations_dir = self.monitor.config.annotations_path
         os.mkdir(annotations_dir)
         create_text_file(
-            os.path.join(annotations_dir, "annotation1"), "value1"
+            os.path.join(annotations_dir, "annotation1"),
+            "value1",
         )
         create_text_file(
-            os.path.join(annotations_dir, "annotation2"), "value2"
+            os.path.join(annotations_dir, "annotation2"),
+            "value2",
         )
         self.mstore.set_accepted_types(["computer-info"])
 

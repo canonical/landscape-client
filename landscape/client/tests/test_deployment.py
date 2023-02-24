@@ -1,15 +1,12 @@
 import mock
 
-from landscape.lib.fs import read_text_file, create_text_file
-
-from landscape.client.deployment import (
-    BaseConfiguration,
-    Configuration,
-    get_versioned_persist,
-    init_logging,
-)
-
+from landscape.client.deployment import BaseConfiguration
+from landscape.client.deployment import Configuration
+from landscape.client.deployment import get_versioned_persist
+from landscape.client.deployment import init_logging
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_text_file
 
 
 class BabbleConfiguration(BaseConfiguration):
@@ -35,7 +32,12 @@ class LoggingTest(LandscapeTest):
             init_logging(MyConfiguration(), "fooprog")
 
         mock_log.assert_called_once_with(
-            mock.ANY, 20, "/somepath", "fooprog", mock.ANY, None
+            mock.ANY,
+            20,
+            "/somepath",
+            "fooprog",
+            mock.ANY,
+            None,
         )
 
 
@@ -60,7 +62,7 @@ class BaseConfigurationTest(LandscapeTest):
         section_name = kwargs.pop("section_name", "client")
         config = "\n".join(
             ["[%s]" % (section_name,)]
-            + ["%s = %s" % pair for pair in kwargs.items()]
+            + ["%s = %s" % pair for pair in kwargs.items()],
         )
         self.config_filename = self.makeFile(config)
         self.config.default_config_filenames[:] = [self.config_filename]
@@ -152,7 +154,7 @@ class ConfigurationTest(LandscapeTest):
     def test_log_file_option(self):
         """Ensure options.log_dir option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--log-dir", "/var/log/my-awesome-log"]
+            ["--log-dir", "/var/log/my-awesome-log"],
         )[0]
         self.assertEqual(options.log_dir, "/var/log/my-awesome-log")
 
@@ -181,7 +183,7 @@ class ConfigurationTest(LandscapeTest):
     def test_url_option(self):
         """Ensure options.url option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--url", "http://mylandscape/message-system"]
+            ["--url", "http://mylandscape/message-system"],
         )[0]
         self.assertEqual(options.url, "http://mylandscape/message-system")
 
@@ -193,7 +195,7 @@ class ConfigurationTest(LandscapeTest):
     def test_ping_url_option(self):
         """Ensure options.ping_url option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--ping-url", "http://mylandscape/ping"]
+            ["--ping-url", "http://mylandscape/ping"],
         )[0]
         self.assertEqual(options.ping_url, "http://mylandscape/ping")
 
@@ -201,13 +203,14 @@ class ConfigurationTest(LandscapeTest):
         """Ensure parse_args sets appropriate ping_url default."""
         options = self.parser.parse_args([])[0]
         self.assertEqual(
-            options.ping_url, "http://landscape.canonical.com/ping"
+            options.ping_url,
+            "http://landscape.canonical.com/ping",
         )
 
     def test_ssl_public_key_option(self):
         """Ensure options.ssl_public_key option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--ssl-public-key", "/tmp/somekeyfile.ssl"]
+            ["--ssl-public-key", "/tmp/somekeyfile.ssl"],
         )[0]
         self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
@@ -246,7 +249,8 @@ class ConfigurationTest(LandscapeTest):
         socket directory.
         """
         self.assertEqual(
-            "/var/lib/landscape/client/sockets", self.config.sockets_path
+            "/var/lib/landscape/client/sockets",
+            self.config.sockets_path,
         )
 
     def test_annotations_path(self):

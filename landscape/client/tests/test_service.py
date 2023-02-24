@@ -4,10 +4,10 @@ import signal
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
-from landscape.lib.testing import FakeReactor
 from landscape.client.deployment import Configuration
 from landscape.client.service import LandscapeService
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.testing import FakeReactor
 
 
 class TestComponent(object):
@@ -19,7 +19,6 @@ class TestService(LandscapeService):
 
 
 class LandscapeServiceTest(LandscapeTest):
-
     def setUp(self):
         super(LandscapeServiceTest, self).setUp()
         self.config = Configuration()
@@ -58,9 +57,11 @@ class LandscapeServiceTest(LandscapeTest):
         """
         logging.getLogger().addHandler(logging.FileHandler(self.makeFile()))
         # Store the initial set of handlers
-        original_streams = [handler.stream for handler in
-                            logging.getLogger().handlers if
-                            isinstance(handler, logging.FileHandler)]
+        original_streams = [
+            handler.stream
+            for handler in logging.getLogger().handlers
+            if isinstance(handler, logging.FileHandler)
+        ]
 
         # Instantiating LandscapeService should register the handler
         TestService(self.config)
@@ -70,9 +71,11 @@ class LandscapeServiceTest(LandscapeTest):
         handler(None, None)
 
         def check(ign):
-            new_streams = [handler.stream for handler in
-                           logging.getLogger().handlers if
-                           isinstance(handler, logging.FileHandler)]
+            new_streams = [
+                handler.stream
+                for handler in logging.getLogger().handlers
+                if isinstance(handler, logging.FileHandler)
+            ]
 
             for stream in new_streams:
                 self.assertTrue(stream not in original_streams)

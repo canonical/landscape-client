@@ -1,13 +1,13 @@
 import os
-import mock
 
+import mock
 from twisted.internet.defer import Deferred
 
-from landscape.lib.apt.package.store import PackageStore
-
-from landscape.lib.testing import EnvironSaverHelper
 from landscape.client.monitor.packagemonitor import PackageMonitor
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.testing import EnvironSaverHelper
 
 
 class PackageMonitorTest(LandscapeTest):
@@ -56,7 +56,8 @@ class PackageMonitorTest(LandscapeTest):
         upon message handling.
         """
         filename = os.path.join(
-            self.broker_service.config.data_path, "package/database"
+            self.broker_service.config.data_path,
+            "package/database",
         )
         package_monitor = PackageMonitor()
         os.unlink(filename)
@@ -102,10 +103,12 @@ class PackageMonitorTest(LandscapeTest):
             mock.patch.object(self.package_monitor, "spawn_reporter")
         ) as mock_spawn_reporter:
             with mock.patch.object(
-                self.package_monitor, "run", side_effect=run_has_run
+                self.package_monitor,
+                "run",
+                side_effect=run_has_run,
             ):
                 (self.broker_service.message_store).set_accepted_types(
-                    ["packages"]
+                    ["packages"],
                 )
                 self.monitor.add(self.package_monitor)
                 self.successResultOf(deferred)
@@ -153,7 +156,9 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_without_output(self):
         self.write_script(
-            self.config, "landscape-package-reporter", "#!/bin/sh\n/bin/true"
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\n/bin/true",
         )
 
         package_monitor = PackageMonitor(self.package_store_filename)
@@ -210,7 +215,8 @@ class PackageMonitorTest(LandscapeTest):
         with mock.patch.object(self.package_monitor, "spawn_reporter") as mkd:
             self.monitor.add(self.package_monitor)
             self.monitor.reactor.fire(
-                ("message-type-acceptance-changed", "packages"), True
+                ("message-type-acceptance-changed", "packages"),
+                True,
             )
 
         mkd.assert_called_once_with()
@@ -275,7 +281,9 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_doesnt_chdir(self):
         self.write_script(
-            self.config, "landscape-package-reporter", "#!/bin/sh\necho RUN\n"
+            self.config,
+            "landscape-package-reporter",
+            "#!/bin/sh\necho RUN\n",
         )
         cwd = os.getcwd()
         self.addCleanup(os.chdir, cwd)

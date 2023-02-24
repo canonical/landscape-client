@@ -1,9 +1,8 @@
-from __future__ import absolute_import
-
 import logging
 import time
 
-from landscape.lib.format import format_delta, format_percent
+from landscape.lib.format import format_delta
+from landscape.lib.format import format_percent
 
 
 class Timer(object):
@@ -73,7 +72,11 @@ class BurstMonitor(Monitor):
     """
 
     def __init__(
-        self, repeat_interval, maximum_count, event_name, create_time=None
+        self,
+        repeat_interval,
+        maximum_count,
+        event_name,
+        create_time=None,
     ):
         super(BurstMonitor, self).__init__(event_name, create_time=create_time)
         self.repeat_interval = repeat_interval
@@ -112,10 +115,15 @@ class CoverageMonitor(Monitor):
     """
 
     def __init__(
-        self, repeat_interval, min_percent, event_name, create_time=None
+        self,
+        repeat_interval,
+        min_percent,
+        event_name,
+        create_time=None,
     ):
         super(CoverageMonitor, self).__init__(
-            event_name, create_time=create_time
+            event_name,
+            create_time=create_time,
         )
         self.repeat_interval = repeat_interval
         self.min_percent = min_percent
@@ -170,10 +178,15 @@ class FrequencyMonitor(Monitor):
     """
 
     def __init__(
-        self, repeat_interval, min_frequency, event_name, create_time=None
+        self,
+        repeat_interval,
+        min_frequency,
+        event_name,
+        create_time=None,
     ):
         super(FrequencyMonitor, self).__init__(
-            event_name, create_time=create_time
+            event_name,
+            create_time=create_time,
         )
         self.repeat_interval = repeat_interval
         self.min_frequency = min_frequency

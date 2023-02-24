@@ -1,21 +1,37 @@
 import locale
 import unittest
 
-from landscape.lib import testing
-from landscape.lib.apt.package.testing import (
-    AptFacadeHelper, HASH1, create_simple_repository, create_deb,
-    PKGNAME_MINIMAL, PKGDEB_MINIMAL, HASH_MINIMAL, PKGNAME_SIMPLE_RELATIONS,
-    PKGDEB_SIMPLE_RELATIONS, HASH_SIMPLE_RELATIONS, PKGNAME_VERSION_RELATIONS,
-    PKGDEB_VERSION_RELATIONS, HASH_VERSION_RELATIONS,
-    PKGNAME_MULTIPLE_RELATIONS, PKGDEB_MULTIPLE_RELATIONS,
-    HASH_MULTIPLE_RELATIONS, PKGNAME_OR_RELATIONS, PKGDEB_OR_RELATIONS,
-    HASH_OR_RELATIONS)
-from landscape.lib.apt.package.skeleton import (
-    build_skeleton_apt, DEB_PROVIDES, DEB_PACKAGE,
-    DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,
-    DEB_CONFLICTS, PackageSkeleton)
-
 from twisted.python.compat import unicode
+
+from landscape.lib import testing
+from landscape.lib.apt.package.skeleton import build_skeleton_apt
+from landscape.lib.apt.package.skeleton import DEB_CONFLICTS
+from landscape.lib.apt.package.skeleton import DEB_NAME_PROVIDES
+from landscape.lib.apt.package.skeleton import DEB_OR_REQUIRES
+from landscape.lib.apt.package.skeleton import DEB_PACKAGE
+from landscape.lib.apt.package.skeleton import DEB_PROVIDES
+from landscape.lib.apt.package.skeleton import DEB_REQUIRES
+from landscape.lib.apt.package.skeleton import DEB_UPGRADES
+from landscape.lib.apt.package.skeleton import PackageSkeleton
+from landscape.lib.apt.package.testing import AptFacadeHelper
+from landscape.lib.apt.package.testing import create_deb
+from landscape.lib.apt.package.testing import create_simple_repository
+from landscape.lib.apt.package.testing import HASH1
+from landscape.lib.apt.package.testing import HASH_MINIMAL
+from landscape.lib.apt.package.testing import HASH_MULTIPLE_RELATIONS
+from landscape.lib.apt.package.testing import HASH_OR_RELATIONS
+from landscape.lib.apt.package.testing import HASH_SIMPLE_RELATIONS
+from landscape.lib.apt.package.testing import HASH_VERSION_RELATIONS
+from landscape.lib.apt.package.testing import PKGDEB_MINIMAL
+from landscape.lib.apt.package.testing import PKGDEB_MULTIPLE_RELATIONS
+from landscape.lib.apt.package.testing import PKGDEB_OR_RELATIONS
+from landscape.lib.apt.package.testing import PKGDEB_SIMPLE_RELATIONS
+from landscape.lib.apt.package.testing import PKGDEB_VERSION_RELATIONS
+from landscape.lib.apt.package.testing import PKGNAME_MINIMAL
+from landscape.lib.apt.package.testing import PKGNAME_MULTIPLE_RELATIONS
+from landscape.lib.apt.package.testing import PKGNAME_OR_RELATIONS
+from landscape.lib.apt.package.testing import PKGNAME_SIMPLE_RELATIONS
+from landscape.lib.apt.package.testing import PKGNAME_VERSION_RELATIONS
 
 
 class SkeletonTestHelper(object):
@@ -25,23 +41,37 @@ class SkeletonTestHelper(object):
         test_case.skeleton_repository_dir = test_case.makeDir()
         create_simple_repository(test_case.skeleton_repository_dir)
         create_deb(
-            test_case.skeleton_repository_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+            test_case.skeleton_repository_dir,
+            PKGNAME_MINIMAL,
+            PKGDEB_MINIMAL,
+        )
         create_deb(
-            test_case.skeleton_repository_dir, PKGNAME_SIMPLE_RELATIONS,
-            PKGDEB_SIMPLE_RELATIONS)
+            test_case.skeleton_repository_dir,
+            PKGNAME_SIMPLE_RELATIONS,
+            PKGDEB_SIMPLE_RELATIONS,
+        )
         create_deb(
-            test_case.skeleton_repository_dir, PKGNAME_VERSION_RELATIONS,
-            PKGDEB_VERSION_RELATIONS)
+            test_case.skeleton_repository_dir,
+            PKGNAME_VERSION_RELATIONS,
+            PKGDEB_VERSION_RELATIONS,
+        )
         create_deb(
-            test_case.skeleton_repository_dir, PKGNAME_MULTIPLE_RELATIONS,
-            PKGDEB_MULTIPLE_RELATIONS)
+            test_case.skeleton_repository_dir,
+            PKGNAME_MULTIPLE_RELATIONS,
+            PKGDEB_MULTIPLE_RELATIONS,
+        )
         create_deb(
-            test_case.skeleton_repository_dir, PKGNAME_OR_RELATIONS,
-            PKGDEB_OR_RELATIONS)
+            test_case.skeleton_repository_dir,
+            PKGNAME_OR_RELATIONS,
+            PKGDEB_OR_RELATIONS,
+        )
 
 
-class BaseTestCase(testing.HelperTestCase, testing.FSTestCase,
-                   unittest.TestCase):
+class BaseTestCase(
+    testing.HelperTestCase,
+    testing.FSTestCase,
+    unittest.TestCase,
+):
     pass
 
 
@@ -89,7 +119,8 @@ class SkeletonAptTest(BaseTestCase):
             (DEB_REQUIRES, "prerequirename1 = prerequireversion1"),
             (DEB_REQUIRES, "requirename1 = requireversion1"),
             (DEB_UPGRADES, "name1 < version1-release1"),
-            (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
+            (DEB_CONFLICTS, "conflictsname1 = conflictsversion1"),
+        ]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH1, skeleton.get_hash(), HASH1)
 
@@ -158,12 +189,15 @@ class SkeletonAptTest(BaseTestCase):
         self.addCleanup(locale.resetlocale)
 
         self._add_package_to_deb_dir(
-            self.skeleton_repository_dir, "pkg", description=u"T\xe9st")
+            self.skeleton_repository_dir,
+            "pkg",
+            description="T\xe9st",
+        )
         self.facade._cache.update(None)
         self.facade._cache.open(None)
         pkg = self.get_package("pkg")
         skeleton = build_skeleton_apt(pkg, with_unicode=True, with_info=True)
-        self.assertEqual(u"T\u00E9st", skeleton.description)
+        self.assertEqual("T\u00E9st", skeleton.description)
 
     def test_build_skeleton_minimal(self):
         """
@@ -181,7 +215,8 @@ class SkeletonAptTest(BaseTestCase):
         self.assertEqual(None, skeleton.installed_size)
         relations = [
             (DEB_NAME_PROVIDES, "minimal = 1.0"),
-            (DEB_UPGRADES, "minimal < 1.0")]
+            (DEB_UPGRADES, "minimal < 1.0"),
+        ]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_MINIMAL, skeleton.get_hash())
 
@@ -195,7 +230,8 @@ class SkeletonAptTest(BaseTestCase):
         self.assertEqual("", skeleton.section)
         self.assertEqual(
             "A minimal package with no dependencies or other relations.",
-            skeleton.summary)
+            skeleton.summary,
+        )
         self.assertEqual("", skeleton.description)
         self.assertEqual(558, skeleton.size)
         self.assertEqual(None, skeleton.installed_size)
@@ -216,7 +252,8 @@ class SkeletonAptTest(BaseTestCase):
             (DEB_REQUIRES, "predepend1"),
             (DEB_UPGRADES, "simple-relations < 1.0"),
             (DEB_CONFLICTS, "break1"),
-            (DEB_CONFLICTS, "conflict1")]
+            (DEB_CONFLICTS, "conflict1"),
+        ]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_SIMPLE_RELATIONS, skeleton.get_hash())
 
@@ -236,7 +273,8 @@ class SkeletonAptTest(BaseTestCase):
             (DEB_REQUIRES, "predepend1 <= 2.0"),
             (DEB_UPGRADES, "version-relations < 1.0"),
             (DEB_CONFLICTS, "break1 > 2.0"),
-            (DEB_CONFLICTS, "conflict1 < 2.0")]
+            (DEB_CONFLICTS, "conflict1 < 2.0"),
+        ]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_VERSION_RELATIONS, skeleton.get_hash())
 
@@ -263,7 +301,8 @@ class SkeletonAptTest(BaseTestCase):
             (DEB_CONFLICTS, "break1 > 2.0"),
             (DEB_CONFLICTS, "break2"),
             (DEB_CONFLICTS, "conflict1 < 2.0"),
-            (DEB_CONFLICTS, "conflict2")]
+            (DEB_CONFLICTS, "conflict2"),
+        ]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_MULTIPLE_RELATIONS, skeleton.get_hash())
 
@@ -280,13 +319,13 @@ class SkeletonAptTest(BaseTestCase):
             (DEB_NAME_PROVIDES, "or-relations = 1.0"),
             (DEB_OR_REQUIRES, "depend1 = 2.0 | depend2"),
             (DEB_OR_REQUIRES, "predepend1 <= 2.0 | predepend2"),
-            (DEB_UPGRADES, "or-relations < 1.0")]
+            (DEB_UPGRADES, "or-relations < 1.0"),
+        ]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_OR_RELATIONS, skeleton.get_hash())
 
 
 class SkeletonTest(BaseTestCase):
-
     def test_skeleton_set_hash(self):
         """
         If the hash is explictly set using C{set_hash}, C{get_hash}

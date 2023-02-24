@@ -1,10 +1,11 @@
 import logging
 
-from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
-
-from landscape.client.user.management import UserManagement
+from landscape.client.amp import ComponentConnector
+from landscape.client.amp import ComponentPublisher
+from landscape.client.amp import remote
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector
+from landscape.client.user.management import UserManagement
 
 
 class UserManager(ManagerPlugin):
@@ -37,13 +38,16 @@ class UserManager(ManagerPlugin):
         self._registry = registry
 
         self._publisher = ComponentPublisher(
-            self, self.registry.reactor, self.registry.config
+            self,
+            self.registry.reactor,
+            self.registry.config,
         )
         self._publisher.start()
 
         for message_type in self._message_types:
             self._registry.register_message(
-                message_type, self._message_dispatch
+                message_type,
+                self._message_dispatch,
             )
 
     def stop(self):
@@ -74,7 +78,8 @@ class UserManager(ManagerPlugin):
         @param message: The request we got from the server.
         """
         user_monitor_connector = RemoteUserMonitorConnector(
-            self.registry.reactor, self.registry.config
+            self.registry.reactor,
+            self.registry.config,
         )
 
         def detect_changes(user_monitor):
@@ -92,7 +97,9 @@ class UserManager(ManagerPlugin):
         message_type = message["type"]
         message_method = self._message_types[message_type]
         return self.call_with_operation_result(
-            message, message_method, message
+            message,
+            message_method,
+            message,
         )
 
     def _send_changes(self, result, message):
@@ -134,7 +141,8 @@ class UserManager(ManagerPlugin):
     def _remove_user(self, message):
         """Run a C{remove-user} operation."""
         return self._management.remove_user(
-            message["username"], message["delete-home"]
+            message["username"],
+            message["delete-home"],
         )
 
     def _add_group(self, message):
@@ -144,19 +152,22 @@ class UserManager(ManagerPlugin):
     def _edit_group(self, message):
         """Run an C{edit-group} operation."""
         return self._management.set_group_details(
-            message["groupname"], message["new-name"]
+            message["groupname"],
+            message["new-name"],
         )
 
     def _add_group_member(self, message):
         """Run an C{add-group-member} operation."""
         return self._management.add_group_member(
-            message["username"], message["groupname"]
+            message["username"],
+            message["groupname"],
         )
 
     def _remove_group_member(self, message):
         """Run a C{remove-group-member} operation."""
         return self._management.remove_group_member(
-            message["username"], message["groupname"]
+            message["username"],
+            message["groupname"],
         )
 
     def _remove_group(self, message):

@@ -1,14 +1,13 @@
-from mock import Mock
+from unittest.mock import Mock
 
-from landscape.lib.testing import FakeReactor
-from landscape.client.tests.helpers import (
-    LandscapeTest,
-    FakeBrokerServiceHelper,
-)
-from landscape.client.monitor.config import MonitorConfiguration, ALL_PLUGINS
-from landscape.client.monitor.service import MonitorService
 from landscape.client.monitor.computerinfo import ComputerInfo
+from landscape.client.monitor.config import ALL_PLUGINS
+from landscape.client.monitor.config import MonitorConfiguration
 from landscape.client.monitor.loadaverage import LoadAverage
+from landscape.client.monitor.service import MonitorService
+from landscape.client.tests.helpers import FakeBrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.testing import FakeReactor
 
 
 class MonitorServiceTest(LandscapeTest):
@@ -39,7 +38,7 @@ class MonitorServiceTest(LandscapeTest):
         given plugins will be enabled.
         """
         self.service.config.load(
-            ["--monitor-plugins", "ComputerInfo, LoadAverage"]
+            ["--monitor-plugins", "ComputerInfo, LoadAverage"],
         )
         plugins = self.service.get_plugins()
         self.assertTrue(isinstance(plugins[0], ComputerInfo))

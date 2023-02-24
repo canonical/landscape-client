@@ -36,4 +36,5 @@ def with_cursor(method):
             self._db.rollback()
             raise
         return result
+
     return inner

@@ -1,26 +1,26 @@
 import socket
 import unittest
+from subprocess import PIPE
+from subprocess import Popen
+from unittest.mock import ANY
+from unittest.mock import DEFAULT
+from unittest.mock import mock_open
+from unittest.mock import patch
 
-from unittest.mock import ANY, DEFAULT, patch, mock_open
-from netifaces import (
-    AF_INET,
-    AF_INET6,
-    AF_LINK,
-    AF_UNIX,
-    ifaddresses as _ifaddresses,
-    interfaces as _interfaces,
-)
-from subprocess import Popen, PIPE
+from netifaces import AF_INET
+from netifaces import AF_INET6
+from netifaces import AF_LINK
+from netifaces import AF_UNIX
+from netifaces import ifaddresses as _ifaddresses
+from netifaces import interfaces as _interfaces
 
 from landscape.lib import testing
-from landscape.lib.network import (
-    get_active_device_info,
-    get_filtered_if_info,
-    get_fqdn,
-    get_network_interface_speed,
-    get_network_traffic,
-    is_up,
-)
+from landscape.lib.network import get_active_device_info
+from landscape.lib.network import get_filtered_if_info
+from landscape.lib.network import get_fqdn
+from landscape.lib.network import get_network_interface_speed
+from landscape.lib.network import get_network_traffic
+from landscape.lib.network import is_up
 
 
 class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
@@ -44,7 +44,7 @@ class NetworkInfoTest(BaseTestCase):
             [
                 (block.split()[0].strip(":"), block.upper())
                 for block in filter(None, result.split("\n\n"))
-            ]
+            ],
         )
 
         for device in device_info:
@@ -124,7 +124,7 @@ class NetworkInfoTest(BaseTestCase):
                     "flags": 4163,
                     "speed": 100,
                     "duplex": True,
-                }
+                },
             ],
         )
 
@@ -181,7 +181,7 @@ class NetworkInfoTest(BaseTestCase):
                     "speed": 100,
                     "duplex": True,
                     "ip_addresses": {AF_INET6: [{"addr": "2001::1"}]},
-                }
+                },
             ],
         )
 
@@ -314,7 +314,7 @@ class NetworkInfoTest(BaseTestCase):
                     "flags": 4163,
                     "speed": 100,
                     "duplex": True,
-                }
+                },
             ],
         )
 
@@ -361,7 +361,7 @@ class NetworkInfoTest(BaseTestCase):
                     "speed": 100,
                     "duplex": True,
                     "ip_addresses": {AF_INET6: [{"addr": "2001::1"}]},
-                }
+                },
             ],
         )
 
@@ -392,7 +392,8 @@ class NetworkInfoTest(BaseTestCase):
             mocks["get_flags"].return_value = 4163
             mocks["get_network_interface_speed"].return_value = (100, True)
             device_info = get_filtered_if_info(
-                filters=(filter_tap,), extended=True
+                filters=(filter_tap,),
+                extended=True,
             )
 
         self.assertEqual(len(device_info), 2)
@@ -501,7 +502,9 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         The link speed is reported as unpacked from the ioctl() call.
         """
         sock = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_IP,
         )
         # ioctl always succeeds
         mock_unpack.return_value = (100, False)
@@ -521,7 +524,9 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         The link speed for an unplugged interface is reported as 0.
         """
         sock = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_IP,
         )
 
         # ioctl always succeeds
@@ -543,7 +548,9 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         If such an error is rasied, report the speed as -1.
         """
         sock = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_IP,
         )
         theerror = IOError()
         theerror.errno = 95
@@ -567,7 +574,9 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         not report the network speed.
         """
         sock = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_IP,
         )
         theerror = IOError()
         theerror.errno = 1
@@ -590,7 +599,9 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
         exception should be raised.
         """
         sock = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_IP,
         )
         theerror = IOError()
         theerror.errno = 999

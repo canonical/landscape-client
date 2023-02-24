@@ -15,9 +15,11 @@ def fetch_ec2_meta_data(fetch=None):
     # number of connections to the backend minimal. See lp:567515.
     deferred = _fetch_ec2_item("instance-id", cloud_data, fetch)
     deferred.addCallback(
-        lambda ignore: _fetch_ec2_item("instance-type", cloud_data, fetch))
+        lambda ignore: _fetch_ec2_item("instance-type", cloud_data, fetch),
+    )
     deferred.addCallback(
-        lambda ignore: _fetch_ec2_item("ami-id", cloud_data, fetch))
+        lambda ignore: _fetch_ec2_item("ami-id", cloud_data, fetch),
+    )
 
     def return_result(ignore):
         """Record the instance data returned by the EC2 API."""
@@ -32,7 +34,9 @@ def fetch_ec2_meta_data(fetch=None):
         return {
             "instance-id": _process_result(instance_id),
             "ami-id": _process_result(ami_id),
-            "instance-type": _process_result(instance_type)}
+            "instance-type": _process_result(instance_type),
+        }
+
     deferred.addCallback(return_result)
     return deferred
 

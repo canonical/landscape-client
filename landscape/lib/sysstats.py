@@ -1,8 +1,7 @@
-from datetime import datetime
-import os
 import os.path
 import struct
 import time
+from datetime import datetime
 
 from twisted.internet.utils import getProcessOutputAndValue
 
@@ -123,7 +122,8 @@ class ThermalZone(object):
                         self.temperature_value = int(line.strip()) / 1000.0
                         self.temperature_unit = "C"
                         self.temperature = "{:.1f} {}".format(
-                            self.temperature_value, self.temperature_unit
+                            self.temperature_value,
+                            self.temperature_unit,
                         )
                     except ValueError:
                         pass

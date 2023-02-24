@@ -1,16 +1,22 @@
+import logging
 import os
 import time
-import logging
 
-from twisted.internet.defer import fail, DeferredList, succeed
+from twisted.internet.defer import DeferredList
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
 from twisted.python.compat import iteritems
 
-from landscape.lib.scriptcontent import generate_script_hash
-from landscape.lib.user import get_user_info, UnknownUserError
 from landscape.client.accumulate import Accumulator
 from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.scriptexecution import ProcessFailedError
 from landscape.client.manager.scriptexecution import (
-    ProcessFailedError, ScriptRunnerMixin, ProcessTimeLimitReachedError)
+    ProcessTimeLimitReachedError,
+)
+from landscape.client.manager.scriptexecution import ScriptRunnerMixin
+from landscape.lib.scriptcontent import generate_script_hash
+from landscape.lib.user import get_user_info
+from landscape.lib.user import UnknownUserError
 
 
 class StoreProxy(object):
@@ -33,19 +39,17 @@ class StoreProxy(object):
 
 
 class InvalidFormatError(Exception):
-
     def __init__(self, value):
         self.value = value
         Exception.__init__(self, self._get_message())
 
     def _get_message(self):
-        return u"Failed to convert to number: '%s'" % self.value
+        return "Failed to convert to number: '%s'" % self.value
 
 
 class NoOutputError(Exception):
-
     def __init__(self):
-        Exception.__init__(self, u"Script did not output any value")
+        Exception.__init__(self, "Script did not output any value")
 
 
 class ProhibitedUserError(Exception):
@@ -60,7 +64,7 @@ class ProhibitedUserError(Exception):
         Exception.__init__(self, self._get_message())
 
     def _get_message(self):
-        return (u"Custom graph cannot be run as user %s" % self.username)
+        return "Custom graph cannot be run as user %s" % self.username
 
 
 class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
@@ -71,6 +75,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     @param process_factory: The L{IReactorProcess} provider to run the
         process with.
     """
+
     run_interval = 300
     size_limit = 1000
     time_limit = 10
@@ -85,9 +90,13 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     def register(self, registry):
         super(CustomGraphPlugin, self).register(registry)
         registry.register_message(
-            "custom-graph-add", self._handle_custom_graph_add)
+            "custom-graph-add",
+            self._handle_custom_graph_add,
+        )
         registry.register_message(
-            "custom-graph-remove", self._handle_custom_graph_remove)
+            "custom-graph-remove",
+            self._handle_custom_graph_remove,
+        )
         self._persist = StoreProxy(self.registry.store)
         self._accumulate = Accumulator(self._persist, self.run_interval)
 
@@ -118,8 +127,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         data_path = self.registry.config.data_path
         scripts_directory = os.path.join(data_path, "custom-graph-scripts")
-        filename = os.path.join(
-            scripts_directory, "graph-%d" % (graph_id,))
+        filename = os.path.join(scripts_directory, "graph-%d" % (graph_id,))
 
         if os.path.exists(filename):
             os.unlink(filename)
@@ -127,23 +135,31 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         try:
             uid, gid = get_user_info(user)[:2]
         except UnknownUserError:
-            logging.error(u"Attempt to add graph with unknown user %s" %
-                          user)
+            logging.error("Attempt to add graph with unknown user %s" % user)
         else:
             script_file = open(filename, "wb")
             # file is closed in write_script_file
             self.write_script_file(
-                script_file, filename, shell, code, uid, gid)
+                script_file,
+                filename,
+                shell,
+                code,
+                uid,
+                gid,
+            )
             if graph_id in self._data:
                 del self._data[graph_id]
         self.registry.store.add_graph(graph_id, filename, user)
 
     def _format_exception(self, e):
-        return u"%s: %s" % (e.__class__.__name__, e.args[0])
+        return "%s: %s" % (e.__class__.__name__, e.args[0])
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            self.message_type, self.send_message, urgent)
+            self.message_type,
+            self.send_message,
+            urgent,
+        )
 
     def send_message(self, urgent):
         if not self.do_send:
@@ -155,7 +171,10 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 if os.path.isfile(filename):
                     script_hash = self._get_script_hash(filename)
                     self._data[graph_id] = {
-                        "values": [], "error": u"", "script-hash": script_hash}
+                        "values": [],
+                        "error": "",
+                        "script-hash": script_hash,
+                    }
 
         message = {"type": self.message_type, "data": self._data}
 
@@ -163,11 +182,17 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         for graph_id, item in iteritems(self._data):
             script_hash = item["script-hash"]
             new_data[graph_id] = {
-                "values": [], "error": u"", "script-hash": script_hash}
+                "values": [],
+                "error": "",
+                "script-hash": script_hash,
+            }
         self._data = new_data
 
-        self.registry.broker.send_message(message, self._session_id,
-                                          urgent=urgent)
+        self.registry.broker.send_message(
+            message,
+            self._session_id,
+            urgent=urgent,
+        )
 
     def _handle_data(self, output, graph_id, now):
         if graph_id not in self._data:
@@ -190,15 +215,19 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         if failure.check(ProcessFailedError):
             failure_value = failure.value.data
             if failure.value.exit_code:
-                failure_value = ("%s (process exited with code %d)" %
-                                 (failure_value, failure.value.exit_code))
+                failure_value = "%s (process exited with code %d)" % (
+                    failure_value,
+                    failure.value.exit_code,
+                )
             self._data[graph_id]["error"] = failure_value
         elif failure.check(ProcessTimeLimitReachedError):
-            self._data[graph_id]["error"] = (
-                u"Process exceeded the %d seconds limit" % (self.time_limit,))
+            self._data[graph_id][
+                "error"
+            ] = "Process exceeded the %d seconds limit" % (self.time_limit,)
         else:
             self._data[graph_id]["error"] = self._format_exception(
-                failure.value)
+                failure.value,
+            )
 
     def _get_script_hash(self, filename):
         with open(filename) as file_object:
@@ -218,7 +247,10 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             return succeed([])
 
         return self.registry.broker.call_if_accepted(
-            self.message_type, self._continue_run, graphs)
+            self.message_type,
+            self._continue_run,
+            graphs,
+        )
 
     def _continue_run(self, graphs):
         deferred_list = []
@@ -231,7 +263,10 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 script_hash = b""
             if graph_id not in self._data:
                 self._data[graph_id] = {
-                    "values": [], "error": u"", "script-hash": script_hash}
+                    "values": [],
+                    "error": "",
+                    "script-hash": script_hash,
+                }
             else:
                 self._data[graph_id]["script-hash"] = script_hash
             try:
@@ -249,7 +284,13 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             if not os.path.isfile(filename):
                 continue
             result = self._run_script(
-                filename, uid, gid, path, {}, self.time_limit)
+                filename,
+                uid,
+                gid,
+                path,
+                {},
+                self.time_limit,
+            )
             result.addCallback(self._handle_data, graph_id, now)
             result.addErrback(self._handle_error, graph_id)
             deferred_list.append(result)

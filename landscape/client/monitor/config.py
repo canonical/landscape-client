@@ -1,12 +1,27 @@
 from landscape.client.deployment import Configuration
 
 
-ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo",
-               "LoadAverage", "MemoryInfo", "MountInfo", "ProcessorInfo",
-               "Temperature", "PackageMonitor", "UserMonitor",
-               "RebootRequired", "AptPreferences", "NetworkActivity",
-               "NetworkDevice", "UpdateManager", "CPUUsage", "SwiftUsage",
-               "CephUsage", "ComputerTags", "UbuntuProInfo"]
+ALL_PLUGINS = [
+    "ActiveProcessInfo",
+    "ComputerInfo",
+    "LoadAverage",
+    "MemoryInfo",
+    "MountInfo",
+    "ProcessorInfo",
+    "Temperature",
+    "PackageMonitor",
+    "UserMonitor",
+    "RebootRequired",
+    "AptPreferences",
+    "NetworkActivity",
+    "NetworkDevice",
+    "UpdateManager",
+    "CPUUsage",
+    "SwiftUsage",
+    "CephUsage",
+    "ComputerTags",
+    "UbuntuProInfo",
+]
 
 
 class MonitorConfiguration(Configuration):
@@ -19,10 +34,13 @@ class MonitorConfiguration(Configuration):
         """
         parser = super(MonitorConfiguration, self).make_parser()
 
-        parser.add_option("--monitor-plugins", metavar="PLUGIN_LIST",
-                          help="Comma-delimited list of monitor plugins to "
-                               "use. ALL means use all plugins.",
-                          default="ALL")
+        parser.add_option(
+            "--monitor-plugins",
+            metavar="PLUGIN_LIST",
+            help="Comma-delimited list of monitor plugins to "
+            "use. ALL means use all plugins.",
+            default="ALL",
+        )
         return parser
 
     @property

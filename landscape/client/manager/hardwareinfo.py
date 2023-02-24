@@ -2,8 +2,8 @@ import os
 
 from twisted.internet.utils import getProcessOutput
 
-from landscape.lib.encoding import encode_values
 from landscape.client.manager.plugin import ManagerPlugin
+from landscape.lib.encoding import encode_values
 
 
 class HardwareInfo(ManagerPlugin):
@@ -20,12 +20,18 @@ class HardwareInfo(ManagerPlugin):
 
     def run(self):
         return self.registry.broker.call_if_accepted(
-            self.message_type, self.send_message)
+            self.message_type,
+            self.send_message,
+        )
 
     def send_message(self):
         environ = encode_values(os.environ)
         result = getProcessOutput(
-            self.command, args=["-xml", "-quiet"], env=environ, path=None)
+            self.command,
+            args=["-xml", "-quiet"],
+            env=environ,
+            path=None,
+        )
         return result.addCallback(self._got_output)
 
     def _got_output(self, output):

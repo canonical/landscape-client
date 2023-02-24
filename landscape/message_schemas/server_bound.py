@@ -1,19 +1,16 @@
 # Copyright 2017 Canonical Limited.  All rights reserved.
-
-from landscape.lib.schema import (
-    KeyDict,
-    Dict,
-    List,
-    Tuple,
-    Bool,
-    Int,
-    Float,
-    Bytes,
-    Unicode,
-    Constant,
-    Any,
-)
 from .message import Message
+from landscape.lib.schema import Any
+from landscape.lib.schema import Bool
+from landscape.lib.schema import Bytes
+from landscape.lib.schema import Constant
+from landscape.lib.schema import Dict
+from landscape.lib.schema import Float
+from landscape.lib.schema import Int
+from landscape.lib.schema import KeyDict
+from landscape.lib.schema import List
+from landscape.lib.schema import Tuple
+from landscape.lib.schema import Unicode
 
 
 __all__ = [
@@ -165,7 +162,8 @@ CLOUD_METADATA = Message(
 
 
 hal_data = Dict(
-    Unicode(), Any(Unicode(), List(Unicode()), Bool(), Int(), Float())
+    Unicode(),
+    Any(Unicode(), List(Unicode()), Bool(), Int(), Float()),
 )
 
 HARDWARE_INVENTORY = Message(
@@ -183,7 +181,7 @@ HARDWARE_INVENTORY = Message(
                 ),  # deletes
                 Tuple(Constant("delete"), Unicode()),
             ),
-        )
+        ),
     },
 )
 
@@ -202,8 +200,8 @@ JUJU_UNITS_INFO = Message(
     "juju-units-info",
     {
         "juju-info-list": List(
-            KeyDict(juju_data.copy(), optional=["private-address"])
-        )
+            KeyDict(juju_data.copy(), optional=["private-address"]),
+        ),
     },
 )
 
@@ -236,8 +234,8 @@ SWIFT_DEVICE_INFO = Message(
     "swift-device-info",
     {
         "swift-device-info": List(
-            KeyDict({"device": Unicode(), "mounted": Bool()})
-        )
+            KeyDict({"device": Unicode(), "mounted": Bool()}),
+        ),
     },
 )
 
@@ -245,12 +243,13 @@ SWIFT_USAGE = Message(
     "swift-usage",
     {
         # Usage data points in the form (timestamp, device, size, avail, used)
-        "data-points": List(Tuple(Int(), Unicode(), Int(), Int(), Int()))
+        "data-points": List(Tuple(Int(), Unicode(), Int(), Int(), Int())),
     },
 )
 
 KEYSTONE_TOKEN = Message(
-    "keystone-token", {"data": Any(Bytes(), Constant(None))}
+    "keystone-token",
+    {"data": Any(Bytes(), Constant(None))},
 )
 
 MEMORY_INFO = Message(
@@ -269,7 +268,8 @@ RESYNCHRONIZE = Message(
 )
 
 MOUNT_ACTIVITY = Message(
-    "mount-activity", {"activities": List(Tuple(Float(), Unicode(), Bool()))}
+    "mount-activity",
+    {"activities": List(Tuple(Float(), Unicode(), Bool()))},
 )
 
 
@@ -285,15 +285,16 @@ MOUNT_INFO = Message(
                         "device": Unicode(),
                         "filesystem": Unicode(),
                         "total-space": Int(),
-                    }
+                    },
                 ),
-            )
+            ),
         ),
     },
 )
 
 FREE_SPACE = Message(
-    "free-space", {"free-space": List(Tuple(Float(), Unicode(), Int()))}
+    "free-space",
+    {"free-space": List(Tuple(Float(), Unicode(), Int()))},
 )
 
 
@@ -341,7 +342,7 @@ REGISTER_3_3 = Message(
                 "environment-uuid": Unicode(),
                 "api-addresses": List(Unicode()),
                 "machine-id": Unicode(),
-            }
+            },
         ),
         "access_group": Unicode(),
         "clone_secure_id": Any(Unicode(), Constant(None)),
@@ -366,7 +367,8 @@ REGISTER_3_3 = Message(
 # just to not break older LDS releases that import it (the last LDS release
 # to have it is 14.07). Eventually it shall be dropped.
 REGISTER_PROVISIONED_MACHINE = Message(
-    "register-provisioned-machine", {"otp": Bytes()}
+    "register-provisioned-machine",
+    {"otp": Bytes()},
 )
 
 
@@ -418,8 +420,8 @@ PROCESSOR_INFO = Message(
                     "cache-size": Int(),
                 },
                 optional=["vendor", "cache-size"],
-            )
-        )
+            ),
+        ),
     },
 )
 
@@ -540,12 +542,12 @@ OLD_USERS = Message(
                     "enabled": Bool(),
                 },
                 optional=["location", "home-phone", "work-phone"],
-            )
+            ),
         ),
         "groups": List(
             KeyDict(
-                {"gid": Int(), "name": Unicode(), "members": List(Unicode())}
-            )
+                {"gid": Int(), "name": Unicode(), "members": List(Unicode())},
+            ),
         ),
     },
     optional=["groups"],
@@ -638,8 +640,8 @@ ADD_PACKAGES = Message(
                     "size": Any(Int(), Constant(None)),
                     "version": Unicode(),
                     "type": Int(),
-                }
-            )
+                },
+            ),
         ),
         "request-id": Int(),
     },
@@ -664,7 +666,7 @@ GRAPH_DATA = KeyDict(
         "values": List(Tuple(Float(), Float())),
         "error": Unicode(),
         "script-hash": Bytes(),
-    }
+    },
 )
 
 CUSTOM_GRAPH = Message("custom-graph", {"data": Dict(Int(), GRAPH_DATA)})
@@ -715,11 +717,11 @@ NETWORK_DEVICE = Message(
                     "broadcast_address": Bytes(),
                     "netmask": Bytes(),
                     "flags": Int(),
-                }
-            )
+                },
+            ),
         ),
         "device-speeds": List(
-            KeyDict({"interface": Bytes(), "speed": Int(), "duplex": Bool()})
+            KeyDict({"interface": Bytes(), "speed": Int(), "duplex": Bool()}),
         ),
     },
     optional=["device-speeds"],
@@ -738,7 +740,8 @@ NETWORK_ACTIVITY = Message(
 UPDATE_MANAGER_INFO = Message("update-manager-info", {"prompt": Unicode()})
 
 COMPUTER_TAGS = Message(
-    "computer-tags", {"tags": Any(Unicode(), Constant(None))}
+    "computer-tags",
+    {"tags": Any(Unicode(), Constant(None))},
 )
 
 UBUNTU_PRO_INFO = Message("ubuntu-pro-info", {"ubuntu-pro-info": Unicode()})

@@ -1,5 +1,8 @@
-
-from landscape.lib.schema import KeyDict, Float, Bytes, Constant, Any
+from landscape.lib.schema import Any
+from landscape.lib.schema import Bytes
+from landscape.lib.schema import Constant
+from landscape.lib.schema import Float
+from landscape.lib.schema import KeyDict
 
 
 class Message(KeyDict):
@@ -16,6 +19,7 @@ class Message(KeyDict):
     @param api: The server API version needed to send this message,
         if C{None} any version is fine.
     """
+
     def __init__(self, type, schema, optional=None, api=None):
         self.type = type
         self.api = api

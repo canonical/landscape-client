@@ -2,13 +2,11 @@ import unittest
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.testing import (
-    FSTestCase,
-    TwistedTestCase,
-    ProcessDataBuilder,
-)
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
+from landscape.lib.testing import FSTestCase
+from landscape.lib.testing import ProcessDataBuilder
+from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.processes import Processes
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
 class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
@@ -51,11 +49,16 @@ class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
     def test_number_of_zombies(self):
         """The number of zombies is added as a note."""
         self.builder.create_data(
-            99, self.builder.ZOMBIE, uid=0, gid=0, process_name="ZOMBERS"
+            99,
+            self.builder.ZOMBIE,
+            uid=0,
+            gid=0,
+            process_name="ZOMBERS",
         )
         self.processes.run()
         self.assertEqual(
-            self.sysinfo.get_notes(), ["There is 1 zombie process."]
+            self.sysinfo.get_notes(),
+            ["There is 1 zombie process."],
         )
 
     def test_multiple_zombies(self):
@@ -70,5 +73,6 @@ class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
             )
         self.processes.run()
         self.assertEqual(
-            self.sysinfo.get_notes(), ["There are 2 zombie processes."]
+            self.sysinfo.get_notes(),
+            ["There are 2 zombie processes."],
         )

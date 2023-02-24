@@ -1,5 +1,5 @@
-from datetime import datetime
 import unittest
+from datetime import datetime
 
 from landscape.lib.timestamp import to_timestamp
 

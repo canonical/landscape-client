@@ -1,7 +1,4 @@
-from __future__ import absolute_import
-
 import logging
-import os
 import os.path
 import sys
 
@@ -23,7 +20,11 @@ def add_cli_options(parser, level="info", logdir=None):
     if logdir:
         logdirhelp += " (default: {!r}).".format(logdir)
     parser.add_option(
-        "-l", "--log-dir", metavar="FILE", default=logdir, help=logdirhelp
+        "-l",
+        "--log-dir",
+        metavar="FILE",
+        default=logdir,
+        help=logdirhelp,
     )
 
     parser.add_option(

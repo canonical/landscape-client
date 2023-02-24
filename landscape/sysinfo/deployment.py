@@ -1,19 +1,29 @@
 """Deployment code for the sysinfo tool."""
 import os
 import sys
-from logging import getLogger, Formatter
+from logging import Formatter
+from logging import getLogger
 from logging.handlers import RotatingFileHandler
 
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import maybeDeferred
 from twisted.python.reflect import namedClass
-from twisted.internet.defer import Deferred, maybeDeferred
 
 from landscape import VERSION
 from landscape.lib.config import BaseConfiguration
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
+from landscape.sysinfo.sysinfo import format_sysinfo
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
-ALL_PLUGINS = ["Load", "Disk", "Memory", "Temperature", "Processes",
-               "LoggedInUsers", "Network"]
+ALL_PLUGINS = [
+    "Load",
+    "Disk",
+    "Memory",
+    "Temperature",
+    "Processes",
+    "LoggedInUsers",
+    "Network",
+]
 
 
 class SysInfoConfiguration(BaseConfiguration):
@@ -24,7 +34,8 @@ class SysInfoConfiguration(BaseConfiguration):
     default_config_filenames = ("/etc/landscape/client.conf",)
     if os.getuid() != 0:
         default_config_filenames += (
-            os.path.expanduser("~/.landscape/sysinfo.conf"),)
+            os.path.expanduser("~/.landscape/sysinfo.conf"),
+        )
     default_data_dir = "/var/lib/landscape/client/"
 
     config_section = "sysinfo"
@@ -41,14 +52,20 @@ class SysInfoConfiguration(BaseConfiguration):
         """
         parser = super(SysInfoConfiguration, self).make_parser()
 
-        parser.add_option("--sysinfo-plugins", metavar="PLUGIN_LIST",
-                          help="Comma-delimited list of sysinfo plugins to "
-                               "use. Default is to use all plugins.")
+        parser.add_option(
+            "--sysinfo-plugins",
+            metavar="PLUGIN_LIST",
+            help="Comma-delimited list of sysinfo plugins to "
+            "use. Default is to use all plugins.",
+        )
 
-        parser.add_option("--exclude-sysinfo-plugins", metavar="PLUGIN_LIST",
-                          help="Comma-delimited list of sysinfo plugins to "
-                               "NOT use. This always take precedence over "
-                               "plugins to include.")
+        parser.add_option(
+            "--exclude-sysinfo-plugins",
+            metavar="PLUGIN_LIST",
+            help="Comma-delimited list of sysinfo plugins to "
+            "NOT use. This always take precedence over "
+            "plugins to include.",
+        )
 
         parser.epilog = "Default plugins: %s" % (", ".join(ALL_PLUGINS))
         return parser
@@ -66,9 +83,12 @@ class SysInfoConfiguration(BaseConfiguration):
         else:
             exclude = self.get_plugin_names(self.exclude_sysinfo_plugins)
         plugins = [x for x in include if x not in exclude]
-        return [namedClass("landscape.sysinfo.%s.%s"
-                           % (plugin_name.lower(), plugin_name))()
-                for plugin_name in plugins]
+        return [
+            namedClass(
+                "landscape.sysinfo.%s.%s" % (plugin_name.lower(), plugin_name),
+            )()
+            for plugin_name in plugins
+        ]
 
 
 def get_landscape_log_directory(landscape_dir=None):
@@ -91,8 +111,11 @@ def setup_logging(landscape_dir=None):
     if not os.path.isdir(landscape_dir):
         os.mkdir(landscape_dir)
     log_filename = os.path.join(landscape_dir, "sysinfo.log")
-    handler = RotatingFileHandler(log_filename,
-                                  maxBytes=500 * 1024, backupCount=1)
+    handler = RotatingFileHandler(
+        log_filename,
+        maxBytes=500 * 1024,
+        backupCount=1,
+    )
     logger.addHandler(handler)
     handler.setFormatter(Formatter("%(asctime)s %(levelname)-8s %(message)s"))
 
@@ -116,8 +139,14 @@ def run(args, reactor=None, sysinfo=None):
         sysinfo.add(plugin)
 
     def show_output(result):
-        print(format_sysinfo(sysinfo.get_headers(), sysinfo.get_notes(),
-                             sysinfo.get_footnotes(), indent="  "))
+        print(
+            format_sysinfo(
+                sysinfo.get_headers(),
+                sysinfo.get_notes(),
+                sysinfo.get_footnotes(),
+                indent="  ",
+            ),
+        )
 
     def run_sysinfo():
         return sysinfo.run().addCallback(show_output)
@@ -128,7 +157,8 @@ def run(args, reactor=None, sysinfo=None):
         # running.
         done = Deferred()
         reactor.callWhenRunning(
-            lambda: maybeDeferred(run_sysinfo).chainDeferred(done))
+            lambda: maybeDeferred(run_sysinfo).chainDeferred(done),
+        )
 
         def stop_reactor(result):
             # We won't need to use callLater here once we use Twisted >8.

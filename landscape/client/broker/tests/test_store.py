@@ -1,20 +1,20 @@
 import os
+
 import mock
-
-
 from twisted.python.compat import intToBytes
 
+from landscape.client.broker.store import MessageStore
+from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.bpickle import dumps
 from landscape.lib.persist import Persist
-from landscape.lib.schema import InvalidError, Int, Bytes, Unicode
+from landscape.lib.schema import Bytes
+from landscape.lib.schema import Int
+from landscape.lib.schema import InvalidError
+from landscape.lib.schema import Unicode
 from landscape.message_schemas.message import Message
-from landscape.client.broker.store import MessageStore
-
-from landscape.client.tests.helpers import LandscapeTest
 
 
 class MessageStoreTest(LandscapeTest):
-
     def setUp(self):
         super(MessageStoreTest, self).setUp()
         self.temp_dir = self.makeDir()
@@ -140,10 +140,10 @@ class MessageStoreTest(LandscapeTest):
     def test_one_message(self):
         self.store.add(dict(type="data", data=b"A thing"))
         messages = self.store.get_pending_messages(200)
-        self.assertMessages(messages,
-                            [{"type": "data",
-                              "data": b"A thing",
-                              "api": b"3.2"}])
+        self.assertMessages(
+            messages,
+            [{"type": "data", "data": b"A thing", "api": b"3.2"}],
+        )
 
     def test_max_pending(self):
         for i in range(10):
@@ -177,23 +177,26 @@ class MessageStoreTest(LandscapeTest):
 
     def test_unaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=intToBytes(i)))
+            self.store.add(
+                dict(type=["data", "unaccepted"][i % 2], data=intToBytes(i)),
+            )
         il = [m["data"] for m in self.store.get_pending_messages(20)]
         self.assertEqual(il, [intToBytes(i) for i in [0, 2, 4, 6, 8]])
 
     def test_unaccepted_with_offset(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=intToBytes(i)))
+            self.store.add(
+                dict(type=["data", "unaccepted"][i % 2], data=intToBytes(i)),
+            )
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(20)]
         self.assertEqual(il, [intToBytes(i) for i in [4, 6, 8]])
 
     def test_unaccepted_reaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=intToBytes(i)))
+            self.store.add(
+                dict(type=["data", "unaccepted"][i % 2], data=intToBytes(i)),
+            )
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(2)]
         self.store.set_accepted_types(["data", "unaccepted"])
@@ -202,8 +205,9 @@ class MessageStoreTest(LandscapeTest):
 
     def test_accepted_unaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=intToBytes(i)))
+            self.store.add(
+                dict(type=["data", "unaccepted"][i % 2], data=intToBytes(i)),
+            )
         # Setting pending offset here means that the first two
         # messages, even though becoming unaccepted now, were already
         # accepted before, so they shouldn't be marked for hold.
@@ -217,8 +221,9 @@ class MessageStoreTest(LandscapeTest):
 
     def test_accepted_unaccepted_old(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i % 2],
-                                data=intToBytes(i)))
+            self.store.add(
+                dict(type=["data", "unaccepted"][i % 2], data=intToBytes(i)),
+            )
         self.store.set_pending_offset(2)
         self.store.set_accepted_types(["unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
@@ -233,8 +238,10 @@ class MessageStoreTest(LandscapeTest):
         # messages will also be delivered.
         self.store.set_accepted_types(["data", "unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
-        self.assertEqual(il, [intToBytes(i)
-                              for i in [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]])
+        self.assertEqual(
+            il,
+            [intToBytes(i) for i in [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]],
+        )
 
     def test_wb_handle_broken_messages(self):
         self.log_helper.ignore_errors(ValueError)
@@ -281,8 +288,10 @@ class MessageStoreTest(LandscapeTest):
 
         messages = self.store.get_pending_messages()
 
-        self.assertEqual(messages, [{"type": "data", "data": b"2",
-                                     "api": b"3.2"}])
+        self.assertEqual(
+            messages,
+            [{"type": "data", "data": b"2", "api": b"3.2"}],
+        )
 
         self.store.set_pending_offset(len(messages))
 
@@ -307,11 +316,16 @@ class MessageStoreTest(LandscapeTest):
             # similar to unplugging the power -- i.e., we're not relying
             # on special exception-handling in the file-writing code.
             self.assertRaises(
-                IOError, self.store.add, {"type": "data", "data": 2})
+                IOError,
+                self.store.add,
+                {"type": "data", "data": 2},
+            )
             mock_open.assert_called_with(mock.ANY, "wb")
             mock_open().write.assert_called_once_with(mock.ANY)
-        self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "data", "data": 1, "api": b"3.2"}])
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "data", "data": 1, "api": b"3.2"}],
+        )
 
     def test_get_server_api_default(self):
         """
@@ -331,8 +345,10 @@ class MessageStoreTest(LandscapeTest):
         By default messages are tagged with the 3.2 server API.
         """
         self.store.add({"type": "empty"})
-        self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": b"3.2"}])
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "empty", "api": b"3.2"}],
+        )
 
     def test_custom_api_on_store(self):
         """
@@ -341,14 +357,18 @@ class MessageStoreTest(LandscapeTest):
         """
         self.store.set_server_api(b"3.3")
         self.store.add({"type": "empty"})
-        self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": b"3.3"}])
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "empty", "api": b"3.3"}],
+        )
 
     def test_custom_api_on_messages(self):
         self.store.set_server_api(b"3.3")
         self.store.add({"type": "empty", "api": b"3.2"})
-        self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "empty", "api": b"3.2"}])
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "empty", "api": b"3.2"}],
+        )
 
     def test_coercion(self):
         """
@@ -356,8 +376,11 @@ class MessageStoreTest(LandscapeTest):
         coerced according to the message schema for the type of the
         message.
         """
-        self.assertRaises(InvalidError,
-                          self.store.add, {"type": "data", "data": 3})
+        self.assertRaises(
+            InvalidError,
+            self.store.add,
+            {"type": "data", "data": 3},
+        )
 
     def test_coercion_ignores_custom_api(self):
         """
@@ -372,12 +395,17 @@ class MessageStoreTest(LandscapeTest):
         the coercion.
         """
         self.store.add_schema(Message("data", {"data": Unicode()}))
-        self.store.add({"type": "data",
-                        "data": u"\N{HIRAGANA LETTER A}".encode("utf-8"),
-                        "api": b"3.2"})
-        self.assertEqual(self.store.get_pending_messages(),
-                         [{"type": "data", "api": b"3.2",
-                           "data": u"\N{HIRAGANA LETTER A}"}])
+        self.store.add(
+            {
+                "type": "data",
+                "data": "\N{HIRAGANA LETTER A}".encode("utf-8"),
+                "api": b"3.2",
+            },
+        )
+        self.assertEqual(
+            self.store.get_pending_messages(),
+            [{"type": "data", "api": b"3.2", "data": "\N{HIRAGANA LETTER A}"}],
+        )
 
     def test_message_is_coerced_to_its_api_schema(self):
         """
@@ -392,7 +420,8 @@ class MessageStoreTest(LandscapeTest):
         self.store.add({"type": "data", "data": 123})
         self.assertEqual(
             self.store.get_pending_messages(),
-            [{"type": "data", "api": b"3.3", "data": 123}])
+            [{"type": "data", "api": b"3.3", "data": 123}],
+        )
 
     def test_message_is_coerced_to_highest_compatible_api_schema(self):
         """
@@ -408,7 +437,8 @@ class MessageStoreTest(LandscapeTest):
         self.store.add({"type": "data", "data": b"foo"})
         self.assertEqual(
             self.store.get_pending_messages(),
-            [{"type": "data", "api": b"3.2", "data": b"foo"}])
+            [{"type": "data", "api": b"3.2", "data": b"foo"}],
+        )
 
     def test_count_pending_messages(self):
         """It is possible to get the total number of pending messages."""
@@ -432,8 +462,7 @@ class MessageStoreTest(LandscapeTest):
         self.assertTrue(os.path.exists(filename))
 
         store = MessageStore(Persist(filename=filename), self.temp_dir)
-        self.assertEqual(set(store.get_accepted_types()),
-                         set(["foo", "bar"]))
+        self.assertEqual(set(store.get_accepted_types()), set(["foo", "bar"]))
 
     def test_is_pending_pre_and_post_message_delivery(self):
         self.log_helper.ignore_errors(ValueError)
@@ -507,8 +536,7 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(global_session_id1, global_session_id2)
 
     def test_get_session_id_unique_for_each_scope(self):
-        """We get a unique session id for differing scopes.
-        """
+        """We get a unique session id for differing scopes."""
         session_id1 = self.store.get_session_id()
         session_id2 = self.store.get_session_id(scope="other")
         self.assertNotEqual(session_id1, session_id2)
@@ -518,14 +546,14 @@ class MessageStoreTest(LandscapeTest):
         default.
         """
         session_id = self.store.get_session_id()
-        persisted_ids = self.store._persist.get('session-ids')
+        persisted_ids = self.store._persist.get("session-ids")
         scope = persisted_ids[session_id]
         self.assertIs(None, scope)
 
     def test_get_session_id_with_scope(self):
         """Test that we can generate a session id within a limited scope."""
         session_id = self.store.get_session_id(scope="hwinfo")
-        persisted_ids = self.store._persist.get('session-ids')
+        persisted_ids = self.store._persist.get("session-ids")
         scope = persisted_ids[session_id]
         self.assertEqual("hwinfo", scope)
 
@@ -592,8 +620,7 @@ class MessageStoreTest(LandscapeTest):
     def test_record_failure_sets_first_failure_time(self):
         """first-failure-time recorded when calling record_failure()."""
         self.store.record_failure(123)
-        self.assertEqual(
-            123, self.store._persist.get("first-failure-time"))
+        self.assertEqual(123, self.store._persist.get("first-failure-time"))
 
     def test_messages_rejected_if_failure_older_than_one_week(self):
         """Messages stop accumulating after one week of not being sent."""
@@ -602,10 +629,12 @@ class MessageStoreTest(LandscapeTest):
         self.assertIsNot(None, self.store.add({"type": "empty"}))
         self.store.record_failure((7 * 24 * 60 * 60) + 1)
         self.assertIs(None, self.store.add({"type": "empty"}))
-        self.assertIn("WARNING: Unable to succesfully communicate with "
-                      "Landscape server for more than a week. Waiting for "
-                      "resync.",
-                      self.logfile.getvalue())
+        self.assertIn(
+            "WARNING: Unable to succesfully communicate with "
+            "Landscape server for more than a week. Waiting for "
+            "resync.",
+            self.logfile.getvalue(),
+        )
         # Resync message and the first one we added right on the week boundary
         self.assertEqual(2, len(self.store.get_pending_messages()))
 
@@ -618,8 +647,10 @@ class MessageStoreTest(LandscapeTest):
         self.store.record_failure((7 * 24 * 60 * 60) + 1)
         self.store.add({"type": "empty"})
         self.assertIs(None, self.store.add({"type": "empty"}))
-        self.assertIn("DEBUG: Dropped message, awaiting resync.",
-                      self.logfile.getvalue())
+        self.assertIn(
+            "DEBUG: Dropped message, awaiting resync.",
+            self.logfile.getvalue(),
+        )
 
     def test_after_clearing_blackhole_messages_are_accepted_again(self):
         """After a successful exchange, messages are accepted again."""
@@ -644,13 +675,13 @@ class MessageStoreTest(LandscapeTest):
         filename = os.path.join(self.temp_dir, "0", "0")
         os.makedirs(os.path.dirname(filename))
         with open(filename, "wb") as fh:
-            fh.write(dumps({b"type": b"data",
-                            b"data": b"A thing",
-                            b"api": b"3.2"}))
+            fh.write(
+                dumps({b"type": b"data", b"data": b"A thing", b"api": b"3.2"}),
+            )
         [message] = self.store.get_pending_messages()
         # message keys are decoded
-        self.assertIn(u"type", message)
-        self.assertIn(u"api", message)
-        self.assertIsInstance(message[u"api"], bytes)  # api is bytes
-        self.assertEqual(u"data", message[u"type"])  # message type is decoded
-        self.assertEqual(b"A thing", message[u"data"])  # other are kept as-is
+        self.assertIn("type", message)
+        self.assertIn("api", message)
+        self.assertIsInstance(message["api"], bytes)  # api is bytes
+        self.assertEqual("data", message["type"])  # message type is decoded
+        self.assertEqual(b"A thing", message["data"])  # other are kept as-is

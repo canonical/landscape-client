@@ -1,9 +1,10 @@
-from landscape.client.tests.helpers import (
-    LandscapeTest, FakeBrokerServiceHelper)
-from landscape.lib.testing import FakeReactor
-from landscape.client.manager.config import ManagerConfiguration, ALL_PLUGINS
-from landscape.client.manager.service import ManagerService
+from landscape.client.manager.config import ALL_PLUGINS
+from landscape.client.manager.config import ManagerConfiguration
 from landscape.client.manager.processkiller import ProcessKiller
+from landscape.client.manager.service import ManagerService
+from landscape.client.tests.helpers import FakeBrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.testing import FakeReactor
 
 
 class ManagerServiceTest(LandscapeTest):
@@ -41,6 +42,7 @@ class ManagerServiceTest(LandscapeTest):
         The L{ManagerService.startService} method connects to the broker,
         starts the plugins and register the manager as broker client.
         """
+
         def stop_service(ignored):
             for plugin in self.service.plugins:
                 if getattr(plugin, "stop", None) is not None:

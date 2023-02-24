@@ -1,14 +1,15 @@
 import json
 import logging
 import socket
+
 import mock
 
-from landscape.lib.compat import _PY3
-
-from landscape.client.broker.registration import RegistrationError, Identity
+from landscape.client.broker.registration import Identity
+from landscape.client.broker.registration import RegistrationError
+from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
+from landscape.client.broker.tests.helpers import RegistrationHelper
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.broker.tests.helpers import (
-    BrokerConfigurationHelper, RegistrationHelper)
+from landscape.lib.compat import _PY3
 from landscape.lib.persist import Persist
 
 
@@ -23,27 +24,37 @@ class IdentityTest(LandscapeTest):
 
     def check_persist_property(self, attr, persist_name):
         value = "VALUE"
-        self.assertEqual(getattr(self.identity, attr), None,
-                         "%r attribute should default to None, not %r" %
-                         (attr, getattr(self.identity, attr)))
-        setattr(self.identity, attr, value)
-        self.assertEqual(getattr(self.identity, attr), value,
-                         "%r attribute should be %r, not %r" %
-                         (attr, value, getattr(self.identity, attr)))
         self.assertEqual(
-            self.persist.get(persist_name), value,
-            "%r not set to %r in persist" % (persist_name, value))
+            getattr(self.identity, attr),
+            None,
+            "%r attribute should default to None, not %r"
+            % (attr, getattr(self.identity, attr)),
+        )
+        setattr(self.identity, attr, value)
+        self.assertEqual(
+            getattr(self.identity, attr),
+            value,
+            "%r attribute should be %r, not %r"
+            % (attr, value, getattr(self.identity, attr)),
+        )
+        self.assertEqual(
+            self.persist.get(persist_name),
+            value,
+            "%r not set to %r in persist" % (persist_name, value),
+        )
 
     def check_config_property(self, attr):
         value = "VALUE"
         setattr(self.config, attr, value)
-        self.assertEqual(getattr(self.identity, attr), value,
-                         "%r attribute should be %r, not %r" %
-                         (attr, value, getattr(self.identity, attr)))
+        self.assertEqual(
+            getattr(self.identity, attr),
+            value,
+            "%r attribute should be %r, not %r"
+            % (attr, value, getattr(self.identity, attr)),
+        )
 
     def test_secure_id(self):
-        self.check_persist_property("secure_id",
-                                    "registration.secure-id")
+        self.check_persist_property("secure_id", "registration.secure-id")
 
     def test_secure_id_as_unicode(self):
         """secure-id is expected to be retrieved as unicode."""
@@ -51,8 +62,7 @@ class IdentityTest(LandscapeTest):
         self.assertEqual(self.identity.secure_id, "spam")
 
     def test_insecure_id(self):
-        self.check_persist_property("insecure_id",
-                                    "registration.insecure-id")
+        self.check_persist_property("insecure_id", "registration.insecure-id")
 
     def test_computer_title(self):
         self.check_config_property("computer_title")
@@ -83,14 +93,14 @@ class RegistrationHandlerTestBase(LandscapeTest):
 
 
 class RegistrationHandlerTest(RegistrationHandlerTestBase):
-
     def test_server_initiated_id_changing(self):
         """
         The server must be able to ask a client to change its secure
         and insecure ids even if no requests were sent.
         """
         self.exchanger.handle_message(
-            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"},
+        )
         self.assertEqual(self.identity.secure_id, "abc")
         self.assertEqual(self.identity.insecure_id, "def")
 
@@ -101,7 +111,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"},
+        )
         reactor_fire_mock.assert_any_call("registration-done")
 
     def test_unknown_id(self):
@@ -120,9 +131,12 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Wu"
         self.mstore.set_accepted_types(["register"])
         self.exchanger.handle_message(
-            {"type": b"unknown-id", "clone-of": "Wu"})
-        self.assertIn("Client is clone of computer Wu",
-                      self.logfile.getvalue())
+            {"type": b"unknown-id", "clone-of": "Wu"},
+        )
+        self.assertIn(
+            "Client is clone of computer Wu",
+            self.logfile.getvalue(),
+        )
 
     def test_clone_secure_id_saved(self):
         """
@@ -134,7 +148,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Wu"
         self.mstore.set_accepted_types(["register"])
         self.exchanger.handle_message(
-            {"type": b"unknown-id", "clone-of": "Wu"})
+            {"type": b"unknown-id", "clone-of": "Wu"},
+        )
         self.assertEqual(self.handler._clone_secure_id, secure_id)
         self.assertIsNone(self.identity.secure_id)
 
@@ -148,7 +163,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.mstore.set_server_api(b"3.3")  # Note this is only for later api
         self.exchanger.handle_message(
-            {"type": b"unknown-id", "clone-of": "Wu"})
+            {"type": b"unknown-id", "clone-of": "Wu"},
+        )
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         self.assertEqual(messages[0]["clone_secure_id"], secure_id)
@@ -192,9 +208,11 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
         self.assertEqual("register", messages[0]["type"])
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "INFO: Queueing message to register with account "
-                         "'account_name' without a password.")
+        self.assertEqual(
+            self.logfile.getvalue().strip(),
+            "INFO: Queueing message to register with account "
+            "'account_name' without a password.",
+        )
 
     @mock.patch("landscape.client.broker.registration.get_vm_info")
     def test_queue_message_on_exchange_with_vm_info(self, get_vm_info_mock):
@@ -210,14 +228,18 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         self.assertEqual(b"vmware", messages[0]["vm-info"])
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "INFO: Queueing message to register with account "
-                         "'account_name' without a password.")
+        self.assertEqual(
+            self.logfile.getvalue().strip(),
+            "INFO: Queueing message to register with account "
+            "'account_name' without a password.",
+        )
         get_vm_info_mock.assert_called_once_with()
 
     @mock.patch("landscape.client.broker.registration.get_container_info")
     def test_queue_message_on_exchange_with_lxc_container(
-            self, get_container_info_mock):
+        self,
+        get_container_info_mock,
+    ):
         """
         If the client is running in an LXC container, the information is
         included in the registration message.
@@ -241,9 +263,11 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         password = messages[0]["registration_password"]
         self.assertEqual("SEKRET", password)
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "INFO: Queueing message to register with account "
-                         "'account_name' with a password.")
+        self.assertEqual(
+            self.logfile.getvalue().strip(),
+            "INFO: Queueing message to register with account "
+            "'account_name' with a password.",
+        )
 
     def test_queue_message_on_exchange_with_tags(self):
         """
@@ -254,14 +278,16 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.config.registration_key = "SEKRET"
-        self.config.tags = u"computer,tag"
+        self.config.tags = "computer,tag"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         self.assertEqual("computer,tag", messages[0]["tags"])
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "INFO: Queueing message to register with account "
-                         "'account_name' and tags computer,tag with a "
-                         "password.")
+        self.assertEqual(
+            self.logfile.getvalue().strip(),
+            "INFO: Queueing message to register with account "
+            "'account_name' and tags computer,tag with a "
+            "password.",
+        )
 
     def test_queue_message_on_exchange_with_invalid_tags(self):
         """
@@ -273,14 +299,16 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.config.registration_key = "SEKRET"
-        self.config.tags = u"<script>alert()</script>"
+        self.config.tags = "<script>alert()</script>"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         self.assertIs(None, messages[0]["tags"])
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "ERROR: Invalid tags provided for registration.\n    "
-                         "INFO: Queueing message to register with account "
-                         "'account_name' with a password.")
+        self.assertEqual(
+            self.logfile.getvalue().strip(),
+            "ERROR: Invalid tags provided for registration.\n    "
+            "INFO: Queueing message to register with account "
+            "'account_name' with a password.",
+        )
 
     def test_queue_message_on_exchange_with_unicode_tags(self):
         """
@@ -291,10 +319,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
         self.config.registration_key = "SEKRET"
-        self.config.tags = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
+        self.config.tags = "prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
-        expected = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
+        expected = "prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.assertEqual(expected, messages[0]["tags"])
 
         logs = self.logfile.getvalue().strip()
@@ -306,10 +334,12 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         # here, to circumvent that problem.
         if _PY3:
             logs = logs.encode("utf-8")
-        self.assertEqual(logs,
-                         b"INFO: Queueing message to register with account "
-                         b"'account_name' and tags prova\xc4\xb5o "
-                         b"with a password.")
+        self.assertEqual(
+            logs,
+            b"INFO: Queueing message to register with account "
+            b"'account_name' and tags prova\xc4\xb5o "
+            b"with a password.",
+        )
 
     def test_queue_message_on_exchange_with_access_group(self):
         """
@@ -318,15 +348,17 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         self.mstore.set_accepted_types(["register"])
         self.config.account_name = "account_name"
-        self.config.access_group = u"dinosaurs"
-        self.config.tags = u"server,london"
+        self.config.access_group = "dinosaurs"
+        self.config.tags = "server,london"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         self.assertEqual("dinosaurs", messages[0]["access_group"])
-        self.assertEqual(self.logfile.getvalue().strip(),
-                         "INFO: Queueing message to register with account "
-                         "'account_name' in access group 'dinosaurs' and "
-                         "tags server,london without a password.")
+        self.assertEqual(
+            self.logfile.getvalue().strip(),
+            "INFO: Queueing message to register with account "
+            "'account_name' in access group 'dinosaurs' and "
+            "tags server,london without a password.",
+        )
 
     def test_queue_message_on_exchange_with_empty_access_group(self):
         """
@@ -334,7 +366,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         an "access_group" key.
         """
         self.mstore.set_accepted_types(["register"])
-        self.config.access_group = u""
+        self.config.access_group = ""
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
         # Make sure the key does not appear in the outgoing message.
@@ -368,8 +400,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(messages[0]["type"], "register")
 
     def test_no_message_when_should_register_is_false(self):
-        """If we already have a secure id, do not queue a register message.
-        """
+        """If we already have a secure id, do not queue a register message."""
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
@@ -395,9 +426,12 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": b"registration", "info": b"unknown-account"})
+            {"type": b"registration", "info": b"unknown-account"},
+        )
         reactor_fire_mock.assert_called_with(
-            "registration-failed", reason="unknown-account")
+            "registration-failed",
+            reason="unknown-account",
+        )
 
     def test_registration_failed_event_max_pending_computers(self):
         """
@@ -407,9 +441,12 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": b"registration", "info": b"max-pending-computers"})
+            {"type": b"registration", "info": b"max-pending-computers"},
+        )
         reactor_fire_mock.assert_called_with(
-            "registration-failed", reason="max-pending-computers")
+            "registration-failed",
+            reason="max-pending-computers",
+        )
 
     def test_registration_failed_event_not_fired_when_uncertain(self):
         """
@@ -418,7 +455,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         reactor_fire_mock = self.reactor.fire = mock.Mock()
         self.exchanger.handle_message(
-            {"type": b"registration", "info": b"blah-blah"})
+            {"type": b"registration", "info": b"blah-blah"},
+        )
         for name, args, kwargs in reactor_fire_mock.mock_calls:
             self.assertNotEquals("registration-failed", args[0])
 
@@ -449,13 +487,15 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         # This should somehow callback the deferred.
         self.exchanger.handle_message(
-            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"},
+        )
 
         self.assertEqual(calls, [1])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
-            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"},
+        )
 
         self.assertEqual(calls, [1])
 
@@ -477,7 +517,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         # This should somehow callback the deferred.
         self.exchanger.handle_message(
-            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"})
+            {"type": b"set-id", "id": b"abc", "insecure-id": b"def"},
+        )
 
         self.assertEqual(results, [None])
 
@@ -502,13 +543,15 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         # This should somehow callback the deferred.
         self.exchanger.handle_message(
-            {"type": b"registration", "info": b"unknown-account"})
+            {"type": b"registration", "info": b"unknown-account"},
+        )
 
         self.assertEqual(calls, [True])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
-            {"type": b"registration", "info": b"unknown-account"})
+            {"type": b"registration", "info": b"unknown-account"},
+        )
 
         self.assertEqual(calls, [True])
 
@@ -534,13 +577,15 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         d.addErrback(add_call)
 
         self.exchanger.handle_message(
-            {"type": b"registration", "info": b"max-pending-computers"})
+            {"type": b"registration", "info": b"max-pending-computers"},
+        )
 
         self.assertEqual(calls, [True])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
-            {"type": b"registration", "info": b"max-pending-computers"})
+            {"type": b"registration", "info": b"max-pending-computers"},
+        )
 
         self.assertEqual(calls, [True])
 
@@ -575,9 +620,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
-    juju_contents = json.dumps({"environment-uuid": "DEAD-BEEF",
-                                "machine-id": "1",
-                                "api-addresses": "10.0.3.1:17070"})
+    juju_contents = json.dumps(
+        {
+            "environment-uuid": "DEAD-BEEF",
+            "machine-id": "1",
+            "api-addresses": "10.0.3.1:17070",
+        },
+    )
 
     def test_juju_info_added_when_present(self):
         """
@@ -593,10 +642,13 @@ class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
         messages = self.mstore.get_pending_messages()
         self.assertEqual(
-            {"environment-uuid": "DEAD-BEEF",
-             "machine-id": "1",
-             "api-addresses": ["10.0.3.1:17070"]},
-            messages[0]["juju-info"])
+            {
+                "environment-uuid": "DEAD-BEEF",
+                "machine-id": "1",
+                "api-addresses": ["10.0.3.1:17070"],
+            },
+            messages[0]["juju-info"],
+        )
 
     def test_juju_info_skipped_with_old_server(self):
         """

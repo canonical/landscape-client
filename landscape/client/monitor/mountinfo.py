@@ -1,11 +1,12 @@
 import codecs
-import time
 import os
+import time
 
 from landscape.client.accumulate import Accumulator
-from landscape.lib.disk import get_mount_info, is_device_removable
-from landscape.lib.monitor import CoverageMonitor
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.disk import get_mount_info
+from landscape.lib.disk import is_device_removable
+from landscape.lib.monitor import CoverageMonitor
 
 
 class MountInfo(MonitorPlugin):
@@ -48,7 +49,8 @@ class MountInfo(MonitorPlugin):
             create_time=self._create_time,
         )
         self.registry.reactor.call_every(
-            self._monitor_interval, self._monitor.log
+            self._monitor_interval,
+            self._monitor.log,
         )
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
         self.call_on_accepted("mount-info", self.send_messages, True)
@@ -86,7 +88,9 @@ class MountInfo(MonitorPlugin):
     def send_messages(self, urgent=False):
         for message in self.create_messages():
             d = self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent
+                message,
+                self._session_id,
+                urgent=urgent,
             )
             if message["type"] == "mount-info":
                 d.addCallback(lambda x: self.persist_mount_info())

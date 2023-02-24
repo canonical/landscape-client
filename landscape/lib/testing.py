@@ -1,8 +1,5 @@
-from __future__ import absolute_import
-
 import bisect
 import logging
-import os
 import os.path
 import re
 import shutil
@@ -10,18 +7,20 @@ import struct
 import sys
 import tempfile
 import unittest
+from logging import ERROR
+from logging import Formatter
+from logging import Handler
 
-
-from logging import Handler, ERROR, Formatter
-from twisted.trial.unittest import TestCase
-from twisted.python.compat import StringType
-from landscape.lib.compat import _PY3
-from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
+from twisted.python.compat import StringType
+from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase
 
+from landscape.lib.compat import _PY3
 from landscape.lib.compat import ConfigParser
-from landscape.lib.compat import stringio, cstringio
+from landscape.lib.compat import cstringio
+from landscape.lib.compat import stringio
 from landscape.lib.config import BaseConfiguration
 from landscape.lib.reactor import EventHandlingReactorMixin
 from landscape.lib.sysstats import LoginInfo
@@ -128,7 +127,11 @@ class FSTestCase(object):
             pass
 
     def makeDir(  # noqa: N802
-        self, suffix="", prefix="tmp", dirname=None, path=None
+        self,
+        suffix="",
+        prefix="tmp",
+        dirname=None,
+        path=None,
     ):
         """Create a temporary directory and return the path to it.
 
@@ -182,7 +185,8 @@ class ConfigTestCase(FSTestCase):
         second_parser.readfp(second_fp)
 
         self.assertEqual(
-            set(first_parser.sections()), set(second_parser.sections())
+            set(first_parser.sections()),
+            set(second_parser.sections()),
         )
         for section in first_parser.sections():
             self.assertEqual(
@@ -203,12 +207,12 @@ class TwistedTestCase(TestCase):
         if not result:
             self.fail(
                 "Success result expected on %r, found no result instead"
-                % (deferred,)
+                % (deferred,),
             )
         elif isinstance(result[0], Failure):
             self.fail(
                 "Success result expected on %r, "
-                "found failure result (%r) instead" % (deferred, result[0])
+                "found failure result (%r) instead" % (deferred, result[0]),
             )
         else:
             return result[0]
@@ -224,12 +228,12 @@ class TwistedTestCase(TestCase):
         if not result:
             self.fail(
                 "Failure result expected on %r, found no result instead"
-                % (deferred,)
+                % (deferred,),
             )
         elif not isinstance(result[0], Failure):
             self.fail(
                 "Failure result expected on %r, "
-                "found success result (%r) instead" % (deferred, result[0])
+                "found success result (%r) instead" % (deferred, result[0]),
             )
         else:
             return result[0]
@@ -245,7 +249,7 @@ class TwistedTestCase(TestCase):
         if result:
             self.fail(
                 "No result expected on %r, found %r instead"
-                % (deferred, result[0])
+                % (deferred, result[0]),
             )
 
     def assertDeferredSucceeded(self, deferred):  # noqa: N802
@@ -436,7 +440,7 @@ def append_login_data(
                 remote_ip_address[2],
                 remote_ip_address[3],
                 b"",
-            )
+            ),
         )
     finally:
         file.close()
@@ -476,7 +480,17 @@ class StubProcessFactory(object):
         childFDs=None,
     ):
         self.spawns.append(
-            (protocol, executable, args, env, path, uid, gid, usePTY, childFDs)
+            (
+                protocol,
+                executable,
+                args,
+                env,
+                path,
+                uid,
+                gid,
+                usePTY,
+                childFDs,
+            ),
         )
 
 
@@ -601,7 +615,7 @@ CapEff: 0000000000000000
             sample_data = """\
 /usr/sbin/%(process_name)s\0--pid-file\0/var/run/%(process_name)s.pid\0
 """ % {
-                "process_name": process_name
+                "process_name": process_name,
             }
         else:
             sample_data = ""

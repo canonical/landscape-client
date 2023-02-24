@@ -5,7 +5,6 @@ current_instance = None
 
 
 class TestPlugin(object):
-
     def __init__(self):
         self.sysinfo = None
         self.has_run = False

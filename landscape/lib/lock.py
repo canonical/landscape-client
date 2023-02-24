@@ -1,6 +1,6 @@
 import fcntl
-import time
 import os
+import time
 
 
 class LockError(Exception):
