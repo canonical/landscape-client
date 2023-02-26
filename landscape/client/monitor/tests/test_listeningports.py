@@ -37,13 +37,13 @@ class ListeningPortsTest(LandscapeTest):
 
     def test_run_interval(self):
         """
-        The L{UpdateManager} plugin will be scheduled to run every hour.
+        The L{ListeningPorts} plugin will be scheduled to run every hour.
         """
         self.assertEqual(60, self.plugin.run_interval)
 
     def test_run_immediately(self):
         """
-        The L{UpdateManager} plugin will be run immediately at startup.
+        The L{ListeningPorts} plugin will be run immediately at startup.
         """
         self.assertTrue(True, self.plugin.run_immediately)
 
