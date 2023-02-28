@@ -1,6 +1,4 @@
-import datetime
 from unittest import mock
-from zoneinfo import ZoneInfo
 
 from landscape.client.monitor.rkhunter import RKHunterInfo
 from landscape.client.tests.helpers import LandscapeTest

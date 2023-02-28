@@ -19,7 +19,7 @@ depends2:
 
 .PHONY: depends3
 depends3:
-	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl
+	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl python3-dateutil python3-pydantic
 
 all: build
 

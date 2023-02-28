@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from zoneinfo import ZoneInfo
+from dateutil import parser
 from unittest import TestCase
 from unittest.mock import patch
 from subprocess import run as run_orig
@@ -16,7 +16,7 @@ from landscape.lib.security import (
 )
 
 COMMON_VERSION = "8.4.3"
-COMMON_DATETIME = datetime(2028, 4, 28, 17, 44, 3, tzinfo=ZoneInfo("CET"))
+COMMON_DATETIME = parser.parse("28 apr 2028 17:44:03 CET")
 
 SAMPLE_RKHUNTER_VERSION = """Rootkit Hunter 8.4.3
 
@@ -518,7 +518,7 @@ class RKHunterLogTest(BaseTestCase):
         filename = self.makeFile(SAMPLE_RKHUNTER_LOG_1)
         rkinfo = RKHunterLogReader(filename)
         self.assertEqual(
-            rkinfo.get_last_log(),
+            rkinfo.get_last_log().dict(),
             RKHunterInfo(
                 version=COMMON_VERSION,
                 files_checked=145,
@@ -526,7 +526,7 @@ class RKHunterLogTest(BaseTestCase):
                 rootkit_checked=478,
                 rootkit_suspect=1,
                 timestamp=COMMON_DATETIME,
-            ),
+            ).dict(),
         )
 
     @patch(
@@ -539,7 +539,7 @@ class RKHunterLogTest(BaseTestCase):
         filename = self.makeFile(SAMPLE_RKHUNTER_LOG_2)
         rkinfo = RKHunterLogReader(filename)
         self.assertEqual(
-            rkinfo.get_last_log(),
+            rkinfo.get_last_log().dict(),
             RKHunterInfo(
                 version=COMMON_VERSION,
                 files_checked=145,
@@ -547,7 +547,7 @@ class RKHunterLogTest(BaseTestCase):
                 rootkit_checked=478,
                 rootkit_suspect=1,
                 timestamp=COMMON_DATETIME,
-            ),
+            ).dict(),
         )
 
     def test_read_rkhunter_info_log_partial_1(self):
