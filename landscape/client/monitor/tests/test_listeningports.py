@@ -4,7 +4,7 @@ from landscape.client.monitor.listeningports import ListeningPorts
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
 from landscape.lib.testing import LogKeeperHelper
-from landscape.lib.tests.test_security import sample_listening_ports_canonical
+from landscape.lib.tests.test_security import sample_listening_ports_dict
 from landscape.lib.tests.test_security import sample_subprocess_run
 
 
@@ -73,14 +73,14 @@ class ListeningPortsTest(LandscapeTest):
             "Queueing message with updated listening-ports status.",
             self.logfile.getvalue(),
         )
-        canonical_sample = sample_listening_ports_canonical()
+        dict_sample = sample_listening_ports_dict()
         self.assertMessages(
             self.mstore.get_pending_messages(),
-            [{"type": "listening-ports-info", "ports": canonical_sample}],
+            [{"type": "listening-ports-info", "ports": dict_sample}],
         )
         self.mstore.delete_all_messages()
         self.plugin.send_message()
         self.assertMessages(
             self.mstore.get_pending_messages(),
-            canonical_sample,
+            dict_sample,
         )

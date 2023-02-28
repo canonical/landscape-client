@@ -20,7 +20,7 @@ class ListeningPorts(MonitorPlugin):
 
         message = {
             "type": "listening-ports-info",
-            "ports": [port.canonical for port in ports],
+            "ports": [port.dict() for port in ports],
         }
         logging.info(
             "Queueing message with updated " "listening-ports status.",

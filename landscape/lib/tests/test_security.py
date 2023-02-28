@@ -4,6 +4,8 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from landscape.lib import testing
+from landscape.lib.security import lsof_cmd
+from landscape.lib.security import awk_cmd
 from landscape.lib.security import get_listeningports
 from landscape.lib.security import ListeningPort
 
@@ -225,12 +227,18 @@ def sample_listening_ports():
     listening = []
     for listeningport in EXPECTED_AWK_OUTPUT.splitlines():
         args = listeningport.split(" ")
-        listening.append(ListeningPort(*args))
+        listening.append(
+            ListeningPort(
+                **dict(
+                    zip(["cmd", "pid", "user", "kind", "mode", "port"], args)
+                )
+            )
+        )
     return listening
 
 
-def sample_listening_ports_canonical():
-    return [port.canonical for port in sample_listening_ports()]
+def sample_listening_ports_dict():
+    return [port.dict() for port in sample_listening_ports()]
 
 
 class BaseTestCase(
@@ -246,43 +254,37 @@ class ListeningPortsTest(BaseTestCase):
 
     def test_analyze_object_behaviour(self):
         listening1 = ListeningPort(
-            "cmd",
-            "pid",
-            "user",
-            "kind",
-            "mode",
-            "port",
+            cmd="cmd",
+            pid=1234,
+            user="user",
+            kind="kind",
+            mode="mode",
+            port=5678,
         )
         listening2 = ListeningPort(
-            "cmd",
-            "pid",
-            "user",
-            "kind",
-            "mode",
-            "port",
+            cmd="cmd",
+            pid=1234,
+            user="user",
+            kind="kind",
+            mode="mode",
+            port=5678,
         )
         self.assertEqual(listening1, listening2)
 
         listening3 = ListeningPort(
-            "cmdX",
-            "pid",
-            "user",
-            "kind",
-            "mode",
-            "port",
+            cmd="cmdX",
+            pid=1234,
+            user="user",
+            kind="kind",
+            mode="mode",
+            port=5678,
         )
         self.assertNotEqual(listening1, listening3)
 
-        can = listening1.canonical
-        for val in ["cmd", "pid", "user", "kind", "mode", "port"]:
-            attr = getattr(listening1, val)
-            self.assertEqual(attr, val)
-            self.assertEqual(attr, can[val])
-
     def test_cmd_exists_and_executable(self):
         assert os.access(echo_cmd, os.X_OK)
-        assert os.access(ListeningPort.lsof_cmd, os.X_OK)
-        assert os.access(ListeningPort.awk_cmd, os.X_OK)
+        assert os.access(lsof_cmd, os.X_OK)
+        assert os.access(awk_cmd, os.X_OK)
 
     @patch("landscape.lib.security.subprocess.run", sample_subprocess_run)
     def test_listeningports(self):
@@ -291,10 +293,10 @@ class ListeningPortsTest(BaseTestCase):
         listening = get_listeningports()
         self.assertEqual(listening, get_listeningports())
 
-        listening_test_canonical = [port.canonical for port in listening_test]
-        listening_canonical = [port.canonical for port in listening]
-        self.assertEqual(listening_test_canonical, listening_canonical)
+        listening_test_dict = [port.dict() for port in listening_test]
+        listening_dict = [port.dict() for port in listening]
+        self.assertEqual(listening_test_dict, listening_dict)
         self.assertEqual(
-            sample_listening_ports_canonical(),
-            listening_canonical,
+            sample_listening_ports_dict(),
+            listening_dict,
         )
