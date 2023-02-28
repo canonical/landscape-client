@@ -1,6 +1,6 @@
 from unittest import mock
 
-from landscape.client.monitor.rkhunter import RKHunterInfo
+from landscape.client.monitor.rkhunterinfo import RKHunterInfo
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
 from landscape.lib.testing import LogKeeperHelper
