@@ -16,7 +16,9 @@ from landscape.lib.security import (
 )
 
 COMMON_VERSION = "8.4.3"
-COMMON_DATETIME = parser.parse("28 apr 2028 17:44:03 CET")
+COMMON_DATETIME = parser.parse(
+    "28 apr 2028 17:44:03 CET", tzinfos=RKHunterLogReader.tzmapping
+)
 
 SAMPLE_RKHUNTER_VERSION = """Rootkit Hunter 8.4.3
 

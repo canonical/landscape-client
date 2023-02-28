@@ -1,7 +1,7 @@
 import os
 import re
 import logging
-from dateutil import parser
+from dateutil import parser, tz
 from datetime import datetime
 import subprocess
 from pydantic import BaseModel, validator
@@ -78,6 +78,12 @@ class RKHunterInfo(BaseModel):
 
 
 class RKHunterBase:
+
+    tzmapping = {
+        "CET": tz.gettz("Europe/Berlin"),
+        "CEST": tz.gettz("Europe/Berlin"),
+    }
+
     def get_version(self):
         ps = subprocess.run(
             [rkhunter_cmd, "--version"],
@@ -92,7 +98,7 @@ class RKHunterBase:
         if found:
             if is_timestamp:
                 ts = " ".join(found.groups()[-1].split(" ")[-5:])
-                return parser.parse(ts)
+                return parser.parse(ts, tzinfos=self.tzmapping)
 
             else:
                 return int(found.groups()[-1])
