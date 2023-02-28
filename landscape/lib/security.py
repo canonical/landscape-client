@@ -1,3 +1,7 @@
+import os
+import re
+from dateutil import parser
+from datetime import datetime
 import subprocess
 from pydantic import BaseModel, validator
 
@@ -5,23 +9,16 @@ __all__ = ["get_listeningports"]
 
 lsof_cmd = "/usr/bin/lsof"
 awk_cmd = "/usr/bin/awk"
+rkhunter_cmd = "/usr/bin/rkhunter"
 
 
 class ListeningPort(BaseModel):
     cmd: str
-    pid: str
+    pid: int
     user: str
     kind: str
     mode: str
-    port: str
-
-    @validator("pid")
-    def pid_must_be_integer(cls, v):  # noqa: N805
-        return str(int(v))
-
-    @validator("port")
-    def port_must_be_integer(cls, v):  # noqa:N805
-        return str(int(v))
+    port: int
 
 
 def get_listeningports():
@@ -64,3 +61,125 @@ def get_listeningports():
         )
 
     return ports
+
+
+class RKHunterInfo(BaseModel):
+    timestamp: str
+    files_checked: int
+    files_suspect: int
+    rootkit_checked: int
+    rootkit_suspect: int
+    version: str
+
+    @validator("timestamp", pre=True)
+    def timesgtamp_validate(cls, timestamp):  # noqa: N805
+        return timestamp.isoformat()
+
+
+class RKHunterBase:
+    def get_version(self):
+        ps = subprocess.run(
+            [rkhunter_cmd, "--version"],
+            check=True,
+            capture_output=True,
+        )
+        firstline = ps.stdout.decode("utf-8").split("\n")[0].strip()
+        return firstline.split(" ")[-1]
+
+    def _extract(self, regex, line, is_timestamp):
+        found = re.search(regex, line)
+        if found:
+            if is_timestamp:
+                ts = " ".join(found.groups()[-1].split(" ")[-5:])
+                return parser.parse(ts)
+
+            else:
+                return int(found.groups()[-1])
+        else:
+            return None
+
+    def _analize(self, lines, from_log=False):
+        info = {
+            "files_checked": r"^((\[.*\])|)\ *Files checked: (.*?)$",
+            "files_suspect": r"^((\[.*\])|)\ *Suspect files: (.*?)$",
+            "rootkit_checked": r"^((\[.*\])|)\ *Rootkits checked\ : (.*?)$",
+            "rootkit_suspect": r"^((\[.*\])|)\ *Possible rootkits: (.*?)$",
+        }
+
+        # Read timestamp from log
+        if from_log:
+            info["timestamp"] = r"^\[.*\]\ Info: End date is (.*?)$"
+
+        result = {}
+        for line in lines:
+            if from_log:
+                line = line.split("\n")[0]
+            for key, value in info.items():
+                if key not in result.keys():
+                    found = self._extract(value, line, key == "timestamp")
+                    if found is not None:
+                        result[key] = found
+                        if len(result) == len(info):
+                            # We got all of them
+                            break
+        return result
+
+
+class RKHunterLogReader(RKHunterBase):
+    def __init__(self, filename="/var/log/rkhunter.log"):
+        self._filename = filename
+
+    def get_last_log(self):
+
+        # Get version
+        version = self.get_version()
+
+        # Get file size
+        size = os.stat(self._filename).st_size
+
+        with open(self._filename, "r") as file:
+
+            # Read last 1024 bytes or whatever we find if it less in reverse
+            file.seek(size - min(size, 1024))
+            lines = file.readlines()
+            lines.reverse()
+
+            # Analize lines
+            result = self._analize(lines, from_log=True)
+
+        # We expect 5 fields found
+        if len(result) == 5:
+            return RKHunterInfo(version=version, **result)
+        else:
+            return None
+
+
+class RKHunterLiveInfo(RKHunterBase):
+    WARNING_CHECK_LST = [
+        "Checking for hidden files and directories",
+        "Checking for prerequisites",
+        "Checking if SSH root access is allowed",
+    ]
+
+    def execute(self):
+
+        # Get version
+        version = self.get_version()
+
+        # Execute rkhunter
+        ps = subprocess.run(
+            [rkhunter_cmd, "-c", "--sk", "--nocolors", "--noappend-log"],
+            check=True,
+            capture_output=True,
+        )
+        lines = ps.stdout.decode("utf-8").strip()
+
+        result = self._analize(lines.split("\n"))
+
+        # We expect 4 fields found
+        if len(result) == 4:
+            return RKHunterInfo(
+                timestamp=datetime.now(), version=version, **result
+            )
+        else:
+            return None

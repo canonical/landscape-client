@@ -1,21 +1,23 @@
+import datetime
 from unittest import mock
+from zoneinfo import ZoneInfo
 
-from landscape.client.monitor.listeningports import ListeningPorts
+from landscape.client.monitor.rkhunter import RKHunterInfo
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
 from landscape.lib.testing import LogKeeperHelper
-from landscape.lib.tests.test_security_listeningports import (
-    sample_listening_ports_dict,
-)
-from landscape.lib.tests.test_security_listeningports import (
-    sample_subprocess_run,
+from landscape.lib.tests.test_security_rkhunter import (
+    sample_subprocess_run_scan,
+    COMMON_VERSION,
+    COMMON_DATETIME,
+    SAMPLE_RKHUNTER_LOG_2,
 )
 
 
-class ListeningPortsTest(LandscapeTest):
+class RKHunterTest(LandscapeTest):
     """
-    Tests relating to the L{ListeningPortsTest} monitoring plug-in, which
-    should notice changes to listening ports and report these back to
+    Tests relating to the L{RKHunterTest} monitoring plug-in, which should
+    notice changes to suspicious files and report these back to
     landscape server.
     """
 
@@ -23,11 +25,13 @@ class ListeningPortsTest(LandscapeTest):
 
     def setUp(self):
         super().setUp()
-        self.plugin = ListeningPorts()
+        self.plugin = RKHunterInfo(self.makeFile(SAMPLE_RKHUNTER_LOG_2))
         self.monitor.add(self.plugin)
-        self.mstore.set_accepted_types(["listening-ports-info"])
+        self.mstore.set_accepted_types(["rkhunter-info"])
 
-    @mock.patch("landscape.lib.security.subprocess.run", sample_subprocess_run)
+    @mock.patch(
+        "landscape.lib.security.subprocess.run", sample_subprocess_run_scan
+    )
     def test_resynchronize(self):
         """
         The "resynchronize" reactor message cause the plugin to send fresh
@@ -41,17 +45,19 @@ class ListeningPortsTest(LandscapeTest):
 
     def test_run_interval(self):
         """
-        The L{ListeningPorts} plugin will be scheduled to run every hour.
+        The L{RKHunter} plugin will be scheduled to run every hour.
         """
-        self.assertEqual(60, self.plugin.run_interval)
+        self.assertEqual(86400, self.plugin.run_interval)
 
     def test_run_immediately(self):
         """
-        The L{ListeningPorts} plugin will be run immediately at startup.
+        The L{RKHunter} plugin will be run immediately at startup.
         """
         self.assertTrue(True, self.plugin.run_immediately)
 
-    @mock.patch("landscape.lib.security.subprocess.run", sample_subprocess_run)
+    @mock.patch(
+        "landscape.lib.security.subprocess.run", sample_subprocess_run_scan
+    )
     def test_run(self):
         """
         If the server can accept them, the plugin should send
@@ -66,7 +72,9 @@ class ListeningPortsTest(LandscapeTest):
         self.mstore.set_accepted_types([])
         self.plugin.run()
 
-    @mock.patch("landscape.lib.security.subprocess.run", sample_subprocess_run)
+    @mock.patch(
+        "landscape.lib.security.subprocess.run", sample_subprocess_run_scan
+    )
     def test_send_message(self):
         """
         A new C{"listening-ports-info"} message should be enqueued if and only
@@ -74,13 +82,21 @@ class ListeningPortsTest(LandscapeTest):
         """
         self.plugin.send_message()
         self.assertIn(
-            "Queueing message with updated listening-ports status.",
+            "Queueing message with updated rkhunter status.",
             self.logfile.getvalue(),
         )
-        dict_sample = sample_listening_ports_dict()
+        dict_sample = {
+            "version": COMMON_VERSION,
+            "files_checked": 145,
+            "files_suspect": 48,
+            "rootkit_checked": 478,
+            "rootkit_suspect": 1,
+            "timestamp": COMMON_DATETIME.isoformat(),
+        }
+
         self.assertMessages(
             self.mstore.get_pending_messages(),
-            [{"type": "listening-ports-info", "ports": dict_sample}],
+            [{"type": "rkhunter-info", "report": dict_sample}],
         )
         self.mstore.delete_all_messages()
         self.plugin.send_message()

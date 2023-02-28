@@ -6,7 +6,8 @@ ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo",
                "Temperature", "PackageMonitor", "UserMonitor",
                "RebootRequired", "AptPreferences", "NetworkActivity",
                "NetworkDevice", "UpdateManager", "CPUUsage", "SwiftUsage",
-               "CephUsage", "ComputerTags", "UbuntuProInfo", "ListeningPorts"]
+               "CephUsage", "ComputerTags", "UbuntuProInfo", "ListeningPorts",
+               "RKHunterInfo"]
 
 
 class MonitorConfiguration(Configuration):

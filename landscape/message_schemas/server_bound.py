@@ -20,8 +20,7 @@ __all__ = [
     "REBOOT_REQUIRED_INFO", "UPDATE_MANAGER_INFO", "CPU_USAGE",
     "CEPH_USAGE", "SWIFT_USAGE", "SWIFT_DEVICE_INFO", "KEYSTONE_TOKEN",
     "JUJU_UNITS_INFO", "CLOUD_METADATA", "COMPUTER_TAGS", "UBUNTU_PRO_INFO",
-    "LISTENING_PORTS_INFO",
-    ]
+    "LISTENING_PORTS_INFO", "RKHUNTER_INFO"]
 
 
 # When adding a new schema, which deprecates an older schema, the recommended
@@ -518,8 +517,24 @@ UBUNTU_PRO_INFO = Message(
 
 LISTENING_PORTS_INFO = Message(
     "listening-ports-info",
-    {"ports": List(Dict(Bytes(), Unicode()))},
+    {"ports": List(KeyDict({"cmd": Unicode(),
+                            "pid": Int(),
+                            "user": Unicode(),
+                            "kind": Unicode(),
+                            "mode": Unicode(),
+                            "port": Int()}))},
 )
+
+RKHUNTER_INFO = Message(
+    "rkhunter-info",
+    {"report": KeyDict({"timestamp": Unicode(),
+                        "files_checked": Int(),
+                        "files_suspect": Int(),
+                        "rootkit_checked": Int(),
+                        "rootkit_suspect": Int(),
+                        "version": Unicode()})},
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
     OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
@@ -534,4 +549,4 @@ message_schemas = (
     REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
     CEPH_USAGE, SWIFT_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
     JUJU_UNITS_INFO, CLOUD_METADATA, COMPUTER_TAGS, UBUNTU_PRO_INFO,
-    LISTENING_PORTS_INFO)
+    LISTENING_PORTS_INFO, RKHUNTER_INFO)
