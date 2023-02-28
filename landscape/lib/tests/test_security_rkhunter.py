@@ -503,6 +503,14 @@ class BaseTestCase(
 class RKHunterLogTest(BaseTestCase):
     """Test for parsing /var/log/rkhunter.log"""
 
+    def test_read_non_existing_file(self):
+        rkinfo = RKHunterLogReader("ABC")
+        self.assertEqual(rkinfo.get_last_log(), None)
+
+    def test_read_non_permissions_file(self):
+        rkinfo = RKHunterLogReader("/root/abc")
+        self.assertEqual(rkinfo.get_last_log(), None)
+
     def test_read_empty_file(self):
         filename = self.makeFile("")
         rkinfo = RKHunterLogReader(filename)

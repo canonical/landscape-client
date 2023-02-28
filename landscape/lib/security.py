@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from dateutil import parser
 from datetime import datetime
 import subprocess
@@ -135,17 +136,30 @@ class RKHunterLogReader(RKHunterBase):
         version = self.get_version()
 
         # Get file size
-        size = os.stat(self._filename).st_size
+        try:
+            size = os.stat(self._filename).st_size
+        except FileNotFoundError as e:
+            logging.warning(f"RKHunter log not found at {self._filename}: {e}")
+            size = None
+        except PermissionError as e:
+            logging.warning(
+                "Couldn't read RKHunter's log. Permission denied while "
+                f"accesing to {self._filename}: {e}"
+            )
+            size = None
 
-        with open(self._filename, "r") as file:
+        if size is not None:
+            with open(self._filename, "r") as file:
 
-            # Read last 1024 bytes or whatever we find if it less in reverse
-            file.seek(size - min(size, 1024))
-            lines = file.readlines()
-            lines.reverse()
+                # Read last 1024 bytes or whatever is left in reverse
+                file.seek(size - min(size, 1024))
+                lines = file.readlines()
+                lines.reverse()
 
-            # Analize lines
-            result = self._analize(lines, from_log=True)
+                # Analize lines
+                result = self._analize(lines, from_log=True)
+        else:
+            result = []
 
         # We expect 5 fields found
         if len(result) == 5:
