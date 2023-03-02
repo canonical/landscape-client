@@ -301,7 +301,7 @@ class FormatTest(unittest.TestCase):
         self.assertEqual(output, ">>Header1: Value1\n" ">>Header2: Value2")
 
     def test_parallel_and_stacked_headers(self):
-        headers = [("Header%d" % i, "Value%d" % i) for i in range(1, 6)]
+        headers = [(f"Header{i:d}", f"Value{i:d}") for i in range(1, 6)]
         output = format_sysinfo(headers)
         self.assertEqual(
             output,
@@ -345,7 +345,7 @@ class FormatTest(unittest.TestCase):
             format_sysinfo(
                 notes=["Something's wrong", "You should look at it", "Really"],
             ),
-            "=> Something's wrong\n" "=> You should look at it\n" "=> Really",
+            "=> Something's wrong\n=> You should look at it\n=> Really",
         )
 
     def test_indented_notes(self):
@@ -376,7 +376,7 @@ class FormatTest(unittest.TestCase):
         # Still dumb.
         self.assertEqual(
             format_sysinfo(footnotes=["Graphs at http://...", "Lunch at ..."]),
-            "Graphs at http://...\n" "Lunch at ...",
+            "Graphs at http://...\nLunch at ...",
         )
 
     def test_indented_footnotes(self):
@@ -386,7 +386,7 @@ class FormatTest(unittest.TestCase):
                 footnotes=["Graphs at http://...", "Lunch at ..."],
                 indent=">>",
             ),
-            ">>Graphs at http://...\n" ">>Lunch at ...",
+            ">>Graphs at http://...\n>>Lunch at ...",
         )
 
     def test_header_and_footnote(self):
@@ -396,7 +396,7 @@ class FormatTest(unittest.TestCase):
                 headers=[("Header", "Value")],
                 footnotes=["Footnote"],
             ),
-            "Header: Value\n" "\n" "Footnote",
+            "Header: Value\n\nFootnote",
         )
 
     def test_header_note_and_footnote(self):
@@ -407,7 +407,7 @@ class FormatTest(unittest.TestCase):
                 notes=["Note"],
                 footnotes=["Footnote"],
             ),
-            "Header: Value\n" "\n" "=> Note\n" "\n" "Footnote",
+            "Header: Value\n\n=> Note\n\nFootnote",
         )
 
     def test_indented_headers_notes_and_footnotes(self):

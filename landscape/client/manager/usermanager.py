@@ -69,7 +69,7 @@ class UserManager(ManagerPlugin):
                         if parts[1].startswith("!"):
                             locked_users.append(parts[0].strip())
             except OSError as e:
-                logging.error("Error reading shadow file. %s" % e)
+                logging.error(f"Error reading shadow file. {e}")
         return locked_users
 
     def _message_dispatch(self, message):

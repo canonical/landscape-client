@@ -201,7 +201,7 @@ class PackageTaskHandler:
                 # The appropriate database is there but broken,
                 # let's remove it and go on
                 logging.warning(
-                    "Invalid hash=>id database %s" % hash_id_db_filename,
+                    f"Invalid hash=>id database {hash_id_db_filename}",
                 )
                 os.remove(hash_id_db_filename)
                 return
@@ -235,8 +235,7 @@ class PackageTaskHandler:
             except KeyError:
                 logging.warning(
                     warning
-                    % "missing code-name key in %s"
-                    % self.lsb_release_filename,
+                    % f"missing code-name key in {self.lsb_release_filename}",
                 )
                 return None
 
@@ -299,7 +298,7 @@ def run_task_handler(cls, args, reactor=None):
     except LockError:
         if config.quiet:
             raise SystemExit()
-        raise SystemExit("error: package %s is already running" % program_name)
+        raise SystemExit(f"error: package {program_name} is already running")
 
     words = re.findall("[A-Z][a-z]+", cls.__name__)
     init_logging(config, "-".join(word.lower() for word in words))

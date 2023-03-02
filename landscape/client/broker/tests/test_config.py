@@ -101,7 +101,7 @@ class ConfigurationTests(LandscapeTest):
         to a list (it must be a string). See bug #1228301.
         """
         filename = self.makeFile(
-            "[client]\n" "tags = check,linode,profile-test",
+            "[client]\ntags = check,linode,profile-test",
         )
 
         configuration = BrokerConfiguration()
@@ -114,7 +114,7 @@ class ConfigurationTests(LandscapeTest):
         The 'access_group' value specified in the configuration file is
         passed through.
         """
-        filename = self.makeFile("[client]\n" "access_group = webserver")
+        filename = self.makeFile("[client]\naccess_group = webserver")
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])

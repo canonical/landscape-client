@@ -155,12 +155,12 @@ class PackageReporter(PackageTaskHandler):
 
             def fetch_ok(data):
                 create_binary_file(hash_id_db_filename, data)
-                logging.info("Downloaded hash=>id database from %s" % url)
+                logging.info(f"Downloaded hash=>id database from {url}")
 
             def fetch_error(failure):
                 exception = failure.value
                 logging.warning(
-                    "Couldn't download hash=>id database: %s" % str(exception),
+                    f"Couldn't download hash=>id database: {str(exception)}",
                 )
 
             if url.startswith("https"):
@@ -280,7 +280,7 @@ class PackageReporter(PackageTaskHandler):
                 and uid == UID_ROOT
             ):
                 logging.info(
-                    "Found ubuntu-release-upgrader running (pid: %s)" % (pid),
+                    f"Found ubuntu-release-upgrader running (pid: {pid})",
                 )
                 return True
         return False
@@ -321,22 +321,22 @@ class PackageReporter(PackageTaskHandler):
 
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
-                    "'%s' exited with status %d (out='%s', err='%s')"
-                    % (self.apt_update_filename, code, out, err),
+                    f"'{self.apt_update_filename}' exited with "
+                    f"status {code:d} (out='{out}', err='{err}')",
                 )
 
                 if code != 0:
                     if code == 100:
                         if retry < len(LOCK_RETRY_DELAYS) - 1:
                             logging.warning(
-                                "Could not acquire the apt lock. Retrying in"
-                                " %s seconds." % LOCK_RETRY_DELAYS[retry + 1],
+                                "Could not acquire the apt lock. Retrying in "
+                                f"{LOCK_RETRY_DELAYS[retry + 1]} seconds.",
                             )
                             continue
 
                     logging.warning(
-                        "'%s' exited with status %d (%s)"
-                        % (self.apt_update_filename, code, err),
+                        f"'{self.apt_update_filename}' exited with "
+                        f"status {code:d} ({err})",
                     )
 
                     # Errors caused by missing cache files are acceptable,
@@ -352,11 +352,9 @@ class PackageReporter(PackageTaskHandler):
                 elif not self._facade.get_channels():
                     code = 1
                     err = (
-                        "There are no APT sources configured in %s or %s."
-                        % (
-                            self.sources_list_filename,
-                            self.sources_list_directory,
-                        )
+                        "There are no APT sources configured "
+                        f"in {self.sources_list_filename} "
+                        f"or {self.sources_list_directory}."
                     )
 
                 yield self._broker.call_if_accepted(
@@ -369,8 +367,7 @@ class PackageReporter(PackageTaskHandler):
                 yield returnValue((out, err, code))
         else:
             logging.debug(
-                "'%s' didn't run, conditions not met"
-                % self.apt_update_filename,
+                f"'{self.apt_update_filename}' didn't run, conditions not met",
             )
             yield returnValue(("", "", 0))
 
@@ -438,8 +435,8 @@ class PackageReporter(PackageTaskHandler):
         self._store.set_hash_ids(hash_ids)
 
         logging.info(
-            "Received %d package hash => id translations, %d hashes "
-            "are unknown." % (len(hash_ids), len(unknown_hashes)),
+            f"Received {len(hash_ids):d} package hash => "
+            f"id translations, {len(unknown_hashes):d} hashes are unknown.",
         )
 
         if unknown_hashes:
@@ -491,8 +488,8 @@ class PackageReporter(PackageTaskHandler):
 
         if packages:
             logging.info(
-                "Queuing messages with data for %d packages to "
-                "exchange urgently." % len(packages),
+                f"Queuing messages with data for {len(packages):d} packages "
+                "to exchange urgently.",
             )
 
             message = {"type": "add-packages", "packages": packages}
@@ -510,8 +507,7 @@ class PackageReporter(PackageTaskHandler):
         def _remove_it(hash_id_db_filename):
             if hash_id_db_filename and os.path.exists(hash_id_db_filename):
                 logging.warning(
-                    "Removing cached hash=>id database %s",
-                    hash_id_db_filename,
+                    f"Removing cached hash=>id database {hash_id_db_filename}",
                 )
                 os.remove(hash_id_db_filename)
 
@@ -577,7 +573,7 @@ class PackageReporter(PackageTaskHandler):
 
             logging.info(
                 "Queuing request for package hash => id "
-                "translation on %d hash(es)." % len(unknown_hashes),
+                f"translation on {len(unknown_hashes):d} hash(es).",
             )
 
             message = {
@@ -650,7 +646,7 @@ class PackageReporter(PackageTaskHandler):
         status_file = apt_pkg.config.find_file("dir::state::status")
         lists_dir = apt_pkg.config.find_dir("dir::state::lists")
         files = [status_file, lists_dir]
-        files.extend(glob.glob("%s/*Packages" % lists_dir))
+        files.extend(glob.glob(f"{lists_dir}/*Packages"))
 
         last_checked = os.stat(stamp_file).st_mtime
         for f in files:
@@ -828,29 +824,18 @@ class PackageReporter(PackageTaskHandler):
 
         logging.info(
             "Queuing message with changes in known packages: "
-            "%(installed)d installed, %(available)d available, "
-            "%(upgrades)d available upgrades, %(locked)d locked, "
-            "%(auto)d autoremovable, %(security)d security, "
-            "%(not_installed)d not installed, "
-            "%(not_available)d not available, "
-            "%(not_upgrades)d not available upgrades, "
-            "%(not_locked)d not locked, "
-            "%(not_auto)d not autoremovable, "
-            "%(not_security)d not security.",
-            dict(
-                installed=len(new_installed),
-                available=len(new_available),
-                upgrades=len(new_upgrades),
-                locked=len(new_locked),
-                auto=len(new_autoremovable),
-                not_installed=len(not_installed),
-                not_available=len(not_available),
-                not_upgrades=len(not_upgrades),
-                not_locked=len(not_locked),
-                not_auto=len(not_autoremovable),
-                security=len(new_security),
-                not_security=len(not_security),
-            ),
+            f"{len(new_installed):d} installed, "
+            f"{len(new_available):d} available, "
+            f"{len(new_upgrades):d} available upgrades, "
+            f"{len(new_locked):d} locked, "
+            f"{len(new_autoremovable):d} autoremovable, "
+            f"{len(new_security):d} security, "
+            f"{len(not_installed):d} not installed, "
+            f"{len(not_available):d} not available, "
+            f"{len(not_upgrades):d} not available upgrades, "
+            f"{len(not_locked):d} not locked, "
+            f"{len(not_autoremovable):d} not autoremovable, "
+            f"{len(not_security):d} not security.",
         )
 
         def update_currently_known(result):

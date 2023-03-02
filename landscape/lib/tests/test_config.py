@@ -60,7 +60,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         )
         config = "\n".join(
             [f"[{section_name}]"]
-            + ["%s = %s" % pair for pair in kwargs.items()],
+            + [f"{key} = {value}" for (key, value) in kwargs.items()],
         )
         self.config_filename = self.makeFile(config)
         self.config.default_config_filenames[:] = [self.config_filename]
@@ -430,7 +430,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
             )
         self.assertEqual(
             str(cm.exception),
-            "error: config file %s can't be read" % filename,
+            f"error: config file {filename} can't be read",
         )
 
     def test_load_cannot_read(self):
@@ -444,7 +444,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
             self.config.load(["--config", filename])
         self.assertEqual(
             str(cm.exception),
-            "error: config file %s can't be read" % filename,
+            f"error: config file {filename} can't be read",
         )
 
     def test_load_not_found(self):
@@ -457,7 +457,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
             self.config.load(["--config", filename])
         self.assertEqual(
             str(cm.exception),
-            "error: config file %s can't be read" % filename,
+            f"error: config file {filename} can't be read",
         )
 
     def test_load_cannot_read_default(self):
@@ -472,7 +472,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
             self.config.load([])
         self.assertEqual(
             str(cm.exception),
-            "error: config file %s can't be read" % default,
+            f"error: config file {default} can't be read",
         )
 
     def test_load_not_found_default(self):
@@ -485,7 +485,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
             self.config.load([])
         self.assertEqual(
             str(cm.exception),
-            "error: config file %s can't be read" % default,
+            f"error: config file {default} can't be read",
         )
 
     def test_load_cannot_read_many_defaults(self):

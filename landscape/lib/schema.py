@@ -93,7 +93,7 @@ class Bytes:
         if isinstance(value, str):
             return value.encode()
 
-        raise InvalidError("%r isn't a bytestring" % value)
+        raise InvalidError(f"{value!r} isn't a bytestring")
 
 
 class Unicode:
@@ -138,8 +138,7 @@ class List:
                 new_list[i] = self.schema.coerce(subvalue)
             except InvalidError as e:
                 raise InvalidError(
-                    "%r could not coerce with %s: %s"
-                    % (subvalue, self.schema, e),
+                    f"{subvalue!r} could not coerce with {self.schema}: {e}",
                 )
         return new_list
 
@@ -159,8 +158,8 @@ class Tuple:
             raise InvalidError(f"{value!r} is not a tuple")
         if len(value) != len(self.schema):
             raise InvalidError(
-                "Need %s items, got %s in %r"
-                % (len(self.schema), len(value), value),
+                f"Need {len(self.schema)} items, "
+                f"got {len(value)} in {value!r}",
             )
         new_value = []
         for schema, value in zip(self.schema, value):
@@ -196,8 +195,8 @@ class KeyDict:
                 new_dict[k] = self.schema[k].coerce(v)
             except InvalidError as e:
                 raise InvalidError(
-                    "Value of %r key of dict %r could not coerce with %s: %s"
-                    % (k, value, self.schema[k], e),
+                    f"Value of {k!r} key of dict {value!r} could not coerce "
+                    f"with {self.schema[k]}: {e}",
                 )
         new_keys = set(new_dict.keys())
         required_keys = set(self.schema.keys()) - self.optional

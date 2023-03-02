@@ -35,8 +35,10 @@ class DependencyError(Exception):
         self.packages = packages
 
     def __str__(self):
-        return "Missing dependencies: %s" % ", ".join(
-            [str(package) for package in self.packages],
+        return "Missing dependencies: {}".format(
+            ", ".join(
+                [str(package) for package in self.packages],
+            ),
         )
 
 
@@ -253,8 +255,7 @@ class AptFacade:
                     self._cache.update()
             except apt.cache.FetchFailedException:
                 raise ChannelError(
-                    "Apt failed to reload channels (%r)"
-                    % (self.get_channels()),
+                    f"Apt failed to reload channels ({self.get_channels()!r})",
                 )
             self._cache.open(None)
 
@@ -307,7 +308,7 @@ class AptFacade:
             source_options = f"[ trusted={trusted_val} ] "
         sources_line = f"deb {source_options}{url} {codename}"
         if components:
-            sources_line += " %s" % " ".join(components)
+            sources_line += " {}".format(" ".join(components))
         if os.path.exists(sources_file_path):
             current_content = read_text_file(sources_file_path).split("\n")
             if sources_line in current_content:
@@ -326,7 +327,7 @@ class AptFacade:
         self._create_packages_file(path)
         # yakkety+ validate even file repository by default. deb dirs don't
         # have a signed Release file but are local so they should be trusted.
-        self.add_channel_apt_deb("file://%s" % path, "./", None, trusted=True)
+        self.add_channel_apt_deb(f"file://{path}", "./", None, trusted=True)
 
     def clear_channels(self):
         """Clear the channels that have been added through the facade.
@@ -603,7 +604,7 @@ class AptFacade:
                 version = dep_package.candidate.version
                 if dep_package not in self._cache.get_changes():
                     version = dep_package.installed.version
-                reason = " but %s is to be installed" % version
+                reason = f" but {version} is to be installed"
         info += reason
         return info
 
@@ -706,12 +707,13 @@ class AptFacade:
         if not_installed:
             raise TransactionError(
                 "Cannot perform the changes, since the following "
-                + "packages are not installed: %s"
-                % ", ".join(
-                    [
-                        version.package.name
-                        for version in sorted(not_installed)
-                    ],
+                + "packages are not installed: {}".format(
+                    ", ".join(
+                        [
+                            version.package.name
+                            for version in sorted(not_installed)
+                        ],
+                    ),
                 ),
             )
 
@@ -754,8 +756,9 @@ class AptFacade:
                     time.sleep(self.dpkg_retry_sleep)
                     logging.warning(
                         "dpkg process might be in use. "
-                        "Retrying package changes. %d retries remaining."
-                        % (self.max_dpkg_retries - dpkg_tries),
+                        "Retrying package changes. "
+                        f"{self.max_dpkg_retries - dpkg_tries:d} "
+                        "retries remaining.",
                     )
                 dpkg_tries += 1
                 try:
@@ -862,8 +865,8 @@ class AptFacade:
 
         if held_package_names:
             raise TransactionError(
-                "Can't perform the changes, since the following packages"
-                + " are held: %s" % ", ".join(sorted(held_package_names)),
+                "Can't perform the changes, since the following packages "
+                "are held: {}".format(", ".join(sorted(held_package_names))),
             )
 
     def _preprocess_global_upgrade(self):

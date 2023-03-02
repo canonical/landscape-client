@@ -234,15 +234,14 @@ class RegistrationHandler:
 
         # The computer is a normal computer, possibly a container.
         with_word = "with" if bool(registration_key) else "without"
-        with_tags = "and tags %s " % tags if tags else ""
-        with_group = "in access group '%s' " % group if group else ""
+        with_tags = f"and tags {tags} " if tags else ""
+        with_group = f"in access group '{group}' " if group else ""
 
         message["ubuntu_pro_info"] = json.dumps(get_ubuntu_pro_info())
 
         logging.info(
-            "Queueing message to register with account %r %s%s"
-            "%s a password."
-            % (account_name, with_group, with_tags, with_word),
+            f"Queueing message to register with account {account_name!r} "
+            f"{with_group}{with_tags}{with_word} a password.",
         )
         self._exchange.send(message)
 
@@ -254,18 +253,18 @@ class RegistrationHandler:
 
         Fire C{"registration-done"} and C{"resynchronize-clients"}.
         """
-        id = self._identity
-        if id.secure_id:
-            logging.info("Overwriting secure_id with '%s'" % id.secure_id)
+        cid = self._identity
+        if cid.secure_id:
+            logging.info(f"Overwriting secure_id with '{cid.secure_id}'")
 
-        id.secure_id = message.get("id")
-        id.insecure_id = message.get("insecure-id")
+        cid.secure_id = message.get("id")
+        cid.insecure_id = message.get("insecure-id")
         logging.info(
             "Using new secure-id ending with %s for account %s.",
-            id.secure_id[-10:],
-            id.account_name,
+            cid.secure_id[-10:],
+            cid.account_name,
         )
-        logging.debug("Using new secure-id: %s", id.secure_id)
+        logging.debug("Using new secure-id: %s", cid.secure_id)
         self._reactor.fire("registration-done")
         self._reactor.fire("resynchronize-clients")
 
@@ -275,18 +274,18 @@ class RegistrationHandler:
             self._reactor.fire("registration-failed", reason=message_info)
 
     def _handle_unknown_id(self, message):
-        id = self._identity
+        cid = self._identity
         clone = message.get("clone-of")
         if clone is None:
             logging.info(
-                "Client has unknown secure-id for account %s."
-                % id.account_name,
+                "Client has unknown secure-id for account "
+                f"{cid.account_name}.",
             )
         else:  # Save the secure id as the clone, and clear it so it's renewed
-            logging.info("Client is clone of computer %s" % clone)
-            self._clone_secure_id = id.secure_id
-        id.secure_id = None
-        id.insecure_id = None
+            logging.info(f"Client is clone of computer {clone}")
+            self._clone_secure_id = cid.secure_id
+        cid.secure_id = None
+        cid.insecure_id = None
 
 
 class RegistrationResponse:

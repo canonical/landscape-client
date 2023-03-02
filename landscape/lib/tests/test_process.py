@@ -29,7 +29,7 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
         status = "\n".join(
             [
                 "Name: foo",
-                "State: %s" % state,
+                f"State: {state}",
                 "Uid: 1000",
                 "Gid: 2000",
                 "VmSize: 3000",

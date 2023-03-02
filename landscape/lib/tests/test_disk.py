@@ -41,7 +41,7 @@ class DiskUtilitiesTest(BaseTestCase):
         """
         self.read_access = read_access
         content = "\n".join(
-            "/dev/sda%d %s %s rw 0 0" % (i, point, fs)
+            f"/dev/sda{i:d} {point} {fs} rw 0 0"
             for i, point in enumerate(points)
         )
         f = open(self.mount_file, "w")

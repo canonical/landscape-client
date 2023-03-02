@@ -45,12 +45,12 @@ class Network:
             ipv6_addresses = info["ip_addresses"].get(AF_INET6, [])
             for addr in ipv4_addresses:
                 self._sysinfo.add_header(
-                    "IPv4 address for %s" % interface,
+                    f"IPv4 address for {interface}",
                     addr["addr"],
                 )
             for addr in ipv6_addresses:
                 self._sysinfo.add_header(
-                    "IPv6 address for %s" % interface,
+                    f"IPv6 address for {interface}",
                     addr["addr"],
                 )
 

@@ -174,5 +174,5 @@ class SwiftUsage(MonitorPlugin):
         # Update device list and remove usage for devices that no longer exist.
         current_devices = set(self._persist.get("devices", ()))
         for device in current_devices - devices:
-            self._persist.remove("usage.%s" % device)
+            self._persist.remove(f"usage.{device}")
         self._persist.set("devices", list(devices))

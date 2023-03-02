@@ -441,8 +441,8 @@ class MessageExchange:
         context = self._exchange_store.get_message_context(operation_id)
         if context is None:
             logging.warning(
-                "No message context for message with operation-id: %s"
-                % operation_id,
+                "No message context for message with "
+                f"operation-id: {operation_id}",
             )
             return False
 
@@ -477,9 +477,9 @@ class MessageExchange:
         """
         if self._message_is_obsolete(message):
             logging.info(
-                "Response message with operation-id %s was discarded "
-                "because the client's secure ID has changed in the meantime"
-                % message.get("operation-id"),
+                "Response message with operation-id "
+                f"{message.get('operation-id')} was discarded "
+                "because the client's secure ID has changed in the meantime",
             )
             return None
 
@@ -551,14 +551,14 @@ class MessageExchange:
         if "exchange" in message:
             self._config.exchange_interval = message["exchange"]
             logging.info(
-                "Exchange interval set to %d seconds."
-                % self._config.exchange_interval,
+                "Exchange interval set "
+                f"to {self._config.exchange_interval:d} seconds.",
             )
         if "urgent-exchange" in message:
             self._config.urgent_exchange_interval = message["urgent-exchange"]
             logging.info(
-                "Urgent exchange interval set to %d seconds."
-                % self._config.urgent_exchange_interval,
+                "Urgent exchange interval set "
+                f"to {self._config.urgent_exchange_interval:d} seconds.",
             )
         self._config.write()
 
@@ -585,13 +585,12 @@ class MessageExchange:
         start_time = time.time()
         if self._urgent_exchange:
             logging.info(
-                "Starting urgent message exchange with %s."
-                % self._transport.get_url(),
+                "Starting urgent message exchange "
+                f"with {self._transport.get_url()}.",
             )
         else:
             logging.info(
-                "Starting message exchange with %s."
-                % self._transport.get_url(),
+                f"Starting message exchange with {self._transport.get_url()}.",
             )
 
         deferred = Deferred()
@@ -652,7 +651,7 @@ class MessageExchange:
                 # The error returned is an SSL error, most likely the server
                 # is using a self-signed certificate. Let's fire a special
                 # event so that the GUI can display a nice message.
-                logging.error("Message exchange failed: %s" % error.message)
+                logging.error(f"Message exchange failed: {error.message}")
                 ssl_error = True
 
             self._reactor.fire("exchange-failed", ssl_error=ssl_error)
@@ -948,9 +947,9 @@ def get_accepted_types_diff(old_types, new_types):
     stable_types = old_types & new_types
     removed_types = old_types - new_types
     diff = []
-    diff.extend(["+%s" % type for type in added_types])
-    diff.extend(["%s" % type for type in stable_types])
-    diff.extend(["-%s" % type for type in removed_types])
+    diff.extend([f"+{typ}" for typ in added_types])
+    diff.extend([f"{typ}" for typ in stable_types])
+    diff.extend([f"-{typ}" for typ in removed_types])
     return " ".join(diff)
 
 

@@ -177,8 +177,8 @@ class Pinger:
             self._config.ping_interval = message["ping"]
             self._config.write()
             info(
-                "Ping interval set to %d seconds."
-                % self._config.ping_interval,
+                f"Ping interval set to {self._config.ping_interval:d} "
+                "seconds.",
             )
         if self._call_id is not None:
             self._reactor.cancel_call(self._call_id)

@@ -132,7 +132,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                     )
                 elif not os.path.isfile(self.import_from):
                     raise ImportOptionError(
-                        "File %s doesn't exist." % self.import_from,
+                        f"File {self.import_from} doesn't exist.",
                     )
                 else:
                     try:
@@ -141,8 +141,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         )
                     except Exception:
                         raise ImportOptionError(
-                            "Couldn't read configuration from %s."
-                            % self.import_from,
+                            "Couldn't read configuration "
+                            f"from {self.import_from}.",
                         )
             except Exception as error:
                 raise ImportOptionError(str(error))
@@ -153,7 +153,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                 options = parser[self.config_section]
             if not options:
                 raise ImportOptionError(
-                    "Nothing to import at %s." % self.import_from,
+                    f"Nothing to import at {self.import_from}.",
                 )
             options.update(self._command_line_options)
             self._command_line_options = options
@@ -161,7 +161,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
     def fetch_import_url(self, url):
         """Handle fetching of URLs passed to --url."""
 
-        print_text("Fetching configuration from %s..." % url)
+        print_text(f"Fetching configuration from {url}...")
         error_message = None
         try:
             content = fetch(url)
@@ -169,8 +169,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             error_message = str(error)
         if error_message is not None:
             raise ImportOptionError(
-                "Couldn't download configuration from %s: %s"
-                % (url, error_message),
+                f"Couldn't download configuration from {url}: {error_message}",
             )
         return content
 
@@ -282,7 +281,7 @@ class LandscapeSetupScript:
         """
         default = getattr(self.config, option, None)
         if default:
-            msg += " [%s]: " % default
+            msg += f" [{default}]: "
         else:
             msg += ": "
         required = required and not (bool(default))
@@ -353,16 +352,15 @@ class LandscapeSetupScript:
             return
 
         show_help(
-            """
+            f"""
             A registration key may be associated with your Landscape
             account to prevent unauthorized registration attempts.  This
             is not your personal login password.  It is optional, and unless
             explicitly set on the server, it may be skipped here.
 
             If you don't remember the registration key you can find it
-            at https://landscape.canonical.com/account/%s
-            """
-            % self.config.account_name,
+            at https://landscape.canonical.com/account/{self.config.account_name}
+            """,  # noqa: E501
         )
 
         self.password_prompt("registration_key", "Account registration key")
@@ -392,7 +390,9 @@ class LandscapeSetupScript:
             invalid_users = get_invalid_users(options["script_users"])
             if invalid_users:
                 raise ConfigurationError(
-                    "Unknown system users: %s" % ", ".join(invalid_users),
+                    "Unknown system users: {}".format(
+                        ", ".join(invalid_users),
+                    ),
                 )
             return
         show_help(
@@ -469,7 +469,7 @@ class LandscapeSetupScript:
             invalid_tags = self._get_invalid_tags(options["tags"])
             if invalid_tags:
                 raise ConfigurationError(
-                    "Invalid tags: %s" % ", ".join(invalid_tags),
+                    "Invalid tags: {}".format(", ".join(invalid_tags)),
                 )
             return
 
@@ -563,7 +563,7 @@ def check_script_users(config):
         invalid_users = get_invalid_users(config.get("script_users"))
         if invalid_users:
             raise ConfigurationError(
-                "Unknown system users: %s" % ", ".join(invalid_users),
+                "Unknown system users: {}".format(", ".join(invalid_users)),
             )
         if not config.include_manager_plugins:
             config.include_manager_plugins = "ScriptExecution"
@@ -666,7 +666,7 @@ def store_public_key_data(config, certificate_data):
         config.data_path,
         os.path.basename(config.get_config_filename() + ".ssl_public_key"),
     )
-    print_text("Writing SSL CA certificate to %s..." % key_filename)
+    print_text(f"Writing SSL CA certificate to {key_filename}...")
     create_binary_file(key_filename, certificate_data)
     return key_filename
 

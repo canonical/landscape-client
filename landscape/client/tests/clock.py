@@ -244,8 +244,8 @@ class DelayedCall:
 
         now = self.seconds()
         li = [
-            "<DelayedCall %s [%ss] called=%s cancelled=%s"
-            % (id(self), self.time - now, self.called, self.cancelled),
+            f"<DelayedCall {id(self)} [{self.time-now}s] "
+            f"called={self.called} cancelled={self.cancelled}",
         ]
         if func is not None:
             li.extend((" ", func, "("))
@@ -266,8 +266,9 @@ class DelayedCall:
 
         if self.debug:
             li.append(
-                ("\n\ntraceback at creation: \n\n%s")
-                % ("    ".join(self.creator)),
+                "\n\ntraceback at creation: \n\n{}".format(
+                    "    ".join(self.creator),
+                ),
             )
         li.append(">")
 

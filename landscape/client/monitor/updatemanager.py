@@ -46,9 +46,8 @@ class UpdateManager(MonitorPlugin):
         if prompt not in valid_prompts:
             prompt = "normal"
             message = (
-                "%s contains invalid Prompt value. "
-                "Should be one of %s."
-                % (self.update_manager_filename, valid_prompts)
+                f"{self.update_manager_filename} contains invalid Prompt "
+                f"value. Should be one of {valid_prompts}."
             )
             logging.warning(message)
         return prompt

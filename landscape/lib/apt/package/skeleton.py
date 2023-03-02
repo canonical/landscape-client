@@ -52,13 +52,13 @@ class PackageSkeleton:
             return self._hash
         # We use ascii here as encoding  for backwards compatibility as it was
         # default encoding for conversion from unicode to bytes in Python 2.7.
-        package_info = (
-            "[%d %s %s]" % (self.type, self.name, self.version)
-        ).encode("ascii")
+        package_info = (f"[{self.type:d} {self.name} {self.version}]").encode(
+            "ascii",
+        )
         digest = sha1(package_info)
         self.relations.sort()
         for pair in self.relations:
-            digest.update(("[%d %s]" % (pair[0], pair[1])).encode("ascii"))
+            digest.update((f"[{pair[0]:d} {pair[1]}]").encode("ascii"))
         return digest.digest()
 
     def set_hash(self, package_hash):

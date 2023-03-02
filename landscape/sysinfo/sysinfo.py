@@ -106,7 +106,7 @@ class SysInfoPluginRegistry(PluginRegistry):
 
     def _log_plugin_error(self, failure, plugin):
         self._plugin_error = True
-        message = "%s plugin raised an exception." % plugin.__class__.__name__
+        message = f"{plugin.__class__.__name__} plugin raised an exception."
         logger = getLogger("landscape-sysinfo")
         log_failure(failure, message, logger=logger)
 
@@ -117,7 +117,7 @@ class SysInfoPluginRegistry(PluginRegistry):
             path = os.path.join(get_landscape_log_directory(), "sysinfo.log")
             self.add_note(
                 "There were exceptions while processing one or more plugins. "
-                "See %s for more information." % path,
+                f"See {path} for more information.",
             )
         return result
 

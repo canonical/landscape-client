@@ -19,10 +19,10 @@ class HTTPCodeError(FetchError):
         self.body = body
 
     def __str__(self):
-        return "Server returned HTTP code %d" % self.http_code
+        return f"Server returned HTTP code {self.http_code:d}"
 
     def __repr__(self):
-        return "<HTTPCodeError http_code=%d>" % self.http_code
+        return f"<HTTPCodeError http_code={self.http_code:d}>"
 
 
 class PyCurlError(FetchError):
@@ -31,13 +31,10 @@ class PyCurlError(FetchError):
         self._message = message
 
     def __str__(self):
-        return "Error %d: %s" % (self.error_code, self.message)
+        return f"Error {self.error_code:d}: {self.message}"
 
     def __repr__(self):
-        return "<PyCurlError args=(%d, '%s')>" % (
-            self.error_code,
-            self.message,
-        )
+        return f"<PyCurlError args=({self.error_code:d}, '{self.message}')>"
 
     @property
     def message(self):
@@ -102,7 +99,7 @@ def fetch(
     if headers:
         curl.setopt(
             pycurl.HTTPHEADER,
-            ["%s: %s" % pair for pair in sorted(iteritems(headers))],
+            [f"{key}: {value}" for (key, value) in sorted(iteritems(headers))],
         )
 
     if insecure:

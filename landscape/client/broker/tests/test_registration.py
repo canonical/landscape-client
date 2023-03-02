@@ -26,15 +26,15 @@ class IdentityTest(LandscapeTest):
         self.assertEqual(
             getattr(self.identity, attr),
             None,
-            "%r attribute should default to None, not %r"
-            % (attr, getattr(self.identity, attr)),
+            f"{attr!r} attribute should default to None, "
+            f"not {getattr(self.identity, attr)!r}",
         )
         setattr(self.identity, attr, value)
         self.assertEqual(
             getattr(self.identity, attr),
             value,
-            "%r attribute should be %r, not %r"
-            % (attr, value, getattr(self.identity, attr)),
+            f"{attr!r} attribute should be {value!r}, "
+            f"not {getattr(self.identity, attr)!r}",
         )
         self.assertEqual(
             self.persist.get(persist_name),
@@ -48,8 +48,8 @@ class IdentityTest(LandscapeTest):
         self.assertEqual(
             getattr(self.identity, attr),
             value,
-            "%r attribute should be %r, not %r"
-            % (attr, value, getattr(self.identity, attr)),
+            f"{attr!r} attribute should be {value!r}, "
+            f"not {getattr(self.identity, attr)!r}",
         )
 
     def test_secure_id(self):

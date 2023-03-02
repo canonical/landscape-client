@@ -59,7 +59,7 @@ class CloudTest(
                 if setup_item == item:
                     self.add_query_result(item, error)
                 else:
-                    self.add_query_result(setup_item, "value%s" % setup_item)
+                    self.add_query_result(setup_item, f"value{setup_item}")
 
             deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
             failure = self.failureResultOf(deferred)

@@ -126,13 +126,13 @@ class NetworkActivity(MonitorPlugin):
             out_step_data = self._accumulate(
                 new_timestamp,
                 delta_out,
-                "delta-out-%s" % interface,
+                f"delta-out-{interface}",
             )
 
             in_step_data = self._accumulate(
                 new_timestamp,
                 delta_in,
-                "delta-in-%s" % interface,
+                f"delta-in-{interface}",
             )
 
             # there's only data when we cross a step boundary

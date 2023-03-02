@@ -59,10 +59,10 @@ class MemoryStatsTest(BaseTestCase):
         self.assertEqual(memstats.total_swap, 1584)
         self.assertEqual(memstats.free_swap, 1567)
         self.assertEqual(memstats.used_swap, 17)
-        self.assertEqual("%.2f" % memstats.free_memory_percentage, "56.42")
-        self.assertEqual("%.2f" % memstats.free_swap_percentage, "98.93")
-        self.assertEqual("%.2f" % memstats.used_memory_percentage, "43.58")
-        self.assertEqual("%.2f" % memstats.used_swap_percentage, "1.07")
+        self.assertEqual(f"{memstats.free_memory_percentage:.2f}", "56.42")
+        self.assertEqual(f"{memstats.free_swap_percentage:.2f}", "98.93")
+        self.assertEqual(f"{memstats.used_memory_percentage:.2f}", "43.58")
+        self.assertEqual(f"{memstats.used_swap_percentage:.2f}", "1.07")
 
     def test_get_memory_info_without_swap(self):
         sample = re.subn(
@@ -93,8 +93,8 @@ class FakeWhoQTest(testing.HelperTestCase, BaseTestCase):
         who = open(self.who_path, "w")
         who.write("#!/bin/sh\n")
         who.write("test x$1 = x-q || echo missing-parameter\n")
-        who.write("echo %s\n" % users)
-        who.write("echo '# users=%d'\n" % len(users.split()))
+        who.write(f"echo {users}\n")
+        who.write(f"echo '# users={len(users.split()):d}'\n")
         who.close()
 
         os.chmod(self.who_path, 0o770)
@@ -140,7 +140,7 @@ class UptimeTest(BaseTestCase):
     def test_valid_uptime_file(self):
         """Test ensures that we can read a valid /proc/uptime file."""
         proc_file = self.makeFile("17608.24 16179.25")
-        self.assertEqual("%0.2f" % get_uptime(proc_file), "17608.24")
+        self.assertEqual(f"{get_uptime(proc_file):0.2f}", "17608.24")
 
 
 class ProcfsThermalZoneTest(BaseTestCase):

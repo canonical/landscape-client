@@ -187,7 +187,7 @@ class PackageStore(HashIdStore):
     @with_cursor
     def remove_available(self, cursor, ids):
         id_list = ",".join(str(int(id)) for id in ids)
-        cursor.execute("DELETE FROM available WHERE id IN (%s)" % id_list)
+        cursor.execute(f"DELETE FROM available WHERE id IN ({id_list})")
 
     @with_cursor
     def clear_available(self, cursor):
@@ -207,7 +207,7 @@ class PackageStore(HashIdStore):
     def remove_available_upgrades(self, cursor, ids):
         id_list = ",".join(str(int(id)) for id in ids)
         cursor.execute(
-            "DELETE FROM available_upgrade WHERE id IN (%s)" % id_list,
+            f"DELETE FROM available_upgrade WHERE id IN ({id_list})",
         )
 
     @with_cursor
@@ -227,7 +227,7 @@ class PackageStore(HashIdStore):
     @with_cursor
     def remove_autoremovable(self, cursor, ids):
         id_list = ",".join(str(int(id)) for id in ids)
-        cursor.execute("DELETE FROM autoremovable WHERE id IN (%s)" % id_list)
+        cursor.execute(f"DELETE FROM autoremovable WHERE id IN ({id_list})")
 
     @with_cursor
     def clear_autoremovable(self, cursor):
@@ -246,7 +246,7 @@ class PackageStore(HashIdStore):
     @with_cursor
     def remove_security(self, cursor, ids):
         id_list = ",".join(str(int(id)) for id in ids)
-        cursor.execute("DELETE FROM security WHERE id IN (%s)" % id_list)
+        cursor.execute(f"DELETE FROM security WHERE id IN ({id_list})")
 
     @with_cursor
     def clear_security(self, cursor):
@@ -265,7 +265,7 @@ class PackageStore(HashIdStore):
     @with_cursor
     def remove_installed(self, cursor, ids):
         id_list = ",".join(str(int(id)) for id in ids)
-        cursor.execute("DELETE FROM installed WHERE id IN (%s)" % id_list)
+        cursor.execute(f"DELETE FROM installed WHERE id IN ({id_list})")
 
     @with_cursor
     def clear_installed(self, cursor):
@@ -291,7 +291,7 @@ class PackageStore(HashIdStore):
     @with_cursor
     def remove_locked(self, cursor, ids):
         id_list = ",".join(str(int(id)) for id in ids)
-        cursor.execute("DELETE FROM locked WHERE id IN (%s)" % id_list)
+        cursor.execute(f"DELETE FROM locked WHERE id IN ({id_list})")
 
     @with_cursor
     def clear_locked(self, cursor):
@@ -349,8 +349,9 @@ class PackageStore(HashIdStore):
     @with_cursor
     def clear_tasks(self, cursor, except_tasks=()):
         cursor.execute(
-            "DELETE FROM task WHERE id NOT IN (%s)"
-            % ",".join([str(task.id) for task in except_tasks]),
+            "DELETE FROM task WHERE id NOT IN ({})".format(
+                ",".join([str(task.id) for task in except_tasks]),
+            ),
         )
 
 
@@ -388,8 +389,8 @@ class FakePackageStore(PackageStore):
     def get_messages_by_ids(self, cursor, message_ids):
         params = ", ".join(["?"] * len(message_ids))
         result = cursor.execute(
-            "SELECT id, data FROM message WHERE id IN (%s) "
-            "ORDER BY id" % params,
+            f"SELECT id, data FROM message WHERE id IN ({params}) "
+            "ORDER BY id",
             tuple(message_ids),
         ).fetchall()
         return [(row[0], bytes(row[1])) for row in result]

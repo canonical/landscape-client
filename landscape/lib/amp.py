@@ -11,7 +11,7 @@ this class::
     class Greeter(object):
 
         def hello(self, name):
-            return "hi %s!" % name
+            return f"hi {name}!"
 
     greeter = Greeter()
 
@@ -180,7 +180,7 @@ class MethodCallReceiver(CommandLocator):
         # it here again.
         method = method.decode("utf-8")
         if method not in self._methods:
-            raise MethodCallError("Forbidden method '%s'" % method)
+            raise MethodCallError(f"Forbidden method '{method}'")
 
         method_func = getattr(self._object, method)
 

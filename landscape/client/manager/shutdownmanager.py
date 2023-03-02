@@ -109,7 +109,7 @@ class ShutdownManager(ManagerPlugin):
         Returns a C{command, args} 2-tuple suitable for use with
         L{IReactorProcess.spawnProcess}.
         """
-        minutes = None if force else "+%d" % (protocol.delay // 60,)
+        minutes = None if force else f"+{protocol.delay//60:d}"
         args = {
             (False, False): [
                 "/sbin/shutdown",

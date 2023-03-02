@@ -127,8 +127,8 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         def check_failure(failure):
             self.assertIn(
-                "WARNING: Couldn't fetch file from %s (Server return"
-                "ed HTTP code 404)" % signature_url,
+                f"WARNING: Couldn't fetch file from {signature_url} "
+                "(Server returned HTTP code 404)",
                 self.logfile.getvalue(),
             )
             self.assertIn(
@@ -370,7 +370,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                     "=== Standard output ===\n\n"
                     "--frontend DistUpgradeViewNonInteractive\n"
                     "FOO=bar\n"
-                    "PWD=%s\nout\n\n\n" % upgrade_tool_directory
+                    f"PWD={upgrade_tool_directory}\nout\n\n\n"
                 )
                 self.assertMessages(
                     self.get_pending_messages(),
@@ -524,12 +524,12 @@ class ReleaseUpgraderTest(LandscapeTest):
             "        sys.exit(0)\n"
             "    pid = os.fork()\n"
             "    if pid > 0:\n"
-            "        fd = open('%s', 'w')\n"
+            f"        fd = open('{child_pid_filename}', 'w')\n"
             "        fd.write(str(pid))\n"
             "        fd.close()\n"
             "        sys.exit(0)\n"
             "    while True:\n"
-            "        time.sleep(2)\n" % child_pid_filename,
+            "        time.sleep(2)\n",
         )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
@@ -604,7 +604,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
                 self.assertEqual(
                     out,
-                    ("--force-apt-update\n%s\n" % os.getcwd()).encode("utf-8"),
+                    (f"--force-apt-update\n{os.getcwd()}\n").encode("utf-8"),
                 )
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)

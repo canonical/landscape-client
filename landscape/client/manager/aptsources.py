@@ -126,12 +126,12 @@ class AptSources(ManagerPlugin):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
-            shutil.move(filename, "%s.save" % filename)
+            shutil.move(filename, f"{filename}.save")
 
         for source in sources:
             filename = os.path.join(
                 self.SOURCES_LIST_D,
-                "landscape-%s.list" % source["name"],
+                f"landscape-{source['name']}.list",
             )
             # Servers send unicode, but an upgrade from python2 can get bytes
             # from stored messages, so we need to handle both.
@@ -149,7 +149,7 @@ class AptSources(ManagerPlugin):
         args = ["--force-apt-update"]
 
         if self.registry.config.config is not None:
-            args.append("--config=%s" % self.registry.config.config)
+            args.append(f"--config={self.registry.config.config}")
 
         if os.getuid() == 0:
             uid = pwd.getpwnam("landscape").pw_uid

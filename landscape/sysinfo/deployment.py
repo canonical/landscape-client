@@ -67,7 +67,7 @@ class SysInfoConfiguration(BaseConfiguration):
             "plugins to include.",
         )
 
-        parser.epilog = "Default plugins: %s" % (", ".join(ALL_PLUGINS))
+        parser.epilog = "Default plugins: {}".format(", ".join(ALL_PLUGINS))
         return parser
 
     def get_plugin_names(self, plugin_spec):
@@ -127,7 +127,7 @@ def run(args, reactor=None, sysinfo=None):
     try:
         setup_logging()
     except OSError as e:
-        sys.exit("Unable to setup logging. %s" % e)
+        sys.exit(f"Unable to setup logging. {e}")
 
     if sysinfo is None:
         sysinfo = SysInfoPluginRegistry()

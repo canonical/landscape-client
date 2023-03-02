@@ -43,7 +43,7 @@ class HTTPTransport:
             message_api = message_api.decode("ascii")
         headers = {
             "X-Message-API": message_api,
-            "User-Agent": "landscape-client/%s" % VERSION,
+            "User-Agent": f"landscape-client/{VERSION}",
             "Content-Type": "application/octet-stream",
         }
         if computer_id:
@@ -102,7 +102,7 @@ class HTTPTransport:
                 message_api,
             )
         except Exception:
-            logging.exception("Error contacting the server at %s." % self._url)
+            logging.exception(f"Error contacting the server at {self._url}.")
             raise
         else:
             logging.info(
@@ -115,7 +115,7 @@ class HTTPTransport:
         try:
             response = bpickle.loads(data)
         except Exception:
-            logging.exception("Server returned invalid data: %r" % data)
+            logging.exception(f"Server returned invalid data: {data!r}")
             return None
         else:
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:

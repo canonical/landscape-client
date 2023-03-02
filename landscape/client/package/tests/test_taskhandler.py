@@ -108,7 +108,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "missing code-name key in %s" % self.handler.lsb_release_filename,
+            f"missing code-name key in {self.handler.lsb_release_filename}",
         )
 
         return result
@@ -131,8 +131,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            "[Errno 2] No such file or directory: '%s'"
-            % self.handler.lsb_release_filename,
+            "[Errno 2] No such file or directory: "
+            f"'{self.handler.lsb_release_filename}'",
         )
 
         return result
@@ -256,7 +256,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         # The failure should be properly logged
         logging_mock.assert_called_with(
-            "Invalid hash=>id database %s" % hash_id_db_filename,
+            f"Invalid hash=>id database {hash_id_db_filename}",
         )
 
         # We remove the broken hash=>id database and go on without it

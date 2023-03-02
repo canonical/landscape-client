@@ -44,11 +44,8 @@ class LandscapeService(Service):
     def startService(self):  # noqa: N802
         Service.startService(self)
         logging.info(
-            "%s started with config %s"
-            % (
-                self.service_name.capitalize(),
-                self.config.get_config_filename(),
-            ),
+            f"{self.service_name.capitalize()} started with "
+            f"config {self.config.get_config_filename()}",
         )
 
     def stopService(self):  # noqa: N802
@@ -56,11 +53,8 @@ class LandscapeService(Service):
         # shutdown sequence will do that for us.
         Service.stopService(self)
         logging.info(
-            "%s stopped with config %s"
-            % (
-                self.service_name.capitalize(),
-                self.config.get_config_filename(),
-            ),
+            f"{self.service_name.capitalize()} stopped with "
+            f"config {self.config.get_config_filename()}",
         )
 
 
@@ -104,10 +98,10 @@ def run_landscape_service(configuration_class, service_class, args):
         clones = []
         for i in range(configuration.clones):
             clone_config = configuration.clone()
-            clone_config.computer_title += " Clone %d" % i
+            clone_config.computer_title += f" Clone {i:d}"
             clone_config.master_data_path = configuration.data_path
-            clone_config.data_path += "-clone-%d" % i
-            clone_config.log_dir += "-clone-%d" % i
+            clone_config.data_path += f"-clone-{i:d}"
+            clone_config.log_dir += f"-clone-{i:d}"
             clone_config.is_clone = True
             clones.append(service_class(clone_config))
 

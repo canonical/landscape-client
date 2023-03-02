@@ -31,7 +31,7 @@ def get_user_info(username=None):
             # locale.setlocale() to use UTF-8 was not successful.
             info = pwd.getpwnam(username_str)
         except (KeyError, UnicodeEncodeError):
-            raise UnknownUserError("Unknown user '%s'" % username)
+            raise UnknownUserError(f"Unknown user '{username}'")
         uid = info.pw_uid
         gid = info.pw_gid
         path = info.pw_dir

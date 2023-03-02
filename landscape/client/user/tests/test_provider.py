@@ -317,8 +317,8 @@ root:x:0:0:root:/root:/bin/bash
                 break
         else:
             self.fail(
-                "The user %s (uid=0) was not found in the get_data "
-                "result." % (user_0.pw_name),
+                f"The user {user_0.pw_name} (uid=0) was not found "
+                "in the get_data result.",
             )
 
     def test_get_users_duplicate_usernames(self):
@@ -508,8 +508,8 @@ root:x:0:0:root:/root:/bin/bash
                 break
         else:
             self.fail(
-                "The group %s (gid=0) was not found in the get_data "
-                "result." % (group_0.gr_name,),
+                f"The group {group_0.gr_name} (gid=0) was not found "
+                "in the get_data result.",
             )
 
     def test_get_user_data(self):
@@ -679,18 +679,18 @@ broken2
             },
         )
         log1 = (
-            "WARNING: passwd file %s is incorrectly formatted: line 2."
-            % passwd_file
+            f"WARNING: passwd file {passwd_file} is incorrectly "
+            "formatted: line 2."
         )
         self.assertIn(log1, self.logfile.getvalue())
         log2 = (
-            "WARNING: passwd file %s is incorrectly formatted: line 3."
-            % passwd_file
+            f"WARNING: passwd file {passwd_file} is incorrectly "
+            "formatted: line 3."
         )
         self.assertIn(log2, self.logfile.getvalue())
         log3 = (
-            "WARNING: passwd file %s is incorrectly formatted: line 6."
-            % passwd_file
+            f"WARNING: passwd file {passwd_file} is incorrectly "
+            "formatted: line 6."
         )
         self.assertIn(log3, self.logfile.getvalue())
 
@@ -743,7 +743,7 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
                 "primary-gid": 65534,
             },
         )
-        log = "WARNING: passwd file %s is incorrectly formatted" % passwd_file
+        log = f"WARNING: passwd file {passwd_file} is incorrectly formatted"
         self.assertTrue(log not in self.logfile.getvalue())
 
     def test_get_groups_incorrect_groups_file(self):
@@ -771,8 +771,8 @@ kevin:x:kevin:
             {"name": "cdrom", "gid": 24, "members": []},
         )
         log = (
-            "WARNING: group file %s is incorrectly "
-            "formatted: line 3." % group_file
+            f"WARNING: group file {group_file} is incorrectly "
+            "formatted: line 3."
         )
         self.assertIn(log, self.logfile.getvalue())
 
@@ -798,5 +798,5 @@ cdrom:x:24:
         )
         groups = provider.get_groups()
         self.assertEqual(groups[0], {"name": "root", "gid": 0, "members": []})
-        log = "WARNING: group file %s is incorrectly formatted" % group_file
+        log = f"WARNING: group file {group_file} is incorrectly formatted"
         self.assertTrue(log not in self.logfile.getvalue())

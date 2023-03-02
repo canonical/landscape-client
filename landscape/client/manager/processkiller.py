@@ -57,9 +57,9 @@ class ProcessKiller(ManagerPlugin):
         if not process_info:
             start_time = datetime.utcfromtimestamp(start_time)
             message = (
-                "The process %s with PID %d that started at %s UTC was "
-                "not found"
-            ) % (name, pid, start_time)
+                f"The process {name} with PID {pid:d} that started "
+                f"at {start_time} UTC was not found"
+            )
             raise ProcessNotFoundError(message)
         elif abs(process_info["start-time"] - start_time) > 2:
             # We don't check that the start time matches precisely because
@@ -68,11 +68,11 @@ class ProcessKiller(ManagerPlugin):
             expected_time = datetime.utcfromtimestamp(start_time)
             actual_time = datetime.utcfromtimestamp(process_info["start-time"])
             message = (
-                "The process %s with PID %d that started at "
-                "%s UTC was not found.  A process with the same "
-                "PID that started at %s UTC was found and not "
-                "sent the %s signal"
-            ) % (name, pid, expected_time, actual_time, signame)
+                f"The process {name} with PID {pid:d} that started at "
+                f"{expected_time} UTC was not found.  A process with the same "
+                f"PID that started at {actual_time} UTC was found and not "
+                f"sent the {signame} signal"
+            )
             raise ProcessMismatchError(message)
 
         signum = getattr(signal, f"SIG{signame}")
@@ -81,7 +81,7 @@ class ProcessKiller(ManagerPlugin):
         except Exception:
             # XXX Nothing is indicating what the problem was.
             message = (
-                "Attempting to send the %s signal to the process "
-                "%s with PID %d failed"
-            ) % (signame, name, pid)
+                f"Attempting to send the {signame} signal to the process "
+                f"{name} with PID {pid:d} failed"
+            )
             raise SignalProcessError(message)

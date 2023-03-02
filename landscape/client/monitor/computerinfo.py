@@ -88,7 +88,7 @@ class ComputerInfo(MonitorPlugin):
         if message:
             message["type"] = "cloud-instance-metadata"
             logging.info(
-                "Queueing message with updated cloud instance " "metadata.",
+                "Queueing message with updated cloud instance metadata.",
             )
             self.registry.broker.send_message(
                 message,
@@ -186,8 +186,7 @@ class ComputerInfo(MonitorPlugin):
             self._cloud_retries += 1
             if self._cloud_retries >= METADATA_RETRY_MAX:
                 logging.info(
-                    "No cloud meta-data available. %s"
-                    % error.getErrorMessage(),
+                    f"No cloud meta-data available. {error.getErrorMessage()}",
                 )
 
         def log_success(result):

@@ -242,8 +242,8 @@ def get_network_traffic(source_file="/proc/net/dev"):
 
     # Parse out the column headers as keys.
     _, receive_columns, transmit_columns = lines[1].split("|")
-    columns = ["recv_%s" % column for column in receive_columns.split()]
-    columns.extend(["send_%s" % column for column in transmit_columns.split()])
+    columns = [f"recv_{column}" for column in receive_columns.split()]
+    columns.extend([f"send_{column}" for column in transmit_columns.split()])
 
     # Parse out the network devices.
     devices = {}

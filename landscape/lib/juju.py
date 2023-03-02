@@ -21,7 +21,7 @@ def get_juju_info(config):
     # return None in any case.
     except Exception:
         logging.exception(
-            "Error attempting to read JSON from %s" % config.juju_filename,
+            f"Error attempting to read JSON from {config.juju_filename}",
         )
         return None
 

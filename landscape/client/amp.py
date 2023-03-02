@@ -125,14 +125,14 @@ class ComponentConnector:
             factory.factor = factor
 
         def fire_reconnect(ignored):
-            self._reactor.fire("%s-reconnect" % self.component.name)
+            self._reactor.fire(f"{self.component.name}-reconnect")
 
         def connected(remote):
             factory.notifyOnConnect(fire_reconnect)
             return remote
 
         def log_error(failure):
-            logging.error("Error while connecting to %s", self.component.name)
+            logging.error(f"Error while connecting to {self.component.name}")
             return failure
 
         socket_path = _get_socket_path(self.component, self._config)

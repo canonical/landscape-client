@@ -22,10 +22,10 @@ def format_object(object):
 def format_delta(seconds):
     if not seconds:
         seconds = 0.0
-    return "%.02fs" % float(seconds)
+    return f"{float(seconds):.02f}s"
 
 
 def format_percent(percent):
     if not percent:
         percent = 0.0
-    return "%.02f%%" % float(percent)
+    return f"{float(percent):.02f}%"

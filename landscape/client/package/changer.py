@@ -122,7 +122,7 @@ class PackageChanger(PackageTaskHandler):
             os.setuid(pwd.getpwnam("landscape").pw_uid)
         command = find_reporter_command(self._config)
         if self._config.config is not None:
-            command += " -c %s" % self._config.config
+            command += f" -c {self._config.config}"
         os.system(command)
 
     def handle_task(self, task):
@@ -149,8 +149,8 @@ class PackageChanger(PackageTaskHandler):
         """
         failure.trap(UnknownPackageData)
         logging.warning(
-            "Package data not yet synchronized with server (%r)"
-            % failure.value.args[0],
+            "Package data not yet synchronized with "
+            f"server ({failure.value.args[0]!r})",
         )
         if task.timestamp < time.time() - UNKNOWN_PACKAGE_DATA_TIMEOUT:
             message = {
@@ -185,8 +185,9 @@ class PackageChanger(PackageTaskHandler):
         """Initialize the Apt channels as needed.
 
         @param binaries: A possibly empty list of 3-tuples of the form
-            (hash, id, deb), holding the hash, the id and the content of
-            additional Debian packages that should be loaded in the channels.
+            (bin_hash, bin_id, deb), holding the hash, the id and the content
+            of additional Debian packages that should be loaded in the
+            channels.
         """
         binaries_path = self._config.binaries_path
 
@@ -195,12 +196,12 @@ class PackageChanger(PackageTaskHandler):
 
         if binaries:
             hash_ids = {}
-            for hash, id, deb in binaries:
+            for bin_hash, bin_id, deb in binaries:
                 create_binary_file(
-                    os.path.join(binaries_path, "%d.deb" % id),
+                    os.path.join(binaries_path, f"{bin_id:d}.deb"),
                     base64.decodebytes(deb),
                 )
-                hash_ids[hash] = id
+                hash_ids[bin_hash] = bin_id
             self._store.set_hash_ids(hash_ids)
             self._facade.add_channel_deb_dir(binaries_path)
             self._facade.reload_channels(force_reload_binaries=True)
@@ -389,7 +390,7 @@ class PackageChanger(PackageTaskHandler):
     def _log_reboot(self, result, minutes):
         """Log the reboot."""
         logging.warning(
-            "Landscape is rebooting the system in %s minutes" % minutes,
+            f"Landscape is rebooting the system in {minutes} minutes",
         )
 
     def _send_response(

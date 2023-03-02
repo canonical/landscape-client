@@ -5,8 +5,6 @@ from DistUtilsExtra.command import build_extra
 
 from landscape import UPSTREAM_VERSION
 
-# from python3-distutils-extra
-
 
 SETUP = dict(
     name=None,

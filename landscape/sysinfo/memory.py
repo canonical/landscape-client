@@ -14,10 +14,10 @@ class Memory:
         memstats = MemoryStats(self._filename)
         self._sysinfo.add_header(
             "Memory usage",
-            "%d%%" % memstats.used_memory_percentage,
+            f"{int(memstats.used_memory_percentage):d}%",
         )
         self._sysinfo.add_header(
             "Swap usage",
-            "%d%%" % memstats.used_swap_percentage,
+            f"{int(memstats.used_swap_percentage):d}%",
         )
         return succeed(None)

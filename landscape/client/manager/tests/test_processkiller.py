@@ -161,9 +161,9 @@ class ProcessKillerTests(LandscapeTest):
             },
         )
         expected_text = (
-            "ProcessNotFoundError: The process zsh with PID %d "
+            f"ProcessNotFoundError: The process zsh with PID {pid:d} "
             "that started at 1970-01-01 00:01:50 UTC was not "
-            "found" % (pid,)
+            "found"
         )
 
         service = self.broker_service
@@ -212,10 +212,9 @@ class ProcessKillerTests(LandscapeTest):
         actual_time = datetime.utcfromtimestamp(20)
         expected_text = (
             "ProcessMismatchError: The process python with "
-            "PID %d that started at %s UTC was not found.  A "
-            "process with the same PID that started at %s UTC "
-            "was found and not sent the KILL signal"
-            % (pid, expected_time, actual_time)
+            f"PID {pid:d} that started at {expected_time} UTC was not "
+            "found.  A process with the same PID that started "
+            f"at {actual_time} UTC was found and not sent the KILL signal"
         )
 
         service = self.broker_service
@@ -271,7 +270,7 @@ class ProcessKillerTests(LandscapeTest):
         )
         expected_text = (
             "SignalProcessError: Attempting to send the KILL "
-            "signal to the process hostname with PID %d failed" % (pid,)
+            f"signal to the process hostname with PID {pid:d} failed"
         )
 
         service = self.broker_service

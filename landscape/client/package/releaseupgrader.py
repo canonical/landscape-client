@@ -88,7 +88,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             message = self.make_operation_result_message(
                 operation_id,
                 FAILED,
-                "The system is already running %s." % target_code_name,
+                f"The system is already running {target_code_name}.",
                 1,
             )
             logging.info(
@@ -165,8 +165,8 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         def log_failure(failure):
             logging.warning(
-                "Invalid signature for upgrade-tool tarball: %s"
-                % str(failure.value),
+                "Invalid signature for upgrade-tool "
+                f"tarball: {str(failure.value)}",
             )
             return failure
 
@@ -301,7 +301,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         args = ["--force-apt-update"]
 
         if self._config.config is not None:
-            args.append("--config=%s" % self._config.config)
+            args.append(f"--config={self._config.config}")
 
         return spawn_process(
             reporter,
@@ -318,7 +318,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         message = self.make_operation_result_message(
             operation_id,
             FAILED,
-            "%s" % str(failure.value),
+            str(failure.value),
             1,
         )
 

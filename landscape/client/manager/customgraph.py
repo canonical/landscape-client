@@ -44,7 +44,7 @@ class InvalidFormatError(Exception):
         Exception.__init__(self, self._get_message())
 
     def _get_message(self):
-        return "Failed to convert to number: '%s'" % self.value
+        return f"Failed to convert to number: '{self.value}'"
 
 
 class NoOutputError(Exception):
@@ -64,7 +64,7 @@ class ProhibitedUserError(Exception):
         Exception.__init__(self, self._get_message())
 
     def _get_message(self):
-        return "Custom graph cannot be run as user %s" % self.username
+        return f"Custom graph cannot be run as user {self.username}"
 
 
 class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
@@ -127,7 +127,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         data_path = self.registry.config.data_path
         scripts_directory = os.path.join(data_path, "custom-graph-scripts")
-        filename = os.path.join(scripts_directory, "graph-%d" % (graph_id,))
+        filename = os.path.join(scripts_directory, f"graph-{graph_id:d}")
 
         if os.path.exists(filename):
             os.unlink(filename)
@@ -135,7 +135,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         try:
             uid, gid = get_user_info(user)[:2]
         except UnknownUserError:
-            logging.error("Attempt to add graph with unknown user %s" % user)
+            logging.error(f"Attempt to add graph with unknown user {user}")
         else:
             script_file = open(filename, "wb")
             # file is closed in write_script_file
@@ -215,15 +215,15 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         if failure.check(ProcessFailedError):
             failure_value = failure.value.data
             if failure.value.exit_code:
-                failure_value = "%s (process exited with code %d)" % (
-                    failure_value,
-                    failure.value.exit_code,
+                failure_value = (
+                    f"{failure_value} (process exited with code "
+                    f"{failure.value.exit_code:d})"
                 )
             self._data[graph_id]["error"] = failure_value
         elif failure.check(ProcessTimeLimitReachedError):
             self._data[graph_id][
                 "error"
-            ] = "Process exceeded the %d seconds limit" % (self.time_limit,)
+            ] = f"Process exceeded the {self.time_limit:d} seconds limit"
         else:
             self._data[graph_id]["error"] = self._format_exception(
                 failure.value,

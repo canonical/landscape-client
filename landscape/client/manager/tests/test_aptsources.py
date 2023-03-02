@@ -386,7 +386,7 @@ class AptSourcesTests(LandscapeTest):
             self.assertEqual(
                 [
                     "--force-apt-update",
-                    "--config=%s" % self.manager.config.config,
+                    f"--config={self.manager.config.config}",
                 ],
                 args,
             )

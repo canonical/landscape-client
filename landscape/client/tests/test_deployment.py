@@ -62,7 +62,7 @@ class BaseConfigurationTest(LandscapeTest):
         section_name = kwargs.pop("section_name", "client")
         config = "\n".join(
             [f"[{section_name}]"]
-            + ["%s = %s" % pair for pair in kwargs.items()],
+            + [f"{key} = {value}" for (key, value) in kwargs.items()],
         )
         self.config_filename = self.makeFile(config)
         self.config.default_config_filenames[:] = [self.config_filename]

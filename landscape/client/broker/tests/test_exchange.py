@@ -410,7 +410,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(payload["next-expected-sequence"], 0)
 
     @mock.patch(
-        "landscape.client.broker.store.MessageStore" ".delete_old_messages",
+        "landscape.client.broker.store.MessageStore.delete_old_messages",
     )
     def test_pending_offset_when_next_expected_too_high(
         self,
@@ -896,11 +896,11 @@ class MessageExchangeTest(LandscapeTest):
         # schedule a regular exchange.
         # Let's make sure that that *original* impending-exchange event has
         # been cancelled:
-        TIME_UNTIL_EXCHANGE = 60 * 60  # noqa: N806
-        TIME_UNTIL_NOTIFY = 10  # noqa: N806
-        TIME_ADVANCED = 20  # time that we've already advanced # noqa: N806
+        time_until_exchange = 60 * 60
+        time_until_notify = 10
+        time_advanced = 20
         self.reactor.advance(
-            TIME_UNTIL_EXCHANGE - (TIME_UNTIL_NOTIFY + TIME_ADVANCED),
+            time_until_exchange - (time_until_notify + time_advanced),
         )
         self.assertEqual(events, [True])
         # Ok, so no new events means that the original call was
@@ -1245,7 +1245,7 @@ class MessageExchangeTest(LandscapeTest):
         event should be fired with the optional "ssl_error" flag set to True.
         """
         self.log_helper.ignore_errors(
-            "Message exchange failed: Failed to " "communicate.",
+            "Message exchange failed: Failed to communicate.",
         )
         events = []
 

@@ -463,9 +463,8 @@ class CustomGraphManagerTests(LandscapeTest):
                             123: {
                                 "error": (
                                     "ProhibitedUserError: Custom graph cannot "
-                                    "be run as user %s"
-                                )
-                                % (username,),
+                                    f"be run as user {username}"
+                                ),
                                 "script-hash": b"",
                                 "values": [],
                             },
@@ -928,8 +927,8 @@ class CustomGraphManagerTests(LandscapeTest):
                     {
                         "data": {
                             123: {
-                                "error": "UnknownUserError: Unknown user '%s'"
-                                % username,
+                                "error": "UnknownUserError: "
+                                f"Unknown user '{username}'",
                                 "script-hash": (
                                     b"9893532233caff98cd083a116b013c0b"
                                 ),

@@ -227,16 +227,15 @@ class BrokerClient:
         @return: The return value of the handler, if found.
         @raises: HandlerNotFoundError if the handler was not found
         """
-        type = message["type"]
-        handler = self._registered_messages.get(type)
+        typ = message["type"]
+        handler = self._registered_messages.get(typ)
         if handler is None:
-            raise HandlerNotFoundError(type)
+            raise HandlerNotFoundError(typ)
         try:
             return handler(message)
         except Exception:
             exception(
-                "Error running message handler for type %r: %r"
-                % (type, handler),
+                f"Error running message handler for type {typ!r}: {handler!r}",
             )
 
     @remote
@@ -293,8 +292,8 @@ class BrokerClient:
           - Re-register ourselves as client, so the broker knows we exist and
             will talk to us firing events and dispatching messages.
         """
-        for type in self._registered_messages:
-            self.broker.register_client_accepted_message_type(type)
+        for typ in self._registered_messages:
+            self.broker.register_client_accepted_message_type(typ)
         self.broker.register_client(self.name)
 
     @remote

@@ -124,6 +124,7 @@ class ProcessInformation:
                 if self._boot_time is None:
                     logging.warning(
                         "Skipping process (PID %s) without boot time.",
+                        process_id,
                     )
                     return None
                 process_info["start-time"] = to_timestamp(

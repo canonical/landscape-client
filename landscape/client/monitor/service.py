@@ -22,7 +22,7 @@ class MonitorService(LandscapeService):
     def __init__(self, config):
         self.persist_filename = os.path.join(
             config.data_path,
-            "%s.bpickle" % self.service_name,
+            f"{self.service_name}.bpickle",
         )
         super().__init__(config)
         self.plugins = self.get_plugins()
@@ -41,8 +41,8 @@ class MonitorService(LandscapeService):
     def get_plugins(self):
         return [
             namedClass(
-                "landscape.client.monitor.%s.%s"
-                % (plugin_name.lower(), plugin_name),
+                "landscape.client.monitor."
+                f"{plugin_name.lower()}.{plugin_name}",
             )()
             for plugin_name in self.config.plugin_factories
         ]

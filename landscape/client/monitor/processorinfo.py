@@ -63,8 +63,7 @@ class ProcessorInfo(MonitorPlugin):
                 return pair[1](source_filename)
 
         raise PluginConfigError(
-            "A processor info reader for '%s' is not "
-            "available." % machine_name,
+            f"A processor info reader for '{machine_name}' is not available.",
         )
 
     def register(self, registry):

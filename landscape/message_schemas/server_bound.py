@@ -177,8 +177,8 @@ HARDWARE_INVENTORY = Message(
                     Unicode(),  # udi,
                     hal_data,  # creates,
                     hal_data,  # updates,
-                    hal_data,
-                ),  # deletes
+                    hal_data,  # deletes
+                ),
                 Tuple(Constant("delete"), Unicode()),
             ),
         ),

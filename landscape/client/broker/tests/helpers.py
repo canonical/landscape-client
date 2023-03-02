@@ -50,8 +50,8 @@ class BrokerConfigurationHelper:
                 "computer_title = Some Computer\n"
                 "account_name = some_account\n"
                 "ping_url = http://localhost:91910\n"
-                "data_path = %s\n"
-                "log_dir = %s\n" % (data_path, log_dir),
+                f"data_path = {data_path}\n"
+                f"log_dir = {log_dir}\n",
             )
 
         bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)

@@ -867,7 +867,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         If tags are not provided, the user should be prompted for them.
         """
         help_snippet = (
-            "You may provide tags for this computer e.g. " "server,precise."
+            "You may provide tags for this computer e.g. server,precise."
         )
         self.script.prompt = mock.Mock()
 
@@ -1116,14 +1116,13 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         mock_sysvconfig().restart_landscape.assert_called_once_with()
         self.assertConfigEqual(
             self.get_content(config),
-            """\
+            f"""\
 [client]
 computer_title = rex
-data_path = %s
+data_path = {config.data_path}
 account_name = account
 url = https://landscape.canonical.com/message-system
-"""
-            % config.data_path,
+""",
         )
 
     @mock.patch("landscape.client.configuration.SysVConfig")
@@ -1136,12 +1135,11 @@ url = https://landscape.canonical.com/message-system
         setup(config)
         self.assertConfigEqual(
             self.get_content(config),
-            """\
+            f"""\
 [client]
-data_path = %s
+data_path = {config.data_path}
 url = https://landscape.canonical.com/message-system
-"""
-            % config.data_path,
+""",
         )
 
     @mock.patch("landscape.client.configuration.SysVConfig")
@@ -1186,7 +1184,7 @@ url = https://landscape.canonical.com/message-system
             "[client]\n"
             "http_proxy = \n"
             "tags = \n"
-            "data_path = %s\n"
+            f"data_path = {config.data_path}\n"
             "registration_key = \n"
             "account_name = \n"
             "computer_title = \n"
@@ -1195,7 +1193,7 @@ url = https://landscape.canonical.com/message-system
             "exchange_interval = 900\n"
             "ping_interval = 30\n"
             "ping_url = http://landscape.canonical.com/ping\n"
-            "urgent_exchange_interval = 60\n" % config.data_path,
+            "urgent_exchange_interval = 60\n",
         )
 
     @mock.patch("landscape.client.configuration.SysVConfig")
@@ -1862,7 +1860,7 @@ registration_key = shared-secret
         except ImportOptionError as error:
             self.assertEqual(
                 str(error),
-                "Nothing to import at %s." % import_filename,
+                f"Nothing to import at {import_filename}.",
             )
         else:
             self.fail("ImportOptionError not raised")
@@ -1885,7 +1883,7 @@ registration_key = shared-secret
         except ImportOptionError as error:
             self.assertEqual(
                 str(error),
-                "File %s doesn't exist." % import_filename,
+                f"File {import_filename} doesn't exist.",
             )
         else:
             self.fail("ImportOptionError not raised")
@@ -1914,7 +1912,7 @@ registration_key = shared-secret
         except ImportOptionError as error:
             self.assertEqual(
                 str(error),
-                "Nothing to import at %s." % import_filename,
+                f"Nothing to import at {import_filename}.",
             )
         else:
             self.fail("ImportOptionError not raised")
@@ -1939,7 +1937,7 @@ registration_key = shared-secret
             )
         except ImportOptionError as error:
             self.assertIn(
-                "Nothing to import at %s" % import_filename,
+                f"Nothing to import at {import_filename}",
                 str(error),
             )
         else:
@@ -1962,7 +1960,7 @@ registration_key = shared-secret
             ["--import", import_filename],
         )
         expected_message = (
-            "Couldn't read configuration from %s." % import_filename
+            f"Couldn't read configuration from {import_filename}."
         )
         self.assertEqual(str(error), expected_message)
 
@@ -2283,7 +2281,7 @@ registration_key = shared-secret
     ):
         mock_sysvconfig().restart_landscape.return_value = True
         data_path = self.makeDir()
-        config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
+        config_filename = self.makeFile(f"[client]\ndata_path={data_path}")
         key_filename = os.path.join(
             data_path,
             os.path.basename(config_filename) + ".ssl_public_key",
@@ -2310,7 +2308,7 @@ registration_key = shared-secret
         mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
         mock_sysvconfig().restart_landscape.assert_called_once_with()
         mock_print_text.assert_called_once_with(
-            "Writing SSL CA certificate to %s..." % key_filename,
+            f"Writing SSL CA certificate to {key_filename}...",
         )
         self.assertEqual("Hi there!", open(key_filename).read())
 
@@ -2752,7 +2750,7 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         )
         self.assertEqual(b"123456789", read_binary_file(key_filename))
         mock_print_text.assert_called_once_with(
-            "Writing SSL CA certificate to %s..." % key_filename,
+            f"Writing SSL CA certificate to {key_filename}...",
         )
 
 

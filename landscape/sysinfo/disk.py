@@ -8,11 +8,11 @@ from landscape.lib.disk import get_mount_info
 
 def format_megabytes(megabytes):
     if megabytes >= 1024 * 1024:
-        return "%.2fTB" % (megabytes / (1024 * 1024))
+        return f"{megabytes / (1024 * 1024):.2f}TB"
     elif megabytes >= 1024:
-        return "%.2fGB" % (megabytes / 1024)
+        return f"{megabytes / 1024:.2f}GB"
     else:
-        return "%dMB" % (megabytes)
+        return f"{megabytes:d}MB"
 
 
 def usage(info):

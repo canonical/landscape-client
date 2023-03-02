@@ -22,8 +22,8 @@ class UpgradeManagerBase:
         """
         if version in self._upgraders:
             raise UpgraderConflict(
-                "%s is already registered as %s; not adding %s"
-                % (version, self._upgraders[version], function),
+                f"{version} is already registered as "
+                f"{self._upgraders[version]}; not adding {function}",
             )
         self._upgraders[version] = function
 
@@ -66,7 +66,7 @@ class UpgradeManager(UpgradeManagerBase):
             if version > persist.get("system-version"):
                 persist.set("system-version", version)
                 upgrader(persist)
-                logging.info("Successfully applied patch %s" % version)
+                logging.info(f"Successfully applied patch {version}")
 
     def initialize(self, persist):
         """

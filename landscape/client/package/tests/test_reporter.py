@@ -120,9 +120,9 @@ class PackageReporterAptTest(LandscapeTest):
         """Create a fake apt-update executable"""
         self.reporter.apt_update_filename = self.makeFile(
             "#!/bin/sh\n"
-            "echo -n '%s'\n"
-            "echo -n '%s' >&2\n"
-            "exit %d" % (out, err, code),
+            f"echo -n '{out}'\n"
+            f"echo -n '{err}' >&2\n"
+            f"exit {code:d}",
         )
         os.chmod(self.reporter.apt_update_filename, 0o755)
 
@@ -411,7 +411,7 @@ class PackageReporterAptTest(LandscapeTest):
         result.addCallback(callback)
 
         logging_mock.assert_called_once_with(
-            "Downloaded hash=>id database from %s" % hash_id_db_url,
+            f"Downloaded hash=>id database from {hash_id_db_url}",
         )
         mock_fetch_async.assert_called_once_with(
             hash_id_db_url,
@@ -516,7 +516,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Couldn't determine which hash=>id database to use: "
-            "missing code-name key in %s" % self.reporter.lsb_release_filename,
+            f"missing code-name key in {self.reporter.lsb_release_filename}",
         )
         return result
 
@@ -1659,8 +1659,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("error", err)
             self.assertEqual(2, code)
             warning_mock.assert_called_once_with(
-                "'%s' exited with status 2 (error)"
-                % self.reporter.apt_update_filename,
+                f"'{self.reporter.apt_update_filename}' "
+                "exited with status 2 (error)",
             )
 
         result.addCallback(callback)
@@ -1948,8 +1948,8 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    ("'%s' didn't run, conditions not met")
-                    % self.reporter.apt_update_filename,
+                    f"'{self.reporter.apt_update_filename}' "
+                    "didn't run, conditions not met",
                 )
 
             result.addCallback(callback)
@@ -1993,8 +1993,8 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    ("'%s' didn't run, conditions not met")
-                    % self.reporter.apt_update_filename,
+                    f"'{self.reporter.apt_update_filename}' "
+                    "didn't run, conditions not met",
                 )
 
             result.addCallback(callback)
@@ -2326,7 +2326,7 @@ class PackageReporterAptTest(LandscapeTest):
         )
         self.assertFalse(self.reporter._is_release_upgrader_running())
         # fake 'release upgrader' running
-        reporter.UID_ROOT = "%d" % os.getuid()
+        reporter.UID_ROOT = f"{os.getuid():d}"
         self.assertTrue(self.reporter._is_release_upgrader_running())
         p.terminate()
 

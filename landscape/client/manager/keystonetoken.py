@@ -70,8 +70,8 @@ class KeystoneToken(DataWatcher):
             admin_token = config.get("DEFAULT", "admin_token")
         except NoOptionError:
             logging.error(
-                "KeystoneToken: No admin_token found in %s"
-                % (self._keystone_config_file),
+                "KeystoneToken: No admin_token found in "
+                f"{self._keystone_config_file}",
             )
             return None
         # There is no support for surrogateescape in Python 2, but we actually

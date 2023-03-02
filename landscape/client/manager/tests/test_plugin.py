@@ -64,7 +64,7 @@ class BrokerPluginTest(LandscapeTest):
                     {
                         "type": "operation-result",
                         "status": FAILED,
-                        "result-text": "RuntimeError: What the " "crap!",
+                        "result-text": "RuntimeError: What the crap!",
                         "operation-id": 12312,
                     },
                 ],

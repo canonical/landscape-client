@@ -242,7 +242,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script("/bin/sh", "umask")
 
         def check(result):
-            self.assertEqual("%04o\n" % old_umask, result)
+            self.assertEqual(f"{old_umask:04o}\n", result)
             mock_umask.assert_has_calls(
                 [mock.call(0o22), mock.call(old_umask)],
             )
@@ -317,7 +317,7 @@ class RunScriptTests(LandscapeTest):
         mock_fetch.return_value = succeed(b"some other data")
 
         headers = {
-            "User-Agent": "landscape-client/%s" % VERSION,
+            "User-Agent": f"landscape-client/{VERSION}",
             "Content-Type": "application/octet-stream",
             "X-Computer-ID": "secure_id",
         }
@@ -364,7 +364,7 @@ class RunScriptTests(LandscapeTest):
         mock_fetch.return_value = succeed(b"some other data")
 
         headers = {
-            "User-Agent": "landscape-client/%s" % VERSION,
+            "User-Agent": f"landscape-client/{VERSION}",
             "Content-Type": "application/octet-stream",
             "X-Computer-ID": "secure_id",
         }
@@ -955,8 +955,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
                 {
                     "type": "operation-result",
                     "operation-id": 123,
-                    "result-text": "UnknownUserError: Unknown user '%s'"
-                    % username,
+                    "result-text": "UnknownUserError: "
+                    f"Unknown user '{username}'",
                     "status": FAILED,
                 },
             ],
@@ -1226,7 +1226,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         registration_persist.set("secure-id", "secure_id")
         persist.save()
         headers = {
-            "User-Agent": "landscape-client/%s" % VERSION,
+            "User-Agent": f"landscape-client/{VERSION}",
             "Content-Type": "application/octet-stream",
             "X-Computer-ID": "secure_id",
         }

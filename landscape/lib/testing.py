@@ -206,13 +206,13 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if not result:
             self.fail(
-                "Success result expected on %r, found no result instead"
-                % (deferred,),
+                f"Success result expected on {deferred!r}, "
+                "found no result instead",
             )
         elif isinstance(result[0], Failure):
             self.fail(
-                "Success result expected on %r, "
-                "found failure result (%r) instead" % (deferred, result[0]),
+                f"Success result expected on {deferred!r}, "
+                f"found failure result ({result[0]!r}) instead",
             )
         else:
             return result[0]
@@ -227,13 +227,13 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if not result:
             self.fail(
-                "Failure result expected on %r, found no result instead"
-                % (deferred,),
+                f"Failure result expected on {deferred!r}, "
+                "found no result instead",
             )
         elif not isinstance(result[0], Failure):
             self.fail(
-                "Failure result expected on %r, "
-                "found success result (%r) instead" % (deferred, result[0]),
+                f"Failure result expected on {deferred!r}, "
+                f"found success result ({result[0]!r}) instead",
             )
         else:
             return result[0]
@@ -248,8 +248,8 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if result:
             self.fail(
-                "No result expected on %r, found %r instead"
-                % (deferred, result[0]),
+                f"No result expected on {deferred!r}, "
+                f"found {result[0]!r} instead",
             )
 
     def assertDeferredSucceeded(self, deferred):  # noqa: N802
@@ -548,19 +548,19 @@ class ProcessDataBuilder:
             kernel process)
         @param stat_data: Array of items to write to the /proc/<pid>/stat file.
         """
-        sample_data = """
-Name:   %(process_name)s
-State:  %(state)s
+        sample_data = f"""
+Name:   {process_name[:15]}
+State:  {state}
 Tgid:   24759
 Pid:    24759
 PPid:   17238
 TracerPid:      0
-Uid:    %(uid)d    0    0    0
-Gid:    %(gid)d    0    0    0
+Uid:    {uid:d}    0    0    0
+Gid:    {gid:d}    0    0    0
 FDSize: 256
 Groups: 4 20 24 25 29 30 44 46 106 110 112 1000
 VmPeak:    11680 kB
-VmSize:    %(vmsize)d kB
+VmSize:    {vmsize:d} kB
 VmLck:         0 kB
 VmHWM:      6928 kB
 VmRSS:      6924 kB
@@ -579,15 +579,7 @@ SigCgt: 0000000059816eff
 CapInh: 0000000000000000
 CapPrm: 0000000000000000
 CapEff: 0000000000000000
-""" % (
-            {
-                "process_name": process_name[:15],
-                "state": state,
-                "uid": uid,
-                "gid": gid,
-                "vmsize": vmsize,
-            }
-        )  # noqa
+"""
         process_dir = os.path.join(self._sample_dir, str(process_id))
         os.mkdir(process_dir)
         filename = os.path.join(process_dir, "status")
@@ -598,11 +590,9 @@ CapEff: 0000000000000000
         finally:
             file.close()
         if stat_data is None:
-            stat_data = """\
-0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 %d\
-""" % (
-                started_after_boot,
-            )
+            stat_data = f"""\
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 {started_after_boot:d}\
+"""
         filename = os.path.join(process_dir, "stat")
 
         file = open(filename, "w+")

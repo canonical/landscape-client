@@ -155,7 +155,7 @@ class PackageMonitor(MonitorPlugin):
 
     def _got_reporter_output(self, output):
         if output:
-            logging.warning("Package reporter output:\n%s" % output)
+            logging.warning(f"Package reporter output:\n{output}")
 
     def _reset(self):
         """

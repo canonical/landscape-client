@@ -96,7 +96,7 @@ class UserProviderBase:
         for data in self.get_users():
             if data["username"] == username:
                 return data["uid"]
-        raise UserNotFoundError("UID not found for user %s." % username)
+        raise UserNotFoundError(f"UID not found for user {username}.")
 
     def get_gid(self, groupname):
         """Returns the GID for C{groupname}.
@@ -107,7 +107,7 @@ class UserProviderBase:
         for data in self.get_groups():
             if data["name"] == groupname:
                 return data["gid"]
-        raise GroupNotFoundError("Group not found for group %s." % groupname)
+        raise GroupNotFoundError(f"Group not found for group {groupname}.")
 
 
 class UserProvider(UserProviderBase):
@@ -183,8 +183,8 @@ class UserProvider(UserProviderBase):
                     )
                 except (ValueError, TypeError):
                     logging.warn(
-                        "passwd file %s is incorrectly formatted: line %d."
-                        % (self._passwd_file, current_line),
+                        f"passwd file {self._passwd_file} is incorrectly "
+                        f"formatted: line {current_line:d}.",
                     )
         return user_data
 
@@ -219,8 +219,8 @@ class UserProvider(UserProviderBase):
                 )
             except (AttributeError, ValueError):
                 logging.warn(
-                    "group file %s is incorrectly formatted: "
-                    "line %d." % (self._group_file, current_line),
+                    f"group file {self._group_file} is incorrectly formatted: "
+                    f"line {current_line:d}.",
                 )
         group_file.close()
         return group_data

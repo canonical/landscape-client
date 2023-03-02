@@ -32,8 +32,7 @@ def gpg_verify(filename, signature, gpg="/usr/bin/gpg", apt_dir="/etc/apt"):
         out, err = out.decode("ascii"), err.decode("ascii")
         if code != 0:
             raise InvalidGPGSignature(
-                "%s failed (out='%s', err='%s', "
-                "code='%d')" % (gpg, out, err, code),
+                f"{gpg} failed (out='{out}', err='{err}', code='{code:d}')",
             )
 
     gpg_home = tempfile.mkdtemp()

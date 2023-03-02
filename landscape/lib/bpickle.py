@@ -42,7 +42,7 @@ def dumps(obj, _dt=dumps_table):
     try:
         return _dt[type(obj)](obj)
     except KeyError as e:
-        raise ValueError("Unsupported type: %s" % e)
+        raise ValueError(f"Unsupported type: {e}")
 
 
 def loads(byte_string, _lt=loads_table, as_is=False):
@@ -59,30 +59,30 @@ def loads(byte_string, _lt=loads_table, as_is=False):
         # we slice the bytestring instead.
         return _lt[byte_string[0:1]](byte_string, 0, as_is=as_is)[0]
     except KeyError as e:
-        raise ValueError("Unknown type character: %s" % e)
+        raise ValueError(f"Unknown type character: {e}")
     except IndexError:
         raise ValueError("Corrupted data")
 
 
 def dumps_bool(obj):
-    return ("b%d" % int(obj)).encode("utf-8")
+    return (f"b{int(obj):d}").encode("utf-8")
 
 
 def dumps_int(obj):
-    return ("i%d;" % obj).encode("utf-8")
+    return (f"i{obj:d};").encode("utf-8")
 
 
 def dumps_float(obj):
-    return ("f%r;" % obj).encode("utf-8")
+    return (f"f{obj!r};").encode("utf-8")
 
 
 def dumps_bytes(obj):
-    return ("s%d:" % (len(obj),)).encode("utf-8") + obj
+    return (f"s{len(obj):d}:").encode("utf-8") + obj
 
 
 def dumps_unicode(obj):
     bobj = obj.encode("utf-8")
-    return ("u%d:%s" % (len(bobj), obj)).encode("utf-8")
+    return (f"u{len(bobj):d}:{obj}").encode("utf-8")
 
 
 def dumps_list(obj, _dt=dumps_table):

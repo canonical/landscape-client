@@ -22,7 +22,7 @@ class Processes:
             if num_zombies == 1:
                 msg = "There is 1 zombie process."
             else:
-                msg = "There are %d zombie processes." % (num_zombies,)
+                msg = f"There are {num_zombies:d} zombie processes."
             self._sysinfo.add_note(msg)
         self._sysinfo.add_header("Processes", str(num_processes))
         return succeed(None)

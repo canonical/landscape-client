@@ -70,7 +70,7 @@ class UnknownInterpreterError(Exception):
         Exception.__init__(self, self._get_message())
 
     def _get_message(self):
-        return "Unknown interpreter: '%s'" % self.interpreter
+        return f"Unknown interpreter: '{self.interpreter}'"
 
 
 class ScriptRunnerMixin:
@@ -227,7 +227,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         root_path = self.registry.config.url.rsplit("/", 1)[0] + "/attachment/"
         env["LANDSCAPE_ATTACHMENTS"] = attachment_dir = tempfile.mkdtemp()
         headers = {
-            "User-Agent": "landscape-client/%s" % VERSION,
+            "User-Agent": f"landscape-client/{VERSION}",
             "Content-Type": "application/octet-stream",
             "X-Computer-ID": computer_id,
         }
@@ -238,7 +238,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 yield succeed(None)
             else:
                 data = yield fetch_async(
-                    "%s%d" % (root_path, attachment_id),
+                    f"{root_path}{attachment_id:d}",
                     cainfo=self.registry.config.ssl_public_key,
                     headers=headers,
                 )

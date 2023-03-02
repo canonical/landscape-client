@@ -23,7 +23,7 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
         gpg = self.makeFile(
             "#!/bin/sh\n"
             "touch $3/trustdb.gpg\n"
-            "echo -n $@ > %s\n" % gpg_options,
+            f"echo -n $@ > {gpg_options}\n",
         )
         os.chmod(gpg, 0o755)
         gpg_home = self.makeDir()
@@ -42,9 +42,9 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
             def check_result(ignored):
                 self.assertEqual(
                     open(gpg_options).read(),
-                    "--no-options --homedir %s --no-default-keyring "
-                    "--ignore-time-conflict --keyring %s/trusted.gpg "
-                    "--verify /some/signature /some/file" % (gpg_home, aptdir),
+                    f"--no-options --homedir {gpg_home} --no-default-keyring "
+                    f"--ignore-time-conflict --keyring {aptdir}/trusted.gpg "
+                    "--verify /some/signature /some/file",
                 )
                 self.assertFalse(os.path.exists(gpg_home))
 
@@ -72,7 +72,7 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
             def check_failure(failure):
                 self.assertEqual(
                     str(failure.value),
-                    "%s failed (out='out\n', err='err\n', " "code='1')" % gpg,
+                    f"{gpg} failed (out='out\n', err='err\n', " "code='1')",
                 )
                 self.assertFalse(os.path.exists(gpg_home))
 

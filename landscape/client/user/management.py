@@ -62,7 +62,7 @@ class UserManagement:
             if result != 0:
                 raise UserManagementError(
                     "Error resetting password for user "
-                    "%s.\n%s" % (username, new_output),
+                    f"{username}.\n{new_output}",
                 )
             else:
                 output += new_output
@@ -95,8 +95,8 @@ class UserManagement:
         result, output = self.call_popen(command)
         if result != 0:
             raise UserManagementError(
-                "Error setting primary group to %d for"
-                "%s.\n%s" % (primary_gid, username, output),
+                f"Error setting primary group to {primary_gid:d} for"
+                f"{username}.\n{output}",
             )
         return output
 
@@ -133,8 +133,7 @@ class UserManagement:
             result, output = self.call_popen(command + [username])
             if result != 0:
                 raise UserManagementError(
-                    "Error setting details for user "
-                    "%s.\n%s" % (username, output),
+                    "Error setting details for user " f"{username}.\n{output}",
                 )
             return output
 
@@ -185,8 +184,7 @@ class UserManagement:
         result, output = self.call_popen(command)
         if result != 0:
             raise UserManagementError(
-                "Error removing user %s (UID %d).\n%s"
-                % (username, uid, output),
+                f"Error removing user {username} (UID {uid:d}).\n{output}",
             )
         return output
 
@@ -213,8 +211,8 @@ class UserManagement:
         result, output = self.call_popen(command)
         if result != 0:
             raise UserManagementError(
-                "Error renaming group %s (GID %d) to "
-                "%s.\n%s" % (groupname, gid, new_name, output),
+                f"Error renaming group {groupname} (GID {gid:d}) to "
+                f"{new_name}.\n{output}",
             )
         return output
 
@@ -237,9 +235,8 @@ class UserManagement:
         )
         if result != 0:
             raise UserManagementError(
-                "Error adding user %s (UID %d) to "
-                "group %s (GID %d).\n%s"
-                % (username, uid, groupname, gid, output),
+                f"Error adding user {username} (UID {uid:d}) to "
+                f"group {groupname} (GID {gid:d}).\n{output}",
             )
         return output
 
@@ -262,9 +259,8 @@ class UserManagement:
         )
         if result != 0:
             raise UserManagementError(
-                "Error removing user %s (UID %d) "
-                "from group %s (GID (%d).\n%s"
-                % (username, uid, groupname, gid, output),
+                f"Error removing user {username} (UID {uid:d}) "
+                f"from group {groupname} (GID ({gid:d}).\n{output}",
             )
         return output
 
@@ -275,8 +271,7 @@ class UserManagement:
         result, output = self.call_popen(["groupdel", groupname])
         if result != 0:
             raise UserManagementError(
-                "Error removing group %s (GID %d).\n%s"
-                % (groupname, gid, output),
+                f"Error removing group {groupname} (GID {gid:d}).\n{output}",
             )
         return output
 

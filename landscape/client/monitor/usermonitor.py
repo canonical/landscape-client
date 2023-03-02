@@ -118,7 +118,7 @@ class UserMonitor(MonitorPlugin):
         def log_error(result):
             log_failure(
                 result,
-                "Error occured calling send_message in " "_detect_changes",
+                "Error occured calling send_message in _detect_changes",
             )
 
         self._provider.locked_users = locked_users

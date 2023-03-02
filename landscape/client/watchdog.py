@@ -137,7 +137,7 @@ class Daemon:
         if self._last_started + RESTART_BURST_DELAY > now:
             self._quick_starts += 1
             if self._quick_starts == MAXIMUM_CONSECUTIVE_RESTARTS:
-                error("Can't keep %s running. Exiting." % self.program)
+                error(f"Can't keep {self.program} running. Exiting.")
                 self._reactor.stop()
                 return
         else:
@@ -290,7 +290,7 @@ class WatchedProcessProtocol(ProcessProtocol):
         except ProcessExitedAlready:
             pass
         else:
-            warning("%s didn't die.  Sending SIGKILL." % self.daemon.program)
+            warning(f"{self.daemon.program} didn't die.  Sending SIGKILL.")
         self._delayed_really_kill = None
 
     def rotate_logs(self):
@@ -584,7 +584,7 @@ class WatchDogService(Service):
 
             # Create clones log and data directories
             for i in range(self._config.clones):
-                suffix = "-clone-%d" % i
+                suffix = f"-clone-{i:d}"
                 bootstrap_list.bootstrap(
                     data_path=self._config.data_path + suffix,
                     log_dir=self._config.log_dir + suffix,
@@ -596,8 +596,10 @@ class WatchDogService(Service):
         def start_if_not_running(running_daemons):
             if running_daemons:
                 error(
-                    "ERROR: The following daemons are already running: %s"
-                    % (", ".join(x.program for x in running_daemons)),
+                    "ERROR: The following daemons are already "
+                    "running: {}".format(
+                        ", ".join(x.program for x in running_daemons),
+                    ),
                 )
                 self.exit_code = 1
                 reactor.crash()  # so stopService isn't called.

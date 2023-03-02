@@ -29,7 +29,7 @@ def detect_jiffies():
 
         uptime2_data = read_uptime2()
 
-        stat_file = open("/proc/%d/stat" % pid)
+        stat_file = open(f"/proc/{pid:d}/stat")
         stat_data = stat_file.read()
         stat_file.close()
 

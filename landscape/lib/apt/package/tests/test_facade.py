@@ -231,7 +231,7 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -387,7 +387,7 @@ class AptFacadeTest(
         self.assertEqual(
             [
                 {
-                    "baseurl": "file://%s" % deb_dir,
+                    "baseurl": f"file://{deb_dir}",
                     "distribution": "./",
                     "components": "",
                     "type": "deb",
@@ -621,7 +621,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -642,7 +642,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -668,7 +668,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -690,7 +690,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -748,7 +748,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -773,7 +773,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -800,7 +800,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1167,7 +1167,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1184,7 +1184,7 @@ class AptFacadeTest(
         self._add_system_package("foo", version="0.5")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1202,7 +1202,7 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.5")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1221,7 +1221,7 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1255,7 +1255,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1281,7 +1281,7 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1326,7 +1326,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1365,7 +1365,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1397,7 +1397,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1438,7 +1438,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1472,7 +1472,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1589,7 +1589,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1642,7 +1642,7 @@ class AptFacadeTest(
             },
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1693,7 +1693,7 @@ class AptFacadeTest(
             control_fields={"Depends": "bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1714,7 +1714,7 @@ class AptFacadeTest(
             control_fields={"Depends": "bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1748,7 +1748,7 @@ class AptFacadeTest(
             control_fields={"Pre-Depends": "bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1782,7 +1782,7 @@ class AptFacadeTest(
             control_fields={"Depends": "bar (>= 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1818,7 +1818,7 @@ class AptFacadeTest(
             control_fields={"Depends": "bar (>= 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1857,7 +1857,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1896,7 +1896,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1937,7 +1937,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -1975,7 +1975,7 @@ class AptFacadeTest(
             control_fields={"Depends": "bar | baz (>= 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2011,7 +2011,7 @@ class AptFacadeTest(
             control_fields={"Conflicts": "foo"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2053,7 +2053,7 @@ class AptFacadeTest(
             control_fields={"Breaks": "foo"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2090,7 +2090,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2130,7 +2130,7 @@ class AptFacadeTest(
         )
         self._add_system_package("baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2172,7 +2172,7 @@ class AptFacadeTest(
             control_fields={"Depends": "there1, missing1, there2 | missing2"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2210,7 +2210,7 @@ class AptFacadeTest(
             control_fields={"Depends": "another-bar"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2286,7 +2286,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2310,7 +2310,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2342,7 +2342,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
         self._add_system_package("baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2379,7 +2379,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2416,7 +2416,7 @@ class AptFacadeTest(
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2447,7 +2447,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2514,7 +2514,7 @@ class AptFacadeTest(
             version="2.0",
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2584,7 +2584,7 @@ class AptFacadeTest(
             control_fields={"Multi-Arch": "same"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2623,7 +2623,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._add_package_to_deb_dir(deb_dir, "baz")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2647,7 +2647,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="3.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2670,7 +2670,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2690,7 +2690,7 @@ class AptFacadeTest(
         self._add_system_package("noauto", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "noauto", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2756,7 +2756,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2786,7 +2786,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "bar")
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2812,7 +2812,7 @@ class AptFacadeTest(
         self._add_system_package("foo")
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2845,7 +2845,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2930,7 +2930,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2952,7 +2952,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -2980,7 +2980,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3026,7 +3026,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3053,7 +3053,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3081,7 +3081,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="3.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3115,7 +3115,7 @@ class AptFacadeTest(
         )
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3185,7 +3185,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3208,7 +3208,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3234,7 +3234,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3257,7 +3257,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3285,7 +3285,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3320,7 +3320,7 @@ class AptFacadeTest(
             control_fields={"Depends": "foo (>> 1.0)"},
         )
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3365,7 +3365,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )
@@ -3522,7 +3522,7 @@ class AptFacadeTest(
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb(
-            "file://%s" % deb_dir,
+            f"file://{deb_dir}",
             "./",
             trusted=True,
         )

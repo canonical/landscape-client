@@ -177,8 +177,8 @@ class BaseConfiguration:
             if not allow_missing:
                 if len(config_filenames) == 1:
                     message = (
-                        "error: config file %s can't be read"
-                        % config_filenames[0]
+                        f"error: config file {config_filenames[0]} "
+                        "can't be read"
                     )
                 else:
                     message = "error: no config file could be read"
@@ -190,9 +190,11 @@ class BaseConfiguration:
         for option in self.required_options:
             if not getattr(self, option):
                 sys.exit(
-                    "error: must specify --%s "
-                    "or the '%s' directive in the config file."
-                    % (option.replace("_", "-"), option),
+                    "error: must specify --{} "
+                    "or the '{}' directive in the config file.".format(
+                        option.replace("_", "-"),
+                        option,
+                    ),
                 )
 
     def _load_external_options(self):

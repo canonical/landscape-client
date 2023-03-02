@@ -30,8 +30,8 @@ class ManagerService(LandscapeService):
         """Return instances of all the plugins enabled in the configuration."""
         return [
             namedClass(
-                "landscape.client.manager.%s.%s"
-                % (plugin_name.lower(), plugin_name),
+                "landscape.client.manager."
+                f"{plugin_name.lower()}.{plugin_name}",
             )()
             for plugin_name in self.config.plugin_factories
         ]

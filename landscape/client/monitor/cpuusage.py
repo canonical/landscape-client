@@ -98,9 +98,8 @@ class CPUUsage(MonitorPlugin):
                 stat = f.readline()
         except OSError:
             logging.error(
-                "Could not open %s for reading, "
+                f"Could not open {stat_file} for reading, "
                 "CPU usage cannot be computed.",
-                stat_file,
             )
             return None
 

@@ -37,8 +37,8 @@ class MessageTestCase(unittest.TestCase):
         if obtained != expected:
             raise self.failureException(
                 "Messages don't match.\n"
-                "Expected:\n%s\nObtained:\n%s\n"
-                % (pprint.pformat(expected), pprint.pformat(obtained)),
+                f"Expected:\n{pprint.pformat(expected)}\n"
+                f"Obtained:\n{pprint.pformat(obtained)}\n",
             )
 
     def assertMessages(self, obtained, expected):  # noqa: N802
@@ -52,13 +52,13 @@ class MessageTestCase(unittest.TestCase):
         if obtained_len < expected_len:
             extra = pprint.pformat(expected[-diff:])
             raise self.failureException(
-                "Expected the following %d additional "
-                "messages:\n%s" % (diff, extra),
+                f"Expected the following {diff:d} additional "
+                f"messages:\n{extra}",
             )
         elif expected_len < obtained_len:
             extra = pprint.pformat(obtained[-diff:])
             raise self.failureException(
-                "Got %d more messages than expected:\n" "%s" % (diff, extra),
+                f"Got {diff:d} more messages than expected:\n{extra}",
             )
 
 
@@ -129,8 +129,8 @@ class FakeBrokerServiceHelper:
             "computer_title = Some Computer\n"
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
-            "data_path = %s\n"
-            "log_dir = %s\n" % (test_case.data_path, log_dir),
+            f"data_path = {test_case.data_path}\n"
+            f"log_dir = {log_dir}\n",
         )
 
         bootstrap_list.bootstrap(

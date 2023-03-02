@@ -325,7 +325,7 @@ class RunTest(
 
     def test_run_sets_up_logging(self):
         with mock.patch(
-            "landscape.sysinfo.deployment" ".setup_logging",
+            "landscape.sysinfo.deployment.setup_logging",
         ) as setup_logging_mock:
             run(["--sysinfo-plugins", "TestPlugin"])
         setup_logging_mock.assert_called_once_with()

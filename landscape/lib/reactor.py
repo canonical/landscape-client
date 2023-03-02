@@ -122,7 +122,7 @@ class EventHandlingReactorMixin:
         if type(id) is EventID:
             self._event_handlers[id._event_type].remove(id._pair)
         else:
-            raise InvalidID("EventID instance expected, received %r" % id)
+            raise InvalidID(f"EventID instance expected, received {id!r}")
 
 
 class ReactorID:

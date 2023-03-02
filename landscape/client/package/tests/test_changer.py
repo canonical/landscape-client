@@ -137,7 +137,7 @@ class AptPackageChangerTest(LandscapeTest):
         """Return the channels that will be used for the binaries."""
         return [
             {
-                "baseurl": "file://%s" % binaries_path,
+                "baseurl": f"file://{binaries_path}",
                 "components": "",
                 "distribution": "./",
                 "type": "deb",
@@ -188,7 +188,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.assertMessages(self.get_pending_messages(), [])
 
         self.assertIn(
-            "Package data not yet synchronized with server (%r)" % hash2,
+            f"Package data not yet synchronized with server ({hash2!r})",
             self.logfile.getvalue(),
         )
 
@@ -251,7 +251,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer.handle_tasks()
 
         self.assertIn(
-            "Package data not yet synchronized with server (%r)" % b"hash",
+            "Package data not yet synchronized with server (b'hash')",
             self.logfile.getvalue(),
         )
         self.assertTrue(self.store.get_next_task("changer"))
@@ -266,7 +266,7 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer.handle_tasks()
 
         self.assertIn(
-            "Package data not yet synchronized with server (%r)" % b"hash",
+            "Package data not yet synchronized with server (b'hash')",
             self.logfile.getvalue(),
         )
         self.assertTrue(self.store.get_next_task("changer"))

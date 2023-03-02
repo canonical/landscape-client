@@ -123,13 +123,13 @@ class Persist:
                 and os.path.getsize(filepathold) > 0
             ):
 
-                # warning("Broken configuration file at %s" % filepath)
-                # warning("Trying backup at %s" % filepathold)
+                # warning(f"Broken configuration file at {filepath}")
+                # warning(f"Trying backup at {filepathold}")
                 try:
                     self._hardmap = self._backend.load(filepathold)
                 except Exception:
                     raise PersistError(
-                        "Broken configuration file at %s" % filepathold,
+                        f"Broken configuration file at {filepathold}",
                     )
                 return True
             return False
@@ -138,7 +138,7 @@ class Persist:
         if not os.path.isfile(filepath):
             if load_old():
                 return
-            raise PersistError("File not found: %s" % filepath)
+            raise PersistError(f"File not found: {filepath}")
         if os.path.getsize(filepath) == 0:
             load_old()
             return
@@ -147,7 +147,7 @@ class Persist:
         except Exception:
             if load_old():
                 return
-            raise PersistError("Broken configuration file at %s" % filepath)
+            raise PersistError(f"Broken configuration file at {filepath}")
 
     def save(self, filepath=None):
         """Save the persist to the given C{filepath}.
@@ -184,8 +184,8 @@ class Persist:
                 if queue:
                     path = path[: -len(queue)]
                 raise PersistError(
-                    "Can't traverse %r (%r): %r"
-                    % (type(obj), path_tuple_to_string(path), str(obj)),
+                    f"Can't traverse {type(obj)!r} "
+                    f"({path_tuple_to_string(path)!r}): {str(obj)!r}",
                 )
             if newobj is marker:
                 break
@@ -207,8 +207,8 @@ class Persist:
                     newobj = self._backend.set(obj, elem, newvalue)
                     if newobj is NotImplemented:
                         raise PersistError(
-                            "Can't traverse %r with %r"
-                            % (type(obj), type(elem)),
+                            f"Can't traverse {type(obj)!r} "
+                            f"with {type(elem)!r}",
                         )
                     if not queue:
                         break
@@ -243,7 +243,7 @@ class Persist:
             return True
         result = self._backend.has(obj, value)
         if result is NotImplemented:
-            raise PersistError("Can't check %r for containment" % type(obj))
+            raise PersistError(f"Can't check {type(obj)!r} for containment")
         return result
 
     def keys(self, path, soft=False, hard=False, weak=False):
@@ -252,7 +252,7 @@ class Persist:
             return []
         result = self._backend.keys(obj)
         if result is NotImplemented:
-            raise PersistError("Can't return keys for %s" % type(obj))
+            raise PersistError(f"Can't return keys for {type(obj)}")
         return result
 
     def get(self, path, default=None, soft=False, hard=False, weak=False):
@@ -463,7 +463,7 @@ def path_string_to_tuple(path):
                 try:
                     result.append(int(token[1:-1]))
                 except ValueError:
-                    raise PersistError("Invalid path index: %r" % token)
+                    raise PersistError(f"Invalid path index: {token!r}")
             else:
                 result.append(token.replace(r"\.", "."))
     return tuple(result)
@@ -473,7 +473,7 @@ def path_tuple_to_string(path):
     result = []
     for elem in path:
         if type(elem) is int:
-            result[-1] += "[%d]" % elem
+            result[-1] += f"[{elem:d}]"
         else:
             result.append(str(elem).replace(".", r"\."))
     return ".".join(result)

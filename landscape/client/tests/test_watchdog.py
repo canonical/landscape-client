@@ -652,7 +652,7 @@ class DaemonTest(DaemonTestBase):
 
     def test_start_process(self):
         output_filename = self.makeFile("NOT RUN")
-        self._write_script('#!/bin/sh\necho "RUN $@" > %s' % output_filename)
+        self._write_script(f'#!/bin/sh\necho "RUN $@" > {output_filename}')
 
         waiter = FileChangeWaiter(output_filename)
 
@@ -669,7 +669,7 @@ class DaemonTest(DaemonTestBase):
 
     def test_start_process_with_verbose(self):
         output_filename = self.makeFile("NOT RUN")
-        self._write_script('#!/bin/sh\necho "RUN $@" > %s' % output_filename)
+        self._write_script(f'#!/bin/sh\necho "RUN $@" > {output_filename}')
 
         waiter = FileChangeWaiter(output_filename)
 
@@ -688,14 +688,13 @@ class DaemonTest(DaemonTestBase):
         output_filename = self.makeFile("NOT RUN")
         self._write_script(
             (
-                "#!%s\n"
+                f"#!{sys.executable}\n"
                 "import time\n"
-                "file = open(%r, 'w')\n"
+                f"file = open({output_filename!r}, 'w')\n"
                 "file.write('RUN')\n"
                 "file.close()\n"
                 "time.sleep(1000)\n"
-            )
-            % (sys.executable, output_filename),
+            ),
         )
 
         waiter = FileChangeWaiter(output_filename)
@@ -713,15 +712,14 @@ class DaemonTest(DaemonTestBase):
         output_filename = self.makeFile("NOT RUN")
         self._write_script(
             (
-                "#!%s\n"
+                f"#!{sys.executable}\n"
                 "import signal, os\n"
                 "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
-                "file = open(%r, 'w')\n"
+                f"file = open({output_filename!r}, 'w')\n"
                 "file.write('RUN')\n"
                 "file.close()\n"
                 "os.kill(os.getpid(), signal.SIGSTOP)\n"
-            )
-            % (sys.executable, output_filename),
+            ),
         )
 
         self.addCleanup(
@@ -744,7 +742,7 @@ class DaemonTest(DaemonTestBase):
         died.
         """
         output_filename = self.makeFile("NOT RUN")
-        self._write_script('#!/bin/sh\necho "RUN" > %s' % output_filename)
+        self._write_script(f'#!/bin/sh\necho "RUN" > {output_filename}')
 
         self.daemon.start()
 
@@ -759,7 +757,7 @@ class DaemonTest(DaemonTestBase):
         certain amount of time, just like C{wait}.
         """
         output_filename = self.makeFile("NOT RUN")
-        self._write_script('#!/bin/sh\necho "RUN" > %s' % output_filename)
+        self._write_script(f'#!/bin/sh\necho "RUN" > {output_filename}')
 
         self.daemon.start()
 
@@ -772,21 +770,20 @@ class DaemonTest(DaemonTestBase):
         """wait_or_die eventually terminates the process."""
         output_filename = self.makeFile("NOT RUN")
         self._write_script(
-            """\
-#!%(exe)s
+            f"""\
+#!{sys.executable}
 import time
 import signal
-file = open(%(out)r, 'w')
+file = open({output_filename!r}, 'w')
 file.write('unsignalled')
 file.close()
 def term(frame, sig):
-    file = open(%(out)r, 'w')
+    file = open({output_filename!r}, 'w')
     file.write('TERMINATED')
     file.close()
 signal.signal(signal.SIGTERM, term)
 time.sleep(999)
-        """
-            % {"exe": sys.executable, "out": output_filename},
+        """,
         )
 
         self.addCleanup(
@@ -811,15 +808,14 @@ time.sleep(999)
         output_filename = self.makeFile("NOT RUN")
         self._write_script(
             (
-                "#!%s\n"
+                f"#!{sys.executable}\n"
                 "import signal, os\n"
                 "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
-                "file = open(%r, 'w')\n"
+                f"file = open({output_filename!r}, 'w')\n"
                 "file.write('RUN')\n"
                 "file.close()\n"
                 "os.kill(os.getpid(), signal.SIGSTOP)\n"
-            )
-            % (sys.executable, output_filename),
+            ),
         )
 
         self.addCleanup(
@@ -881,7 +877,7 @@ time.sleep(999)
 
         output_filename = self.makeFile("NOT RUN")
 
-        self._write_script("#!/bin/sh\necho RUN >> %s" % output_filename)
+        self._write_script(f"#!/bin/sh\necho RUN >> {output_filename}")
 
         def got_result(result):
             self.assertEqual(
@@ -921,14 +917,14 @@ time.sleep(999)
         # that happend a while ago, and so give the impression that some time
         # has passed and it's fine to restart more times again.
         self.log_helper.ignore_errors(
-            "Can't keep landscape-broker running. " "Exiting.",
+            "Can't keep landscape-broker running. Exiting.",
         )
         stop = []
         stopped = []
 
         output_filename = self.makeFile("NOT RUN")
 
-        self._write_script("#!/bin/sh\necho RUN >> %s" % output_filename)
+        self._write_script(f"#!/bin/sh\necho RUN >> {output_filename}")
 
         def got_result(result):
             # Pay attention to the +1 bellow. It's the reason for this test.
@@ -1081,13 +1077,12 @@ time.sleep(999)
         output_filename = self.makeFile("NOT CALLED")
         socket_filename = os.path.join(self.config.sockets_path, "broker.sock")
         broker_filename = self.makeFile(
-            STUB_BROKER
-            % {
-                "executable": sys.executable,
-                "path": sys.path,
-                "output_filename": output_filename,
-                "socket": socket_filename,
-            },
+            STUB_BROKER.format(
+                executable=sys.executable,
+                path=sys.path,
+                output_filename=output_filename,
+                socket=socket_filename,
+            ),
         )
 
         os.chmod(broker_filename, 0o755)
@@ -1403,7 +1398,7 @@ class WatchDogServiceTest(LandscapeTest):
 
 
 STUB_BROKER = """\
-#!%(executable)s
+#!{executable}
 import sys
 
 import warnings
@@ -1412,7 +1407,7 @@ warnings.filterwarnings("ignore", "Python C API version mismatch",
 
 from twisted.internet import reactor
 
-sys.path = %(path)r
+sys.path = {path!r}
 
 from landscape.lib.amp import MethodCallServerFactory
 from landscape.client.broker.server import BrokerServer
@@ -1421,7 +1416,7 @@ from landscape.client.amp import get_remote_methods
 class StubBroker(object):
 
     def exit(self):
-        file = open(%(output_filename)r, "w")
+        file = open({output_filename!r}, "w")
         file.write("CALLED")
         file.close()
         reactor.callLater(1, reactor.stop)
@@ -1429,7 +1424,7 @@ class StubBroker(object):
 stub_broker = StubBroker()
 methods = get_remote_methods(BrokerServer)
 factory = MethodCallServerFactory(stub_broker, methods)
-reactor.listenUNIX(%(socket)r, factory)
+reactor.listenUNIX({socket!r}, factory)
 reactor.run()
 """
 
@@ -1459,7 +1454,7 @@ class WatchDogRunTests(LandscapeTest):
         with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn(
-            "landscape-client can only be run" " as 'root' or 'landscape'.",
+            "landscape-client can only be run as 'root' or 'landscape'.",
             str(sys_exit),
         )
 

@@ -10,7 +10,7 @@ class LsbReleaseTest(testing.FSTestCase, unittest.TestCase):
     def test_parse_lsb_release(self):
         with mock.patch("landscape.lib.lsb_release.check_output") as co_mock:
             co_mock.return_value = (
-                b"Ubuntu\nUbuntu 22.04.1 LTS\n22.04\njammy" b"\n"
+                b"Ubuntu\nUbuntu 22.04.1 LTS\n22.04\njammy\n"
             )
             lsb_release = parse_lsb_release()
 
@@ -27,7 +27,7 @@ class LsbReleaseTest(testing.FSTestCase, unittest.TestCase):
     def test_parse_lsb_release_debian(self):
         with mock.patch("landscape.lib.lsb_release.check_output") as co_mock:
             co_mock.return_value = (
-                b"Debian\nDebian GNU/Linux 11 (bullseye)\n" b"11\nbullseye\n"
+                b"Debian\nDebian GNU/Linux 11 (bullseye)\n11\nbullseye\n"
             )
             lsb_release = parse_lsb_release()
 
@@ -73,7 +73,7 @@ class LsbReleaseTest(testing.FSTestCase, unittest.TestCase):
         L{parse_lsb_release} ignores lines not matching the map of
         known keys, and returns only keys with an actual value.
         """
-        lsb_release_filename = self.makeFile("DISTRIB_ID=Ubuntu\n" "FOO=Bar\n")
+        lsb_release_filename = self.makeFile("DISTRIB_ID=Ubuntu\nFOO=Bar\n")
 
         with mock.patch("landscape.lib.lsb_release.check_output") as co_mock:
             co_mock.side_effect = CalledProcessError(127, "")

@@ -181,8 +181,8 @@ class TestProtocolServer:
             self.client.adderror(
                 self._current_test,
                 RemoteError(
-                    "lost connection during test '%s'"
-                    % self.current_test_description,
+                    "lost connection during test "
+                    f"'{self.current_test_description}'",
                 ),
             )
             self.client.stopTest(self._current_test)
@@ -192,7 +192,7 @@ class TestProtocolServer:
                 RemoteError(
                     "lost connection during "
                     "error report of test "
-                    "'%s'" % self.current_test_description,
+                    f"'{self.current_test_description}'",
                 ),
             )
             self.client.stopTest(self._current_test)
@@ -202,7 +202,7 @@ class TestProtocolServer:
                 RemoteError(
                     "lost connection during "
                     "failure report of test "
-                    "'%s'" % self.current_test_description,
+                    f"'{self.current_test_description}'",
                 ),
             )
             self.client.stopTest(self._current_test)
@@ -245,25 +245,25 @@ class TestProtocolClient(unittest.TestResult):
 
     def adderror(self, test, error):
         """Report an error in test test."""
-        self._stream.write("error: %s [\n" % test.shortDescription())
+        self._stream.write(f"error: {test.shortDescription()} [\n")
         for line in self._exc_info_to_string(error, test).splitlines():
-            self._stream.write("%s\n" % line)
+            self._stream.write(f"{line}\n")
         self._stream.write("]\n")
 
     def addfailure(self, test, error):
         """Report a failure in test test."""
-        self._stream.write("failure: %s [\n" % test.shortDescription())
+        self._stream.write(f"failure: {test.shortDescription()} [\n")
         for line in self._exc_info_to_string(error, test).splitlines():
-            self._stream.write("%s\n" % line)
+            self._stream.write(f"{line}\n")
         self._stream.write("]\n")
 
     def addsuccess(self, test):
         """Report a success in a test."""
-        self._stream.write("successful: %s\n" % test.shortDescription())
+        self._stream.write(f"successful: {test.shortDescription()}\n")
 
     def starttest(self, test):
         """Mark a test as starting its test run."""
-        self._stream.write("test: %s\n" % test.shortDescription())
+        self._stream.write(f"test: {test.shortDescription()}\n")
 
 
 def RemoteError(description=""):  # noqa: N802
@@ -287,7 +287,7 @@ class RemotedTestCase(unittest.TestCase):
 
     def error(self, label):
         raise NotImplementedError(
-            "%s on RemotedTestCases is not permitted." % label,
+            f"{label} on RemotedTestCases is not permitted.",
         )
 
     def setUp(self):

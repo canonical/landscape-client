@@ -29,7 +29,7 @@ class CurlStub:
     def getinfo(self, what):
         if what in self.infos:
             return self.infos[what]
-        raise RuntimeError("Stub doesn't know about %d info" % what)
+        raise RuntimeError(f"Stub doesn't know about {what:d} info")
 
     def setopt(self, option, value):
         if isinstance(value, unicode):

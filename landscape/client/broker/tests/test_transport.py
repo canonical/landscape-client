@@ -60,7 +60,7 @@ class HTTPTransportTest(LandscapeTest):
         self.ports.append(port)
         transport = HTTPTransport(
             None,
-            "http://localhost:%d/" % (port.getHost().port,),
+            f"http://localhost:{port.getHost().port:d}/",
         )
         result = deferToThread(
             transport.exchange,
@@ -134,7 +134,7 @@ class HTTPTransportTest(LandscapeTest):
         self.ports.append(port)
         transport = HTTPTransport(
             None,
-            "https://localhost:%d/" % (port.getHost().port,),
+            f"https://localhost:{port.getHost().port:d}/",
             PUBKEY,
         )
         result = deferToThread(
@@ -182,7 +182,7 @@ class HTTPTransportTest(LandscapeTest):
         self.ports.append(port)
         transport = HTTPTransport(
             None,
-            "https://localhost:%d/" % (port.getHost().port,),
+            f"https://localhost:{port.getHost().port:d}/",
             pubkey=PUBKEY,
         )
 

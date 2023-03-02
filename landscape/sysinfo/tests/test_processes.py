@@ -37,7 +37,7 @@ class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
                 self.builder.RUNNING,
                 uid=0,
                 gid=0,
-                process_name="foo%d" % (i,),
+                process_name=f"foo{i:d}",
             )
         self.processes.run()
         self.assertEqual(self.sysinfo.get_headers(), [("Processes", "3")])
@@ -69,7 +69,7 @@ class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
                 self.builder.ZOMBIE,
                 uid=0,
                 gid=0,
-                process_name="ZOMBERS%d" % (i,),
+                process_name=f"ZOMBERS{i:d}",
             )
         self.processes.run()
         self.assertEqual(

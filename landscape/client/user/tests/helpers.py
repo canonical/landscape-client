@@ -18,12 +18,12 @@ class FakeUserManagement:
             self._groups[data["name"]] = data
 
     def _make_fake_shadow_file(self, locked_users, unlocked_users):
-        entry = "%s:%s:13348:0:99999:7:::\n"
+        entry = "{}:{}:13348:0:99999:7:::\n"
         shadow_file = open(self.shadow_file, "w")
         for user in locked_users:
-            shadow_file.write(entry % (user, "!"))
+            shadow_file.write(entry.format(user, "!"))
         for user in unlocked_users:
-            shadow_file.write(entry % (user, "qweqweqeqweqw"))
+            shadow_file.write(entry.format(user, "qweqweqeqweqw"))
         shadow_file.close()
 
     def add_user(
@@ -145,7 +145,7 @@ class FakeUserManagement:
         try:
             return self._groups[name]["gid"]
         except KeyError:
-            raise UserManagementError("Group %s wasn't found." % name)
+            raise UserManagementError(f"Group {name} wasn't found.")
 
     def add_group(self, name):
         gid = 1000
