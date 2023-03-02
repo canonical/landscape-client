@@ -60,7 +60,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         )
         config = "\n".join(
             [f"[{section_name}]"]
-            + [f"{key} = {value}" for (key, value) in kwargs.items()],
+            + [f"{key} = {value}" for key, value in kwargs.items()],
         )
         self.config_filename = self.makeFile(config)
         self.config.default_config_filenames[:] = [self.config_filename]
