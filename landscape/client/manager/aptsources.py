@@ -1,3 +1,4 @@
+import glob
 import os
 import pwd
 import grp
@@ -98,6 +99,8 @@ class AptSources(ManagerPlugin):
         """
         Replaces `SOURCES_LIST` with a Landscape-managed version and moves the
         original to a ".save" file.
+
+        Configurably does the same with files in `SOURCES_LIST_D`.
         """
 
         saved_sources = "{}.save".format(self.SOURCES_LIST)
@@ -122,6 +125,11 @@ class AptSources(ManagerPlugin):
             # Re-instate original sources
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
+
+        if self.registry.config.get("manage_sources_list_d", "yes") == "yes":
+            filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list"))
+            for filename in filenames:
+                shutil.move(filename, f"{filename}.save")
 
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
