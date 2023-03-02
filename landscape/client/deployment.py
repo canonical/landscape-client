@@ -116,6 +116,13 @@ class Configuration(BaseConfiguration):
                           dest="stagger_launch", default=0.1, type=float,
                           help="Ratio, between 0 and 1, by which to scatter "
                                "various tasks of landscape.")
+        parser.add_option(
+            "--manage-sources-list-d",
+            action="store_true",
+            default=True,
+            help="Repository profiles manage the files in "
+            "/etc/apt/sources.list.d"
+        )
 
         # Hidden options, used for load-testing to run in-process clones
         parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)

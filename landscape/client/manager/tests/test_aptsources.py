@@ -254,7 +254,7 @@ class AptSourcesTests(LandscapeTest):
                                "file2.list.save"), "w") as sources2:
             sources2.write("ok\n")
 
-        self.manager.config.manage_sources_list_d = "no"
+        self.manager.config.manage_sources_list_d = False
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
              "operation-id": 1})

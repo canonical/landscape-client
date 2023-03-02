@@ -126,7 +126,7 @@ class AptSources(ManagerPlugin):
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
-        if self.registry.config.get("manage_sources_list_d", "yes") == "yes":
+        if self.registry.config.manage_sources_list_d:
             filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list"))
             for filename in filenames:
                 shutil.move(filename, f"{filename}.save")
