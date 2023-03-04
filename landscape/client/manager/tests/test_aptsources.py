@@ -210,10 +210,10 @@ class AptSourcesTests(LandscapeTest):
                               "result-text": msg, "status": FAILED,
                               "operation-id": 1}])
 
-    def test_rename_sources_list_d(self):
+    def test_renames_sources_list_d(self):
         """
         The sources files in sources.list.d are renamed to .save when a message
-        is received.
+        is received if config says to manage them, which is the default.
         """
         with open(os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
                   "w") as sources1:
@@ -232,6 +232,38 @@ class AptSourcesTests(LandscapeTest):
                 os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list")))
 
         self.assertTrue(
+            os.path.exists(
+                os.path.join(self.sourceslist.SOURCES_LIST_D,
+                             "file1.list.save")))
+
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(self.sourceslist.SOURCES_LIST_D,
+                             "file2.list.save")))
+
+    def test_does_not_rename_sources_list_d(self):
+        """
+        The sources files in sources.list.d are not renamed to .save when a
+        message is received if config says not to manage them.
+        """
+        with open(os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
+                  "w") as sources1:
+            sources1.write("ok\n")
+
+        with open(os.path.join(self.sourceslist.SOURCES_LIST_D,
+                               "file2.list.save"), "w") as sources2:
+            sources2.write("ok\n")
+
+        self.manager.config.manage_sources_list_d = False
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+             "operation-id": 1})
+
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list")))
+
+        self.assertFalse(
             os.path.exists(
                 os.path.join(self.sourceslist.SOURCES_LIST_D,
                              "file1.list.save")))
