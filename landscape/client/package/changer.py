@@ -1,28 +1,34 @@
+import grp
 import logging
-import time
 import os
 import pwd
-import grp
+import time
 
-from twisted.internet.defer import maybeDeferred, succeed
 from twisted.internet import reactor
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
 
-from landscape.constants import (
-    SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT,
-    POLICY_STRICT, POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
-    UNKNOWN_PACKAGE_DATA_TIMEOUT)
-
-from landscape.lib.config import get_bindir
-from landscape.lib import base64
-from landscape.lib.fs import create_binary_file
-from landscape.lib.log import log_failure
-from landscape.client.package.reporter import find_reporter_command
-from landscape.client.package.taskhandler import (
-    PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
-    run_task_handler)
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.shutdownmanager import ShutdownProcessProtocol
 from landscape.client.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
+from landscape.client.package.reporter import find_reporter_command
+from landscape.client.package.taskhandler import PackageTaskError
+from landscape.client.package.taskhandler import PackageTaskHandler
+from landscape.client.package.taskhandler import (
+    PackageTaskHandlerConfiguration,
+)
+from landscape.client.package.taskhandler import run_task_handler
+from landscape.constants import DEPENDENCY_ERROR_RESULT
+from landscape.constants import ERROR_RESULT
+from landscape.constants import POLICY_ALLOW_ALL_CHANGES
+from landscape.constants import POLICY_ALLOW_INSTALLS
+from landscape.constants import POLICY_STRICT
+from landscape.constants import SUCCESS_RESULT
+from landscape.constants import UNKNOWN_PACKAGE_DATA_TIMEOUT
+from landscape.lib import base64
+from landscape.lib.config import get_bindir
+from landscape.lib.fs import create_binary_file
+from landscape.lib.log import log_failure
 
 
 class UnknownPackageData(Exception):
@@ -38,7 +44,7 @@ class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
         return os.path.join(self.package_directory, "binaries")
 
 
-class ChangePackagesResult(object):
+class ChangePackagesResult:
     """Value object to hold the results of change packages operation.
 
     @ivar code: The result code of the requested changes.
@@ -63,14 +69,27 @@ class PackageChanger(PackageTaskHandler):
 
     queue_name = "changer"
 
-    def __init__(self, store, facade, remote, config, process_factory=reactor,
-                 landscape_reactor=None,
-                 reboot_required_filename=REBOOT_REQUIRED_FILENAME):
-        super(PackageChanger, self).__init__(
-            store, facade, remote, config, landscape_reactor)
+    def __init__(
+        self,
+        store,
+        facade,
+        remote,
+        config,
+        process_factory=reactor,
+        landscape_reactor=None,
+        reboot_required_filename=REBOOT_REQUIRED_FILENAME,
+    ):
+        super().__init__(
+            store,
+            facade,
+            remote,
+            config,
+            landscape_reactor,
+        )
         self._process_factory = process_factory
         if landscape_reactor is None:  # For testing purposes.
             from landscape.client.reactor import LandscapeReactor
+
             self._landscape_reactor = LandscapeReactor()
         else:
             self._landscape_reactor = landscape_reactor
@@ -103,7 +122,7 @@ class PackageChanger(PackageTaskHandler):
             os.setuid(pwd.getpwnam("landscape").pw_uid)
         command = find_reporter_command(self._config)
         if self._config.config is not None:
-            command += " -c %s" % self._config.config
+            command += f" -c {self._config.config}"
         os.system(command)
 
     def handle_task(self, task):
@@ -129,14 +148,18 @@ class PackageChanger(PackageTaskHandler):
         up again at the next run.
         """
         failure.trap(UnknownPackageData)
-        logging.warning("Package data not yet synchronized with server (%r)" %
-                        failure.value.args[0])
+        logging.warning(
+            "Package data not yet synchronized with "
+            f"server ({failure.value.args[0]!r})",
+        )
         if task.timestamp < time.time() - UNKNOWN_PACKAGE_DATA_TIMEOUT:
-            message = {"type": "change-packages-result",
-                       "operation-id": task.data["operation-id"],
-                       "result-code": ERROR_RESULT,
-                       "result-text": "Package data has changed. "
-                                      "Please retry the operation."}
+            message = {
+                "type": "change-packages-result",
+                "operation-id": task.data["operation-id"],
+                "result-code": ERROR_RESULT,
+                "result-text": "Package data has changed. "
+                "Please retry the operation.",
+            }
             return self._broker.send_message(message, self._session_id)
         else:
             raise PackageTaskError()
@@ -145,8 +168,9 @@ class PackageChanger(PackageTaskHandler):
         """
         Return a boolean indicating if the update-stamp stamp file exists.
         """
-        return (os.path.exists(self._config.update_stamp_filename) or
-                os.path.exists(self.update_notifier_stamp))
+        return os.path.exists(
+            self._config.update_stamp_filename,
+        ) or os.path.exists(self.update_notifier_stamp)
 
     def _clear_binaries(self):
         """Remove any binaries and its associated channel."""
@@ -161,8 +185,9 @@ class PackageChanger(PackageTaskHandler):
         """Initialize the Apt channels as needed.
 
         @param binaries: A possibly empty list of 3-tuples of the form
-            (hash, id, deb), holding the hash, the id and the content of
-            additional Debian packages that should be loaded in the channels.
+            (bin_hash, bin_id, deb), holding the hash, the id and the content
+            of additional Debian packages that should be loaded in the
+            channels.
         """
         binaries_path = self._config.binaries_path
 
@@ -171,18 +196,27 @@ class PackageChanger(PackageTaskHandler):
 
         if binaries:
             hash_ids = {}
-            for hash, id, deb in binaries:
-                create_binary_file(os.path.join(binaries_path, "%d.deb" % id),
-                                   base64.decodebytes(deb))
-                hash_ids[hash] = id
+            for bin_hash, bin_id, deb in binaries:
+                create_binary_file(
+                    os.path.join(binaries_path, f"{bin_id:d}.deb"),
+                    base64.decodebytes(deb),
+                )
+                hash_ids[bin_hash] = bin_id
             self._store.set_hash_ids(hash_ids)
             self._facade.add_channel_deb_dir(binaries_path)
             self._facade.reload_channels(force_reload_binaries=True)
 
         self._facade.ensure_channels_reloaded()
 
-    def mark_packages(self, upgrade=False, install=(), remove=(),
-                      hold=(), remove_hold=(), reset=True):
+    def mark_packages(
+        self,
+        upgrade=False,
+        install=(),
+        remove=(),
+        hold=(),
+        remove_hold=(),
+        reset=True,
+    ):
         """Mark packages for upgrade, installation or removal.
 
         @param upgrade: If C{True} mark all installed packages for upgrade.
@@ -200,10 +234,11 @@ class PackageChanger(PackageTaskHandler):
             self._facade.mark_global_upgrade()
 
         for mark_function, mark_ids in [
-                (self._facade.mark_install, install),
-                (self._facade.mark_remove, remove),
-                (self._facade.mark_hold, hold),
-                (self._facade.mark_remove_hold, remove_hold)]:
+            (self._facade.mark_install, install),
+            (self._facade.mark_remove, remove),
+            (self._facade.mark_hold, hold),
+            (self._facade.mark_remove_hold, remove_hold),
+        ]:
             for mark_id in mark_ids:
                 hash = self._store.get_id_hash(mark_id)
                 if hash is None:
@@ -225,7 +260,9 @@ class PackageChanger(PackageTaskHandler):
         # Delay importing these so that we don't import Apt unless
         # we really need to.
         from landscape.lib.apt.package.facade import (
-                DependencyError, TransactionError)
+            DependencyError,
+            TransactionError,
+        )
 
         result = ChangePackagesResult()
         count = 0
@@ -252,15 +289,18 @@ class PackageChanger(PackageTaskHandler):
                         result.installs.append(id)
                 if count == 1 and self.may_complement_changes(result, policy):
                     # Mark all missing packages and try one more iteration
-                    self.mark_packages(install=result.installs,
-                                       remove=result.removals, reset=False)
+                    self.mark_packages(
+                        install=result.installs,
+                        remove=result.removals,
+                        reset=False,
+                    )
                 else:
                     result.code = DEPENDENCY_ERROR_RESULT
             else:
                 result.code = SUCCESS_RESULT
 
         if result.code == SUCCESS_RESULT and result.text is None:
-            result.text = 'No changes required; all changes already performed'
+            result.text = "No changes required; all changes already performed"
         return result
 
     def may_complement_changes(self, result, policy):
@@ -288,20 +328,27 @@ class PackageChanger(PackageTaskHandler):
         """Handle a C{change-packages} message."""
 
         self.init_channels(message.get("binaries", ()))
-        self.mark_packages(upgrade=message.get("upgrade-all", False),
-                           install=message.get("install", ()),
-                           remove=message.get("remove", ()),
-                           hold=message.get("hold", ()),
-                           remove_hold=message.get("remove-hold", ()))
+        self.mark_packages(
+            upgrade=message.get("upgrade-all", False),
+            install=message.get("install", ()),
+            remove=message.get("remove", ()),
+            hold=message.get("hold", ()),
+            remove_hold=message.get("remove-hold", ()),
+        )
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
-        needs_reboot = (message.get("reboot-if-necessary") and
-                        os.path.exists(self.reboot_required_filename))
+        needs_reboot = message.get("reboot-if-necessary") and os.path.exists(
+            self.reboot_required_filename,
+        )
         stop_exchanger = needs_reboot
 
-        deferred = self._send_response(None, message, result,
-                                       stop_exchanger=stop_exchanger)
+        deferred = self._send_response(
+            None,
+            message,
+            result,
+            stop_exchanger=stop_exchanger,
+        )
         if needs_reboot:
             # Reboot the system after a short delay after the response has been
             # sent to the broker. This is to allow the broker time to save the
@@ -327,24 +374,39 @@ class PackageChanger(PackageTaskHandler):
         protocol.set_timeout(self._landscape_reactor)
         protocol.result.addCallback(self._log_reboot, minutes)
         protocol.result.addErrback(log_failure, "Reboot failed.")
-        args = ["/sbin/shutdown", "-r", minutes,
-                "Landscape is rebooting the system"]
+        args = [
+            "/sbin/shutdown",
+            "-r",
+            minutes,
+            "Landscape is rebooting the system",
+        ]
         self._process_factory.spawnProcess(
-            protocol, "/sbin/shutdown", args=args)
+            protocol,
+            "/sbin/shutdown",
+            args=args,
+        )
         return protocol.result
 
     def _log_reboot(self, result, minutes):
         """Log the reboot."""
         logging.warning(
-            "Landscape is rebooting the system in %s minutes" % minutes)
+            f"Landscape is rebooting the system in {minutes} minutes",
+        )
 
-    def _send_response(self, reboot_result, message, package_change_result,
-                       stop_exchanger=False):
+    def _send_response(
+        self,
+        reboot_result,
+        message,
+        package_change_result,
+        stop_exchanger=False,
+    ):
         """
         Create a response and dispatch to the broker.
         """
-        response = {"type": "change-packages-result",
-                    "operation-id": message.get("operation-id")}
+        response = {
+            "type": "change-packages-result",
+            "operation-id": message.get("operation-id"),
+        }
 
         response["result-code"] = package_change_result.code
         if package_change_result.text:
@@ -354,8 +416,10 @@ class PackageChanger(PackageTaskHandler):
         if package_change_result.removals:
             response["must-remove"] = sorted(package_change_result.removals)
 
-        logging.info("Queuing response with change package results to "
-                     "exchange urgently.")
+        logging.info(
+            "Queuing response with change package results to "
+            "exchange urgently.",
+        )
 
         deferred = self._broker.send_message(response, self._session_id, True)
         if stop_exchanger:
@@ -374,7 +438,8 @@ class PackageChanger(PackageTaskHandler):
             "operation-id": message.get("operation-id"),
             "status": FAILED,
             "result-text": "This client doesn't support package locks.",
-            "result-code": 1}
+            "result-code": 1,
+        }
         return self._broker.send_message(response, self._session_id, True)
 
     @classmethod

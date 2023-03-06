@@ -1,14 +1,13 @@
 import unittest
 
 from landscape.lib.testing import TwistedTestCase
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.landscapelink import LandscapeLink
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
 class LandscapeLinkTest(TwistedTestCase, unittest.TestCase):
-
     def setUp(self):
-        super(LandscapeLinkTest, self).setUp()
+        super().setUp()
         self.landscape_link = LandscapeLink()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.landscape_link)
@@ -20,5 +19,8 @@ class LandscapeLinkTest(TwistedTestCase, unittest.TestCase):
         self.landscape_link.run()
         self.assertEqual(
             self.sysinfo.get_footnotes(),
-            ["Graph this data and manage this system at:\n"
-             "    https://landscape.canonical.com/"])
+            [
+                "Graph this data and manage this system at:\n"
+                "    https://landscape.canonical.com/",
+            ],
+        )

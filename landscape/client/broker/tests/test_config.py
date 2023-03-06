@@ -1,8 +1,8 @@
 import os
 
 from landscape.client.broker.config import BrokerConfiguration
-from landscape.lib.testing import EnvironSaverHelper
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.testing import EnvironSaverHelper
 
 
 class ConfigurationTests(LandscapeTest):
@@ -20,9 +20,16 @@ class ConfigurationTests(LandscapeTest):
             del os.environ["https_proxy"]
 
         configuration = BrokerConfiguration()
-        configuration.load(["--http-proxy", "foo",
-                            "--https-proxy", "bar",
-                            "--url", "whatever"])
+        configuration.load(
+            [
+                "--http-proxy",
+                "foo",
+                "--https-proxy",
+                "bar",
+                "--url",
+                "whatever",
+            ],
+        )
         self.assertEqual(os.environ["http_proxy"], "foo")
         self.assertEqual(os.environ["https_proxy"], "bar")
 
@@ -53,9 +60,9 @@ class ConfigurationTests(LandscapeTest):
         os.environ["https_proxy"] = "originals"
 
         configuration = BrokerConfiguration()
-        configuration.load(["--http-proxy", "x",
-                            "--https-proxy", "y",
-                            "--url", "whatever"])
+        configuration.load(
+            ["--http-proxy", "x", "--https-proxy", "y", "--url", "whatever"],
+        )
         self.assertEqual(os.environ["http_proxy"], "x")
         self.assertEqual(os.environ["https_proxy"], "y")
 
@@ -74,10 +81,12 @@ class ConfigurationTests(LandscapeTest):
         The 'urgent_exchange_interval, 'exchange_interval' and 'ping_interval'
         values specified in the configuration file are converted to integers.
         """
-        filename = self.makeFile("[client]\n"
-                                 "urgent_exchange_interval = 12\n"
-                                 "exchange_interval = 34\n"
-                                 "ping_interval = 6\n")
+        filename = self.makeFile(
+            "[client]\n"
+            "urgent_exchange_interval = 12\n"
+            "exchange_interval = 34\n"
+            "ping_interval = 6\n",
+        )
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])
@@ -91,8 +100,9 @@ class ConfigurationTests(LandscapeTest):
         The 'tags' value specified in the configuration file is not converted
         to a list (it must be a string). See bug #1228301.
         """
-        filename = self.makeFile("[client]\n"
-                                 "tags = check,linode,profile-test")
+        filename = self.makeFile(
+            "[client]\ntags = check,linode,profile-test",
+        )
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])
@@ -104,8 +114,7 @@ class ConfigurationTests(LandscapeTest):
         The 'access_group' value specified in the configuration file is
         passed through.
         """
-        filename = self.makeFile("[client]\n"
-                                 "access_group = webserver")
+        filename = self.makeFile("[client]\naccess_group = webserver")
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])
@@ -122,5 +131,7 @@ class ConfigurationTests(LandscapeTest):
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename])
 
-        self.assertEqual(configuration.url,
-                         "https://landscape.canonical.com/message-system")
+        self.assertEqual(
+            configuration.url,
+            "https://landscape.canonical.com/message-system",
+        )

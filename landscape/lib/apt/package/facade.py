@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import hashlib
 import logging
 import os
@@ -7,23 +5,23 @@ import subprocess
 import sys
 import tempfile
 import time
-
 from operator import attrgetter
 
 import apt
 import apt_inst
 import apt_pkg
-
-from aptsources.sourceslist import SourcesList
-from apt.progress.text import AcquireProgress
 from apt.progress.base import InstallProgress
+from apt.progress.text import AcquireProgress
+from aptsources.sourceslist import SourcesList
 from twisted.python.compat import itervalues
 
-
-from landscape.lib.compat import StringIO
-from landscape.lib.fs import append_text_file, create_text_file
-from landscape.lib.fs import read_text_file, read_binary_file, touch_file
 from .skeleton import build_skeleton_apt
+from landscape.lib.compat import StringIO
+from landscape.lib.fs import append_text_file
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_binary_file
+from landscape.lib.fs import read_text_file
+from landscape.lib.fs import touch_file
 
 
 class TransactionError(Exception):
@@ -37,8 +35,11 @@ class DependencyError(Exception):
         self.packages = packages
 
     def __str__(self):
-        return ("Missing dependencies: %s" %
-                ", ".join([str(package) for package in self.packages]))
+        return "Missing dependencies: {}".format(
+            ", ".join(
+                [str(package) for package in self.packages],
+            ),
+        )
 
 
 class ChannelError(Exception):
@@ -46,7 +47,6 @@ class ChannelError(Exception):
 
 
 class LandscapeAcquireProgress(AcquireProgress):
-
     def _winch(self, *dummy):
         """Override trying to get the column count of the buffer.
 
@@ -84,13 +84,13 @@ class LandscapeInstallProgress(InstallProgress):
         determine whether there were any errors. If dpkg didn't exit
         cleanly it should mean that something went wrong.
         """
-        res = super(LandscapeInstallProgress, self).wait_child()
+        res = super().wait_child()
         self.dpkg_exited = os.WIFEXITED(res)
         return res
 
     def fork(self):
         """Fork and override the excepthook in the child process."""
-        pid = super(LandscapeInstallProgress, self).fork()
+        pid = super().fork()
         if pid == 0:
             # No need to clean up after ourselves, since the child
             # process will die after dpkg has been run.
@@ -115,7 +115,7 @@ class LandscapeInstallProgress(InstallProgress):
         self.old_excepthook(exc_type, exc_obj, exc_tb)
 
 
-class AptFacade(object):
+class AptFacade:
     """Wrapper for tasks using Apt.
 
     This object wraps Apt features, in a way that makes using and testing
@@ -186,14 +186,19 @@ class AptFacade(object):
         For Apt, it means all packages that are held.
         """
         return [
-            version for version in self.get_packages()
-            if (self.is_package_installed(version) and
-                self._is_package_held(version.package))]
+            version
+            for version in self.get_packages()
+            if (
+                self.is_package_installed(version)
+                and self._is_package_held(version.package)
+            )
+        ]
 
     def get_package_holds(self):
         """Return the name of all the packages that are on hold."""
-        return sorted([version.package.name
-                       for version in self.get_locked_packages()])
+        return sorted(
+            [version.package.name for version in self.get_locked_packages()],
+        )
 
     def _set_dpkg_selections(self, selection):
         """Set the dpkg selection.
@@ -202,7 +207,8 @@ class AptFacade(object):
         """
         process = subprocess.Popen(
             ["dpkg", "--set-selections"] + self._dpkg_args,
-            stdin=subprocess.PIPE)
+            stdin=subprocess.PIPE,
+        )
         # We need bytes here to communicate with the process.
         process.communicate(selection.encode("utf-8"))
 
@@ -218,9 +224,9 @@ class AptFacade(object):
 
         @param version: The version of the package to unhold.
         """
-        if (not self.is_package_installed(version) or
-            not self._is_package_held(version.package)
-            ):
+        if not self.is_package_installed(version) or not self._is_package_held(
+            version.package,
+        ):
             return
         self._set_dpkg_selections(version.package.name + " install")
 
@@ -233,9 +239,9 @@ class AptFacade(object):
         """
         self._cache.open(None)
         internal_sources_list = self._get_internal_sources_list()
-        if (self.refetch_package_index or
-            (force_reload_binaries and os.path.exists(internal_sources_list))
-            ):
+        if self.refetch_package_index or (
+            force_reload_binaries and os.path.exists(internal_sources_list)
+        ):
 
             # Try to update only the internal repos, if the python-apt
             # version is new enough to accept a sources_list parameter.
@@ -249,8 +255,8 @@ class AptFacade(object):
                     self._cache.update()
             except apt.cache.FetchFailedException:
                 raise ChannelError(
-                    "Apt failed to reload channels (%r)" % (
-                        self.get_channels()))
+                    f"Apt failed to reload channels ({self.get_channels()!r})",
+                )
             self._cache.open(None)
 
         self._pkg2hash.clear()
@@ -260,7 +266,9 @@ class AptFacade(object):
                 continue
             for version in package.versions:
                 hash = self.get_package_skeleton(
-                    version, with_info=False).get_hash()
+                    version,
+                    with_info=False,
+                ).get_hash()
                 # Use a tuple including the package, since the Version
                 # objects of two different packages can have the same
                 # hash.
@@ -279,8 +287,13 @@ class AptFacade(object):
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
         return os.path.join(sources_dir, "_landscape-internal-facade.list")
 
-    def add_channel_apt_deb(self, url, codename, components=None,
-                            trusted=None):
+    def add_channel_apt_deb(
+        self,
+        url,
+        codename,
+        components=None,
+        trusted=None,
+    ):
         """Add a deb URL which points to a repository.
 
         @param url: The base URL of the repository.
@@ -292,10 +305,10 @@ class AptFacade(object):
         source_options = ""
         if trusted is not None and url.startswith("file:"):
             trusted_val = "yes" if trusted else "no"
-            source_options = "[ trusted={} ] ".format(trusted_val)
-        sources_line = "deb {}{} {}".format(source_options, url, codename)
+            source_options = f"[ trusted={trusted_val} ] "
+        sources_line = f"deb {source_options}{url} {codename}"
         if components:
-            sources_line += " %s" % " ".join(components)
+            sources_line += " {}".format(" ".join(components))
         if os.path.exists(sources_file_path):
             current_content = read_text_file(sources_file_path).split("\n")
             if sources_line in current_content:
@@ -314,7 +327,7 @@ class AptFacade(object):
         self._create_packages_file(path)
         # yakkety+ validate even file repository by default. deb dirs don't
         # have a signed Release file but are local so they should be trusted.
-        self.add_channel_apt_deb("file://%s" % path, "./", None, trusted=True)
+        self.add_channel_apt_deb(f"file://{path}", "./", None, trusted=True)
 
     def clear_channels(self):
         """Clear the channels that have been added through the facade.
@@ -345,9 +358,16 @@ class AptFacade(object):
         and type keys.
         """
         sources_list = SourcesList()
-        return [{"baseurl": entry.uri, "distribution": entry.dist,
-                 "components": " ".join(entry.comps), "type": entry.type}
-                for entry in sources_list if not entry.disabled]
+        return [
+            {
+                "baseurl": entry.uri,
+                "distribution": entry.dist,
+                "components": " ".join(entry.comps),
+                "type": entry.type,
+            }
+            for entry in sources_list
+            if not entry.disabled
+        ]
 
     def reset_channels(self):
         """Remove all the configured channels."""
@@ -373,17 +393,26 @@ class AptFacade(object):
         sha1 = hashlib.sha1(contents).hexdigest()
         sha256 = hashlib.sha256(contents).hexdigest()
         tag_section = apt_pkg.TagSection(control)
-        new_tags = [("Filename", filename), ("Size", str(size)),
-                    ("MD5sum", md5), ("SHA1", sha1), ("SHA256", sha256)]
+        new_tags = [
+            ("Filename", filename),
+            ("Size", str(size)),
+            ("MD5sum", md5),
+            ("SHA1", sha1),
+            ("SHA256", sha256),
+        ]
         try:
             tag_section.write(
                 dest,
                 apt_pkg.REWRITE_PACKAGE_ORDER,
-                [apt_pkg.TagRewrite(k, v) for k, v in new_tags])
+                [apt_pkg.TagRewrite(k, v) for k, v in new_tags],
+            )
         except AttributeError:
             # support for python-apt < 1.9
             section = apt_pkg.rewrite_section(
-                tag_section, apt_pkg.REWRITE_PACKAGE_ORDER, new_tags)
+                tag_section,
+                apt_pkg.REWRITE_PACKAGE_ORDER,
+                new_tags,
+            )
             dest.write(section.encode("utf-8"))
 
     def get_arch(self):
@@ -481,8 +510,10 @@ class AptFacade(object):
         @param name: The name the returned packages should have.
         """
         return [
-            version for version in self.get_packages()
-            if version.package.name == name]
+            version
+            for version in self.get_packages()
+            if version.package.name == name
+        ]
 
     def _is_package_broken(self, package):
         """Is the package broken?
@@ -497,18 +528,21 @@ class AptFacade(object):
         """
         if package.is_inst_broken:
             return True
-        if (not package.marked_install and
-            not package.marked_upgrade and
-            not package.marked_downgrade
-            ):
+        if (
+            not package.marked_install
+            and not package.marked_upgrade
+            and not package.marked_downgrade
+        ):
             return package in self._package_installs
         return False
 
     def _get_broken_packages(self):
         """Return the packages that are in a broken state."""
-        return set(
-            version.package for version in self.get_packages()
-            if self._is_package_broken(version.package))
+        return {
+            version.package
+            for version in self.get_packages()
+            if self._is_package_broken(version.package)
+        }
 
     def _get_changed_versions(self, package):
         """Return the versions that will be changed for the package.
@@ -538,26 +572,31 @@ class AptFacade(object):
         # comparison checks. Same versions of different packages compare
         # as being the same, so we need to include the package as well.
         all_changes = [
-            (version.package, version) for version in requested_changes]
+            (version.package, version) for version in requested_changes
+        ]
         versions_to_be_changed = set()
         for package in self._cache.get_changes():
             if not self._is_main_architecture(package):
                 continue
             versions = self._get_changed_versions(package)
             versions_to_be_changed.update(
-                (package, version) for version in versions)
+                (package, version) for version in versions
+            )
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
-                [version for package, version in dependencies])
+                [version for package, version in dependencies],
+            )
         return len(versions_to_be_changed) > 0
 
     def _get_unmet_relation_info(self, dep_relation):
         """Return a string representation of a specific dependency relation."""
         info = dep_relation.target_pkg.name
         if dep_relation.target_ver:
-            info += " (%s %s)" % (
-                dep_relation.comp_type, dep_relation.target_ver)
+            info += " ({} {})".format(
+                dep_relation.comp_type,
+                dep_relation.target_ver,
+            )
         reason = " but is not installable"
         if dep_relation.target_pkg.name in self._cache:
             dep_package = self._cache[dep_relation.target_pkg.name]
@@ -565,7 +604,7 @@ class AptFacade(object):
                 version = dep_package.candidate.version
                 if dep_package not in self._cache.get_changes():
                     version = dep_package.installed.version
-                reason = " but %s is to be installed" % version
+                reason = f" but {version} is to be installed"
         info += reason
         return info
 
@@ -582,10 +621,10 @@ class AptFacade(object):
         for or_dep in dependency:
             for target in or_dep.all_targets():
                 package = target.parent_pkg
-                if ((package.current_state == apt_pkg.CURSTATE_INSTALLED or
-                     depcache.marked_install(package)) and
-                    not depcache.marked_delete(package)
-                    ):
+                if (
+                    package.current_state == apt_pkg.CURSTATE_INSTALLED
+                    or depcache.marked_install(package)
+                ) and not depcache.marked_delete(package):
 
                     return is_positive
         return not is_positive
@@ -608,8 +647,9 @@ class AptFacade(object):
             found_dependency_error = False
             # Fetch candidate version from our install list because
             # apt-2.1.5 resets broken packages candidate.
-            candidate = next(v._cand for v in self._version_installs
-                             if v.package == package)
+            candidate = next(
+                v._cand for v in self._version_installs if v.package == package
+            )
             for dep_type in ["PreDepends", "Depends", "Conflicts", "Breaks"]:
                 dependencies = candidate.depends_list.get(dep_type, [])
                 for dependency in dependencies:
@@ -618,14 +658,19 @@ class AptFacade(object):
                     relation_infos = []
                     for dep_relation in dependency:
                         relation_infos.append(
-                            self._get_unmet_relation_info(dep_relation))
-                    info = "  %s: %s: " % (package.name, dep_type)
+                            self._get_unmet_relation_info(dep_relation),
+                        )
+                    info = f"  {package.name}: {dep_type}: "
                     or_divider = " or\n" + " " * len(info)
                     all_info.append(info + or_divider.join(relation_infos))
                     found_dependency_error = True
             if not found_dependency_error:
                 all_info.append(
-                    "  %s: %s" % (package.name, "Unknown dependency error"))
+                    "  {}: {}".format(
+                        package.name,
+                        "Unknown dependency error",
+                    ),
+                )
         return "\n".join(all_info)
 
     def _set_frontend_noninteractive(self):
@@ -648,19 +693,29 @@ class AptFacade(object):
         """
         Perform pending hold operations on packages.
         """
-        hold_changes = (len(self._version_hold_creations) > 0 or
-                        len(self._version_hold_removals) > 0)
+        hold_changes = (
+            len(self._version_hold_creations) > 0
+            or len(self._version_hold_removals) > 0
+        )
         if not hold_changes:
             return None
-        not_installed = [version for version in
-                         self._version_hold_creations
-                         if not self.is_package_installed(version)]
+        not_installed = [
+            version
+            for version in self._version_hold_creations
+            if not self.is_package_installed(version)
+        ]
         if not_installed:
             raise TransactionError(
-                "Cannot perform the changes, since the following " +
-                "packages are not installed: %s" % ", ".join(
-                    [version.package.name
-                     for version in sorted(not_installed)]))
+                "Cannot perform the changes, since the following "
+                + "packages are not installed: {}".format(
+                    ", ".join(
+                        [
+                            version.package.name
+                            for version in sorted(not_installed)
+                        ],
+                    ),
+                ),
+            )
 
         for version in self._version_hold_creations:
             self.set_package_hold(version)
@@ -701,33 +756,43 @@ class AptFacade(object):
                     time.sleep(self.dpkg_retry_sleep)
                     logging.warning(
                         "dpkg process might be in use. "
-                        "Retrying package changes. %d retries remaining."
-                        % (self.max_dpkg_retries - dpkg_tries))
+                        "Retrying package changes. "
+                        f"{self.max_dpkg_retries - dpkg_tries:d} "
+                        "retries remaining.",
+                    )
                 dpkg_tries += 1
                 try:
                     self._cache.commit(
                         fetch_progress=LandscapeAcquireProgress(fetch_output),
-                        install_progress=install_progress)
+                        install_progress=install_progress,
+                    )
                     if not install_progress.dpkg_exited:
                         raise SystemError("dpkg didn't exit cleanly.")
                 except SystemError as exc:
-                    result_text = (fetch_output.getvalue() +
-                                   read_text_file(install_output_path))
-                    error = TransactionError(exc.args[0] +
-                                             "\n\nPackage operation log:\n" +
-                                             result_text)
+                    result_text = fetch_output.getvalue() + read_text_file(
+                        install_output_path,
+                    )
+                    error = TransactionError(
+                        exc.args[0]
+                        + "\n\nPackage operation log:\n"
+                        + result_text,
+                    )
                     # No need to retry SystemError, since it's most
                     # likely a permanent error.
                     break
                 except apt.cache.LockFailedException as exception:
-                    result_text = (fetch_output.getvalue() +
-                                   read_text_file(install_output_path))
-                    error = TransactionError(exception.args[0] +
-                                             "\n\nPackage operation log:\n" +
-                                             result_text)
+                    result_text = fetch_output.getvalue() + read_text_file(
+                        install_output_path,
+                    )
+                    error = TransactionError(
+                        exception.args[0]
+                        + "\n\nPackage operation log:\n"
+                        + result_text,
+                    )
                 else:
-                    result_text = (fetch_output.getvalue() +
-                                   read_text_file(install_output_path))
+                    result_text = fetch_output.getvalue() + read_text_file(
+                        install_output_path,
+                    )
                     break
             if error is not None:
                 raise error
@@ -754,8 +819,9 @@ class AptFacade(object):
             # installed packages from auto-removal, while allowing upgrades
             # of auto-removable packages.
             is_manual = (
-                not version.package.installed or
-                not version.package.is_auto_installed)
+                not version.package.installed
+                or not version.package.is_auto_installed
+            )
 
             # Set auto_fix=False to avoid removing the package we asked to
             # install when we need to resolve dependencies.
@@ -767,12 +833,15 @@ class AptFacade(object):
     def _preprocess_removes(self, fixer):
         held_package_names = set()
 
-        package_installs = set(
-            version.package for version in self._version_installs)
+        package_installs = {
+            version.package for version in self._version_installs
+        }
 
-        package_upgrades = set(
-            version.package for version in self._version_removals
-            if version.package in package_installs)
+        package_upgrades = {
+            version.package
+            for version in self._version_removals
+            if version.package in package_installs
+        }
 
         for version in self._version_removals:
             if self._is_package_held(version.package):
@@ -796,8 +865,9 @@ class AptFacade(object):
 
         if held_package_names:
             raise TransactionError(
-                "Can't perform the changes, since the following packages" +
-                " are held: %s" % ", ".join(sorted(held_package_names)))
+                "Can't perform the changes, since the following packages "
+                "are held: {}".format(", ".join(sorted(held_package_names))),
+            )
 
     def _preprocess_global_upgrade(self):
         if self._global_upgrade:
@@ -812,8 +882,9 @@ class AptFacade(object):
             try:
                 fixer.resolve(True)
             except SystemError as error:
-                raise TransactionError(error.args[0] + "\n" +
-                                       self._get_unmet_dependency_info())
+                raise TransactionError(
+                    error.args[0] + "\n" + self._get_unmet_dependency_info(),
+                )
             else:
                 now_broken_packages = self._get_broken_packages()
                 if now_broken_packages != already_broken_packages:
@@ -822,7 +893,7 @@ class AptFacade(object):
     def _preprocess_package_changes(self):
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
-        if (not version_changes and not self._global_upgrade):
+        if not version_changes and not self._global_upgrade:
             return []
         already_broken_packages = self._get_broken_packages()
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)

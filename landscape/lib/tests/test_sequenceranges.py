@@ -1,12 +1,15 @@
 import unittest
 
-from landscape.lib.sequenceranges import (
-    SequenceRanges, remove_from_ranges, add_to_ranges, find_ranges_index,
-    ranges_to_sequence, sequence_to_ranges, SequenceError)
+from landscape.lib.sequenceranges import add_to_ranges
+from landscape.lib.sequenceranges import find_ranges_index
+from landscape.lib.sequenceranges import ranges_to_sequence
+from landscape.lib.sequenceranges import remove_from_ranges
+from landscape.lib.sequenceranges import sequence_to_ranges
+from landscape.lib.sequenceranges import SequenceError
+from landscape.lib.sequenceranges import SequenceRanges
 
 
 class SequenceRangesTest(unittest.TestCase):
-
     def setUp(self):
         self.ranges = [1, 2, (15, 17), 19, (21, 24), 26, 27]
         self.sequence = [1, 2, 15, 16, 17, 19, 21, 22, 23, 24, 26, 27]
@@ -82,7 +85,6 @@ class SequenceRangesTest(unittest.TestCase):
 
 
 class SequenceToRangesTest(unittest.TestCase):
-
     def test_empty(self):
         self.assertEqual(list(sequence_to_ranges([])), [])
 
@@ -97,8 +99,10 @@ class SequenceToRangesTest(unittest.TestCase):
 
     def test_many_elements(self):
         sequence = [1, 2, 15, 16, 17, 19, 21, 22, 23, 24, 26, 27]
-        self.assertEqual(list(sequence_to_ranges(sequence)),
-                         [1, 2, (15, 17), 19, (21, 24), 26, 27])
+        self.assertEqual(
+            list(sequence_to_ranges(sequence)),
+            [1, 2, (15, 17), 19, (21, 24), 26, 27],
+        )
 
     def test_out_of_order(self):
         self.assertRaises(SequenceError, next, sequence_to_ranges([2, 1]))
@@ -108,7 +112,6 @@ class SequenceToRangesTest(unittest.TestCase):
 
 
 class RangesToSequenceTest(unittest.TestCase):
-
     def test_empty(self):
         self.assertEqual(list(ranges_to_sequence([])), [])
 
@@ -123,8 +126,10 @@ class RangesToSequenceTest(unittest.TestCase):
 
     def test_many_elements(self):
         ranges = [1, 2, (15, 17), 19, (21, 24), 26, 27]
-        self.assertEqual(list(ranges_to_sequence(ranges)),
-                         [1, 2, 15, 16, 17, 19, 21, 22, 23, 24, 26, 27])
+        self.assertEqual(
+            list(ranges_to_sequence(ranges)),
+            [1, 2, 15, 16, 17, 19, 21, 22, 23, 24, 26, 27],
+        )
 
     def test_invalid_range(self):
         """
@@ -135,7 +140,6 @@ class RangesToSequenceTest(unittest.TestCase):
 
 
 class FindRangesIndexTest(unittest.TestCase):
-
     def test_empty(self):
         self.assertEqual(find_ranges_index([], 2), 0)
 
@@ -173,7 +177,6 @@ class FindRangesIndexTest(unittest.TestCase):
 
 
 class AddToRangesTest(unittest.TestCase):
-
     def test_empty(self):
         ranges = []
         add_to_ranges(ranges, 1)
@@ -235,7 +238,6 @@ class AddToRangesTest(unittest.TestCase):
 
 
 class RemoveFromRangesTest(unittest.TestCase):
-
     def test_empty(self):
         ranges = []
         remove_from_ranges(ranges, 1)
@@ -293,11 +295,13 @@ class RemoveFromRangesTest(unittest.TestCase):
 
 
 def test_suite():
-    return unittest.TestSuite((
-        unittest.makeSuite(SequenceToRangesTest),
-        unittest.makeSuite(RangesToSequenceTest),
-        unittest.makeSuite(SequenceRangesTest),
-        unittest.makeSuite(FindRangesIndexTest),
-        unittest.makeSuite(AddToRangesTest),
-        unittest.makeSuite(RemoveFromRangesTest),
-    ))
+    return unittest.TestSuite(
+        (
+            unittest.makeSuite(SequenceToRangesTest),
+            unittest.makeSuite(RangesToSequenceTest),
+            unittest.makeSuite(SequenceRangesTest),
+            unittest.makeSuite(FindRangesIndexTest),
+            unittest.makeSuite(AddToRangesTest),
+            unittest.makeSuite(RemoveFromRangesTest),
+        ),
+    )

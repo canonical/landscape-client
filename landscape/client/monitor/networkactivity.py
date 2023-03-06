@@ -2,13 +2,12 @@
 A monitor that collects data on network activity, and sends messages
 with the inbound/outbound traffic per interface per step interval.
 """
-
 import time
 
-from landscape.lib.network import get_network_traffic, is_64
 from landscape.client.accumulate import Accumulator
-
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.network import get_network_traffic
+from landscape.lib.network import is_64
 
 
 class NetworkActivity(MonitorPlugin):
@@ -24,8 +23,11 @@ class NetworkActivity(MonitorPlugin):
 
     max_network_items_to_exchange = 200
 
-    def __init__(self, network_activity_file="/proc/net/dev",
-                 create_time=time.time):
+    def __init__(
+        self,
+        network_activity_file="/proc/net/dev",
+        create_time=time.time,
+    ):
         self._source_file = network_activity_file
         # accumulated values for sending out via message
         self._network_activity = {}
@@ -37,7 +39,7 @@ class NetworkActivity(MonitorPlugin):
             self._rollover_maxint = pow(2, 32)
 
     def register(self, registry):
-        super(NetworkActivity, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, self.registry.step_size)
         self.call_on_accepted("network-activity", self.exchange, True)
 
@@ -66,11 +68,17 @@ class NetworkActivity(MonitorPlugin):
         if not message:
             return
         self.registry.broker.send_message(
-            message, self._session_id, urgent=urgent)
+            message,
+            self._session_id,
+            urgent=urgent,
+        )
 
     def exchange(self, urgent=False):
-        self.registry.broker.call_if_accepted("network-activity",
-                                              self.send_message, urgent)
+        self.registry.broker.call_if_accepted(
+            "network-activity",
+            self.send_message,
+            urgent,
+        )
 
     def _traffic_delta(self, new_traffic):
         """
@@ -97,7 +105,9 @@ class NetworkActivity(MonitorPlugin):
 
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (
-                traffic["send_bytes"], traffic["recv_bytes"])
+                traffic["send_bytes"],
+                traffic["recv_bytes"],
+            )
 
         # We need cast the keys to a list as the size of the dictionary changes
         # on delete and the .keys() generator throws an error.
@@ -114,10 +124,16 @@ class NetworkActivity(MonitorPlugin):
         new_traffic = get_network_traffic(self._source_file)
         for interface, delta_out, delta_in in self._traffic_delta(new_traffic):
             out_step_data = self._accumulate(
-                new_timestamp, delta_out, "delta-out-%s" % interface)
+                new_timestamp,
+                delta_out,
+                f"delta-out-{interface}",
+            )
 
             in_step_data = self._accumulate(
-                new_timestamp, delta_in, "delta-in-%s" % interface)
+                new_timestamp,
+                delta_in,
+                f"delta-in-{interface}",
+            )
 
             # there's only data when we cross a step boundary
             if not (in_step_data and out_step_data):
@@ -125,4 +141,5 @@ class NetworkActivity(MonitorPlugin):
 
             steps = self._network_activity.setdefault(interface, [])
             steps.append(
-                (in_step_data[0], int(in_step_data[1]), int(out_step_data[1])))
+                (in_step_data[0], int(in_step_data[1]), int(out_step_data[1])),
+            )

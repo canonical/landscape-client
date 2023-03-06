@@ -9,7 +9,7 @@ except ImportError:
 from landscape.lib.store import with_cursor
 
 
-class MessageContext(object):
+class MessageContext:
     """Stores a context for incoming messages that require a response.
 
     The context consists of
@@ -39,10 +39,11 @@ class MessageContext(object):
     def remove(self, cursor):
         cursor.execute(
             "DELETE FROM message_context WHERE operation_id=?",
-            (self.operation_id,))
+            (self.operation_id,),
+        )
 
 
-class ExchangeStore(object):
+class ExchangeStore:
     """Message meta data required by the L{MessageExchange}.
 
     The implementation uses a SQLite database as backend, with a single table
@@ -51,6 +52,7 @@ class ExchangeStore(object):
 
     @param filename: The name of the file that contains the sqlite database.
     """
+
     _db = None
 
     def __init__(self, filename):
@@ -61,13 +63,20 @@ class ExchangeStore(object):
 
     @with_cursor
     def add_message_context(
-            self, cursor, operation_id, secure_id, message_type):
+        self,
+        cursor,
+        operation_id,
+        secure_id,
+        message_type,
+    ):
         """Add a L{MessageContext} with the given data."""
         params = (operation_id, secure_id, message_type, time.time())
         cursor.execute(
             "INSERT INTO message_context "
             "   (operation_id, secure_id, message_type, timestamp) "
-            "   VALUES (?,?,?,?)", params)
+            "   VALUES (?,?,?,?)",
+            params,
+        )
         return MessageContext(self._db, *params)
 
     @with_cursor
@@ -75,7 +84,9 @@ class ExchangeStore(object):
         """The L{MessageContext} for the given C{operation_id} or C{None}."""
         cursor.execute(
             "SELECT operation_id, secure_id, message_type, timestamp "
-            "FROM message_context WHERE operation_id=?", (operation_id,))
+            "FROM message_context WHERE operation_id=?",
+            (operation_id,),
+        )
         row = cursor.fetchone()
         if row:
             return MessageContext(self._db, *row)
@@ -101,10 +112,12 @@ def ensure_exchange_schema(db):
             "CREATE TABLE message_context"
             " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP, "
             "  secure_id TEXT NOT NULL, operation_id INTEGER NOT NULL, "
-            "  message_type text NOT NULL)")
+            "  message_type text NOT NULL)",
+        )
         cursor.execute(
             "CREATE UNIQUE INDEX msgctx_operationid_idx ON "
-            "message_context(operation_id)")
+            "message_context(operation_id)",
+        )
     except (sqlite3.OperationalError, sqlite3.DatabaseError):
         cursor.close()
         db.rollback()

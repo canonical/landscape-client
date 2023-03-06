@@ -1,8 +1,5 @@
-from __future__ import absolute_import
-
 import bisect
 import logging
-import os
 import os.path
 import re
 import shutil
@@ -10,18 +7,20 @@ import struct
 import sys
 import tempfile
 import unittest
+from logging import ERROR
+from logging import Formatter
+from logging import Handler
 
-
-from logging import Handler, ERROR, Formatter
-from twisted.trial.unittest import TestCase
-from twisted.python.compat import StringType as basestring
-from landscape.lib.compat import _PY3
-from twisted.python.failure import Failure
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
+from twisted.python.compat import StringType
+from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase
 
+from landscape.lib.compat import _PY3
 from landscape.lib.compat import ConfigParser
-from landscape.lib.compat import stringio, cstringio
+from landscape.lib.compat import cstringio
+from landscape.lib.compat import stringio
 from landscape.lib.config import BaseConfiguration
 from landscape.lib.reactor import EventHandlingReactorMixin
 from landscape.lib.sysstats import LoginInfo
@@ -30,7 +29,7 @@ from landscape.lib.sysstats import LoginInfo
 class CompatTestCase(unittest.TestCase):
 
     if not _PY3:
-        assertCountEqual = TestCase.assertItemsEqual
+        assertCountEqual = TestCase.assertItemsEqual  # noqa: N815
 
 
 class HelperTestCase(unittest.TestCase):
@@ -38,7 +37,7 @@ class HelperTestCase(unittest.TestCase):
     helpers = []
 
     def setUp(self):
-        super(HelperTestCase, self).setUp()
+        super().setUp()
 
         self._helper_instances = []
         if LogKeeperHelper not in self.helpers:
@@ -58,18 +57,26 @@ class HelperTestCase(unittest.TestCase):
             if hasattr(helper, "tear_down"):
                 helper.tear_down(self)
 
-        super(HelperTestCase, self).tearDown()
+        super().tearDown()
 
 
-class FSTestCase(object):
-
-    def assertFileContent(self, filename, expected_content):
+class FSTestCase:
+    def assertFileContent(self, filename, expected_content):  # noqa: N802
         with open(filename, "rb") as fd:
             actual_content = fd.read()
         self.assertEqual(expected_content, actual_content)
 
-    def makeFile(self, content=None, suffix="", prefix="tmp", basename=None,
-                 dirname=None, path=None, mode="w", backupsuffix=None):
+    def makeFile(  # noqa: N802
+        self,
+        content=None,
+        suffix="",
+        prefix="tmp",
+        basename=None,
+        dirname=None,
+        path=None,
+        mode="w",
+        backupsuffix=None,
+    ):
         """Create a temporary file and return the path to it.
 
         @param content: Initial content for the file.
@@ -101,6 +108,7 @@ class FSTestCase(object):
                     os.remove(path + backupsuffix)
                 except OSError:
                     pass
+
             self.addCleanup(remove_backup)
 
         return path
@@ -118,7 +126,13 @@ class FSTestCase(object):
         except OSError:
             pass
 
-    def makeDir(self, suffix="", prefix="tmp", dirname=None, path=None):
+    def makeDir(  # noqa: N802
+        self,
+        suffix="",
+        prefix="tmp",
+        dirname=None,
+        path=None,
+    ):
         """Create a temporary directory and return the path to it.
 
         @param suffix: Suffix to be given to the file's basename.
@@ -139,18 +153,14 @@ class FSTestCase(object):
         if bindir is None:
             bindir = self.makeDir()
         config.bindir = bindir
-        filename = self.makeFile(
-            content,
-            dirname=bindir,
-            basename=name)
+        filename = self.makeFile(content, dirname=bindir, basename=name)
         os.chmod(filename, 0o755)
         return filename
 
 
 class ConfigTestCase(FSTestCase):
-
     def setUp(self):
-        super(ConfigTestCase, self).setUp()
+        super().setUp()
 
         self._old_config_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = [self.makeFile("")]
@@ -158,9 +168,9 @@ class ConfigTestCase(FSTestCase):
     def tearDown(self):
         BaseConfiguration.default_config_filenames = self._old_config_filenames
 
-        super(ConfigTestCase, self).tearDown()
+        super().tearDown()
 
-    def assertConfigEqual(self, first, second):
+    def assertConfigEqual(self, first, second):  # noqa: N802
         """
         Compare two configuration files for equality.  The order of parameters
         and comments may be different but the actual parameters and sections
@@ -174,16 +184,19 @@ class ConfigTestCase(FSTestCase):
         second_parser = ConfigParser()
         second_parser.readfp(second_fp)
 
-        self.assertEqual(set(first_parser.sections()),
-                         set(second_parser.sections()))
+        self.assertEqual(
+            set(first_parser.sections()),
+            set(second_parser.sections()),
+        )
         for section in first_parser.sections():
-            self.assertEqual(dict(first_parser.items(section)),
-                             dict(second_parser.items(section)))
+            self.assertEqual(
+                dict(first_parser.items(section)),
+                dict(second_parser.items(section)),
+            )
 
 
 class TwistedTestCase(TestCase):
-
-    def successResultOf(self, deferred):
+    def successResultOf(self, deferred):  # noqa: N802
         """See C{twisted.trial._synctest._Assertions.successResultOf}.
 
         This is a copy of the original method, which is available only
@@ -193,16 +206,18 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if not result:
             self.fail(
-                "Success result expected on %r, found no result instead" % (
-                    deferred,))
+                f"Success result expected on {deferred!r}, "
+                "found no result instead",
+            )
         elif isinstance(result[0], Failure):
             self.fail(
-                "Success result expected on %r, "
-                "found failure result (%r) instead" % (deferred, result[0]))
+                f"Success result expected on {deferred!r}, "
+                f"found failure result ({result[0]!r}) instead",
+            )
         else:
             return result[0]
 
-    def failureResultOf(self, deferred):
+    def failureResultOf(self, deferred):  # noqa: N802
         """See C{twisted.trial._synctest._Assertions.failureResultOf}.
 
         This is a copy of the original method, which is available only
@@ -212,16 +227,18 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if not result:
             self.fail(
-                "Failure result expected on %r, found no result instead" % (
-                    deferred,))
+                f"Failure result expected on {deferred!r}, "
+                "found no result instead",
+            )
         elif not isinstance(result[0], Failure):
             self.fail(
-                "Failure result expected on %r, "
-                "found success result (%r) instead" % (deferred, result[0]))
+                f"Failure result expected on {deferred!r}, "
+                f"found success result ({result[0]!r}) instead",
+            )
         else:
             return result[0]
 
-    def assertNoResult(self, deferred):
+    def assertNoResult(self, deferred):  # noqa: N802
         """See C{twisted.trial._synctest._Assertions.assertNoResult}.
 
         This is a copy of the original method, which is available only
@@ -231,19 +248,21 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if result:
             self.fail(
-                "No result expected on %r, found %r instead" % (
-                    deferred, result[0]))
+                f"No result expected on {deferred!r}, "
+                f"found {result[0]!r} instead",
+            )
 
-    def assertDeferredSucceeded(self, deferred):
+    def assertDeferredSucceeded(self, deferred):  # noqa: N802
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
 
         def callback(result):
             called.append(True)
+
         deferred.addCallback(callback)
         self.assertTrue(called)
 
-    def assertSuccess(self, deferred, result=None):
+    def assertSuccess(self, deferred, result=None):  # noqa: N802
         """
         Assert that the given C{deferred} results in the given C{result}.
         """
@@ -252,7 +271,6 @@ class TwistedTestCase(TestCase):
 
 
 class ErrorHandler(Handler):
-
     def __init__(self, *args, **kwargs):
         Handler.__init__(self, *args, **kwargs)
         self.errors = []
@@ -263,7 +281,6 @@ class ErrorHandler(Handler):
 
 
 class LoggedErrorsError(Exception):
-
     def __str__(self):
         out = "The following errors were logged\n"
         formatter = Formatter()
@@ -272,7 +289,7 @@ class LoggedErrorsError(Exception):
         return out
 
 
-class LogKeeperHelper(object):
+class LogKeeperHelper:
     """Record logging information.
 
     Puts a 'logfile' attribute on your test case, which is a StringIO
@@ -287,7 +304,7 @@ class LogKeeperHelper(object):
         test_case.logger = logger = logging.getLogger()
         test_case.logfile = cstringio()
         handler = logging.StreamHandler(test_case.logfile)
-        format = ("%(levelname)8s: %(message)s")
+        format = "%(levelname)8s: %(message)s"
         handler.setFormatter(logging.Formatter(format))
         self.old_handlers = logger.handlers
         self.old_level = logger.level
@@ -301,9 +318,11 @@ class LogKeeperHelper(object):
         errors = []
         for record in self.error_handler.errors:
             for ignored_type in self.ignored_exception_types:
-                if (record.exc_info and record.exc_info[0] and
-                    issubclass(record.exc_info[0], ignored_type)
-                    ):
+                if (
+                    record.exc_info
+                    and record.exc_info[0]
+                    and issubclass(record.exc_info[0], ignored_type)
+                ):
                     break
             else:
                 for ignored_regex in self.ignored_exception_regexes:
@@ -315,14 +334,13 @@ class LogKeeperHelper(object):
             raise LoggedErrorsError(errors)
 
     def ignore_errors(self, type_or_regex):
-        if isinstance(type_or_regex, basestring):
+        if isinstance(type_or_regex, StringType):
             self.ignored_exception_regexes.append(re.compile(type_or_regex))
         else:
             self.ignored_exception_types.append(type_or_regex)
 
 
-class EnvironSnapshot(object):
-
+class EnvironSnapshot:
     def __init__(self):
         self._snapshot = os.environ.copy()
 
@@ -333,8 +351,7 @@ class EnvironSnapshot(object):
                 del os.environ[key]
 
 
-class EnvironSaverHelper(object):
-
+class EnvironSaverHelper:
     def set_up(self, test_case):
         self._snapshot = EnvironSnapshot()
 
@@ -342,8 +359,7 @@ class EnvironSaverHelper(object):
         self._snapshot.restore()
 
 
-class MockPopen(object):
-
+class MockPopen:
     def __init__(self, output, return_codes=None, err_out=""):
         self.output = output
         self.err_out = err_out
@@ -373,8 +389,7 @@ class MockPopen(object):
         return self.return_codes.pop(0)
 
 
-class StandardIOHelper(object):
-
+class StandardIOHelper:
     def set_up(self, test_case):
         test_case.old_stdout = sys.stdout
         test_case.old_stdin = sys.stdin
@@ -388,23 +403,45 @@ class StandardIOHelper(object):
         sys.stdin = test_case.old_stdin
 
 
-def append_login_data(filename, login_type=0, pid=0, tty_device="/dev/",
-                      id="", username="", hostname="", termination_status=0,
-                      exit_status=0, session_id=0, entry_time_seconds=0,
-                      entry_time_milliseconds=0,
-                      remote_ip_address=[0, 0, 0, 0]):
+def append_login_data(
+    filename,
+    login_type=0,
+    pid=0,
+    tty_device="/dev/",
+    id="",
+    username="",
+    hostname="",
+    termination_status=0,
+    exit_status=0,
+    session_id=0,
+    entry_time_seconds=0,
+    entry_time_milliseconds=0,
+    remote_ip_address=[0, 0, 0, 0],
+):
     """Append binary login data to the specified filename."""
     file = open(filename, "ab")
     try:
-        file.write(struct.pack(LoginInfo.RAW_FORMAT, login_type, pid,
-                               tty_device.encode("utf-8"), id.encode("utf-8"),
-                               username.encode("utf-8"),
-                               hostname.encode("utf-8"),
-                               termination_status, exit_status, session_id,
-                               entry_time_seconds, entry_time_milliseconds,
-                               remote_ip_address[0], remote_ip_address[1],
-                               remote_ip_address[2], remote_ip_address[3],
-                               b""))
+        file.write(
+            struct.pack(
+                LoginInfo.RAW_FORMAT,
+                login_type,
+                pid,
+                tty_device.encode("utf-8"),
+                id.encode("utf-8"),
+                username.encode("utf-8"),
+                hostname.encode("utf-8"),
+                termination_status,
+                exit_status,
+                session_id,
+                entry_time_seconds,
+                entry_time_milliseconds,
+                remote_ip_address[0],
+                remote_ip_address[1],
+                remote_ip_address[2],
+                remote_ip_address[3],
+                b"",
+            ),
+        )
     finally:
         file.close()
 
@@ -421,7 +458,7 @@ def mock_time():
     return mock_counter(100)
 
 
-class StubProcessFactory(object):
+class StubProcessFactory:
     """
     A L{IReactorProcess} provider which records L{spawnProcess} calls and
     allows tests to get at the protocol.
@@ -430,26 +467,47 @@ class StubProcessFactory(object):
     def __init__(self):
         self.spawns = []
 
-    def spawnProcess(self, protocol, executable, args=(), env={}, path=None,
-                     uid=None, gid=None, usePTY=0, childFDs=None):
-        self.spawns.append((protocol, executable, args,
-                            env, path, uid, gid, usePTY, childFDs))
+    def spawnProcess(  # noqa: N802
+        self,
+        protocol,
+        executable,
+        args=(),
+        env={},
+        path=None,
+        uid=None,
+        gid=None,
+        usePTY=0,
+        childFDs=None,
+    ):
+        self.spawns.append(
+            (
+                protocol,
+                executable,
+                args,
+                env,
+                path,
+                uid,
+                gid,
+                usePTY,
+                childFDs,
+            ),
+        )
 
 
-class DummyProcess(object):
+class DummyProcess:
     """A process (transport) that doesn't do anything."""
 
     def __init__(self):
         self.signals = []
 
-    def signalProcess(self, signal):
+    def signalProcess(self, signal):  # noqa: N802
         self.signals.append(signal)
 
-    def closeChildFD(self, fd):
+    def closeChildFD(self, fd):  # noqa: N802
         pass
 
 
-class ProcessDataBuilder(object):
+class ProcessDataBuilder:
     """Builder creates sample data for the process info plugin to consume.
 
     @param sample_dir: The directory for sample data.
@@ -466,9 +524,18 @@ class ProcessDataBuilder(object):
     def __init__(self, sample_dir):
         self._sample_dir = sample_dir
 
-    def create_data(self, process_id, state, uid, gid,
-                    started_after_boot=0, process_name=None,
-                    generate_cmd_line=True, stat_data=None, vmsize=11676):
+    def create_data(
+        self,
+        process_id,
+        state,
+        uid,
+        gid,
+        started_after_boot=0,
+        process_name=None,
+        generate_cmd_line=True,
+        stat_data=None,
+        vmsize=11676,
+    ):
 
         """Creates sample data for a process.
 
@@ -481,19 +548,19 @@ class ProcessDataBuilder(object):
             kernel process)
         @param stat_data: Array of items to write to the /proc/<pid>/stat file.
         """
-        sample_data = """
-Name:   %(process_name)s
-State:  %(state)s
+        sample_data = f"""
+Name:   {process_name[:15]}
+State:  {state}
 Tgid:   24759
 Pid:    24759
 PPid:   17238
 TracerPid:      0
-Uid:    %(uid)d    0    0    0
-Gid:    %(gid)d    0    0    0
+Uid:    {uid:d}    0    0    0
+Gid:    {gid:d}    0    0    0
 FDSize: 256
 Groups: 4 20 24 25 29 30 44 46 106 110 112 1000
 VmPeak:    11680 kB
-VmSize:    %(vmsize)d kB
+VmSize:    {vmsize:d} kB
 VmLck:         0 kB
 VmHWM:      6928 kB
 VmRSS:      6924 kB
@@ -512,8 +579,7 @@ SigCgt: 0000000059816eff
 CapInh: 0000000000000000
 CapPrm: 0000000000000000
 CapEff: 0000000000000000
-""" % ({"process_name": process_name[:15], "state": state, "uid": uid,
-        "gid": gid, "vmsize": vmsize})  # noqa
+"""
         process_dir = os.path.join(self._sample_dir, str(process_id))
         os.mkdir(process_dir)
         filename = os.path.join(process_dir, "status")
@@ -524,9 +590,9 @@ CapEff: 0000000000000000
         finally:
             file.close()
         if stat_data is None:
-            stat_data = """\
-0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 %d\
-""" % (started_after_boot,)
+            stat_data = f"""\
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 {started_after_boot:d}\
+"""
         filename = os.path.join(process_dir, "stat")
 
         file = open(filename, "w+")
@@ -537,8 +603,10 @@ CapEff: 0000000000000000
 
         if generate_cmd_line:
             sample_data = """\
-/usr/sbin/%(process_name)s\0--pid-file\0/var/run/%(process_name)s.pid\0
-""" % {"process_name": process_name}
+/usr/sbin/{process_name}\0--pid-file\0/var/run/{process_name}.pid\0
+""".format(
+                process_name=process_name,
+            )
         else:
             sample_data = ""
         filename = os.path.join(process_dir, "cmdline")
@@ -555,8 +623,7 @@ CapEff: 0000000000000000
         shutil.rmtree(process_dir)
 
 
-class FakeReactorID(object):
-
+class FakeReactorID:
     def __init__(self, data):
         self.active = True
         self._data = data
@@ -575,13 +642,14 @@ class FakeReactor(EventHandlingReactorMixin):
     around Unix sockets), and implement a fake version C{listen_unix}, but this
     hasn't been done yet.
     """
+
     # XXX probably this shouldn't be a class attribute, but we need client-side
     # FakeReactor instaces to be aware of listening sockets created by
     # server-side FakeReactor instances.
     _socket_paths = {}
 
     def __init__(self):
-        super(FakeReactor, self).__init__()
+        super().__init__()
         self._current_time = 0
         self._calls = []
         self.hosts = {}
@@ -590,6 +658,7 @@ class FakeReactor(EventHandlingReactorMixin):
         # XXX we need a reference to the Twisted reactor as well because
         # some tests use it
         from twisted.internet import reactor
+
         self._reactor = reactor
 
     def time(self):
@@ -610,7 +679,6 @@ class FakeReactor(EventHandlingReactorMixin):
         self._calls.insert(index, call)
 
     def call_every(self, seconds, f, *args, **kwargs):
-
         def fake():
             # update the call so that cancellation will continue
             # working with the same ID. And do it *before* the call
@@ -622,6 +690,7 @@ class FakeReactor(EventHandlingReactorMixin):
                 if call.active:
                     self.cancel_call(call)
                 raise
+
         call = self.call_later(seconds, fake)
         return call
 
@@ -631,7 +700,7 @@ class FakeReactor(EventHandlingReactorMixin):
                 self._calls.remove(id._data)
             id.active = False
         else:
-            super(FakeReactor, self).cancel_call(id)
+            super().cancel_call(id)
 
     def call_when_running(self, f):
         # Just schedule a call that will be kicked by the run() method.
@@ -657,10 +726,8 @@ class FakeReactor(EventHandlingReactorMixin):
         self._run_threaded_callbacks()
 
     def listen_unix(self, socket_path, factory):
-
-        class FakePort(object):
-
-            def stopListening(oself):
+        class FakePort:
+            def stopListening(oself):  # noqa: N802,N805
                 self._socket_paths.pop(socket_path)
 
         self._socket_paths[socket_path] = factory
@@ -669,6 +736,7 @@ class FakeReactor(EventHandlingReactorMixin):
     def connect_unix(self, path, factory):
         server = self._socket_paths.get(path)
         from landscape.lib.tests.test_amp import FakeConnector
+
         if server:
             connector = FakeConnector(factory, server)
             connector.connect()
@@ -697,8 +765,9 @@ class FakeReactor(EventHandlingReactorMixin):
         advancing time and triggering the relevant scheduled calls (see
         also C{call_later} and C{call_every}).
         """
-        while (self._calls and
-               self._calls[0][0] <= self._current_time + seconds):
+        while (
+            self._calls and self._calls[0][0] <= self._current_time + seconds
+        ):
             call = self._calls.pop(0)
             # If we find a call within the time we're advancing,
             # before calling it, let's advance the time *just* to

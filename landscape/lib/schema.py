@@ -1,14 +1,18 @@
 """A schema system. Yes. Another one!"""
-from twisted.python.compat import iteritems, unicode, long
+from twisted.python.compat import iteritems
+from twisted.python.compat import long
+from twisted.python.compat import unicode
 
 
 class InvalidError(Exception):
     """Raised when invalid input is received."""
+
     pass
 
 
-class Constant(object):
+class Constant:
     """Something that must be equal to a constant value."""
+
     def __init__(self, value):
         self.value = value
 
@@ -20,15 +24,16 @@ class Constant(object):
                 pass
 
         if value != self.value:
-            raise InvalidError("%r != %r" % (value, self.value))
+            raise InvalidError(f"{value!r} != {self.value!r}")
         return value
 
 
-class Any(object):
+class Any:
     """Something which must apply to any of a number of different schemas.
 
     @param schemas: Other schema objects.
     """
+
     def __init__(self, *schemas):
         self.schemas = schemas
 
@@ -42,40 +47,45 @@ class Any(object):
                 return schema.coerce(value)
             except InvalidError:
                 pass
-        raise InvalidError("%r did not match any schema in %s"
-                           % (value, self.schemas))
+        raise InvalidError(
+            f"{value!r} did not match any schema in {self.schemas}",
+        )
 
 
-class Bool(object):
+class Bool:
     """Something that must be a C{bool}."""
+
     def coerce(self, value):
         if not isinstance(value, bool):
-            raise InvalidError("%r is not a bool" % (value,))
+            raise InvalidError(f"{value!r} is not a bool")
         return value
 
 
-class Int(object):
+class Int:
     """Something that must be an C{int} or C{long}."""
+
     def coerce(self, value):
         if not isinstance(value, (int, long)):
-            raise InvalidError("%r isn't an int or long" % (value,))
+            raise InvalidError(f"{value!r} isn't an int or long")
         return value
 
 
-class Float(object):
+class Float:
     """Something that must be an C{int}, C{long}, or C{float}."""
+
     def coerce(self, value):
         if not isinstance(value, (int, long, float)):
-            raise InvalidError("%r isn't a float" % (value,))
+            raise InvalidError(f"{value!r} isn't a float")
         return value
 
 
-class Bytes(object):
+class Bytes:
     """A binary string.
 
     If the value is a Python3 str (unicode), it will be automatically
     encoded.
     """
+
     def coerce(self, value):
         if isinstance(value, bytes):
             return value
@@ -83,10 +93,10 @@ class Bytes(object):
         if isinstance(value, str):
             return value.encode()
 
-        raise InvalidError("%r isn't a bytestring" % value)
+        raise InvalidError(f"{value!r} isn't a bytestring")
 
 
-class Unicode(object):
+class Unicode:
     """Something that must be a C{unicode}.
 
     If the value is a C{str}, it will automatically be decoded.
@@ -102,35 +112,38 @@ class Unicode(object):
             try:
                 value = value.decode(self.encoding)
             except UnicodeDecodeError as e:
-                raise InvalidError("%r can't be decoded: %s" % (value, str(e)))
+                raise InvalidError(
+                    "{!r} can't be decoded: {}".format(value, str(e)),
+                )
         if not isinstance(value, unicode):
-            raise InvalidError("%r isn't a unicode" % (value,))
+            raise InvalidError(f"{value!r} isn't a unicode")
         return value
 
 
-class List(object):
+class List:
     """Something which must be a C{list}.
 
     @param schema: The schema that all values of the list must match.
     """
+
     def __init__(self, schema):
         self.schema = schema
 
     def coerce(self, value):
         if not isinstance(value, list):
-            raise InvalidError("%r is not a list" % (value,))
+            raise InvalidError(f"{value!r} is not a list")
         new_list = list(value)
         for i, subvalue in enumerate(value):
             try:
                 new_list[i] = self.schema.coerce(subvalue)
             except InvalidError as e:
                 raise InvalidError(
-                    "%r could not coerce with %s: %s"
-                    % (subvalue, self.schema, e))
+                    f"{subvalue!r} could not coerce with {self.schema}: {e}",
+                )
         return new_list
 
 
-class Tuple(object):
+class Tuple:
     """Something which must be a fixed-length tuple.
 
     @param schema: A sequence of schemas, which will be applied to
@@ -142,17 +155,19 @@ class Tuple(object):
 
     def coerce(self, value):
         if not isinstance(value, tuple):
-            raise InvalidError("%r is not a tuple" % (value,))
+            raise InvalidError(f"{value!r} is not a tuple")
         if len(value) != len(self.schema):
-            raise InvalidError("Need %s items, got %s in %r"
-                               % (len(self.schema), len(value), value))
+            raise InvalidError(
+                f"Need {len(self.schema)} items, "
+                f"got {len(value)} in {value!r}",
+            )
         new_value = []
         for schema, value in zip(self.schema, value):
             new_value.append(schema.coerce(value))
         return tuple(new_value)
 
 
-class KeyDict(object):
+class KeyDict:
     """Something which must be a C{dict} with defined keys.
 
     The keys must be constant and the values must match a per-key schema.
@@ -160,6 +175,7 @@ class KeyDict(object):
     @param schema: A dict mapping keys to schemas that the values of those
         keys must match.
     """
+
     def __init__(self, schema, optional=None):
         if optional is None:
             optional = []
@@ -169,26 +185,28 @@ class KeyDict(object):
     def coerce(self, value):
         new_dict = {}
         if not isinstance(value, dict):
-            raise InvalidError("%r is not a dict." % (value,))
+            raise InvalidError(f"{value!r} is not a dict.")
         for k, v in iteritems(value):
             if k not in self.schema:
-                raise InvalidError("%r is not a valid key as per %r"
-                                   % (k, self.schema))
+                raise InvalidError(
+                    f"{k!r} is not a valid key as per {self.schema!r}",
+                )
             try:
                 new_dict[k] = self.schema[k].coerce(v)
             except InvalidError as e:
                 raise InvalidError(
-                    "Value of %r key of dict %r could not coerce with %s: %s"
-                    % (k, value, self.schema[k], e))
+                    f"Value of {k!r} key of dict {value!r} could not coerce "
+                    f"with {self.schema[k]}: {e}",
+                )
         new_keys = set(new_dict.keys())
         required_keys = set(self.schema.keys()) - self.optional
         missing = required_keys - new_keys
         if missing:
-            raise InvalidError("Missing keys %s" % (missing,))
+            raise InvalidError(f"Missing keys {missing}")
         return new_dict
 
 
-class Dict(object):
+class Dict:
     """Something which must be a C{dict} with arbitrary keys.
 
     @param key_schema: The schema that keys must match.
@@ -201,7 +219,7 @@ class Dict(object):
 
     def coerce(self, value):
         if not isinstance(value, dict):
-            raise InvalidError("%r is not a dict." % (value,))
+            raise InvalidError(f"{value!r} is not a dict.")
         new_dict = {}
         for k, v in value.items():
             new_dict[self.key_schema.coerce(k)] = self.value_schema.coerce(v)

@@ -5,7 +5,7 @@ class SequenceError(Exception):
     """Raised when the sequence isn't proper for translation to ranges."""
 
 
-class SequenceRanges(object):
+class SequenceRanges:
     """High level interface to ranges.
 
     A ranges list represent a sequence of ordered and non-repeating
@@ -50,8 +50,8 @@ class SequenceRanges(object):
         if index < len(self._ranges):
             test = self._ranges[index]
             if isinstance(test, tuple):
-                return (test[0] <= item <= test[1])
-            return (test == item)
+                return test[0] <= item <= test[1]
+            return test == item
         return False
 
     def add(self, item):
@@ -79,10 +79,11 @@ def sequence_to_ranges(sequence):
         else:
             if item is not None and item <= range_stop:
                 if item < range_stop:
-                    raise SequenceError("Sequence is unordered (%r < %r)" %
-                                        (item, range_stop))
+                    raise SequenceError(
+                        f"Sequence is unordered ({item!r} < {range_stop!r})",
+                    )
                 else:
-                    raise SequenceError("Found duplicated item (%r)" % (item,))
+                    raise SequenceError(f"Found duplicated item ({item!r})")
             if range_stop == range_start:
                 yield range_start
             elif range_stop == range_start + 1:
@@ -185,9 +186,9 @@ def remove_from_ranges(ranges, item):
             if item >= range_start:
                 # Handle right side of the range (and replace original item).
                 if range_stop < item + 3:
-                    ranges[index:index + 1] = range(item + 1, range_stop + 1)
+                    ranges[index : index + 1] = range(item + 1, range_stop + 1)
                 else:
-                    ranges[index:index + 1] = ((item + 1, range_stop),)
+                    ranges[index : index + 1] = ((item + 1, range_stop),)
 
                 # Handle left side of the range.
                 if range_start > item - 3:

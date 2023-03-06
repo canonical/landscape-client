@@ -1,16 +1,19 @@
-from twisted.internet.defer import maybeDeferred, execute, succeed
+from twisted.internet.defer import execute
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
 from twisted.python.compat import iteritems
 
-from landscape.lib.amp import RemoteObject, MethodCallArgument
-from landscape.client.amp import ComponentConnector, get_remote_methods
-from landscape.client.broker.server import BrokerServer
+from landscape.client.amp import ComponentConnector
+from landscape.client.amp import get_remote_methods
 from landscape.client.broker.client import BrokerClient
-from landscape.client.monitor.monitor import Monitor
+from landscape.client.broker.server import BrokerServer
 from landscape.client.manager.manager import Manager
+from landscape.client.monitor.monitor import Monitor
+from landscape.lib.amp import MethodCallArgument
+from landscape.lib.amp import RemoteObject
 
 
 class RemoteBroker(RemoteObject):
-
     def call_if_accepted(self, type, callable, *args):
         """Call C{callable} if C{type} is an accepted message type."""
         deferred_types = self.get_accepted_message_types()
@@ -18,6 +21,7 @@ class RemoteBroker(RemoteObject):
         def got_accepted_types(result):
             if type in result:
                 return callable(*args)
+
         deferred_types.addCallback(got_accepted_types)
         return deferred_types
 
@@ -30,11 +34,10 @@ class RemoteBroker(RemoteObject):
             callable will be fired.
         """
         result = self.listen_events(list(handlers.keys()))
-        return result.addCallback(
-            lambda args: handlers[args[0]](**args[1]))
+        return result.addCallback(lambda args: handlers[args[0]](**args[1]))
 
 
-class FakeRemoteBroker(object):
+class FakeRemoteBroker:
     """Looks like L{RemoteBroker}, but actually talks to local objects."""
 
     def __init__(self, exchanger, message_store, broker_server):
@@ -48,16 +51,19 @@ class FakeRemoteBroker(object):
         that they're encodable with AMP.
         """
         original = getattr(self.broker_server, name, None)
-        if (name in get_remote_methods(self.broker_server) and
-            original is not None and
-            callable(original)
-            ):
+        if (
+            name in get_remote_methods(self.broker_server)
+            and original is not None
+            and callable(original)
+        ):
+
             def method(*args, **kwargs):
                 for arg in args:
                     assert MethodCallArgument.check(arg)
                 for k, v in iteritems(kwargs):
                     assert MethodCallArgument.check(v)
                 return execute(original, *args, **kwargs)
+
             return method
         else:
             raise AttributeError(name)
@@ -76,8 +82,7 @@ class FakeRemoteBroker(object):
             callable will be fired.
         """
         result = self.broker_server.listen_events(handlers.keys())
-        return result.addCallback(
-            lambda args: handlers[args[0]](**args[1]))
+        return result.addCallback(lambda args: handlers[args[0]](**args[1]))
 
     def register(self):
         return succeed(None)
@@ -114,8 +119,8 @@ def get_component_registry():
         RemoteBrokerConnector,
         RemoteClientConnector,
         RemoteMonitorConnector,
-        RemoteManagerConnector
+        RemoteManagerConnector,
     ]
-    return dict(
-        (connector.component.name, connector)
-        for connector in all_connectors)
+    return {
+        connector.component.name: connector for connector in all_connectors
+    }

@@ -8,8 +8,7 @@ from landscape.lib.reactor import EventHandlingReactor
 from landscape.lib.testing import FakeReactor
 
 
-class ReactorTestMixin(object):
-
+class ReactorTestMixin:
     def test_call_later(self):
         reactor = self.get_reactor()
         called = []
@@ -17,6 +16,7 @@ class ReactorTestMixin(object):
         def dummy():
             called.append("Hello!")
             reactor.stop()
+
         reactor.call_later(0, dummy)
         reactor.run()
         self.assertEqual(called, ["Hello!"])
@@ -28,6 +28,7 @@ class ReactorTestMixin(object):
         def dummy(a, b=3):
             called.append((a, b))
             reactor.stop()
+
         reactor.call_later(0, dummy, "a", b="b")
         reactor.run()
         self.assertEqual(called, [("a", "b")])
@@ -39,6 +40,7 @@ class ReactorTestMixin(object):
         def append():
             called.append("Hey!")
             return True
+
         reactor.call_later(0, append)
         reactor.call_later(0.3, reactor.stop)
         reactor.run()
@@ -77,6 +79,7 @@ class ReactorTestMixin(object):
         def cancel_call():
             reactor.cancel_call(id)
             called.append("hi")
+
         id = reactor.call_every(0, cancel_call)
         reactor.call_later(0.1, reactor.stop)
         reactor.run()
@@ -113,6 +116,7 @@ class ReactorTestMixin(object):
 
         def handle_foobar():
             called.append(True)
+
         reactor.call_on("foobar", handle_foobar)
         reactor.fire("foobar")
         self.assertEqual(called, [True])
@@ -127,6 +131,7 @@ class ReactorTestMixin(object):
 
         def handle_foobar():
             called.append(True)
+
         reactor.call_on("foobar", handle_foobar)
         reactor.fire("foobar")
         reactor.fire("foobar")
@@ -138,6 +143,7 @@ class ReactorTestMixin(object):
 
         def handle_foobar(a, b=3):
             called.append((a, b))
+
         reactor.call_on("foobar", handle_foobar)
         reactor.fire("foobar", "a", b=6)
         self.assertEqual(called, [("a", 6)])
@@ -213,8 +219,10 @@ class ReactorTestMixin(object):
         self.assertTrue(1 in called)
         self.assertTrue(3 in called)
         self.assertTrue("handle_two" in self.logfile.getvalue())
-        self.assertTrue("ZeroDivisionError" in self.logfile.getvalue(),
-                        self.logfile.getvalue())
+        self.assertTrue(
+            "ZeroDivisionError" in self.logfile.getvalue(),
+            self.logfile.getvalue(),
+        )
 
     def test_weird_event_type(self):
         # This can be useful for "namespaced" event types
@@ -344,8 +352,10 @@ class ReactorTestMixin(object):
         reactor.run()
 
         self.assertEqual(called, ["f"])
-        self.assertTrue("ZeroDivisionError" in self.logfile.getvalue(),
-                        self.logfile.getvalue())
+        self.assertTrue(
+            "ZeroDivisionError" in self.logfile.getvalue(),
+            self.logfile.getvalue(),
+        )
 
     def test_call_in_main(self):
         reactor = self.get_reactor()
@@ -395,9 +405,11 @@ class ReactorTestMixin(object):
         self.assertEqual([True], calls)
 
 
-class FakeReactorTest(testing.HelperTestCase, ReactorTestMixin,
-                      unittest.TestCase):
-
+class FakeReactorTest(
+    testing.HelperTestCase,
+    ReactorTestMixin,
+    unittest.TestCase,
+):
     def get_reactor(self):
         return FakeReactor()
 
@@ -429,9 +441,11 @@ class FakeReactorTest(testing.HelperTestCase, ReactorTestMixin,
         self.assertEqual(reactor.time(), 13.5)
 
 
-class EventHandlingReactorTest(testing.HelperTestCase, ReactorTestMixin,
-                               unittest.TestCase):
-
+class EventHandlingReactorTest(
+    testing.HelperTestCase,
+    ReactorTestMixin,
+    unittest.TestCase,
+):
     def get_reactor(self):
         reactor = EventHandlingReactor()
         # It's not possible to stop the reactor in a Trial test, calling

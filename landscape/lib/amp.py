@@ -11,7 +11,7 @@ this class::
     class Greeter(object):
 
         def hello(self, name):
-            return "hi %s!" % name
+            return f"hi {name}!"
 
     greeter = Greeter()
 
@@ -46,13 +46,20 @@ for more details about the Twisted AMP protocol.
 """
 from uuid import uuid4
 
-from twisted.internet.defer import Deferred, maybeDeferred, succeed
-from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
-from twisted.python.failure import Failure
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
+from twisted.internet.protocol import ReconnectingClientFactory
+from twisted.internet.protocol import ServerFactory
+from twisted.protocols.amp import AMP
+from twisted.protocols.amp import Argument
+from twisted.protocols.amp import Command
+from twisted.protocols.amp import CommandLocator
+from twisted.protocols.amp import Integer
+from twisted.protocols.amp import MAX_VALUE_LENGTH
+from twisted.protocols.amp import String
 from twisted.python.compat import xrange
-
-from twisted.protocols.amp import (
-    Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH, CommandLocator)
+from twisted.python.failure import Failure
 
 from landscape.lib import bpickle
 
@@ -60,18 +67,18 @@ from landscape.lib import bpickle
 class MethodCallArgument(Argument):
     """A bpickle-compatible argument."""
 
-    def toString(self, inObject):
+    def toString(self, inobject):  # noqa: N802
         """Serialize an argument."""
-        return bpickle.dumps(inObject)
+        return bpickle.dumps(inobject)
 
-    def fromString(self, inString):
+    def fromString(self, instring):  # noqa: N802
         """Unserialize an argument."""
-        return bpickle.loads(inString)
+        return bpickle.loads(instring)
 
     @classmethod
-    def check(cls, inObject):
+    def check(cls, inobject):
         """Check if an argument is serializable."""
-        return type(inObject) in bpickle.dumps_table
+        return type(inobject) in bpickle.dumps_table
 
 
 class MethodCallError(Exception):
@@ -96,9 +103,11 @@ class MethodCall(Command):
       and C{kwargs} the keyword ones.
     """
 
-    arguments = [(b"sequence", Integer()),
-                 (b"method", String()),
-                 (b"arguments", String())]
+    arguments = [
+        (b"sequence", Integer()),
+        (b"method", String()),
+        (b"arguments", String()),
+    ]
 
     response = [(b"result", MethodCallArgument())]
 
@@ -120,8 +129,7 @@ class MethodCallChunk(Command):
       being split and buffered.
     """
 
-    arguments = [(b"sequence", Integer()),
-                 (b"chunk", String())]
+    arguments = [(b"sequence", Integer()), (b"chunk", String())]
 
     response = [(b"result", Integer())]
 
@@ -172,7 +180,7 @@ class MethodCallReceiver(CommandLocator):
         # it here again.
         method = method.decode("utf-8")
         if method not in self._methods:
-            raise MethodCallError("Forbidden method '%s'" % method)
+            raise MethodCallError(f"Forbidden method '{method}'")
 
         method_func = getattr(self._object, method)
 
@@ -208,7 +216,7 @@ class MethodCallReceiver(CommandLocator):
         return result
 
 
-class MethodCallSender(object):
+class MethodCallSender:
     """Call methods on a remote object over L{AMP} and return the result.
 
     @param protocol: A connected C{AMP} protocol.
@@ -216,6 +224,7 @@ class MethodCallSender(object):
 
     @ivar timeout: A timeout for remote method class, see L{send_method_call}.
     """
+
     timeout = 60
 
     _chunk_size = MAX_VALUE_LENGTH
@@ -271,8 +280,10 @@ class MethodCallSender(object):
         method = method.encode("utf-8")
 
         # Split the given arguments in one or more chunks
-        chunks = [arguments[i:i + self._chunk_size]
-                  for i in xrange(0, len(arguments), self._chunk_size)]
+        chunks = [
+            arguments[i : i + self._chunk_size]
+            for i in xrange(0, len(arguments), self._chunk_size)
+        ]
 
         result = Deferred()
         if len(chunks) > 1:
@@ -280,8 +291,13 @@ class MethodCallSender(object):
             for chunk in chunks[:-1]:
 
                 def create_send_chunk(sequence, chunk):
-                    send_chunk = (lambda x: self._protocol.callRemote(
-                        MethodCallChunk, sequence=sequence, chunk=chunk))
+                    def send_chunk(x):
+                        return self._protocol.callRemote(
+                            MethodCallChunk,
+                            sequence=sequence,
+                            chunk=chunk,
+                        )
+
                     return send_chunk
 
                 result.addCallback(create_send_chunk(sequence, chunk))
@@ -289,7 +305,11 @@ class MethodCallSender(object):
         def send_last_chunk(ignored):
             chunk = chunks[-1]
             return self._call_remote_with_timeout(
-                MethodCall, sequence=sequence, method=method, arguments=chunk)
+                MethodCall,
+                sequence=sequence,
+                method=method,
+                arguments=chunk,
+            )
 
         result.addCallback(send_last_chunk)
         result.addCallback(lambda response: response["result"])
@@ -309,13 +329,13 @@ class MethodCallClientProtocol(AMP):
 
     factory = None
 
-    def connectionMade(self):
+    def connectionMade(self):  # noqa: N802
         """Notify our factory that we're ready to go."""
         if self.factory is not None:  # Factory can be None in unit-tests
             self.factory.clientConnectionMade(self)
 
 
-class RemoteObject(object):
+class RemoteObject:
     """An object able to transparently call methods on a remote object.
 
     Any method call on a L{RemoteObject} instance will return a L{Deferred}
@@ -342,6 +362,7 @@ class RemoteObject(object):
         keyword arguments it was called with, and returning a L{Deferred}
         resulting in the L{MethodCall}'s response value.
         """
+
         def send_method_call(*args, **kwargs):
             deferred = Deferred()
             self._send_method_call(method, args, kwargs, deferred)
@@ -351,12 +372,20 @@ class RemoteObject(object):
 
     def _send_method_call(self, method, args, kwargs, deferred, call=None):
         """Send a L{MethodCall} command, adding callbacks to handle retries."""
-        result = self._sender.send_method_call(method=method,
-                                               args=args,
-                                               kwargs=kwargs)
+        result = self._sender.send_method_call(
+            method=method,
+            args=args,
+            kwargs=kwargs,
+        )
         result.addCallback(self._handle_result, deferred, call=call)
-        result.addErrback(self._handle_failure, method, args, kwargs,
-                          deferred, call=call)
+        result.addErrback(
+            self._handle_failure,
+            method,
+            args,
+            kwargs,
+            deferred,
+            call=call,
+        )
 
         if self._factory.fake_connection is not None:
             # Transparently flush the connection after a send_method_call
@@ -377,8 +406,15 @@ class RemoteObject(object):
             call.cancel()  # This is a successful retry, cancel the timeout.
         deferred.callback(result)
 
-    def _handle_failure(self, failure, method, args, kwargs, deferred,
-                        call=None):
+    def _handle_failure(
+        self,
+        failure,
+        method,
+        args,
+        kwargs,
+        deferred,
+        call=None,
+    ):
         """Called when a L{MethodCall} command fails.
 
         If a failure is due to a connection error and if C{retry_on_reconnect}
@@ -413,10 +449,15 @@ class RemoteObject(object):
             # This is the first failure for this request, let's schedule a
             # timeout call.
             timeout = Failure(MethodCallError("timeout"))
-            call = self._factory.clock.callLater(self._factory.retryTimeout,
-                                                 self._handle_failure,
-                                                 timeout, method, args,
-                                                 kwargs, deferred=deferred)
+            call = self._factory.clock.callLater(
+                self._factory.retryTimeout,
+                self._handle_failure,
+                timeout,
+                method,
+                args,
+                kwargs,
+                deferred=deferred,
+            )
 
         self._pending_requests[deferred] = (method, args, kwargs, call)
 
@@ -459,7 +500,7 @@ class MethodCallServerFactory(ServerFactory):
         self.object = obj
         self.methods = methods
 
-    def buildProtocol(self, addr):
+    def buildProtocol(self, addr):  # noqa: N802
         protocol = self.protocol(self.object, self.methods)
         protocol.factory = self
         return protocol
@@ -487,13 +528,13 @@ class MethodCallClientFactory(ReconnectingClientFactory):
     """
 
     factor = 1.6180339887498948
-    maxDelay = 30
+    maxDelay = 30  # noqa: N815
 
     protocol = MethodCallClientProtocol
     remote = RemoteObject
 
-    retryOnReconnect = False
-    retryTimeout = None
+    retryOnReconnect = False  # noqa: N815
+    retryTimeout = None  # noqa: N815
 
     # XXX support exposing fake asynchronous connections created by tests, so
     # they can be flushed transparently and emulate a synchronous behavior. See
@@ -514,7 +555,7 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         self._requests = []
         self._remote = None
 
-    def getRemoteObject(self):
+    def getRemoteObject(self):  # noqa: N802
         """Get a L{RemoteObject} as soon as the connection is ready.
 
         @return: A C{Deferred} firing with a connected L{RemoteObject}.
@@ -525,15 +566,15 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         self._requests.append(deferred)
         return deferred
 
-    def notifyOnConnect(self, callback):
+    def notifyOnConnect(self, callback):  # noqa: N802
         """Invoke the given C{callback} when a connection is re-established."""
         self._connects.append(callback)
 
-    def dontNotifyOnConnect(self, callback):
+    def dontNotifyOnConnect(self, callback):  # noqa: N802
         """Remove the given C{callback} from listeners."""
         self._connects.remove(callback)
 
-    def clientConnectionMade(self, protocol):
+    def clientConnectionMade(self, protocol):  # noqa: N802
         """Called when a newly built protocol gets connected."""
         if self._remote is None:
             # This is the first time we successfully connect
@@ -545,15 +586,18 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         # In all cases fire pending requests
         self._fire_requests(self._remote)
 
-    def clientConnectionFailed(self, connector, reason):
+    def clientConnectionFailed(self, connector, reason):  # noqa: N802
         """Try to connect again or errback pending request."""
-        ReconnectingClientFactory.clientConnectionFailed(self, connector,
-                                                         reason)
+        ReconnectingClientFactory.clientConnectionFailed(
+            self,
+            connector,
+            reason,
+        )
         if self._callID is None:
             # The factory won't retry to connect, so notify that we failed
             self._fire_requests(reason)
 
-    def buildProtocol(self, addr):
+    def buildProtocol(self, addr):  # noqa: N802
         self.resetDelay()
         protocol = ReconnectingClientFactory.buildProtocol(self, addr)
         return protocol

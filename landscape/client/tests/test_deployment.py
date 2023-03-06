@@ -1,12 +1,12 @@
-import mock
+from unittest import mock
 
-from landscape.lib.fs import read_text_file, create_text_file
-
-from landscape.client.deployment import (
-    BaseConfiguration, Configuration, get_versioned_persist,
-    init_logging)
-
+from landscape.client.deployment import BaseConfiguration
+from landscape.client.deployment import Configuration
+from landscape.client.deployment import get_versioned_persist
+from landscape.client.deployment import init_logging
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_text_file
 
 
 class BabbleConfiguration(BaseConfiguration):
@@ -14,13 +14,12 @@ class BabbleConfiguration(BaseConfiguration):
     default_config_filenames = []
 
     def make_parser(self):
-        parser = super(BabbleConfiguration, self).make_parser()
+        parser = super().make_parser()
         parser.add_option("--whatever", metavar="STUFF")
         return parser
 
 
 class LoggingTest(LandscapeTest):
-
     def test_init_logging_file(self):
         """Check init_logging sets proper logging paths."""
 
@@ -33,13 +32,18 @@ class LoggingTest(LandscapeTest):
             init_logging(MyConfiguration(), "fooprog")
 
         mock_log.assert_called_once_with(
-            mock.ANY, 20, "/somepath", "fooprog", mock.ANY, None)
+            mock.ANY,
+            20,
+            "/somepath",
+            "fooprog",
+            mock.ANY,
+            None,
+        )
 
 
 class BaseConfigurationTest(LandscapeTest):
-
     def setUp(self):
-        super(BaseConfigurationTest, self).setUp()
+        super().setUp()
         self.reset_config()
 
     def reset_config(self, configuration_class=None):
@@ -47,6 +51,7 @@ class BaseConfigurationTest(LandscapeTest):
 
             class MyConfiguration(BaseConfiguration):
                 default_config_filenames = []
+
             configuration_class = MyConfiguration
 
         self.config_class = configuration_class
@@ -55,8 +60,10 @@ class BaseConfigurationTest(LandscapeTest):
 
     def write_config_file(self, **kwargs):
         section_name = kwargs.pop("section_name", "client")
-        config = "\n".join(["[%s]" % (section_name,)] +
-                           ["%s = %s" % pair for pair in kwargs.items()])
+        config = "\n".join(
+            [f"[{section_name}]"]
+            + [f"{key} = {value}" for key, value in kwargs.items()],
+        )
         self.config_filename = self.makeFile(config)
         self.config.default_config_filenames[:] = [self.config_filename]
 
@@ -133,9 +140,8 @@ class BaseConfigurationTest(LandscapeTest):
 
 
 class ConfigurationTest(LandscapeTest):
-
     def setUp(self):
-        super(ConfigurationTest, self).setUp()
+        super().setUp()
 
         class MyConfiguration(Configuration):
             default_config_filenames = []
@@ -148,7 +154,8 @@ class ConfigurationTest(LandscapeTest):
     def test_log_file_option(self):
         """Ensure options.log_dir option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--log-dir", "/var/log/my-awesome-log"])[0]
+            ["--log-dir", "/var/log/my-awesome-log"],
+        )[0]
         self.assertEqual(options.log_dir, "/var/log/my-awesome-log")
 
     def test_log_level_default(self):
@@ -176,7 +183,8 @@ class ConfigurationTest(LandscapeTest):
     def test_url_option(self):
         """Ensure options.url option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--url", "http://mylandscape/message-system"])[0]
+            ["--url", "http://mylandscape/message-system"],
+        )[0]
         self.assertEqual(options.url, "http://mylandscape/message-system")
 
     def test_url_default(self):
@@ -187,19 +195,23 @@ class ConfigurationTest(LandscapeTest):
     def test_ping_url_option(self):
         """Ensure options.ping_url option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--ping-url", "http://mylandscape/ping"])[0]
+            ["--ping-url", "http://mylandscape/ping"],
+        )[0]
         self.assertEqual(options.ping_url, "http://mylandscape/ping")
 
     def test_ping_url_default(self):
         """Ensure parse_args sets appropriate ping_url default."""
         options = self.parser.parse_args([])[0]
         self.assertEqual(
-            options.ping_url, "http://landscape.canonical.com/ping")
+            options.ping_url,
+            "http://landscape.canonical.com/ping",
+        )
 
     def test_ssl_public_key_option(self):
         """Ensure options.ssl_public_key option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--ssl-public-key", "/tmp/somekeyfile.ssl"])[0]
+            ["--ssl-public-key", "/tmp/somekeyfile.ssl"],
+        )[0]
         self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
     def test_ssl_public_key_default(self):
@@ -238,7 +250,8 @@ class ConfigurationTest(LandscapeTest):
         """
         self.assertEqual(
             "/var/lib/landscape/client/sockets",
-            self.config.sockets_path)
+            self.config.sockets_path,
+        )
 
     def test_annotations_path(self):
         """
@@ -247,7 +260,8 @@ class ConfigurationTest(LandscapeTest):
         """
         self.assertEqual(
             "/var/lib/landscape/client/annotations.d",
-            self.config.annotations_path)
+            self.config.annotations_path,
+        )
 
     def test_juju_filename(self):
         """
@@ -256,19 +270,20 @@ class ConfigurationTest(LandscapeTest):
         """
         self.assertEqual(
             "/var/lib/landscape/client/juju-info.json",
-            self.config.juju_filename)
+            self.config.juju_filename,
+        )
 
 
 class GetVersionedPersistTest(LandscapeTest):
-
     def test_upgrade_service(self):
-
-        class FakeService(object):
+        class FakeService:
             persist_filename = self.makePersistFile(content="")
             service_name = "monitor"
 
         mock_monitor = mock.Mock()
-        with mock.patch.dict("landscape.client.upgraders.UPGRADE_MANAGERS",
-                             {"monitor": mock_monitor}):
+        with mock.patch.dict(
+            "landscape.client.upgraders.UPGRADE_MANAGERS",
+            {"monitor": mock_monitor},
+        ):
             persist = get_versioned_persist(FakeService())
             mock_monitor.apply.assert_called_with(persist)

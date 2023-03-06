@@ -1,15 +1,15 @@
-import time
 import os
+import time
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.lock import lock_path, LockError
+from landscape.lib.lock import lock_path
+from landscape.lib.lock import LockError
 
 
 class LockTest(testing.FSTestCase, unittest.TestCase):
-
     def setUp(self):
-        super(LockTest, self).setUp()
+        super().setUp()
         self.filename = self.makeFile()
 
     def test_lock_creates_path(self):

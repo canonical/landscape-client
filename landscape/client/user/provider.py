@@ -1,8 +1,8 @@
-from grp import struct_group
-from pwd import struct_passwd
 import csv
 import logging
 import subprocess
+from grp import struct_group
+from pwd import struct_passwd
 
 from landscape.lib.compat import _PY3
 
@@ -19,7 +19,7 @@ class GroupNotFoundError(Exception):
     """Raised when a group couldn't be found by gid/groupname."""
 
 
-class UserProviderBase(object):
+class UserProviderBase:
     """This is a base class for user Providers."""
 
     def __init__(self, locked_users=None):
@@ -47,11 +47,18 @@ class UserProviderBase(object):
                 gecos_data.append(None)
             name, location, work_phone, home_phone = tuple(gecos_data)
             enabled = user.pw_name not in self.locked_users
-            users.append({"username": user.pw_name, "name": name,
-                          "uid": user.pw_uid, "enabled": enabled,
-                          "location": location, "work-phone": work_phone,
-                          "home-phone": home_phone,
-                          "primary-gid": user.pw_gid})
+            users.append(
+                {
+                    "username": user.pw_name,
+                    "name": name,
+                    "uid": user.pw_uid,
+                    "enabled": enabled,
+                    "location": location,
+                    "work-phone": work_phone,
+                    "home-phone": home_phone,
+                    "primary-gid": user.pw_gid,
+                },
+            )
             found_usernames.add(user.pw_name)
         return users
 
@@ -61,7 +68,7 @@ class UserProviderBase(object):
         Each group is represented as a dict with the keys: C{name},
         C{gid} and C{members}.
         """
-        user_names = set([x["username"] for x in self.get_users()])
+        user_names = {x["username"] for x in self.get_users()}
         groups = []
         found_groupnames = set()
         for group in self.get_group_data():
@@ -70,8 +77,13 @@ class UserProviderBase(object):
             if group.gr_name in found_groupnames:
                 continue
             member_names = user_names.intersection(group.gr_mem)
-            groups.append({"name": group.gr_name, "gid": group.gr_gid,
-                           "members": sorted(list(member_names))})
+            groups.append(
+                {
+                    "name": group.gr_name,
+                    "gid": group.gr_gid,
+                    "members": sorted(list(member_names)),
+                },
+            )
             found_groupnames.add(group.gr_name)
         return groups
 
@@ -84,7 +96,7 @@ class UserProviderBase(object):
         for data in self.get_users():
             if data["username"] == username:
                 return data["uid"]
-        raise UserNotFoundError("UID not found for user %s." % username)
+        raise UserNotFoundError(f"UID not found for user {username}.")
 
     def get_gid(self, groupname):
         """Returns the GID for C{groupname}.
@@ -95,20 +107,31 @@ class UserProviderBase(object):
         for data in self.get_groups():
             if data["name"] == groupname:
                 return data["gid"]
-        raise GroupNotFoundError("Group not found for group %s." % groupname)
+        raise GroupNotFoundError(f"Group not found for group {groupname}.")
 
 
 class UserProvider(UserProviderBase):
 
     popen = subprocess.Popen
 
-    passwd_fields = ["username", "passwd", "uid", "primary-gid", "gecos",
-                     "home", "shell"]
+    passwd_fields = [
+        "username",
+        "passwd",
+        "uid",
+        "primary-gid",
+        "gecos",
+        "home",
+        "shell",
+    ]
     group_fields = ["name", "passwd", "gid", "members"]
 
-    def __init__(self, locked_users=[], passwd_file="/etc/passwd",
-                 group_file="/etc/group"):
-        super(UserProvider, self).__init__(locked_users)
+    def __init__(
+        self,
+        locked_users=[],
+        passwd_file="/etc/passwd",
+        group_file="/etc/group",
+    ):
+        super().__init__(locked_users)
         self._passwd_file = passwd_file
         self._group_file = group_file
 
@@ -125,31 +148,44 @@ class UserProvider(UserProviderBase):
         # explicitly indicate the encoding as we cannot rely on the system
         # default encoding.
         if _PY3:
-            open_params = dict(encoding="utf-8", errors='replace')
+            open_params = dict(encoding="utf-8", errors="replace")
         else:
             open_params = dict()
         with open(self._passwd_file, "r", **open_params) as passwd_file:
             reader = csv.DictReader(
-                passwd_file, fieldnames=self.passwd_fields, delimiter=":",
-                quoting=csv.QUOTE_NONE)
+                passwd_file,
+                fieldnames=self.passwd_fields,
+                delimiter=":",
+                quoting=csv.QUOTE_NONE,
+            )
             current_line = 0
             for row in reader:
                 current_line += 1
                 # This skips the NIS user marker in the passwd file.
-                if (row["username"].startswith("+") or
-                        row["username"].startswith("-")):
+                if row["username"].startswith("+") or row[
+                    "username"
+                ].startswith("-"):
                     continue
                 gecos = row["gecos"]
                 if not _PY3 and gecos is not None:
                     gecos = gecos.decode("utf-8", "replace")
                 try:
-                    user_data.append((row["username"], row["passwd"],
-                                      int(row["uid"]), int(row["primary-gid"]),
-                                      gecos, row["home"], row["shell"]))
+                    user_data.append(
+                        (
+                            row["username"],
+                            row["passwd"],
+                            int(row["uid"]),
+                            int(row["primary-gid"]),
+                            gecos,
+                            row["home"],
+                            row["shell"],
+                        ),
+                    )
                 except (ValueError, TypeError):
                     logging.warn(
-                        "passwd file %s is incorrectly formatted: line %d."
-                        % (self._passwd_file, current_line))
+                        f"passwd file {self._passwd_file} is incorrectly "
+                        f"formatted: line {current_line:d}.",
+                    )
         return user_data
 
     def get_group_data(self):
@@ -160,19 +196,31 @@ class UserProvider(UserProviderBase):
         """
         group_data = []
         group_file = open(self._group_file, "r")
-        reader = csv.DictReader(group_file, fieldnames=self.group_fields,
-                                delimiter=":", quoting=csv.QUOTE_NONE)
+        reader = csv.DictReader(
+            group_file,
+            fieldnames=self.group_fields,
+            delimiter=":",
+            quoting=csv.QUOTE_NONE,
+        )
         current_line = 0
         for row in reader:
             current_line += 1
             # Skip if we find the NIS marker
-            if (row["name"].startswith("+") or row["name"].startswith("-")):
+            if row["name"].startswith("+") or row["name"].startswith("-"):
                 continue
             try:
-                group_data.append((row["name"], row["passwd"], int(row["gid"]),
-                                   row["members"].split(",")))
+                group_data.append(
+                    (
+                        row["name"],
+                        row["passwd"],
+                        int(row["gid"]),
+                        row["members"].split(","),
+                    ),
+                )
             except (AttributeError, ValueError):
-                logging.warn("group file %s is incorrectly formatted: "
-                             "line %d." % (self._group_file, current_line))
+                logging.warn(
+                    f"group file {self._group_file} is incorrectly formatted: "
+                    f"line {current_line:d}.",
+                )
         group_file.close()
         return group_data

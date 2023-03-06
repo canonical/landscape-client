@@ -1,11 +1,15 @@
 #!/usr/bin/python3
-import sys, os
+import os
+import sys
 
 try:
-    if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
+    if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath(
+        "scripts",
+    ):
         sys.path.insert(0, "./")
     else:
         from landscape.lib.warning import hide_warnings
+
         hide_warnings()
 
     from twisted.internet import reactor

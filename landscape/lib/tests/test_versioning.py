@@ -1,10 +1,10 @@
 from unittest import TestCase
 
-from landscape.lib.versioning import is_version_higher, sort_versions
+from landscape.lib.versioning import is_version_higher
+from landscape.lib.versioning import sort_versions
 
 
 class IsVersionHigherTest(TestCase):
-
     def test_greater(self):
         """
         The C{is_version_higher} function returns C{True} if the first
@@ -28,7 +28,6 @@ class IsVersionHigherTest(TestCase):
 
 
 class SortVersionsTest(TestCase):
-
     def test_sort(self):
         """
         The C{sort_versions} function sorts the given versions from the

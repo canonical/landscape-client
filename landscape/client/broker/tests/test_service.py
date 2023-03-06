@@ -1,12 +1,11 @@
 import os
+from unittest.mock import Mock
 
-from mock import Mock
-
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
-from landscape.client.broker.service import BrokerService
-from landscape.client.broker.transport import HTTPTransport
 from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.broker.service import BrokerService
+from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
+from landscape.client.broker.transport import HTTPTransport
+from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.testing import FakeReactor
 
 
@@ -15,7 +14,7 @@ class BrokerServiceTest(LandscapeTest):
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
-        super(BrokerServiceTest, self).setUp()
+        super().setUp()
 
         class FakeBrokerService(BrokerService):
             reactor_factory = FakeReactor
@@ -28,7 +27,8 @@ class BrokerServiceTest(LandscapeTest):
         """
         self.assertEqual(
             self.service.persist.filename,
-            os.path.join(self.config.data_path, "broker.bpickle"))
+            os.path.join(self.config.data_path, "broker.bpickle"),
+        )
 
     def test_transport(self):
         """

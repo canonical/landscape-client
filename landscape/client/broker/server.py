@@ -42,15 +42,14 @@ Diagram::
                                                       : exchange
 
 """
-
 import logging
 
 from twisted.internet.defer import Deferred
-from landscape.lib.compat import _PY3
 
-from landscape.lib.twisted_util import gather_results
 from landscape.client.amp import remote
 from landscape.client.manager.manager import FAILED
+from landscape.lib.compat import _PY3
+from landscape.lib.twisted_util import gather_results
 
 
 def event(method):
@@ -71,7 +70,7 @@ def event(method):
     return broadcast_event
 
 
-class BrokerServer(object):
+class BrokerServer:
     """
     A broker server capable of handling messages from plugins connected using
     the L{BrokerProtocol}.
@@ -82,11 +81,20 @@ class BrokerServer(object):
     @param registration: The {RegistrationHandler}.
     @param message_store: The broker's L{MessageStore}.
     """
+
     name = "broker"
 
-    def __init__(self, config, reactor, exchange, registration,
-                 message_store, pinger):
+    def __init__(
+        self,
+        config,
+        reactor,
+        exchange,
+        registration,
+        message_store,
+        pinger,
+    ):
         from landscape.client.broker.amp import get_component_registry
+
         self.connectors_registry = get_component_registry()
         self._config = config
         self._reactor = reactor
@@ -99,8 +107,10 @@ class BrokerServer(object):
 
         reactor.call_on("message", self.broadcast_message)
         reactor.call_on("impending-exchange", self.impending_exchange)
-        reactor.call_on("message-type-acceptance-changed",
-                        self.message_type_acceptance_changed)
+        reactor.call_on(
+            "message-type-acceptance-changed",
+            self.message_type_acceptance_changed,
+        )
         reactor.call_on("server-uuid-changed", self.server_uuid_changed)
         reactor.call_on("package-data-changed", self.package_data_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
@@ -201,7 +211,9 @@ class BrokerServer(object):
             message = {k.decode("ascii"): v for k, v in message.items()}
             message["type"] = message["type"].decode("ascii")
         if isinstance(session_id, bool) and message["type"] in (
-                "operation-result", "change-packages-result"):
+            "operation-result",
+            "change-packages-result",
+        ):
             # XXX This means we're performing a Landscape-driven upgrade and
             # we're being invoked by a package-changer or release-upgrader
             # process that is running code which doesn't know about the
@@ -218,7 +230,8 @@ class BrokerServer(object):
 
         if session_id is None:
             raise RuntimeError(
-                "Session ID must be set before attempting to send a message")
+                "Session ID must be set before attempting to send a message",
+            )
         if self._message_store.is_valid_session_id(session_id):
             return self._exchanger.send(message, urgent=urgent)
 
@@ -320,7 +333,6 @@ class BrokerServer(object):
         calls = []
 
         def get_handler(event_type):
-
             def handler(**kwargs):
                 for call in calls:
                     self._reactor.cancel_call(call)
@@ -367,26 +379,30 @@ class BrokerServer(object):
         indicating as such.
         """
         opid = message.get("operation-id")
-        if (True not in results and
-            opid is not None and
-            message["type"] != "resynchronize"
-            ):
+        if (
+            True not in results
+            and opid is not None
+            and message["type"] != "resynchronize"
+        ):
 
             mtype = message["type"]
-            logging.error("Nobody handled the %s message." % (mtype,))
+            logging.error(f"Nobody handled the {mtype} message.")
 
             result_text = """\
-Landscape client failed to handle this request (%s) because the
+Landscape client failed to handle this request ({}) because the
 plugin which should handle it isn't available.  This could mean that the
 plugin has been intentionally disabled, or that the client isn't running
 properly, or you may be running an older version of the client that doesn't
 support this feature.
-""" % (mtype,)
+""".format(
+                mtype,
+            )
             response = {
                 "type": "operation-result",
                 "status": FAILED,
                 "result-text": result_text,
-                "operation-id": opid}
+                "operation-id": opid,
+            }
             self._exchanger.send(response, urgent=True)
 
     @remote

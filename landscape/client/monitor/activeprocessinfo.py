@@ -3,9 +3,9 @@ import subprocess
 from twisted.python.compat import itervalues
 
 from landscape.client.diff import diff
-from landscape.lib.process import ProcessInformation
-from landscape.lib.jiffies import detect_jiffies
 from landscape.client.monitor.plugin import DataWatcher
+from landscape.lib.jiffies import detect_jiffies
+from landscape.lib.process import ProcessInformation
 
 
 class ActiveProcessInfo(DataWatcher):
@@ -13,22 +13,30 @@ class ActiveProcessInfo(DataWatcher):
     message_type = "active-process-info"
     scope = "process"
 
-    def __init__(self, proc_dir="/proc", boot_time=None, jiffies=None,
-                 uptime=None, popen=subprocess.Popen):
-        super(ActiveProcessInfo, self).__init__()
+    def __init__(
+        self,
+        proc_dir="/proc",
+        boot_time=None,
+        jiffies=None,
+        uptime=None,
+        popen=subprocess.Popen,
+    ):
+        super().__init__()
         self._proc_dir = proc_dir
         self._persist_processes = {}
         self._previous_processes = {}
         self._jiffies_per_sec = jiffies or detect_jiffies()
         self._popen = popen
         self._first_run = True
-        self._process_info = ProcessInformation(proc_dir=proc_dir,
-                                                jiffies=jiffies,
-                                                boot_time=boot_time,
-                                                uptime=uptime)
+        self._process_info = ProcessInformation(
+            proc_dir=proc_dir,
+            jiffies=jiffies,
+            boot_time=boot_time,
+            uptime=uptime,
+        )
 
     def register(self, manager):
-        super(ActiveProcessInfo, self).register(manager)
+        super().register(manager)
         self.call_on_accepted(self.message_type, self.exchange, True)
 
     def _reset(self):

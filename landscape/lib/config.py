@@ -1,25 +1,30 @@
-from __future__ import absolute_import
-
-from logging import getLogger
-from optparse import OptionParser
-import os
 import os.path
 import sys
+from logging import getLogger
+from optparse import OptionParser
 
-from configobj import ConfigObj, ConfigObjError
-from twisted.python.compat import StringType as basestring
+from configobj import ConfigObj
+from configobj import ConfigObjError
+from twisted.python.compat import StringType
 
 from landscape.lib import cli
 
 
 def add_cli_options(parser, filename=None):
     """Add common config-related CLI options to the given arg parser."""
-    cfgfilehelp = ("Use config from this file (any command line "
-                   "options override settings from the file).")
+    cfgfilehelp = (
+        "Use config from this file (any command line "
+        "options override settings from the file)."
+    )
     if filename is not None:
-        cfgfilehelp += " (default: {!r})".format(filename)
-    parser.add_option("-c", "--config", metavar="FILE", default=filename,
-                      help=cfgfilehelp)
+        cfgfilehelp += f" (default: {filename!r})"
+    parser.add_option(
+        "-c",
+        "--config",
+        metavar="FILE",
+        default=filename,
+        help=cfgfilehelp,
+    )
 
 
 class ConfigSpecOptionParser(OptionParser):
@@ -36,7 +41,7 @@ class ConfigSpecOptionParser(OptionParser):
         return option
 
 
-class BaseConfiguration(object):
+class BaseConfiguration:
     """Base class for configuration implementations.
 
     @cvar required_options: Optionally, a sequence of key names to require when
@@ -84,10 +89,12 @@ class BaseConfiguration(object):
 
         Otherwise C{AttributeError} is raised.
         """
-        for options in [self._set_options,
-                        self._command_line_options,
-                        self._config_file_options,
-                        self._command_line_defaults]:
+        for options in [
+            self._set_options,
+            self._command_line_options,
+            self._config_file_options,
+            self._command_line_defaults,
+        ]:
             if name in options:
                 value = options[name]
                 break
@@ -96,7 +103,7 @@ class BaseConfiguration(object):
                 value = None
             else:
                 raise AttributeError(name)
-        if isinstance(value, basestring):
+        if isinstance(value, StringType):
             option = self._parser.get_option("--" + name.replace("_", "-"))
             if option is not None:
                 value = option.convert_value(None, value)
@@ -127,7 +134,7 @@ class BaseConfiguration(object):
         not stored in the configuration file.
         """
         if name.startswith("_"):
-            super(BaseConfiguration, self).__setattr__(name, value)
+            super().__setattr__(name, value)
         else:
             self._set_options[name] = value
 
@@ -158,9 +165,10 @@ class BaseConfiguration(object):
             allow_missing = accept_nonexistent_default_config
         # Parse configuration file, if found.
         for config_filename in config_filenames:
-            if (os.path.isfile(config_filename) and
-                os.access(config_filename, os.R_OK)
-                ):
+            if os.path.isfile(config_filename) and os.access(
+                config_filename,
+                os.R_OK,
+            ):
 
                 self.load_configuration_file(config_filename)
                 break
@@ -169,8 +177,9 @@ class BaseConfiguration(object):
             if not allow_missing:
                 if len(config_filenames) == 1:
                     message = (
-                        "error: config file %s can't be read" %
-                        config_filenames[0])
+                        f"error: config file {config_filenames[0]} "
+                        "can't be read"
+                    )
                 else:
                     message = "error: no config file could be read"
                 sys.exit(message)
@@ -180,9 +189,13 @@ class BaseConfiguration(object):
         # Check that all needed options were given.
         for option in self.required_options:
             if not getattr(self, option):
-                sys.exit("error: must specify --%s "
-                         "or the '%s' directive in the config file."
-                         % (option.replace('_', '-'), option))
+                sys.exit(
+                    "error: must specify --{} "
+                    "or the '{}' directive in the config file.".format(
+                        option.replace("_", "-"),
+                        option,
+                    ),
+                )
 
     def _load_external_options(self):
         """Hook for loading options from elsewhere (e.g. for --import)."""
@@ -224,8 +237,12 @@ class BaseConfiguration(object):
         # from writing "" as an empty value, which get_plugins interprets as
         # '""' which search for a plugin named "".  See bug #1241821.
         try:
-            config_obj = ConfigObj(config_source, list_values=False,
-                                   raise_errors=False, write_empty_values=True)
+            config_obj = ConfigObj(
+                config_source,
+                list_values=False,
+                raise_errors=False,
+                write_empty_values=True,
+            )
         except ConfigObjError as e:
             logger = getLogger()
             logger.warn("ERROR at {}: {}".format(config_source, str(e)))
@@ -262,10 +279,11 @@ class BaseConfiguration(object):
         section = config_obj[self.config_section]
         for name, value in all_options.items():
             if name != "config" and name not in self.unsaved_options:
-                if (value == self._command_line_defaults.get(name) and
-                    name not in self._config_file_options and
-                    name not in self._command_line_options
-                    ):
+                if (
+                    value == self._command_line_defaults.get(name)
+                    and name not in self._config_file_options
+                    and name not in self._command_line_options
+                ):
 
                     # We don't want to write this value to the config file
                     # as it is default value and as not present in the

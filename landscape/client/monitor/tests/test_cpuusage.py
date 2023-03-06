@@ -1,5 +1,7 @@
-from landscape.client.monitor.cpuusage import CPUUsage, LAST_MESURE_KEY
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.monitor.cpuusage import CPUUsage
+from landscape.client.monitor.cpuusage import LAST_MESURE_KEY
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 
 
 class CPUUsagePluginTest(LandscapeTest):
@@ -199,9 +201,10 @@ class CPUUsagePluginTest(LandscapeTest):
 
         self.monitor.exchange()
 
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "cpu-usage",
-                              "cpu-usages": [(60, 1.0)]}])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "cpu-usage", "cpu-usages": [(60, 1.0)]}],
+        )
 
     def test_no_message_if_not_accepted(self):
         """
@@ -210,8 +213,7 @@ class CPUUsagePluginTest(LandscapeTest):
         """
         interval = 30
 
-        plugin = CPUUsage(create_time=self.reactor.time,
-                          interval=interval)
+        plugin = CPUUsage(create_time=self.reactor.time, interval=interval)
 
         self.monitor.add(plugin)
 
@@ -238,7 +240,7 @@ class CPUUsagePluginTest(LandscapeTest):
         self.assertNotEqual([], plugin._cpu_usage_points)
         self.assertEqual([(300, 1.0), (600, 1.0)], plugin._cpu_usage_points)
 
-    def test_plugin_run_with_None(self):
+    def test_plugin_run_with_None(self):  # noqa: N802
         """
         The plugin's run() method fills in the _cpu_usage_points with
         accumulated samples after each C{monitor.step_size} period.
@@ -266,5 +268,7 @@ class CPUUsagePluginTest(LandscapeTest):
         # over with the new points.
         plugin._get_cpu_usage = fake_get_cpu_usage
         self.reactor.advance(self.monitor.step_size)
-        self.assertEqual([(300, 1.0), (600, 1.0), (900, 1.0)],
-                         plugin._cpu_usage_points)
+        self.assertEqual(
+            [(300, 1.0), (600, 1.0), (900, 1.0)],
+            plugin._cpu_usage_points,
+        )

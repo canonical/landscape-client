@@ -34,11 +34,11 @@ OPTIONS
   --ignore-sigint          Ignore interrupt signals.
   --ignore-sigusr1         Ignore SIGUSR1 signal to rotate logs.
   -a NAME, --account-name=NAME   The account this computer belongs to.
-  -p KEY, --registration-key=KEY  The account-wide key 
+  -p KEY, --registration-key=KEY  The account-wide key
                            used for registering clients.
   -t TITLE, --computer-title=TITLE   The title of this computer.
   -u URL, --url=URL        The server URL to connect to (default: 'https://landscape.canonical.com/message-system').
-  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The SSL CA certificate to 
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The SSL CA certificate to
                            verify the server with. Only used if the server URL
                            to which we connect is https.
   --exchange-interval=INTERVAL   The number of seconds between server
@@ -65,9 +65,9 @@ OPTIONS
                            the command line, with precedence being given to
                            real command line options.
   --script-users=USERS     A comma-separated list of users to allow scripts to
-                           run. To allow scripts to be run by any user, 
+                           run. To allow scripts to be run by any user,
                            enter: ALL.
-  --include-manager-plugins=PLUGINS   A comma-separated list of manager 
+  --include-manager-plugins=PLUGINS   A comma-separated list of manager
                            plugins to load explicitly.
   -n, --no-start           Don't start the client automatically.
   --ok-no-register         Return exit code 0 instead of 2 if the client can't be
@@ -75,15 +75,15 @@ OPTIONS
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
   --otp=OTP                The one-time password (OTP) to use in cloud configuration.
-  --is-registered          Exit with code 0 (success) if client 
-                           is registered else returns 5. Display 
+  --is-registered          Exit with code 0 (success) if client
+                           is registered else returns 5. Display
                            registration info.
 
 CLOUD
 
 Landscape has some cloud features that become available when the EC2 or
 UEC machine instance was started using Landscape and the AMI is one of
-the official ones provided in the Web user interface. We call these 
+the official ones provided in the Web user interface. We call these
 instances "Landscape enabled", because they contain a pre-configured
 landscape-client installed in them which will register the running instance
 automatically with Landscape as soon as it starts up.
