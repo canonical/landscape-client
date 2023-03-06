@@ -97,8 +97,15 @@ class AptSources(ManagerPlugin):
         return self.call_with_operation_result(message, lambda: deferred)
 
     def _handle_sources(self, ignored, sources):
-        """Handle sources repositories."""
+        """
+        Replaces `SOURCES_LIST` with a Landscape-managed version and moves the
+        original to a ".save" file.
+
+        Configurably does the same with files in `SOURCES_LIST_D`.
+        """
+        
         saved_sources = f"{self.SOURCES_LIST}.save"
+
         if sources:
             fd, path = tempfile.mkstemp()
             os.close(fd)
@@ -125,8 +132,10 @@ class AptSources(ManagerPlugin):
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
-        for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
-            shutil.move(filename, f"{filename}.save")
+        if self.registry.config.manage_sources_list_d:
+            filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list"))
+            for filename in filenames:
+                shutil.move(filename, f"{filename}.save")
 
         for source in sources:
             filename = os.path.join(
