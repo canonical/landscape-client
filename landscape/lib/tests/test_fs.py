@@ -1,15 +1,17 @@
-# -*- coding: utf-8 -*-
 import codecs
 import os
-from mock import patch
 import time
 import unittest
+from unittest.mock import patch
 
 from twisted.python.compat import long
 
 from landscape.lib import testing
-from landscape.lib.fs import append_text_file, append_binary_file, touch_file
-from landscape.lib.fs import read_text_file, read_binary_file
+from landscape.lib.fs import append_binary_file
+from landscape.lib.fs import append_text_file
+from landscape.lib.fs import read_binary_file
+from landscape.lib.fs import read_text_file
+from landscape.lib.fs import touch_file
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -17,7 +19,6 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 
 class ReadFileTest(BaseTestCase):
-
     def test_read_binary_file(self):
         """
         With no options L{read_binary_file} reads the whole file passed as
@@ -49,61 +50,64 @@ class ReadFileTest(BaseTestCase):
         """
         path = self.makeFile("foo bar from end")
         self.assertEqual(
-            read_binary_file(path, limit=100), b"foo bar from end")
+            read_binary_file(path, limit=100),
+            b"foo bar from end",
+        )
         self.assertEqual(
-            read_binary_file(path, limit=-100), b"foo bar from end")
+            read_binary_file(path, limit=-100),
+            b"foo bar from end",
+        )
 
     def test_read_text_file(self):
         """
         With no options L{read_text_file} reads the whole file passed as
         argument as string decoded with utf-8.
         """
-        utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
+        utf8_content = codecs.encode("foo \N{SNOWMAN}", "utf-8")
         path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_text_file(path), u"foo ☃")
+        self.assertEqual(read_text_file(path), "foo ☃")
 
     def test_read_text_file_with_limit(self):
         """
         With a positive limit L{read_text_file} returns up to L{limit}
         characters from the start of the file.
         """
-        utf8_content = codecs.encode(u"foo \N{SNOWMAN}", "utf-8")
+        utf8_content = codecs.encode("foo \N{SNOWMAN}", "utf-8")
         path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_text_file(path, limit=3), u"foo")
+        self.assertEqual(read_text_file(path, limit=3), "foo")
 
     def test_read_text_file_with_negative_limit(self):
         """
         With a negative limit L{read_text_file} reads only the tail characters
         of the string.
         """
-        utf8_content = codecs.encode(u"foo \N{SNOWMAN} bar", "utf-8")
+        utf8_content = codecs.encode("foo \N{SNOWMAN} bar", "utf-8")
         path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_text_file(path, limit=-5), u"☃ bar")
+        self.assertEqual(read_text_file(path, limit=-5), "☃ bar")
 
     def test_read_text_file_with_limit_bigger_than_file(self):
         """
         If the limit is bigger than the file L{read_text_file} reads the entire
         file.
         """
-        utf8_content = codecs.encode(u"foo \N{SNOWMAN} bar", "utf-8")
+        utf8_content = codecs.encode("foo \N{SNOWMAN} bar", "utf-8")
         path = self.makeFile(utf8_content, mode="wb")
-        self.assertEqual(read_text_file(path, limit=100), u"foo ☃ bar")
-        self.assertEqual(read_text_file(path, limit=-100), u"foo ☃ bar")
+        self.assertEqual(read_text_file(path, limit=100), "foo ☃ bar")
+        self.assertEqual(read_text_file(path, limit=-100), "foo ☃ bar")
 
     def test_read_text_file_with_broken_utf8(self):
         """
         A text file containing broken UTF-8 shouldn't cause an error, just
         return some sensible replacement chars.
         """
-        not_quite_utf8_content = b'foo \xca\xff bar'
-        path = self.makeFile(not_quite_utf8_content, mode='wb')
-        self.assertEqual(read_text_file(path), u'foo \ufffd\ufffd bar')
-        self.assertEqual(read_text_file(path, limit=5), u'foo \ufffd')
-        self.assertEqual(read_text_file(path, limit=-3), u'bar')
+        not_quite_utf8_content = b"foo \xca\xff bar"
+        path = self.makeFile(not_quite_utf8_content, mode="wb")
+        self.assertEqual(read_text_file(path), "foo \ufffd\ufffd bar")
+        self.assertEqual(read_text_file(path, limit=5), "foo \ufffd")
+        self.assertEqual(read_text_file(path, limit=-3), "bar")
 
 
 class TouchFileTest(BaseTestCase):
-
     @patch("os.utime")
     def test_touch_file(self, utime_mock):
         """
@@ -134,25 +138,29 @@ class TouchFileTest(BaseTestCase):
         expected_time = current_time - 1
 
         with patch.object(
-                time, "time", return_value=current_time) as time_mock:
+            time,
+            "time",
+            return_value=current_time,
+        ) as time_mock:
             with patch.object(os, "utime") as utime_mock:
                 touch_file(path, offset_seconds=-1)
 
         time_mock.assert_called_once_with()
         utime_mock.assert_called_once_with(
-            path, (expected_time, expected_time))
+            path,
+            (expected_time, expected_time),
+        )
 
         self.assertFileContent(path, b"")
 
 
 class AppendFileTest(BaseTestCase):
-
     def test_append_existing_text_file(self):
         """
         The L{append_text_file} function appends contents to an existing file.
         """
         existing_file = self.makeFile("foo bar")
-        append_text_file(existing_file, u" baz ☃")
+        append_text_file(existing_file, " baz ☃")
         self.assertFileContent(existing_file, b"foo bar baz \xe2\x98\x83")
 
     def test_append_text_no_file(self):
@@ -161,7 +169,7 @@ class AppendFileTest(BaseTestCase):
         exist already.
         """
         new_file = os.path.join(self.makeDir(), "new_file")
-        append_text_file(new_file, u"contents ☃")
+        append_text_file(new_file, "contents ☃")
         self.assertFileContent(new_file, b"contents \xe2\x98\x83")
 
     def test_append_existing_binary_file(self):

@@ -1,12 +1,11 @@
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
-from landscape.sysinfo.loggedinusers import LoggedInUsers
 from landscape.lib.tests.test_sysstats import FakeWhoQTest
+from landscape.sysinfo.loggedinusers import LoggedInUsers
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
 class LoggedInUsersTest(FakeWhoQTest):
-
     def setUp(self):
-        super(LoggedInUsersTest, self).setUp()
+        super().setUp()
         self.logged_users = LoggedInUsers()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.logged_users)
@@ -16,8 +15,11 @@ class LoggedInUsersTest(FakeWhoQTest):
         result = self.logged_users.run()
 
         def check_headers(result):
-            self.assertEqual(self.sysinfo.get_headers(),
-                             [("Users logged in", "3")])
+            self.assertEqual(
+                self.sysinfo.get_headers(),
+                [("Users logged in", "3")],
+            )
+
         return result.addCallback(check_headers)
 
     def test_order_is_preserved_even_if_asynchronous(self):
@@ -27,10 +29,11 @@ class LoggedInUsersTest(FakeWhoQTest):
         self.sysinfo.add_header("After", "2")
 
         def check_headers(result):
-            self.assertEqual(self.sysinfo.get_headers(),
-                             [("Before", "1"),
-                              ("Users logged in", "3"),
-                              ("After", "2")])
+            self.assertEqual(
+                self.sysinfo.get_headers(),
+                [("Before", "1"), ("Users logged in", "3"), ("After", "2")],
+            )
+
         return result.addCallback(check_headers)
 
     def test_ignore_errors_on_command(self):
@@ -44,4 +47,5 @@ class LoggedInUsersTest(FakeWhoQTest):
 
         def check_headers(result):
             self.assertEqual(self.sysinfo.get_headers(), [])
+
         return result.addCallback(check_headers)

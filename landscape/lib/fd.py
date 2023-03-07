@@ -4,7 +4,6 @@ This module mostly exists for L{clean_fds}, so it can be imported without
 accidentally getting a reactor or something else that might create a critical
 file descriptor.
 """
-
 import os
 import resource
 

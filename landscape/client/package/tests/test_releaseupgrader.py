@@ -1,49 +1,61 @@
-import mock
 import os
 import signal
 import tarfile
 import unittest
+from unittest import mock
 
 from twisted.internet import reactor
-from twisted.internet.defer import succeed, fail, Deferred
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
 
-from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.gpg import InvalidGPGSignature
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.testing import LogKeeperHelper, EnvironSaverHelper
+from landscape.client.manager.manager import FAILED
+from landscape.client.manager.manager import SUCCEEDED
+from landscape.client.package.releaseupgrader import main
+from landscape.client.package.releaseupgrader import ReleaseUpgrader
 from landscape.client.package.releaseupgrader import (
-    ReleaseUpgrader, ReleaseUpgraderConfiguration, main)
-from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
-from landscape.client.manager.manager import SUCCEEDED, FAILED
+    ReleaseUpgraderConfiguration,
+)
+from landscape.client.tests.helpers import BrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.gpg import InvalidGPGSignature
+from landscape.lib.testing import EnvironSaverHelper
+from landscape.lib.testing import LogKeeperHelper
 
 
 class ReleaseUpgraderConfigurationTest(unittest.TestCase):
-
     def test_upgrade_tool_directory(self):
         """
         L{ReleaseUpgraderConfiguration.upgrade_tool_directory} returns the
         path to the directory holding the fetched upgrade-tool files.
         """
         config = ReleaseUpgraderConfiguration()
-        self.assertEqual(config.upgrade_tool_directory,
-                         os.path.join(config.package_directory,
-                                      "upgrade-tool"))
+        self.assertEqual(
+            config.upgrade_tool_directory,
+            os.path.join(config.package_directory, "upgrade-tool"),
+        )
 
 
 class ReleaseUpgraderTest(LandscapeTest):
 
-    helpers = [LogKeeperHelper,
-               EnvironSaverHelper, BrokerServiceHelper]
+    helpers = [LogKeeperHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(ReleaseUpgraderTest, self).setUp()
+        super().setUp()
         self.config = ReleaseUpgraderConfiguration()
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
         os.mkdir(self.config.upgrade_tool_directory)
         self.store = PackageStore(self.makeFile())
-        self.upgrader = ReleaseUpgrader(self.store, None,
-                                        self.remote, self.config, None)
+        self.upgrader = ReleaseUpgrader(
+            self.store,
+            None,
+            self.remote,
+            self.config,
+            None,
+        )
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
@@ -61,7 +73,8 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         method_returns = {
             tarball_url: succeed(b"tarball"),
-            signature_url: succeed(b"signature")}
+            signature_url: succeed(b"signature"),
+        }
 
         def side_effect(param):
             return method_returns[param]
@@ -69,17 +82,22 @@ class ReleaseUpgraderTest(LandscapeTest):
         fetch_mock.side_effect = side_effect
 
         os.rmdir(self.config.upgrade_tool_directory)
-        result = self.upgrader.fetch(tarball_url,
-                                     signature_url)
+        result = self.upgrader.fetch(tarball_url, signature_url)
 
         def check_result(ignored):
             directory = self.config.upgrade_tool_directory
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz"), b"tarball")
+                os.path.join(directory, "karmic.tar.gz"),
+                b"tarball",
+            )
             self.assertFileContent(
-                os.path.join(directory, "karmic.tar.gz.gpg"), b"signature")
-            self.assertIn("INFO: Successfully fetched upgrade-tool files",
-                          self.logfile.getvalue())
+                os.path.join(directory, "karmic.tar.gz.gpg"),
+                b"signature",
+            )
+            self.assertIn(
+                "INFO: Successfully fetched upgrade-tool files",
+                self.logfile.getvalue(),
+            )
             calls = [mock.call(tarball_url), mock.call(signature_url)]
             fetch_mock.assert_has_calls(calls, any_order=True)
 
@@ -97,22 +115,26 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         method_returns = {
             tarball_url: succeed(b"tarball"),
-            signature_url: fail(HTTPCodeError(404, b"not found"))}
+            signature_url: fail(HTTPCodeError(404, b"not found")),
+        }
 
         def side_effect(param):
             return method_returns[param]
 
         fetch_mock.side_effect = side_effect
 
-        result = self.upgrader.fetch(tarball_url,
-                                     signature_url)
+        result = self.upgrader.fetch(tarball_url, signature_url)
 
         def check_failure(failure):
-            self.assertIn("WARNING: Couldn't fetch file from %s (Server return"
-                          "ed HTTP code 404)" % signature_url,
-                          self.logfile.getvalue())
-            self.assertIn("WARNING: Couldn't fetch all upgrade-tool files",
-                          self.logfile.getvalue())
+            self.assertIn(
+                f"WARNING: Couldn't fetch file from {signature_url} "
+                "(Server returned HTTP code 404)",
+                self.logfile.getvalue(),
+            )
+            self.assertIn(
+                "WARNING: Couldn't fetch all upgrade-tool files",
+                self.logfile.getvalue(),
+            )
             calls = [mock.call(tarball_url), mock.call(signature_url)]
             fetch_mock.assert_has_calls(calls, any_order=True)
 
@@ -120,8 +142,10 @@ class ReleaseUpgraderTest(LandscapeTest):
         result.addErrback(check_failure)
         return result
 
-    @mock.patch("landscape.client.package.releaseupgrader.gpg_verify",
-                return_value=succeed(True))
+    @mock.patch(
+        "landscape.client.package.releaseupgrader.gpg_verify",
+        return_value=succeed(True),
+    )
     def test_verify(self, gpg_mock):
         """
         L{ReleaseUpgrader.verify} verifies the upgrade tool tarball against
@@ -133,10 +157,14 @@ class ReleaseUpgraderTest(LandscapeTest):
         result = self.upgrader.verify(tarball_filename, signature_filename)
 
         def check_result(ignored):
-            self.assertIn("INFO: Successfully verified upgrade-tool tarball",
-                          self.logfile.getvalue())
+            self.assertIn(
+                "INFO: Successfully verified upgrade-tool tarball",
+                self.logfile.getvalue(),
+            )
             gpg_mock.assert_called_once_with(
-                tarball_filename, signature_filename)
+                tarball_filename,
+                signature_filename,
+            )
 
         result.addCallback(check_result)
         return result
@@ -154,10 +182,15 @@ class ReleaseUpgraderTest(LandscapeTest):
         result = self.upgrader.verify(tarball_filename, signature_filename)
 
         def check_failure(failure):
-            self.assertIn("WARNING: Invalid signature for upgrade-tool "
-                          "tarball: gpg error", self.logfile.getvalue())
+            self.assertIn(
+                "WARNING: Invalid signature for upgrade-tool "
+                "tarball: gpg error",
+                self.logfile.getvalue(),
+            )
             gpg_mock.assert_called_once_with(
-                tarball_filename, signature_filename)
+                tarball_filename,
+                signature_filename,
+            )
 
         result.addCallback(self.fail)
         result.addErrback(check_failure)
@@ -189,16 +222,22 @@ class ReleaseUpgraderTest(LandscapeTest):
         The L{ReleaseUpgrader.tweak} method adds the Landscape PPA repository
         to the list of available mirrors.
         """
-        mirrors_filename = os.path.join(self.config.upgrade_tool_directory,
-                                        "mirrors.cfg")
-        self.makeFile(path=mirrors_filename,
-                      content="ftp://ftp.lug.ro/ubuntu/\n")
+        mirrors_filename = os.path.join(
+            self.config.upgrade_tool_directory,
+            "mirrors.cfg",
+        )
+        self.makeFile(
+            path=mirrors_filename,
+            content="ftp://ftp.lug.ro/ubuntu/\n",
+        )
 
         def check_result(ignored):
-            self.assertFileContent(mirrors_filename,
-                                   b"ftp://ftp.lug.ro/ubuntu/\n"
-                                   b"http://ppa.launchpad.net/landscape/"
-                                   b"trunk/ubuntu/\n")
+            self.assertFileContent(
+                mirrors_filename,
+                b"ftp://ftp.lug.ro/ubuntu/\n"
+                b"http://ppa.launchpad.net/landscape/"
+                b"trunk/ubuntu/\n",
+            )
 
         result = self.upgrader.tweak("hardy")
         result.addCallback(check_result)
@@ -208,8 +247,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         The default directory for the upgrade-tool logs is the system one.
         """
-        self.assertEqual(self.upgrader.logs_directory,
-                         "/var/log/dist-upgrade")
+        self.assertEqual(self.upgrader.logs_directory, "/var/log/dist-upgrade")
 
     def test_default_logs_limit(self):
         """
@@ -223,22 +261,28 @@ class ReleaseUpgraderTest(LandscapeTest):
         the process standard output, error and log files.
         """
         self.upgrader.logs_directory = self.makeDir()
-        self.makeFile(basename="main.log",
-                      dirname=self.upgrader.logs_directory,
-                      content="main log")
-        self.makeFile(basename="apt.log",
-                      dirname=self.upgrader.logs_directory,
-                      content="apt log")
+        self.makeFile(
+            basename="main.log",
+            dirname=self.upgrader.logs_directory,
+            content="main log",
+        )
+        self.makeFile(
+            basename="apt.log",
+            dirname=self.upgrader.logs_directory,
+            content="apt log",
+        )
         text = self.upgrader.make_operation_result_text("stdout", "stderr")
-        self.assertEqual(text,
-                         "=== Standard output ===\n\n"
-                         "stdout\n\n"
-                         "=== Standard error ===\n\n"
-                         "stderr\n\n"
-                         "=== apt.log ===\n\n"
-                         "apt log\n\n"
-                         "=== main.log ===\n\n"
-                         "main log\n\n")
+        self.assertEqual(
+            text,
+            "=== Standard output ===\n\n"
+            "stdout\n\n"
+            "=== Standard error ===\n\n"
+            "stderr\n\n"
+            "=== apt.log ===\n\n"
+            "apt log\n\n"
+            "=== main.log ===\n\n"
+            "main log\n\n",
+        )
 
     def test_make_operation_result_text_with_no_stderr(self):
         """
@@ -247,9 +291,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         self.upgrader.logs_directory = self.makeDir()
         text = self.upgrader.make_operation_result_text("stdout", "")
-        self.assertEqual(text,
-                         "=== Standard output ===\n\n"
-                         "stdout\n\n")
+        self.assertEqual(text, "=== Standard output ===\n\n" "stdout\n\n")
 
     def test_make_operation_result_text_only_considers_log_files(self):
         """
@@ -260,11 +302,13 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.upgrader.logs_directory = self.makeDir()
         self.makeDir(dirname=self.upgrader.logs_directory)
         text = self.upgrader.make_operation_result_text("stdout", "stderr")
-        self.assertEqual(text,
-                         "=== Standard output ===\n\n"
-                         "stdout\n\n"
-                         "=== Standard error ===\n\n"
-                         "stderr\n\n")
+        self.assertEqual(
+            text,
+            "=== Standard output ===\n\n"
+            "stdout\n\n"
+            "=== Standard error ===\n\n"
+            "stderr\n\n",
+        )
 
     def test_make_operation_result_text_trims_long_files(self):
         """
@@ -273,17 +317,21 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         self.upgrader.logs_directory = self.makeDir()
         self.upgrader.logs_limit = 8
-        self.makeFile(basename="main.log",
-                      dirname=self.upgrader.logs_directory,
-                      content="very long log")
+        self.makeFile(
+            basename="main.log",
+            dirname=self.upgrader.logs_directory,
+            content="very long log",
+        )
         text = self.upgrader.make_operation_result_text("stdout", "stderr")
-        self.assertEqual(text,
-                         "=== Standard output ===\n\n"
-                         "stdout\n\n"
-                         "=== Standard error ===\n\n"
-                         "stderr\n\n"
-                         "=== main.log ===\n\n"
-                         "long log\n\n")
+        self.assertEqual(
+            text,
+            "=== Standard output ===\n\n"
+            "stdout\n\n"
+            "=== Standard error ===\n\n"
+            "stderr\n\n"
+            "=== main.log ===\n\n"
+            "long log\n\n",
+        )
 
     def test_upgrade(self):
         """
@@ -294,11 +342,13 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
-        fd.write("#!/bin/sh\n"
-                 "echo $@\n"
-                 "echo FOO=$FOO\n"
-                 "echo PWD=$PWD\n"
-                 "echo out\n")
+        fd.write(
+            "#!/bin/sh\n"
+            "echo $@\n"
+            "echo FOO=$FOO\n"
+            "echo PWD=$PWD\n"
+            "echo out\n",
+        )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
         env_backup = os.environ.copy()
@@ -311,19 +361,29 @@ class ReleaseUpgraderTest(LandscapeTest):
             result = self.upgrader.upgrade("karmic", 100)
 
             def check_result(ignored):
-                self.assertIn("INFO: Queuing message with release upgrade "
-                              "results to exchange urgently.",
-                              self.logfile.getvalue())
-                result_text = (u"=== Standard output ===\n\n"
-                               "--frontend DistUpgradeViewNonInteractive\n"
-                               "FOO=bar\n"
-                               "PWD=%s\nout\n\n\n" % upgrade_tool_directory)
-                self.assertMessages(self.get_pending_messages(),
-                                    [{"type": "operation-result",
-                                      "operation-id": 100,
-                                      "status": SUCCEEDED,
-                                      "result-text": result_text,
-                                      "result-code": 0}])
+                self.assertIn(
+                    "INFO: Queuing message with release upgrade "
+                    "results to exchange urgently.",
+                    self.logfile.getvalue(),
+                )
+                result_text = (
+                    "=== Standard output ===\n\n"
+                    "--frontend DistUpgradeViewNonInteractive\n"
+                    "FOO=bar\n"
+                    f"PWD={upgrade_tool_directory}\nout\n\n\n"
+                )
+                self.assertMessages(
+                    self.get_pending_messages(),
+                    [
+                        {
+                            "type": "operation-result",
+                            "operation-id": 100,
+                            "status": SUCCEEDED,
+                            "result-text": result_text,
+                            "result-code": 0,
+                        },
+                    ],
+                )
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -345,10 +405,12 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
-        fd.write("#!/bin/sh\n"
-                 "echo DEBUG_UPDATE_MANAGER=$DEBUG_UPDATE_MANAGER\n"
-                 "echo RELEASE_UPRADER_ALLOW_THIRD_PARTY="
-                 "$RELEASE_UPRADER_ALLOW_THIRD_PARTY\n")
+        fd.write(
+            "#!/bin/sh\n"
+            "echo DEBUG_UPDATE_MANAGER=$DEBUG_UPDATE_MANAGER\n"
+            "echo RELEASE_UPRADER_ALLOW_THIRD_PARTY="
+            "$RELEASE_UPRADER_ALLOW_THIRD_PARTY\n",
+        )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
         env_backup = os.environ.copy()
@@ -357,20 +419,31 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         def do_test():
 
-            result = self.upgrader.upgrade("karmic", 100,
-                                           allow_third_party=True,
-                                           debug=True)
+            result = self.upgrader.upgrade(
+                "karmic",
+                100,
+                allow_third_party=True,
+                debug=True,
+            )
 
             def check_result(ignored):
-                result_text = (u"=== Standard output ===\n\n"
-                               "DEBUG_UPDATE_MANAGER=True\n"
-                               "RELEASE_UPRADER_ALLOW_THIRD_PARTY=True\n\n\n")
-                self.assertMessages(self.get_pending_messages(),
-                                    [{"type": "operation-result",
-                                      "operation-id": 100,
-                                      "status": SUCCEEDED,
-                                      "result-text": result_text,
-                                      "result-code": 0}])
+                result_text = (
+                    "=== Standard output ===\n\n"
+                    "DEBUG_UPDATE_MANAGER=True\n"
+                    "RELEASE_UPRADER_ALLOW_THIRD_PARTY=True\n\n\n"
+                )
+                self.assertMessages(
+                    self.get_pending_messages(),
+                    [
+                        {
+                            "type": "operation-result",
+                            "operation-id": 100,
+                            "status": SUCCEEDED,
+                            "result-text": result_text,
+                            "result-code": 0,
+                        },
+                    ],
+                )
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -392,10 +465,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
-        fd.write("#!/bin/sh\n"
-                 "echo out\n"
-                 "echo err >&2\n"
-                 "exit 3")
+        fd.write("#!/bin/sh\n" "echo out\n" "echo err >&2\n" "exit 3")
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
 
@@ -406,14 +476,22 @@ class ReleaseUpgraderTest(LandscapeTest):
             result = self.upgrader.upgrade("karmic", 100)
 
             def check_result(ignored):
-                result_text = (u"=== Standard output ===\n\nout\n\n\n"
-                               "=== Standard error ===\n\nerr\n\n\n")
-                self.assertMessages(self.get_pending_messages(),
-                                    [{"type": "operation-result",
-                                      "operation-id": 100,
-                                      "status": FAILED,
-                                      "result-text": result_text,
-                                      "result-code": 3}])
+                result_text = (
+                    "=== Standard output ===\n\nout\n\n\n"
+                    "=== Standard error ===\n\nerr\n\n\n"
+                )
+                self.assertMessages(
+                    self.get_pending_messages(),
+                    [
+                        {
+                            "type": "operation-result",
+                            "operation-id": 100,
+                            "status": FAILED,
+                            "result-text": result_text,
+                            "result-code": 3,
+                        },
+                    ],
+                )
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -433,24 +511,26 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         child_pid_filename = self.makeFile()
         fd = open(upgrade_tool_filename, "w")
-        fd.write("#!/usr/bin/env python3\n"
-                 "import os\n"
-                 "import time\n"
-                 "import sys\n"
-                 "if __name__ == '__main__':\n"
-                 "    print('First parent')\n"
-                 "    pid = os.fork()\n"
-                 "    if pid > 0:\n"
-                 "        time.sleep(0.5)\n"
-                 "        sys.exit(0)\n"
-                 "    pid = os.fork()\n"
-                 "    if pid > 0:\n"
-                 "        fd = open('%s', 'w')\n"
-                 "        fd.write(str(pid))\n"
-                 "        fd.close()\n"
-                 "        sys.exit(0)\n"
-                 "    while True:\n"
-                 "        time.sleep(2)\n" % child_pid_filename)
+        fd.write(
+            "#!/usr/bin/env python3\n"
+            "import os\n"
+            "import time\n"
+            "import sys\n"
+            "if __name__ == '__main__':\n"
+            "    print('First parent')\n"
+            "    pid = os.fork()\n"
+            "    if pid > 0:\n"
+            "        time.sleep(0.5)\n"
+            "        sys.exit(0)\n"
+            "    pid = os.fork()\n"
+            "    if pid > 0:\n"
+            f"        fd = open('{child_pid_filename}', 'w')\n"
+            "        fd.write(str(pid))\n"
+            "        fd.close()\n"
+            "        sys.exit(0)\n"
+            "    while True:\n"
+            "        time.sleep(2)\n",
+        )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
         os.environ.clear()
@@ -462,7 +542,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             result = self.upgrader.upgrade("karmic", 100)
 
             def kill_child(how):
-                fd = open(child_pid_filename, "r")
+                fd = open(child_pid_filename)
                 child_pid = int(fd.read())
                 fd.close()
                 os.remove(child_pid_filename)
@@ -477,9 +557,11 @@ class ReleaseUpgraderTest(LandscapeTest):
 
             def check_result(ignored):
                 force_kill_child.cancel()
-                self.assertIn("INFO: Queuing message with release upgrade "
-                              "results to exchange urgently.",
-                              self.logfile.getvalue())
+                self.assertIn(
+                    "INFO: Queuing message with release upgrade "
+                    "results to exchange urgently.",
+                    self.logfile.getvalue(),
+                )
                 kill_child("cleanly")
                 result_text = self.get_pending_messages()[0]["result-text"]
                 self.assertIn("First parent\n", result_text)
@@ -509,9 +591,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\n"
-            "echo $@\n"
-            "echo $(pwd)\n")
+            "#!/bin/sh\n" "echo $@\n" "echo $(pwd)\n",
+        )
 
         deferred = Deferred()
 
@@ -523,7 +604,8 @@ class ReleaseUpgraderTest(LandscapeTest):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
                 self.assertEqual(
                     out,
-                    ("--force-apt-update\n%s\n" % os.getcwd()).encode("utf-8"))
+                    (f"--force-apt-update\n{os.getcwd()}\n").encode("utf-8"),
+                )
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
 
@@ -543,18 +625,28 @@ class ReleaseUpgraderTest(LandscapeTest):
         the landscape uid and gid.
         """
 
-        class FakePwNam(object):
+        class FakePwNam:
             pw_uid = 1234
+
         getpwnam_mock.return_value = FakePwNam()
 
-        class FakeGrNam(object):
+        class FakeGrNam:
             gr_gid = 5678
+
         getgrnam_mock.return_value = FakeGrNam()
 
         spawn_process_calls = []
 
-        def spawn_process(pp, reporter, args=None, uid=None, gid=None,
-                          path=None, env=None, usePTY=None):
+        def spawn_process(
+            pp,
+            reporter,
+            args=None,
+            uid=None,
+            gid=None,
+            path=None,
+            env=None,
+            usePTY=None,
+        ):
             self.assertEqual(uid, 1234)
             self.assertEqual(gid, 5678)
             spawn_process_calls.append(True)
@@ -580,7 +672,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\necho $@\n")
+            "#!/bin/sh\necho $@\n",
+        )
         self.config.config = "/some/config"
 
         deferred = Deferred()
@@ -590,8 +683,10 @@ class ReleaseUpgraderTest(LandscapeTest):
 
             def check_result(args):
                 out, err, code = args
-                self.assertEqual(out, b"--force-apt-update "
-                                      b"--config=/some/config\n")
+                self.assertEqual(
+                    out,
+                    b"--force-apt-update " b"--config=/some/config\n",
+                )
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
 
@@ -616,23 +711,34 @@ class ReleaseUpgraderTest(LandscapeTest):
             return succeed(None)
 
         def verify(tarball_filename, signature_filename):
-            self.assertEqual(tarball_filename,
-                             os.path.join(upgrade_tool_directory, "tarball"))
-            self.assertEqual(signature_filename,
-                             os.path.join(upgrade_tool_directory, "sign"))
+            self.assertEqual(
+                tarball_filename,
+                os.path.join(upgrade_tool_directory, "tarball"),
+            )
+            self.assertEqual(
+                signature_filename,
+                os.path.join(upgrade_tool_directory, "sign"),
+            )
             calls.append("verify")
 
         def extract(filename_tarball):
-            self.assertEqual(filename_tarball,
-                             os.path.join(upgrade_tool_directory, "tarball"))
+            self.assertEqual(
+                filename_tarball,
+                os.path.join(upgrade_tool_directory, "tarball"),
+            )
             calls.append("extract")
 
         def tweak(current_code_name):
             self.assertEqual(current_code_name, "jaunty")
             calls.append("tweak")
 
-        def upgrade(code_name, operation_id, allow_third_party=False,
-                    debug=False, mode=None):
+        def upgrade(
+            code_name,
+            operation_id,
+            allow_third_party=False,
+            debug=False,
+            mode=None,
+        ):
             self.assertEqual(operation_id, 100)
             self.assertEqual(code_name, "karmic")
             self.assertTrue(allow_third_party)
@@ -651,20 +757,25 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.upgrader.finish = finish
 
         self.upgrader.lsb_release_filename = self.makeFile(
-            "DISTRIB_CODENAME=jaunty\n")
+            "DISTRIB_CODENAME=jaunty\n",
+        )
 
-        message = {"type": "release-upgrade",
-                   "code-name": "karmic",
-                   "upgrade-tool-tarball-url": "http://some/tarball",
-                   "upgrade-tool-signature-url": "http://some/sign",
-                   "allow-third-party": True,
-                   "operation-id": 100}
+        message = {
+            "type": "release-upgrade",
+            "code-name": "karmic",
+            "upgrade-tool-tarball-url": "http://some/tarball",
+            "upgrade-tool-signature-url": "http://some/sign",
+            "allow-third-party": True,
+            "operation-id": 100,
+        }
 
         result = self.upgrader.handle_release_upgrade(message)
 
         def check_result(ignored):
-            self.assertEqual(calls, ["fetch", "verify", "extract", "tweak",
-                                     "upgrade", "finish"])
+            self.assertEqual(
+                calls,
+                ["fetch", "verify", "extract", "tweak", "upgrade", "finish"],
+            )
 
         result.addCallback(check_result)
         return result
@@ -675,25 +786,36 @@ class ReleaseUpgraderTest(LandscapeTest):
         failure if the system is already running the desired release.
         """
         self.upgrader.lsb_release_filename = self.makeFile(
-            "DISTRIB_CODENAME=karmic\n")
+            "DISTRIB_CODENAME=karmic\n",
+        )
 
-        message = {"type": "release-upgrade",
-                   "code-name": "karmic",
-                   "operation-id": 100}
+        message = {
+            "type": "release-upgrade",
+            "code-name": "karmic",
+            "operation-id": 100,
+        }
 
         result = self.upgrader.handle_release_upgrade(message)
 
         def check_result(ignored):
-            self.assertIn("INFO: Queuing message with release upgrade "
-                          "failure to exchange urgently.",
-                          self.logfile.getvalue())
-            self.assertMessages(self.get_pending_messages(),
-                                [{"type": "operation-result",
-                                  "operation-id": 100,
-                                  "status": FAILED,
-                                  "result-text": "The system is already "
-                                                 "running karmic.",
-                                  "result-code": 1}])
+            self.assertIn(
+                "INFO: Queuing message with release upgrade "
+                "failure to exchange urgently.",
+                self.logfile.getvalue(),
+            )
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 100,
+                        "status": FAILED,
+                        "result-text": "The system is already "
+                        "running karmic.",
+                        "result-code": 1,
+                    },
+                ],
+            )
 
         result.addCallback(check_result)
         return result
@@ -704,7 +826,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         failure if any of the helper method errbacks.
         """
         self.upgrader.lsb_release_filename = self.makeFile(
-            "DISTRIB_CODENAME=jaunty\n")
+            "DISTRIB_CODENAME=jaunty\n",
+        )
 
         calls = []
 
@@ -735,24 +858,34 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.upgrader.upgrade = upgrade
         self.upgrader.finish = finish
 
-        message = {"type": "release-upgrade",
-                   "code-name": "karmic",
-                   "operation-id": 100,
-                   "upgrade-tool-tarball-url": "http://some/tarball",
-                   "upgrade-tool-signature-url": "http://some/signature"}
+        message = {
+            "type": "release-upgrade",
+            "code-name": "karmic",
+            "operation-id": 100,
+            "upgrade-tool-tarball-url": "http://some/tarball",
+            "upgrade-tool-signature-url": "http://some/signature",
+        }
 
         result = self.upgrader.handle_release_upgrade(message)
 
         def check_result(ignored):
-            self.assertIn("INFO: Queuing message with release upgrade "
-                          "failure to exchange urgently.",
-                          self.logfile.getvalue())
-            self.assertMessages(self.get_pending_messages(),
-                                [{"type": "operation-result",
-                                  "operation-id": 100,
-                                  "status": FAILED,
-                                  "result-text": "failure",
-                                  "result-code": 1}])
+            self.assertIn(
+                "INFO: Queuing message with release upgrade "
+                "failure to exchange urgently.",
+                self.logfile.getvalue(),
+            )
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 100,
+                        "status": FAILED,
+                        "result-text": "failure",
+                        "result-code": 1,
+                    },
+                ],
+            )
             self.assertEqual(calls, ["fetch", "verify"])
 
         result.addCallback(check_result)
@@ -767,7 +900,7 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         message = {"type": "release-upgrade"}
 
-        class FakeTask(object):
+        class FakeTask:
             data = message
 
         task = FakeTask()
@@ -780,15 +913,17 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         message = {"type": "foo"}
 
-        class FakeTask(object):
+        class FakeTask:
             data = message
 
         self.assertEqual(self.upgrader.handle_task(FakeTask()), None)
 
     @mock.patch("os.setsid")
     @mock.patch("os.getpgrp")
-    @mock.patch("landscape.client.package.releaseupgrader.run_task_handler",
-                return_value="RESULT")
+    @mock.patch(
+        "landscape.client.package.releaseupgrader.run_task_handler",
+        return_value="RESULT",
+    )
     def test_main(self, run_task_handler, getpgrp_mock, setsid_mock):
         """
         The L{main} function creates a new session if the process is not

@@ -3,7 +3,6 @@ from landscape.client.tests.helpers import LandscapeTest
 
 
 class DiffTest(LandscapeTest):
-
     def test_empty(self):
         self.assertEqual(diff({}, {}), ({}, {}, {}))
 
@@ -29,6 +28,7 @@ class DiffTest(LandscapeTest):
     def test_complex(self):
         old = {"str": "wubble", "int": 10}
         new = {"strlist": ["foo", "bar"], "int": 25}
-        self.assertEqual(diff(old, new), ({"strlist": ["foo", "bar"]},
-                                          {"int": 25},
-                                          {"str": "wubble"}))
+        self.assertEqual(
+            diff(old, new),
+            ({"strlist": ["foo", "bar"]}, {"int": 25}, {"str": "wubble"}),
+        )

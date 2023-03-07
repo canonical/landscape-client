@@ -1,17 +1,18 @@
 import logging
-import time
 import os
+import time
 
 from twisted.internet import threads
 from twisted.python.compat import unicode
 
 from landscape.client.accumulate import Accumulator
-from landscape.lib.monitor import CoverageMonitor
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.monitor import CoverageMonitor
 
 
 try:
     from rados import Rados
+
     has_rados = hasattr(Rados, "get_cluster_stats")
 except ImportError:
     has_rados = False
@@ -45,8 +46,12 @@ class CephUsage(MonitorPlugin):
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, interval=30, monitor_interval=60 * 60,
-                 create_time=time.time):
+    def __init__(
+        self,
+        interval=30,
+        monitor_interval=60 * 60,
+        create_time=time.time,
+    ):
         self.active = True
         self._has_rados = has_rados
         self._interval = interval
@@ -57,19 +62,26 @@ class CephUsage(MonitorPlugin):
         self._ceph_config = None
 
     def register(self, registry):
-        super(CephUsage, self).register(registry)
+        super().register(registry)
         self._ceph_config = os.path.join(
-            self.registry.config.data_path, "ceph-client",
-            "ceph.landscape-client.conf")
+            self.registry.config.data_path,
+            "ceph-client",
+            "ceph.landscape-client.conf",
+        )
 
         self._accumulate = Accumulator(self._persist, self._interval)
         self._monitor = CoverageMonitor(
-            self._interval, 0.8, "Ceph usage snapshot",
-            create_time=self._create_time)
+            self._interval,
+            0.8,
+            "Ceph usage snapshot",
+            create_time=self._create_time,
+        )
 
         self.registry.reactor.call_every(self._interval, self.run)
         self.registry.reactor.call_every(
-            self._monitor_interval, self._monitor.log)
+            self._monitor_interval,
+            self._monitor.log,
+        )
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
         self.call_on_accepted("ceph-usage", self.send_message, True)
 
@@ -77,20 +89,28 @@ class CephUsage(MonitorPlugin):
         ceph_points = self._ceph_usage_points
         ring_id = self._ceph_ring_id
         self._ceph_usage_points = []
-        return {"type": "ceph-usage",
-                "ring-id": ring_id,
-                "ceph-usages": [],  # For backwards-compatibility
-                "data-points": ceph_points}
+        return {
+            "type": "ceph-usage",
+            "ring-id": ring_id,
+            "ceph-usages": [],  # For backwards-compatibility
+            "data-points": ceph_points,
+        }
 
     def send_message(self, urgent=False):
         message = self.create_message()
         if message["ring-id"] and message["data-points"]:
             self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent)
+                message,
+                self._session_id,
+                urgent=urgent,
+            )
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "ceph-usage", self.send_message, urgent)
+            "ceph-usage",
+            self.send_message,
+            urgent,
+        )
 
     def run(self):
         if not self._should_run():
@@ -107,8 +127,10 @@ class CephUsage(MonitorPlugin):
             return False
 
         if not self._has_rados:
-            logging.info("This machine does not appear to be a Ceph machine. "
-                         "Deactivating plugin.")
+            logging.info(
+                "This machine does not appear to be a Ceph machine. "
+                "Deactivating plugin.",
+            )
             self.active = False
             return False
 
@@ -121,8 +143,10 @@ class CephUsage(MonitorPlugin):
 
     def _perform_rados_call(self):
         """The actual Rados interaction."""
-        with Rados(conffile=self._ceph_config,
-                   rados_id="landscape-client") as cluster:
+        with Rados(
+            conffile=self._ceph_config,
+            rados_id="landscape-client",
+        ) as cluster:
 
             cluster_stats = cluster.get_cluster_stats()
             if self._ceph_ring_id is None:
@@ -137,13 +161,16 @@ class CephUsage(MonitorPlugin):
         Parses the output and stores the usage data in an accumulator.
         """
         names_map = [
-            ("total", "kb"), ("avail", "kb_avail"), ("used", "kb_used")]
+            ("total", "kb"),
+            ("avail", "kb_avail"),
+            ("used", "kb_used"),
+        ]
         timestamp = int(self._create_time())
 
         step_values = []
         for name, key in names_map:
             value = cluster_stats[key] * 1024  # Report usage in bytes
-            step_value = self._accumulate(timestamp, value, "usage.%s" % name)
+            step_value = self._accumulate(timestamp, value, f"usage.{name}")
             step_values.append(step_value)
 
         if not all(step_values):

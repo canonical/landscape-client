@@ -37,7 +37,7 @@ landscape-devel account on the Landscape staging server (or you can specify
 another account with the --account parameter).
 
 The built VM will be stored under ./build/intrepid along with some other
-files. To launch the VM, cd to ./build/intrepid and issue: 
+files. To launch the VM, cd to ./build/intrepid and issue:
 $ ./run
 Once it's booted you can log into it with:
 $ ./ssh

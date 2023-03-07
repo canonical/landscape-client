@@ -1,6 +1,6 @@
 import fcntl
-import time
 import os
+import time
 
 
 class LockError(Exception):
@@ -18,7 +18,7 @@ def lock_path(path, timeout=0):
     while True:
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError:
+        except OSError:
             if started < time.time() - timeout:
                 raise LockError("Couldn't obtain lock")
         else:

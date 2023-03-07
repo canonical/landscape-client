@@ -1,16 +1,16 @@
-import mock
 import os
 import unittest
+from unittest import mock
 
 from landscape.lib import testing
-from landscape.lib.process import calculate_pcpu, ProcessInformation
 from landscape.lib.fs import create_text_file
+from landscape.lib.process import calculate_pcpu
+from landscape.lib.process import ProcessInformation
 
 
 class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
-
     def setUp(self):
-        super(ProcessInfoTest, self).setUp()
+        super().setUp()
         self.proc_dir = self.makeDir()
 
     def _add_process_info(self, process_id, state="R (running)"):
@@ -26,13 +26,16 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
         cmd_line = "/usr/bin/foo"
         create_text_file(os.path.join(process_dir, "cmdline"), cmd_line)
 
-        status = "\n".join([
-            "Name: foo",
-            "State: %s" % state,
-            "Uid: 1000",
-            "Gid: 2000",
-            "VmSize: 3000",
-            "Ignored: value"])
+        status = "\n".join(
+            [
+                "Name: foo",
+                f"State: {state}",
+                "Uid: 1000",
+                "Gid: 2000",
+                "VmSize: 3000",
+                "Ignored: value",
+            ],
+        )
         create_text_file(os.path.join(process_dir, "status"), status)
 
         stat_array = [str(index) for index in range(44)]
@@ -42,16 +45,19 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
     @mock.patch("landscape.lib.process.detect_jiffies", return_value=1)
     @mock.patch("os.listdir")
     @mock.patch("landscape.lib.sysstats.get_uptime")
-    def test_missing_process_race(self, get_uptime_mock, list_dir_mock,
-                                  jiffies_mock):
+    def test_missing_process_race(
+        self,
+        get_uptime_mock,
+        list_dir_mock,
+        jiffies_mock,
+    ):
         """
         We use os.listdir("/proc") to get the list of active processes, if a
         process ends before we attempt to read the process' information, then
         this should not trigger an error.
         """
 
-        class FakeFile(object):
-
+        class FakeFile:
             def __init__(self, response=""):
                 self._response = response
                 self.closed = False
@@ -61,7 +67,7 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
 
             def __iter__(self):
                 if self._response is None:
-                    raise IOError("Fake file error")
+                    raise OSError("Fake file error")
                 else:
                     yield self._response
 
@@ -73,15 +79,18 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
         fakefile1 = FakeFile("test-binary")
         fakefile2 = FakeFile(None)
         with mock.patch(
-                "landscape.lib.process.open", mock.mock_open(), create=True,
-                ) as open_mock:
+            "landscape.lib.process.open",
+            mock.mock_open(),
+            create=True,
+        ) as open_mock:
             # This means "return fakefile1, then fakefile2"
             open_mock.side_effect = [fakefile1, fakefile2]
             process_info = ProcessInformation("/proc")
             processes = list(process_info.get_all_process_info())
             calls = [
                 mock.call("/proc/12345/cmdline", "r"),
-                mock.call("/proc/12345/status", "r")]
+                mock.call("/proc/12345/status", "r"),
+            ]
             open_mock.assert_has_calls(calls)
         self.assertEqual(processes, [])
         list_dir_mock.assert_called_with("/proc")
@@ -146,7 +155,9 @@ class CalculatePCPUTest(unittest.TestCase):
 
     def test_calculate_pcpu_real_data(self):
         self.assertEqual(
-            calculate_pcpu(51286, 5000, 19000.07, 9281.0, 100), 3.0)
+            calculate_pcpu(51286, 5000, 19000.07, 9281.0, 100),
+            3.0,
+        )
 
     def test_calculate_pcpu(self):
         """
@@ -155,8 +166,7 @@ class CalculatePCPUTest(unittest.TestCase):
 
         This should be cpu utilisation of 20%
         """
-        self.assertEqual(calculate_pcpu(8000, 2000, 1000, 50000, 100),
-                         20.0)
+        self.assertEqual(calculate_pcpu(8000, 2000, 1000, 50000, 100), 20.0)
 
     def test_calculate_pcpu_capped(self):
         """
@@ -166,8 +176,7 @@ class CalculatePCPUTest(unittest.TestCase):
         This should be cpu utilisation of 200% but capped at 99% CPU
         utilisation.
         """
-        self.assertEqual(calculate_pcpu(98000, 2000, 1000, 50000, 100),
-                         99.0)
+        self.assertEqual(calculate_pcpu(98000, 2000, 1000, 50000, 100), 99.0)
 
     def test_calculate_pcpu_floored(self):
         """

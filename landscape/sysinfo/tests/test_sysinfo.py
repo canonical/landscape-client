@@ -1,20 +1,23 @@
-from logging import getLogger, StreamHandler
-import mock
 import os
 import unittest
+from logging import getLogger
+from logging import StreamHandler
+from unittest import mock
 
-from twisted.internet.defer import Deferred, succeed, fail
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
 
 from landscape.lib.compat import StringIO
 from landscape.lib.plugin import PluginRegistry
 from landscape.lib.testing import HelperTestCase
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
+from landscape.sysinfo.sysinfo import format_sysinfo
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
 class SysInfoPluginRegistryTest(HelperTestCase):
-
     def setUp(self):
-        super(SysInfoPluginRegistryTest, self).setUp()
+        super().setUp()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo_logfile = StringIO()
         self.handler = StreamHandler(self.sysinfo_logfile)
@@ -22,7 +25,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.logger.addHandler(self.handler)
 
     def tearDown(self):
-        super(SysInfoPluginRegistryTest, self).tearDown()
+        super().tearDown()
         self.logger.removeHandler(self.handler)
 
     def test_is_plugin_registry(self):
@@ -33,7 +36,8 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.sysinfo.add_header("Swap usage", "None")
         self.assertEqual(
             self.sysinfo.get_headers(),
-            [("Memory usage", "65%"), ("Swap usage", "None")])
+            [("Memory usage", "65%"), ("Swap usage", "None")],
+        )
         self.assertEqual(self.sysinfo.get_notes(), [])
         self.assertEqual(self.sysinfo.get_footnotes(), [])
 
@@ -42,31 +46,41 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.sysinfo.add_header("Header2", "Value2")
         self.sysinfo.add_header("Header3", "Value3")
         self.sysinfo.add_header("Header2", "Value4")
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Header1", "Value1"),
-                          ("Header2", "Value2"),
-                          ("Header2", "Value4"),
-                          ("Header3", "Value3")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [
+                ("Header1", "Value1"),
+                ("Header2", "Value2"),
+                ("Header2", "Value4"),
+                ("Header3", "Value3"),
+            ],
+        )
 
     def test_add_header_with_none_value(self):
         self.sysinfo.add_header("Header1", "Value1")
         self.sysinfo.add_header("Header2", None)
         self.sysinfo.add_header("Header3", "Value3")
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Header1", "Value1"),
-                          ("Header3", "Value3")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Header1", "Value1"), ("Header3", "Value3")],
+        )
         self.sysinfo.add_header("Header2", "Value2")
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Header1", "Value1"),
-                          ("Header2", "Value2"),
-                          ("Header3", "Value3")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [
+                ("Header1", "Value1"),
+                ("Header2", "Value2"),
+                ("Header3", "Value3"),
+            ],
+        )
 
     def test_add_and_get_notes(self):
         self.sysinfo.add_note("Your laptop is burning!")
         self.sysinfo.add_note("Oh, your house too, btw.")
         self.assertEqual(
             self.sysinfo.get_notes(),
-            ["Your laptop is burning!", "Oh, your house too, btw."])
+            ["Your laptop is burning!", "Oh, your house too, btw."],
+        )
         self.assertEqual(self.sysinfo.get_headers(), [])
         self.assertEqual(self.sysinfo.get_footnotes(), [])
 
@@ -75,14 +89,13 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.sysinfo.add_footnote("Go! Go!")
         self.assertEqual(
             self.sysinfo.get_footnotes(),
-            ["Graphs available at http://graph", "Go! Go!"])
+            ["Graphs available at http://graph", "Go! Go!"],
+        )
         self.assertEqual(self.sysinfo.get_headers(), [])
         self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_run(self):
-
-        class Plugin(object):
-
+        class Plugin:
             def __init__(self, deferred):
                 self._deferred = deferred
 
@@ -115,7 +128,8 @@ class SysInfoPluginRegistryTest(HelperTestCase):
 
     plugin_exception_message = (
         "There were exceptions while processing one or more plugins. "
-        "See %s/sysinfo.log for more information.")
+        "See %s/sysinfo.log for more information."
+    )
 
     def test_plugins_run_after_synchronous_error(self):
         """
@@ -125,8 +139,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         self.log_helper.ignore_errors(ZeroDivisionError)
         plugins_what_run = []
 
-        class BadPlugin(object):
-
+        class BadPlugin:
             def register(self, registry):
                 pass
 
@@ -134,8 +147,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
                 plugins_what_run.append(self)
                 1 / 0
 
-        class GoodPlugin(object):
-
+        class GoodPlugin:
             def register(self, registry):
                 pass
 
@@ -158,13 +170,13 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         path = os.path.expanduser("~/.landscape")
         self.assertEqual(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message % path])
+            [self.plugin_exception_message % path],
+        )
 
     def test_asynchronous_errors_logged(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
 
-        class BadPlugin(object):
-
+        class BadPlugin:
             def register(self, registry):
                 pass
 
@@ -181,21 +193,20 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         path = os.path.expanduser("~/.landscape")
         self.assertEqual(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message % path])
+            [self.plugin_exception_message % path],
+        )
 
     def test_multiple_exceptions_get_one_note(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
 
-        class RegularBadPlugin(object):
-
+        class RegularBadPlugin:
             def register(self, registry):
                 pass
 
             def run(self):
                 1 / 0
 
-        class AsyncBadPlugin(object):
-
+        class AsyncBadPlugin:
             def register(self, registry):
                 pass
 
@@ -211,7 +222,8 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         path = os.path.expanduser("~/.landscape")
         self.assertEqual(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message % path])
+            [self.plugin_exception_message % path],
+        )
 
     @mock.patch("os.getuid", return_value=0)
     def test_exception_running_as_privileged_user(self, uid_mock):
@@ -221,8 +233,7 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         directory.
         """
 
-        class AsyncBadPlugin(object):
-
+        class AsyncBadPlugin:
             def register(self, registry):
                 pass
 
@@ -239,11 +250,11 @@ class SysInfoPluginRegistryTest(HelperTestCase):
         path = "/var/log/landscape"
         self.assertEqual(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message % path])
+            [self.plugin_exception_message % path],
+        )
 
 
 class FormatTest(unittest.TestCase):
-
     def test_no_headers(self):
         output = format_sysinfo([])
         self.assertEqual(output, "")
@@ -253,48 +264,62 @@ class FormatTest(unittest.TestCase):
         self.assertEqual(output, "Header: Value")
 
     def test_parallel_headers_with_just_enough_space(self):
-        output = format_sysinfo([("Header1", "Value1"),
-                                 ("Header2", "Value2")], width=34)
+        output = format_sysinfo(
+            [("Header1", "Value1"), ("Header2", "Value2")],
+            width=34,
+        )
         self.assertEqual(output, "Header1: Value1   Header2: Value2")
 
     def test_stacked_headers_which_barely_doesnt_fit(self):
-        output = format_sysinfo([("Header1", "Value1"),
-                                 ("Header2", "Value2")], width=33)
+        output = format_sysinfo(
+            [("Header1", "Value1"), ("Header2", "Value2")],
+            width=33,
+        )
         self.assertEqual(output, "Header1: Value1\nHeader2: Value2")
 
     def test_stacked_headers_with_clearly_insufficient_space(self):
-        output = format_sysinfo([("Header1", "Value1"),
-                                 ("Header2", "Value2")], width=1)
-        self.assertEqual(output,
-                         "Header1: Value1\n"
-                         "Header2: Value2")
+        output = format_sysinfo(
+            [("Header1", "Value1"), ("Header2", "Value2")],
+            width=1,
+        )
+        self.assertEqual(output, "Header1: Value1\n" "Header2: Value2")
 
     def test_indent_headers_in_parallel_with_just_enough_space(self):
-        output = format_sysinfo([("Header1", "Value1"),
-                                 ("Header2", "Value2")], indent=">>", width=36)
+        output = format_sysinfo(
+            [("Header1", "Value1"), ("Header2", "Value2")],
+            indent=">>",
+            width=36,
+        )
         self.assertEqual(output, ">>Header1: Value1   Header2: Value2")
 
     def test_indent_headers_stacked_which_barely_doesnt_fit(self):
-        output = format_sysinfo([("Header1", "Value1"),
-                                 ("Header2", "Value2")], indent=">>", width=35)
-        self.assertEqual(output,
-                         ">>Header1: Value1\n"
-                         ">>Header2: Value2")
+        output = format_sysinfo(
+            [("Header1", "Value1"), ("Header2", "Value2")],
+            indent=">>",
+            width=35,
+        )
+        self.assertEqual(output, ">>Header1: Value1\n" ">>Header2: Value2")
 
     def test_parallel_and_stacked_headers(self):
-        headers = [("Header%d" % i, "Value%d" % i) for i in range(1, 6)]
+        headers = [(f"Header{i:d}", f"Value{i:d}") for i in range(1, 6)]
         output = format_sysinfo(headers)
         self.assertEqual(
             output,
             "Header1: Value1   Header3: Value3   Header5: Value5\n"
-            "Header2: Value2   Header4: Value4")
+            "Header2: Value2   Header4: Value4",
+        )
 
     def test_value_alignment(self):
-        output = format_sysinfo([("Header one", "Value one"),
-                                 ("Header2", "Value2"),
-                                 ("Header3", "Value3"),
-                                 ("Header4", "Value4"),
-                                 ("Header5", "Value five")], width=45)
+        output = format_sysinfo(
+            [
+                ("Header one", "Value one"),
+                ("Header2", "Value2"),
+                ("Header3", "Value3"),
+                ("Header4", "Value4"),
+                ("Header5", "Value five"),
+            ],
+            width=45,
+        )
         # These headers and values were crafted to cover several cases:
         #
         # - Header padding (Header2 and Header3)
@@ -302,105 +327,126 @@ class FormatTest(unittest.TestCase):
         # - Lack of value padding due to a missing last column (Value3)
         # - Lack of value padding due to being a last column (Value4)
         #
-        self.assertEqual(output,
-                         "Header one: Value one   Header4: Value4\n"
-                         "Header2:    Value2      Header5: Value five\n"
-                         "Header3:    Value3")
+        self.assertEqual(
+            output,
+            "Header one: Value one   Header4: Value4\n"
+            "Header2:    Value2      Header5: Value five\n"
+            "Header3:    Value3",
+        )
 
     def test_one_note(self):
-        self.assertEqual(format_sysinfo(notes=["Something's wrong!"]),
-                         "=> Something's wrong!")
+        self.assertEqual(
+            format_sysinfo(notes=["Something's wrong!"]),
+            "=> Something's wrong!",
+        )
 
     def test_more_notes(self):
-        self.assertEqual(format_sysinfo(notes=["Something's wrong",
-                                               "You should look at it",
-                                               "Really"]),
-                         "=> Something's wrong\n"
-                         "=> You should look at it\n"
-                         "=> Really")
+        self.assertEqual(
+            format_sysinfo(
+                notes=["Something's wrong", "You should look at it", "Really"],
+            ),
+            "=> Something's wrong\n=> You should look at it\n=> Really",
+        )
 
     def test_indented_notes(self):
-        self.assertEqual(format_sysinfo(notes=["Something's wrong",
-                                               "You should look at it",
-                                               "Really"], indent=">>"),
-                         ">>=> Something's wrong\n"
-                         ">>=> You should look at it\n"
-                         ">>=> Really")
+        self.assertEqual(
+            format_sysinfo(
+                notes=["Something's wrong", "You should look at it", "Really"],
+                indent=">>",
+            ),
+            ">>=> Something's wrong\n"
+            ">>=> You should look at it\n"
+            ">>=> Really",
+        )
 
     def test_header_and_note(self):
-        self.assertEqual(format_sysinfo(headers=[("Header", "Value")],
-                                        notes=["Note"]),
-                         "Header: Value\n"
-                         "\n"
-                         "=> Note")
+        self.assertEqual(
+            format_sysinfo(headers=[("Header", "Value")], notes=["Note"]),
+            "Header: Value\n" "\n" "=> Note",
+        )
 
     def test_one_footnote(self):
         # Pretty dumb.
-        self.assertEqual(format_sysinfo(footnotes=["Graphs at http://..."]),
-                         "Graphs at http://...")
+        self.assertEqual(
+            format_sysinfo(footnotes=["Graphs at http://..."]),
+            "Graphs at http://...",
+        )
 
     def test_more_footnotes(self):
         # Still dumb.
-        self.assertEqual(format_sysinfo(footnotes=["Graphs at http://...",
-                                                   "Lunch at ..."]),
-                         "Graphs at http://...\n"
-                         "Lunch at ...")
+        self.assertEqual(
+            format_sysinfo(footnotes=["Graphs at http://...", "Lunch at ..."]),
+            "Graphs at http://...\nLunch at ...",
+        )
 
     def test_indented_footnotes(self):
         # Barely more interesting.
-        self.assertEqual(format_sysinfo(footnotes=["Graphs at http://...",
-                                                   "Lunch at ..."],
-                                        indent=">>"),
-                         ">>Graphs at http://...\n"
-                         ">>Lunch at ...")
+        self.assertEqual(
+            format_sysinfo(
+                footnotes=["Graphs at http://...", "Lunch at ..."],
+                indent=">>",
+            ),
+            ">>Graphs at http://...\n>>Lunch at ...",
+        )
 
     def test_header_and_footnote(self):
         # Warming up.
-        self.assertEqual(format_sysinfo(headers=[("Header", "Value")],
-                                        footnotes=["Footnote"]),
-                         "Header: Value\n"
-                         "\n"
-                         "Footnote"
-                         )
+        self.assertEqual(
+            format_sysinfo(
+                headers=[("Header", "Value")],
+                footnotes=["Footnote"],
+            ),
+            "Header: Value\n\nFootnote",
+        )
 
     def test_header_note_and_footnote(self):
         # Nice.
-        self.assertEqual(format_sysinfo(headers=[("Header", "Value")],
-                                        notes=["Note"],
-                                        footnotes=["Footnote"]),
-                         "Header: Value\n"
-                         "\n"
-                         "=> Note\n"
-                         "\n"
-                         "Footnote"
-                         )
+        self.assertEqual(
+            format_sysinfo(
+                headers=[("Header", "Value")],
+                notes=["Note"],
+                footnotes=["Footnote"],
+            ),
+            "Header: Value\n\n=> Note\n\nFootnote",
+        )
 
     def test_indented_headers_notes_and_footnotes(self):
         # Hot!
-        self.assertEqual(format_sysinfo(headers=[("Header1", "Value1"),
-                                                 ("Header2", "Value2"),
-                                                 ("Header3", "Value3")],
-                                        notes=["Note1", "Note2"],
-                                        footnotes=["Footnote1", "Footnote2"],
-                                        indent="  ",
-                                        width=36),
-                         "  Header1: Value1   Header3: Value3\n"
-                         "  Header2: Value2\n"
-                         "\n"
-                         "  => Note1\n"
-                         "  => Note2\n"
-                         "\n"
-                         "  Footnote1\n"
-                         "  Footnote2"
-                         )
+        self.assertEqual(
+            format_sysinfo(
+                headers=[
+                    ("Header1", "Value1"),
+                    ("Header2", "Value2"),
+                    ("Header3", "Value3"),
+                ],
+                notes=["Note1", "Note2"],
+                footnotes=["Footnote1", "Footnote2"],
+                indent="  ",
+                width=36,
+            ),
+            "  Header1: Value1   Header3: Value3\n"
+            "  Header2: Value2\n"
+            "\n"
+            "  => Note1\n"
+            "  => Note2\n"
+            "\n"
+            "  Footnote1\n"
+            "  Footnote2",
+        )
 
     def test_wrap_long_notes(self):
         self.assertEqual(
-            format_sysinfo(notes=[
-                "I do believe that a very long note, such as one that is "
-                "longer than about 50 characters, should wrap at the "
-                "specified width."], width=50, indent="Z"),
+            format_sysinfo(
+                notes=[
+                    "I do believe that a very long note, such as one that is "
+                    "longer than about 50 characters, should wrap at the "
+                    "specified width.",
+                ],
+                width=50,
+                indent="Z",
+            ),
             """\
 Z=> I do believe that a very long note, such as
     one that is longer than about 50 characters,
-    should wrap at the specified width.""")
+    should wrap at the specified width.""",
+        )

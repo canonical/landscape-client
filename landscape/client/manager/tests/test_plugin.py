@@ -1,8 +1,10 @@
 from twisted.internet.defer import Deferred
 
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.plugin import SUCCEEDED
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
-from landscape.client.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 class BrokerPluginTest(LandscapeTest):
@@ -19,14 +21,22 @@ class BrokerPluginTest(LandscapeTest):
         broker_service = self.broker_service
         broker_service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
-        operation = (lambda: None)
+
+        def operation():
+            return None
 
         def assert_messages(ignored):
             messages = broker_service.message_store.get_pending_messages()
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 12312}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 12312,
+                    },
+                ],
+            )
 
         result = plugin.call_with_operation_result(message, operation)
         return result.addCallback(assert_messages)
@@ -48,10 +58,17 @@ class BrokerPluginTest(LandscapeTest):
 
         def assert_messages(ignored):
             messages = broker_service.message_store.get_pending_messages()
-            self.assertMessages(messages,
-                                [{"type": "operation-result", "status": FAILED,
-                                  "result-text": "RuntimeError: What the "
-                                  "crap!", "operation-id": 12312}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": FAILED,
+                        "result-text": "RuntimeError: What the crap!",
+                        "operation-id": 12312,
+                    },
+                ],
+            )
             logdata = self.logfile.getvalue()
             self.assertTrue("RuntimeError: What the crap!" in logdata, logdata)
 
@@ -67,7 +84,9 @@ class BrokerPluginTest(LandscapeTest):
         broker_service = self.broker_service
         broker_service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 123}
-        operation = (lambda: None)
+
+        def operation():
+            return None
 
         def assert_urgency(ignored):
             self.assertTrue(broker_service.exchanger.is_urgent())
@@ -85,15 +104,23 @@ class BrokerPluginTest(LandscapeTest):
         broker_service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
         deferred = Deferred()
-        operation = (lambda: deferred)
+
+        def operation():
+            return deferred
 
         def assert_messages(ignored):
             messages = broker_service.message_store.get_pending_messages()
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "result-text": "blah",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 12312}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "result-text": "blah",
+                        "status": SUCCEEDED,
+                        "operation-id": 12312,
+                    },
+                ],
+            )
 
         result = plugin.call_with_operation_result(message, operation)
         result.addCallback(assert_messages)

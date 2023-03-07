@@ -1,14 +1,14 @@
-import mock
+from unittest import mock
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
-from landscape.lib.twisted_util import gather_results
-from landscape.client.tests.helpers import (
-        LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.client.broker.client import BrokerClientPlugin
+from landscape.client.broker.client import HandlerNotFoundError
 from landscape.client.broker.tests.helpers import BrokerClientHelper
-from landscape.client.broker.client import (
-        BrokerClientPlugin, HandlerNotFoundError)
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.twisted_util import gather_results
 
 
 class BrokerClientTest(LandscapeTest):
@@ -45,7 +45,8 @@ class BrokerClientTest(LandscapeTest):
         getting a session id.
         """
         test_session_id = self.successResultOf(
-            self.client.broker.get_session_id(scope="test"))
+            self.client.broker.get_session_id(scope="test"),
+        )
         plugin = BrokerClientPlugin()
         plugin.scope = "test"
         self.client.add(plugin)
@@ -130,8 +131,10 @@ class BrokerClientTest(LandscapeTest):
         If a plugin has a run method, the reactor will call it every
         run_interval, but will stop and log if it raises unhandled exceptions.
         """
+
         class RunFailure(Exception):
             pass
+
         # log helper should not complain on the error we're testing
         self.log_helper.ignore_errors("BrokerClientPlugin.*")
         plugin = BrokerClientPlugin()
@@ -146,7 +149,8 @@ class BrokerClientTest(LandscapeTest):
         # message entry that would be present on a live client.
         self.assertIn(
             "ERROR: BrokerClientPlugin raised an uncaught exception",
-            self.logfile.getvalue())
+            self.logfile.getvalue(),
+        )
 
     def test_run_interval_blocked_during_resynch(self):
         """
@@ -220,7 +224,8 @@ class BrokerClientTest(LandscapeTest):
         def got_result(result):
             self.assertEqual(
                 self.exchanger.get_client_accepted_message_types(),
-                sorted(["bar", "foo"] + DEFAULT_ACCEPTED_TYPES))
+                sorted(["bar", "foo"] + DEFAULT_ACCEPTED_TYPES),
+            )
 
         return gather_results([result1, result2]).addCallback(got_result)
 
@@ -251,8 +256,10 @@ class BrokerClientTest(LandscapeTest):
 
         def dispatch_message(result):
             self.assertIs(self.client.dispatch_message(message), None)
-            self.assertTrue("Error running message handler for type 'foo'" in
-                            self.logfile.getvalue())
+            self.assertTrue(
+                "Error running message handler for type 'foo'"
+                in self.logfile.getvalue(),
+            )
             handle_message.assert_called_once_with(message)
 
         result = self.client.register_message("foo", handle_message)
@@ -263,8 +270,11 @@ class BrokerClientTest(LandscapeTest):
         L{BrokerClient.dispatch_message} raises an error if no handler was
         found for the given message.
         """
-        error = self.assertRaises(HandlerNotFoundError,
-                                  self.client.dispatch_message, {"type": "x"})
+        error = self.assertRaises(
+            HandlerNotFoundError,
+            self.client.dispatch_message,
+            {"type": "x"},
+        )
         self.assertEqual(str(error), "x")
 
     def test_message(self):
@@ -326,8 +336,9 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugin1)
         self.client.add(plugin2)
         self.client.exchange()
-        self.assertTrue("Error during plugin exchange" in
-                        self.logfile.getvalue())
+        self.assertTrue(
+            "Error during plugin exchange" in self.logfile.getvalue(),
+        )
         self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
         plugin1.exchange.assert_called_once_with()
         plugin2.exchange.assert_called_once_with()
@@ -342,8 +353,10 @@ class BrokerClientTest(LandscapeTest):
         plugin.exchange = mock.Mock()
         self.client.add(plugin)
         self.client_reactor.fire("impending-exchange")
-        self.assertTrue("Got notification of impending exchange. "
-                        "Notifying all plugins." in self.logfile.getvalue())
+        self.assertTrue(
+            "Got notification of impending exchange. "
+            "Notifying all plugins." in self.logfile.getvalue(),
+        )
         plugin.exchange.assert_called_once_with()
 
     def test_fire_event(self):
@@ -415,7 +428,9 @@ class BrokerClientTest(LandscapeTest):
             calls = [mock.call("bar"), mock.call("foo")]
 
             broker.register_client_accepted_message_type.assert_has_calls(
-                calls, any_order=True)
+                calls,
+                any_order=True,
+            )
             broker.register_client.assert_called_once_with("client")
 
         return gather_results([result1, result2]).addCallback(got_result)

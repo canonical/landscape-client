@@ -1,5 +1,4 @@
 """The Landscape monitor plugin system."""
-
 import os
 
 from landscape.client.broker.client import BrokerClient
@@ -10,9 +9,15 @@ class Monitor(BrokerClient):
 
     name = "monitor"
 
-    def __init__(self, reactor, config, persist, persist_filename=None,
-                 step_size=5 * 60):
-        super(Monitor, self).__init__(reactor, config)
+    def __init__(
+        self,
+        reactor,
+        config,
+        persist,
+        persist_filename=None,
+        step_size=5 * 60,
+    ):
+        super().__init__(reactor, config)
         self.reactor = reactor
         self.config = config
         self.persist = persist
@@ -30,5 +35,5 @@ class Monitor(BrokerClient):
 
     def exchange(self):
         """Call C{exchange} on all plugins."""
-        super(Monitor, self).exchange()
+        super().exchange()
         self.flush()

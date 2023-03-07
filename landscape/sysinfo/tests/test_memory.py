@@ -1,8 +1,9 @@
 import unittest
 
-from landscape.lib.testing import TwistedTestCase, FSTestCase
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
+from landscape.lib.testing import FSTestCase
+from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.memory import Memory
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
 MEMINFO_SAMPLE = """
@@ -38,9 +39,8 @@ VmallocChunk:    86764 kB
 
 
 class MemoryTest(FSTestCase, TwistedTestCase, unittest.TestCase):
-
     def setUp(self):
-        super(MemoryTest, self).setUp()
+        super().setUp()
         self.memory = Memory(self.makeFile(MEMINFO_SAMPLE))
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.memory)
@@ -50,6 +50,7 @@ class MemoryTest(FSTestCase, TwistedTestCase, unittest.TestCase):
 
     def test_run_adds_header(self):
         self.memory.run()
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Memory usage", "27%"),
-                          ("Swap usage", "39%")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Memory usage", "27%"), ("Swap usage", "39%")],
+        )

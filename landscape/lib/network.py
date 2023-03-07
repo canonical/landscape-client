@@ -1,17 +1,17 @@
-from __future__ import absolute_import
-
 """
 Network introspection utilities using ioctl and the /proc filesystem.
 """
 import array
+import errno
 import fcntl
+import logging
 import socket
 import struct
-import errno
-import logging
 
 import netifaces
-from landscape.lib.compat import long, _PY3
+
+from landscape.lib.compat import _PY3
+from landscape.lib.compat import long
 
 __all__ = ["get_active_device_info", "get_network_traffic"]
 
@@ -40,8 +40,8 @@ def is_active(ifaddresses):
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
-    inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get('addr')
-    inet6_addr = ifaddresses.get(netifaces.AF_INET6, [{}])[0].get('addr')
+    inet_addr = ifaddresses.get(netifaces.AF_INET, [{}])[0].get("addr")
+    inet6_addr = ifaddresses.get(netifaces.AF_INET6, [{}])[0].get("addr")
     return bool(inet_addr or inet6_addr)
 
 
@@ -58,8 +58,11 @@ def get_ip_addresses(ifaddresses):
         results[netifaces.AF_INET] = ifaddresses[netifaces.AF_INET]
     if netifaces.AF_INET6 in ifaddresses:
         # Ignore link-local IPv6 addresses (fe80::/10).
-        global_addrs = [addr for addr in ifaddresses[netifaces.AF_INET6]
-                        if not addr['addr'].startswith('fe80:')]
+        global_addrs = [
+            addr
+            for addr in ifaddresses[netifaces.AF_INET6]
+            if not addr["addr"].startswith("fe80:")
+        ]
         if global_addrs:
             results[netifaces.AF_INET6] = global_addrs
 
@@ -71,7 +74,7 @@ def get_broadcast_address(ifaddresses):
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
-    return ifaddresses[netifaces.AF_INET][0].get('broadcast', '0.0.0.0')
+    return ifaddresses[netifaces.AF_INET][0].get("broadcast", "0.0.0.0")
 
 
 def get_netmask(ifaddresses):
@@ -79,7 +82,7 @@ def get_netmask(ifaddresses):
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
-    return ifaddresses[netifaces.AF_INET][0].get('netmask', '')
+    return ifaddresses[netifaces.AF_INET][0].get("netmask", "")
 
 
 def get_ip_address(ifaddresses):
@@ -87,7 +90,7 @@ def get_ip_address(ifaddresses):
 
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
-    return ifaddresses[netifaces.AF_INET][0]['addr']
+    return ifaddresses[netifaces.AF_INET][0]["addr"]
 
 
 def get_mac_address(ifaddresses):
@@ -99,8 +102,8 @@ def get_mac_address(ifaddresses):
     @param ifaddresses: a dict as returned by L{netifaces.ifaddresses}
     """
     if netifaces.AF_LINK in ifaddresses:
-        return ifaddresses[netifaces.AF_LINK][0].get('addr', '')
-    return ''
+        return ifaddresses[netifaces.AF_LINK][0].get("addr", "")
+    return ""
 
 
 def get_flags(sock, interface):
@@ -111,7 +114,10 @@ def get_flags(sock, interface):
     @see /usr/include/linux/if.h for the meaning of the flags.
     """
     data = fcntl.ioctl(
-        sock.fileno(), SIOCGIFFLAGS, struct.pack("256s", interface[:15]))
+        sock.fileno(),
+        SIOCGIFFLAGS,
+        struct.pack("256s", interface[:15]),
+    )
     return struct.unpack("H", data[16:18])[0]
 
 
@@ -119,7 +125,7 @@ def get_default_interfaces():
     """
     Returns a list of interfaces with default routes
     """
-    default_table = netifaces.gateways()['default']
+    default_table = netifaces.gateways()["default"]
     interfaces = [gateway[1] for gateway in default_table.values()]
     return interfaces
 
@@ -135,8 +141,11 @@ def get_filtered_if_info(filters=(), extended=False):
     results = []
 
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
-                             socket.IPPROTO_IP)
+        sock = socket.socket(
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_IP,
+        )
 
         for interface in netifaces.interfaces():
             if any(f(interface) for f in filters):
@@ -161,7 +170,9 @@ def get_filtered_if_info(filters=(), extended=False):
             ifinfo = {"interface": interface}
             ifinfo["flags"] = flags
             ifinfo["speed"], ifinfo["duplex"] = get_network_interface_speed(
-                sock, ifencoded)
+                sock,
+                ifencoded,
+            )
 
             if extended:
                 ifinfo["ip_addresses"] = ip_addresses
@@ -170,7 +181,8 @@ def get_filtered_if_info(filters=(), extended=False):
                 ifinfo["ip_address"] = get_ip_address(ifaddresses)
                 ifinfo["mac_address"] = get_mac_address(ifaddresses)
                 ifinfo["broadcast_address"] = get_broadcast_address(
-                    ifaddresses)
+                    ifaddresses,
+                )
                 ifinfo["netmask"] = get_netmask(ifaddresses)
 
             results.append(ifinfo)
@@ -180,9 +192,13 @@ def get_filtered_if_info(filters=(), extended=False):
     return results
 
 
-def get_active_device_info(skipped_interfaces=("lo",),
-                           skip_vlan=True, skip_alias=True,
-                           extended=False, default_only=False):
+def get_active_device_info(
+    skipped_interfaces=("lo",),
+    skip_vlan=True,
+    skip_alias=True,
+    extended=False,
+    default_only=False,
+):
     def filter_local(interface):
         return interface in skipped_interfaces
 
@@ -204,13 +220,16 @@ def get_active_device_info(skipped_interfaces=("lo",),
     def filter_tap(interface):
         return interface.startswith("tap")
 
-    return get_filtered_if_info(filters=(
-        filter_tap,
-        filter_local,
-        filter_vlan,
-        filter_alias,
-        filter_default,
-    ), extended=extended)
+    return get_filtered_if_info(
+        filters=(
+            filter_tap,
+            filter_local,
+            filter_vlan,
+            filter_alias,
+            filter_default,
+        ),
+        extended=extended,
+    )
 
 
 def get_network_traffic(source_file="/proc/net/dev"):
@@ -223,8 +242,8 @@ def get_network_traffic(source_file="/proc/net/dev"):
 
     # Parse out the column headers as keys.
     _, receive_columns, transmit_columns = lines[1].split("|")
-    columns = ["recv_%s" % column for column in receive_columns.split()]
-    columns.extend(["send_%s" % column for column in transmit_columns.split()])
+    columns = [f"recv_{column}" for column in receive_columns.split()]
+    columns.extend([f"send_{column}" for column in transmit_columns.split()])
 
     # Parse out the network devices.
     devices = {}
@@ -249,9 +268,14 @@ def get_fqdn():
     fqdn = socket.getfqdn()
     if "localhost" in fqdn:
         # Try the heavy artillery
-        fqdn = socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET,
-                                  socket.SOCK_DGRAM, socket.IPPROTO_IP,
-                                  socket.AI_CANONNAME)[0][3]
+        fqdn = socket.getaddrinfo(
+            socket.gethostname(),
+            None,
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_IP,
+            socket.AI_CANONNAME,
+        )[0][3]
         if "localhost" in fqdn:
             # Another fallback
             fqdn = socket.gethostname()
@@ -283,8 +307,10 @@ def get_network_interface_speed(sock, interface_name):
         speed, duplex = struct.unpack("12xHB28x", res)
     except (IOError, OSError) as e:
         if e.errno == errno.EPERM:
-            logging.warning("Could not determine network interface speed, "
-                            "operation not permitted.")
+            logging.warning(
+                "Could not determine network interface speed, "
+                "operation not permitted.",
+            )
         elif e.errno != errno.EOPNOTSUPP and e.errno != errno.EINVAL:
             raise e
         speed = -1

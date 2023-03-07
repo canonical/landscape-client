@@ -12,10 +12,10 @@ management software. The client is responsible for communicating
 system information to the landscape server and executing remote
 management commands on the system.
 
-OPTIONS 
+OPTIONS
   --version                  Show program's version number and exit.
   -h, --help                 Show this help message and exit.
-  -c FILE, --config=FILE     Use config from this file (any command line 
+  -c FILE, --config=FILE     Use config from this file (any command line
                              options override settings from the file). (default:
                              '/etc/landscape/client.conf')
   -d PATH, --data-path=PATH  The directory to store data files in (default:
@@ -27,7 +27,7 @@ OPTIONS
   -u URL, --url=URL          The server URL to connect to.
   --ping-url=PING_URL        The URL to perform lightweight exchange initiation
                              with.
-  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY    The public SSL key to 
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY    The public SSL key to
                              verify the server. Only used if the given server
                              URL is https.
   --ignore-sigint            Ignore interrupt signals.
@@ -35,7 +35,7 @@ OPTIONS
   --daemon                   Fork and run in the background.
   --pid-file=PID_FILE        The file to write the PID to.
   --monitor-only             Don't enable management features. This is useful
-                             if you want to run the client as a non-root 
+                             if you want to run the client as a non-root
                              user.
 
 EXAMPLES

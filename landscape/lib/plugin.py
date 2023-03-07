@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 
 from .format import format_object
@@ -9,7 +7,7 @@ class PluginConfigError(Exception):
     """There was an error registering or configuring a plugin."""
 
 
-class PluginRegistry(object):
+class PluginRegistry:
     """A central integration point for plugins."""
 
     def __init__(self):
@@ -40,7 +38,7 @@ class PluginRegistry(object):
         return self._plugin_names[name]
 
 
-class Plugin(object):
+class Plugin:
     """A convenience for writing plugins.
 
     This provides a register method which will set up a bunch of

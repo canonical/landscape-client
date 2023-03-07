@@ -4,8 +4,7 @@ from twisted.internet.defer import succeed
 current_instance = None
 
 
-class TestPlugin(object):
-
+class TestPlugin:
     def __init__(self):
         self.sysinfo = None
         self.has_run = False

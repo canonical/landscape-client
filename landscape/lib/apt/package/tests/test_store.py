@@ -1,12 +1,14 @@
-import mock
 import sqlite3
 import threading
 import time
 import unittest
+from unittest import mock
 
 from landscape.lib import testing
-from landscape.lib.apt.package.store import (
-        HashIdStore, PackageStore, UnknownHashIDRequest, InvalidHashIdDb)
+from landscape.lib.apt.package.store import HashIdStore
+from landscape.lib.apt.package.store import InvalidHashIdDb
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.apt.package.store import UnknownHashIDRequest
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -14,9 +16,8 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 
 class HashIdStoreTest(BaseTestCase):
-
     def setUp(self):
-        super(HashIdStoreTest, self).setUp()
+        super().setUp()
 
         self.filename = self.makeFile()
         self.store1 = HashIdStore(self.filename)
@@ -49,7 +50,7 @@ class HashIdStoreTest(BaseTestCase):
         db = sqlite3.connect(self.store1._filename)
         commits = []
 
-        class FakeDb(object):
+        class FakeDb:
             def __getattr__(self, name):
                 if name == "commit":
                     return self.commit
@@ -70,7 +71,7 @@ class HashIdStoreTest(BaseTestCase):
         db = sqlite3.connect(self.store1._filename)
         rollbacks = []
 
-        class FakeDb(object):
+        class FakeDb:
             def __getattr__(self, name):
                 if name == "rollback":
                     return self.rollback
@@ -117,8 +118,10 @@ class HashIdStoreTest(BaseTestCase):
         store_filename = self.makeFile()
         db = sqlite3.connect(store_filename)
         cursor = db.cursor()
-        cursor.execute("CREATE TABLE hash"
-                       " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+        cursor.execute(
+            "CREATE TABLE hash"
+            " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
+        )
         cursor.close()
         db.commit()
 
@@ -127,9 +130,8 @@ class HashIdStoreTest(BaseTestCase):
 
 
 class PackageStoreTest(BaseTestCase):
-
     def setUp(self):
-        super(PackageStoreTest, self).setUp()
+        super().setUp()
 
         self.filename = self.makeFile()
         self.store1 = PackageStore(self.filename)
@@ -146,7 +148,6 @@ class PackageStoreTest(BaseTestCase):
         self.assertTrue(self.store1.has_hash_id_db())
 
     def test_add_hash_id_db_with_non_sqlite_file(self):
-
         def junk_db_factory():
             filename = self.makeFile()
             open(filename, "w").write("junk")
@@ -165,19 +166,23 @@ class PackageStoreTest(BaseTestCase):
         self.assertFalse(self.store1.has_hash_id_db())
 
     def test_add_hash_id_db_with_wrong_schema(self):
-
         def non_compliant_db_factory():
             filename = self.makeFile()
             db = sqlite3.connect(filename)
             cursor = db.cursor()
-            cursor.execute("CREATE TABLE hash"
-                           " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+            cursor.execute(
+                "CREATE TABLE hash"
+                " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
+            )
             cursor.close()
             db.commit()
             return filename
 
-        self.assertRaises(InvalidHashIdDb, self.store1.add_hash_id_db,
-                          non_compliant_db_factory())
+        self.assertRaises(
+            InvalidHashIdDb,
+            self.store1.add_hash_id_db,
+            non_compliant_db_factory(),
+        )
         self.assertFalse(self.store1.has_hash_id_db())
 
     def hash_id_db_factory(self, hash_ids):
@@ -195,10 +200,12 @@ class PackageStoreTest(BaseTestCase):
         self.store1.set_hash_ids({b"hash1": 1})
 
         # Add a couple of hash=>id dbs
-        self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash1": 2,
-                                                            b"hash2": 3}))
-        self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash2": 4,
-                                                            b"ha\x00sh1": 5}))
+        self.store1.add_hash_id_db(
+            self.hash_id_db_factory({b"hash1": 2, b"hash2": 3}),
+        )
+        self.store1.add_hash_id_db(
+            self.hash_id_db_factory({b"hash2": 4, b"ha\x00sh1": 5}),
+        )
 
         # Check look-up priorities and binary hashes
         self.assertEqual(self.store1.get_hash_id(b"hash1"), 2)
@@ -212,8 +219,9 @@ class PackageStoreTest(BaseTestCase):
         the desired mapping is not found.
         """
         self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash1": 123}))
-        self.store1.add_hash_id_db(self.hash_id_db_factory({b"hash1": 999,
-                                                            b"hash2": 456}))
+        self.store1.add_hash_id_db(
+            self.hash_id_db_factory({b"hash1": 999, b"hash2": 456}),
+        )
         self.store1.set_hash_ids({b"hash3": 789})
         self.assertEqual(self.store1.get_id_hash(123), b"hash1")
         self.assertEqual(self.store1.get_id_hash(456), b"hash2")
@@ -253,9 +261,10 @@ class PackageStoreTest(BaseTestCase):
         """Adding 20k ids must take less than 5 seconds."""
         started = time.time()
         self.store1.add_available_upgrades(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Adding 20k available upgrades ids took "
-                        "more than 5 seconds.")
+        self.assertTrue(
+            time.time() - started < 5,
+            "Adding 20k available upgrades ids took " "more than 5 seconds.",
+        )
 
     def test_remove_available_upgrades(self):
         self.store1.add_available_upgrades([1, 2, 3, 4])
@@ -266,9 +275,10 @@ class PackageStoreTest(BaseTestCase):
         self.store1.add_available_upgrades(range(20000))
         started = time.time()
         self.store1.remove_available_upgrades(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Removing 20k available upgrades ids took "
-                        "more than 5 seconds.")
+        self.assertTrue(
+            time.time() - started < 5,
+            "Removing 20k available upgrades ids took " "more than 5 seconds.",
+        )
 
     def test_clear_available_upgrades(self):
         self.store1.add_available_upgrades([1, 2, 3, 4])
@@ -306,8 +316,10 @@ class PackageStoreTest(BaseTestCase):
         """Adding 20k ids must take less than 5 seconds."""
         started = time.time()
         self.store1.add_installed(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Adding 20k installed ids took more than 5 seconds.")
+        self.assertTrue(
+            time.time() - started < 5,
+            "Adding 20k installed ids took more than 5 seconds.",
+        )
 
     def test_remove_installed(self):
         self.store1.add_installed([1, 2, 3, 4])
@@ -318,8 +330,10 @@ class PackageStoreTest(BaseTestCase):
         self.store1.add_installed(range(20000))
         started = time.time()
         self.store1.remove_installed(range(20000))
-        self.assertTrue(time.time() - started < 5,
-                        "Removing 20k installed ids took more than 5 seconds.")
+        self.assertTrue(
+            time.time() - started < 5,
+            "Removing 20k installed ids took more than 5 seconds.",
+        )
 
     def test_clear_installed(self):
         self.store1.add_installed([1, 2, 3, 4])
@@ -334,18 +348,21 @@ class PackageStoreTest(BaseTestCase):
         filename = self.makeFile()
         database = sqlite3.connect(filename)
         cursor = database.cursor()
-        cursor.execute("CREATE TABLE available"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE available_upgrade"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE installed"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE hash_id_request"
-                       " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
-                       " message_id INTEGER, hashes BLOB)")
-        cursor.execute("CREATE TABLE task"
-                       " (id INTEGER PRIMARY KEY, queue TEXT,"
-                       " timestamp TIMESTAMP, data BLOB)")
+        cursor.execute("CREATE TABLE available" " (id INTEGER PRIMARY KEY)")
+        cursor.execute(
+            "CREATE TABLE available_upgrade" " (id INTEGER PRIMARY KEY)",
+        )
+        cursor.execute("CREATE TABLE installed" " (id INTEGER PRIMARY KEY)")
+        cursor.execute(
+            "CREATE TABLE hash_id_request"
+            " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
+            " message_id INTEGER, hashes BLOB)",
+        )
+        cursor.execute(
+            "CREATE TABLE task"
+            " (id INTEGER PRIMARY KEY, queue TEXT,"
+            " timestamp TIMESTAMP, data BLOB)",
+        )
         cursor.close()
         database.commit()
         database.close()
@@ -414,8 +431,11 @@ class PackageStoreTest(BaseTestCase):
         hashes2 = ["ha\x00sh3", "ha\x00sh4"]
         self.store1.add_hash_id_request(hashes1)
         self.store1.add_hash_id_request(hashes2)
-        hashes = [hash for request in self.store2.iter_hash_id_requests()
-                  for hash in request.hashes]
+        hashes = [
+            hash
+            for request in self.store2.iter_hash_id_requests()
+            for hash in request.hashes
+        ]
         self.assertEqual(hashes, hashes1 + hashes2)
 
     def test_get_initial_hash_id_request_timestamp(self):
@@ -445,14 +465,20 @@ class PackageStoreTest(BaseTestCase):
         self.assertEqual(request2.message_id, 456)
 
     def test_get_hash_id_request_with_unknown_request_id(self):
-        self.assertRaises(UnknownHashIDRequest,
-                          self.store1.get_hash_id_request, 123)
+        self.assertRaises(
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            123,
+        )
 
     def test_remove_hash_id_request(self):
         request = self.store1.add_hash_id_request(["hash1"])
         request.remove()
-        self.assertRaises(UnknownHashIDRequest,
-                          self.store1.get_hash_id_request, request.id)
+        self.assertRaises(
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            request.id,
+        )
 
     def test_add_task(self):
         data = {"answer": 42}
@@ -514,10 +540,16 @@ class PackageStoreTest(BaseTestCase):
         request1 = self.store1.add_hash_id_request(["hash1"])
         request2 = self.store1.add_hash_id_request(["hash2"])
         self.store1.clear_hash_id_requests()
-        self.assertRaises(UnknownHashIDRequest,
-                          self.store1.get_hash_id_request, request1.id)
-        self.assertRaises(UnknownHashIDRequest,
-                          self.store1.get_hash_id_request, request2.id)
+        self.assertRaises(
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            request1.id,
+        )
+        self.assertRaises(
+            UnknownHashIDRequest,
+            self.store1.get_hash_id_request,
+            request2.id,
+        )
 
     def test_clear_tasks(self):
         data = {"answer": 42}

@@ -39,14 +39,14 @@ class PatchedFilesystemLock(lockfile.FilesystemLock):
             # out normally.
             pass
 
-        result = super(PatchedFilesystemLock, self).lock()
+        result = super().lock()
         self.clean = self.clean and clean
         return result
 
 
 def get_process_name(pid):
     """Return a process name from a pid."""
-    stat_path = "/proc/{}/stat".format(pid)
+    stat_path = f"/proc/{pid}/stat"
     with open(stat_path) as stat_file:
         stat = stat_file.read()
     return stat.partition("(")[2].rpartition(")")[0]

@@ -1,32 +1,45 @@
-# -*- encoding: utf-8 -*-
-import time
-import sys
 import os
+import sys
+import time
+from unittest.mock import call
+from unittest.mock import Mock
+from unittest.mock import patch
 
 from twisted.internet.defer import Deferred
+from twisted.internet.error import ProcessDone
+from twisted.internet.error import ProcessTerminated
 from twisted.python.failure import Failure
-from twisted.internet.error import ProcessTerminated, ProcessDone
 
-from mock import patch, Mock, call
-
-from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.apt.package.facade import (
-    DependencyError, TransactionError)
-from landscape.lib.apt.package.testing import (
-    HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
-    AptFacadeHelper, SimpleRepositoryHelper)
-from landscape.lib import base64
-from landscape.lib.fs import create_text_file, read_text_file, touch_file
-from landscape.lib.testing import StubProcessFactory, FakeReactor
-from landscape.client.package.changer import (
-    PackageChanger, main, UNKNOWN_PACKAGE_DATA_TIMEOUT,
-    SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
-    POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
-from landscape.client.package.changer import (
-    PackageChangerConfiguration, ChangePackagesResult)
-from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.shutdownmanager import ShutdownFailedError
+from landscape.client.package.changer import ChangePackagesResult
+from landscape.client.package.changer import DEPENDENCY_ERROR_RESULT
+from landscape.client.package.changer import ERROR_RESULT
+from landscape.client.package.changer import main
+from landscape.client.package.changer import PackageChanger
+from landscape.client.package.changer import PackageChangerConfiguration
+from landscape.client.package.changer import POLICY_ALLOW_ALL_CHANGES
+from landscape.client.package.changer import POLICY_ALLOW_INSTALLS
+from landscape.client.package.changer import SUCCESS_RESULT
+from landscape.client.package.changer import UNKNOWN_PACKAGE_DATA_TIMEOUT
+from landscape.client.tests.helpers import BrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib import base64
+from landscape.lib.apt.package.facade import DependencyError
+from landscape.lib.apt.package.facade import TransactionError
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.apt.package.testing import AptFacadeHelper
+from landscape.lib.apt.package.testing import HASH1
+from landscape.lib.apt.package.testing import HASH2
+from landscape.lib.apt.package.testing import HASH3
+from landscape.lib.apt.package.testing import PKGDEB1
+from landscape.lib.apt.package.testing import PKGDEB2
+from landscape.lib.apt.package.testing import SimpleRepositoryHelper
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import read_text_file
+from landscape.lib.fs import touch_file
+from landscape.lib.testing import FakeReactor
+from landscape.lib.testing import StubProcessFactory
 
 
 class AptPackageChangerTest(LandscapeTest):
@@ -34,7 +47,7 @@ class AptPackageChangerTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(AptPackageChangerTest, self).setUp()
+        super().setUp()
         self.store = PackageStore(self.makeFile())
         self.config = PackageChangerConfiguration()
         self.config.data_path = self.makeDir()
@@ -45,15 +58,20 @@ class AptPackageChangerTest(LandscapeTest):
         os.mkdir(self.config.binaries_path)
         touch_file(self.config.update_stamp_filename)
         self.changer = PackageChanger(
-            self.store, self.facade, self.remote, self.config,
+            self.store,
+            self.facade,
+            self.remote,
+            self.config,
             process_factory=self.process_factory,
             landscape_reactor=self.landscape_reactor,
-            reboot_required_filename=reboot_required_filename)
+            reboot_required_filename=reboot_required_filename,
+        )
         self.changer.update_notifier_stamp = "/Not/Existing"
         self.changer.get_session_id()
         service = self.broker_service
-        service.message_store.set_accepted_types(["change-packages-result",
-                                                  "operation-result"])
+        service.message_store.set_accepted_types(
+            ["change-packages-result", "operation-result"],
+        )
 
     def set_pkg1_installed(self):
         """Return the hash of a package that is installed."""
@@ -75,14 +93,18 @@ class AptPackageChangerTest(LandscapeTest):
         Return the hashes of the two packages.
         """
         self._add_package_to_deb_dir(
-            self.repository_dir, "foo", control_fields={"Depends": "bar"})
+            self.repository_dir,
+            "foo",
+            control_fields={"Depends": "bar"},
+        )
         self._add_package_to_deb_dir(self.repository_dir, "bar")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         return (
             self.facade.get_package_hash(foo),
-            self.facade.get_package_hash(bar))
+            self.facade.get_package_hash(bar),
+        )
 
     def set_pkg2_upgrades_pkg1(self):
         """Make it so that one package upgrades another.
@@ -95,23 +117,32 @@ class AptPackageChangerTest(LandscapeTest):
         foo_1, foo_2 = sorted(self.facade.get_packages_by_name("foo"))
         return (
             self.facade.get_package_hash(foo_1),
-            self.facade.get_package_hash(foo_2))
+            self.facade.get_package_hash(foo_2),
+        )
 
     def remove_pkg2(self):
         """Remove package name2 from its repository."""
         packages_file = os.path.join(self.repository_dir, "Packages")
         packages_contents = read_text_file(packages_file)
         packages_contents = "\n\n".join(
-            [stanza for stanza in packages_contents.split("\n\n")
-             if "Package: name2" not in stanza])
+            [
+                stanza
+                for stanza in packages_contents.split("\n\n")
+                if "Package: name2" not in stanza
+            ],
+        )
         create_text_file(packages_file, packages_contents)
 
     def get_binaries_channels(self, binaries_path):
         """Return the channels that will be used for the binaries."""
-        return [{"baseurl": "file://%s" % binaries_path,
-                 "components": "",
-                 "distribution": "./",
-                 "type": "deb"}]
+        return [
+            {
+                "baseurl": f"file://{binaries_path}",
+                "components": "",
+                "distribution": "./",
+                "type": "deb",
+            },
+        ]
 
     def get_package_name(self, version):
         """Return the name of the package."""
@@ -132,8 +163,8 @@ class AptPackageChangerTest(LandscapeTest):
     def replace_perform_changes(self, func):
         old_perform_changes = self.Facade.perform_changes
 
-        def reset_perform_changes(Facade):
-            Facade.perform_changes = old_perform_changes
+        def reset_perform_changes(facade):
+            facade.perform_changes = old_perform_changes
 
         self.addCleanup(reset_perform_changes, self.Facade)
         self.Facade.perform_changes = func
@@ -144,9 +175,10 @@ class AptPackageChangerTest(LandscapeTest):
         # Let's request an operation that would require an answer with a
         # must-install field with a package for which the id isn't yet
         # known by the client.
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [1],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [1], "operation-id": 123},
+        )
 
         # In our first try, we should get nothing, because the id of the
         # dependency (hash2) isn't known.
@@ -155,8 +187,10 @@ class AptPackageChangerTest(LandscapeTest):
         self.assertEqual(result.called, True)
         self.assertMessages(self.get_pending_messages(), [])
 
-        self.assertIn("Package data not yet synchronized with server (%r)"
-                      % hash2, self.logfile.getvalue())
+        self.assertIn(
+            f"Package data not yet synchronized with server ({hash2!r})",
+            self.logfile.getvalue(),
+        )
 
         # So now we'll set it, and advance the reactor to the scheduled
         # change detection.  We'll get a lot of messages, including the
@@ -165,57 +199,76 @@ class AptPackageChangerTest(LandscapeTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"must-install": [2],
-                                  "operation-id": 123,
-                                  "result-code": 101,
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "must-install": [2],
+                        "operation-id": 123,
+                        "result-code": 101,
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
+
         return result.addCallback(got_result)
 
     def test_install_unknown_id(self):
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [456],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [456], "operation-id": 123},
+        )
 
         self.changer.handle_tasks()
 
-        self.assertIn("Package data not yet synchronized with server (456)",
-                      self.logfile.getvalue())
+        self.assertIn(
+            "Package data not yet synchronized with server (456)",
+            self.logfile.getvalue(),
+        )
         self.assertTrue(self.store.get_next_task("changer"))
 
     def test_remove_unknown_id(self):
-        self.store.add_task("changer",
-                            {"type": "change-packages", "remove": [456],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "remove": [456], "operation-id": 123},
+        )
 
         self.changer.handle_tasks()
 
-        self.assertIn("Package data not yet synchronized with server (456)",
-                      self.logfile.getvalue())
+        self.assertIn(
+            "Package data not yet synchronized with server (456)",
+            self.logfile.getvalue(),
+        )
         self.assertTrue(self.store.get_next_task("changer"))
 
     def test_install_unknown_package(self):
         self.store.set_hash_ids({b"hash": 456})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [456],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [456], "operation-id": 123},
+        )
 
         self.changer.handle_tasks()
 
-        self.assertIn("Package data not yet synchronized with server (%r)" %
-                      b"hash", self.logfile.getvalue())
+        self.assertIn(
+            "Package data not yet synchronized with server (b'hash')",
+            self.logfile.getvalue(),
+        )
         self.assertTrue(self.store.get_next_task("changer"))
 
     def test_remove_unknown_package(self):
         self.store.set_hash_ids({b"hash": 456})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "remove": [456],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "remove": [456], "operation-id": 123},
+        )
 
         self.changer.handle_tasks()
 
-        self.assertIn("Package data not yet synchronized with server (%r)" %
-                      b"hash", self.logfile.getvalue())
+        self.assertIn(
+            "Package data not yet synchronized with server (b'hash')",
+            self.logfile.getvalue(),
+        )
         self.assertTrue(self.store.get_next_task("changer"))
 
     def test_unknown_data_timeout(self):
@@ -223,9 +276,10 @@ class AptPackageChangerTest(LandscapeTest):
 
         In these cases a warning is logged, and the task is removed.
         """
-        self.store.add_task("changer",
-                            {"type": "change-packages", "remove": [123],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "remove": [123], "operation-id": 123},
+        )
 
         the_time = time.time() + UNKNOWN_PACKAGE_DATA_TIMEOUT
         with patch("time.time", return_value=the_time) as time_mock:
@@ -233,17 +287,22 @@ class AptPackageChangerTest(LandscapeTest):
 
         time_mock.assert_called_with()
 
-        self.assertIn("Package data not yet synchronized with server (123)",
-                      self.logfile.getvalue())
+        self.assertIn(
+            "Package data not yet synchronized with server (123)",
+            self.logfile.getvalue(),
+        )
 
         def got_result(result):
-            message = {"type": "change-packages-result",
-                       "operation-id": 123,
-                       "result-code": 100,
-                       "result-text": "Package data has changed. "
-                                      "Please retry the operation."}
+            message = {
+                "type": "change-packages-result",
+                "operation-id": 123,
+                "result-code": 100,
+                "result-text": "Package data has changed. "
+                "Please retry the operation.",
+            }
             self.assertMessages(self.get_pending_messages(), [message])
             self.assertEqual(self.store.get_next_task("changer"), None)
+
         return result.addCallback(got_result)
 
     def test_dependency_error(self):
@@ -268,13 +327,15 @@ class AptPackageChangerTest(LandscapeTest):
         # loaded.
         self.facade.ensure_channels_reloaded()
         self.store.set_hash_ids({installed_hash: 1, HASH2: 2, HASH3: 3})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [2], "operation-id": 123},
+        )
 
         packages = [
             self.facade.get_package_by_hash(pkg_hash)
-            for pkg_hash in [installed_hash, HASH2, HASH3]]
+            for pkg_hash in [installed_hash, HASH2, HASH3]
+        ]
 
         def raise_dependency_error(self):
             raise DependencyError(set(packages))
@@ -284,12 +345,19 @@ class AptPackageChangerTest(LandscapeTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"must-install": [2, 3],
-                                  "must-remove": [1],
-                                  "operation-id": 123,
-                                  "result-code": 101,
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "must-install": [2, 3],
+                        "must-remove": [1],
+                        "operation-id": 123,
+                        "result-code": 101,
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
+
         return result.addCallback(got_result)
 
     def test_dependency_error_with_binaries(self):
@@ -301,18 +369,23 @@ class AptPackageChangerTest(LandscapeTest):
         self.remove_pkg2()
         installed_hash = self.set_pkg1_installed()
         self.store.set_hash_ids({installed_hash: 1, HASH3: 3})
-        self.store.add_task("changer",
-                            {"type": "change-packages",
-                             "install": [2],
-                             "binaries": [(HASH2, 2, PKGDEB2)],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [2],
+                "binaries": [(HASH2, 2, PKGDEB2)],
+                "operation-id": 123,
+            },
+        )
 
         packages = set()
 
         def raise_dependency_error(self):
             packages.update(
                 self.get_package_by_hash(pkg_hash)
-                for pkg_hash in [installed_hash, HASH2, HASH3])
+                for pkg_hash in [installed_hash, HASH2, HASH3]
+            )
             raise DependencyError(set(packages))
 
         self.replace_perform_changes(raise_dependency_error)
@@ -321,12 +394,19 @@ class AptPackageChangerTest(LandscapeTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"must-install": [2, 3],
-                                  "must-remove": [1],
-                                  "operation-id": 123,
-                                  "result-code": 101,
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "must-install": [2, 3],
+                        "must-remove": [1],
+                        "operation-id": 123,
+                        "result-code": 101,
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
+
         return result.addCallback(got_result)
 
     def test_perform_changes_with_allow_install_policy(self):
@@ -339,7 +419,8 @@ class AptPackageChangerTest(LandscapeTest):
         [package1] = self.facade.get_packages_by_name("name1")
 
         self.facade.perform_changes = Mock(
-            side_effect=[DependencyError([package1]), "success"])
+            side_effect=[DependencyError([package1]), "success"],
+        )
 
         self.facade.mark_install = Mock()
 
@@ -366,7 +447,8 @@ class AptPackageChangerTest(LandscapeTest):
         [package2] = self.facade.get_packages_by_name("name2")
 
         self.facade.perform_changes = Mock(
-            side_effect=DependencyError([package1, package2]))
+            side_effect=DependencyError([package1, package2]),
+        )
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
@@ -390,8 +472,11 @@ class AptPackageChangerTest(LandscapeTest):
         [package2] = self.facade.get_packages_by_name("name2")
 
         self.facade.perform_changes = Mock(
-            side_effect=[DependencyError([package1]),
-                         DependencyError([package2])])
+            side_effect=[
+                DependencyError([package1]),
+                DependencyError([package2]),
+            ],
+        )
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
@@ -408,11 +493,15 @@ class AptPackageChangerTest(LandscapeTest):
         field that will be passed to the C{perform_changes} method.
         """
         self.store.set_hash_ids({HASH1: 1})
-        self.store.add_task("changer",
-                            {"type": "change-packages",
-                             "install": [1],
-                             "policy": POLICY_ALLOW_INSTALLS,
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [1],
+                "policy": POLICY_ALLOW_INSTALLS,
+                "operation-id": 123,
+            },
+        )
 
         result = ChangePackagesResult()
         result.code = SUCCESS_RESULT
@@ -423,7 +512,8 @@ class AptPackageChangerTest(LandscapeTest):
 
         self.successResultOf(self.changer.handle_tasks())
         self.changer.change_packages.assert_called_once_with(
-            POLICY_ALLOW_INSTALLS)
+            POLICY_ALLOW_INSTALLS,
+        )
 
     def test_perform_changes_with_policy_allow_all_changes(self):
         """
@@ -438,8 +528,8 @@ class AptPackageChangerTest(LandscapeTest):
         [package2] = self.facade.get_packages_by_name("name2")
 
         self.facade.perform_changes = Mock(
-            side_effect=[DependencyError([package1, package2]),
-                         "success"])
+            side_effect=[DependencyError([package1, package2]), "success"],
+        )
         self.facade.mark_install = Mock()
         self.facade.mark_remove = Mock()
 
@@ -462,9 +552,10 @@ class AptPackageChangerTest(LandscapeTest):
         the server know about the unsolvable problem.
         """
         self.store.set_hash_ids({HASH1: 1})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [1],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [1], "operation-id": 123},
+        )
 
         self.disable_clear_channels()
         result = self.changer.handle_tasks()
@@ -476,8 +567,11 @@ class AptPackageChangerTest(LandscapeTest):
             self.assertEqual(message["operation-id"], 123)
             self.assertEqual(message["result-code"], 100)
             self.assertIn(
-                "packages have unmet dependencies", message["result-text"])
+                "packages have unmet dependencies",
+                message["result-text"],
+            )
             self.assertEqual(message["type"], "change-packages-result")
+
         return result.addCallback(got_result)
 
     def test_tasks_are_isolated_marks(self):
@@ -497,12 +591,18 @@ class AptPackageChangerTest(LandscapeTest):
         installed_hash = self.set_pkg1_installed()
         self.store.set_hash_ids({installed_hash: 1, installable_hash: 2})
 
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "operation-id": 123})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "upgrade-all": True,
-                             "operation-id": 124})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [2], "operation-id": 123},
+        )
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "upgrade-all": True,
+                "operation-id": 124,
+            },
+        )
 
         result = self.changer.handle_tasks()
 
@@ -530,12 +630,14 @@ class AptPackageChangerTest(LandscapeTest):
         installed_hash = self.set_pkg1_installed()
         self.store.set_hash_ids({installed_hash: 1, installable_hash: 2})
 
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "operation-id": 123})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "remove": [1],
-                             "operation-id": 124})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [2], "operation-id": 123},
+        )
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "remove": [1], "operation-id": 124},
+        )
 
         result = self.changer.handle_tasks()
 
@@ -558,23 +660,32 @@ class AptPackageChangerTest(LandscapeTest):
         """
         installed_hash = self.set_pkg1_installed()
         self.store.set_hash_ids({installed_hash: 1, HASH2: 2, HASH3: 3})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [2], "operation-id": 123},
+        )
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
+
         self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 1,
-                                  "result-text": "Yeah, I did whatever you've "
-                                                 "asked for!",
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "result-code": 1,
+                        "result-text": "Yeah, I did whatever you've "
+                        "asked for!",
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
+
         return result.addCallback(got_result)
 
     def test_successful_operation_with_binaries(self):
@@ -583,25 +694,38 @@ class AptPackageChangerTest(LandscapeTest):
         packages.
         """
         self.store.set_hash_ids({HASH3: 3})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2, 3],
-                             "binaries": [(HASH2, 2, PKGDEB2)],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [2, 3],
+                "binaries": [(HASH2, 2, PKGDEB2)],
+                "operation-id": 123,
+            },
+        )
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
+
         self.replace_perform_changes(return_good_result)
         self.disable_clear_channels()
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 1,
-                                  "result-text": "Yeah, I did whatever you've "
-                                                 "asked for!",
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "result-code": 1,
+                        "result-text": "Yeah, I did whatever you've "
+                        "asked for!",
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
+
         return result.addCallback(got_result)
 
     def test_global_upgrade(self):
@@ -613,38 +737,59 @@ class AptPackageChangerTest(LandscapeTest):
         hash1, hash2 = self.set_pkg2_upgrades_pkg1()
         self.store.set_hash_ids({hash1: 1, hash2: 2})
 
-        self.store.add_task("changer",
-                            {"type": "change-packages", "upgrade-all": True,
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "upgrade-all": True,
+                "operation-id": 123,
+            },
+        )
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "must-install": [2],
-                                  "must-remove": [1],
-                                  "result-code": 101,
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "must-install": [2],
+                        "must-remove": [1],
+                        "result-code": 101,
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
 
         return result.addCallback(got_result)
 
     def test_global_upgrade_with_nothing_to_do(self):
 
-        self.store.add_task("changer",
-                            {"type": "change-packages", "upgrade-all": True,
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "upgrade-all": True,
+                "operation-id": 123,
+            },
+        )
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 1,
-                                  "result-text":
-                                      u"No changes required; all changes "
-                                      u"already performed",
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "result-code": 1,
+                        "result-text": "No changes required; all changes "
+                        "already performed",
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
 
         return result.addCallback(got_result)
 
@@ -656,8 +801,10 @@ class AptPackageChangerTest(LandscapeTest):
         os.remove(self.config.update_stamp_filename)
 
         def assert_log(ignored):
-            self.assertIn("The package-reporter hasn't run yet, exiting.",
-                          self.logfile.getvalue())
+            self.assertIn(
+                "The package-reporter hasn't run yet, exiting.",
+                self.logfile.getvalue(),
+            )
 
         result = self.changer.run()
         return result.addCallback(assert_log)
@@ -668,13 +815,16 @@ class AptPackageChangerTest(LandscapeTest):
         # Add a task that will do nothing besides producing an
         # answer.  The reporter is only spawned if at least one
         # task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "operation-id": 123},
+        )
 
         self.successResultOf(self.changer.run())
 
         system_mock.assert_called_once_with(
-            "/fake/bin/landscape-package-reporter")
+            "/fake/bin/landscape-package-reporter",
+        )
 
     @patch("os.system")
     def test_spawn_reporter_after_running_with_config(self, system_mock):
@@ -685,19 +835,27 @@ class AptPackageChangerTest(LandscapeTest):
         # Add a task that will do nothing besides producing an
         # answer.  The reporter is only spawned if at least one
         # task was handled.
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "operation-id": 123},
+        )
         self.successResultOf(self.changer.run())
 
         system_mock.assert_called_once_with(
-            "/fake/bin/landscape-package-reporter -c test.conf")
+            "/fake/bin/landscape-package-reporter -c test.conf",
+        )
 
     @patch("os.getuid", return_value=0)
     @patch("os.setgid")
     @patch("os.setuid")
     @patch("os.system")
     def test_set_effective_uid_and_gid_when_running_as_root(
-            self, system_mock, setuid_mock, setgid_mock, getuid_mock):
+        self,
+        system_mock,
+        setuid_mock,
+        setgid_mock,
+        getuid_mock,
+    ):
         """
         After the package changer has run, we want the package-reporter to run
         to report the recent changes.  If we're running as root, we want to
@@ -705,10 +863,10 @@ class AptPackageChangerTest(LandscapeTest):
         """
         self.config.bindir = "/fake/bin"
 
-        class FakeGroup(object):
+        class FakeGroup:
             gr_gid = 199
 
-        class FakeUser(object):
+        class FakeUser:
             pw_uid = 199
 
         # We are running as root
@@ -717,8 +875,10 @@ class AptPackageChangerTest(LandscapeTest):
                 # Add a task that will do nothing besides producing an
                 # answer.  The reporter is only spawned if at least
                 # one task was handled.
-                self.store.add_task("changer", {"type": "change-packages",
-                                                "operation-id": 123})
+                self.store.add_task(
+                    "changer",
+                    {"type": "change-packages", "operation-id": 123},
+                )
                 self.successResultOf(self.changer.run())
 
         grnam_mock.assert_called_once_with("landscape")
@@ -726,7 +886,8 @@ class AptPackageChangerTest(LandscapeTest):
         pwnam_mock.assert_called_once_with("landscape")
         setuid_mock.assert_called_once_with(199)
         system_mock.assert_called_once_with(
-            "/fake/bin/landscape-package-reporter")
+            "/fake/bin/landscape-package-reporter",
+        )
 
     def test_run(self):
         changer_mock = patch.object(self, "changer")
@@ -746,7 +907,9 @@ class AptPackageChangerTest(LandscapeTest):
 
     @patch("os.system")
     def test_dont_spawn_reporter_after_running_if_nothing_done(
-            self, system_mock):
+        self,
+        system_mock,
+    ):
         self.successResultOf(self.changer.run())
         system_mock.assert_not_called()
 
@@ -754,8 +917,10 @@ class AptPackageChangerTest(LandscapeTest):
         pid = os.getpid() + 1
         with patch("os.getpgrp", return_value=pid) as getpgrp_mock:
             with patch("os.setsid") as setsid_mock:
-                with patch("landscape.client.package.changer.run_task_handler",
-                           return_value="RESULT") as run_task_handler_mock:
+                with patch(
+                    "landscape.client.package.changer.run_task_handler",
+                    return_value="RESULT",
+                ) as run_task_handler_mock:
                     self.assertEqual(main(["ARGS"]), "RESULT")
 
         getpgrp_mock.assert_called_once_with()
@@ -786,30 +951,40 @@ class AptPackageChangerTest(LandscapeTest):
     def test_find_command_default(self):
         expected = os.path.join(
             os.path.dirname(os.path.abspath(sys.argv[0])),
-            "landscape-package-changer")
+            "landscape-package-changer",
+        )
         command = PackageChanger.find_command()
 
         self.assertEqual(expected, command)
 
     def test_transaction_error_with_unicode_data(self):
         self.store.set_hash_ids({HASH1: 1})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [1],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "install": [1], "operation-id": 123},
+        )
 
         def raise_error(self):
-            raise TransactionError(u"áéíóú")
+            raise TransactionError("áéíóú")
+
         self.replace_perform_changes(raise_error)
         self.disable_clear_channels()
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 100,
-                                  "result-text": u"áéíóú",
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "result-code": 100,
+                        "result-text": "áéíóú",
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
+
         return result.addCallback(got_result)
 
     def test_update_stamp_exists(self):
@@ -835,7 +1010,8 @@ class AptPackageChangerTest(LandscapeTest):
     def test_binaries_path(self):
         self.assertEqual(
             self.config.binaries_path,
-            os.path.join(self.config.data_path, "package", "binaries"))
+            os.path.join(self.config.data_path, "package", "binaries"),
+        )
 
     def test_init_channels(self):
         """
@@ -848,19 +1024,26 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer.init_channels(binaries)
 
         binaries_path = self.config.binaries_path
-        self.assertFileContent(os.path.join(binaries_path, "111.deb"),
-                               base64.decodebytes(PKGDEB1))
-        self.assertFileContent(os.path.join(binaries_path, "222.deb"),
-                               base64.decodebytes(PKGDEB2))
+        self.assertFileContent(
+            os.path.join(binaries_path, "111.deb"),
+            base64.decodebytes(PKGDEB1),
+        )
+        self.assertFileContent(
+            os.path.join(binaries_path, "222.deb"),
+            base64.decodebytes(PKGDEB2),
+        )
         self.assertEqual(
             self.facade.get_channels(),
-            self.get_binaries_channels(binaries_path))
+            self.get_binaries_channels(binaries_path),
+        )
 
         self.assertEqual(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
 
         self.facade.ensure_channels_reloaded()
-        [pkg1, pkg2] = sorted(self.facade.get_packages(),
-                              key=self.get_package_name)
+        [pkg1, pkg2] = sorted(
+            self.facade.get_packages(),
+            key=self.get_package_name,
+        )
         self.assertEqual(self.facade.get_package_hash(pkg1), HASH1)
         self.assertEqual(self.facade.get_package_hash(pkg2), HASH2)
 
@@ -892,13 +1075,19 @@ class AptPackageChangerTest(LandscapeTest):
         # like it is by default.
         self.facade.refetch_package_index = False
         self.assertEqual(None, self.facade.get_package_by_hash(HASH2))
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "binaries": [(HASH2, 2, PKGDEB2)],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [2],
+                "binaries": [(HASH2, 2, PKGDEB2)],
+                "operation-id": 123,
+            },
+        )
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
+
         self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
@@ -929,22 +1118,35 @@ class AptPackageChangerTest(LandscapeTest):
         old_mtime = time.time() - 10
         os.utime(self.facade._dpkg_status, (old_mtime, old_mtime))
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "hold": [foo.package.id],
-                                        "remove-hold": [baz.package.id],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "hold": [foo.package.id],
+                "remove-hold": [baz.package.id],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual(["foo"], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertIn(
+                "Queuing response with change package results "
+                "to exchange urgently.",
+                self.logfile.getvalue(),
+            )
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-text": "Package holds successfully changed.",
-                  "result-code": 1}])
+                [
+                    {
+                        "type": "change-packages-result",
+                        "operation-id": 123,
+                        "result-text": "Package holds successfully changed.",
+                        "result-code": 1,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -963,10 +1165,14 @@ class AptPackageChangerTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "hold": [foo.package.id,
-                                                 bar.package.id],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "hold": [foo.package.id, bar.package.id],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
@@ -991,10 +1197,14 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.set_package_hold(foo)
         self.facade.set_package_hold(bar)
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "remove-hold": [foo.package.id,
-                                                        bar.package.id],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "remove-hold": [foo.package.id, bar.package.id],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
@@ -1015,21 +1225,34 @@ class AptPackageChangerTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.set_package_hold(foo)
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "hold": [foo.package.id],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "hold": [foo.package.id],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual(["foo"], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertIn(
+                "Queuing response with change package results "
+                "to exchange urgently.",
+                self.logfile.getvalue(),
+            )
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-text": "Package holds successfully changed.",
-                  "result-code": 1}])
+                [
+                    {
+                        "type": "change-packages-result",
+                        "operation-id": 123,
+                        "result-text": "Package holds successfully changed.",
+                        "result-code": 1,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1044,35 +1267,46 @@ class AptPackageChangerTest(LandscapeTest):
         requests won't get processed.
         """
         self._add_system_package("foo", version="1.0")
-        self._add_package_to_deb_dir(
-            self.repository_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(self.repository_dir, "foo", version="2.0")
         self._add_system_package("bar", version="1.0")
-        self._add_package_to_deb_dir(
-            self.repository_dir, "bar", version="2.0")
+        self._add_package_to_deb_dir(self.repository_dir, "bar", version="2.0")
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
         [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
-        self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
-                                 self.facade.get_package_hash(foo2): 2,
-                                 self.facade.get_package_hash(bar1): 3,
-                                 self.facade.get_package_hash(bar2): 4})
+        self.store.set_hash_ids(
+            {
+                self.facade.get_package_hash(foo1): 1,
+                self.facade.get_package_hash(foo2): 2,
+                self.facade.get_package_hash(bar1): 3,
+                self.facade.get_package_hash(bar2): 4,
+            },
+        )
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "hold": [2, 3],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "hold": [2, 3], "operation-id": 123},
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertIn(
+                "Queuing response with change package results "
+                "to exchange urgently.",
+                self.logfile.getvalue(),
+            )
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-text": "Cannot perform the changes, since the" +
-                                 " following packages are not installed: foo",
-                  "result-code": 100}])
+                [
+                    {
+                        "type": "change-packages-result",
+                        "operation-id": 123,
+                        "result-text": "Cannot perform the changes, since the"
+                        + " following packages are not installed: foo",
+                        "result-code": 100,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1096,26 +1330,37 @@ class AptPackageChangerTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         [baz] = self.facade.get_packages_by_name("baz")
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "hold": [foo.package.id,
-                                                 bar.package.id,
-                                                 baz.package.id],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "hold": [foo.package.id, bar.package.id, baz.package.id],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertIn(
+                "Queuing response with change package results "
+                "to exchange urgently.",
+                self.logfile.getvalue(),
+            )
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-text": "Cannot perform the changes, since the "
-                  "following packages are not installed: "
-                  "%s, %s" % tuple(sorted([bar.package.name,
-                                           baz.package.name])),
-                  "result-code": 100}])
+                [
+                    {
+                        "type": "change-packages-result",
+                        "operation-id": 123,
+                        "result-text": "Cannot perform the changes, since the "
+                        "following packages are not installed: "
+                        "%s, %s"
+                        % tuple(sorted([bar.package.name, baz.package.name])),
+                        "result-code": 100,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1127,10 +1372,10 @@ class AptPackageChangerTest(LandscapeTest):
         synchronized message and a failure of the operation.
         """
 
-        self.store.add_task("changer",
-                            {"type": "change-packages",
-                             "hold": [123],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {"type": "change-packages", "hold": [123], "operation-id": 123},
+        )
 
         thetime = time.time()
         with patch("time.time") as time_mock:
@@ -1138,17 +1383,22 @@ class AptPackageChangerTest(LandscapeTest):
             result = self.changer.handle_tasks()
         time_mock.assert_any_call()
 
-        self.assertIn("Package data not yet synchronized with server (123)",
-                      self.logfile.getvalue())
+        self.assertIn(
+            "Package data not yet synchronized with server (123)",
+            self.logfile.getvalue(),
+        )
 
         def got_result(result):
-            message = {"type": "change-packages-result",
-                       "operation-id": 123,
-                       "result-code": 100,
-                       "result-text": "Package data has changed. "
-                                      "Please retry the operation."}
+            message = {
+                "type": "change-packages-result",
+                "operation-id": 123,
+                "result-code": 100,
+                "result-text": "Package data has changed. "
+                "Please retry the operation.",
+            }
             self.assertMessages(self.get_pending_messages(), [message])
             self.assertEqual(self.store.get_next_task("changer"), None)
+
         return result.addCallback(got_result)
 
     def test_change_package_holds_delete_not_held(self):
@@ -1162,21 +1412,34 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
         [foo] = self.facade.get_packages_by_name("foo")
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "remove-hold": [foo.package.id],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "remove-hold": [foo.package.id],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertIn(
+                "Queuing response with change package results "
+                "to exchange urgently.",
+                self.logfile.getvalue(),
+            )
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-text": "Package holds successfully changed.",
-                  "result-code": 1}])
+                [
+                    {
+                        "type": "change-packages-result",
+                        "operation-id": 123,
+                        "result-text": "Package holds successfully changed.",
+                        "result-code": 1,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1189,31 +1452,47 @@ class AptPackageChangerTest(LandscapeTest):
         hold is removed.
         """
         self._add_system_package("foo", version="1.0")
-        self._add_package_to_deb_dir(
-            self.repository_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(self.repository_dir, "foo", version="2.0")
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
-        self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
-                                 self.facade.get_package_hash(foo2): 2})
+        self.store.set_hash_ids(
+            {
+                self.facade.get_package_hash(foo1): 1,
+                self.facade.get_package_hash(foo2): 2,
+            },
+        )
         self.facade.mark_install(foo1)
         self.facade.mark_hold(foo1)
         self.facade.perform_changes()
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "remove-hold": [2],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "remove-hold": [2],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual(["foo"], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertIn(
+                "Queuing response with change package results "
+                "to exchange urgently.",
+                self.logfile.getvalue(),
+            )
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-text": "Package holds successfully changed.",
-                  "result-code": 1}])
+                [
+                    {
+                        "type": "change-packages-result",
+                        "operation-id": 123,
+                        "result-text": "Package holds successfully changed.",
+                        "result-code": 1,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1229,21 +1508,34 @@ class AptPackageChangerTest(LandscapeTest):
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
         [foo] = self.facade.get_packages_by_name("foo")
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "remove-hold": [foo.package.id],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "remove-hold": [foo.package.id],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertIn(
+                "Queuing response with change package results "
+                "to exchange urgently.",
+                self.logfile.getvalue(),
+            )
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-text": "Package holds successfully changed.",
-                  "result-code": 1}])
+                [
+                    {
+                        "type": "change-packages-result",
+                        "operation-id": 123,
+                        "result-text": "Package holds successfully changed.",
+                        "result-code": 1,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1254,19 +1546,31 @@ class AptPackageChangerTest(LandscapeTest):
         change-package-locks activities, since it can't add or remove
         locks because apt doesn't support this.
         """
-        self.store.add_task("changer", {"type": "change-package-locks",
-                                        "create": [("foo", ">=", "1.0")],
-                                        "delete": [("bar", None, None)],
-                                        "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-package-locks",
+                "create": [("foo", ">=", "1.0")],
+                "delete": [("bar", None, None)],
+                "operation-id": 123,
+            },
+        )
 
         def assert_result(result):
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "operation-result",
-                  "operation-id": 123,
-                  "status": FAILED,
-                  "result-text": "This client doesn't support package locks.",
-                  "result-code": 1}])
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 123,
+                        "status": FAILED,
+                        "result-text": (
+                            "This client doesn't support package locks."
+                        ),
+                        "result-code": 1,
+                    },
+                ],
+            )
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1276,27 +1580,40 @@ class AptPackageChangerTest(LandscapeTest):
         After the C{change-packages} handler has installed the binaries,
         the binaries and the internal facade deb source is removed.
         """
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "binaries": [(HASH2, 2, PKGDEB2)],
-                             "operation-id": 123})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [2],
+                "binaries": [(HASH2, 2, PKGDEB2)],
+                "operation-id": 123,
+            },
+        )
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
+
         self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 1,
-                                  "result-text": "Yeah, I did whatever you've "
-                                                 "asked for!",
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "result-code": 1,
+                        "result-text": "Yeah, I did whatever you've "
+                        "asked for!",
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
             self.assertEqual([], os.listdir(self.config.binaries_path))
             self.assertFalse(
-                os.path.exists(self.facade._get_internal_sources_list()))
+                os.path.exists(self.facade._get_internal_sources_list()),
+            )
 
         return result.addCallback(got_result)
 
@@ -1306,27 +1623,41 @@ class AptPackageChangerTest(LandscapeTest):
         A C{ShutdownProtocolProcess} is created and the package result change
         is returned.
         """
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "binaries": [(HASH2, 2, PKGDEB2)],
-                             "operation-id": 123,
-                             "reboot-if-necessary": True})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [2],
+                "binaries": [(HASH2, 2, PKGDEB2)],
+                "operation-id": 123,
+                "reboot-if-necessary": True,
+            },
+        )
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
+
         self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertIn("Landscape is rebooting the system",
-                          self.logfile.getvalue())
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 1,
-                                  "result-text": "Yeah, I did whatever you've "
-                                                 "asked for!",
-                                  "type": "change-packages-result"}])
+            self.assertIn(
+                "Landscape is rebooting the system",
+                self.logfile.getvalue(),
+            )
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "result-code": 1,
+                        "result-text": "Yeah, I did whatever you've "
+                        "asked for!",
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
 
         self.landscape_reactor.advance(5)
         [arguments] = self.process_factory.spawns
@@ -1342,25 +1673,37 @@ class AptPackageChangerTest(LandscapeTest):
         A C{ShutdownProtocol} is created and the package result change is
         returned, even if the reboot fails.
         """
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "binaries": [(HASH2, 2, PKGDEB2)],
-                             "operation-id": 123,
-                             "reboot-if-necessary": True})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [2],
+                "binaries": [(HASH2, 2, PKGDEB2)],
+                "operation-id": 123,
+                "reboot-if-necessary": True,
+            },
+        )
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
+
         self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 1,
-                                  "result-text": "Yeah, I did whatever you've "
-                                                 "asked for!",
-                                  "type": "change-packages-result"}])
+            self.assertMessages(
+                self.get_pending_messages(),
+                [
+                    {
+                        "operation-id": 123,
+                        "result-code": 1,
+                        "result-text": "Yeah, I did whatever you've "
+                        "asked for!",
+                        "type": "change-packages-result",
+                    },
+                ],
+            )
             self.log_helper.ignore_errors(ShutdownFailedError)
 
         self.landscape_reactor.advance(5)
@@ -1374,14 +1717,20 @@ class AptPackageChangerTest(LandscapeTest):
         """
         After initiating a reboot process, no more messages are exchanged.
         """
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [2],
-                             "binaries": [(HASH2, 2, PKGDEB2)],
-                             "operation-id": 123,
-                             "reboot-if-necessary": True})
+        self.store.add_task(
+            "changer",
+            {
+                "type": "change-packages",
+                "install": [2],
+                "binaries": [(HASH2, 2, PKGDEB2)],
+                "operation-id": 123,
+                "reboot-if-necessary": True,
+            },
+        )
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
+
         self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
@@ -1406,6 +1755,7 @@ class AptPackageChangerTest(LandscapeTest):
         """
         Invoking L{PackageChanger.run} results in the session ID being fetched.
         """
+
         def assert_session_id(ignored):
             self.assertTrue(self.changer._session_id is not None)
 

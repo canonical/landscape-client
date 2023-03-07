@@ -1,8 +1,8 @@
-import os
 import logging
+import os
 
-from landscape.lib.fs import read_text_file
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.fs import read_text_file
 
 
 REBOOT_REQUIRED_FILENAME = "/var/run/reboot-required"
@@ -35,7 +35,7 @@ class RebootRequired(MonitorPlugin):
             return []
 
         lines = read_text_file(self._packages_filename).splitlines()
-        packages = set(line.strip() for line in lines if line)
+        packages = {line.strip() for line in lines if line}
         return sorted(packages)
 
     def _create_message(self):
@@ -59,12 +59,18 @@ class RebootRequired(MonitorPlugin):
         message = self._create_message()
         if message:
             message["type"] = "reboot-required-info"
-            logging.info("Queueing message with updated "
-                         "reboot-required status.")
-            self.registry.broker.send_message(message, self._session_id,
-                                              urgent=True)
+            logging.info(
+                "Queueing message with updated " "reboot-required status.",
+            )
+            self.registry.broker.send_message(
+                message,
+                self._session_id,
+                urgent=True,
+            )
 
     def run(self):
         """Send reboot-required messages if the server accepts them."""
         return self.registry.broker.call_if_accepted(
-            "reboot-required-info", self.send_message)
+            "reboot-required-info",
+            self.send_message,
+        )

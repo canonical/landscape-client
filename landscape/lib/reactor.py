@@ -1,8 +1,6 @@
 """
 Extend the regular Twisted reactor with event-handling features.
 """
-from __future__ import absolute_import
-
 import logging
 import time
 
@@ -19,7 +17,7 @@ class CallHookError(Exception):
     """Raised when hooking on a reactor incorrectly."""
 
 
-class EventID(object):
+class EventID:
     """Unique identifier for an event handler.
 
     @param event_type: Name of the event type handled by the handler.
@@ -32,7 +30,7 @@ class EventID(object):
         self._pair = pair
 
 
-class EventHandlingReactorMixin(object):
+class EventHandlingReactorMixin:
     """Fire events identified by strings and register handlers for them.
 
     Note that event handlers are executed synchronously when the C{fire} method
@@ -43,7 +41,7 @@ class EventHandlingReactorMixin(object):
     """
 
     def __init__(self):
-        super(EventHandlingReactorMixin, self).__init__()
+        super().__init__()
         self._event_handlers = {}
 
     def call_on(self, event_type, handler, priority=0):
@@ -85,21 +83,34 @@ class EventHandlingReactorMixin(object):
         handlers = list(self._event_handlers.get(event_type, ()))
         for handler, priority in handlers:
             try:
-                logging.debug("Calling %s for %s with priority %d.",
-                              format_object(handler), event_type, priority)
+                logging.debug(
+                    "Calling %s for %s with priority %d.",
+                    format_object(handler),
+                    event_type,
+                    priority,
+                )
                 results.append(handler(*args, **kwargs))
             except KeyboardInterrupt:
-                logging.exception("Keyboard interrupt while running event "
-                                  "handler %s for event type %r with "
-                                  "args %r %r.", format_object(handler),
-                                  event_type, args, kwargs)
+                logging.exception(
+                    "Keyboard interrupt while running event "
+                    "handler %s for event type %r with "
+                    "args %r %r.",
+                    format_object(handler),
+                    event_type,
+                    args,
+                    kwargs,
+                )
                 self.stop()
                 raise
             except Exception:
-                logging.exception("Error running event handler %s for "
-                                  "event type %r with args %r %r.",
-                                  format_object(handler), event_type,
-                                  args, kwargs)
+                logging.exception(
+                    "Error running event handler %s for "
+                    "event type %r with args %r %r.",
+                    format_object(handler),
+                    event_type,
+                    args,
+                    kwargs,
+                )
         logging.debug("Finished firing %s.", event_type)
         return results
 
@@ -111,11 +122,10 @@ class EventHandlingReactorMixin(object):
         if type(id) is EventID:
             self._event_handlers[id._event_type].remove(id._pair)
         else:
-            raise InvalidID("EventID instance expected, received %r" % id)
+            raise InvalidID(f"EventID instance expected, received {id!r}")
 
 
-class ReactorID(object):
-
+class ReactorID:
     def __init__(self, timeout):
         self._timeout = timeout
 
@@ -131,11 +141,12 @@ class EventHandlingReactor(EventHandlingReactorMixin):
     def __init__(self):
         from twisted.internet import reactor
         from twisted.internet.task import LoopingCall
+
         self._LoopingCall = LoopingCall
         self._reactor = reactor
         self._cleanup()
         self.callFromThread = reactor.callFromThread
-        super(EventHandlingReactor, self).__init__()
+        super().__init__()
 
     def time(self):
         """Get current time.
@@ -208,6 +219,7 @@ class EventHandlingReactor(EventHandlingReactorMixin):
         @note: Both C{callback} and C{errback} will be executed in the
             the parent thread.
         """
+
         def on_success(result):
             if callback:
                 return callback(result)

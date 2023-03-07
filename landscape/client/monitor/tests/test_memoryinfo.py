@@ -1,7 +1,8 @@
-import mock
+from unittest import mock
 
 from landscape.client.monitor.memoryinfo import MemoryInfo
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 
 
 class MemoryInfoTest(LandscapeTest):
@@ -35,7 +36,7 @@ VmallocChunk:   510252 kB
 """
 
     def setUp(self):
-        super(MemoryInfoTest, self).setUp()
+        super().setUp()
 
     def test_read_proc_meminfo(self):
         """
@@ -68,8 +69,10 @@ VmallocChunk:   510252 kB
         messages contain expected free memory and free swap values.
         """
         filename = self.makeFile(self.SAMPLE_DATA)
-        plugin = MemoryInfo(source_filename=filename,
-                            create_time=self.reactor.time)
+        plugin = MemoryInfo(
+            source_filename=filename,
+            create_time=self.reactor.time,
+        )
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
@@ -85,8 +88,10 @@ VmallocChunk:   510252 kB
         expected.
         """
         filename = self.makeFile(self.SAMPLE_DATA)
-        plugin = MemoryInfo(source_filename=filename,
-                            create_time=self.reactor.time)
+        plugin = MemoryInfo(
+            source_filename=filename,
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -104,8 +109,10 @@ VmallocChunk:   510252 kB
         fall on a step boundary.
         """
         filename = self.makeFile(self.SAMPLE_DATA)
-        plugin = MemoryInfo(source_filename=filename,
-                            create_time=self.reactor.time)
+        plugin = MemoryInfo(
+            source_filename=filename,
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
 
         step_size = self.monitor.step_size
@@ -125,8 +132,10 @@ VmallocChunk:   510252 kB
         self.mstore.set_accepted_types(["memory-info"])
 
         filename = self.makeFile(self.SAMPLE_DATA)
-        plugin = MemoryInfo(source_filename=filename,
-                            create_time=self.reactor.time)
+        plugin = MemoryInfo(
+            source_filename=filename,
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
         self.monitor.exchange()
         self.assertEqual(len(self.mstore.get_pending_messages()), 0)
@@ -141,31 +150,48 @@ VmallocChunk:   510252 kB
         self.mstore.set_accepted_types(["memory-info"])
 
         filename = self.makeFile(self.SAMPLE_DATA)
-        plugin = MemoryInfo(source_filename=filename,
-                            create_time=self.reactor.time)
+        plugin = MemoryInfo(
+            source_filename=filename,
+            create_time=self.reactor.time,
+        )
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
         self.reactor.advance(step_size * 2)
         self.monitor.exchange()
 
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "memory-info",
-                              "memory-info": [(step_size, 852, 1567),
-                                              (step_size * 2, 852, 1567)]}])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [
+                {
+                    "type": "memory-info",
+                    "memory-info": [
+                        (step_size, 852, 1567),
+                        (step_size * 2, 852, 1567),
+                    ],
+                },
+            ],
+        )
 
     def test_call_on_accepted(self):
-        plugin = MemoryInfo(source_filename=self.makeFile(self.SAMPLE_DATA),
-                            create_time=self.reactor.time)
+        plugin = MemoryInfo(
+            source_filename=self.makeFile(self.SAMPLE_DATA),
+            create_time=self.reactor.time,
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 1)
 
         with mock.patch.object(self.remote, "send_message"):
-            self.reactor.fire(("message-type-acceptance-changed",
-                               "memory-info"), True)
+            self.reactor.fire(
+                ("message-type-acceptance-changed", "memory-info"),
+                True,
+            )
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY, urgent=True)
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
+            )
 
     def test_no_message_if_not_accepted(self):
         """

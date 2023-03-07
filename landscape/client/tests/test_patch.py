@@ -1,12 +1,12 @@
 import sqlite3
 
-from landscape.lib.persist import Persist
-from landscape.client.patch import UpgradeManager, SQLiteUpgradeManager
+from landscape.client.patch import SQLiteUpgradeManager
+from landscape.client.patch import UpgradeManager
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.persist import Persist
 
 
 class PatchTest(LandscapeTest):
-
     def setUp(self):
         LandscapeTest.setUp(self)
         self.persist = Persist()
@@ -87,7 +87,6 @@ class PatchTest(LandscapeTest):
 
 
 class SQLitePatchTest(LandscapeTest):
-
     def setUp(self):
         LandscapeTest.setUp(self)
         self.db_filename = self.makeFile()
@@ -103,8 +102,10 @@ class SQLitePatchTest(LandscapeTest):
         """
         self.manager.initialize(self.cursor)
         self.manager.apply(self.cursor)
-        self.assertEqual(self.manager.get_database_versions(self.cursor),
-                         set())
+        self.assertEqual(
+            self.manager.get_database_versions(self.cursor),
+            set(),
+        )
 
     def test_one_patch(self):
         """Test that patches are called and passed a sqlite db object."""
@@ -152,8 +153,10 @@ class SQLitePatchTest(LandscapeTest):
         self.manager.register_upgrader(5, lambda x: 1 / 0)
         self.manager.register_upgrader(3, lambda x: 1 / 0)
         self.manager.initialize(self.cursor)
-        self.assertEqual(self.manager.get_database_versions(self.cursor),
-                         set([1, 3, 5]))
+        self.assertEqual(
+            self.manager.get_database_versions(self.cursor),
+            {1, 3, 5},
+        )
 
     def test_decorated_upgraders_run(self):
         """

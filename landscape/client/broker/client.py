@@ -1,19 +1,23 @@
-from logging import info, exception, error, debug
-import sys
 import random
+import sys
+from logging import debug
+from logging import error
+from logging import exception
+from logging import info
 
-from twisted.internet.defer import maybeDeferred, succeed
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
 
+from landscape.client.amp import remote
 from landscape.lib.format import format_object
 from landscape.lib.twisted_util import gather_results
-from landscape.client.amp import remote
 
 
 class HandlerNotFoundError(Exception):
     """A handler for the given message type was not found."""
 
 
-class BrokerClientPlugin(object):
+class BrokerClientPlugin:
     """A convenience for writing L{BrokerClient} plugins.
 
     This provides a register method which will set up a bunch of
@@ -32,6 +36,7 @@ class BrokerClientPlugin(object):
         sent. See L{landscape.broker.server.BrokerServer.send_message} for
         more details.
     """
+
     run_interval = 5
     run_immediately = False
     scope = None  # Global scope
@@ -58,8 +63,10 @@ class BrokerClientPlugin(object):
             if acceptance:
                 return callable(*args, **kwargs)
 
-        self.client.reactor.call_on(("message-type-acceptance-changed", type),
-                                    acceptance_changed)
+        self.client.reactor.call_on(
+            ("message-type-acceptance-changed", type),
+            acceptance_changed,
+        )
 
     def _resynchronize(self, scopes=None):
         """
@@ -106,18 +113,27 @@ class BrokerClientPlugin(object):
             if self.run_immediately:
                 self._run_with_error_log()
             if self.run_interval is not None:
-                delay = (random.random() * self.run_interval *
-                         self.client.config.stagger_launch)
-                debug("delaying start of %s for %d seconds",
-                      format_object(self), delay)
+                delay = (
+                    random.random()
+                    * self.run_interval
+                    * self.client.config.stagger_launch
+                )
+                debug(
+                    "delaying start of %s for %d seconds",
+                    format_object(self),
+                    delay,
+                )
                 self._loop = self.client.reactor.call_later(
-                    delay, self._start_loop)
+                    delay,
+                    self._start_loop,
+                )
 
     def _start_loop(self):
         """Launch the client loop."""
         self._loop = self.client.reactor.call_every(
             self.run_interval,
-            self._run_with_error_log)
+            self._run_with_error_log,
+        )
 
     def _run_with_error_log(self):
         """Wrap self.run in a Deferred with a logging error handler."""
@@ -134,7 +150,7 @@ class BrokerClientPlugin(object):
         return failure
 
 
-class BrokerClient(object):
+class BrokerClient:
     """Basic plugin registry for clients that have to deal with the broker.
 
     This knows about the needs of a client when dealing with the Landscape
@@ -148,10 +164,11 @@ class BrokerClient(object):
 
     @param reactor: A L{LandscapeReactor}.
     """
+
     name = "client"
 
     def __init__(self, reactor, config):
-        super(BrokerClient, self).__init__()
+        super().__init__()
         self.reactor = reactor
         self.broker = None
         self.config = config
@@ -179,7 +196,7 @@ class BrokerClient(object):
         """
         info("Registering plugin %s.", format_object(plugin))
         self._plugins.append(plugin)
-        if hasattr(plugin, 'plugin_name'):
+        if hasattr(plugin, "plugin_name"):
             self._plugin_names[plugin.plugin_name] = plugin
         plugin.register(self)
 
@@ -210,15 +227,16 @@ class BrokerClient(object):
         @return: The return value of the handler, if found.
         @raises: HandlerNotFoundError if the handler was not found
         """
-        type = message["type"]
-        handler = self._registered_messages.get(type)
+        typ = message["type"]
+        handler = self._registered_messages.get(typ)
         if handler is None:
-            raise HandlerNotFoundError(type)
+            raise HandlerNotFoundError(typ)
         try:
             return handler(message)
         except Exception:
-            exception("Error running message handler for type %r: %r"
-                      % (type, handler))
+            exception(
+                f"Error running message handler for type {typ!r}: {handler!r}",
+            )
 
     @remote
     def message(self, message):
@@ -259,8 +277,9 @@ class BrokerClient(object):
             results = self.reactor.fire((event_type, message_type), acceptance)
         else:
             results = self.reactor.fire(event_type, *args, **kwargs)
-        return gather_results([
-            maybeDeferred(lambda x: x, result) for result in results])
+        return gather_results(
+            [maybeDeferred(lambda x: x, result) for result in results],
+        )
 
     def handle_reconnect(self):
         """Called when the connection with the broker is established again.
@@ -273,8 +292,8 @@ class BrokerClient(object):
           - Re-register ourselves as client, so the broker knows we exist and
             will talk to us firing events and dispatching messages.
         """
-        for type in self._registered_messages:
-            self.broker.register_client_accepted_message_type(type)
+        for typ in self._registered_messages:
+            self.broker.register_client_accepted_message_type(typ)
         self.broker.register_client(self.name)
 
     @remote

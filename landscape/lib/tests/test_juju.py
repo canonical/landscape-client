@@ -1,20 +1,28 @@
-from collections import namedtuple
 import json
 import unittest
+from collections import namedtuple
 
 from landscape.lib import testing
 from landscape.lib.juju import get_juju_info
 
 
-SAMPLE_JUJU_INFO = json.dumps({"environment-uuid": "DEAD-BEEF",
-                               "machine-id": "1",
-                               "api-addresses": "10.0.3.1:17070",
-                               "private-address": "127.0.0.1"})
+SAMPLE_JUJU_INFO = json.dumps(
+    {
+        "environment-uuid": "DEAD-BEEF",
+        "machine-id": "1",
+        "api-addresses": "10.0.3.1:17070",
+        "private-address": "127.0.0.1",
+    },
+)
 
-SAMPLE_JUJU_INFO_2 = json.dumps({"environment-uuid": "DEAD-BEEF",
-                                 "machine-id": "1",
-                                 "api-addresses": "10.0.3.2:17070",
-                                 "private-address": "127.0.0.1"})
+SAMPLE_JUJU_INFO_2 = json.dumps(
+    {
+        "environment-uuid": "DEAD-BEEF",
+        "machine-id": "1",
+        "api-addresses": "10.0.3.2:17070",
+        "private-address": "127.0.0.1",
+    },
+)
 
 
 class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
@@ -22,12 +30,11 @@ class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
     Config = namedtuple("Config", ["juju_filename"])
 
     def setUp(self):
-        super(JujuTest, self).setUp()
+        super().setUp()
         self.stub_config = self.Config(self.makeFile())
 
     def _create_tmp_juju_file(self, contents):
-        return self.makeFile(
-            contents, path=self.stub_config.juju_filename)
+        return self.makeFile(contents, path=self.stub_config.juju_filename)
 
     def test_get_juju_info(self):
         """
@@ -36,10 +43,14 @@ class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
         self._create_tmp_juju_file(SAMPLE_JUJU_INFO)
         juju_info = get_juju_info(self.stub_config)
         self.assertEqual(
-            {u"environment-uuid": "DEAD-BEEF",
-             u"machine-id": "1",
-             u"private-address": "127.0.0.1",
-             u"api-addresses": ["10.0.3.1:17070"]}, juju_info)
+            {
+                "environment-uuid": "DEAD-BEEF",
+                "machine-id": "1",
+                "private-address": "127.0.0.1",
+                "api-addresses": ["10.0.3.1:17070"],
+            },
+            juju_info,
+        )
 
     def test_get_juju_info_empty_file(self):
         """
@@ -60,16 +71,23 @@ class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
 
     def test_get_juju_info_multiple_endpoints(self):
         """L{get_juju_info} turns space separated API addresses into a list."""
-        juju_multiple_endpoints = json.dumps({
-            "environment-uuid": "DEAD-BEEF",
-            "machine-id": "0",
-            "api-addresses": "10.0.3.1:17070 10.0.3.2:18080",
-            "private-address": "127.0.0.1"})
+        juju_multiple_endpoints = json.dumps(
+            {
+                "environment-uuid": "DEAD-BEEF",
+                "machine-id": "0",
+                "api-addresses": "10.0.3.1:17070 10.0.3.2:18080",
+                "private-address": "127.0.0.1",
+            },
+        )
 
         self._create_tmp_juju_file(juju_multiple_endpoints)
         juju_info = get_juju_info(self.stub_config)
         self.assertEqual(
-            {"environment-uuid": "DEAD-BEEF",
-             "machine-id": "0",
-             "api-addresses": ["10.0.3.1:17070", "10.0.3.2:18080"],
-             "private-address": "127.0.0.1"}, juju_info)
+            {
+                "environment-uuid": "DEAD-BEEF",
+                "machine-id": "0",
+                "api-addresses": ["10.0.3.1:17070", "10.0.3.2:18080"],
+                "private-address": "127.0.0.1",
+            },
+            juju_info,
+        )

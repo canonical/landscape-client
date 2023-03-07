@@ -1,11 +1,11 @@
-from twisted.python.compat import iteritems, itervalues
+from twisted.python.compat import iteritems
+from twisted.python.compat import itervalues
 
 from landscape.client.user.management import UserManagementError
 from landscape.client.user.provider import UserProviderBase
 
 
-class FakeUserManagement(object):
-
+class FakeUserManagement:
     def __init__(self, provider=None):
         self.shadow_file = getattr(provider, "shadow_file", None)
         self.provider = provider
@@ -18,16 +18,25 @@ class FakeUserManagement(object):
             self._groups[data["name"]] = data
 
     def _make_fake_shadow_file(self, locked_users, unlocked_users):
-        entry = "%s:%s:13348:0:99999:7:::\n"
+        entry = "{}:{}:13348:0:99999:7:::\n"
         shadow_file = open(self.shadow_file, "w")
         for user in locked_users:
-            shadow_file.write(entry % (user, "!"))
+            shadow_file.write(entry.format(user, "!"))
         for user in unlocked_users:
-            shadow_file.write(entry % (user, "qweqweqeqweqw"))
+            shadow_file.write(entry.format(user, "qweqweqeqweqw"))
         shadow_file.close()
 
-    def add_user(self, username, name, password, require_password_reset,
-                 primary_group_name, location, work_phone, home_phone):
+    def add_user(
+        self,
+        username,
+        name,
+        password,
+        require_password_reset,
+        primary_group_name,
+        location,
+        work_phone,
+        home_phone,
+    ):
         try:
             uid = 1000
             if self._users:
@@ -36,15 +45,31 @@ class FakeUserManagement(object):
                 primary_gid = self.get_gid(primary_group_name)
             else:
                 primary_gid = uid
-            self._users[uid] = {"username": username, "name": name,
-                                "uid": uid, "enabled": True,
-                                "location": location, "work-phone": work_phone,
-                                "home-phone": home_phone,
-                                "primary-gid": primary_gid}
-            gecos_string = "%s,%s,%s,%s" % (name, location or "",
-                                            work_phone or "", home_phone or "")
-            userdata = (username, "x", uid, primary_gid, gecos_string,
-                        "/bin/sh", "/home/user")
+            self._users[uid] = {
+                "username": username,
+                "name": name,
+                "uid": uid,
+                "enabled": True,
+                "location": location,
+                "work-phone": work_phone,
+                "home-phone": home_phone,
+                "primary-gid": primary_gid,
+            }
+            gecos_string = "{},{},{},{}".format(
+                name,
+                location or "",
+                work_phone or "",
+                home_phone or "",
+            )
+            userdata = (
+                username,
+                "x",
+                uid,
+                primary_gid,
+                gecos_string,
+                "/bin/sh",
+                "/home/user",
+            )
             self.provider.users.append(userdata)
         except KeyError:
             raise UserManagementError("add_user failed")
@@ -81,25 +106,38 @@ class FakeUserManagement(object):
         self.provider.users = remaining_users
         return "remove_user succeeded"
 
-    def set_user_details(self, username, password=None, name=None,
-                         location=None, work_number=None, home_number=None,
-                         primary_group_name=None):
+    def set_user_details(
+        self,
+        username,
+        password=None,
+        name=None,
+        location=None,
+        work_number=None,
+        home_number=None,
+        primary_group_name=None,
+    ):
         data = self._users.setdefault(username, {})
-        for key, value in [("name", name),
-                           ("location", location),
-                           ("work-phone", work_number),
-                           ("home-phone", home_number),
-                           ]:
+        for key, value in [
+            ("name", name),
+            ("location", location),
+            ("work-phone", work_number),
+            ("home-phone", home_number),
+        ]:
             if value:
                 data[key] = value
         if primary_group_name:
             data["primary-gid"] = self.get_gid(primary_group_name)
         else:
             data["primary-gid"] = None
-        userdata = (username, "x", data["uid"], data["primary-gid"],
-                    "%s,%s,%s,%s," % (name, location, work_number,
-                                      home_number),
-                    "/bin/sh", "/home/user")
+        userdata = (
+            username,
+            "x",
+            data["uid"],
+            data["primary-gid"],
+            f"{name},{location},{work_number},{home_number},",
+            "/bin/sh",
+            "/home/user",
+        )
         self.provider.users = [userdata]
         return "set_user_details succeeded"
 
@@ -107,7 +145,7 @@ class FakeUserManagement(object):
         try:
             return self._groups[name]["gid"]
         except KeyError:
-            raise UserManagementError("Group %s wasn't found." % name)
+            raise UserManagementError(f"Group {name} wasn't found.")
 
     def add_group(self, name):
         gid = 1000
@@ -154,15 +192,20 @@ class FakeUserManagement(object):
 
 
 class FakeUserProvider(UserProviderBase):
-
-    def __init__(self, users=None, groups=None, popen=None, shadow_file=None,
-                 locked_users=None):
+    def __init__(
+        self,
+        users=None,
+        groups=None,
+        popen=None,
+        shadow_file=None,
+        locked_users=None,
+    ):
         self.users = users
         self.groups = groups
         if popen:
             self.popen = popen
         self.shadow_file = shadow_file
-        super(FakeUserProvider, self).__init__(locked_users=locked_users)
+        super().__init__(locked_users=locked_users)
 
     def get_user_data(self, system=False):
         if self.users is None:
@@ -175,7 +218,7 @@ class FakeUserProvider(UserProviderBase):
         return self.groups
 
 
-class FakeUserInfo(object):
+class FakeUserInfo:
     """Implements enough functionality to work for Changes tests."""
 
     persist_name = "users"
