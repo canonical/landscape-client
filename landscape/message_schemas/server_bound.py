@@ -57,6 +57,7 @@ __all__ = [
     "CLOUD_METADATA",
     "COMPUTER_TAGS",
     "UBUNTU_PRO_INFO",
+    "LIVEPATCH",
 ]
 
 
@@ -746,6 +747,10 @@ COMPUTER_TAGS = Message(
 
 UBUNTU_PRO_INFO = Message("ubuntu-pro-info", {"ubuntu-pro-info": Unicode()})
 
+LIVEPATCH = Message(
+    "livepatch",
+    {"livepatch": Unicode()})
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     COMPUTER_UPTIME,
@@ -790,4 +795,5 @@ message_schemas = (
     CLOUD_METADATA,
     COMPUTER_TAGS,
     UBUNTU_PRO_INFO,
+    LIVEPATCH,
 )
