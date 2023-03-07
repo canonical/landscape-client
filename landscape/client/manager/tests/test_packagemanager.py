@@ -1,16 +1,15 @@
-import mock
-import os
 import os.path
+from unittest import mock
 
 from twisted.internet.defer import Deferred
 
+from landscape.client.manager.packagemanager import PackageManager
 from landscape.client.package.changer import PackageChanger
 from landscape.client.package.releaseupgrader import ReleaseUpgrader
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
 from landscape.lib.apt.package.store import PackageStore
-
 from landscape.lib.testing import EnvironSaverHelper
-from landscape.client.manager.packagemanager import PackageManager
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class PackageManagerTest(LandscapeTest):
@@ -20,10 +19,11 @@ class PackageManagerTest(LandscapeTest):
 
     def setUp(self):
         """Initialize test helpers and create a sample package store."""
-        super(PackageManagerTest, self).setUp()
+        super().setUp()
         self.config = self.broker_service.config
-        self.package_store = PackageStore(os.path.join(self.data_path,
-                                                       "package/database"))
+        self.package_store = PackageStore(
+            os.path.join(self.data_path, "package/database"),
+        )
         self.package_manager = PackageManager()
 
     def test_create_default_store_upon_message_handling(self):
@@ -49,8 +49,10 @@ class PackageManagerTest(LandscapeTest):
         self.manager.add(self.package_manager)
         with mock.patch.object(self.package_manager, "spawn_handler"):
             self.package_manager.run()
-            self.assertNotIn(PackageChanger,
-                             self.package_manager.spawn_handler.call_args_list)
+            self.assertNotIn(
+                PackageChanger,
+                self.package_manager.spawn_handler.call_args_list,
+            )
             self.assertEqual(0, self.package_manager.spawn_handler.call_count)
 
     def test_dont_spawn_release_upgrader_if_message_not_accepted(self):
@@ -61,8 +63,10 @@ class PackageManagerTest(LandscapeTest):
         self.manager.add(self.package_manager)
         with mock.patch.object(self.package_manager, "spawn_handler"):
             self.package_manager.run()
-            self.assertNotIn(ReleaseUpgrader,
-                             self.package_manager.spawn_handler.call_args_list)
+            self.assertNotIn(
+                ReleaseUpgrader,
+                self.package_manager.spawn_handler.call_args_list,
+            )
             self.assertEqual(0, self.package_manager.spawn_handler.call_count)
 
     def test_spawn_handler_on_registration_when_already_accepted(self):
@@ -79,15 +83,20 @@ class PackageManagerTest(LandscapeTest):
             return run_result_deferred.chainDeferred(deferred)
 
         with mock.patch.object(self.package_manager, "spawn_handler"):
-            with mock.patch.object(self.package_manager, "run",
-                                   side_effect=run_has_run):
+            with mock.patch.object(
+                self.package_manager,
+                "run",
+                side_effect=run_has_run,
+            ):
                 service = self.broker_service
                 service.message_store.set_accepted_types(
-                    ["change-packages-result"])
+                    ["change-packages-result"],
+                )
                 self.manager.add(self.package_manager)
                 self.successResultOf(deferred)
                 self.package_manager.spawn_handler.assert_called_once_with(
-                    PackageChanger)
+                    PackageChanger,
+                )
                 self.package_manager.run.assert_called_once_with()
 
     def test_spawn_changer_on_run_if_message_accepted(self):
@@ -102,7 +111,8 @@ class PackageManagerTest(LandscapeTest):
             self.manager.add(self.package_manager)
             self.package_manager.run()
             self.package_manager.spawn_handler.assert_called_with(
-                PackageChanger)
+                PackageChanger,
+            )
             # Method is called once for registration, then again explicitly.
             self.assertEquals(2, self.package_manager.spawn_handler.call_count)
 
@@ -119,7 +129,8 @@ class PackageManagerTest(LandscapeTest):
             self.manager.add(self.package_manager)
             self.manager.reactor.fire("package-data-changed")[0]
             self.package_manager.spawn_handler.assert_called_with(
-                PackageChanger)
+                PackageChanger,
+            )
             # Method is called once for registration, then again explicitly.
             self.assertEquals(2, self.package_manager.spawn_handler.call_count)
 
@@ -135,7 +146,8 @@ class PackageManagerTest(LandscapeTest):
             self.manager.add(self.package_manager)
             self.package_manager.run()
             self.package_manager.spawn_handler.assert_called_with(
-                ReleaseUpgrader)
+                ReleaseUpgrader,
+            )
             # Method is called once for registration, then again explicitly.
             self.assertEquals(2, self.package_manager.spawn_handler.call_count)
 
@@ -149,7 +161,8 @@ class PackageManagerTest(LandscapeTest):
             self.assertTrue(task)
             self.assertEqual(task.data, message)
             self.package_manager.spawn_handler.assert_called_once_with(
-                PackageChanger)
+                PackageChanger,
+            )
 
     def test_change_packages_handling_with_reboot(self):
         self.manager.add(self.package_manager)
@@ -161,7 +174,8 @@ class PackageManagerTest(LandscapeTest):
             self.assertTrue(task)
             self.assertEqual(task.data, message)
             self.package_manager.spawn_handler.assert_called_once_with(
-                PackageChanger)
+                PackageChanger,
+            )
 
     def test_release_upgrade_handling(self):
         """
@@ -178,7 +192,8 @@ class PackageManagerTest(LandscapeTest):
             self.assertTrue(task)
             self.assertEqual(task.data, message)
             self.package_manager.spawn_handler.assert_called_once_with(
-                ReleaseUpgrader)
+                ReleaseUpgrader,
+            )
 
     def test_spawn_changer(self):
         """
@@ -188,7 +203,8 @@ class PackageManagerTest(LandscapeTest):
         command = self.write_script(
             self.config,
             "landscape-package-changer",
-            "#!/bin/sh\necho 'I am the changer!' >&2\n")
+            "#!/bin/sh\necho 'I am the changer!' >&2\n",
+        )
         self.manager.config = self.config
 
         self.package_store.add_task("changer", "Do something!")
@@ -211,7 +227,8 @@ class PackageManagerTest(LandscapeTest):
         command = self.write_script(
             self.config,
             "landscape-release-upgrader",
-            "#!/bin/sh\necho 'I am the upgrader!' >&2\n")
+            "#!/bin/sh\necho 'I am the upgrader!' >&2\n",
+        )
         self.manager.config = self.config
 
         self.package_store.add_task("release-upgrader", "Do something!")
@@ -229,7 +246,8 @@ class PackageManagerTest(LandscapeTest):
         self.write_script(
             self.config,
             "landscape-package-changer",
-            "#!/bin/sh\n/bin/true")
+            "#!/bin/sh\n/bin/true",
+        )
         self.manager.config = self.config
 
         self.package_store.add_task("changer", "Do something!")
@@ -247,7 +265,8 @@ class PackageManagerTest(LandscapeTest):
         command = self.write_script(
             self.config,
             "landscape-package-changer",
-            "#!/bin/sh\necho VAR: $VAR\n")
+            "#!/bin/sh\necho VAR: $VAR\n",
+        )
         self.manager.config = self.config
 
         self.manager.add(self.package_manager)
@@ -267,7 +286,8 @@ class PackageManagerTest(LandscapeTest):
         command = self.write_script(
             self.config,
             "landscape-package-changer",
-            "#!/bin/sh\necho OPTIONS: $@\n")
+            "#!/bin/sh\necho OPTIONS: $@\n",
+        )
         self.manager.config = self.config
 
         self.manager.add(self.package_manager)
@@ -298,7 +318,8 @@ class PackageManagerTest(LandscapeTest):
         self.write_script(
             self.config,
             "landscape-package-changer",
-            "#!/bin/sh\necho RUN\n")
+            "#!/bin/sh\necho RUN\n",
+        )
         self.manager.config = self.config
 
         cwd = os.getcwd()
@@ -334,4 +355,5 @@ class PackageManagerTest(LandscapeTest):
             self.assertTrue(task)
             self.assertEqual(task.data, message)
             self.package_manager.spawn_handler.assert_called_once_with(
-                PackageChanger)
+                PackageChanger,
+            )

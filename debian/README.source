@@ -12,4 +12,4 @@ appreciated if you also updated the UPSTREAM_VERSION variable in
 landscape/__init__.py to include the entire new client version number. This
 helps us keep track of exact version of clients in use. There's no need to
 update the DEBIAN_REVISION variable, as it gets automatically set at build
-time. 
+time.

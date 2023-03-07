@@ -1,22 +1,24 @@
-import os
 import errno
+import os
 import subprocess
 import textwrap
+from unittest import mock
 
-import mock
-
-from twisted.internet.error import ConnectError, CannotListenError
+from twisted.internet.error import CannotListenError
+from twisted.internet.error import ConnectError
 from twisted.internet.task import Clock
 
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.amp import ComponentConnector
+from landscape.client.amp import ComponentPublisher
+from landscape.client.amp import remote
 from landscape.client.deployment import Configuration
-from landscape.client.amp import ComponentPublisher, ComponentConnector, remote
 from landscape.client.reactor import LandscapeReactor
+from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.amp import MethodCallError
 from landscape.lib.testing import FakeReactor
 
 
-class TestComponent(object):
+class TestComponent:
 
     name = "test"
 
@@ -33,16 +35,14 @@ class TestComponentConnector(ComponentConnector):
     component = TestComponent
 
 
-class FakeAMP(object):
-
+class FakeAMP:
     def __init__(self, locator):
         self._locator = locator
 
 
 class ComponentPublisherTest(LandscapeTest):
-
     def setUp(self):
-        super(ComponentPublisherTest, self).setUp()
+        super().setUp()
         reactor = FakeReactor()
         config = Configuration()
         config.data_path = self.makeDir()
@@ -59,7 +59,7 @@ class ComponentPublisherTest(LandscapeTest):
     def tearDown(self):
         self.connector.disconnect()
         self.publisher.stop()
-        super(ComponentPublisherTest, self).tearDown()
+        super().tearDown()
 
     def test_remote_methods(self):
         """Methods decorated with @remote are accessible remotely."""
@@ -74,9 +74,8 @@ class ComponentPublisherTest(LandscapeTest):
 
 
 class ComponentConnectorTest(LandscapeTest):
-
     def setUp(self):
-        super(ComponentConnectorTest, self).setUp()
+        super().setUp()
         self.reactor = FakeReactor()
         # XXX this should be dropped once the FakeReactor doesn't use the
         # real reactor anymore under the hood.
@@ -104,8 +103,10 @@ class ComponentConnectorTest(LandscapeTest):
         self.log_helper.ignore_errors("Error while connecting to test")
 
         def assert_log(ignored):
-            self.assertIn("Error while connecting to test",
-                          self.logfile.getvalue())
+            self.assertIn(
+                "Error while connecting to test",
+                self.logfile.getvalue(),
+            )
 
         result = self.connector.connect(max_retries=0)
         self.assertFailure(result, ConnectError)
@@ -171,10 +172,9 @@ class ComponentConnectorTest(LandscapeTest):
     @mock.patch("twisted.python.lockfile.kill")
     def test_stale_locks_with_dead_pid(self, mock_kill):
         """Publisher starts with stale lock."""
-        mock_kill.side_effect = [
-            OSError(errno.ESRCH, "No such process")]
-        sock_path = os.path.join(self.config.sockets_path, u"test.sock")
-        lock_path = u"{}.lock".format(sock_path)
+        mock_kill.side_effect = [OSError(errno.ESRCH, "No such process")]
+        sock_path = os.path.join(self.config.sockets_path, "test.sock")
+        lock_path = f"{sock_path}.lock"
         # fake a PID which does not exist
         os.symlink("-1", lock_path)
 
@@ -197,9 +197,10 @@ class ComponentConnectorTest(LandscapeTest):
     def test_stale_locks_recycled_pid(self, mock_kill):
         """Publisher starts with stale lock pointing to recycled process."""
         mock_kill.side_effect = [
-            OSError(errno.EPERM, "Operation not permitted")]
-        sock_path = os.path.join(self.config.sockets_path, u"test.sock")
-        lock_path = u"{}.lock".format(sock_path)
+            OSError(errno.EPERM, "Operation not permitted"),
+        ]
+        sock_path = os.path.join(self.config.sockets_path, "test.sock")
+        lock_path = f"{sock_path}.lock"
         # fake a PID recycled by a known process which isn't landscape (init)
         os.symlink("1", lock_path)
 
@@ -222,14 +223,19 @@ class ComponentConnectorTest(LandscapeTest):
     @mock.patch("twisted.python.lockfile.kill")
     def test_with_valid_lock(self, mock_kill):
         """Publisher raises lock error if a valid lock is held."""
-        sock_path = os.path.join(self.config.sockets_path, u"test.sock")
-        lock_path = u"{}.lock".format(sock_path)
+        sock_path = os.path.join(self.config.sockets_path, "test.sock")
+        lock_path = f"{sock_path}.lock"
         # fake a landscape process
-        app = self.makeFile(textwrap.dedent("""\
+        app = self.makeFile(
+            textwrap.dedent(
+                """\
             #!/usr/bin/python3
             import time
             time.sleep(10)
-        """), basename="landscape-manager")
+        """,
+            ),
+            basename="landscape-manager",
+        )
         os.chmod(app, 0o755)
         call = subprocess.Popen([app])
         self.addCleanup(call.terminate)

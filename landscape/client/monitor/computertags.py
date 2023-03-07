@@ -16,7 +16,7 @@ class ComputerTags(DataWatcher):
     run_immediately = True
 
     def __init__(self, args=sys.argv):
-        super(ComputerTags, self).__init__()
+        super().__init__()
         self.args = args  # Defined to specify args in unit tests
 
     def get_data(self):

@@ -1,14 +1,14 @@
 """Deployment code for the monitor."""
-
 import os
 
 from twisted.python.reflect import namedClass
 
-from landscape.client.service import LandscapeService, run_landscape_service
+from landscape.client.amp import ComponentPublisher
+from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.monitor.config import MonitorConfiguration
 from landscape.client.monitor.monitor import Monitor
-from landscape.client.broker.amp import RemoteBrokerConnector
-from landscape.client.amp import ComponentPublisher
+from landscape.client.service import LandscapeService
+from landscape.client.service import run_landscape_service
 
 
 class MonitorService(LandscapeService):
@@ -21,22 +21,35 @@ class MonitorService(LandscapeService):
 
     def __init__(self, config):
         self.persist_filename = os.path.join(
-            config.data_path, "%s.bpickle" % self.service_name)
-        super(MonitorService, self).__init__(config)
+            config.data_path,
+            f"{self.service_name}.bpickle",
+        )
+        super().__init__(config)
         self.plugins = self.get_plugins()
-        self.monitor = Monitor(self.reactor, self.config, self.persist,
-                               persist_filename=self.persist_filename)
-        self.publisher = ComponentPublisher(self.monitor, self.reactor,
-                                            self.config)
+        self.monitor = Monitor(
+            self.reactor,
+            self.config,
+            self.persist,
+            persist_filename=self.persist_filename,
+        )
+        self.publisher = ComponentPublisher(
+            self.monitor,
+            self.reactor,
+            self.config,
+        )
 
     def get_plugins(self):
-        return [namedClass("landscape.client.monitor.%s.%s"
-                           % (plugin_name.lower(), plugin_name))()
-                for plugin_name in self.config.plugin_factories]
+        return [
+            namedClass(
+                "landscape.client.monitor."
+                f"{plugin_name.lower()}.{plugin_name}",
+            )()
+            for plugin_name in self.config.plugin_factories
+        ]
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         """Start the monitor."""
-        super(MonitorService, self).startService()
+        super().startService()
         self.publisher.start()
 
         def start_plugins(broker):
@@ -50,7 +63,7 @@ class MonitorService(LandscapeService):
         connected = self.connector.connect()
         return connected.addCallback(start_plugins)
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         """Stop the monitor.
 
         The monitor is flushed to ensure that things like persist databases
@@ -59,7 +72,7 @@ class MonitorService(LandscapeService):
         deferred = self.publisher.stop()
         self.monitor.flush()
         self.connector.disconnect()
-        super(MonitorService, self).stopService()
+        super().stopService()
         return deferred
 
 

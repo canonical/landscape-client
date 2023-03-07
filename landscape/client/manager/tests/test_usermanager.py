@@ -1,17 +1,18 @@
-# -*- coding: utf-8 -*-
 import os
-from mock import Mock
+from unittest.mock import Mock
 
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.usermanager import RemoteUserManagerConnector
+from landscape.client.manager.usermanager import UserManager
+from landscape.client.monitor.usermonitor import UserMonitor
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.user.provider import UserManagementError
+from landscape.client.user.tests.helpers import FakeUserManagement
+from landscape.client.user.tests.helpers import FakeUserProvider
 from landscape.lib.persist import Persist
 from landscape.lib.twisted_util import gather_results
-from landscape.client.manager.plugin import SUCCEEDED, FAILED
-from landscape.client.monitor.usermonitor import UserMonitor
-from landscape.client.manager.usermanager import (
-    UserManager, RemoteUserManagerConnector)
-from landscape.client.user.tests.helpers import (
-        FakeUserProvider, FakeUserManagement)
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.client.user.provider import UserManagementError
 
 
 class UserGroupTestBase(LandscapeTest):
@@ -19,27 +20,34 @@ class UserGroupTestBase(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(UserGroupTestBase, self).setUp()
-        self.shadow_file = self.makeFile("""\
+        super().setUp()
+        self.shadow_file = self.makeFile(
+            """\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
-""")
+""",
+        )
         accepted_types = ["operation-result", "users"]
         self.broker_service.message_store.set_accepted_types(accepted_types)
 
     def tearDown(self):
-        super(UserGroupTestBase, self).tearDown()
+        super().tearDown()
         for plugin in self.plugins:
             plugin.stop()
 
     def setup_environment(self, users, groups, shadow_file):
-        provider = FakeUserProvider(users=users, groups=groups,
-                                    shadow_file=shadow_file)
+        provider = FakeUserProvider(
+            users=users,
+            groups=groups,
+            shadow_file=shadow_file,
+        )
         user_monitor = UserMonitor(provider=provider)
         management = FakeUserManagement(provider=provider)
-        user_manager = UserManager(management=management,
-                                   shadow_file=shadow_file)
+        user_manager = UserManager(
+            management=management,
+            shadow_file=shadow_file,
+        )
         self.manager.persist = Persist()
         user_monitor.register(self.manager)
         user_manager.register(self.manager)
@@ -48,7 +56,6 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
 
 class UserOperationsMessagingTest(UserGroupTestBase):
-
     def test_add_user_event(self):
         """
         When an C{add-user} event is received the user should be
@@ -59,30 +66,52 @@ class UserOperationsMessagingTest(UserGroupTestBase):
 
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 123, "timestamp": 0,
-                                  "result-text": "add_user succeeded"},
-                                 {"timestamp": 0, "type": "users",
-                                  "operation-id": 123,
-                                  "create-users": [{"home-phone": None,
-                                                    "username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": "Room 101",
-                                                    "work-phone": "+12345",
-                                                    "name": u"John Doe",
-                                                    "primary-gid": 1000}]}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "add_user succeeded",
+                    },
+                    {
+                        "timestamp": 0,
+                        "type": "users",
+                        "operation-id": 123,
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": "Room 101",
+                                "work-phone": "+12345",
+                                "name": "John Doe",
+                                "primary-gid": 1000,
+                            },
+                        ],
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
 
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "name": "John Doe", "password": "password",
-             "operation-id": 123, "require-password-reset": False,
-             "primary-group-name": None, "location": "Room 101",
-             "work-number": "+12345", "home-number": None,
-             "type": "add-user"})
+            {
+                "username": "jdoe",
+                "name": "John Doe",
+                "password": "password",
+                "operation-id": 123,
+                "require-password-reset": False,
+                "primary-group-name": None,
+                "location": "Room 101",
+                "work-number": "+12345",
+                "home-number": None,
+                "type": "add-user",
+            },
+        )
 
         result.addCallback(handle_callback)
         return result
@@ -92,32 +121,55 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         When an C{add-user} event with utf-8 unicode strings is received the
         user should be added.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 123, "timestamp": 0,
-                                  "result-text": "add_user succeeded"},
-                                 {"timestamp": 0, "type": "users",
-                                  "operation-id": 123,
-                                  "create-users": [{"home-phone": None,
-                                                    "username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": "Room 101",
-                                                    "work-phone": "+12345",
-                                                    "name": u"請不要刪除",
-                                                    "primary-gid": 1000}]}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "add_user succeeded",
+                    },
+                    {
+                        "timestamp": 0,
+                        "type": "users",
+                        "operation-id": 123,
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": "Room 101",
+                                "work-phone": "+12345",
+                                "name": "請不要刪除",
+                                "primary-gid": 1000,
+                            },
+                        ],
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
 
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "name": "請不要刪除", "password": "password",
-             "operation-id": 123, "require-password-reset": False,
-             "primary-group-name": None, "location": "Room 101",
-             "work-number": "+12345", "home-number": None,
-             "type": "add-user"})
+            {
+                "username": "jdoe",
+                "name": "請不要刪除",
+                "password": "password",
+                "operation-id": 123,
+                "require-password-reset": False,
+                "primary-group-name": None,
+                "location": "Room 101",
+                "work-number": "+12345",
+                "home-number": None,
+                "type": "add-user",
+            },
+        )
 
         result.addCallback(handle_callback)
         return result
@@ -128,38 +180,55 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         received the user should be added. This is what the server is
         sending over the wire in the real-world.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 123, "timestamp": 0,
-                                  "result-text": "add_user succeeded"},
-                                 {"timestamp": 0, "type": "users",
-                                  "operation-id": 123,
-                                  "create-users": [
-                                      {"home-phone": u"請不要刪除",
-                                       "username": u"請不要刪除",
-                                       "uid": 1000,
-                                       "enabled": True,
-                                       "location": u"請不要刪除",
-                                       "work-phone": u"請不要刪除",
-                                       "name": u"請不要刪除",
-                                       "primary-gid": 1000}]}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "add_user succeeded",
+                    },
+                    {
+                        "timestamp": 0,
+                        "type": "users",
+                        "operation-id": 123,
+                        "create-users": [
+                            {
+                                "home-phone": "請不要刪除",
+                                "username": "請不要刪除",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": "請不要刪除",
+                                "work-phone": "請不要刪除",
+                                "name": "請不要刪除",
+                                "primary-gid": 1000,
+                            },
+                        ],
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
 
         result = self.manager.dispatch_message(
-            {'username': u'\u8acb\u4e0d\u8981\u522a\u9664',
-             'work-number': u'\u8acb\u4e0d\u8981\u522a\u9664',
-             'home-number': u'\u8acb\u4e0d\u8981\u522a\u9664',
-             'name': u'\u8acb\u4e0d\u8981\u522a\u9664',
-             'operation-id': 123,
-             'require-password-reset': False,
-             'password': u'\u8acb\u4e0d\u8981\u522a\u9664',
-             'type': 'add-user',
-             'primary-group-name': u'\u8acb\u4e0d\u8981\u522a\u9664',
-             'location': u'\u8acb\u4e0d\u8981\u522a\u9664'})
+            {
+                "username": "\u8acb\u4e0d\u8981\u522a\u9664",
+                "work-number": "\u8acb\u4e0d\u8981\u522a\u9664",
+                "home-number": "\u8acb\u4e0d\u8981\u522a\u9664",
+                "name": "\u8acb\u4e0d\u8981\u522a\u9664",
+                "operation-id": 123,
+                "require-password-reset": False,
+                "password": "\u8acb\u4e0d\u8981\u522a\u9664",
+                "type": "add-user",
+                "primary-group-name": "\u8acb\u4e0d\u8981\u522a\u9664",
+                "location": "\u8acb\u4e0d\u8981\u522a\u9664",
+            },
+        )
 
         result.addCallback(handle_callback)
         return result
@@ -174,16 +243,30 @@ class UserOperationsMessagingTest(UserGroupTestBase):
 
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
-            self.assertMessages(messages,
-                                [{"type": "operation-result", "status": FAILED,
-                                  "operation-id": 123, "timestamp": 0,
-                                  "result-text": "KeyError: 'username'"}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": FAILED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "KeyError: 'username'",
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
 
         result = self.manager.dispatch_message(
-            {"name": "John Doe", "password": "password", "operation-id": 123,
-             "require-password-reset": False, "type": "add-user"})
+            {
+                "name": "John Doe",
+                "password": "password",
+                "operation-id": 123,
+                "require-password-reset": False,
+                "type": "add-user",
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -210,10 +293,19 @@ class UserOperationsMessagingTest(UserGroupTestBase):
 
         plugin = self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "name": "John Doe", "password": "password",
-             "operation-id": 123, "require-password-reset": False,
-             "primary-group-name": None, "type": "add-user",
-             "location": None, "home-number": "+123456", "work-number": None})
+            {
+                "username": "jdoe",
+                "name": "John Doe",
+                "password": "password",
+                "operation-id": 123,
+                "require-password-reset": False,
+                "primary-group-name": None,
+                "type": "add-user",
+                "location": None,
+                "home-number": "+123456",
+                "work-number": None,
+            },
+        )
 
         result.addCallback(handle_callback1)
         return result
@@ -230,33 +322,59 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
             messages = [messages[0], messages[2]]
-            self.assertMessages(messages,
-                                [{"type": "users",
-                                  "create-users": [{"home-phone": None,
-                                                    "name": "Bo",
-                                                    "username": "bo",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": None,
-                                                    "primary-gid": 1000,
-                                                    "work-phone": None}]},
-                                 {"type": "users", "operation-id": 123,
-                                  "create-users": [{"home-phone": "+123456",
-                                                    "username": "jdoe",
-                                                    "uid": 1001,
-                                                    "enabled": True,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "name": "John Doe",
-                                                    "primary-gid": 1001}]}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "users",
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "name": "Bo",
+                                "username": "bo",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": None,
+                                "primary-gid": 1000,
+                                "work-phone": None,
+                            },
+                        ],
+                    },
+                    {
+                        "type": "users",
+                        "operation-id": 123,
+                        "create-users": [
+                            {
+                                "home-phone": "+123456",
+                                "username": "jdoe",
+                                "uid": 1001,
+                                "enabled": True,
+                                "location": None,
+                                "work-phone": None,
+                                "name": "John Doe",
+                                "primary-gid": 1001,
+                            },
+                        ],
+                    },
+                ],
+            )
 
         users = [("bo", "x", 1000, 1000, "Bo,,,,", "/home/bo", "/bin/zsh")]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "name": "John Doe", "password": "password",
-             "operation-id": 123, "require-password-reset": False,
-             "type": "add-user", "primary-group-name": None,
-             "location": None, "work-number": None, "home-number": "+123456"})
+            {
+                "username": "jdoe",
+                "name": "John Doe",
+                "password": "password",
+                "operation-id": 123,
+                "require-password-reset": False,
+                "type": "add-user",
+                "primary-group-name": None,
+                "location": None,
+                "work-number": None,
+                "home-number": "+123456",
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -272,32 +390,55 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
             # Ignore the message created by plugin.run.
-            self.assertMessages(messages[1:],
-                                [{"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 99, "timestamp": 0,
-                                  "result-text": "set_user_details succeeded"},
-                                 {"update-users": [{"username": "jdoe",
-                                                    "uid": 1001,
-                                                    "enabled": True,
-                                                    "work-phone": "789WORK",
-                                                    "home-phone": "123HOME",
-                                                    "location": "Everywhere",
-                                                    "name": "John Doe",
-                                                    "primary-gid": 1001}],
-                                    "timestamp": 0, "type": "users",
-                                  "operation-id": 99}])
+            self.assertMessages(
+                messages[1:],
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 99,
+                        "timestamp": 0,
+                        "result-text": "set_user_details succeeded",
+                    },
+                    {
+                        "update-users": [
+                            {
+                                "username": "jdoe",
+                                "uid": 1001,
+                                "enabled": True,
+                                "work-phone": "789WORK",
+                                "home-phone": "123HOME",
+                                "location": "Everywhere",
+                                "name": "John Doe",
+                                "primary-gid": 1001,
+                            },
+                        ],
+                        "timestamp": 0,
+                        "type": "users",
+                        "operation-id": 99,
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1001, 1000, "John Doe,,,,",
-                  "/home/bo", "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1001, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         groups = [("users", "x", 1001, [])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"uid": 1001, "username": "jdoe", "password": "password",
-             "name": "John Doe", "location": "Everywhere",
-             "work-number": "789WORK", "home-number": "123HOME",
-             "operation-id": 99, "primary-group-name": u"users",
-             "type": "edit-user"})
+            {
+                "uid": 1001,
+                "username": "jdoe",
+                "password": "password",
+                "name": "John Doe",
+                "location": "Everywhere",
+                "work-number": "789WORK",
+                "home-number": "123HOME",
+                "operation-id": 99,
+                "primary-group-name": "users",
+                "type": "edit-user",
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -321,14 +462,23 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(messages, new_messages)
             return result
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,",
-                  "/home/bo", "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         plugin = self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "password": "password", "name": "John Doe",
-             "location": "Everywhere", "work-number": "789WORK",
-             "home-number": "123HOME", "primary-group-name": None,
-             "type": "edit-user", "operation-id": 99})
+            {
+                "username": "jdoe",
+                "password": "password",
+                "name": "John Doe",
+                "location": "Everywhere",
+                "work-number": "789WORK",
+                "home-number": "123HOME",
+                "primary-group-name": None,
+                "type": "edit-user",
+                "operation-id": 99,
+            },
+        )
         result.addCallback(handle_callback1)
         return result
 
@@ -343,39 +493,63 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            self.assertMessages([messages[0], messages[2]],
-                                [{"type": "users",
-                                  "create-group-members": {u"users":
-                                                           [u"jdoe"]},
-                                  "create-groups": [{"gid": 1001,
-                                                     "name": u"users"}],
-                                  "create-users": [{"home-phone": None,
-                                                    "work-phone": None,
-                                                    "username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": None,
-                                                    "name": "John Doe",
-                                                    "primary-gid": 1000}]},
-                                 {"type": "users", "operation-id": 99,
-                                  "update-users": [{"username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "work-phone": "789WORK",
-                                                    "home-phone": "123HOME",
-                                                    "location": "Everywhere",
-                                                    "primary-gid": 1001,
-                                                    "name": "John Doe"}]}])
+            self.assertMessages(
+                [messages[0], messages[2]],
+                [
+                    {
+                        "type": "users",
+                        "create-group-members": {"users": ["jdoe"]},
+                        "create-groups": [{"gid": 1001, "name": "users"}],
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "work-phone": None,
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": None,
+                                "name": "John Doe",
+                                "primary-gid": 1000,
+                            },
+                        ],
+                    },
+                    {
+                        "type": "users",
+                        "operation-id": 99,
+                        "update-users": [
+                            {
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": True,
+                                "work-phone": "789WORK",
+                                "home-phone": "123HOME",
+                                "location": "Everywhere",
+                                "primary-gid": 1001,
+                                "name": "John Doe",
+                            },
+                        ],
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo",
-                  "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         groups = [("users", "x", 1001, ["jdoe"])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "password": "password", "name": "John Doe",
-             "location": "Everywhere", "work-number": "789WORK",
-             "home-number": "123HOME", "primary-group-name": u"users",
-             "type": "edit-user", "operation-id": 99})
+            {
+                "username": "jdoe",
+                "password": "password",
+                "name": "John Doe",
+                "location": "Everywhere",
+                "work-number": "789WORK",
+                "home-number": "123HOME",
+                "primary-group-name": "users",
+                "type": "edit-user",
+                "operation-id": 99,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -393,22 +567,37 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
             # Ignore the message created by plugin.run.
-            self.assertMessages([messages[2], messages[1]],
-                                [{"timestamp": 0, "delete-users": ["jdoe"],
-                                  "type": "users", "operation-id": 39},
-                                 {"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 39, "timestamp": 0,
-                                  "result-text": "remove_user succeeded"}])
+            self.assertMessages(
+                [messages[2], messages[1]],
+                [
+                    {
+                        "timestamp": 0,
+                        "delete-users": ["jdoe"],
+                        "type": "users",
+                        "operation-id": 39,
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 39,
+                        "timestamp": 0,
+                        "result-text": "remove_user succeeded",
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo",
-                  "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "delete-home": True,
-             "type": "remove-user",
-             "operation-id": 39})
+            {
+                "username": "jdoe",
+                "delete-home": True,
+                "type": "remove-user",
+                "operation-id": 39,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -417,34 +606,60 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         The L{UserManager} can handle multiple remove-user events at the same
         time.
         """
-        users = [("foo", "x", 1000, 1000, "Foo,,,,", "/home/foo", "/bin/zsh"),
-                 ("bar", "x", 1001, 1001, "Bar,,,,", "/home/bar", "/bin/zsh")]
+        users = [
+            ("foo", "x", 1000, 1000, "Foo,,,,", "/home/foo", "/bin/zsh"),
+            ("bar", "x", 1001, 1001, "Bar,,,,", "/home/bar", "/bin/zsh"),
+        ]
         self.setup_environment(users, [], None)
 
         def handle_callback(ignored):
             messages = self.broker_service.message_store.get_pending_messages()
             # Ignore the message created by plugin.run.
-            messages = sorted([messages[1], messages[3]],
-                              key=lambda message: message["operation-id"])
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 39, "timestamp": 0,
-                                  "result-text": "remove_user succeeded"},
-                                 {"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 40, "timestamp": 0,
-                                  "result-text": "remove_user succeeded"}])
+            messages = sorted(
+                [messages[1], messages[3]],
+                key=lambda message: message["operation-id"],
+            )
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 39,
+                        "timestamp": 0,
+                        "result-text": "remove_user succeeded",
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 40,
+                        "timestamp": 0,
+                        "result-text": "remove_user succeeded",
+                    },
+                ],
+            )
 
         results = []
-        results.append(self.manager.dispatch_message({"username": "foo",
-                                                      "delete-home": True,
-                                                      "type": "remove-user",
-                                                      "operation-id": 39}))
-        results.append(self.manager.dispatch_message({"username": "bar",
-                                                      "delete-home": True,
-                                                      "type": "remove-user",
-                                                      "operation-id": 40}))
+        results.append(
+            self.manager.dispatch_message(
+                {
+                    "username": "foo",
+                    "delete-home": True,
+                    "type": "remove-user",
+                    "operation-id": 39,
+                },
+            ),
+        )
+        results.append(
+            self.manager.dispatch_message(
+                {
+                    "username": "bar",
+                    "delete-home": True,
+                    "type": "remove-user",
+                    "operation-id": 40,
+                },
+            ),
+        )
         return gather_results(results).addCallback(handle_callback)
 
     def test_failing_remove_user_event(self):
@@ -458,17 +673,28 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 1)
             failure_string = "UserManagementError: remove_user failed"
-            self.assertMessages(messages,
-                                [{"type": "operation-result", "status": FAILED,
-                                  "operation-id": 39, "timestamp": 0,
-                                  "result-text": failure_string}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": FAILED,
+                        "operation-id": 39,
+                        "timestamp": 0,
+                        "result-text": failure_string,
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "delete-home": True,
-             "type": "remove-user",
-             "operation-id": 39})
+            {
+                "username": "jdoe",
+                "delete-home": True,
+                "type": "remove-user",
+                "operation-id": 39,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -483,26 +709,40 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         """
 
         def handle_callback(result):
-            messages = (
-                self.broker_service.message_store.get_pending_messages())
+            messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
             # Ignore the message created by plugin.run.
-            self.assertMessages([messages[2], messages[1]],
-                                [{"timestamp": 0, "delete-users": ["jdoe"],
-                                  "type": "users", "operation-id": 39},
-                                 {"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 39, "timestamp": 0,
-                                  "result-text": "remove_user succeeded"}])
+            self.assertMessages(
+                [messages[2], messages[1]],
+                [
+                    {
+                        "timestamp": 0,
+                        "delete-users": ["jdoe"],
+                        "type": "users",
+                        "operation-id": 39,
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 39,
+                        "timestamp": 0,
+                        "result-text": "remove_user succeeded",
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1000, 1000,
-                  "John Doe,,,,", "/home/bo", "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "delete-home": False,
-             "type": "remove-user",
-             "operation-id": 39})
+            {
+                "username": "jdoe",
+                "delete-home": False,
+                "type": "remove-user",
+                "operation-id": 39,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -526,14 +766,18 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             new_messages = message_store.get_pending_messages()
             self.assertEqual(messages, new_messages)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo",
-                  "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         plugin = self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "delete-home": True,
-             "type": "remove-user",
-             "operation-id": 39})
+            {
+                "username": "jdoe",
+                "delete-home": True,
+                "type": "remove-user",
+                "operation-id": 39,
+            },
+        )
         result.addCallback(handle_callback1)
         return result
 
@@ -549,28 +793,44 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            self.assertMessages([messages[0], messages[2]],
-                                [{"type": "users",
-                                  "create-users": [{"home-phone": None,
-                                                    "username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "primary-gid": 1000,
-                                                    "name": "John Doe"}]},
-                                 {"type": "users",
-                                  "delete-users": ["jdoe"],
-                                  "operation-id": 39}])
+            self.assertMessages(
+                [messages[0], messages[2]],
+                [
+                    {
+                        "type": "users",
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": None,
+                                "work-phone": None,
+                                "primary-gid": 1000,
+                                "name": "John Doe",
+                            },
+                        ],
+                    },
+                    {
+                        "type": "users",
+                        "delete-users": ["jdoe"],
+                        "operation-id": 39,
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo",
-                  "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "delete-home": True,
-             "type": "remove-user",
-             "operation-id": 39})
+            {
+                "username": "jdoe",
+                "delete-home": True,
+                "type": "remove-user",
+                "operation-id": 39,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -587,29 +847,43 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3, messages)
             # Ignore the message created by plugin.run.
-            self.assertMessages([messages[2], messages[1]],
-                                [{"timestamp": 0, "type": "users",
-                                  "operation-id": 99,
-                                  "update-users": [{"home-phone": None,
-                                                    "username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": False,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "primary-gid": 1000,
-                                                    "name": u"John Doe"}]},
-                                 {"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 99, "timestamp": 0,
-                                  "result-text": "lock_user succeeded"}])
+            self.assertMessages(
+                [messages[2], messages[1]],
+                [
+                    {
+                        "timestamp": 0,
+                        "type": "users",
+                        "operation-id": 99,
+                        "update-users": [
+                            {
+                                "home-phone": None,
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": False,
+                                "location": None,
+                                "work-phone": None,
+                                "primary-gid": 1000,
+                                "name": "John Doe",
+                            },
+                        ],
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 99,
+                        "timestamp": 0,
+                        "result-text": "lock_user succeeded",
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo",
-                  "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "operation-id": 99,
-             "type": "lock-user"})
+            {"username": "jdoe", "operation-id": 99, "type": "lock-user"},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -625,17 +899,23 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 1)
             failure_string = "UserManagementError: lock_user failed"
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "status": FAILED,
-                                  "operation-id": 99, "timestamp": 0,
-                                  "result-text": failure_string}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": FAILED,
+                        "operation-id": 99,
+                        "timestamp": 0,
+                        "result-text": failure_string,
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "operation-id": 99,
-             "type": "lock-user"})
+            {"username": "jdoe", "operation-id": 99, "type": "lock-user"},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -659,13 +939,13 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             new_messages = message_store.get_pending_messages()
             self.assertEqual(messages, new_messages)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo",
-                  "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         plugin = self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "type": "lock-user",
-             "operation-id": 99})
+            {"username": "jdoe", "type": "lock-user", "operation-id": 99},
+        )
         result.addCallback(handle_callback1)
         return result
 
@@ -676,36 +956,54 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         should first detect changes and then perform the operation.
         The results should be reported in separate messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            self.assertMessages([messages[0], messages[2]],
-                                [{"type": "users",
-                                  "create-users": [{"home-phone": None,
-                                                    "username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "primary-gid": 1000,
-                                                    "name": "John Doe"}]},
-                                 {"type": "users", "operation-id": 99,
-                                  "update-users": [{"home-phone": None,
-                                                    "username": "jdoe",
-                                                    "uid": 1000,
-                                                    "enabled": False,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "primary-gid": 1000,
-                                                    "name": "John Doe"}]}])
+            self.assertMessages(
+                [messages[0], messages[2]],
+                [
+                    {
+                        "type": "users",
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": None,
+                                "work-phone": None,
+                                "primary-gid": 1000,
+                                "name": "John Doe",
+                            },
+                        ],
+                    },
+                    {
+                        "type": "users",
+                        "operation-id": 99,
+                        "update-users": [
+                            {
+                                "home-phone": None,
+                                "username": "jdoe",
+                                "uid": 1000,
+                                "enabled": False,
+                                "location": None,
+                                "work-phone": None,
+                                "primary-gid": 1000,
+                                "name": "John Doe",
+                            },
+                        ],
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo",
-                  "/bin/zsh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh"),
+        ]
         self.setup_environment(users, [], self.shadow_file)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "type": "lock-user",
-             "operation-id": 99})
+            {"username": "jdoe", "type": "lock-user", "operation-id": 99},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -721,30 +1019,52 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
             # Ignore the message created by plugin.run.
-            self.assertMessages([messages[2], messages[1]],
-                                [{"timestamp": 0, "type": "users",
-                                  "operation-id": 99,
-                                  "update-users": [{"home-phone": None,
-                                                    "username": "psmith",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "primary-gid": 1000,
-                                                    "name": u"Paul Smith"}]},
-                                 {"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 99, "timestamp": 0,
-                                  "result-text": "unlock_user succeeded"}])
+            self.assertMessages(
+                [messages[2], messages[1]],
+                [
+                    {
+                        "timestamp": 0,
+                        "type": "users",
+                        "operation-id": 99,
+                        "update-users": [
+                            {
+                                "home-phone": None,
+                                "username": "psmith",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": None,
+                                "work-phone": None,
+                                "primary-gid": 1000,
+                                "name": "Paul Smith",
+                            },
+                        ],
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 99,
+                        "timestamp": 0,
+                        "result-text": "unlock_user succeeded",
+                    },
+                ],
+            )
 
-        users = [("psmith", "x", 1000, 1000, "Paul Smith,,,,", "/home/psmith",
-                  "/bin/zsh")]
+        users = [
+            (
+                "psmith",
+                "x",
+                1000,
+                1000,
+                "Paul Smith,,,,",
+                "/home/psmith",
+                "/bin/zsh",
+            ),
+        ]
         self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
-            {"username": "psmith",
-             "type": "unlock-user",
-             "operation-id": 99})
+            {"username": "psmith", "type": "unlock-user", "operation-id": 99},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -760,17 +1080,23 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 1)
             failure_string = "UserManagementError: unlock_user failed"
-            self.assertMessages(messages,
-                                [{"type": "operation-result",
-                                  "status": FAILED,
-                                  "operation-id": 99, "timestamp": 0,
-                                  "result-text": failure_string}])
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": FAILED,
+                        "operation-id": 99,
+                        "timestamp": 0,
+                        "result-text": failure_string,
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "operation-id": 99,
-             "type": "unlock-user"})
+            {"username": "jdoe", "operation-id": 99, "type": "unlock-user"},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -795,14 +1121,22 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             new_messages = message_store.get_pending_messages()
             self.assertEqual(messages, new_messages)
 
-        users = [("psmith", "x", 1000, 1000, "Paul Smith,,,,", "/home/psmith",
-                  "/bin/zsh")]
+        users = [
+            (
+                "psmith",
+                "x",
+                1000,
+                1000,
+                "Paul Smith,,,,",
+                "/home/psmith",
+                "/bin/zsh",
+            ),
+        ]
         plugin = self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
-            {"username": "psmith",
-             "operation-id": 99,
-             "type": "unlock-user"})
+            {"username": "psmith", "operation-id": 99, "type": "unlock-user"},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -818,40 +1152,64 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            self.assertMessages([messages[0], messages[2]],
-                                [{"type": "users",
-                                  "create-users": [{"home-phone": None,
-                                                    "username": "psmith",
-                                                    "uid": 1000,
-                                                    "enabled": False,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "primary-gid": 1000,
-                                                    "name": "Paul Smith"}]},
-                                 {"type": "users", "operation-id": 99,
-                                  "update-users": [{"home-phone": None,
-                                                    "username": "psmith",
-                                                    "uid": 1000,
-                                                    "enabled": True,
-                                                    "location": None,
-                                                    "work-phone": None,
-                                                    "primary-gid": 1000,
-                                                    "name": "Paul Smith"}]}])
+            self.assertMessages(
+                [messages[0], messages[2]],
+                [
+                    {
+                        "type": "users",
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "username": "psmith",
+                                "uid": 1000,
+                                "enabled": False,
+                                "location": None,
+                                "work-phone": None,
+                                "primary-gid": 1000,
+                                "name": "Paul Smith",
+                            },
+                        ],
+                    },
+                    {
+                        "type": "users",
+                        "operation-id": 99,
+                        "update-users": [
+                            {
+                                "home-phone": None,
+                                "username": "psmith",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": None,
+                                "work-phone": None,
+                                "primary-gid": 1000,
+                                "name": "Paul Smith",
+                            },
+                        ],
+                    },
+                ],
+            )
 
-        users = [("psmith", "x", 1000, 1000, "Paul Smith,,,,", "/home/psmith",
-                  "/bin/zsh")]
+        users = [
+            (
+                "psmith",
+                "x",
+                1000,
+                1000,
+                "Paul Smith,,,,",
+                "/home/psmith",
+                "/bin/zsh",
+            ),
+        ]
         self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
-            {"username": "psmith",
-             "operation-id": 99,
-             "type": "unlock-user"})
+            {"username": "psmith", "operation-id": 99, "type": "unlock-user"},
+        )
         result.addCallback(handle_callback)
         return result
 
 
 class GroupOperationsMessagingTest(UserGroupTestBase):
-
     def test_add_group_event(self):
         """
         When an C{add-group} message is received the group should be
@@ -864,21 +1222,29 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 2)
             # Ignore the message created by plugin.run.
-            self.assertMessages([messages[1], messages[0]],
-                                [{"type": "users", "timestamp": 0,
-                                  "operation-id": 123,
-                                  "create-groups": [{"gid": 1000,
-                                                     "name": "bizdev"}]},
-                                 {"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 123, "timestamp": 0,
-                                  "result-text": "add_group succeeded"}])
+            self.assertMessages(
+                [messages[1], messages[0]],
+                [
+                    {
+                        "type": "users",
+                        "timestamp": 0,
+                        "operation-id": 123,
+                        "create-groups": [{"gid": 1000, "name": "bizdev"}],
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "add_group succeeded",
+                    },
+                ],
+            )
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"groupname": "bizdev",
-             "type": "add-group",
-             "operation-id": 123})
+            {"groupname": "bizdev", "type": "add-group", "operation-id": 123},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -904,9 +1270,8 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
         plugin = self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
-            {"groupname": "bizdev",
-             "operation-id": 123,
-             "type": "add-group"})
+            {"groupname": "bizdev", "operation-id": 123, "type": "add-group"},
+        )
         result.addCallback(handle_callback1)
         return result
 
@@ -922,20 +1287,26 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
             # We skip the operation-result message.
-            self.assertMessages([messages[0], messages[2]],
-                                [{"type": "users",
-                                  "create-groups": [{"gid": 1001,
-                                                     "name": "sales"}]},
-                                 {"type": "users", "operation-id": 123,
-                                  "create-groups": [{"gid": 1002,
-                                                     "name": "bizdev"}]}])
+            self.assertMessages(
+                [messages[0], messages[2]],
+                [
+                    {
+                        "type": "users",
+                        "create-groups": [{"gid": 1001, "name": "sales"}],
+                    },
+                    {
+                        "type": "users",
+                        "operation-id": 123,
+                        "create-groups": [{"gid": 1002, "name": "bizdev"}],
+                    },
+                ],
+            )
 
         groups = [("sales", "x", 1001, [])]
         self.setup_environment([], groups, None)
         result = self.manager.dispatch_message(
-            {"groupname": "bizdev",
-             "type": "add-group",
-             "operation-id": 123})
+            {"groupname": "bizdev", "type": "add-group", "operation-id": 123},
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -954,30 +1325,39 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(len(messages), 3)
             # Ignore the message created when the initial snapshot was
             # taken before the operation was performed.
-            expected = [{"create-groups": [{"gid": 50,
-                                            "name": "sales"}],
-                         "timestamp": 0,
-                         "type": "users"},
-                        {"type": "operation-result",
-                         "status": SUCCEEDED,
-                         "operation-id": 123, "timestamp": 0,
-                         "result-text": "set_group_details succeeded"},
-                        {"delete-groups": ["sales"],
-                         "create-groups": [{"gid": 50,
-                                            "name": "bizdev"}],
-                         "timestamp": 0,
-                         "operation-id": 123,
-                         "type": "users"},
-                        ]
+            expected = [
+                {
+                    "create-groups": [{"gid": 50, "name": "sales"}],
+                    "timestamp": 0,
+                    "type": "users",
+                },
+                {
+                    "type": "operation-result",
+                    "status": SUCCEEDED,
+                    "operation-id": 123,
+                    "timestamp": 0,
+                    "result-text": "set_group_details succeeded",
+                },
+                {
+                    "delete-groups": ["sales"],
+                    "create-groups": [{"gid": 50, "name": "bizdev"}],
+                    "timestamp": 0,
+                    "operation-id": 123,
+                    "type": "users",
+                },
+            ]
             self.assertMessages(messages, expected)
 
         groups = [("sales", "x", 50, [])]
         self.setup_environment([], groups, None)
         result = self.manager.dispatch_message(
-            {"groupname": "sales",
-             "new-name": "bizdev",
-             "type": "edit-group",
-             "operation-id": 123})
+            {
+                "groupname": "sales",
+                "new-name": "bizdev",
+                "type": "edit-group",
+                "operation-id": 123,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -1004,11 +1384,14 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         groups = [("sales", "x", 50, [])]
         plugin = self.setup_environment([], groups, None)
         result = self.manager.dispatch_message(
-            {"gid": 50,
-             "groupname": "sales",
-             "new-name": "bizdev",
-             "operation-id": 123,
-             "type": "edit-group"})
+            {
+                "gid": 50,
+                "groupname": "sales",
+                "new-name": "bizdev",
+                "operation-id": 123,
+                "type": "edit-group",
+            },
+        )
         result.addCallback(handle_callback1)
         return result
 
@@ -1023,8 +1406,13 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
         def handle_callback1(result):
             result = self.manager.dispatch_message(
-                {"groupname": "sales", "new-name": "webdev",
-                 "operation-id": 123, "type": "edit-group"})
+                {
+                    "groupname": "sales",
+                    "new-name": "webdev",
+                    "operation-id": 123,
+                    "type": "edit-group",
+                },
+            )
 
             result.addCallback(handle_callback2)
             return result
@@ -1033,15 +1421,21 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            self.assertMessages([messages[0], messages[2]],
-                                [{"type": "users",
-                                  "create-groups": [{"gid": 1001,
-                                                     "name": "sales"}]},
-                                 {"type": "users",
-                                  "operation-id": 123,
-                                  "delete-groups": ["sales"],
-                                  "create-groups": [{"gid": 1001,
-                                                     "name": "webdev"}]}])
+            self.assertMessages(
+                [messages[0], messages[2]],
+                [
+                    {
+                        "type": "users",
+                        "create-groups": [{"gid": 1001, "name": "sales"}],
+                    },
+                    {
+                        "type": "users",
+                        "operation-id": 123,
+                        "delete-groups": ["sales"],
+                        "create-groups": [{"gid": 1001, "name": "webdev"}],
+                    },
+                ],
+            )
 
         groups = [("sales", "x", 1001, [])]
         plugin = self.setup_environment([], groups, None)
@@ -1063,25 +1457,36 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(len(messages), 3)
             # Ignore the message created when the initial snapshot was
             # taken before the operation was performed.
-            expected = [{"type": "users", "timestamp": 0,
-                         "operation-id": 123,
-                         "create-group-members": {"bizdev": ["jdoe"]}},
-                        {"type": "operation-result",
-                         "timestamp": 0,
-                         "status": SUCCEEDED,
-                         "operation-id": 123,
-                         "result-text": "add_group_member succeeded"}]
+            expected = [
+                {
+                    "type": "users",
+                    "timestamp": 0,
+                    "operation-id": 123,
+                    "create-group-members": {"bizdev": ["jdoe"]},
+                },
+                {
+                    "type": "operation-result",
+                    "timestamp": 0,
+                    "status": SUCCEEDED,
+                    "operation-id": 123,
+                    "result-text": "add_group_member succeeded",
+                },
+            ]
             self.assertMessages([messages[2], messages[1]], expected)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
-                  "/home/jdoe")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
+        ]
         groups = [("bizdev", "x", 1001, [])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "groupname": "bizdev",
-             "operation-id": 123,
-             "type": "add-group-member"})
+            {
+                "username": "jdoe",
+                "groupname": "bizdev",
+                "operation-id": 123,
+                "type": "add-group-member",
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -1100,23 +1505,36 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(len(messages), 3)
             # Ignore the message created when the initial snapshot was
             # taken before the operation was performed.
-            expected = [{"type": "users", "timestamp": 0,
-                         "operation-id": 123,
-                         "create-group-members": {"bizdev": ["jdoe"]}},
-                        {"type": "operation-result", "timestamp": 0,
-                         "status": SUCCEEDED, "operation-id": 123,
-                         "result-text": "add_group_member succeeded"}]
+            expected = [
+                {
+                    "type": "users",
+                    "timestamp": 0,
+                    "operation-id": 123,
+                    "create-group-members": {"bizdev": ["jdoe"]},
+                },
+                {
+                    "type": "operation-result",
+                    "timestamp": 0,
+                    "status": SUCCEEDED,
+                    "operation-id": 123,
+                    "result-text": "add_group_member succeeded",
+                },
+            ]
             self.assertMessages([messages[2], messages[1]], expected)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
-                  "/home/jdoe")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
+        ]
         groups = [("bizdev", "x", 1001, [])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "groupname": "bizdev",
-             "type": "add-group-member",
-             "operation-id": 123})
+            {
+                "username": "jdoe",
+                "groupname": "bizdev",
+                "type": "add-group-member",
+                "operation-id": 123,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -1141,15 +1559,19 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             new_messages = message_store.get_pending_messages()
             self.assertEqual(messages, new_messages)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
-                  "/home/jdoe")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
+        ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         plugin = self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"username": u"jdoe",
-             "groupname": u"bizdev",
-             "type": "add-group-member",
-             "operation-id": 123})
+            {
+                "username": "jdoe",
+                "groupname": "bizdev",
+                "type": "add-group-member",
+                "operation-id": 123,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -1165,30 +1587,44 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            expected = [{"type": "users",
-                         "create-users": [{"home-phone": None,
-                                           "username": "jdoe",
-                                           "uid": 1000,
-                                           "enabled": True,
-                                           "location": None,
-                                           "work-phone": None,
-                                           "primary-gid": 1000,
-                                           "name": "John Doe"}],
-                         "create-groups": [{"gid": 1001,
-                                            "name": "bizdev"}]},
-                        {"type": "users", "operation-id": 123,
-                         "create-group-members": {"bizdev": ["jdoe"]}}]
+            expected = [
+                {
+                    "type": "users",
+                    "create-users": [
+                        {
+                            "home-phone": None,
+                            "username": "jdoe",
+                            "uid": 1000,
+                            "enabled": True,
+                            "location": None,
+                            "work-phone": None,
+                            "primary-gid": 1000,
+                            "name": "John Doe",
+                        },
+                    ],
+                    "create-groups": [{"gid": 1001, "name": "bizdev"}],
+                },
+                {
+                    "type": "users",
+                    "operation-id": 123,
+                    "create-group-members": {"bizdev": ["jdoe"]},
+                },
+            ]
             self.assertMessages([messages[0], messages[2]], expected)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
-                  "/home/jdoe")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
+        ]
         groups = [("bizdev", "x", 1001, [])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe",
-             "groupname": "bizdev",
-             "type": "add-group-member",
-             "operation-id": 123})
+            {
+                "username": "jdoe",
+                "groupname": "bizdev",
+                "type": "add-group-member",
+                "operation-id": 123,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -1207,21 +1643,36 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             # Ignore the message created by plugin.run.
             self.assertMessages(
                 [messages[2], messages[1]],
-                [{"type": "users", "timestamp": 0,
-                  "operation-id": 123,
-                  "delete-group-members": {"bizdev": ["jdoe"]}},
-                 {"type": "operation-result",
-                  "status": SUCCEEDED,
-                  "operation-id": 123, "timestamp": 0,
-                  "result-text": "remove_group_member succeeded"}])
+                [
+                    {
+                        "type": "users",
+                        "timestamp": 0,
+                        "operation-id": 123,
+                        "delete-group-members": {"bizdev": ["jdoe"]},
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "remove_group_member succeeded",
+                    },
+                ],
+            )
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
-                  "/home/jdoe")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
+        ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "groupname": "bizdev",
-             "type": "remove-group-member", "operation-id": 123})
+            {
+                "username": "jdoe",
+                "groupname": "bizdev",
+                "type": "remove-group-member",
+                "operation-id": 123,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -1245,14 +1696,19 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             new_messages = message_store.get_pending_messages()
             self.assertEqual(messages, new_messages)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
-                  "/home/jdoe")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
+        ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         plugin = self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"username": "jdoe", "groupname": "bizdev",
-             "type": "remove-group-member",
-             "operation-id": 123})
+            {
+                "username": "jdoe",
+                "groupname": "bizdev",
+                "type": "remove-group-member",
+                "operation-id": 123,
+            },
+        )
         result.addCallback(handle_callback1)
         return result
 
@@ -1268,31 +1724,46 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            expected = [{"timestamp": 0, "type": "users",
-                         "create-users": [{"home-phone": None,
-                                           "username": "jdoe",
-                                           "uid": 1000,
-                                           "enabled": True,
-                                           "location": None,
-                                           "work-phone": None,
-                                           "primary-gid": 1000,
-                                           "name": "John Doe"}],
-                         "create-groups": [{"gid": 1001,
-                                            "name": "bizdev"}],
-                         "create-group-members": {"bizdev": ["jdoe"]}},
-                        {"type": "users", "operation-id": 123,
-                         "delete-group-members": {"bizdev": ["jdoe"]}}]
+            expected = [
+                {
+                    "timestamp": 0,
+                    "type": "users",
+                    "create-users": [
+                        {
+                            "home-phone": None,
+                            "username": "jdoe",
+                            "uid": 1000,
+                            "enabled": True,
+                            "location": None,
+                            "work-phone": None,
+                            "primary-gid": 1000,
+                            "name": "John Doe",
+                        },
+                    ],
+                    "create-groups": [{"gid": 1001, "name": "bizdev"}],
+                    "create-group-members": {"bizdev": ["jdoe"]},
+                },
+                {
+                    "type": "users",
+                    "operation-id": 123,
+                    "delete-group-members": {"bizdev": ["jdoe"]},
+                },
+            ]
             self.assertMessages([messages[0], messages[2]], expected)
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
-                  "/home/jdoe")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh", "/home/jdoe"),
+        ]
         groups = [("bizdev", "x", 1001, ["jdoe"])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
-            {"groupname": "bizdev",
-             "username": "jdoe",
-             "type": "remove-group-member",
-             "operation-id": 123})
+            {
+                "groupname": "bizdev",
+                "username": "jdoe",
+                "type": "remove-group-member",
+                "operation-id": 123,
+            },
+        )
         result.addCallback(handle_callback)
         return result
 
@@ -1307,8 +1778,12 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
         def handle_callback1(result):
             result = self.manager.dispatch_message(
-                {"groupname": "sales", "type": "remove-group",
-                 "operation-id": 123})
+                {
+                    "groupname": "sales",
+                    "type": "remove-group",
+                    "operation-id": 123,
+                },
+            )
 
             result.addCallback(handle_callback2)
             return result
@@ -1319,14 +1794,24 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             self.assertEqual(len(messages), 3)
             # Ignore the message created when the initial snapshot was
             # taken before the operation was performed.
-            self.assertMessages([messages[2], messages[1]],
-                                [{"type": "users", "timestamp": 0,
-                                  "operation-id": 123,
-                                  "delete-groups": ["sales"]},
-                                 {"type": "operation-result",
-                                  "status": SUCCEEDED,
-                                  "operation-id": 123, "timestamp": 0,
-                                  "result-text": "remove_group succeeded"}])
+            self.assertMessages(
+                [messages[2], messages[1]],
+                [
+                    {
+                        "type": "users",
+                        "timestamp": 0,
+                        "operation-id": 123,
+                        "delete-groups": ["sales"],
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "remove_group succeeded",
+                    },
+                ],
+            )
 
         groups = [("sales", "x", 1001, ["jdoe"])]
         plugin = self.setup_environment([], groups, None)
@@ -1358,9 +1843,12 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         groups = [("sales", "x", 50, [])]
         plugin = self.setup_environment([], groups, None)
         result = self.manager.dispatch_message(
-            {"groupname": "sales",
-             "operation-id": 123,
-             "type": "remove-group"})
+            {
+                "groupname": "sales",
+                "operation-id": 123,
+                "type": "remove-group",
+            },
+        )
         result.addCallback(handle_callback1)
         return result
 
@@ -1375,8 +1863,12 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
         def handle_callback1(result):
             result = self.manager.dispatch_message(
-                {"groupname": "sales", "operation-id": 123,
-                 "type": "remove-group"})
+                {
+                    "groupname": "sales",
+                    "operation-id": 123,
+                    "type": "remove-group",
+                },
+            )
             result.addCallback(handle_callback2)
             return result
 
@@ -1384,13 +1876,20 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
             self.assertEqual(len(messages), 3)
-            self.assertMessages([messages[0], messages[2]],
-                                [{"type": "users",
-                                  "create-groups": [{"gid": 1001,
-                                                     "name": "sales"}]},
-                                 {"type": "users",
-                                  "delete-groups": ["sales"],
-                                  "operation-id": 123}])
+            self.assertMessages(
+                [messages[0], messages[2]],
+                [
+                    {
+                        "type": "users",
+                        "create-groups": [{"gid": 1001, "name": "sales"}],
+                    },
+                    {
+                        "type": "users",
+                        "delete-groups": ["sales"],
+                        "operation-id": 123,
+                    },
+                ],
+            )
 
         groups = [("sales", "x", 1001, [])]
         plugin = self.setup_environment([], groups, None)
@@ -1400,9 +1899,8 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
 
 
 class UserManagerTest(LandscapeTest):
-
     def setUp(self):
-        super(UserManagerTest, self).setUp()
+        super().setUp()
         self.shadow_file = self.makeFile()
         self.user_manager = UserManager(shadow_file=self.shadow_file)
 
@@ -1412,9 +1910,11 @@ class UserManagerTest(LandscapeTest):
         of locked users.
         """
         fd = open(self.shadow_file, "w")
-        fd.write("jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
-                 "psmith:!:13348:0:99999:7:::\n"
-                 "yo:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
+        fd.write(
+            "jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
+            "psmith:!:13348:0:99999:7:::\n"
+            "yo:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n",
+        )
         fd.close()
         self.assertEqual(self.user_manager.get_locked_usernames(), ["psmith"])
 
@@ -1436,8 +1936,11 @@ class UserManagerTest(LandscapeTest):
         self.log_helper.ignore_errors("Error reading shadow file.*")
         self.assertFalse(os.path.exists(self.shadow_file))
         self.assertEqual(self.user_manager.get_locked_usernames(), [])
-        self.assertIn("Error reading shadow file. [Errno 2] No such file or "
-                      "directory", self.logfile.getvalue())
+        self.assertIn(
+            "Error reading shadow file. [Errno 2] No such file or "
+            "directory",
+            self.logfile.getvalue(),
+        )
 
 
 class RemoteUserManagerTest(LandscapeTest):
@@ -1445,15 +1948,17 @@ class RemoteUserManagerTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(RemoteUserManagerTest, self).setUp()
+        super().setUp()
 
         def set_remote(remote):
             self.remote_user_manager = remote
 
         self.shadow_file = self.makeFile()
         self.user_manager = UserManager(shadow_file=self.shadow_file)
-        self.user_manager_connector = RemoteUserManagerConnector(self.reactor,
-                                                                 self.config)
+        self.user_manager_connector = RemoteUserManagerConnector(
+            self.reactor,
+            self.config,
+        )
         self.user_manager.register(self.manager)
         connected = self.user_manager_connector.connect()
         return connected.addCallback(set_remote)
@@ -1461,7 +1966,7 @@ class RemoteUserManagerTest(LandscapeTest):
     def tearDown(self):
         self.user_manager_connector.disconnect()
         self.user_manager.stop()
-        return super(RemoteUserManagerTest, self).tearDown()
+        return super().tearDown()
 
     def test_get_locked_usernames(self):
         """
@@ -1471,5 +1976,5 @@ class RemoteUserManagerTest(LandscapeTest):
         self.user_manager.get_locked_usernames = Mock(return_value=["fred"])
         deferred = self.remote_user_manager.get_locked_usernames()
         result = self.successResultOf(deferred)
-        self.assertEqual(result, ['fred'])
+        self.assertEqual(result, ["fred"])
         self.user_manager.get_locked_usernames.assert_called_once_with()

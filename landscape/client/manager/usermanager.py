@@ -1,10 +1,11 @@
 import logging
 
-from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
-
-from landscape.client.user.management import UserManagement
+from landscape.client.amp import ComponentConnector
+from landscape.client.amp import ComponentPublisher
+from landscape.client.amp import remote
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector
+from landscape.client.user.management import UserManagement
 
 
 class UserManager(ManagerPlugin):
@@ -14,17 +15,18 @@ class UserManager(ManagerPlugin):
     def __init__(self, management=None, shadow_file="/etc/shadow"):
         self._management = management or UserManagement()
         self._shadow_file = shadow_file
-        self._message_types = {"add-user": self._add_user,
-                               "edit-user": self._edit_user,
-                               "lock-user": self._lock_user,
-                               "unlock-user": self._unlock_user,
-                               "remove-user": self._remove_user,
-                               "add-group": self._add_group,
-                               "edit-group": self._edit_group,
-                               "remove-group": self._remove_group,
-                               "add-group-member": self._add_group_member,
-                               "remove-group-member":
-                               self._remove_group_member}
+        self._message_types = {
+            "add-user": self._add_user,
+            "edit-user": self._edit_user,
+            "lock-user": self._lock_user,
+            "unlock-user": self._unlock_user,
+            "remove-user": self._remove_user,
+            "add-group": self._add_group,
+            "edit-group": self._edit_group,
+            "remove-group": self._remove_group,
+            "add-group-member": self._add_group_member,
+            "remove-group-member": self._remove_group_member,
+        }
         self._publisher = None
 
     def register(self, registry):
@@ -32,16 +34,21 @@ class UserManager(ManagerPlugin):
         Schedule reactor events for generic L{Plugin} callbacks, user
         and group management operations, and resynchronization.
         """
-        super(UserManager, self).register(registry)
+        super().register(registry)
         self._registry = registry
 
-        self._publisher = ComponentPublisher(self, self.registry.reactor,
-                                             self.registry.config)
+        self._publisher = ComponentPublisher(
+            self,
+            self.registry.reactor,
+            self.registry.config,
+        )
         self._publisher.start()
 
         for message_type in self._message_types:
-            self._registry.register_message(message_type,
-                                            self._message_dispatch)
+            self._registry.register_message(
+                message_type,
+                self._message_dispatch,
+            )
 
     def stop(self):
         """Stop listening for incoming AMP connections."""
@@ -61,8 +68,8 @@ class UserManager(ManagerPlugin):
                     if len(parts) > 1:
                         if parts[1].startswith("!"):
                             locked_users.append(parts[0].strip())
-            except IOError as e:
-                logging.error("Error reading shadow file. %s" % e)
+            except OSError as e:
+                logging.error(f"Error reading shadow file. {e}")
         return locked_users
 
     def _message_dispatch(self, message):
@@ -71,7 +78,9 @@ class UserManager(ManagerPlugin):
         @param message: The request we got from the server.
         """
         user_monitor_connector = RemoteUserMonitorConnector(
-            self.registry.reactor, self.registry.config)
+            self.registry.reactor,
+            self.registry.config,
+        )
 
         def detect_changes(user_monitor):
             self._user_monitor = user_monitor
@@ -87,30 +96,39 @@ class UserManager(ManagerPlugin):
     def _perform_operation(self, result, message):
         message_type = message["type"]
         message_method = self._message_types[message_type]
-        return self.call_with_operation_result(message, message_method,
-                                               message)
+        return self.call_with_operation_result(
+            message,
+            message_method,
+            message,
+        )
 
     def _send_changes(self, result, message):
         return self._user_monitor.detect_changes(message["operation-id"])
 
     def _add_user(self, message):
         """Run an C{add-user} operation."""
-        return self._management.add_user(message["username"], message["name"],
-                                         message["password"],
-                                         message["require-password-reset"],
-                                         message["primary-group-name"],
-                                         message["location"],
-                                         message["work-number"],
-                                         message["home-number"])
+        return self._management.add_user(
+            message["username"],
+            message["name"],
+            message["password"],
+            message["require-password-reset"],
+            message["primary-group-name"],
+            message["location"],
+            message["work-number"],
+            message["home-number"],
+        )
 
     def _edit_user(self, message):
         """Run an C{edit-user} operation."""
         return self._management.set_user_details(
-                 message["username"], password=message["password"],
-                 name=message["name"], location=message["location"],
-                 work_number=message["work-number"],
-                 home_number=message["home-number"],
-                 primary_group_name=message["primary-group-name"])
+            message["username"],
+            password=message["password"],
+            name=message["name"],
+            location=message["location"],
+            work_number=message["work-number"],
+            home_number=message["home-number"],
+            primary_group_name=message["primary-group-name"],
+        )
 
     def _lock_user(self, message):
         """Run a C{lock-user} operation."""
@@ -122,8 +140,10 @@ class UserManager(ManagerPlugin):
 
     def _remove_user(self, message):
         """Run a C{remove-user} operation."""
-        return self._management.remove_user(message["username"],
-                                            message["delete-home"])
+        return self._management.remove_user(
+            message["username"],
+            message["delete-home"],
+        )
 
     def _add_group(self, message):
         """Run an C{add-group} operation."""
@@ -131,18 +151,24 @@ class UserManager(ManagerPlugin):
 
     def _edit_group(self, message):
         """Run an C{edit-group} operation."""
-        return self._management.set_group_details(message["groupname"],
-                                                  message["new-name"])
+        return self._management.set_group_details(
+            message["groupname"],
+            message["new-name"],
+        )
 
     def _add_group_member(self, message):
         """Run an C{add-group-member} operation."""
-        return self._management.add_group_member(message["username"],
-                                                 message["groupname"])
+        return self._management.add_group_member(
+            message["username"],
+            message["groupname"],
+        )
 
     def _remove_group_member(self, message):
         """Run a C{remove-group-member} operation."""
-        return self._management.remove_group_member(message["username"],
-                                                    message["groupname"])
+        return self._management.remove_group_member(
+            message["username"],
+            message["groupname"],
+        )
 
     def _remove_group(self, message):
         """Run an C{remove-group} operation."""

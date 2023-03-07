@@ -1,5 +1,4 @@
 """Helpers for dealing with software versioning."""
-
 from distutils.version import StrictVersion
 
 
@@ -30,6 +29,9 @@ def sort_versions(versions):
     """
     strict_versions = sorted(
         [StrictVersion(version.decode("ascii")) for version in versions],
-        reverse=True)
-    return [str(strict_version).encode("ascii")
-            for strict_version in strict_versions]
+        reverse=True,
+    )
+    return [
+        str(strict_version).encode("ascii")
+        for strict_version in strict_versions
+    ]

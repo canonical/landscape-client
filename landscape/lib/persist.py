@@ -18,17 +18,24 @@
 # along with this Python module; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-import os
-import sys
 import copy
+import os
 import re
+import sys
 
 from twisted.python.compat import StringType  # Py2: basestring, Py3: str
 
 
-__all__ = ["Persist", "PickleBackend", "BPickleBackend",
-           "path_string_to_tuple", "path_tuple_to_string", "RootedPersist",
-           "PersistError", "PersistReadOnlyError"]
+__all__ = [
+    "Persist",
+    "PickleBackend",
+    "BPickleBackend",
+    "path_string_to_tuple",
+    "path_tuple_to_string",
+    "RootedPersist",
+    "PersistError",
+    "PersistReadOnlyError",
+]
 
 
 NOTHING = object()
@@ -42,7 +49,7 @@ class PersistReadOnlyError(PersistError):
     pass
 
 
-class Persist(object):
+class Persist:
 
     """Persist a hierarchical database of key=>value pairs.
 
@@ -111,17 +118,19 @@ class Persist(object):
 
         def load_old():
             filepathold = filepath + ".old"
-            if (os.path.isfile(filepathold) and
-                os.path.getsize(filepathold) > 0
-                ):
+            if (
+                os.path.isfile(filepathold)
+                and os.path.getsize(filepathold) > 0
+            ):
 
-                # warning("Broken configuration file at %s" % filepath)
-                # warning("Trying backup at %s" % filepathold)
+                # warning(f"Broken configuration file at {filepath}")
+                # warning(f"Trying backup at {filepathold}")
                 try:
                     self._hardmap = self._backend.load(filepathold)
                 except Exception:
-                    raise PersistError("Broken configuration file at %s" %
-                                       filepathold)
+                    raise PersistError(
+                        f"Broken configuration file at {filepathold}",
+                    )
                 return True
             return False
 
@@ -129,7 +138,7 @@ class Persist(object):
         if not os.path.isfile(filepath):
             if load_old():
                 return
-            raise PersistError("File not found: %s" % filepath)
+            raise PersistError(f"File not found: {filepath}")
         if os.path.getsize(filepath) == 0:
             load_old()
             return
@@ -138,7 +147,7 @@ class Persist(object):
         except Exception:
             if load_old():
                 return
-            raise PersistError("Broken configuration file at %s" % filepath)
+            raise PersistError(f"Broken configuration file at {filepath}")
 
     def save(self, filepath=None):
         """Save the persist to the given C{filepath}.
@@ -173,10 +182,11 @@ class Persist(object):
             newobj = self._backend.get(obj, elem)
             if newobj is NotImplemented:
                 if queue:
-                    path = path[:-len(queue)]
-                raise PersistError("Can't traverse %r (%r): %r" %
-                                   (type(obj), path_tuple_to_string(path),
-                                    str(obj)))
+                    path = path[: -len(queue)]
+                raise PersistError(
+                    f"Can't traverse {type(obj)!r} "
+                    f"({path_tuple_to_string(path)!r}): {str(obj)!r}",
+                )
             if newobj is marker:
                 break
         if newobj is not marker:
@@ -196,8 +206,10 @@ class Persist(object):
                         newvalue = setvalue
                     newobj = self._backend.set(obj, elem, newvalue)
                     if newobj is NotImplemented:
-                        raise PersistError("Can't traverse %r with %r" %
-                                           (type(obj), type(elem)))
+                        raise PersistError(
+                            f"Can't traverse {type(obj)!r} "
+                            f"with {type(elem)!r}",
+                        )
                     if not queue:
                         break
                     obj = newobj
@@ -231,7 +243,7 @@ class Persist(object):
             return True
         result = self._backend.has(obj, value)
         if result is NotImplemented:
-            raise PersistError("Can't check %r for containment" % type(obj))
+            raise PersistError(f"Can't check {type(obj)!r} for containment")
         return result
 
     def keys(self, path, soft=False, hard=False, weak=False):
@@ -240,7 +252,7 @@ class Persist(object):
             return []
         result = self._backend.keys(obj)
         if result is NotImplemented:
-            raise PersistError("Can't return keys for %s" % type(obj))
+            raise PersistError(f"Can't return keys for {type(obj)}")
         return result
 
     def get(self, path, default=None, soft=False, hard=False, weak=False):
@@ -308,8 +320,9 @@ class Persist(object):
             if obj is not marker:
                 result = self._backend.remove(obj, elem, isvalue)
                 if result is NotImplemented:
-                    raise PersistError("Can't remove %r from %r" %
-                                       (elem, type(obj)))
+                    raise PersistError(
+                        "Can't remove {!r} from {!r}".format(elem, type(obj)),
+                    )
             if self._backend.empty(obj):
                 if value is not marker:
                     value = marker
@@ -344,7 +357,7 @@ class Persist(object):
         return RootedPersist(self, path)
 
 
-class RootedPersist(object):
+class RootedPersist:
     """Root a L{Persist}'s tree at a particular branch.
 
     This class shares the same interface of L{Persist} and provides a shortcut
@@ -408,8 +421,12 @@ class RootedPersist(object):
             oldpath = path_string_to_tuple(oldpath)
         if isinstance(newpath, StringType):
             newpath = path_string_to_tuple(newpath)
-        return self.parent.move(self.root + oldpath, self.root + newpath,
-                                soft, weak)
+        return self.parent.move(
+            self.root + oldpath,
+            self.root + newpath,
+            soft,
+            weak,
+        )
 
     def root_at(self, path):
         if isinstance(path, StringType):
@@ -446,7 +463,7 @@ def path_string_to_tuple(path):
                 try:
                     result.append(int(token[1:-1]))
                 except ValueError:
-                    raise PersistError("Invalid path index: %r" % token)
+                    raise PersistError(f"Invalid path index: {token!r}")
             else:
                 result.append(token.replace(r"\.", "."))
     return tuple(result)
@@ -456,13 +473,13 @@ def path_tuple_to_string(path):
     result = []
     for elem in path:
         if type(elem) is int:
-            result[-1] += "[%d]" % elem
+            result[-1] += f"[{elem:d}]"
         else:
             result.append(str(elem).replace(".", r"\."))
     return ".".join(result)
 
 
-class Backend(object):
+class Backend:
     """
     Base class for L{Persist} backends implementing hierarchical storage
     functionality.
@@ -572,7 +589,7 @@ class Backend(object):
 
     def empty(self, obj):
         """Whether the given node object has no children."""
-        return (not obj)
+        return not obj
 
     def has(self, obj, elem):
         """Whether the given node object contains the given child element."""
@@ -592,16 +609,16 @@ class Backend(object):
 
 
 class PickleBackend(Backend):
-
     def __init__(self):
         from landscape.lib.compat import cPickle
+
         self._pickle = cPickle
 
     def new(self):
         return {}
 
     def load(self, filepath):
-        with open(filepath, 'rb') as fd:
+        with open(filepath, "rb") as fd:
             return self._pickle.load(fd)
 
     def save(self, filepath, map):
@@ -610,9 +627,9 @@ class PickleBackend(Backend):
 
 
 class BPickleBackend(Backend):
-
     def __init__(self):
         from landscape.lib import bpickle
+
         self._bpickle = bpickle
 
     def new(self):
@@ -625,5 +642,6 @@ class BPickleBackend(Backend):
     def save(self, filepath, map):
         with open(filepath, "wb") as fd:
             fd.write(self._bpickle.dumps(map))
+
 
 # vim:ts=4:sw=4:et

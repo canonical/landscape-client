@@ -16,10 +16,11 @@ from twisted.internet.defer import Deferred
 from landscape.client.broker.exchange import maybe_bytes
 from landscape.client.monitor.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.lib.juju import get_juju_info
-from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
-from landscape.lib.vm_info import get_vm_info, get_container_info
+from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.versioning import is_version_higher
+from landscape.lib.vm_info import get_container_info
+from landscape.lib.vm_info import get_vm_info
 
 
 class RegistrationError(Exception):
@@ -31,7 +32,6 @@ class RegistrationError(Exception):
 
 
 def persist_property(name):
-
     def get(self):
         value = self._persist.get(name)
         try:
@@ -46,14 +46,13 @@ def persist_property(name):
 
 
 def config_property(name):
-
     def get(self):
         return getattr(self._config, name)
 
     return property(get)
 
 
-class Identity(object):
+class Identity:
     """Maintains details about the identity of this Landscape client.
 
     @ivar secure_id: A server-provided ID for secure message exchange.
@@ -83,7 +82,7 @@ class Identity(object):
         self._persist = persist.root_at("registration")
 
 
-class RegistrationHandler(object):
+class RegistrationHandler:
     """
     An object from which registration can be requested of the server,
     and which will handle forced ID changes from the server.
@@ -91,8 +90,16 @@ class RegistrationHandler(object):
     L{register} should be used to perform initial registration.
     """
 
-    def __init__(self, config, identity, reactor, exchange, pinger,
-                 message_store, fetch_async=None):
+    def __init__(
+        self,
+        config,
+        identity,
+        reactor,
+        exchange,
+        pinger,
+        message_store,
+        fetch_async=None,
+    ):
         self._config = config
         self._identity = identity
         self._reactor = reactor
@@ -104,8 +111,10 @@ class RegistrationHandler(object):
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
         self._exchange.register_message("set-id", self._handle_set_id)
         self._exchange.register_message("unknown-id", self._handle_unknown_id)
-        self._exchange.register_message("registration",
-                                        self._handle_registration)
+        self._exchange.register_message(
+            "registration",
+            self._handle_registration,
+        )
         self._should_register = None
         self._fetch_async = fetch_async
         self._juju_data = None
@@ -116,9 +125,11 @@ class RegistrationHandler(object):
         if id.secure_id:
             return False
 
-        return bool(id.computer_title and
-                    id.account_name and
-                    self._message_store.accepts("register"))
+        return bool(
+            id.computer_title
+            and id.account_name
+            and self._message_store.accepts("register"),
+        )
 
     def register(self):
         """
@@ -186,14 +197,16 @@ class RegistrationHandler(object):
             tags = None
             logging.error("Invalid tags provided for registration.")
 
-        message = {"type": "register",
-                   "hostname": get_fqdn(),
-                   "account_name": account_name,
-                   "computer_title": identity.computer_title,
-                   "registration_password": identity.registration_key,
-                   "tags": tags,
-                   "container-info": get_container_info(),
-                   "vm-info": get_vm_info()}
+        message = {
+            "type": "register",
+            "hostname": get_fqdn(),
+            "account_name": account_name,
+            "computer_title": identity.computer_title,
+            "registration_password": identity.registration_key,
+            "tags": tags,
+            "container-info": get_container_info(),
+            "vm-info": get_vm_info(),
+        }
 
         if self._clone_secure_id:
             # We use the secure id here because the registration is encrypted
@@ -216,19 +229,20 @@ class RegistrationHandler(object):
             message["juju-info"] = {
                 "environment-uuid": self._juju_data["environment-uuid"],
                 "api-addresses": self._juju_data["api-addresses"],
-                "machine-id": self._juju_data["machine-id"]}
+                "machine-id": self._juju_data["machine-id"],
+            }
 
         # The computer is a normal computer, possibly a container.
         with_word = "with" if bool(registration_key) else "without"
-        with_tags = "and tags %s " % tags if tags else ""
-        with_group = "in access group '%s' " % group if group else ""
+        with_tags = f"and tags {tags} " if tags else ""
+        with_group = f"in access group '{group}' " if group else ""
 
         message["ubuntu_pro_info"] = json.dumps(get_ubuntu_pro_info())
 
         logging.info(
-            u"Queueing message to register with account %r %s%s"
-            "%s a password." % (
-                account_name, with_group, with_tags, with_word))
+            f"Queueing message to register with account {account_name!r} "
+            f"{with_group}{with_tags}{with_word} a password.",
+        )
         self._exchange.send(message)
 
     def _handle_set_id(self, message):
@@ -239,15 +253,18 @@ class RegistrationHandler(object):
 
         Fire C{"registration-done"} and C{"resynchronize-clients"}.
         """
-        id = self._identity
-        if id.secure_id:
-            logging.info("Overwriting secure_id with '%s'" % id.secure_id)
+        cid = self._identity
+        if cid.secure_id:
+            logging.info(f"Overwriting secure_id with '{cid.secure_id}'")
 
-        id.secure_id = message.get("id")
-        id.insecure_id = message.get("insecure-id")
-        logging.info("Using new secure-id ending with %s for account %s.",
-                     id.secure_id[-10:], id.account_name)
-        logging.debug("Using new secure-id: %s", id.secure_id)
+        cid.secure_id = message.get("id")
+        cid.insecure_id = message.get("insecure-id")
+        logging.info(
+            "Using new secure-id ending with %s for account %s.",
+            cid.secure_id[-10:],
+            cid.account_name,
+        )
+        logging.debug("Using new secure-id: %s", cid.secure_id)
         self._reactor.fire("registration-done")
         self._reactor.fire("resynchronize-clients")
 
@@ -257,19 +274,21 @@ class RegistrationHandler(object):
             self._reactor.fire("registration-failed", reason=message_info)
 
     def _handle_unknown_id(self, message):
-        id = self._identity
+        cid = self._identity
         clone = message.get("clone-of")
         if clone is None:
-            logging.info("Client has unknown secure-id for account %s."
-                         % id.account_name)
+            logging.info(
+                "Client has unknown secure-id for account "
+                f"{cid.account_name}.",
+            )
         else:  # Save the secure id as the clone, and clear it so it's renewed
-            logging.info("Client is clone of computer %s" % clone)
-            self._clone_secure_id = id.secure_id
-        id.secure_id = None
-        id.insecure_id = None
+            logging.info(f"Client is clone of computer {clone}")
+            self._clone_secure_id = cid.secure_id
+        cid.secure_id = None
+        cid.insecure_id = None
 
 
-class RegistrationResponse(object):
+class RegistrationResponse:
     """A helper for dealing with the response of a single registration request.
 
     @ivar deferred: The L{Deferred} that will be fired as per

@@ -24,14 +24,14 @@ administrator logging in to try to fix the problem causing the high load.
 OPTIONS
   --version             show program's version number and exit
   -h, --help            show this help message and exit
-  -c FILE, --config=FILE    
+  -c FILE, --config=FILE
                         Use config from this file (any command line options
                         override settings from the file) (default: '/etc/landscape/client.conf').
-  -d PATH, --data-path=PATH     
+  -d PATH, --data-path=PATH
                         The directory to store data files in (default: '/var/lib/landscape/client/').
-  --sysinfo-plugins=PLUGIN_LIST     
+  --sysinfo-plugins=PLUGIN_LIST
                         Comma-delimited list of sysinfo plugins to use.
-  --exclude-sysinfo-plugins=PLUGIN_LIST     
+  --exclude-sysinfo-plugins=PLUGIN_LIST
                         Comma-delimited list of sysinfo plugins to NOT use.
                         This always take precedence over plugins to include.
 
@@ -79,10 +79,10 @@ If you want to disable the temperature and Network plugins, you could run it lik
       => There is 1 zombie process.
 
 FILES
-/etc/landscape/client.conf  
+/etc/landscape/client.conf
 Configuration file
 
-/var/log/landscape/sysinfo.log  
+/var/log/landscape/sysinfo.log
 Log file for when the tool is run as root. This file will usually be empty,
 unless something wrong happened. In that case, it will have more information
 about the problem.
@@ -91,4 +91,3 @@ When a regular non-root user runs the tool, the log file is ~/.landscape/sysinfo
 SEE ALSO
 landscape-client(1)
 update-motd(5)
-

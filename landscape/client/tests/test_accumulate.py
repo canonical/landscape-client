@@ -1,6 +1,7 @@
-from landscape.lib.persist import Persist
-from landscape.client.accumulate import Accumulator, accumulate
+from landscape.client.accumulate import accumulate
+from landscape.client.accumulate import Accumulator
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.persist import Persist
 
 
 class AccumulateTest(LandscapeTest):

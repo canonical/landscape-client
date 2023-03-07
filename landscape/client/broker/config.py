@@ -1,5 +1,4 @@
 """Configuration class for the broker."""
-
 import os
 
 from landscape.client.deployment import Configuration
@@ -12,7 +11,7 @@ class BrokerConfiguration(Configuration):
     """
 
     def __init__(self):
-        super(BrokerConfiguration, self).__init__()
+        super().__init__()
         self._original_http_proxy = os.environ.get("http_proxy")
         self._original_https_proxy = os.environ.get("https_proxy")
 
@@ -33,35 +32,67 @@ class BrokerConfiguration(Configuration):
               - C{http_proxy}
               - C{https_proxy}
         """
-        parser = super(BrokerConfiguration, self).make_parser()
+        parser = super().make_parser()
 
-        parser.add_option("-a", "--account-name", metavar="NAME",
-                          help="The account this computer belongs to.")
-        parser.add_option("-p", "--registration-key", metavar="KEY",
-                          help="The account-wide key used for "
-                               "registering clients.")
-        parser.add_option("-t", "--computer-title", metavar="TITLE",
-                          help="The title of this computer")
-        parser.add_option("--exchange-interval", default=15 * 60, type="int",
-                          metavar="INTERVAL",
-                          help="The number of seconds between server "
-                               "exchanges.")
-        parser.add_option("--urgent-exchange-interval", default=1 * 60,
-                          type="int", metavar="INTERVAL",
-                          help="The number of seconds between urgent server "
-                               "exchanges.")
-        parser.add_option("--ping-interval", default=30, type="int",
-                          metavar="INTERVAL",
-                          help="The number of seconds between pings.")
-        parser.add_option("--http-proxy", metavar="URL",
-                          help="The URL of the HTTP proxy, if one is needed.")
-        parser.add_option("--https-proxy", metavar="URL",
-                          help="The URL of the HTTPS proxy, if one is needed.")
-        parser.add_option("--access-group", default="",
-                          help="Suggested access group for this computer.")
-        parser.add_option("--tags",
-                          help="Comma separated list of tag names to be sent "
-                               "to the server.")
+        parser.add_option(
+            "-a",
+            "--account-name",
+            metavar="NAME",
+            help="The account this computer belongs to.",
+        )
+        parser.add_option(
+            "-p",
+            "--registration-key",
+            metavar="KEY",
+            help="The account-wide key used for " "registering clients.",
+        )
+        parser.add_option(
+            "-t",
+            "--computer-title",
+            metavar="TITLE",
+            help="The title of this computer",
+        )
+        parser.add_option(
+            "--exchange-interval",
+            default=15 * 60,
+            type="int",
+            metavar="INTERVAL",
+            help="The number of seconds between server " "exchanges.",
+        )
+        parser.add_option(
+            "--urgent-exchange-interval",
+            default=1 * 60,
+            type="int",
+            metavar="INTERVAL",
+            help="The number of seconds between urgent server " "exchanges.",
+        )
+        parser.add_option(
+            "--ping-interval",
+            default=30,
+            type="int",
+            metavar="INTERVAL",
+            help="The number of seconds between pings.",
+        )
+        parser.add_option(
+            "--http-proxy",
+            metavar="URL",
+            help="The URL of the HTTP proxy, if one is needed.",
+        )
+        parser.add_option(
+            "--https-proxy",
+            metavar="URL",
+            help="The URL of the HTTPS proxy, if one is needed.",
+        )
+        parser.add_option(
+            "--access-group",
+            default="",
+            help="Suggested access group for this computer.",
+        )
+        parser.add_option(
+            "--tags",
+            help="Comma separated list of tag names to be sent "
+            "to the server.",
+        )
 
         return parser
 
@@ -78,7 +109,7 @@ class BrokerConfiguration(Configuration):
         C{http_proxy} and C{https_proxy} environment variables based on
         that config data.
         """
-        super(BrokerConfiguration, self).load(args)
+        super().load(args)
         if self.http_proxy:
             os.environ["http_proxy"] = self.http_proxy
         elif self._original_http_proxy:

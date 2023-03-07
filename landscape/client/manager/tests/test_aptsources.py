@@ -1,18 +1,18 @@
 import os
+from unittest import mock
 
-import mock
-
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import succeed
 
 from landscape.client.manager.aptsources import AptSources
-from landscape.client.manager.plugin import SUCCEEDED, FAILED
-
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import SUCCEEDED
 from landscape.client.package.reporter import find_reporter_command
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
 
 
-class FakeStatResult(object):
-
+class FakeStatResult:
     def __init__(self, st_mode, st_uid, st_gid):
         self.st_mode = st_mode
         self.st_uid = st_uid
@@ -23,11 +23,13 @@ class AptSourcesTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(AptSourcesTests, self).setUp()
+        super().setUp()
         self.sourceslist = AptSources()
         self.sources_path = self.makeDir()
-        self.sourceslist.SOURCES_LIST = os.path.join(self.sources_path,
-                                                     "sources.list")
+        self.sourceslist.SOURCES_LIST = os.path.join(
+            self.sources_path,
+            "sources.list",
+        )
         sources_d = os.path.join(self.sources_path, "sources.list.d")
         os.mkdir(sources_d)
         self.sourceslist.SOURCES_LIST_D = sources_d
@@ -51,16 +53,21 @@ class AptSourcesTests(LandscapeTest):
             sources.write("oki\n\ndoki\n#comment\n # other comment\n")
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": b""}],
-             "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": "bla", "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
         with open(self.sourceslist.SOURCES_LIST) as sources:
             self.assertEqual(
                 "# Landscape manages repositories for this computer\n"
                 "# Original content of sources.list can be found in "
-                "sources.list.save\n", sources.read())
+                "sources.list.save\n",
+                sources.read(),
+            )
 
     def test_save_sources_list(self):
         """
@@ -71,16 +78,21 @@ class AptSourcesTests(LandscapeTest):
             sources.write("oki\n\ndoki\n#comment\n # other comment\n")
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": b""}],
-             "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": "bla", "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
-        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        saved_sources_path = f"{self.sourceslist.SOURCES_LIST}.save"
         self.assertTrue(os.path.exists(saved_sources_path))
         with open(saved_sources_path) as saved_sources:
-            self.assertEqual("oki\n\ndoki\n#comment\n # other comment\n",
-                             saved_sources.read())
+            self.assertEqual(
+                "oki\n\ndoki\n#comment\n # other comment\n",
+                saved_sources.read(),
+            )
 
     def test_existing_saved_sources_list(self):
         """
@@ -90,15 +102,18 @@ class AptSourcesTests(LandscapeTest):
         with open(self.sourceslist.SOURCES_LIST, "w") as sources:
             sources.write("oki\n\ndoki\n#comment\n # other comment\n")
 
-        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        saved_sources_path = f"{self.sourceslist.SOURCES_LIST}.save"
         with open(saved_sources_path, "w") as saved_sources:
             saved_sources.write("original content\n")
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": b""}],
-             "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": "bla", "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
         self.assertTrue(os.path.exists(saved_sources_path))
         with open(saved_sources_path) as saved_sources:
@@ -110,13 +125,18 @@ class AptSourcesTests(LandscapeTest):
         unicode content correctly.
         """
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": u"fancy content"}],
-             "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": "bla", "content": "fancy content"}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
         saved_sources_path = os.path.join(
-            self.sourceslist.SOURCES_LIST_D, "landscape-bla.list")
+            self.sourceslist.SOURCES_LIST_D,
+            "landscape-bla.list",
+        )
         self.assertTrue(os.path.exists(saved_sources_path))
         with open(saved_sources_path, "rb") as saved_sources:
             self.assertEqual(b"fancy content", saved_sources.read())
@@ -126,7 +146,7 @@ class AptSourcesTests(LandscapeTest):
         When getting a repository message without sources, AptSources
         restores the previous contents of the sources.list file.
         """
-        saved_sources_path = "{}.save".format(self.sourceslist.SOURCES_LIST)
+        saved_sources_path = f"{self.sourceslist.SOURCES_LIST}.save"
         with open(saved_sources_path, "w") as old_sources:
             old_sources.write("original content\n")
 
@@ -134,10 +154,13 @@ class AptSourcesTests(LandscapeTest):
             sources.write("oki\n\ndoki\n#comment\n # other comment\n")
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace",
-             "sources": [],
-             "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
         with open(self.sourceslist.SOURCES_LIST) as sources:
             self.assertEqual("original content\n", sources.read())
@@ -154,8 +177,11 @@ class AptSourcesTests(LandscapeTest):
         os.chmod(self.sourceslist.SOURCES_LIST, 0o400)
         sources_stat_orig = os.stat(self.sourceslist.SOURCES_LIST)
 
-        fake_stats = FakeStatResult(st_mode=sources_stat_orig.st_mode,
-                                    st_uid=30, st_gid=30)
+        fake_stats = FakeStatResult(
+            st_mode=sources_stat_orig.st_mode,
+            st_uid=30,
+            st_gid=30,
+        )
 
         orig_stat = os.stat
 
@@ -168,52 +194,124 @@ class AptSourcesTests(LandscapeTest):
         _mock_chown = mock.patch("os.chown")
         with _mock_stat as mock_stat, _mock_chown as mock_chown:
             self.manager.dispatch_message(
-                {"type": "apt-sources-replace",
-                 "sources": [{"name": "bla", "content": b""}],
-                 "gpg-keys": [],
-                 "operation-id": 1})
+                {
+                    "type": "apt-sources-replace",
+                    "sources": [{"name": "bla", "content": b""}],
+                    "gpg-keys": [],
+                    "operation-id": 1,
+                },
+            )
 
             service = self.broker_service
-            self.assertMessages(service.message_store.get_pending_messages(),
-                                [{"type": "operation-result",
-                                  "status": SUCCEEDED, "operation-id": 1}])
+            self.assertMessages(
+                service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 1,
+                    },
+                ],
+            )
 
             mock_stat.assert_any_call(self.sourceslist.SOURCES_LIST)
             mock_chown.assert_any_call(
-                self.sourceslist.SOURCES_LIST, fake_stats.st_uid,
-                fake_stats.st_gid)
+                self.sourceslist.SOURCES_LIST,
+                fake_stats.st_uid,
+                fake_stats.st_gid,
+            )
 
         sources_stat_after = os.stat(self.sourceslist.SOURCES_LIST)
-        self.assertEqual(
-            sources_stat_orig.st_mode, sources_stat_after.st_mode)
+        self.assertEqual(sources_stat_orig.st_mode, sources_stat_after.st_mode)
 
     def test_random_failures(self):
         """
         If a failure happens during the manipulation of sources, the activity
         is reported as FAILED with the error message.
         """
+
         def buggy_source_handler(*args):
             raise RuntimeError("foo")
 
         self.sourceslist._handle_sources = buggy_source_handler
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace",
-             "sources": [{"name": "bla", "content": b""}],
-             "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": "bla", "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
         msg = "RuntimeError: foo"
         service = self.broker_service
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "result-text": msg, "status": FAILED,
-                              "operation-id": 1}])
+        self.assertMessages(
+            service.message_store.get_pending_messages(),
+            [
+                {
+                    "type": "operation-result",
+                    "result-text": msg,
+                    "status": FAILED,
+                    "operation-id": 1,
+                },
+            ],
+        )
 
-    def test_rename_sources_list_d(self):
+    def test_renames_sources_list_d(self):
         """
         The sources files in sources.list.d are renamed to .save when a message
-        is received.
+        is received if config says to manage them, which is the default.
+        """
+        with open(
+            os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
+            "w",
+        ) as sources1:
+            sources1.write("ok\n")
+
+        with open(
+            os.path.join(self.sourceslist.SOURCES_LIST_D, "file2.list.save"),
+            "w",
+        ) as sources2:
+            sources2.write("ok\n")
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
+
+        self.assertFalse(
+            os.path.exists(
+                os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
+            ),
+        )
+
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    self.sourceslist.SOURCES_LIST_D,
+                    "file1.list.save",
+                ),
+            ),
+        )
+
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    self.sourceslist.SOURCES_LIST_D,
+                    "file2.list.save",
+                ),
+            ),
+        )
+
+    def test_does_not_rename_sources_list_d(self):
+        """
+        The sources files in sources.list.d are not renamed to .save when a
+        message is received if config says not to manage them.
         """
         with open(os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
                   "w") as sources1:
@@ -223,15 +321,16 @@ class AptSourcesTests(LandscapeTest):
                                "file2.list.save"), "w") as sources2:
             sources2.write("ok\n")
 
+        self.manager.config.manage_sources_list_d = False
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
              "operation-id": 1})
 
-        self.assertFalse(
+        self.assertTrue(
             os.path.exists(
                 os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list")))
 
-        self.assertTrue(
+        self.assertFalse(
             os.path.exists(
                 os.path.join(self.sourceslist.SOURCES_LIST_D,
                              "file1.list.save")))
@@ -246,21 +345,32 @@ class AptSourcesTests(LandscapeTest):
         For every sources listed in the sources field of the message,
         C{AptSources} creates a file with the content in sources.list.d.
         """
-        sources = [{"name": "dev", "content": b"oki\n"},
-                   {"name": "lucid", "content": b"doki\n"}]
+        sources = [
+            {"name": "dev", "content": b"oki\n"},
+            {"name": "lucid", "content": b"doki\n"},
+        ]
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": sources, "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": sources,
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
-        dev_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
-                                "landscape-dev.list")
+        dev_file = os.path.join(
+            self.sourceslist.SOURCES_LIST_D,
+            "landscape-dev.list",
+        )
         self.assertTrue(os.path.exists(dev_file))
         with open(dev_file) as file:
             result = file.read()
         self.assertEqual("oki\n", result)
 
-        lucid_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
-                                  "landscape-lucid.list")
+        lucid_file = os.path.join(
+            self.sourceslist.SOURCES_LIST_D,
+            "landscape-lucid.list",
+        )
         self.assertTrue(os.path.exists(lucid_file))
         with open(lucid_file) as file:
             result = file.read()
@@ -276,15 +386,19 @@ class AptSourcesTests(LandscapeTest):
 
         gpg_keys = ["key1", "key2"]
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [],
-             "gpg-keys": gpg_keys,
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [],
+                "gpg-keys": gpg_keys,
+                "operation-id": 1,
+            },
+        )
 
         keys = []
         gpg_dirpath = self.sourceslist.TRUSTED_GPG_D
         for filename in os.listdir(gpg_dirpath):
             filepath = os.path.join(gpg_dirpath, filename)
-            with open(filepath, 'r') as fh:
+            with open(filepath, "r") as fh:
                 keys.append(fh.read())
 
         self.assertCountEqual(keys, gpg_keys)
@@ -298,16 +412,28 @@ class AptSourcesTests(LandscapeTest):
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             self.assertEqual(
-                find_reporter_command(self.manager.config), command)
-            self.assertEqual(["--force-apt-update", "--config=%s" %
-                              self.manager.config.config], args)
+                find_reporter_command(self.manager.config),
+                command,
+            )
+            self.assertEqual(
+                [
+                    "--force-apt-update",
+                    f"--config={self.manager.config.config}",
+                ],
+                args,
+            )
             deferred.callback(("ok", "", 0))
             return deferred
 
         self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
-            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
-             "operation-id": 1})
+            {
+                "type": "apt-sources-replace",
+                "sources": [],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
 
         return deferred

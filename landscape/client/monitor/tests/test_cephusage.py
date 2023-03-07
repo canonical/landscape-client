@@ -1,14 +1,16 @@
-import mock
-from landscape.lib.fs import touch_file
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from unittest import mock
+
 from landscape.client.monitor.cephusage import CephUsage
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.fs import touch_file
 
 
 class CephUsagePluginTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(CephUsagePluginTest, self).setUp()
+        super().setUp()
         self.mstore = self.broker_service.message_store
         self.plugin = CephUsage(create_time=self.reactor.time)
 
@@ -40,10 +42,15 @@ class CephUsagePluginTest(LandscapeTest):
         self.monitor.exchange()
         self.assertMessages(
             self.mstore.get_pending_messages(),
-            [{"type": "ceph-usage",
-              "ring-id": ring_id,
-              "ceph-usages": [],
-              "data-points": [point]}])
+            [
+                {
+                    "type": "ceph-usage",
+                    "ring-id": ring_id,
+                    "ceph-usages": [],
+                    "data-points": [point],
+                },
+            ],
+        )
 
     def test_create_message(self):
         """
@@ -81,8 +88,10 @@ class CephUsagePluginTest(LandscapeTest):
         monitor_interval = 300
 
         plugin = CephUsage(
-            interval=interval, monitor_interval=monitor_interval,
-            create_time=self.reactor.time)
+            interval=interval,
+            monitor_interval=monitor_interval,
+            create_time=self.reactor.time,
+        )
 
         self.monitor.add(plugin)
 
@@ -120,7 +129,8 @@ class CephUsagePluginTest(LandscapeTest):
         self.assertFalse(plugin._should_run())
         logging.assert_called_once_with(
             "This machine does not appear to be a Ceph machine. "
-            "Deactivating plugin.")
+            "Deactivating plugin.",
+        )
 
     def test_wb_should_run(self):
         """
@@ -144,8 +154,10 @@ class CephUsagePluginTest(LandscapeTest):
         stats = {"kb": 10240, "kb_avail": 8192, "kb_used": 2048}
 
         plugin = CephUsage(
-            create_time=self.reactor.time, interval=interval,
-            monitor_interval=interval)
+            create_time=self.reactor.time,
+            interval=interval,
+            monitor_interval=interval,
+        )
 
         self.monitor.add(plugin)
 
@@ -155,7 +167,9 @@ class CephUsagePluginTest(LandscapeTest):
         plugin._handle_usage(stats)
 
         self.assertEqual(
-            [(300, 10485760, 8388608, 2097152)], plugin._ceph_usage_points)
+            [(300, 10485760, 8388608, 2097152)],
+            plugin._ceph_usage_points,
+        )
 
     def test_resynchronize_message_calls_reset_method(self):
         """

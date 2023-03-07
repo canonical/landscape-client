@@ -112,7 +112,7 @@ for release in $releases; do
    else
        message="Built for $codename, no source changes"
    fi
-   cp debian/changelog ../   
+   cp debian/changelog ../
    dch --force-distribution -b -v $version -D $codename -m $message
    dpkg-buildpackage -S $source_opt -k$key
    dput $ppa ../${package}_${version}_source.changes

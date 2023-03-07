@@ -1,5 +1,8 @@
-
-from landscape.lib.schema import KeyDict, Float, Bytes, Constant, Any
+from landscape.lib.schema import Any
+from landscape.lib.schema import Bytes
+from landscape.lib.schema import Constant
+from landscape.lib.schema import Float
+from landscape.lib.schema import KeyDict
 
 
 class Message(KeyDict):
@@ -16,6 +19,7 @@ class Message(KeyDict):
     @param api: The server API version needed to send this message,
         if C{None} any version is fine.
     """
+
     def __init__(self, type, schema, optional=None, api=None):
         self.type = type
         self.api = api
@@ -26,7 +30,7 @@ class Message(KeyDict):
             optional.extend(["timestamp", "api"])
         else:
             optional = ["timestamp", "api"]
-        super(Message, self).__init__(schema, optional=optional)
+        super().__init__(schema, optional=optional)
 
     def coerce(self, value):
         for k in list(value.keys()):
@@ -36,4 +40,4 @@ class Message(KeyDict):
                 # in a message talks to an older server, that don't understand
                 # the new field yet.
                 value.pop(k)
-        return super(Message, self).coerce(value)
+        return super().coerce(value)

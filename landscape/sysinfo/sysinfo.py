@@ -1,7 +1,7 @@
-import textwrap
-from logging import getLogger
 import math
 import os
+import textwrap
+from logging import getLogger
 
 from twisted.python.failure import Failure
 
@@ -37,7 +37,7 @@ class SysInfoPluginRegistry(PluginRegistry):
     """
 
     def __init__(self):
-        super(SysInfoPluginRegistry, self).__init__()
+        super().__init__()
         self._header_index = {}
         self._headers = []
         self._notes = []
@@ -106,22 +106,31 @@ class SysInfoPluginRegistry(PluginRegistry):
 
     def _log_plugin_error(self, failure, plugin):
         self._plugin_error = True
-        message = "%s plugin raised an exception." % plugin.__class__.__name__
+        message = f"{plugin.__class__.__name__} plugin raised an exception."
         logger = getLogger("landscape-sysinfo")
         log_failure(failure, message, logger=logger)
 
     def _report_error_note(self, result):
         from landscape.sysinfo.deployment import get_landscape_log_directory
+
         if self._plugin_error:
             path = os.path.join(get_landscape_log_directory(), "sysinfo.log")
             self.add_note(
                 "There were exceptions while processing one or more plugins. "
-                "See %s for more information." % path)
+                f"See {path} for more information.",
+            )
         return result
 
 
-def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
-                   column_separator="   ", note_prefix="=> "):
+def format_sysinfo(
+    headers=(),
+    notes=(),
+    footnotes=(),
+    width=80,
+    indent="",
+    column_separator="   ",
+    note_prefix="=> ",
+):
     """Format sysinfo headers, notes and footnotes to be displayed.
 
     This function will format headers notes and footnotes in a way that
@@ -151,9 +160,13 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
     # and then we go back from there until we can fit things.
     min_length = width
     for header, value in headers:
-        min_length = min(min_length, len(header)+len(value)+2)  # 2 for ": "
-    columns = int(math.ceil(float(width) /
-                            (min_length + len(column_separator))))
+        min_length = min(
+            min_length,
+            len(header) + len(value) + 2,
+        )  # 2 for ": "
+    columns = int(
+        math.ceil(float(width) / (min_length + len(column_separator))),
+    )
 
     # Okay, we've got a base for the number of columns.  Now, since
     # columns may have different lengths, and the length of each column
@@ -191,8 +204,9 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
                 # Account for the spacing between each column.
                 total_length += len(column_separator)
 
-            total_length += (widest_header_len + widest_value_len +
-                             len(value_separator))
+            total_length += (
+                widest_header_len + widest_value_len + len(value_separator)
+            )
 
             # Keep track of these lengths for building the output later.
             header_lengths.append((widest_header_len, widest_value_len))
@@ -225,13 +239,15 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
                     # Add inter-column spacing.
                     line += column_separator
                 # And append the column to the current line.
-                line += (header +
-                         value_separator +
-                         " " * (widest_header_len - len(header)) +
-                         value)
+                line += (
+                    header
+                    + value_separator
+                    + " " * (widest_header_len - len(header))
+                    + value
+                )
                 # If there are more columns in this line, pad it up so
                 # that the next column's header is correctly aligned.
-                if headers_len > (column+1) * headers_per_column + row:
+                if headers_len > (column + 1) * headers_per_column + row:
                     line += " " * (widest_value_len - len(value))
         lines.append(line)
 
@@ -242,10 +258,13 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
         initial_indent = indent + note_prefix
         for note in notes:
             lines.extend(
-                textwrap.wrap(note,
-                              initial_indent=initial_indent,
-                              subsequent_indent=" "*len(initial_indent),
-                              width=width))
+                textwrap.wrap(
+                    note,
+                    initial_indent=initial_indent,
+                    subsequent_indent=" " * len(initial_indent),
+                    width=width,
+                ),
+            )
 
     if footnotes:
         if lines:

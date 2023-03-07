@@ -1,7 +1,8 @@
-import mock
+from unittest import mock
 
 from landscape.client.monitor.loadaverage import LoadAverage
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 
 
 def get_load_average():
@@ -45,9 +46,14 @@ class LoadAveragePluginTest(LandscapeTest):
         Sample data is used to ensure that the load average included
         in the message is calculated correctly.
         """
-        get_load_average = (lambda: (0.15, 1, 500))
-        plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=get_load_average)
+
+        def get_load_average():
+            return (0.15, 1, 500)
+
+        plugin = LoadAverage(
+            create_time=self.reactor.time,
+            get_load_average=get_load_average,
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -64,8 +70,10 @@ class LoadAveragePluginTest(LandscapeTest):
         fall on a step boundary.
         """
         _load_averages = get_load_average()
-        plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=lambda: next(_load_averages))
+        plugin = LoadAverage(
+            create_time=self.reactor.time,
+            get_load_average=lambda: next(_load_averages),
+        )
         self.monitor.add(plugin)
 
         for i in range(1, 10):
@@ -82,8 +90,10 @@ class LoadAveragePluginTest(LandscapeTest):
         expected.
         """
         load_averages = get_load_average()
-        plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=lambda: next(load_averages))
+        plugin = LoadAverage(
+            create_time=self.reactor.time,
+            get_load_average=lambda: next(load_averages),
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size)
@@ -103,8 +113,10 @@ class LoadAveragePluginTest(LandscapeTest):
         self.mstore.set_accepted_types(["load-average"])
 
         load_averages = get_load_average()
-        plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=lambda: next(load_averages))
+        plugin = LoadAverage(
+            create_time=self.reactor.time,
+            get_load_average=lambda: next(load_averages),
+        )
         self.monitor.add(plugin)
 
         self.monitor.exchange()
@@ -120,30 +132,45 @@ class LoadAveragePluginTest(LandscapeTest):
         self.mstore.set_accepted_types(["load-average"])
 
         load_averages = get_load_average()
-        plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=lambda: next(load_averages))
+        plugin = LoadAverage(
+            create_time=self.reactor.time,
+            get_load_average=lambda: next(load_averages),
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 2)
         self.monitor.exchange()
 
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "load-average",
-                              "load-averages": [(300, 10.5), (600, 30.5)]}])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [
+                {
+                    "type": "load-average",
+                    "load-averages": [(300, 10.5), (600, 30.5)],
+                },
+            ],
+        )
 
     def test_call_on_accepted(self):
         load_averages = get_load_average()
-        plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=lambda: next(load_averages))
+        plugin = LoadAverage(
+            create_time=self.reactor.time,
+            get_load_average=lambda: next(load_averages),
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 1)
 
         with mock.patch.object(self.remote, "send_message"):
-            self.reactor.fire(("message-type-acceptance-changed",
-                               "load-average"), True)
+            self.reactor.fire(
+                ("message-type-acceptance-changed", "load-average"),
+                True,
+            )
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY, urgent=True)
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
+            )
 
     def test_no_message_if_not_accepted(self):
         """
@@ -151,8 +178,10 @@ class LoadAveragePluginTest(LandscapeTest):
         accepting their type.
         """
         load_averages = get_load_average()
-        plugin = LoadAverage(create_time=self.reactor.time,
-                             get_load_average=lambda: next(load_averages))
+        plugin = LoadAverage(
+            create_time=self.reactor.time,
+            get_load_average=lambda: next(load_averages),
+        )
         self.monitor.add(plugin)
 
         self.reactor.advance(self.monitor.step_size * 2)

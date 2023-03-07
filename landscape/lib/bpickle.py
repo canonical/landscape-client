@@ -31,8 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
-
-from landscape.lib.compat import long, _PY3
+from landscape.lib.compat import _PY3
+from landscape.lib.compat import long
 
 dumps_table = {}
 loads_table = {}
@@ -42,7 +42,7 @@ def dumps(obj, _dt=dumps_table):
     try:
         return _dt[type(obj)](obj)
     except KeyError as e:
-        raise ValueError("Unsupported type: %s" % e)
+        raise ValueError(f"Unsupported type: {e}")
 
 
 def loads(byte_string, _lt=loads_table, as_is=False):
@@ -59,34 +59,30 @@ def loads(byte_string, _lt=loads_table, as_is=False):
         # we slice the bytestring instead.
         return _lt[byte_string[0:1]](byte_string, 0, as_is=as_is)[0]
     except KeyError as e:
-        raise ValueError("Unknown type character: %s" % e)
+        raise ValueError(f"Unknown type character: {e}")
     except IndexError:
         raise ValueError("Corrupted data")
 
 
 def dumps_bool(obj):
-    return ("b%d" % int(obj)
-            ).encode("utf-8")
+    return (f"b{int(obj):d}").encode("utf-8")
 
 
 def dumps_int(obj):
-    return ("i%d;" % obj
-            ).encode("utf-8")
+    return (f"i{obj:d};").encode("utf-8")
 
 
 def dumps_float(obj):
-    return ("f%r;" % obj
-            ).encode("utf-8")
+    return (f"f{obj!r};").encode("utf-8")
 
 
 def dumps_bytes(obj):
-    return ("s%d:" % (len(obj),)).encode("utf-8") + obj
+    return (f"s{len(obj):d}:").encode("utf-8") + obj
 
 
 def dumps_unicode(obj):
     bobj = obj.encode("utf-8")
-    return ("u%d:%s" % (len(bobj), obj)
-            ).encode("utf-8")
+    return (f"u{len(bobj):d}:{obj}").encode("utf-8")
 
 
 def dumps_list(obj, _dt=dumps_table):
@@ -114,28 +110,28 @@ def dumps_none(obj):
 
 
 def loads_bool(bytestring, pos, as_is=False):
-    return bool(int(bytestring[pos+1:pos+2])), pos+2
+    return bool(int(bytestring[pos + 1 : pos + 2])), pos + 2
 
 
 def loads_int(bytestring, pos, as_is=False):
     endpos = bytestring.index(b";", pos)
-    return int(bytestring[pos+1:endpos]), endpos+1
+    return int(bytestring[pos + 1 : endpos]), endpos + 1
 
 
 def loads_float(bytestring, pos, as_is=False):
     endpos = bytestring.index(b";", pos)
-    return float(bytestring[pos+1:endpos]), endpos+1
+    return float(bytestring[pos + 1 : endpos]), endpos + 1
 
 
 def loads_bytes(bytestring, pos, as_is=False):
-    startpos = bytestring.index(b":", pos)+1
-    endpos = startpos+int(bytestring[pos+1:startpos-1])
+    startpos = bytestring.index(b":", pos) + 1
+    endpos = startpos + int(bytestring[pos + 1 : startpos - 1])
     return bytestring[startpos:endpos], endpos
 
 
 def loads_unicode(bytestring, pos, as_is=False):
-    startpos = bytestring.index(b":", pos)+1
-    endpos = startpos+int(bytestring[pos+1:startpos-1])
+    startpos = bytestring.index(b":", pos) + 1
+    endpos = startpos + int(bytestring[pos + 1 : startpos - 1])
     return bytestring[startpos:endpos].decode("utf-8"), endpos
 
 
@@ -143,75 +139,83 @@ def loads_list(bytestring, pos, _lt=loads_table, as_is=False):
     pos += 1
     res = []
     append = res.append
-    while bytestring[pos:pos+1] != b";":
-        obj, pos = _lt[bytestring[pos:pos+1]](bytestring, pos, as_is=as_is)
+    while bytestring[pos : pos + 1] != b";":
+        obj, pos = _lt[bytestring[pos : pos + 1]](bytestring, pos, as_is=as_is)
         append(obj)
-    return res, pos+1
+    return res, pos + 1
 
 
 def loads_tuple(bytestring, pos, _lt=loads_table, as_is=False):
     pos += 1
     res = []
     append = res.append
-    while bytestring[pos:pos+1] != b";":
-        obj, pos = _lt[bytestring[pos:pos+1]](bytestring, pos, as_is=as_is)
+    while bytestring[pos : pos + 1] != b";":
+        obj, pos = _lt[bytestring[pos : pos + 1]](bytestring, pos, as_is=as_is)
         append(obj)
-    return tuple(res), pos+1
+    return tuple(res), pos + 1
 
 
 def loads_dict(bytestring, pos, _lt=loads_table, as_is=False):
     pos += 1
     res = {}
-    while bytestring[pos:pos+1] != b";":
-        key, pos = _lt[bytestring[pos:pos+1]](bytestring, pos, as_is=as_is)
-        val, pos = _lt[bytestring[pos:pos+1]](bytestring, pos, as_is=as_is)
+    while bytestring[pos : pos + 1] != b";":
+        key, pos = _lt[bytestring[pos : pos + 1]](bytestring, pos, as_is=as_is)
+        val, pos = _lt[bytestring[pos : pos + 1]](bytestring, pos, as_is=as_is)
         if _PY3 and not as_is and isinstance(key, bytes):
             # Although the wire format of dictionary keys is ASCII bytes, the
             # code actually expects them to be strings, so we convert them
             # here.
             key = key.decode("ascii")
         res[key] = val
-    return res, pos+1
+    return res, pos + 1
 
 
 def loads_none(str, pos, as_is=False):
-    return None, pos+1
+    return None, pos + 1
 
 
-dumps_table.update({
-    bool: dumps_bool,
-    int: dumps_int,
-    float: dumps_float,
-    list: dumps_list,
-    tuple: dumps_tuple,
-    dict: dumps_dict,
-    type(None): dumps_none,
-    bytes: dumps_bytes,
-})
+dumps_table.update(
+    {
+        bool: dumps_bool,
+        int: dumps_int,
+        float: dumps_float,
+        list: dumps_list,
+        tuple: dumps_tuple,
+        dict: dumps_dict,
+        type(None): dumps_none,
+        bytes: dumps_bytes,
+    },
+)
 
 
-loads_table.update({
-    b"b": loads_bool,
-    b"i": loads_int,
-    b"f": loads_float,
-    b"l": loads_list,
-    b"t": loads_tuple,
-    b"d": loads_dict,
-    b"n": loads_none,
-    b"s": loads_bytes,
-    b"u": loads_unicode,
-})
+loads_table.update(
+    {
+        b"b": loads_bool,
+        b"i": loads_int,
+        b"f": loads_float,
+        b"l": loads_list,
+        b"t": loads_tuple,
+        b"d": loads_dict,
+        b"n": loads_none,
+        b"s": loads_bytes,
+        b"u": loads_unicode,
+    },
+)
 
 
 if bytes is str:
     # Python 2.x: We need to map internal unicode strings to UTF-8
     # encoded strings, and longs to ints.
-    dumps_table.update({
-        unicode: dumps_unicode,  # noqa
-        long: dumps_int,  # noqa
-        })
+    dumps_table.update(
+        {
+            unicode: dumps_unicode,  # noqa
+            long: dumps_int,  # noqa
+        },
+    )
 else:
     # Python 3.x: We need to map internal strings to UTF-8 encoded strings.
-    dumps_table.update({
-        str: dumps_unicode,
-        })
+    dumps_table.update(
+        {
+            str: dumps_unicode,
+        },
+    )

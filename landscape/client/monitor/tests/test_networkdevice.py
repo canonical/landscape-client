@@ -1,9 +1,9 @@
-import mock
+from unittest import mock
 
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.lib.network import (
-    get_active_device_info)
 from landscape.client.monitor.networkdevice import NetworkDevice
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.network import get_active_device_info
 
 
 def test_get_active_device_info():
@@ -16,11 +16,12 @@ class NetworkDeviceTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(NetworkDeviceTest, self).setUp()
+        super().setUp()
         self.plugin = NetworkDevice(test_get_active_device_info)
         self.monitor.add(self.plugin)
         self.broker_service.message_store.set_accepted_types(
-            [self.plugin.message_type])
+            [self.plugin.message_type],
+        )
 
     def test_get_network_device(self):
         """A message is sent with device info"""

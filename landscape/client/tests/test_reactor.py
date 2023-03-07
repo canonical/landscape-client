@@ -1,12 +1,11 @@
 import time
 
 from landscape.client.reactor import LandscapeReactor
-from landscape.lib.tests.test_reactor import ReactorTestMixin
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib.tests.test_reactor import ReactorTestMixin
 
 
 class LandscapeReactorTest(LandscapeTest, ReactorTestMixin):
-
     def get_reactor(self):
         reactor = LandscapeReactor()
         # It's not possible to stop the reactor in a Trial test, calling
