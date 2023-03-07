@@ -103,7 +103,7 @@ class AptSources(ManagerPlugin):
 
         Configurably does the same with files in `SOURCES_LIST_D`.
         """
-        
+
         saved_sources = f"{self.SOURCES_LIST}.save"
 
         if sources:
