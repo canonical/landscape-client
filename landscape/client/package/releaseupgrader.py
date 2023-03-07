@@ -8,16 +8,22 @@ import tarfile
 
 from twisted.internet.defer import succeed
 
-from landscape.lib.config import get_bindir
-from landscape.lib.fetch import url_to_filename, fetch_to_files
-from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
-from landscape.lib.gpg import gpg_verify
-from landscape.lib.fs import read_text_file
-from landscape.client.package.taskhandler import (
-    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
-from landscape.lib.twisted_util import spawn_process
-from landscape.client.manager.manager import SUCCEEDED, FAILED
+from landscape.client.manager.manager import FAILED
+from landscape.client.manager.manager import SUCCEEDED
 from landscape.client.package.reporter import find_reporter_command
+from landscape.client.package.taskhandler import PackageTaskHandler
+from landscape.client.package.taskhandler import (
+    PackageTaskHandlerConfiguration,
+)
+from landscape.client.package.taskhandler import run_task_handler
+from landscape.lib.config import get_bindir
+from landscape.lib.fetch import fetch_to_files
+from landscape.lib.fetch import url_to_filename
+from landscape.lib.fs import read_text_file
+from landscape.lib.gpg import gpg_verify
+from landscape.lib.lsb_release import LSB_RELEASE_FILENAME
+from landscape.lib.lsb_release import parse_lsb_release
+from landscape.lib.twisted_util import spawn_process
 
 
 class ReleaseUpgraderConfiguration(PackageTaskHandlerConfiguration):
@@ -54,11 +60,13 @@ class ReleaseUpgrader(PackageTaskHandler):
 
     def make_operation_result_message(self, operation_id, status, text, code):
         """Convenience to create messages of type C{"operation-result"}."""
-        return {"type": "operation-result",
-                "operation-id": operation_id,
-                "status": status,
-                "result-text": text,
-                "result-code": code}
+        return {
+            "type": "operation-result",
+            "operation-id": operation_id,
+            "status": status,
+            "result-text": text,
+            "result-code": code,
+        }
 
     def handle_task(self, task):
         """Call the proper handler for the given C{task}."""
@@ -78,10 +86,15 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         if target_code_name == current_code_name:
             message = self.make_operation_result_message(
-                operation_id, FAILED,
-                "The system is already running %s." % target_code_name, 1)
-            logging.info("Queuing message with release upgrade failure to "
-                         "exchange urgently.")
+                operation_id,
+                FAILED,
+                f"The system is already running {target_code_name}.",
+                1,
+            )
+            logging.info(
+                "Queuing message with release upgrade failure to "
+                "exchange urgently.",
+            )
             return self._send_message(message)
 
         tarball_url = message["upgrade-tool-tarball-url"]
@@ -89,19 +102,26 @@ class ReleaseUpgrader(PackageTaskHandler):
         allow_third_party = message.get("allow-third-party", False)
         debug = message.get("debug", False)
         directory = self._config.upgrade_tool_directory
-        tarball_filename = url_to_filename(tarball_url,
-                                           directory=directory)
-        signature_filename = url_to_filename(signature_url,
-                                             directory=directory)
+        tarball_filename = url_to_filename(tarball_url, directory=directory)
+        signature_filename = url_to_filename(
+            signature_url,
+            directory=directory,
+        )
 
         result = self.fetch(tarball_url, signature_url)
-        result.addCallback(lambda x: self.verify(tarball_filename,
-                                                 signature_filename))
+        result.addCallback(
+            lambda x: self.verify(tarball_filename, signature_filename),
+        )
         result.addCallback(lambda x: self.extract(tarball_filename))
         result.addCallback(lambda x: self.tweak(current_code_name))
-        result.addCallback(lambda x: self.upgrade(
-            target_code_name, operation_id,
-            allow_third_party=allow_third_party, debug=debug))
+        result.addCallback(
+            lambda x: self.upgrade(
+                target_code_name,
+                operation_id,
+                allow_third_party=allow_third_party,
+                debug=debug,
+            ),
+        )
         result.addCallback(lambda x: self.finish())
         result.addErrback(self.abort, operation_id)
         return result
@@ -115,9 +135,11 @@ class ReleaseUpgrader(PackageTaskHandler):
         if not os.path.exists(self._config.upgrade_tool_directory):
             os.mkdir(self._config.upgrade_tool_directory)
 
-        result = fetch_to_files([tarball_url, signature_url],
-                                self._config.upgrade_tool_directory,
-                                logger=logging.warning)
+        result = fetch_to_files(
+            [tarball_url, signature_url],
+            self._config.upgrade_tool_directory,
+            logger=logging.warning,
+        )
 
         def log_success(ignored):
             logging.info("Successfully fetched upgrade-tool files")
@@ -142,8 +164,10 @@ class ReleaseUpgrader(PackageTaskHandler):
             logging.info("Successfully verified upgrade-tool tarball")
 
         def log_failure(failure):
-            logging.warning("Invalid signature for upgrade-tool tarball: %s"
-                            % str(failure.value))
+            logging.warning(
+                "Invalid signature for upgrade-tool "
+                f"tarball: {str(failure.value)}",
+            )
             return failure
 
         result.addCallback(log_success)
@@ -171,8 +195,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         # party environment variable, so this trick is needed to make it
         # possible to upgrade against testing client packages from the
         # Landscape PPA
-        mirrors_filename = os.path.join(upgrade_tool_directory,
-                                        "mirrors.cfg")
+        mirrors_filename = os.path.join(upgrade_tool_directory, "mirrors.cfg")
         fd = open(mirrors_filename, "a")
         fd.write(self.landscape_ppa_url + "\n")
         fd.close()
@@ -190,19 +213,24 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         for label, content in [("output", out), ("error", err)]:
             if content:
-                buf.write(u"=== Standard %s ===\n\n%s\n\n" % (label, content))
+                buf.write(f"=== Standard {label} ===\n\n{content}\n\n")
 
         for basename in sorted(os.listdir(self.logs_directory)):
             if not basename.endswith(".log"):
                 continue
             filename = os.path.join(self.logs_directory, basename)
             content = read_text_file(filename, -self.logs_limit)
-            buf.write(u"=== %s ===\n\n%s\n\n" % (basename, content))
+            buf.write(f"=== {basename} ===\n\n{content}\n\n")
 
         return buf.getvalue()
 
-    def upgrade(self, code_name, operation_id, allow_third_party=False,
-                debug=False):
+    def upgrade(
+        self,
+        code_name,
+        operation_id,
+        allow_third_party=False,
+        debug=False,
+    ):
         """Run the upgrade-tool command and send a report of the results.
 
         @param code_name: The code-name of the release to upgrade to.
@@ -213,6 +241,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         # This bizarre (and apparently unused) import is a workaround for
         # LP: #1670291 -- see comments in that ticket for an explanation
         import twisted.internet.unix  # noqa: F401
+
         upgrade_tool_directory = self._config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
         args = ["--frontend", "DistUpgradeViewNonInteractive"]
@@ -222,8 +251,13 @@ class ReleaseUpgrader(PackageTaskHandler):
         if debug:
             env["DEBUG_UPDATE_MANAGER"] = "True"
 
-        result = spawn_process(upgrade_tool_filename, args=args, env=env,
-                               path=upgrade_tool_directory, wait_pipes=False)
+        result = spawn_process(
+            upgrade_tool_filename,
+            args=args,
+            env=env,
+            path=upgrade_tool_directory,
+            wait_pipes=False,
+        )
 
         def send_operation_result(args):
             out, err, code = args
@@ -235,10 +269,16 @@ class ReleaseUpgrader(PackageTaskHandler):
             else:
                 status = FAILED
             text = self.make_operation_result_text(out, err)
-            message = self.make_operation_result_message(operation_id, status,
-                                                         text, code)
-            logging.info("Queuing message with release upgrade results to "
-                         "exchange urgently.")
+            message = self.make_operation_result_message(
+                operation_id,
+                status,
+                text,
+                code,
+            )
+            logging.info(
+                "Queuing message with release upgrade results to "
+                "exchange urgently.",
+            )
             return self._send_message(message)
 
         result.addCallback(send_operation_result)
@@ -261,19 +301,31 @@ class ReleaseUpgrader(PackageTaskHandler):
         args = ["--force-apt-update"]
 
         if self._config.config is not None:
-            args.append("--config=%s" % self._config.config)
+            args.append(f"--config={self._config.config}")
 
-        return spawn_process(reporter, args=args, uid=uid, gid=gid,
-                             path=os.getcwd(), env=os.environ)
+        return spawn_process(
+            reporter,
+            args=args,
+            uid=uid,
+            gid=gid,
+            path=os.getcwd(),
+            env=os.environ,
+        )
 
     def abort(self, failure, operation_id):
         """Abort the task reporting details about the failure."""
 
         message = self.make_operation_result_message(
-            operation_id, FAILED, "%s" % str(failure.value), 1)
+            operation_id,
+            FAILED,
+            str(failure.value),
+            1,
+        )
 
-        logging.info("Queuing message with release upgrade failure to "
-                     "exchange urgently.")
+        logging.info(
+            "Queuing message with release upgrade failure to "
+            "exchange urgently.",
+        )
 
         return self._send_message(message)
 

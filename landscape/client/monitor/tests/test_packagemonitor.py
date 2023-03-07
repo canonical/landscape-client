@@ -1,13 +1,13 @@
 import os
-import mock
+from unittest import mock
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.apt.package.store import PackageStore
-
-from landscape.lib.testing import EnvironSaverHelper
 from landscape.client.monitor.packagemonitor import PackageMonitor
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.testing import EnvironSaverHelper
 
 
 class PackageMonitorTest(LandscapeTest):
@@ -17,20 +17,20 @@ class PackageMonitorTest(LandscapeTest):
 
     def setUp(self):
         """Initialize test helpers and create a sample thermal zone."""
-        super(PackageMonitorTest, self).setUp()
+        super().setUp()
         self.package_store_filename = self.makeFile()
         self.package_store = PackageStore(self.package_store_filename)
 
         self.package_monitor = PackageMonitor(self.package_store_filename)
 
-    def createReporterTask(self):
+    def createReporterTask(self):  # noqa: N802
         """
         Put a task for the package reported into the package store.
         """
         message = {"type": "package-ids", "ids": [None], "request-id": 1}
         return self.package_store.add_task("reporter", message)
 
-    def assertSingleReporterTask(self, data, task_id):
+    def assertSingleReporterTask(self, data, task_id):  # noqa: N802
         """
         Check that we have exactly one task, that it contains the right data
         and that it's ID matches our expectation.
@@ -55,14 +55,16 @@ class PackageMonitorTest(LandscapeTest):
         If the package sqlite database file doesn't exist yet, it is created
         upon message handling.
         """
-        filename = os.path.join(self.broker_service.config.data_path,
-                                "package/database")
+        filename = os.path.join(
+            self.broker_service.config.data_path,
+            "package/database",
+        )
         package_monitor = PackageMonitor()
         os.unlink(filename)
         self.assertFalse(os.path.isfile(filename))
 
         self.monitor.add(package_monitor)
-        with mock.patch.object(package_monitor, 'spawn_reporter') as mocked:
+        with mock.patch.object(package_monitor, "spawn_reporter") as mocked:
             message = {"type": "package-ids"}
             self.monitor.dispatch_message(message)
 
@@ -80,7 +82,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_do_not_spawn_reporter_if_message_not_accepted(self):
         self.monitor.add(self.package_monitor)
-        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+        with mock.patch.object(self.package_monitor, "spawn_reporter") as mkd:
             self.successResultOf(self.package_monitor.run())
             self.assertEqual(mkd.mock_calls, [])
 
@@ -97,12 +99,17 @@ class PackageMonitorTest(LandscapeTest):
             run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        with (mock.patch.object(self.package_monitor, 'spawn_reporter')
-              ) as mock_spawn_reporter:
-            with mock.patch.object(self.package_monitor, 'run',
-                                   side_effect=run_has_run):
-                (self.broker_service.message_store
-                 ).set_accepted_types(["packages"])
+        with (
+            mock.patch.object(self.package_monitor, "spawn_reporter")
+        ) as mock_spawn_reporter:
+            with mock.patch.object(
+                self.package_monitor,
+                "run",
+                side_effect=run_has_run,
+            ):
+                (self.broker_service.message_store).set_accepted_types(
+                    ["packages"],
+                )
                 self.monitor.add(self.package_monitor)
                 self.successResultOf(deferred)
 
@@ -110,7 +117,7 @@ class PackageMonitorTest(LandscapeTest):
 
     def test_spawn_reporter_on_run_if_message_accepted(self):
         self.broker_service.message_store.set_accepted_types(["packages"])
-        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+        with mock.patch.object(self.package_monitor, "spawn_reporter") as mkd:
             self.monitor.add(self.package_monitor)
             # We want to ignore calls made as a result of the above line.
             mkd.reset_mock()
@@ -121,7 +128,7 @@ class PackageMonitorTest(LandscapeTest):
     def test_package_ids_handling(self):
         self.monitor.add(self.package_monitor)
 
-        with mock.patch.object(self.package_monitor, 'spawn_reporter'):
+        with mock.patch.object(self.package_monitor, "spawn_reporter"):
             message = {"type": "package-ids", "ids": [None], "request-id": 1}
             self.monitor.dispatch_message(message)
             task = self.package_store.get_next_task("reporter")
@@ -133,7 +140,8 @@ class PackageMonitorTest(LandscapeTest):
         command = self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\necho 'I am the reporter!' >&2\n")
+            "#!/bin/sh\necho 'I am the reporter!' >&2\n",
+        )
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -150,7 +158,8 @@ class PackageMonitorTest(LandscapeTest):
         self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\n/bin/true")
+            "#!/bin/sh\n/bin/true",
+        )
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -166,7 +175,8 @@ class PackageMonitorTest(LandscapeTest):
         command = self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\necho VAR: $VAR\n")
+            "#!/bin/sh\necho VAR: $VAR\n",
+        )
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -186,7 +196,8 @@ class PackageMonitorTest(LandscapeTest):
         command = self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\necho OPTIONS: $@\n")
+            "#!/bin/sh\necho OPTIONS: $@\n",
+        )
 
         package_monitor = PackageMonitor(self.package_store_filename)
         self.monitor.add(package_monitor)
@@ -201,10 +212,12 @@ class PackageMonitorTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_call_on_accepted(self):
-        with mock.patch.object(self.package_monitor, 'spawn_reporter') as mkd:
+        with mock.patch.object(self.package_monitor, "spawn_reporter") as mkd:
             self.monitor.add(self.package_monitor)
             self.monitor.reactor.fire(
-                ("message-type-acceptance-changed", "packages"), True)
+                ("message-type-acceptance-changed", "packages"),
+                True,
+            )
 
         mkd.assert_called_once_with()
 
@@ -270,7 +283,8 @@ class PackageMonitorTest(LandscapeTest):
         self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\necho RUN\n")
+            "#!/bin/sh\necho RUN\n",
+        )
         cwd = os.getcwd()
         self.addCleanup(os.chdir, cwd)
         dir = self.makeDir()

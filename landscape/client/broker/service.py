@@ -1,18 +1,19 @@
 """Deployment code for the monitor."""
-
 import os
 
-from landscape.client.service import LandscapeService, run_landscape_service
 from landscape.client.amp import ComponentPublisher
-from landscape.client.broker.registration import RegistrationHandler, Identity
 from landscape.client.broker.config import BrokerConfiguration
-from landscape.client.broker.transport import HTTPTransport
 from landscape.client.broker.exchange import MessageExchange
 from landscape.client.broker.exchangestore import ExchangeStore
 from landscape.client.broker.ping import Pinger
-from landscape.client.broker.store import get_default_message_store
+from landscape.client.broker.registration import Identity
+from landscape.client.broker.registration import RegistrationHandler
 from landscape.client.broker.server import BrokerServer
 from landscape.client.watchdog import bootstrap_list
+from landscape.client.broker.store import get_default_message_store
+from landscape.client.broker.transport import HTTPTransport
+from landscape.client.service import LandscapeService
+from landscape.client.service import run_landscape_service
 
 
 class BrokerService(LandscapeService):
@@ -47,15 +48,19 @@ class BrokerService(LandscapeService):
     def __init__(self, config):
         self._config = config
         self.persist_filename = os.path.join(
-            config.data_path, "%s.bpickle" % (self.service_name,)
+            config.data_path,
+            f"{self.service_name}.bpickle",
         )
-        super(BrokerService, self).__init__(config)
+        super().__init__(config)
 
         self.transport = self.transport_factory(
-            self.reactor, config.url, config.ssl_public_key
+            self.reactor,
+            config.url,
+            config.ssl_public_key,
         )
         self.message_store = get_default_message_store(
-            self.persist, config.message_store_path
+            self.persist,
+            config.message_store_path,
         )
         self.identity = Identity(self.config, self.persist)
         exchange_store = ExchangeStore(self.config.exchange_store_path)
@@ -68,7 +73,10 @@ class BrokerService(LandscapeService):
             config,
         )
         self.pinger = self.pinger_factory(
-            self.reactor, self.identity, self.exchanger, config
+            self.reactor,
+            self.identity,
+            self.exchanger,
+            config,
         )
         self.registration = RegistrationHandler(
             config,
@@ -87,17 +95,19 @@ class BrokerService(LandscapeService):
             self.pinger,
         )
         self.publisher = ComponentPublisher(
-            self.broker, self.reactor, self.config
+            self.broker,
+            self.reactor,
+            self.config,
         )
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         """Start the broker.
 
         Create a L{BrokerServer} listening on C{broker_socket_path} for clients
         connecting with the L{BrokerServerConnector}, and start the
         L{MessageExchange} and L{Pinger} services.
         """
-        super(BrokerService, self).startService()
+        super().startService()
         bootstrap_list.bootstrap(
             data_path=self._config.data_path, log_dir=self._config.log_dir
         )
@@ -105,12 +115,12 @@ class BrokerService(LandscapeService):
         self.exchanger.start()
         self.pinger.start()
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         """Stop the broker."""
         deferred = self.publisher.stop()
         self.exchanger.stop()
         self.pinger.stop()
-        super(BrokerService, self).stopService()
+        super().stopService()
         return deferred
 
 

@@ -5,7 +5,7 @@
 
 Add our beta PPA to get the latest updates to the landscape-client package
 
-#### Add repo to an Ubuntu series 
+#### Add repo to an Ubuntu series
 ```
 sudo add-apt-repository ppa:landscape/self-hosted-beta
 ```
@@ -50,7 +50,7 @@ monitor_only = true
 
 ## Running
 
-Now you can complete the configuration of your client and register with the 
+Now you can complete the configuration of your client and register with the
 Landscape service. There are two ways to do this:
 
 1. `sudo landscape-config` and answer interactive prompts to finalize your configuration

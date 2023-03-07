@@ -74,7 +74,7 @@ The account this computer belongs to.
 .TP
 .B
 \fB-p\fP KEY, \fB--registration-key\fP=KEY
-The account-wide key 
+The account-wide key
 used for registering clients.
 .TP
 .B
@@ -87,7 +87,7 @@ The server URL to connect to (default: 'https://landscape.canonical.com/message-
 .TP
 .B
 \fB-k\fP SSL_PUBLIC_KEY, \fB--ssl-public-key\fP=SSL_PUBLIC_KEY
-The SSL CA certificate to 
+The SSL CA certificate to
 verify the server with. Only used if the server URL
 to which we connect is https.
 .TP
@@ -153,12 +153,12 @@ real command line \fIoptions\fP.
 .B
 \fB--script-users\fP=USERS
 A comma-separated list of users to allow scripts to
-run. To allow scripts to be run by any user, 
+run. To allow scripts to be run by any user,
 enter: ALL.
 .TP
 .B
 \fB--include-manager-plugins\fP=PLUGINS
-A comma-separated list of manager 
+A comma-separated list of manager
 plugins to load explicitly.
 .TP
 .B
@@ -184,14 +184,14 @@ The one-time password (OTP) to use in cloud configuration.
 .TP
 .B
 \fB--is-registered\fP
-Exit with code 0 (success) if client 
-is registered else returns 5. Display 
+Exit with code 0 (success) if client
+is registered else returns 5. Display
 registration info.
 .SH CLOUD
 
 Landscape has some cloud features that become available when the EC2 or
 UEC machine instance was started using Landscape and the AMI is one of
-the official ones provided in the Web user interface. We call these 
+the official ones provided in the Web user interface. We call these
 instances "Landscape enabled", because they contain a pre-configured
 landscape-client installed in them which will register the running instance
 automatically with Landscape as soon as it starts up.

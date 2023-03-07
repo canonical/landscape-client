@@ -29,7 +29,7 @@ def detect_jiffies():
 
         uptime2_data = read_uptime2()
 
-        stat_file = open("/proc/%d/stat" % pid)
+        stat_file = open(f"/proc/{pid:d}/stat")
         stat_data = stat_file.read()
         stat_file.close()
 
@@ -39,8 +39,8 @@ def detect_jiffies():
         seconds_uptime2 = float(uptime2_data.split()[0])
         jiffie_uptime = int(stat_data.split()[21])
 
-        jiffies1 = int(jiffie_uptime/seconds_uptime1+0.5)
-        jiffies2 = int(jiffie_uptime/seconds_uptime2+0.5)
+        jiffies1 = int(jiffie_uptime / seconds_uptime1 + 0.5)
+        jiffies2 = int(jiffie_uptime / seconds_uptime2 + 0.5)
 
         if jiffies1 == jiffies2:
             break

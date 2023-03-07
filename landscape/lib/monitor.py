@@ -1,12 +1,11 @@
-from __future__ import absolute_import
-
 import logging
 import time
 
-from landscape.lib.format import format_delta, format_percent
+from landscape.lib.format import format_delta
+from landscape.lib.format import format_percent
 
 
-class Timer(object):
+class Timer:
     """
     A timer keeps track of the number of seconds passed during it's
     lifetime and since the last reset.
@@ -42,7 +41,7 @@ class Monitor(Timer):
     """
 
     def __init__(self, event_name, create_time=None):
-        super(Monitor, self).__init__(create_time=create_time)
+        super().__init__(create_time=create_time)
         self.event_name = event_name
         self.count = 0
         self.total_count = 0
@@ -52,12 +51,16 @@ class Monitor(Timer):
         self.total_count += 1
 
     def reset(self):
-        super(Monitor, self).reset()
+        super().reset()
         self.count = 0
 
     def log(self):
-        logging.info("%d %s events occurred in the last %s.", self.count,
-                     self.event_name, format_delta(self.since_reset()))
+        logging.info(
+            "%d %s events occurred in the last %s.",
+            self.count,
+            self.event_name,
+            format_delta(self.since_reset()),
+        )
         self.reset()
 
 
@@ -68,28 +71,36 @@ class BurstMonitor(Monitor):
     time.
     """
 
-    def __init__(self, repeat_interval, maximum_count, event_name,
-                 create_time=None):
-        super(BurstMonitor, self).__init__(event_name, create_time=create_time)
+    def __init__(
+        self,
+        repeat_interval,
+        maximum_count,
+        event_name,
+        create_time=None,
+    ):
+        super().__init__(event_name, create_time=create_time)
         self.repeat_interval = repeat_interval
         self.maximum_count = maximum_count
         self._last_times = []
 
     def ping(self):
-        super(BurstMonitor, self).ping()
+        super().ping()
         now = self.time()
         self._last_times.append(now)
-        if (self._last_times[0] - now > self.repeat_interval or
-            len(self._last_times) > self.maximum_count + 1
-            ):
+        if (
+            self._last_times[0] - now > self.repeat_interval
+            or len(self._last_times) > self.maximum_count + 1
+        ):
             self._last_times.pop(0)
 
     def warn(self):
         if not self._last_times:
             return False
         delta = self.time() - self._last_times[0]
-        return (delta < self.repeat_interval and
-                len(self._last_times) >= self.maximum_count + 1)
+        return (
+            delta < self.repeat_interval
+            and len(self._last_times) >= self.maximum_count + 1
+        )
 
 
 class CoverageMonitor(Monitor):
@@ -103,10 +114,17 @@ class CoverageMonitor(Monitor):
     from this monitor every N seconds.
     """
 
-    def __init__(self, repeat_interval, min_percent, event_name,
-                 create_time=None):
-        super(CoverageMonitor, self).__init__(event_name,
-                                              create_time=create_time)
+    def __init__(
+        self,
+        repeat_interval,
+        min_percent,
+        event_name,
+        create_time=None,
+    ):
+        super().__init__(
+            event_name,
+            create_time=create_time,
+        )
         self.repeat_interval = repeat_interval
         self.min_percent = min_percent
 
@@ -129,9 +147,14 @@ class CoverageMonitor(Monitor):
         log = logging.info
         if self.warn():
             log = logging.warning
-        log("%d of %d expected %s events (%s) occurred in the last %s.",
-            self.count, self.expected_count, self.event_name,
-            format_percent(percent), format_delta(self.since_reset()))
+        log(
+            "%d of %d expected %s events (%s) occurred in the last %s.",
+            self.count,
+            self.expected_count,
+            self.event_name,
+            format_percent(percent),
+            format_delta(self.since_reset()),
+        )
 
         self.reset()
 
@@ -154,10 +177,17 @@ class FrequencyMonitor(Monitor):
     monitor every N seconds.
     """
 
-    def __init__(self, repeat_interval, min_frequency, event_name,
-                 create_time=None):
-        super(FrequencyMonitor, self).__init__(event_name,
-                                               create_time=create_time)
+    def __init__(
+        self,
+        repeat_interval,
+        min_frequency,
+        event_name,
+        create_time=None,
+    ):
+        super().__init__(
+            event_name,
+            create_time=create_time,
+        )
         self.repeat_interval = repeat_interval
         self.min_frequency = min_frequency
         self._last_count = self._create_time()
@@ -168,22 +198,25 @@ class FrequencyMonitor(Monitor):
         return since_ping // self.repeat_interval
 
     def ping(self):
-        super(FrequencyMonitor, self).ping()
+        super().ping()
         self._last_count = self._create_time()
 
     def log(self):
         if self.warn():
-            logging.warning("Only %d of %d minimum expected %s events "
-                            "occurred in the last %s.", self.count,
-                            self.expected_count, self.event_name,
-                            format_delta(self.repeat_interval))
+            logging.warning(
+                "Only %d of %d minimum expected %s events "
+                "occurred in the last %s.",
+                self.count,
+                self.expected_count,
+                self.event_name,
+                format_delta(self.repeat_interval),
+            )
         self.reset()
 
     def warn(self):
         if self.repeat_interval and self.min_frequency:
-            if ((self._create_time() - self._last_count >=
-                 self.repeat_interval) and
-                self.count < self.min_frequency
-                ):
+            if (
+                self._create_time() - self._last_count >= self.repeat_interval
+            ) and self.count < self.min_frequency:
                 return True
         return False

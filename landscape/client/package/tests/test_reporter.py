@@ -1,46 +1,59 @@
 import locale
-import sys
 import os
-import time
-import apt_pkg
-import mock
 import shutil
 import subprocess
+import sys
+import time
+from unittest import mock
 
-from twisted.internet.defer import Deferred, succeed, fail, inlineCallbacks
+import apt_pkg
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import succeed
 
-
+from landscape.client.package import reporter
+from landscape.client.package.reporter import FakeGlobalReporter
+from landscape.client.package.reporter import FakeReporter
+from landscape.client.package.reporter import find_reporter_command
+from landscape.client.package.reporter import HASH_ID_REQUEST_TIMEOUT
+from landscape.client.package.reporter import main
+from landscape.client.package.reporter import PackageReporter
+from landscape.client.package.reporter import PackageReporterConfiguration
+from landscape.client.tests.helpers import BrokerServiceHelper
+from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib import bpickle
 from landscape.lib.apt.package.facade import AptFacade
-from landscape.lib.apt.package.store import (
-    PackageStore, UnknownHashIDRequest, FakePackageStore)
-from landscape.lib.apt.package.testing import (
-    AptFacadeHelper, SimpleRepositoryHelper,
-    HASH1, HASH2, HASH3, PKGNAME1)
-from landscape.lib.fs import create_text_file, touch_file
+from landscape.lib.apt.package.store import FakePackageStore
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.apt.package.store import UnknownHashIDRequest
+from landscape.lib.apt.package.testing import AptFacadeHelper
+from landscape.lib.apt.package.testing import HASH1
+from landscape.lib.apt.package.testing import HASH2
+from landscape.lib.apt.package.testing import HASH3
+from landscape.lib.apt.package.testing import PKGNAME1
+from landscape.lib.apt.package.testing import SimpleRepositoryHelper
 from landscape.lib.fetch import FetchError
-from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
-from landscape.lib.testing import EnvironSaverHelper, FakeReactor
-from landscape.client.package.reporter import (
-    PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
-    PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
-from landscape.client.package import reporter
-from landscape.client.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.lib.fs import create_text_file
+from landscape.lib.fs import touch_file
+from landscape.lib.lsb_release import LSB_RELEASE_FILENAME
+from landscape.lib.lsb_release import parse_lsb_release
+from landscape.lib.testing import EnvironSaverHelper
+from landscape.lib.testing import FakeReactor
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 
 class PackageReporterConfigurationTest(LandscapeTest):
-
     def test_force_apt_update_option(self):
         """
         The L{PackageReporterConfiguration} supports a '--force-apt-update'
         command line option.
         """
         config = PackageReporterConfiguration()
-        config.default_config_filenames = (self.makeFile(""), )
+        config.default_config_filenames = (self.makeFile(""),)
         self.assertFalse(config.force_apt_update)
         config.load(["--force-apt-update"])
         self.assertTrue(config.force_apt_update)
@@ -53,12 +66,17 @@ class PackageReporterAptTest(LandscapeTest):
     Facade = AptFacade
 
     def setUp(self):
-        super(PackageReporterAptTest, self).setUp()
+        super().setUp()
         self.store = PackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
         self.reactor = FakeReactor()
         self.reporter = PackageReporter(
-            self.store, self.facade, self.remote, self.config, self.reactor)
+            self.store,
+            self.facade,
+            self.remote,
+            self.config,
+            self.reactor,
+        )
         self.reporter.get_session_id()
         # Assume update-notifier-common stamp file is not present by
         # default.
@@ -77,7 +95,10 @@ class PackageReporterAptTest(LandscapeTest):
         Return the hash of the package that upgrades "name1".
         """
         self._add_package_to_deb_dir(
-            self.repository_dir, "name1", version="version2")
+            self.repository_dir,
+            "name1",
+            version="version2",
+        )
         self.facade.reload_channels()
         name1_upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
         return self.facade.get_package_hash(name1_upgrade)
@@ -99,9 +120,10 @@ class PackageReporterAptTest(LandscapeTest):
         """Create a fake apt-update executable"""
         self.reporter.apt_update_filename = self.makeFile(
             "#!/bin/sh\n"
-            "echo -n '%s'\n"
-            "echo -n '%s' >&2\n"
-            "exit %d" % (out, err, code))
+            f"echo -n '{out}'\n"
+            f"echo -n '{err}' >&2\n"
+            f"exit {code:d}",
+        )
         os.chmod(self.reporter.apt_update_filename, 0o755)
 
     def test_set_package_ids_with_all_known(self):
@@ -109,9 +131,14 @@ class PackageReporterAptTest(LandscapeTest):
         request2 = self.store.add_hash_id_request([b"hash3", b"hash4"])
         self.store.add_hash_id_request([b"hash5", b"hash6"])
 
-        self.store.add_task("reporter",
-                            {"type": "package-ids", "ids": [123, 456],
-                             "request-id": request2.id})
+        self.store.add_task(
+            "reporter",
+            {
+                "type": "package-ids",
+                "ids": [123, 456],
+                "request-id": request2.id,
+            },
+        )
 
         def got_result(result):
             self.assertEqual(self.store.get_hash_id(b"hash1"), None)
@@ -126,18 +153,20 @@ class PackageReporterAptTest(LandscapeTest):
 
     def test_set_package_ids_with_unknown_request_id(self):
 
-        self.store.add_task("reporter",
-                            {"type": "package-ids", "ids": [123, 456],
-                             "request-id": 123})
+        self.store.add_task(
+            "reporter",
+            {"type": "package-ids", "ids": [123, 456], "request-id": 123},
+        )
 
         # Nothing bad should happen.
         return self.reporter.handle_tasks()
 
     def test_set_package_ids_py27(self):
         """Check py27 upgraded messages are decoded."""
-        self.store.add_task("reporter",
-                            {"type": b"package-ids", "ids": [123, 456],
-                             "request-id": 123})
+        self.store.add_task(
+            "reporter",
+            {"type": b"package-ids", "ids": [123, 456], "request-id": 123},
+        )
         result = self.reporter.handle_tasks()
         self.assertIsInstance(result, Deferred)
 
@@ -147,7 +176,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_task("reporter", {"type": "spam"})
         result = self.reporter.handle_tasks()
         self.assertIsInstance(result, Deferred)
-        expected = "Unknown task message type: {!r}".format(u"spam")  # py2/3
+        expected = "Unknown task message type: {!r}".format("spam")  # py2/3
         mock_warn.assert_called_once_with(expected)
 
     def test_set_package_ids_with_unknown_hashes(self):
@@ -157,10 +186,14 @@ class PackageReporterAptTest(LandscapeTest):
 
         request1 = self.store.add_hash_id_request([b"foo", HASH1, b"bar"])
 
-        self.store.add_task("reporter",
-                            {"type": "package-ids",
-                             "ids": [123, None, 456],
-                             "request-id": request1.id})
+        self.store.add_task(
+            "reporter",
+            {
+                "type": "package-ids",
+                "ids": [123, None, 456],
+                "request-id": request1.id,
+            },
+        )
 
         def got_result(result):
             message = message_store.get_pending_messages()[0]
@@ -181,26 +214,39 @@ class PackageReporterAptTest(LandscapeTest):
 
             self.assertMessages(
                 message_store.get_pending_messages(),
-                [{"packages": [{"description": u"Description1",
+                [
+                    {
+                        "packages": [
+                            {
+                                "description": "Description1",
                                 "installed-size": 28672,
-                                "name": u"name1",
-                                "relations":
-                                    [(131074, u"providesname1"),
-                                     (196610, u"name1 = version1-release1"),
-                                     (262148,
-                                      u"prerequirename1 = prerequireversion1"),
-                                     (262148,
-                                      u"requirename1 = requireversion1"),
-                                     (393224, u"name1 < version1-release1"),
-                                     (458768,
-                                      u"conflictsname1 = conflictsversion1")],
-                                "section": u"Group1",
+                                "name": "name1",
+                                "relations": [
+                                    (131074, "providesname1"),
+                                    (196610, "name1 = version1-release1"),
+                                    (
+                                        262148,
+                                        "prerequirename1 = prerequireversion1",
+                                    ),
+                                    (262148, "requirename1 = requireversion1"),
+                                    (393224, "name1 < version1-release1"),
+                                    (
+                                        458768,
+                                        "conflictsname1 = conflictsversion1",
+                                    ),
+                                ],
+                                "section": "Group1",
                                 "size": 1038,
-                                "summary": u"Summary1",
+                                "summary": "Summary1",
                                 "type": 65537,
-                                "version": u"version1-release1"}],
-                  "request-id": request2.id,
-                  "type": "add-packages"}])
+                                "version": "version1-release1",
+                            },
+                        ],
+                        "request-id": request2.id,
+                        "type": "add-packages",
+                    },
+                ],
+            )
 
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
@@ -212,10 +258,14 @@ class PackageReporterAptTest(LandscapeTest):
 
         request1 = self.store.add_hash_id_request([b"foo", HASH1, b"bar"])
 
-        self.store.add_task("reporter",
-                            {"type": "package-ids",
-                             "ids": [123, None, 456],
-                             "request-id": request1.id})
+        self.store.add_task(
+            "reporter",
+            {
+                "type": "package-ids",
+                "ids": [123, None, 456],
+                "request-id": request1.id,
+            },
+        )
 
         def got_result(result, mocked_get_package_skeleton):
             self.assertTrue(mocked_get_package_skeleton.called)
@@ -223,25 +273,34 @@ class PackageReporterAptTest(LandscapeTest):
             request2 = self.store.get_hash_id_request(message["request-id"])
             self.assertMessages(
                 message_store.get_pending_messages(),
-                [{"packages": [{"description": u"Description1",
+                [
+                    {
+                        "packages": [
+                            {
+                                "description": "Description1",
                                 "installed-size": None,
-                                "name": u"name1",
+                                "name": "name1",
                                 "relations": [],
-                                "section": u"Group1",
+                                "section": "Group1",
                                 "size": None,
-                                "summary": u"Summary1",
+                                "summary": "Summary1",
                                 "type": 65537,
-                                "version": u"version1-release1"}],
-                  "request-id": request2.id,
-                  "type": "add-packages"}])
+                                "version": "version1-release1",
+                            },
+                        ],
+                        "request-id": request2.id,
+                        "type": "add-packages",
+                    },
+                ],
+            )
 
-        class FakePackage(object):
+        class FakePackage:
             type = 65537
-            name = u"name1"
-            version = u"version1-release1"
-            section = u"Group1"
-            summary = u"Summary1"
-            description = u"Description1"
+            name = "name1"
+            version = "version1-release1"
+            section = "Group1"
+            summary = "Summary1"
+            description = "Description1"
             size = None
             installed_size = None
             relations = []
@@ -249,8 +308,11 @@ class PackageReporterAptTest(LandscapeTest):
             def get_hash(self):
                 return HASH1  # Need to match the hash of the initial request
 
-        with mock.patch.object(self.Facade, "get_package_skeleton",
-                               return_value=FakePackage()) as mocked:
+        with mock.patch.object(
+            self.Facade,
+            "get_package_skeleton",
+            return_value=FakePackage(),
+        ) as mocked:
             deferred = self.reporter.handle_tasks()
             return deferred.addCallback(got_result, mocked)
 
@@ -266,19 +328,27 @@ class PackageReporterAptTest(LandscapeTest):
 
         request_id = self.store.add_hash_id_request([b"foo", HASH1, b"bar"]).id
 
-        self.store.add_task("reporter", {"type": "package-ids",
-                                         "ids": [123, None, 456],
-                                         "request-id": request_id})
+        self.store.add_task(
+            "reporter",
+            {
+                "type": "package-ids",
+                "ids": [123, None, 456],
+                "request-id": request_id,
+            },
+        )
 
         def got_result(result, send_mock):
             send_mock.assert_called_once_with(mock.ANY, mock.ANY, True)
             self.assertMessages(message_store.get_pending_messages(), [])
             self.assertEqual(
                 [request.id for request in self.store.iter_hash_id_requests()],
-                [request_id])
+                [request_id],
+            )
 
         with mock.patch.object(
-                self.reporter._broker, "send_message") as send_mock:
+            self.reporter._broker,
+            "send_message",
+        ) as send_mock:
             send_mock.return_value = deferred
             result = self.reporter.handle_tasks()
             self.assertFailure(result, Boom)
@@ -286,18 +356,25 @@ class PackageReporterAptTest(LandscapeTest):
 
     def test_set_package_ids_removes_request_id_when_done(self):
         request = self.store.add_hash_id_request([b"hash1"])
-        self.store.add_task("reporter", {"type": "package-ids", "ids": [123],
-                                         "request-id": request.id})
+        self.store.add_task(
+            "reporter",
+            {"type": "package-ids", "ids": [123], "request-id": request.id},
+        )
 
         def got_result(result):
-            self.assertRaises(UnknownHashIDRequest,
-                              self.store.get_hash_id_request, request.id)
+            self.assertRaises(
+                UnknownHashIDRequest,
+                self.store.get_hash_id_request,
+                request.id,
+            )
 
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
 
-    @mock.patch("landscape.client.package.reporter.fetch_async",
-                return_value=succeed(b"hash-ids"))
+    @mock.patch(
+        "landscape.client.package.reporter.fetch_async",
+        return_value=succeed(b"hash-ids"),
+    )
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db(self, logging_mock, mock_fetch_async):
 
@@ -305,8 +382,12 @@ class PackageReporterAptTest(LandscapeTest):
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = "http://fake.url/path/"
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                           "hash-id", "uuid_codename_arch")
+        hash_id_db_filename = os.path.join(
+            self.config.data_path,
+            "package",
+            "hash-id",
+            "uuid_codename_arch",
+        )
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
@@ -326,16 +407,23 @@ class PackageReporterAptTest(LandscapeTest):
         def callback(ignored):
             self.assertTrue(os.path.exists(hash_id_db_filename))
             self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
+
         result.addCallback(callback)
 
         logging_mock.assert_called_once_with(
-            "Downloaded hash=>id database from %s" % hash_id_db_url)
+            f"Downloaded hash=>id database from {hash_id_db_url}",
+        )
         mock_fetch_async.assert_called_once_with(
-            hash_id_db_url, cainfo=None, proxy=None)
+            hash_id_db_url,
+            cainfo=None,
+            proxy=None,
+        )
         return result
 
-    @mock.patch("landscape.client.package.reporter.fetch_async",
-                return_value=succeed(b"hash-ids"))
+    @mock.patch(
+        "landscape.client.package.reporter.fetch_async",
+        return_value=succeed(b"hash-ids"),
+    )
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db_with_proxy(self, logging_mock, mock_fetch_async):
         """fetching hash-id-db uses proxy settings"""
@@ -358,7 +446,10 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
-            hash_id_db_url, cainfo=None, proxy="http://helloproxy:8000")
+            hash_id_db_url,
+            cainfo=None,
+            proxy="http://helloproxy:8000",
+        )
         return result
 
     @mock.patch("landscape.client.package.reporter.fetch_async")
@@ -368,8 +459,12 @@ class PackageReporterAptTest(LandscapeTest):
         self.config.package_hash_id_url = "http://fake.url/path/"
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                           "hash-id", "uuid_codename_arch")
+        hash_id_db_filename = os.path.join(
+            self.config.data_path,
+            "package",
+            "hash-id",
+            "uuid_codename_arch",
+        )
         open(hash_id_db_filename, "w").write("test")
 
         # Fake uuid, codename and arch
@@ -403,7 +498,8 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter.fetch_hash_id_db()
         logging_mock.assert_called_once_with(
             "Couldn't determine which hash=>id database to use: "
-            "server UUID not available")
+            "server UUID not available",
+        )
         return result
 
     @mock.patch("logging.warning", return_value=None)
@@ -420,7 +516,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         logging_mock.assert_called_once_with(
             "Couldn't determine which hash=>id database to use: "
-            "missing code-name key in %s" % self.reporter.lsb_release_filename)
+            f"missing code-name key in {self.reporter.lsb_release_filename}",
+        )
         return result
 
     @mock.patch("logging.warning", return_value=None)
@@ -437,19 +534,26 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter.fetch_hash_id_db()
         logging_mock.assert_called_once_with(
             "Couldn't determine which hash=>id database to use: "
-            "unknown dpkg architecture")
+            "unknown dpkg architecture",
+        )
         return result
 
-    @mock.patch("landscape.client.package.reporter.fetch_async",
-                return_value=succeed(b"hash-ids"))
+    @mock.patch(
+        "landscape.client.package.reporter.fetch_async",
+        return_value=succeed(b"hash-ids"),
+    )
     def test_fetch_hash_id_db_with_default_url(self, mock_fetch_async):
         # Let's say package_hash_id_url is not set but url is
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = None
         self.config.url = "http://fake.url/path/message-system/"
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                           "hash-id", "uuid_codename_arch")
+        hash_id_db_filename = os.path.join(
+            self.config.data_path,
+            "package",
+            "hash-id",
+            "uuid_codename_arch",
+        )
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
@@ -458,24 +562,34 @@ class PackageReporterAptTest(LandscapeTest):
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
-        hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
-                         "uuid_codename_arch"
+        hash_id_db_url = (
+            "http://fake.url/path/hash-id-databases/" "uuid_codename_arch"
+        )
         result = self.reporter.fetch_hash_id_db()
 
         # Check the database
         def callback(ignored):
             self.assertTrue(os.path.exists(hash_id_db_filename))
             self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
+
         result.addCallback(callback)
         mock_fetch_async.assert_called_once_with(
-            hash_id_db_url, cainfo=None, proxy=None)
+            hash_id_db_url,
+            cainfo=None,
+            proxy=None,
+        )
         return result
 
-    @mock.patch("landscape.client.package.reporter.fetch_async",
-                return_value=fail(FetchError("fetch error")))
+    @mock.patch(
+        "landscape.client.package.reporter.fetch_async",
+        return_value=fail(FetchError("fetch error")),
+    )
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_with_download_error(
-            self, logging_mock, mock_fetch_async):
+        self,
+        logging_mock,
+        mock_fetch_async,
+    ):
 
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
@@ -495,15 +609,23 @@ class PackageReporterAptTest(LandscapeTest):
         # We shouldn't have any hash=>id database
         def callback(ignored):
             hash_id_db_filename = os.path.join(
-                self.config.data_path, "package", "hash-id",
-                "uuid_codename_arch")
+                self.config.data_path,
+                "package",
+                "hash-id",
+                "uuid_codename_arch",
+            )
             self.assertEqual(os.path.exists(hash_id_db_filename), False)
+
         result.addCallback(callback)
 
         logging_mock.assert_called_once_with(
-            "Couldn't download hash=>id database: fetch error")
+            "Couldn't download hash=>id database: fetch error",
+        )
         mock_fetch_async.assert_called_once_with(
-            hash_id_db_url, cainfo=None, proxy=None)
+            hash_id_db_url,
+            cainfo=None,
+            proxy=None,
+        )
         return result
 
     @mock.patch("logging.warning", return_value=None)
@@ -524,17 +646,24 @@ class PackageReporterAptTest(LandscapeTest):
         # We shouldn't have any hash=>id database
         def callback(ignored):
             hash_id_db_filename = os.path.join(
-                self.config.data_path, "package", "hash-id",
-                "uuid_codename_arch")
+                self.config.data_path,
+                "package",
+                "hash-id",
+                "uuid_codename_arch",
+            )
             self.assertEqual(os.path.exists(hash_id_db_filename), False)
+
         result.addCallback(callback)
 
         logging_mock.assert_called_once_with(
-            "Can't determine the hash=>id database url")
+            "Can't determine the hash=>id database url",
+        )
         return result
 
-    @mock.patch("landscape.client.package.reporter.fetch_async",
-                return_value=succeed(b"hash-ids"))
+    @mock.patch(
+        "landscape.client.package.reporter.fetch_async",
+        return_value=succeed(b"hash-ids"),
+    )
     def test_fetch_hash_id_db_with_custom_certificate(self, mock_fetch_async):
         """
         The L{PackageReporter.fetch_hash_id_db} method takes into account the
@@ -551,13 +680,17 @@ class PackageReporterAptTest(LandscapeTest):
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
-        hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
-                         "uuid_codename_arch"
+        hash_id_db_url = (
+            "http://fake.url/path/hash-id-databases/" "uuid_codename_arch"
+        )
 
         # Now go!
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
-            hash_id_db_url, cainfo=self.config.ssl_public_key, proxy=None)
+            hash_id_db_url,
+            cainfo=self.config.ssl_public_key,
+            proxy=None,
+        )
 
         return result
 
@@ -583,8 +716,10 @@ class PackageReporterAptTest(LandscapeTest):
         """
         self.reporter.sources_list_filename = "/I/Dont/Exist/At/All"
         self.reporter.sources_list_directory = self.makeDir()
-        self.makeFile(dirname=self.reporter.sources_list_directory,
-                      content="deb http://foo ./")
+        self.makeFile(
+            dirname=self.reporter.sources_list_directory,
+            content="deb http://foo ./",
+        )
         self.assertTrue(self.reporter._apt_sources_have_changed())
 
     def test_remove_expired_hash_id_request(self):
@@ -594,8 +729,11 @@ class PackageReporterAptTest(LandscapeTest):
         request.timestamp -= HASH_ID_REQUEST_TIMEOUT
 
         def got_result(result):
-            self.assertRaises(UnknownHashIDRequest,
-                              self.store.get_hash_id_request, request.id)
+            self.assertRaises(
+                UnknownHashIDRequest,
+                self.store.get_hash_id_request,
+                request.id,
+            )
 
         result = self.reporter.remove_expired_hash_id_requests()
         return result.addCallback(got_result)
@@ -620,9 +758,9 @@ class PackageReporterAptTest(LandscapeTest):
     def test_remove_expired_hash_id_request_updates_timestamps(self):
         request = self.store.add_hash_id_request([b"hash1"])
         message_store = self.broker_service.message_store
-        message_id = message_store.add({"type": "add-packages",
-                                        "packages": [],
-                                        "request-id": request.id})
+        message_id = message_store.add(
+            {"type": "add-packages", "packages": [], "request-id": request.id},
+        )
         request.message_id = message_id
         initial_timestamp = request.timestamp
 
@@ -636,8 +774,11 @@ class PackageReporterAptTest(LandscapeTest):
         request = self.store.add_hash_id_request([b"hash1"])
 
         def got_result(result):
-            self.assertRaises(UnknownHashIDRequest,
-                              self.store.get_hash_id_request, request.id)
+            self.assertRaises(
+                UnknownHashIDRequest,
+                self.store.get_hash_id_request,
+                request.id,
+            )
 
         result = self.reporter.remove_expired_hash_id_requests()
         return result.addCallback(got_result)
@@ -649,10 +790,16 @@ class PackageReporterAptTest(LandscapeTest):
         message_store.set_accepted_types(["unknown-package-hashes"])
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"hashes": EqualsHashes(HASH1, HASH3),
-                                  "request-id": 1,
-                                  "type": "unknown-package-hashes"}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [
+                    {
+                        "hashes": EqualsHashes(HASH1, HASH3),
+                        "request-id": 1,
+                        "type": "unknown-package-hashes",
+                    },
+                ],
+            )
 
             message = message_store.get_pending_messages()[0]
 
@@ -668,8 +815,12 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["unknown-package-hashes"])
 
-        self.addCleanup(setattr, reporter, "MAX_UNKNOWN_HASHES_PER_REQUEST",
-                        reporter.MAX_UNKNOWN_HASHES_PER_REQUEST)
+        self.addCleanup(
+            setattr,
+            reporter,
+            "MAX_UNKNOWN_HASHES_PER_REQUEST",
+            reporter.MAX_UNKNOWN_HASHES_PER_REQUEST,
+        )
 
         reporter.MAX_UNKNOWN_HASHES_PER_REQUEST = 2
 
@@ -707,10 +858,16 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_hash_id_request([HASH1, HASH3])
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"hashes": [HASH2],
-                                  "request-id": 2,
-                                  "type": "unknown-package-hashes"}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [
+                    {
+                        "hashes": [HASH2],
+                        "request-id": 2,
+                        "type": "unknown-package-hashes",
+                    },
+                ],
+            )
 
             message = message_store.get_pending_messages()[0]
 
@@ -754,7 +911,9 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(list(self.store.iter_hash_id_requests()), [])
 
         with mock.patch.object(
-                self.reporter._broker, "send_message") as send_mock:
+            self.reporter._broker,
+            "send_message",
+        ) as send_mock:
             send_mock.return_value = deferred
             result = self.reporter.request_unknown_hashes()
             self.assertFailure(result, Boom)
@@ -773,8 +932,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.assertFalse(os.path.exists(self.check_stamp_file))
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "available": [(1, 3)]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "available": [(1, 3)]}],
+            )
             self.assertTrue(os.path.exists(self.check_stamp_file))
 
         result = self.reporter.detect_packages_changes()
@@ -787,8 +948,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "available": [(1, 3)]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "available": [(1, 3)]}],
+            )
 
             self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
 
@@ -802,8 +965,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.set_hash_ids({HASH1: 1, HASH3: 3})
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "available": [1, 3]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "available": [1, 3]}],
+            )
 
             self.assertEqual(sorted(self.store.get_available()), [1, 3])
 
@@ -818,8 +983,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_available([1, 3])
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "available": [2]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "available": [2]}],
+            )
 
             self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
 
@@ -836,9 +1003,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_available([1, 2, 3])
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages",
-                                  "not-available": [(1, 3)]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "not-available": [(1, 3)]}],
+            )
 
             self.assertEqual(self.store.get_available(), [])
 
@@ -855,8 +1023,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.set_pkg1_installed()
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "installed": [1]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "installed": [1]}],
+            )
 
             self.assertEqual(self.store.get_installed(), [1])
 
@@ -890,8 +1060,10 @@ class PackageReporterAptTest(LandscapeTest):
 
         def got_result(result):
             self.assertTrue(result)
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "not-installed": [1]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "not-installed": [1]}],
+            )
 
             self.assertEqual(self.store.get_installed(), [])
 
@@ -920,15 +1092,15 @@ class PackageReporterAptTest(LandscapeTest):
         self.set_pkg1_installed()
         self.facade.reload_channels()
 
-        self.store.set_hash_ids(
-            {HASH1: 1, upgrade_hash: 2, HASH3: 3})
+        self.store.set_hash_ids({HASH1: 1, upgrade_hash: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
         self.store.add_installed([1])
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages",
-                                  "available-upgrades": [2]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "available-upgrades": [2]}],
+            )
 
             self.assertEqual(self.store.get_available_upgrades(), [2])
 
@@ -944,9 +1116,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_available_upgrades([2])
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages",
-                                  "not-available-upgrades": [2]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "not-available-upgrades": [2]}],
+            )
 
             self.assertEqual(self.store.get_available_upgrades(), [])
 
@@ -1014,11 +1187,16 @@ class PackageReporterAptTest(LandscapeTest):
 
         yield self.reporter.detect_packages_changes()
 
-        self.assertMessages(message_store.get_pending_messages(), [{
-            "type": "packages",
-            "available": [(1, 3)],
-            "security": [(1, 3)],
-        }])
+        self.assertMessages(
+            message_store.get_pending_messages(),
+            [
+                {
+                    "type": "packages",
+                    "available": [(1, 3)],
+                    "security": [(1, 3)],
+                },
+            ],
+        )
         self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
         self.assertEqual(sorted(self.store.get_security()), [1, 2, 3])
 
@@ -1034,10 +1212,15 @@ class PackageReporterAptTest(LandscapeTest):
 
         yield self.reporter.detect_packages_changes()
 
-        self.assertMessages(message_store.get_pending_messages(), [{
-            "type": "packages",
-            "not-security": [1, 2],
-        }])
+        self.assertMessages(
+            message_store.get_pending_messages(),
+            [
+                {
+                    "type": "packages",
+                    "not-security": [1, 2],
+                },
+            ],
+        )
         self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
         self.assertEqual(self.store.get_security(), [])
 
@@ -1082,8 +1265,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "available": [(1, 3)]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "available": [(1, 3)]}],
+            )
 
             self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
 
@@ -1119,8 +1304,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "available": [(1, 3)]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "available": [(1, 3)]}],
+            )
 
             self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
 
@@ -1140,17 +1327,20 @@ class PackageReporterAptTest(LandscapeTest):
 
         touch_file(self.check_stamp_file)
 
-        self.store.add_task("reporter",
-                            {"type": "package-ids", "ids": [123, 456],
-                             "request-id": 123})
+        self.store.add_task(
+            "reporter",
+            {"type": "package-ids", "ids": [123, 456], "request-id": 123},
+        )
 
         yield self.reporter.handle_tasks()
 
         yield self.reporter.detect_packages_changes()
 
         # We check that detect changes run by looking at messages
-        self.assertMessages(message_store.get_pending_messages(),
-                            [{"type": "packages", "available": [(1, 3)]}])
+        self.assertMessages(
+            message_store.get_pending_messages(),
+            [{"type": "packages", "available": [(1, 3)]}],
+        )
 
     def test_detect_packages_changes_with_not_locked_and_ranges(self):
         """
@@ -1166,8 +1356,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.store.add_available([1, 2, 3])
 
         def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "not-locked": [(1, 3)]}])
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "packages", "not-locked": [(1, 3)]}],
+            )
             self.assertEqual(sorted(self.store.get_locked()), [])
 
         result = self.reporter.detect_packages_changes()
@@ -1177,8 +1369,11 @@ class PackageReporterAptTest(LandscapeTest):
         """
         The L{PackageReporter.detect_changes} method package changes.
         """
-        with mock.patch.object(self.reporter, "detect_packages_changes",
-                               return_value=succeed(True)) as reporter_mock:
+        with mock.patch.object(
+            self.reporter,
+            "detect_packages_changes",
+            return_value=succeed(True),
+        ) as reporter_mock:
             self.successResultOf(self.reporter.detect_changes())
         reporter_mock.assert_called_once_with()
 
@@ -1190,8 +1385,11 @@ class PackageReporterAptTest(LandscapeTest):
         """
         callback = mock.Mock()
         self.broker_service.reactor.call_on("package-data-changed", callback)
-        with mock.patch.object(self.reporter, "detect_packages_changes",
-                               return_value=succeed(True)) as reporter_mock:
+        with mock.patch.object(
+            self.reporter,
+            "detect_packages_changes",
+            return_value=succeed(True),
+        ) as reporter_mock:
             self.successResultOf(self.reporter.detect_changes())
         reporter_mock.assert_called_once_with()
         callback.assert_called_once_with()
@@ -1203,9 +1401,11 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.use_hash_id_db = mock.Mock(return_value=results[2])
         self.reporter.handle_tasks = mock.Mock(return_value=results[3])
         self.reporter.remove_expired_hash_id_requests = mock.Mock(
-            return_value=results[4])
+            return_value=results[4],
+        )
         self.reporter.request_unknown_hashes = mock.Mock(
-            return_value=results[5])
+            return_value=results[5],
+        )
         self.reporter.detect_changes = mock.Mock(return_value=results[6])
 
         self.reporter.run()
@@ -1239,7 +1439,10 @@ class PackageReporterAptTest(LandscapeTest):
         them as utf-8 (LP: #1827857).
         """
         self._add_package_to_deb_dir(
-            self.repository_dir, "gosa", description=u"GOsa\u00B2")
+            self.repository_dir,
+            "gosa",
+            description="GOsa\u00B2",
+        )
         self.facade.reload_channels()
 
         # Set the only non-utf8 locale which we're sure exists.
@@ -1255,7 +1458,7 @@ class PackageReporterAptTest(LandscapeTest):
         # description translation.
         pkg = self.facade.get_packages_by_name("gosa")[0]
         skel = self.facade.get_package_skeleton(pkg, with_info=True)
-        self.assertEqual(u"GOsa\u00B2", skel.description)
+        self.assertEqual("GOsa\u00B2", skel.description)
 
     def test_find_reporter_command_with_bindir(self):
         self.config.bindir = "/spam/eggs"
@@ -1266,7 +1469,8 @@ class PackageReporterAptTest(LandscapeTest):
     def test_find_reporter_command_default(self):
         expected = os.path.join(
             os.path.dirname(os.path.abspath(sys.argv[0])),
-            "landscape-package-reporter")
+            "landscape-package-reporter",
+        )
         command = find_reporter_command()
 
         self.assertEqual(expected, command)
@@ -1293,7 +1497,9 @@ class PackageReporterAptTest(LandscapeTest):
         message_store.set_server_uuid("uuid")
         self.facade.set_arch("arch")
         hash_id_file = os.path.join(
-            self.config.hash_id_directory, "uuid_codename_arch")
+            self.config.hash_id_directory,
+            "uuid_codename_arch",
+        )
         os.makedirs(self.config.hash_id_directory)
         with open(hash_id_file, "w"):
             pass
@@ -1315,8 +1521,10 @@ class PackageReporterAptTest(LandscapeTest):
         self.assertEqual(self.store.get_available_upgrades(), [2])
         self.assertEqual(self.store.get_available(), [1])
         self.assertEqual(self.store.get_installed(), [2])
-        self.assertEqual(self.store.get_hash_id_request(request1.id).id,
-                         request1.id)
+        self.assertEqual(
+            self.store.get_hash_id_request(request1.id).id,
+            request1.id,
+        )
 
         self.store.add_task("reporter", {"type": "resynchronize"})
 
@@ -1324,7 +1532,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.reactor.advance(0)
         with mock.patch(
             "landscape.client.package.taskhandler.parse_lsb_release",
-            side_effect=lambda _: {"code-name": "codename"}
+            side_effect=lambda _: {"code-name": "codename"},
         ):
             yield deferred
 
@@ -1372,13 +1580,18 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("error", err)
                 self.assertEqual(0, code)
                 self.assertFalse(warning_mock.called)
-                debug_mock.assert_has_calls([
-                    mock.call(
-                        "Checking if ubuntu-release-upgrader is running."),
-                    mock.call(
-                        "'%s' exited with status 0 (out='output', err='error')"
-                        % self.reporter.apt_update_filename)
-                ])
+                debug_mock.assert_has_calls(
+                    [
+                        mock.call(
+                            "Checking if ubuntu-release-upgrader is running.",
+                        ),
+                        mock.call(
+                            f"'{self.reporter.apt_update_filename}' exited"
+                            " with status 0 (out='output', err='error')",
+                        ),
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1411,8 +1624,10 @@ class PackageReporterAptTest(LandscapeTest):
         sources.list file has changed.
 
         """
-        self.assertEqual(self.reporter.sources_list_filename,
-                         "/etc/apt/sources.list")
+        self.assertEqual(
+            self.reporter.sources_list_filename,
+            "/etc/apt/sources.list",
+        )
         self.reporter.sources_list_filename = self.makeFile("deb ftp://url ./")
         self._make_fake_apt_update()
 
@@ -1444,8 +1659,9 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("error", err)
             self.assertEqual(2, code)
             warning_mock.assert_called_once_with(
-                "'%s' exited with status 2 (error)" %
-                self.reporter.apt_update_filename)
+                f"'{self.reporter.apt_update_filename}' "
+                "exited with status 2 (error)",
+            )
 
         result.addCallback(callback)
         self.reactor.advance(0)
@@ -1464,9 +1680,11 @@ class PackageReporterAptTest(LandscapeTest):
             "spawn_process",
             side_effect=[
                 # Simulate series of failures to acquire the apt lock.
-                succeed((b'', b'', 100)),
-                succeed((b'', b'', 100)),
-                succeed((b'', b'', 100))])
+                succeed((b"", b"", 100)),
+                succeed((b"", b"", 100)),
+                succeed((b"", b"", 100)),
+            ],
+        )
         spawn_patcher.start()
         self.addCleanup(spawn_patcher.stop)
 
@@ -1481,10 +1699,15 @@ class PackageReporterAptTest(LandscapeTest):
         result.addCallback(callback)
         self.reactor.advance(60)
         message = "Could not acquire the apt lock. Retrying in {} seconds."
-        calls = [mock.call(message.format(20)),
-                 mock.call(message.format(40)),
-                 mock.call("'{}' exited with status 1000 ()".format(
-                     self.reporter.apt_update_filename))]
+        calls = [
+            mock.call(message.format(20)),
+            mock.call(message.format(40)),
+            mock.call(
+                "'{}' exited with status 1000 ()".format(
+                    self.reporter.apt_update_filename,
+                ),
+            ),
+        ]
         logging_mock.has_calls(calls)
         return result
 
@@ -1504,8 +1727,10 @@ class PackageReporterAptTest(LandscapeTest):
             "spawn_process",
             side_effect=[
                 # Simulate a failed apt lock grab then a successful one.
-                succeed((b'', b'', 100)),
-                succeed((b'output', b'error', 0))])
+                succeed((b"", b"", 100)),
+                succeed((b"output", b"error", 0)),
+            ],
+        )
         spawn_patcher.start()
         self.addCleanup(spawn_patcher.stop)
 
@@ -1517,7 +1742,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("error", err)
             self.assertEqual(0, code)
             warning_mock.assert_called_once_with(
-                "Could not acquire the apt lock. Retrying in 20 seconds.")
+                "Could not acquire the apt lock. Retrying in 20 seconds.",
+            )
 
         result.addCallback(callback)
         self.reactor.advance(20)
@@ -1540,8 +1766,16 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 10.0, "code": 0, "err": u""}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 10.0,
+                            "code": 0,
+                            "err": "",
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1565,8 +1799,16 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 0.0, "code": 2, "err": u"error"}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 0.0,
+                            "code": 2,
+                            "err": "error",
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1591,13 +1833,24 @@ class PackageReporterAptTest(LandscapeTest):
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
-                error = "There are no APT sources configured in %s or %s." % (
-                    self.reporter.sources_list_filename,
-                    self.reporter.sources_list_directory)
+                error = (
+                    "There are no APT sources configured in {} or {}.".format(
+                        self.reporter.sources_list_filename,
+                        self.reporter.sources_list_directory,
+                    )
+                )
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 0.0, "code": 1, "err": error}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 0.0,
+                            "code": 1,
+                            "err": error,
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1622,8 +1875,16 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 0.0, "code": 2, "err": u"error"}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 0.0,
+                            "code": 2,
+                            "err": "error",
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1647,8 +1908,16 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 0.0, "code": 0, "err": u"message"}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 0.0,
+                            "code": 0,
+                            "err": "message",
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1679,8 +1948,10 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    ("'%s' didn't run, conditions not met"
-                     ) % self.reporter.apt_update_filename)
+                    f"'{self.reporter.apt_update_filename}' "
+                    "didn't run, conditions not met",
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1700,7 +1971,9 @@ class PackageReporterAptTest(LandscapeTest):
         self.makeFile("", path=self.config.update_stamp_filename)
         expired_time = time.time() - self.config.apt_update_interval - 1
         os.utime(
-            self.config.update_stamp_filename, (expired_time, expired_time))
+            self.config.update_stamp_filename,
+            (expired_time, expired_time),
+        )
         # The interval for the update-notifier-common stamp file is not
         # expired.
         self.reporter.update_notifier_stamp = self.makeFile("")
@@ -1720,8 +1993,10 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
                 debug_mock.assert_called_once_with(
-                    ("'%s' didn't run, conditions not met"
-                     ) % self.reporter.apt_update_filename)
+                    f"'{self.reporter.apt_update_filename}' "
+                    "didn't run, conditions not met",
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1741,10 +2016,14 @@ class PackageReporterAptTest(LandscapeTest):
         # The interval for both stamp files is expired.
         self.makeFile("", path=self.config.update_stamp_filename)
         os.utime(
-            self.config.update_stamp_filename, (expired_time, expired_time))
+            self.config.update_stamp_filename,
+            (expired_time, expired_time),
+        )
         self.reporter.update_notifier_stamp = self.makeFile("")
         os.utime(
-            self.reporter.update_notifier_stamp, (expired_time, expired_time))
+            self.reporter.update_notifier_stamp,
+            (expired_time, expired_time),
+        )
 
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
@@ -1757,8 +2036,16 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 0.0, "code": 0, "err": u"message"}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 0.0,
+                            "code": 0,
+                            "err": "message",
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1780,7 +2067,9 @@ class PackageReporterAptTest(LandscapeTest):
 
             def callback(ignored):
                 self.assertTrue(
-                    os.path.exists(self.config.update_stamp_filename))
+                    os.path.exists(self.config.update_stamp_filename),
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1788,8 +2077,10 @@ class PackageReporterAptTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    @mock.patch("landscape.client.package.reporter.spawn_process",
-                return_value=succeed((b"", b"", 0)))
+    @mock.patch(
+        "landscape.client.package.reporter.spawn_process",
+        return_value=succeed((b"", b"", 0)),
+    )
     def test_run_apt_update_honors_http_proxy(self, mock_spawn_process):
         """
         The PackageReporter.run_apt_update method honors the http_proxy
@@ -1805,10 +2096,13 @@ class PackageReporterAptTest(LandscapeTest):
 
         mock_spawn_process.assert_called_once_with(
             self.reporter.apt_update_filename,
-            env={"http_proxy": "http://proxy_server:8080"})
+            env={"http_proxy": "http://proxy_server:8080"},
+        )
 
-    @mock.patch("landscape.client.package.reporter.spawn_process",
-                return_value=succeed((b"", b"", 0)))
+    @mock.patch(
+        "landscape.client.package.reporter.spawn_process",
+        return_value=succeed((b"", b"", 0)),
+    )
     def test_run_apt_update_honors_https_proxy(self, mock_spawn_process):
         """
         The PackageReporter.run_apt_update method honors the https_proxy
@@ -1824,7 +2118,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         mock_spawn_process.assert_called_once_with(
             self.reporter.apt_update_filename,
-            env={"https_proxy": "http://proxy_server:8443"})
+            env={"https_proxy": "http://proxy_server:8443"},
+        )
 
     def test_run_apt_update_error_on_cache_file(self):
         """
@@ -1836,13 +2131,17 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
         self._make_fake_apt_update(
-            code=2, out="not important",
-            err=("E: Problem renaming the file "
-                 "/var/cache/apt/pkgcache.bin.6ZsRSX to "
-                 "/var/cache/apt/pkgcache.bin - rename (2: No such file "
-                 "or directory)\n"
-                 "W: You may want to run apt-get update to correct these "
-                 "problems"))
+            code=2,
+            out="not important",
+            err=(
+                "E: Problem renaming the file "
+                "/var/cache/apt/pkgcache.bin.6ZsRSX to "
+                "/var/cache/apt/pkgcache.bin - rename (2: No such file "
+                "or directory)\n"
+                "W: You may want to run apt-get update to correct these "
+                "problems"
+            ),
+        )
         deferred = Deferred()
 
         def do_test():
@@ -1851,8 +2150,16 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 0.0, "code": 0, "err": u""}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 0.0,
+                            "code": 0,
+                            "err": "",
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1868,17 +2175,21 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
         self._make_fake_apt_update(
-            code=2, out="not important",
-            err=("E: Problem renaming the file "
-                 "/var/cache/apt/srcpkgcache.bin.Pw1Zxy to "
-                 "/var/cache/apt/srcpkgcache.bin - rename (2: No such file "
-                 "or directory)\n"
-                 "E: Problem renaming the file "
-                 "/var/cache/apt/pkgcache.bin.wz8ooS to "
-                 "/var/cache/apt/pkgcache.bin - rename (2: No such file "
-                 "or directory)\n"
-                 "E: The package lists or status file could not be parsed "
-                 "or opened."))
+            code=2,
+            out="not important",
+            err=(
+                "E: Problem renaming the file "
+                "/var/cache/apt/srcpkgcache.bin.Pw1Zxy to "
+                "/var/cache/apt/srcpkgcache.bin - rename (2: No such file "
+                "or directory)\n"
+                "E: Problem renaming the file "
+                "/var/cache/apt/pkgcache.bin.wz8ooS to "
+                "/var/cache/apt/pkgcache.bin - rename (2: No such file "
+                "or directory)\n"
+                "E: The package lists or status file could not be parsed "
+                "or opened."
+            ),
+        )
 
         deferred = Deferred()
 
@@ -1888,8 +2199,16 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(
                     message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "report-timestamp": 0.0, "code": 0, "err": u""}])
+                    [
+                        {
+                            "type": "package-reporter-result",
+                            "report-timestamp": 0.0,
+                            "code": 0,
+                            "err": "",
+                        },
+                    ],
+                )
+
             result.addCallback(callback)
             self.reactor.advance(0)
             result.chainDeferred(deferred)
@@ -1922,6 +2241,7 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(message_store.get_pending_messages(), [])
                 self.assertEqual([1234], intervals)
+
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -1996,12 +2316,17 @@ class PackageReporterAptTest(LandscapeTest):
         # no 'release upgrader running'
         self.assertFalse(self.reporter._is_release_upgrader_running())
         # fake 'release ugrader' running with non-root UID
-        p = subprocess.Popen([reporter.PYTHON_BIN, '-c',
-                              'import time; time.sleep(10)',
-                              reporter.RELEASE_UPGRADER_PATTERN + "12345"])
+        p = subprocess.Popen(
+            [
+                reporter.PYTHON_BIN,
+                "-c",
+                "import time; time.sleep(10)",
+                reporter.RELEASE_UPGRADER_PATTERN + "12345",
+            ],
+        )
         self.assertFalse(self.reporter._is_release_upgrader_running())
         # fake 'release upgrader' running
-        reporter.UID_ROOT = "%d" % os.getuid()
+        reporter.UID_ROOT = f"{os.getuid():d}"
         self.assertTrue(self.reporter._is_release_upgrader_running())
         p.terminate()
 
@@ -2011,12 +2336,17 @@ class GlobalPackageReporterAptTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(GlobalPackageReporterAptTest, self).setUp()
+        super().setUp()
         self.store = FakePackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
         self.reactor = FakeReactor()
         self.reporter = FakeGlobalReporter(
-            self.store, self.facade, self.remote, self.config, self.reactor)
+            self.store,
+            self.facade,
+            self.remote,
+            self.config,
+            self.reactor,
+        )
         # Assume update-notifier-common stamp file is not present by
         # default.
         self.reporter.update_notifier_stamp = "/Not/Existing"
@@ -2030,7 +2360,8 @@ class GlobalPackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
         self.reporter.apt_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0",
+        )
         os.chmod(self.reporter.apt_update_filename, 0o755)
         deferred = Deferred()
 
@@ -2040,15 +2371,25 @@ class GlobalPackageReporterAptTest(LandscapeTest):
             self.reactor.advance(0)
 
             def callback(ignore):
-                message = {"type": "package-reporter-result",
-                           "report-timestamp": 0.0, "code": 0, "err": u"error"}
+                message = {
+                    "type": "package-reporter-result",
+                    "report-timestamp": 0.0,
+                    "code": 0,
+                    "err": "error",
+                }
                 self.assertMessages(
-                    message_store.get_pending_messages(), [message])
-                stored = list(self.store._db.execute(
-                    "SELECT id, data FROM message").fetchall())
+                    message_store.get_pending_messages(),
+                    [message],
+                )
+                stored = list(
+                    self.store._db.execute(
+                        "SELECT id, data FROM message",
+                    ).fetchall(),
+                )
                 self.assertEqual(1, len(stored))
                 self.assertEqual(1, stored[0][0])
                 self.assertEqual(message, bpickle.loads(bytes(stored[0][1])))
+
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -2061,7 +2402,7 @@ class FakePackageReporterTest(LandscapeTest):
     helpers = [EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(FakePackageReporterTest, self).setUp()
+        super().setUp()
         self.store = FakePackageStore(self.makeFile())
         global_file = self.makeFile()
         self.global_store = FakePackageStore(global_file)
@@ -2069,7 +2410,12 @@ class FakePackageReporterTest(LandscapeTest):
         self.config = PackageReporterConfiguration()
         self.reactor = FakeReactor()
         self.reporter = FakeReporter(
-            self.store, None, self.remote, self.config, self.reactor)
+            self.store,
+            None,
+            self.remote,
+            self.config,
+            self.reactor,
+        )
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
 
@@ -2080,16 +2426,19 @@ class FakePackageReporterTest(LandscapeTest):
         """
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
-        message = {"type": "package-reporter-result",
-                   "code": 0, "err": u"error"}
+        message = {
+            "type": "package-reporter-result",
+            "code": 0,
+            "err": "error",
+        }
         self.global_store.save_message(message)
 
         def check(ignore):
             messages = message_store.get_pending_messages()
-            self.assertMessages(
-                messages, [message])
-            stored = list(self.store._db.execute(
-                "SELECT id FROM message").fetchall())
+            self.assertMessages(messages, [message])
+            stored = list(
+                self.store._db.execute("SELECT id FROM message").fetchall(),
+            )
             self.assertEqual(1, len(stored))
             self.assertEqual(1, stored[0][0])
 
@@ -2103,26 +2452,38 @@ class FakePackageReporterTest(LandscapeTest):
         """
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
-        message1 = {"type": "package-reporter-result",
-                    "code": 0, "err": u"error"}
+        message1 = {
+            "type": "package-reporter-result",
+            "code": 0,
+            "err": "error",
+        }
         self.global_store.save_message(message1)
-        message2 = {"type": "package-reporter-result",
-                    "code": 1, "err": u"error"}
+        message2 = {
+            "type": "package-reporter-result",
+            "code": 1,
+            "err": "error",
+        }
         self.global_store.save_message(message2)
 
         def check1(ignore):
             self.assertMessages(
-                message_store.get_pending_messages(), [message1])
-            stored = list(self.store._db.execute(
-                "SELECT id FROM message").fetchall())
+                message_store.get_pending_messages(),
+                [message1],
+            )
+            stored = list(
+                self.store._db.execute("SELECT id FROM message").fetchall(),
+            )
             self.assertEqual(1, stored[0][0])
             return self.reporter.run().addCallback(check2)
 
         def check2(ignore):
             self.assertMessages(
-                message_store.get_pending_messages(), [message1, message2])
-            stored = list(self.store._db.execute(
-                "SELECT id FROM message").fetchall())
+                message_store.get_pending_messages(),
+                [message1, message2],
+            )
+            stored = list(
+                self.store._db.execute("SELECT id FROM message").fetchall(),
+            )
             self.assertEqual(2, len(stored))
             self.assertEqual(1, stored[0][0])
             self.assertEqual(2, stored[1][0])
@@ -2130,8 +2491,7 @@ class FakePackageReporterTest(LandscapeTest):
         return self.reporter.run().addCallback(check1)
 
 
-class EqualsHashes(object):
-
+class EqualsHashes:
     def __init__(self, *hashes):
         self._hashes = sorted(hashes)
 

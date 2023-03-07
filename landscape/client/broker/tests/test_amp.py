@@ -1,10 +1,10 @@
-import mock
+from unittest import mock
 
+from landscape.client.broker.tests.helpers import RemoteBrokerHelper
+from landscape.client.broker.tests.helpers import RemoteClientHelper
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
+from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.amp import MethodCallError
-from landscape.client.tests.helpers import (
-        LandscapeTest, DEFAULT_ACCEPTED_TYPES)
-from landscape.client.broker.tests.helpers import (
-    RemoteBrokerHelper, RemoteClientHelper)
 
 
 class RemoteBrokerTest(LandscapeTest):
@@ -41,13 +41,13 @@ class RemoteBrokerTest(LandscapeTest):
 
         session_id = self.successResultOf(self.remote.get_session_id())
         message_id = self.successResultOf(
-            self.remote.send_message(message, session_id))
+            self.remote.send_message(message, session_id),
+        )
 
         self.assertTrue(isinstance(message_id, int))
         self.assertTrue(self.mstore.is_pending(message_id))
         self.assertFalse(self.exchanger.is_urgent())
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [message])
+        self.assertMessages(self.mstore.get_pending_messages(), [message])
 
     def test_send_message_with_urgent(self):
         """
@@ -56,8 +56,9 @@ class RemoteBrokerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         session_id = self.successResultOf(self.remote.get_session_id())
-        message_id = self.successResultOf(self.remote.send_message(
-            message, session_id, urgent=True))
+        message_id = self.successResultOf(
+            self.remote.send_message(message, session_id, urgent=True),
+        )
         self.assertTrue(isinstance(message_id, int))
         self.assertTrue(self.exchanger.is_urgent())
 
@@ -95,8 +96,9 @@ class RemoteBrokerTest(LandscapeTest):
         a L{Deferred}.
         """
         # This should make the registration succeed
-        self.transport.responses.append([{"type": "set-id", "id": "abc",
-                                          "insecure-id": "def"}])
+        self.transport.responses.append(
+            [{"type": "set-id", "id": "abc", "insecure-id": "def"}],
+        )
         result = self.remote.register()
         return self.assertSuccess(result, None)
 
@@ -130,7 +132,8 @@ class RemoteBrokerTest(LandscapeTest):
             self.assertEqual(response, None)
             self.assertEqual(
                 self.exchanger.get_client_accepted_message_types(),
-                sorted(["type"] + DEFAULT_ACCEPTED_TYPES))
+                sorted(["type"] + DEFAULT_ACCEPTED_TYPES),
+            )
 
         result = self.remote.register_client_accepted_message_type("type")
         return result.addCallback(assert_response)
@@ -159,8 +162,11 @@ class RemoteBrokerTest(LandscapeTest):
         The L{RemoteBroker.call_if_accepted} method doesn't do anything if the
         given message type is not accepted.
         """
-        function = (lambda: 1 / 0)
-        result = self.remote.call_if_accepted("test", function)
+
+        def division_by_zero():
+            raise ZeroDivisionError()
+
+        result = self.remote.call_if_accepted("test", division_by_zero)
         return self.assertSuccess(result, None)
 
     def test_listen_events(self):
@@ -181,8 +187,9 @@ class RemoteBrokerTest(LandscapeTest):
         """
         callback1 = mock.Mock()
         callback2 = mock.Mock(return_value=123)
-        deferred = self.remote.call_on_event({"event1": callback1,
-                                              "event2": callback2})
+        deferred = self.remote.call_on_event(
+            {"event1": callback1, "event2": callback2},
+        )
         self.reactor.call_later(0.05, self.reactor.fire, "event2")
         self.reactor.advance(0.05)
         self.remote._factory.fake_connection.flush()
@@ -228,8 +235,10 @@ class RemoteClientTest(LandscapeTest):
         a L{Deferred}.
         """
         handler = mock.Mock()
-        with mock.patch.object(self.client.broker,
-                               "register_client_accepted_message_type") as m:
+        with mock.patch.object(
+            self.client.broker,
+            "register_client_accepted_message_type",
+        ) as m:
             # We need to register a test message handler to let the dispatch
             # message method call succeed
             self.client.register_message("test", handler)

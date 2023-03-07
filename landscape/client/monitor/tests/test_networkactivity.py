@@ -1,6 +1,8 @@
 import socket
+
 from landscape.client.monitor.networkactivity import NetworkActivity
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 
 
 class NetworkActivityTest(LandscapeTest):
@@ -16,28 +18,41 @@ Inter-|   Receive                           |  Transmit
 """
 
     def setUp(self):
-        super(NetworkActivityTest, self).setUp()
+        super().setUp()
         self.activity_file = open(self.makeFile(), "w+")
         self.write_activity()
         self.plugin = NetworkActivity(
             network_activity_file=self.activity_file.name,
-            create_time=self.reactor.time)
+            create_time=self.reactor.time,
+        )
         self.monitor.add(self.plugin)
 
     def tearDown(self):
         self.activity_file.close()
-        super(NetworkActivityTest, self).tearDown()
+        super().tearDown()
 
-    def write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
-                       extra="", lo_in_p=0, lo_out_p=0, **kw):
-        kw.update(dict(
-            lo_in=lo_in,
-            lo_out=lo_out,
-            lo_in_p=lo_in_p,
-            lo_out_p=lo_out_p,
-            eth0_in=eth0_in,
-            eth0_out=eth0_out,
-            extra=extra))
+    def write_activity(
+        self,
+        lo_in=0,
+        lo_out=0,
+        eth0_in=0,
+        eth0_out=0,
+        extra="",
+        lo_in_p=0,
+        lo_out_p=0,
+        **kw,
+    ):
+        kw.update(
+            dict(
+                lo_in=lo_in,
+                lo_out=lo_out,
+                lo_in_p=lo_in_p,
+                lo_out_p=lo_out_p,
+                eth0_in=eth0_in,
+                eth0_out=eth0_out,
+                extra=extra,
+            ),
+        )
         self.activity_file.seek(0, 0)
         self.activity_file.truncate()
         self.activity_file.write(self.stats_template % kw)
@@ -58,7 +73,7 @@ Inter-|   Receive                           |  Transmit
         # hmmm. try to connect anywhere to advance the net stats
         try:
             socket.socket().connect(("localhost", 9999))
-        except socket.error:
+        except OSError:
             pass
         plugin.run()
         message = plugin.create_message()
@@ -79,8 +94,7 @@ Inter-|   Receive                           |  Transmit
         self.assertTrue(message)
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "network-activity")
-        self.assertEqual(message["activities"][b"lo"],
-                         [(300, 10, 99)])
+        self.assertEqual(message["activities"][b"lo"], [(300, 10, 99)])
         # Ensure that b"eth0" is not in activities
         self.assertEqual(len(message["activities"]), 1)
 
@@ -99,8 +113,7 @@ Inter-|   Receive                           |  Transmit
         self.assertTrue(message)
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "network-activity")
-        self.assertEqual(message["activities"][b"lo"],
-                         [(300, 9010, 9099)])
+        self.assertEqual(message["activities"][b"lo"], [(300, 9010, 9099)])
         # Ensure that b"eth0" is not in activities
         self.assertEqual(len(message["activities"]), 1)
 
@@ -181,11 +194,18 @@ Inter-|   Receive                           |  Transmit
         self.mstore.set_accepted_types([self.plugin.message_type])
         self.plugin.exchange()
         step_size = self.monitor.step_size
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "network-activity",
-                              "activities": {b"lo": [(step_size, 0, 1000)],
-                                             b"eth0": [(step_size, 0, 1000)],
-                                             }}])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [
+                {
+                    "type": "network-activity",
+                    "activities": {
+                        b"lo": [(step_size, 0, 1000)],
+                        b"eth0": [(step_size, 0, 1000)],
+                    },
+                },
+            ],
+        )
 
     def test_config(self):
         """The network activity plugin is enabled by default."""
@@ -203,6 +223,7 @@ Inter-|   Receive                           |  Transmit
             for i in range(50):
                 result += row % (i, data, data)
             return result
+
         for i in range(1, 10):
             data = i * 1000
             self.write_activity(lo_out=data, eth0_out=data, extra=extra(data))

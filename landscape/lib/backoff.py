@@ -48,6 +48,6 @@ class ExponentialBackoff:
         for a delay of 12 and 25% stagger, it works out to 9 + rand(0,3)
         """
         delay = self.get_delay()
-        non_random_part = delay * (1-stagger_fraction)
+        non_random_part = delay * (1 - stagger_fraction)
         random_part = delay * stagger_fraction * random.random()
         return int(non_random_part + random_part)

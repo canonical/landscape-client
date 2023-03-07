@@ -1,17 +1,18 @@
 import logging
-import time
 import os
+import time
 
 from twisted.internet import threads
 
 from landscape.client.accumulate import Accumulator
+from landscape.client.monitor.plugin import MonitorPlugin
 from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.network import get_active_device_info
-from landscape.client.monitor.plugin import MonitorPlugin
 
 try:
     from swift.common.ring import Ring
     from swift.cli.recon import Scout
+
     has_swift = True
 except ImportError:
     has_swift = False
@@ -28,9 +29,13 @@ class SwiftUsage(MonitorPlugin):
     persist_name = "swift-usage"
     scope = "storage"
 
-    def __init__(self, interval=30, monitor_interval=60 * 60,
-                 create_time=time.time,
-                 swift_ring="/etc/swift/object.ring.gz"):
+    def __init__(
+        self,
+        interval=30,
+        monitor_interval=60 * 60,
+        create_time=time.time,
+        swift_ring="/etc/swift/object.ring.gz",
+    ):
         self._interval = interval
         self._monitor_interval = monitor_interval
         self._create_time = create_time
@@ -41,13 +46,18 @@ class SwiftUsage(MonitorPlugin):
         self.active = True
 
     def register(self, registry):
-        super(SwiftUsage, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, self._interval)
         self._monitor = CoverageMonitor(
-            self.run_interval, 0.8, "Swift device usage snapshot",
-            create_time=self._create_time)
+            self.run_interval,
+            0.8,
+            "Swift device usage snapshot",
+            create_time=self._create_time,
+        )
         self.registry.reactor.call_every(
-            self._monitor_interval, self._monitor.log)
+            self._monitor_interval,
+            self._monitor.log,
+        )
 
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
         self.call_on_accepted("swift-usage", self.send_message, True)
@@ -62,11 +72,17 @@ class SwiftUsage(MonitorPlugin):
         message = self.create_message()
         if message:
             self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent)
+                message,
+                self._session_id,
+                urgent=urgent,
+            )
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "swift-usage", self.send_message, urgent)
+            "swift-usage",
+            self.send_message,
+            urgent,
+        )
 
     def run(self):
         if not self._should_run():
@@ -87,7 +103,8 @@ class SwiftUsage(MonitorPlugin):
         if not self._has_swift:
             logging.info(
                 "This machine does not appear to be a Swift machine. "
-                "Deactivating plugin.")
+                "Deactivating plugin.",
+            )
             self.active = False
             return False
 
@@ -108,8 +125,7 @@ class SwiftUsage(MonitorPlugin):
 
     def _get_local_ips(self):
         """Return a list of IP addresses for local devices."""
-        return [
-            device["ip_address"] for device in get_active_device_info()]
+        return [device["ip_address"] for device in get_active_device_info()]
 
     def _perform_recon_call(self, host):
         """Get usage information from Swift Recon service."""
@@ -142,9 +158,12 @@ class SwiftUsage(MonitorPlugin):
             for key in ("size", "avail", "used"):
                 # Store values in tree so it's easy to delete all values for a
                 # device
-                persist_key = "usage.%s.%s" % (device, key)
+                persist_key = f"usage.{device}.{key}"
                 step_value = self._accumulate(
-                    timestamp, usage[key], persist_key)
+                    timestamp,
+                    usage[key],
+                    persist_key,
+                )
                 step_values.append(step_value)
 
             if all(step_values):
@@ -155,5 +174,5 @@ class SwiftUsage(MonitorPlugin):
         # Update device list and remove usage for devices that no longer exist.
         current_devices = set(self._persist.get("devices", ()))
         for device in current_devices - devices:
-            self._persist.remove("usage.%s" % device)
+            self._persist.remove(f"usage.{device}")
         self._persist.set("devices", list(devices))

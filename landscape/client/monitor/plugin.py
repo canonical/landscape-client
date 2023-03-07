@@ -2,9 +2,9 @@ from logging import info
 
 from twisted.internet.defer import succeed
 
+from landscape.client.broker.client import BrokerClientPlugin
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
-from landscape.client.broker.client import BrokerClientPlugin
 
 
 class MonitorPlugin(BrokerClientPlugin):
@@ -17,7 +17,7 @@ class MonitorPlugin(BrokerClientPlugin):
     scope = None
 
     def register(self, monitor):
-        super(MonitorPlugin, self).register(monitor)
+        super().register(monitor)
         if self.persist_name is not None:
             self._persist = self.monitor.persist.root_at(self.persist_name)
         else:
@@ -65,10 +65,15 @@ class DataWatcher(MonitorPlugin):
     def send_message(self, urgent):
         message = self.get_message()
         if message is not None:
-            info("Queueing a message with updated data watcher info "
-                 "for %s.", format_object(self))
+            info(
+                "Queueing a message with updated data watcher info "
+                f"for {format_object(self)}.",
+            )
             result = self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent)
+                message,
+                self._session_id,
+                urgent=urgent,
+            )
 
             def persist_data(message_id):
                 self.persist_data()
@@ -90,5 +95,8 @@ class DataWatcher(MonitorPlugin):
         Conditionally add a message to the message store if new data
         is available.
         """
-        return self.registry.broker.call_if_accepted(self.message_type,
-                                                     self.send_message, urgent)
+        return self.registry.broker.call_if_accepted(
+            self.message_type,
+            self.send_message,
+            urgent,
+        )

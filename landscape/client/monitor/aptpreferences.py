@@ -2,10 +2,9 @@ import os
 
 from twisted.python.compat import iteritems
 
-from landscape.lib.fs import read_text_file
-from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
-
 from landscape.client.monitor.plugin import DataWatcher
+from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
+from landscape.lib.fs import read_text_file
 
 
 class AptPreferences(DataWatcher):
@@ -30,13 +29,17 @@ class AptPreferences(DataWatcher):
         simply return C{None}
         """
         data = {}
-        preferences_filename = os.path.join(self._etc_apt_directory,
-                                            u"preferences")
+        preferences_filename = os.path.join(
+            self._etc_apt_directory,
+            "preferences",
+        )
         if os.path.exists(preferences_filename):
             data[preferences_filename] = read_text_file(preferences_filename)
 
-        preferences_directory = os.path.join(self._etc_apt_directory,
-                                             u"preferences.d")
+        preferences_directory = os.path.join(
+            self._etc_apt_directory,
+            "preferences.d",
+        )
         if os.path.isdir(preferences_directory):
             for entry in os.listdir(preferences_directory):
                 filename = os.path.join(preferences_directory, entry)

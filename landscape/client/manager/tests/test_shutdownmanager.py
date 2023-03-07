@@ -1,12 +1,15 @@
-from twisted.python.failure import Failure
-from twisted.internet.error import ProcessTerminated, ProcessDone
+from twisted.internet.error import ProcessDone
+from twisted.internet.error import ProcessTerminated
 from twisted.internet.protocol import ProcessProtocol
+from twisted.python.failure import Failure
 
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.shutdownmanager import ShutdownManager
+from landscape.client.manager.shutdownmanager import ShutdownProcessProtocol
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
 from landscape.lib.testing import StubProcessFactory
-from landscape.client.manager.plugin import SUCCEEDED, FAILED
-from landscape.client.manager.shutdownmanager import (
-    ShutdownManager, ShutdownProcessProtocol)
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class ShutdownManagerTest(LandscapeTest):
@@ -14,9 +17,10 @@ class ShutdownManagerTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(ShutdownManagerTest, self).setUp()
+        super().setUp()
         self.broker_service.message_store.set_accepted_types(
-            ["shutdown", "operation-result"])
+            ["shutdown", "operation-result"],
+        )
         self.broker_service.pinger.start()
         self.process_factory = StubProcessFactory()
         self.plugin = ShutdownManager(process_factory=self.process_factory)
@@ -37,16 +41,32 @@ class ShutdownManagerTest(LandscapeTest):
         self.assertTrue(isinstance(protocol, ShutdownProcessProtocol))
         self.assertEqual(
             arguments[1:3],
-            ("/sbin/shutdown", ["/sbin/shutdown", "-r", "+4",
-                                "Landscape is rebooting the system"]))
+            (
+                "/sbin/shutdown",
+                [
+                    "/sbin/shutdown",
+                    "-r",
+                    "+4",
+                    "Landscape is rebooting the system",
+                ],
+            ),
+        )
 
         def restart_performed(ignore):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             self.assertEqual(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result", "api": b"3.2",
-                  "operation-id": 100, "timestamp": 10, "status": SUCCEEDED,
-                  "result-text": u"Data may arrive in batches."}])
+                [
+                    {
+                        "type": "operation-result",
+                        "api": b"3.2",
+                        "operation-id": 100,
+                        "timestamp": 10,
+                        "status": SUCCEEDED,
+                        "result-text": "Data may arrive in batches.",
+                    },
+                ],
+            )
 
         protocol.result.addCallback(restart_performed)
         protocol.childDataReceived(0, b"Data may arrive ")
@@ -68,8 +88,16 @@ class ShutdownManagerTest(LandscapeTest):
         [arguments] = self.process_factory.spawns
         self.assertEqual(
             arguments[1:3],
-            ("/sbin/shutdown", ["/sbin/shutdown", "-h", "+4",
-                                "Landscape is shutting down the system"]))
+            (
+                "/sbin/shutdown",
+                [
+                    "/sbin/shutdown",
+                    "-h",
+                    "+4",
+                    "Landscape is shutting down the system",
+                ],
+            ),
+        )
 
     def test_restart_fails(self):
         """
@@ -90,15 +118,17 @@ class ShutdownManagerTest(LandscapeTest):
             self.assertEqual(message["operation-id"], 100)
             self.assertEqual(message["timestamp"], 0)
             self.assertEqual(message["status"], FAILED)
-            self.assertIn(u"Failure text is reported.", message["result-text"])
+            self.assertIn("Failure text is reported.", message["result-text"])
 
             # Check that after failing, we attempt to force the shutdown by
             # switching the binary called
             [spawn1_args, spawn2_args] = self.process_factory.spawns
             protocol = spawn2_args[0]
             self.assertIsInstance(protocol, ProcessProtocol)
-            self.assertEqual(spawn2_args[1:3],
-                             ("/sbin/reboot", ["/sbin/reboot"]))
+            self.assertEqual(
+                spawn2_args[1:3],
+                ("/sbin/reboot", ["/sbin/reboot"]),
+            )
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]

@@ -1,10 +1,14 @@
-from mock import ANY, Mock, patch
+from unittest.mock import ANY
+from unittest.mock import Mock
+from unittest.mock import patch
 
-from landscape.lib.testing import LogKeeperHelper
+from landscape.client.monitor.plugin import DataWatcher
+from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 from landscape.lib.schema import Int
+from landscape.lib.testing import LogKeeperHelper
 from landscape.message_schemas.message import Message
-from landscape.client.monitor.plugin import MonitorPlugin, DataWatcher
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class MonitorPluginTest(LandscapeTest):
@@ -60,7 +64,10 @@ class MonitorPluginTest(LandscapeTest):
         """
         plugin = MonitorPlugin()
         plugin.register(self.monitor)
-        callback = (lambda: 1 / 0)
+
+        def callback():
+            return 1 / 0
+
         plugin.call_on_accepted("type", callback)
         self.reactor.fire(("message-type-acceptance-changed", "type"), False)
 
@@ -130,12 +137,16 @@ class DataWatcherTest(LandscapeTest):
         self.mstore.add_schema(Message("wubble", {"wubblestuff": Int()}))
 
     def test_get_message(self):
-        self.assertEqual(self.plugin.get_message(),
-                         {"type": "wubble", "wubblestuff": 1})
+        self.assertEqual(
+            self.plugin.get_message(),
+            {"type": "wubble", "wubblestuff": 1},
+        )
 
     def test_get_message_unchanging(self):
-        self.assertEqual(self.plugin.get_message(),
-                         {"type": "wubble", "wubblestuff": 1})
+        self.assertEqual(
+            self.plugin.get_message(),
+            {"type": "wubble", "wubblestuff": 1},
+        )
         self.assertEqual(self.plugin.get_message(), None)
 
     def test_basic_exchange(self):
@@ -145,9 +156,12 @@ class DataWatcherTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(messages[0]["type"], "wubble")
         self.assertEqual(messages[0]["wubblestuff"], 1)
-        self.assertIn("Queueing a message with updated data watcher info for "
-                      "landscape.client.monitor.tests.test_plugin."
-                      "StubDataWatchingPlugin.", self.logfile.getvalue())
+        self.assertIn(
+            "Queueing a message with updated data watcher info for "
+            "landscape.client.monitor.tests.test_plugin."
+            "StubDataWatchingPlugin.",
+            self.logfile.getvalue(),
+        )
 
     def test_unchanging_value(self):
         # Is this really want we want to do?
@@ -166,7 +180,10 @@ class DataWatcherTest(LandscapeTest):
             self.mstore.set_accepted_types(["wubble"])
             self.plugin.exchange(True)
             self.remote.send_message.assert_called_once_with(
-                ANY, ANY, urgent=True)
+                ANY,
+                ANY,
+                urgent=True,
+            )
 
     def test_no_message_if_not_accepted(self):
         """
