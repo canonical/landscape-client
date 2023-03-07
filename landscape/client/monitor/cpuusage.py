@@ -1,9 +1,9 @@
-import time
 import logging
+import time
 
 from landscape.client.accumulate import Accumulator
-from landscape.lib.monitor import CoverageMonitor
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.monitor import CoverageMonitor
 
 LAST_MESURE_KEY = "last-cpu-usage-measure"
 ACCUMULATOR_KEY = "cpu-usage-accumulator"
@@ -13,13 +13,18 @@ class CPUUsage(MonitorPlugin):
     """
     Plugin that captures CPU usage information.
     """
+
     persist_name = "cpu-usage"
     scope = "cpu"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, interval=30, monitor_interval=60 * 60,
-                 create_time=time.time):
+    def __init__(
+        self,
+        interval=30,
+        monitor_interval=60 * 60,
+        create_time=time.time,
+    ):
         self._interval = interval
         self._monitor_interval = monitor_interval
         self._cpu_usage_points = []
@@ -27,16 +32,21 @@ class CPUUsage(MonitorPlugin):
         self._stat_file = "/proc/stat"
 
     def register(self, registry):
-        super(CPUUsage, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, registry.step_size)
 
         self.registry.reactor.call_every(self._interval, self.run)
 
-        self._monitor = CoverageMonitor(self._interval, 0.8,
-                                        "CPU usage snapshot",
-                                        create_time=self._create_time)
-        self.registry.reactor.call_every(self._monitor_interval,
-                                         self._monitor.log)
+        self._monitor = CoverageMonitor(
+            self._interval,
+            0.8,
+            "CPU usage snapshot",
+            create_time=self._create_time,
+        )
+        self.registry.reactor.call_every(
+            self._monitor_interval,
+            self._monitor.log,
+        )
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
         self.call_on_accepted("cpu-usage", self.send_message, True)
 
@@ -48,12 +58,18 @@ class CPUUsage(MonitorPlugin):
     def send_message(self, urgent=False):
         message = self.create_message()
         if len(message["cpu-usages"]):
-            self.registry.broker.send_message(message, self._session_id,
-                                              urgent=urgent)
+            self.registry.broker.send_message(
+                message,
+                self._session_id,
+                urgent=urgent,
+            )
 
     def exchange(self, urgent=False):
-        self.registry.broker.call_if_accepted("cpu-usage",
-                                              self.send_message, urgent)
+        self.registry.broker.call_if_accepted(
+            "cpu-usage",
+            self.send_message,
+            urgent,
+        )
 
     def run(self):
         self._monitor.ping()
@@ -62,8 +78,11 @@ class CPUUsage(MonitorPlugin):
 
         step_data = None
         if new_cpu_usage is not None:
-            step_data = self._accumulate(new_timestamp, new_cpu_usage,
-                                         ACCUMULATOR_KEY)
+            step_data = self._accumulate(
+                new_timestamp,
+                new_cpu_usage,
+                ACCUMULATOR_KEY,
+            )
         if step_data is not None:
             self._cpu_usage_points.append(step_data)
 
@@ -77,9 +96,11 @@ class CPUUsage(MonitorPlugin):
                 # The first line of the file is the CPU information aggregated
                 # across cores.
                 stat = f.readline()
-        except IOError:
-            logging.error("Could not open %s for reading, "
-                          "CPU usage cannot be computed.", stat_file)
+        except OSError:
+            logging.error(
+                f"Could not open {stat_file} for reading, "
+                "CPU usage cannot be computed.",
+            )
             return None
 
         # The cpu line is composed of:

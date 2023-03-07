@@ -1,7 +1,10 @@
-from landscape.lib.testing import append_login_data
+from unittest.mock import ANY
+from unittest.mock import Mock
+
 from landscape.client.monitor.computeruptime import ComputerUptime
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
-from mock import ANY, Mock
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.testing import append_login_data
 
 
 class ComputerUptimeTest(LandscapeTest):
@@ -16,8 +19,12 @@ class ComputerUptimeTest(LandscapeTest):
     def test_deliver_message(self):
         """Test delivering a message with the boot and shutdown times."""
         wtmp_filename = self.makeFile("")
-        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
-                          entry_time_seconds=535)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=535,
+        )
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
         plugin.run()
@@ -31,8 +38,12 @@ class ComputerUptimeTest(LandscapeTest):
     def test_only_deliver_unique_shutdown_messages(self):
         """Test that only unique shutdown messages are generated."""
         wtmp_filename = self.makeFile("")
-        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
-                          entry_time_seconds=535)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=535,
+        )
 
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
@@ -44,8 +55,12 @@ class ComputerUptimeTest(LandscapeTest):
         self.assertTrue("shutdown-times" in message)
         self.assertEqual(message["shutdown-times"], [535])
 
-        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
-                          entry_time_seconds=3212)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=3212,
+        )
 
         plugin.run()
         message = self.mstore.get_pending_messages()[1]
@@ -57,10 +72,18 @@ class ComputerUptimeTest(LandscapeTest):
     def test_only_queue_messages_with_data(self):
         """Test ensures that messages without data are not queued."""
         wtmp_filename = self.makeFile("")
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=3212)
-        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
-                          entry_time_seconds=3562)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="reboot",
+            entry_time_seconds=3212,
+        )
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=3562,
+        )
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
 
@@ -80,8 +103,12 @@ class ComputerUptimeTest(LandscapeTest):
     def test_boot_time_same_as_last_known_startup_time(self):
         """Ensure one message is queued for duplicate startup times."""
         wtmp_filename = self.makeFile("")
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=3212)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="reboot",
+            entry_time_seconds=3212,
+        )
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
         plugin.run()
@@ -97,16 +124,28 @@ class ComputerUptimeTest(LandscapeTest):
         the client. This is simulated by creating a new instance of the plugin.
         """
         wtmp_filename = self.makeFile("")
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=3212)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="reboot",
+            entry_time_seconds=3212,
+        )
         plugin1 = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin1)
         plugin1.run()
 
-        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
-                          entry_time_seconds=3871)
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=4657)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=3871,
+        )
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="reboot",
+            entry_time_seconds=4657,
+        )
         plugin2 = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin2)
         plugin2.run()
@@ -122,10 +161,18 @@ class ComputerUptimeTest(LandscapeTest):
         """Test ensures reading falls back to logrotated files."""
         wtmp_filename = self.makeFile("")
         logrotated_filename = self.makeFile("", path=wtmp_filename + ".1")
-        append_login_data(logrotated_filename, tty_device="~",
-                          username="reboot", entry_time_seconds=125)
-        append_login_data(logrotated_filename, tty_device="~",
-                          username="shutdown", entry_time_seconds=535)
+        append_login_data(
+            logrotated_filename,
+            tty_device="~",
+            username="reboot",
+            entry_time_seconds=125,
+        )
+        append_login_data(
+            logrotated_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=535,
+        )
 
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
@@ -143,14 +190,30 @@ class ComputerUptimeTest(LandscapeTest):
         """Test ensures reading falls back to logrotated files."""
         wtmp_filename = self.makeFile("")
         logrotated_filename = self.makeFile("", path=wtmp_filename + ".1")
-        append_login_data(logrotated_filename, tty_device="~",
-                          username="reboot", entry_time_seconds=125)
-        append_login_data(logrotated_filename, tty_device="~",
-                          username="shutdown", entry_time_seconds=535)
-        append_login_data(wtmp_filename, tty_device="~",
-                          username="reboot", entry_time_seconds=1025)
-        append_login_data(wtmp_filename, tty_device="~",
-                          username="shutdown", entry_time_seconds=1150)
+        append_login_data(
+            logrotated_filename,
+            tty_device="~",
+            username="reboot",
+            entry_time_seconds=125,
+        )
+        append_login_data(
+            logrotated_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=535,
+        )
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="reboot",
+            entry_time_seconds=1025,
+        )
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=1150,
+        )
 
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
@@ -177,16 +240,21 @@ class ComputerUptimeTest(LandscapeTest):
 
     def test_call_on_accepted(self):
         wtmp_filename = self.makeFile("")
-        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
-                          entry_time_seconds=535)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=535,
+        )
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
 
         self.remote.send_message = Mock()
 
-        self.reactor.fire(("message-type-acceptance-changed",
-                           "computer-uptime"),
-                          True)
+        self.reactor.fire(
+            ("message-type-acceptance-changed", "computer-uptime"),
+            True,
+        )
         self.remote.send_message.assert_called_once_with(ANY, ANY, urgent=True)
 
     def test_no_message_if_not_accepted(self):
@@ -196,8 +264,12 @@ class ComputerUptimeTest(LandscapeTest):
         """
         self.mstore.set_accepted_types([])
         wtmp_filename = self.makeFile("")
-        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
-                          entry_time_seconds=535)
+        append_login_data(
+            wtmp_filename,
+            tty_device="~",
+            username="shutdown",
+            entry_time_seconds=535,
+        )
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
         plugin.run()

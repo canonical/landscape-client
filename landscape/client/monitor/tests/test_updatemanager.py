@@ -1,8 +1,9 @@
-import mock
+from unittest import mock
 
-from landscape.lib.testing import LogKeeperHelper
 from landscape.client.monitor.updatemanager import UpdateManager
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.testing import LogKeeperHelper
 
 
 class UpdateManagerTest(LandscapeTest):
@@ -15,7 +16,7 @@ class UpdateManagerTest(LandscapeTest):
     helpers = [MonitorHelper, LogKeeperHelper]
 
     def setUp(self):
-        super(UpdateManagerTest, self).setUp()
+        super().setUp()
         self.update_manager_filename = self.makeFile()
         self.plugin = UpdateManager(self.update_manager_filename)
         self.monitor.add(self.plugin)
@@ -65,11 +66,14 @@ Prompt=never
 """
         self.makeFile(path=self.update_manager_filename, content=content)
         self.plugin.send_message()
-        self.assertIn("Queueing message with updated update-manager status.",
-                      self.logfile.getvalue())
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "update-manager-info",
-                              "prompt": u"never"}])
+        self.assertIn(
+            "Queueing message with updated update-manager status.",
+            self.logfile.getvalue(),
+        )
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "update-manager-info", "prompt": "never"}],
+        )
         self.mstore.delete_all_messages()
         self.plugin.send_message()
         self.assertMessages(self.mstore.get_pending_messages(), [])
@@ -94,7 +98,9 @@ Prompt=never
         with mock.patch.object(self.remote, "send_message"):
             self.plugin.run()
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY)
+                mock.ANY,
+                mock.ANY,
+            )
         self.mstore.set_accepted_types([])
         self.plugin.run()
 

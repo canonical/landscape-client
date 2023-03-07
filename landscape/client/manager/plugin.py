@@ -1,8 +1,8 @@
 from twisted.internet.defer import maybeDeferred
 
+from landscape.client.broker.client import BrokerClientPlugin
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
-from landscape.client.broker.client import BrokerClientPlugin
 
 # Protocol messages! Same constants are defined in the server.
 FAILED = 5
@@ -10,7 +10,6 @@ SUCCEEDED = 6
 
 
 class ManagerPlugin(BrokerClientPlugin):
-
     @property
     def manager(self):
         """An alias for the C{client} attribute}."""
@@ -37,21 +36,30 @@ class ManagerPlugin(BrokerClientPlugin):
             return SUCCEEDED, text
 
         def failure(failure):
-            text = "%s: %s" % (failure.type.__name__, failure.value)
-            msg = ("Error occured running message handler %s with "
-                   "args %r %r.", format_object(callable), args, kwargs)
+            text = f"{failure.type.__name__}: {failure.value}"
+            msg = (
+                "Error occured running message handler %s with " "args %r %r.",
+                format_object(callable),
+                args,
+                kwargs,
+            )
             log_failure(failure, msg=msg)
             return FAILED, text
 
         def send(args):
             status, text = args
-            result = {"type": "operation-result",
-                      "status": status,
-                      "operation-id": message["operation-id"]}
+            result = {
+                "type": "operation-result",
+                "status": status,
+                "operation-id": message["operation-id"],
+            }
             if text:
                 result["result-text"] = text
             return self.manager.broker.send_message(
-                result, self._session_id, urgent=True)
+                result,
+                self._session_id,
+                urgent=True,
+            )
 
         deferred.addCallback(success)
         deferred.addErrback(failure)

@@ -1,12 +1,12 @@
 import os
 import unittest
-
-from mock import patch
+from unittest.mock import patch
 
 from landscape.lib import testing
-from landscape.lib.disk import (
-    get_filesystem_for_path, get_mount_info, is_device_removable,
-    _get_device_removable_file_path)
+from landscape.lib.disk import _get_device_removable_file_path
+from landscape.lib.disk import get_filesystem_for_path
+from landscape.lib.disk import get_mount_info
+from landscape.lib.disk import is_device_removable
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -14,9 +14,8 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 
 class DiskUtilitiesTest(BaseTestCase):
-
     def setUp(self):
-        super(DiskUtilitiesTest, self).setUp()
+        super().setUp()
         self.mount_file = self.makeFile("")
         self.stat_results = {}
 
@@ -31,7 +30,7 @@ class DiskUtilitiesTest(BaseTestCase):
         else:
             raise OSError("Permission denied")
 
-    def set_mount_points(self, points, read_access=True, fs='ext4'):
+    def set_mount_points(self, points, read_access=True, fs="ext4"):
         """
         This method prepares a fake mounts file containing the
         mount points specified in the C{points} list of strings. This file
@@ -41,14 +40,17 @@ class DiskUtilitiesTest(BaseTestCase):
         yield a permission denied error when inspected.
         """
         self.read_access = read_access
-        content = "\n".join("/dev/sda%d %s %s rw 0 0" % (i, point, fs)
-                            for i, point in enumerate(points))
+        content = "\n".join(
+            f"/dev/sda{i:d} {point} {fs} rw 0 0"
+            for i, point in enumerate(points)
+        )
         f = open(self.mount_file, "w")
         f.write(content)
         f.close()
         for point in points:
             self.stat_results[point] = os.statvfs_result(
-                (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0))
+                (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0),
+            )
 
     def test_get_filesystem_for_path(self):
         self.set_mount_points(["/"])
@@ -58,7 +60,8 @@ class DiskUtilitiesTest(BaseTestCase):
     def test_get_filesystem_subpath(self):
         self.set_mount_points(["/"])
         self.stat_results["/"] = os.statvfs_result(
-            (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0))
+            (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0),
+        )
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
         self.assertEqual(info["mount-point"], "/")
 
@@ -73,7 +76,7 @@ class DiskUtilitiesTest(BaseTestCase):
         self.assertEqual(info["mount-point"], "/")
 
     def test_get_filesystem_weird_fs(self):
-        self.set_mount_points(["/"], fs='simfs')
+        self.set_mount_points(["/"], fs="simfs")
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
         self.assertEqual(info["mount-point"], "/")
 
@@ -82,8 +85,11 @@ class DiskUtilitiesTest(BaseTestCase):
         os.symlink("/foo/bar", symlink_path)
         self.addCleanup(os.remove, symlink_path)
         self.set_mount_points(["/", "/foo"])
-        info = get_filesystem_for_path(symlink_path,
-                                       self.mount_file, self.statvfs)
+        info = get_filesystem_for_path(
+            symlink_path,
+            self.mount_file,
+            self.statvfs,
+        )
         self.assertEqual(info["mount-point"], "/foo")
 
     def test_ignore_unreadable_mount_point(self):
@@ -93,7 +99,10 @@ class DiskUtilitiesTest(BaseTestCase):
         """
         self.set_mount_points(["/secret"], read_access=False)
         info = get_filesystem_for_path(
-            "/secret", self.mount_file, self.statvfs)
+            "/secret",
+            self.mount_file,
+            self.statvfs,
+        )
         self.assertIs(info, None)
 
     def test_ignore_unmounted_and_virtual_mountpoints(self):
@@ -102,26 +111,35 @@ class DiskUtilitiesTest(BaseTestCase):
         ensure non-regression on bug #1045374.
         """
         self.read_access = True
-        content = "\n".join(["auto_direct /opt/whatever autofs",
-                             "none /run/lock tmpfs",
-                             "proc /proc proc",
-                             "/dev/sda1 /home ext4"])
+        content = "\n".join(
+            [
+                "auto_direct /opt/whatever autofs",
+                "none /run/lock tmpfs",
+                "proc /proc proc",
+                "/dev/sda1 /home ext4",
+            ],
+        )
 
         f = open(self.mount_file, "w")
         f.write(content)
         f.close()
 
         self.stat_results["/home"] = os.statvfs_result(
-            (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0))
+            (4096, 0, 1000, 500, 0, 0, 0, 0, 0, 0),
+        )
 
         result = [x for x in get_mount_info(self.mount_file, self.statvfs)]
-        expected = {"device": "/dev/sda1", "mount-point": "/home",
-                    "filesystem": "ext4", "total-space": 3, "free-space": 1}
+        expected = {
+            "device": "/dev/sda1",
+            "mount-point": "/home",
+            "filesystem": "ext4",
+            "total-space": 3,
+            "free-space": 1,
+        }
         self.assertEqual([expected], result)
 
 
 class RemovableDiskTest(BaseTestCase):
-
     @patch("os.path.islink")
     def test_wb_get_device_removable_file_path(self, is_link_mock):
         """

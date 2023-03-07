@@ -1,8 +1,125 @@
-landscape-client (22.09+git6230-0ubuntu0) UNRELEASED; urgency=medium
+landscape-client (23.02-0ubuntu1) focal; urgency=medium
 
-  * New upstream build for beta ppa
+  * New upstream release for focal, jammy, kinetic, lunar
 
- -- Kevin Nasto <kevin.nasto@canonical.com>  Tue, 29 Nov 2022 00:06:06 +0000
+ -- Mitch Burton <mitch.burton@canonical.com>  Wed, 08 Feb 2023 10:23:31 -0800
+
+landscape-client (19.12-0ubuntu13) jammy; urgency=medium
+
+  * d/landscape-sysinfo.wrapper, d/landscape-common.postrm: avoid too
+    frequent expensive operations (LP: #1893716)
+    - use a cache file and refresh it only once per minute
+    - use a single printf to format output
+    - if the former info was useful and we'd replace it with "sorry, load to
+      high" skip that update
+    - remove the cache file on purge
+
+ -- Christian Ehrhardt <christian.ehrhardt@canonical.com>  Wed, 30 Mar 2022 12:32:38 +0200
+
+landscape-client (19.12-0ubuntu12) jammy; urgency=medium
+
+  * d/p/lp1903776-release-upgrade.patch (LP: #1903776)
+    - Use /etc/apt/trusted.gpg.d for validating upgrade-tool signature.
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Wed, 09 Mar 2022 11:02:22 -0500
+
+landscape-client (19.12-0ubuntu11) jammy; urgency=medium
+
+  * debian/patches/1962539_twisted_py3.patch:
+    Fix obsolete imports on jammy. (LP: #1962539)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Wed, 02 Mar 2022 18:29:37 -0500
+
+landscape-client (19.12-0ubuntu10) impish; urgency=medium
+
+  * No-change rebuild to build packages with zstd compression.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 07 Oct 2021 12:32:25 +0200
+
+landscape-client (19.12-0ubuntu9.1) hirsute; urgency=medium
+
+  * Replace deprecated tostring() call with tobytes(). (LP: #1911050)
+
+ -- Brian Murray <brian@ubuntu.com>  Thu, 22 Apr 2021 14:59:38 -0700
+
+landscape-client (19.12-0ubuntu9) hirsute; urgency=medium
+
+  * Drop dh-systemd build dependency.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 10 Mar 2021 16:44:11 +0100
+
+landscape-client (19.12-0ubuntu8) hirsute; urgency=medium
+
+  * d/p/0003-clean-publisher-shutdown.patch:
+    Let publisher services shutdown cleanly (LP: #1870087)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Mon, 01 Mar 2021 21:00:40 -0500
+
+landscape-client (19.12-0ubuntu7) hirsute; urgency=medium
+
+  * Switch from depreated base64.decodestring to base64.decodebytes to fix
+    FTBFS with python3.9.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Tue, 24 Nov 2020 10:35:48 +0000
+
+landscape-client (19.12-0ubuntu6) hirsute; urgency=medium
+
+  * No-change rebuild to build with python3.9 as default.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 19 Nov 2020 18:32:52 +0100
+
+landscape-client (19.12-0ubuntu5) groovy; urgency=medium
+
+  * d/landscape-client.service (LP: #1870087)
+    - Set KillMode on service to avoid killing dpkg
+      through self-upgrade.
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Mon, 27 Apr 2020 16:13:02 +0000
+
+landscape-client (19.12-0ubuntu4) focal; urgency=medium
+
+  * d/p/0002-lp1870087-stale-locks.patch:
+    Clean stale twisted lock files (LP: #1870087)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Tue, 14 Apr 2020 11:07:41 -0400
+
+landscape-client (19.12-0ubuntu3) focal; urgency=medium
+
+  * No-change rebuild to build with python3.8.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 25 Jan 2020 04:32:59 +0000
+
+landscape-client (19.12-0ubuntu2) focal; urgency=medium
+
+  * Handle EINVAL error of SIOCETHTOOL ioctl (LP: #1855522)
+    The error occurs on WSL (1) and causes an error showing up in MOTD.
+
+ -- Balint Reczey <rbalint@ubuntu.com>  Sat, 07 Dec 2019 15:52:03 +0100
+
+landscape-client (19.12-0ubuntu1) focal; urgency=medium
+
+  * New upstream release 19.12:
+    - Modernized packaging.
+    - Added support for python-apt 1.9
+    - Converted init script to systemd service.
+    - Set default value if data_path is missing. (LP: #1728681)
+    - Sysinfo: add support for multiple IPv6 addresses per interface.
+      (LP: #829379)
+    - Clear hash id database on package resync. (LP: #1616116)
+    - Permit environments containing unicode chars for script execution.
+      (LP: #1765518)
+    - Set LANG in sysinfo wrapper. (LP: #1780071)
+    - Avoid leaking memory through unused twisted logs. (LP: #1685885)
+    - Handle unicode apt-sources-replace (LP: #1771443)
+    - Add simfs to the whitelist of watched file-systems (LP: #1499104)
+    - Return non-blank message when tasks already performed. (LP: #928933)
+    - Overrid apt progress pulse(). (LP: #1758529)
+    - Improvements on vm_info detection (LP: #1754073) (LP: #1799843)
+      (LP: #1828217)
+    - Remove the landscape url from motd output by removing LandscapeLink
+      from the list of default landscape-sysinfo plugins. (LP: #1753936)
+
+ -- Simon Poirier <simon.poirier@canonical.com>  Wed, 04 Dec 2019 14:12:24 +0000
 
 landscape-client (18.03-0ubuntu1) bionic; urgency=medium
 
@@ -202,7 +319,7 @@ landscape-client (13.07.1-0ubuntu2) saucy; urgency=low
      landscape-common package to the landscape-client-ui as part of
      LP: #1175553, LP: #1180691. The added "Replaces:" stanza does not need
      an equivalent "Breaks:" since packages depend on each other with a
-     strictly equal version number, avoiding the case described in 
+     strictly equal version number, avoiding the case described in
      http://www.debian.org/doc/debian-policy/footnotes.html#f53
 
  -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Fri, 9 Aug 2013 17:01:28 +0200
@@ -365,10 +482,10 @@ landscape-client (12.04-0ubuntu0.12.04.0) precise; urgency=low
     #953292, #953463, #953034, #949200, #953026, #954499, #954516, #954285,
     #953065, #954414, #954332, #954542, #955966, #955139, #956030, #956119).
   * Add the ability to auto discover the server location on local deployment
-    (LP: #917422, #927620, #917422, #928585, #929087, #932325, #948564) 
+    (LP: #917422, #927620, #917422, #928585, #929087, #932325, #948564)
   * Allow the client to accept arbitrary environment variables from the
     server for script execution (LP: #954999).
-  * Make landscape-config exit non-zero when registration fails and 
+  * Make landscape-config exit non-zero when registration fails and
     --ok-no-register is not passed (LP: #271759).
   * Check for the content of /sys/bus/xen/devices to report a machine as a Xen
     VM instead of just relying on the existence of /sys/bus/xen (LP: #921970).
@@ -794,11 +911,11 @@ landscape-client (1.0.21.1-0ubuntu2) intrepid; urgency=low
 
 landscape-client (1.0.21.1-0ubuntu1) intrepid; urgency=low
 
-  * New upstream version: 
+  * New upstream version:
     * Add ok-no-register option to landscape-config script to not fail if
       dbus isn't started or landscape-client isn't running.
     * lower timeout related to package management in landscape.
-  * debian/control: Depend on cron. 
+  * debian/control: Depend on cron.
   * debian/landscape-client.postinst: use ok-no-register option so that the
     postinst script doesn't fail when run from the installer. (LP: #274573).
 
@@ -846,7 +963,7 @@ landscape-client (1.0.18-0ubuntu4) intrepid; urgency=low
   [ Mathias Gug ]
   * debian/landscape-common.postinst, debian/landscape-common.prerm: don't
     call update-motd init script as it's no longer available in the
-    update-motd package. Call directly /usr/sbin/update-motd instead. 
+    update-motd package. Call directly /usr/sbin/update-motd instead.
     (LP: #271854)
 
  -- Mathias Gug <mathiaz@ubuntu.com>  Thu, 18 Sep 2008 16:47:08 -0400
@@ -866,15 +983,15 @@ landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
       command. A landscape account is not required to use this package.
     - landscape-client: has all the binaries required to run the
       landscape-client. Requires a landscape account.
-    - debian/control: 
+    - debian/control:
       + move some dependencies to landscape-client so that
-        landscape-common doesn't install unecessary packages in the 
+        landscape-common doesn't install unecessary packages in the
         default -server install.
       + move python-gobject to a Pre-Depends so that landscape-config can
         register the system during the postinst (LP: #268838).
   * debian/control:
     - depend on python-smartpm instead of smartpm-core.
-  * debian/landscape-client.postrm: delete /etc/landscape/client.conf when 
+  * debian/landscape-client.postrm: delete /etc/landscape/client.conf when
     the package is purged.
   * debian/landscape-client.postinst: remove sysinfo_in_motd debconf question
     as it wasn't used.
@@ -890,7 +1007,7 @@ landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
 
 landscape-client (1.0.18-0ubuntu1) intrepid; urgency=low
 
-  * New upstream release 
+  * New upstream release
 
  -- Rick Clark <rick.clark@ubuntu.com>  Mon, 08 Sep 2008 16:35:57 -0500
 
@@ -1009,7 +1126,7 @@ landscape-client (1.0.11-hardy1-landscape1) hardy; urgency=low
 
 landscape-client (1.0.10-hardy1-landscape1) hardy; urgency=low
 
-  * Change the utilisation of the csv module to be compatible with 
+  * Change the utilisation of the csv module to be compatible with
     python 2.4 as used in Dapper.
 
  -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:58:05 +0000
@@ -1258,7 +1375,7 @@ landscape-client (0.10.3-1ubuntu1) feisty; urgency=low
     fixed (#114829).
 
  -- Landscape Team <landscape-team@canonical.com>  Mon, 15 May 2007 16:31:00 -0700
-	
+
 landscape-client (0.10.2-1ubuntu1) feisty; urgency=low
 
   * New upstream release.
@@ -1272,7 +1389,7 @@ landscape-client (0.10.1-1ubuntu1) feisty; urgency=low
   * Minor fix in package management plugin timings.
 
  -- Landscape Team <landscape-devel@lists.canonical.com>  Thu, 10 May 2007 10:00:00 -0700
-	
+
 landscape-client (0.10.0-1ubuntu1) feisty; urgency=low
 
   * New upstream release.
@@ -1282,9 +1399,9 @@ landscape-client (0.10.0-1ubuntu1) feisty; urgency=low
   * The client uses the new operations system.  Support for the now
     unused action info system is gone.
   * A minor bpickle bug was fixed.
-	
+
  -- Jamshed Kakar <jamshed.kakar@canonical.com>  Mon, 7 May 2007 20:16:00 -0700
-	
+
 landscape-client (0.9.6-1ubuntu1) feisty; urgency=low
 
   * New upstream release.
@@ -1367,7 +1484,7 @@ landscape-client (0.8.1-1) unstable; urgency=low
   * New upstream release.
   * Account registration log message no longer exposes account
     password.
-	
+
  -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 18 Jan 2007 23:07:00 -0800
 
 landscape-client (0.8.0-1) unstable; urgency=low
@@ -1378,7 +1495,7 @@ landscape-client (0.8.0-1) unstable; urgency=low
   * Client includes an SSL certificate to verify the server with.
   * Package depends on python2.4-pycurl, which is necessary for the
     new SSL support.
-	
+
  -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 18 Jan 2007 10:48:00 -0800
 
 landscape-client (0.7.0-1) unstable; urgency=low
@@ -1389,7 +1506,7 @@ landscape-client (0.7.0-1) unstable; urgency=low
     added to control log verbosity.
   * Package depends on perl-modules, which is necessary for bare-bones
     server installs.
-	
+
  -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 2 Jan 2007 12:54:00 -0800
 
 landscape-client (0.6.1-1) unstable; urgency=low

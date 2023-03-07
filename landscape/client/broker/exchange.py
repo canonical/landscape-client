@@ -342,23 +342,28 @@ Diagram::
   14. Schedule exchange
 
 """
-import time
 import logging
-from landscape.lib.hashlib import md5
+import time
 
-from twisted.internet.defer import Deferred, succeed
-from landscape.lib.compat import _PY3
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import succeed
 
+from landscape import CLIENT_API
+from landscape import DEFAULT_SERVER_API
+from landscape import SERVER_API
 from landscape.lib.backoff import ExponentialBackoff
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.compat import _PY3
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
 from landscape.lib.format import format_delta
-from landscape.lib.message import got_next_expected, RESYNC
-from landscape.lib.versioning import is_version_higher, sort_versions
+from landscape.lib.hashlib import md5
+from landscape.lib.message import got_next_expected
+from landscape.lib.message import RESYNC
+from landscape.lib.versioning import is_version_higher
+from landscape.lib.versioning import sort_versions
 
-from landscape import DEFAULT_SERVER_API, SERVER_API, CLIENT_API
 
-
-class MessageExchange(object):
+class MessageExchange:
     """Schedule and handle message exchanges with the server.
 
     The L{MessageExchange} is the place where messages are sent to go out
@@ -376,8 +381,16 @@ class MessageExchange(object):
     # The highest server API that we are capable of speaking
     _api = SERVER_API
 
-    def __init__(self, reactor, store, transport, registration_info,
-                 exchange_store, config, max_messages=100):
+    def __init__(
+        self,
+        reactor,
+        store,
+        transport,
+        registration_info,
+        exchange_store,
+        config,
+        max_messages=100,
+    ):
         """
         @param reactor: The L{LandscapeReactor} used to fire events in response
             to messages received by the server.
@@ -421,15 +434,16 @@ class MessageExchange(object):
         A message is considered obsolete if the secure ID changed since it was
         received.
         """
-        if 'operation-id' not in message:
+        if "operation-id" not in message:
             return False
 
-        operation_id = message['operation-id']
+        operation_id = message["operation-id"]
         context = self._exchange_store.get_message_context(operation_id)
         if context is None:
             logging.warning(
-                "No message context for message with operation-id: %s"
-                % operation_id)
+                "No message context for message with "
+                f"operation-id: {operation_id}",
+            )
             return False
 
         # Compare the current secure ID with the one that was in effect when
@@ -450,7 +464,7 @@ class MessageExchange(object):
                 max_bytes = self._max_log_text_bytes
                 if len(value) > max_bytes:
                     value = value[:max_bytes]
-                    value += '...MESSAGE TRUNCATED DUE TO SIZE'
+                    value += "...MESSAGE TRUNCATED DUE TO SIZE"
                     message[field] = value
 
     def send(self, message, urgent=False):
@@ -463,14 +477,15 @@ class MessageExchange(object):
         """
         if self._message_is_obsolete(message):
             logging.info(
-                "Response message with operation-id %s was discarded "
-                "because the client's secure ID has changed in the meantime"
-                % message.get('operation-id'))
+                "Response message with operation-id "
+                f"{message.get('operation-id')} was discarded "
+                "because the client's secure ID has changed in the meantime",
+            )
             return None
 
         # These fields sometimes have really long output we need to trim
-        self.truncate_message_field('err', message)
-        self.truncate_message_field('result-text', message)
+        self.truncate_message_field("err", message)
+        self.truncate_message_field("result-text", message)
 
         if "timestamp" not in message:
             message["timestamp"] = int(self._reactor.time())
@@ -535,12 +550,16 @@ class MessageExchange(object):
     def _handle_set_intervals(self, message):
         if "exchange" in message:
             self._config.exchange_interval = message["exchange"]
-            logging.info("Exchange interval set to %d seconds." %
-                         self._config.exchange_interval)
+            logging.info(
+                "Exchange interval set "
+                f"to {self._config.exchange_interval:d} seconds.",
+            )
         if "urgent-exchange" in message:
             self._config.urgent_exchange_interval = message["urgent-exchange"]
-            logging.info("Urgent exchange interval set to %d seconds." %
-                         self._config.urgent_exchange_interval)
+            logging.info(
+                "Urgent exchange interval set "
+                f"to {self._config.urgent_exchange_interval:d} seconds.",
+            )
         self._config.write()
 
     def exchange(self):
@@ -565,19 +584,24 @@ class MessageExchange(object):
 
         start_time = time.time()
         if self._urgent_exchange:
-            logging.info("Starting urgent message exchange with %s."
-                         % self._transport.get_url())
+            logging.info(
+                "Starting urgent message exchange "
+                f"with {self._transport.get_url()}.",
+            )
         else:
-            logging.info("Starting message exchange with %s."
-                         % self._transport.get_url())
+            logging.info(
+                f"Starting message exchange with {self._transport.get_url()}.",
+            )
 
         deferred = Deferred()
 
         def exchange_completed():
             self.schedule_exchange(force=True)
             self._reactor.fire("exchange-done")
-            logging.info("Message exchange completed in %s.",
-                         format_delta(time.time() - start_time))
+            logging.info(
+                "Message exchange completed in %s.",
+                format_delta(time.time() - start_time),
+            )
             deferred.callback(None)
 
         def handle_result(result):
@@ -627,7 +651,7 @@ class MessageExchange(object):
                 # The error returned is an SSL error, most likely the server
                 # is using a self-signed certificate. Let's fire a special
                 # event so that the GUI can display a nice message.
-                logging.error("Message exchange failed: %s" % error.message)
+                logging.error(f"Message exchange failed: {error.message}")
                 ssl_error = True
 
             self._reactor.fire("exchange-failed", ssl_error=ssl_error)
@@ -636,16 +660,19 @@ class MessageExchange(object):
             logging.info("Message exchange failed.")
             exchange_completed()
 
-        self._reactor.call_in_thread(handle_result, handle_failure,
-                                     self._transport.exchange, payload,
-                                     self._registration_info.secure_id,
-                                     self._get_exchange_token(),
-                                     payload.get("server-api"))
+        self._reactor.call_in_thread(
+            handle_result,
+            handle_failure,
+            self._transport.exchange,
+            payload,
+            self._registration_info.secure_id,
+            self._get_exchange_token(),
+            payload.get("server-api"),
+        )
         return deferred
 
     def is_urgent(self):
-        """Return a bool showing whether there is an urgent exchange scheduled.
-        """
+        """Return bool showing whether there is an urgent exchange scheduled"""
         return self._urgent_exchange
 
     def schedule_exchange(self, urgent=False, force=False):
@@ -666,9 +693,12 @@ class MessageExchange(object):
         # The 'not self._exchanging' check below is currently untested.
         # It's a bit tricky to test as it is preventing rehooking 'exchange'
         # while there's a background thread doing the exchange itself.
-        if (not self._exchanging and
-            (force or self._exchange_id is None or
-             urgent and not self._urgent_exchange)):
+        if not self._exchanging and (
+            force
+            or self._exchange_id is None
+            or urgent
+            and not self._urgent_exchange
+        ):
             if urgent:
                 self._urgent_exchange = True
             if self._exchange_id:
@@ -680,18 +710,24 @@ class MessageExchange(object):
                 interval = self._config.exchange_interval
             backoff_delay = self._backoff_counter.get_random_delay()
             if backoff_delay:
-                logging.warning("Server is busy. Backing off client for {} "
-                                "seconds".format(backoff_delay))
+                logging.warning(
+                    "Server is busy. Backing off client for {} "
+                    "seconds".format(backoff_delay),
+                )
                 interval += backoff_delay
 
             if self._notification_id is not None:
                 self._reactor.cancel_call(self._notification_id)
             notification_interval = interval - 10
             self._notification_id = self._reactor.call_later(
-                notification_interval, self._notify_impending_exchange)
+                notification_interval,
+                self._notify_impending_exchange,
+            )
 
             self._exchange_id = self._reactor.call_later(
-                interval, self.exchange)
+                interval,
+                self.exchange,
+            )
 
     def _get_exchange_token(self):
         """Get the token given us by the server at the last exchange.
@@ -743,13 +779,15 @@ class MessageExchange(object):
                 del messages[i:]
         else:
             server_api = store.get_server_api()
-        payload = {"server-api": server_api,
-                   "client-api": CLIENT_API,
-                   "sequence": store.get_sequence(),
-                   "accepted-types": accepted_types_digest,
-                   "messages": messages,
-                   "total-messages": total_messages,
-                   "next-expected-sequence": store.get_server_sequence()}
+        payload = {
+            "server-api": server_api,
+            "client-api": CLIENT_API,
+            "sequence": store.get_sequence(),
+            "accepted-types": accepted_types_digest,
+            "messages": messages,
+            "total-messages": total_messages,
+            "next-expected-sequence": store.get_server_sequence(),
+        }
         accepted_client_types = self.get_client_accepted_message_types()
         accepted_client_types_hash = self._hash_types(accepted_client_types)
         if accepted_client_types_hash != self._client_accepted_types_hash:
@@ -776,7 +814,8 @@ class MessageExchange(object):
         """
         message_store = self._message_store
         self._client_accepted_types_hash = result.get(
-            "client-accepted-types-hash")
+            "client-accepted-types-hash",
+        )
         next_expected = result.get("next-expected-sequence")
         old_sequence = message_store.get_sequence()
         if next_expected is None:
@@ -793,8 +832,10 @@ class MessageExchange(object):
             # let's fire an event to tell all the plugins that they
             # ought to generate new messages so the server gets some
             # up-to-date data.
-            logging.info("Server asked for ancient data: resynchronizing all "
-                         "state with the server.")
+            logging.info(
+                "Server asked for ancient data: resynchronizing all "
+                "state with the server.",
+            )
             self.send({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
 
@@ -808,8 +849,9 @@ class MessageExchange(object):
         if new_uuid and isinstance(new_uuid, bytes):
             new_uuid = new_uuid.decode("ascii")
         if new_uuid != old_uuid:
-            logging.info("Server UUID changed (old=%s, new=%s)."
-                         % (old_uuid, new_uuid))
+            logging.info(
+                f"Server UUID changed (old={old_uuid}, new={new_uuid}).",
+            )
             self._reactor.fire("server-uuid-changed", old_uuid, new_uuid)
             message_store.set_server_uuid(new_uuid)
 
@@ -874,12 +916,14 @@ class MessageExchange(object):
         Any message handlers registered with L{register_message} will
         be called.
         """
-        if 'operation-id' in message:
+        if "operation-id" in message:
             # This is a message that requires a response. Store the secure ID
             # so we can check for obsolete results later.
             self._exchange_store.add_message_context(
-                message['operation-id'], self._registration_info.secure_id,
-                message['type'])
+                message["operation-id"],
+                self._registration_info.secure_id,
+                message["type"],
+            )
 
         self._reactor.fire("message", message)
         # This has plan interference! but whatever.
@@ -903,9 +947,9 @@ def get_accepted_types_diff(old_types, new_types):
     stable_types = old_types & new_types
     removed_types = old_types - new_types
     diff = []
-    diff.extend(["+%s" % type for type in added_types])
-    diff.extend(["%s" % type for type in stable_types])
-    diff.extend(["-%s" % type for type in removed_types])
+    diff.extend([f"+{typ}" for typ in added_types])
+    diff.extend([f"{typ}" for typ in stable_types])
+    diff.extend([f"-{typ}" for typ in removed_types])
     return " ".join(diff)
 
 

@@ -1,8 +1,7 @@
-from datetime import datetime
-import os
 import os.path
 import struct
 import time
+from datetime import datetime
 
 from twisted.internet.utils import getProcessOutputAndValue
 
@@ -14,20 +13,26 @@ class CommandError(Exception):
     """Raised when an external command returns a non-zero status."""
 
 
-class MemoryStats(object):
-
+class MemoryStats:
     def __init__(self, filename="/proc/meminfo"):
         data = {}
         for line in open(filename):
             if ":" in line:
                 key, value = line.split(":", 1)
-                if key in ["MemTotal", "SwapFree", "SwapTotal", "MemFree",
-                           "Buffers", "Cached"]:
+                if key in [
+                    "MemTotal",
+                    "SwapFree",
+                    "SwapTotal",
+                    "MemFree",
+                    "Buffers",
+                    "Cached",
+                ]:
                     data[key] = int(value.split()[0])
 
         self.total_memory = data["MemTotal"] // 1024
-        self.free_memory = (data["MemFree"] + data["Buffers"] +
-                            data["Cached"]) // 1024
+        self.free_memory = (
+            data["MemFree"] + data["Buffers"] + data["Cached"]
+        ) // 1024
         self.total_swap = data["SwapTotal"] // 1024
         self.free_swap = data["SwapFree"] // 1024
 
@@ -69,19 +74,20 @@ def get_logged_in_users():
     def parse_output(args):
         stdout_data, stderr_data, status = args
         if status != 0:
-            raise CommandError(stderr_data.decode('ascii'))
+            raise CommandError(stderr_data.decode("ascii"))
         first_line = stdout_data.split(b"\n", 1)[0]
-        first_line = first_line.decode('ascii')
+        first_line = first_line.decode("ascii")
         return sorted(set(first_line.split()))
+
     return result.addCallback(parse_output)
 
 
-def get_uptime(uptime_file=u"/proc/uptime"):
+def get_uptime(uptime_file="/proc/uptime"):
     """
     This parses a file in /proc/uptime format and returns a floating point
     version of the first value (the actual uptime).
     """
-    with open(uptime_file, 'r') as ufile:
+    with open(uptime_file, "r") as ufile:
         data = ufile.readline()
     up, idle = data.split()
     return float(up)
@@ -98,7 +104,7 @@ def get_thermal_zones(thermal_zone_path=None):
             yield ThermalZone(thermal_zone_path, zone_name)
 
 
-class ThermalZone(object):
+class ThermalZone:
 
     temperature = None
     temperature_value = None
@@ -114,12 +120,14 @@ class ThermalZone(object):
                     line = f.readline()
                     try:
                         self.temperature_value = int(line.strip()) / 1000.0
-                        self.temperature_unit = 'C'
-                        self.temperature = '{:.1f} {}'.format(
-                                self.temperature_value, self.temperature_unit)
+                        self.temperature_unit = "C"
+                        self.temperature = "{:.1f} {}".format(
+                            self.temperature_value,
+                            self.temperature_unit,
+                        )
                     except ValueError:
                         pass
-            except EnvironmentError:
+            except OSError:
                 pass
         else:
             temperature_path = os.path.join(self.path, "temperature")
@@ -135,7 +143,7 @@ class ThermalZone(object):
                             pass
 
 
-class LoginInfo(object):
+class LoginInfo:
     """Information about a login session gathered from wtmp or utmp."""
 
     # FIXME This format string works fine on my hardware, but *may* be
@@ -165,7 +173,7 @@ class LoginInfo(object):
         return bytestring.strip(b"\0").decode("utf-8")
 
 
-class LoginInfoReader(object):
+class LoginInfoReader:
     """Reader parses C{/var/log/wtmp} and/or C{/var/run/utmp} files.
 
     @file: Initialize the reader with an open file.
@@ -195,12 +203,16 @@ class LoginInfoReader(object):
         return None
 
 
-class BootTimes(object):
+class BootTimes:
     _last_boot = None
     _last_shutdown = None
 
-    def __init__(self, filename="/var/log/wtmp",
-                 boots_newer_than=0, shutdowns_newer_than=0):
+    def __init__(
+        self,
+        filename="/var/log/wtmp",
+        boots_newer_than=0,
+        shutdowns_newer_than=0,
+    ):
         self._filename = filename
         self._boots_newer_than = boots_newer_than
         self._shutdowns_newer_than = shutdowns_newer_than
@@ -216,12 +228,16 @@ class BootTimes(object):
             for info in reader.login_info():
                 if info.tty_device.startswith("~"):
                     timestamp = to_timestamp(info.entry_time)
-                    if (info.username == "reboot" and
-                            timestamp > self._last_boot):
+                    if (
+                        info.username == "reboot"
+                        and timestamp > self._last_boot
+                    ):
                         reboot_times.append(timestamp)
                         self._last_boot = timestamp
-                    elif (info.username == "shutdown" and
-                            timestamp > self._last_shutdown):
+                    elif (
+                        info.username == "shutdown"
+                        and timestamp > self._last_shutdown
+                    ):
                         shutdown_times.append(timestamp)
                         self._last_shutdown = timestamp
         return reboot_times, shutdown_times

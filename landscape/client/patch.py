@@ -5,7 +5,7 @@ class UpgraderConflict(Exception):
     """Two upgraders with the same version have been registered."""
 
 
-class UpgradeManagerBase(object):
+class UpgradeManagerBase:
     """A simple upgrade system."""
 
     def __init__(self):
@@ -22,8 +22,9 @@ class UpgradeManagerBase(object):
         """
         if version in self._upgraders:
             raise UpgraderConflict(
-                "%s is already registered as %s; not adding %s" %
-                (version, self._upgraders[version], function))
+                f"{version} is already registered as "
+                f"{self._upgraders[version]}; not adding {function}",
+            )
         self._upgraders[version] = function
 
     def get_version(self):
@@ -44,14 +45,15 @@ class UpgradeManagerBase(object):
         @param version: The version number that the function will be
             upgrading to.
         """
+
         def inner(function):
             self.register_upgrader(version, function)
             return function
+
         return inner
 
 
 class UpgradeManager(UpgradeManagerBase):
-
     def apply(self, persist):
         """Bring the database up-to-date.
 
@@ -64,7 +66,7 @@ class UpgradeManager(UpgradeManagerBase):
             if version > persist.get("system-version"):
                 persist.set("system-version", version)
                 upgrader(persist)
-                logging.info("Successfully applied patch %s" % version)
+                logging.info(f"Successfully applied patch {version}")
 
     def initialize(self, persist):
         """
@@ -80,7 +82,7 @@ class SQLiteUpgradeManager(UpgradeManagerBase):
     def get_database_versions(self, cursor):
         cursor.execute("SELECT version FROM patch")
         result = cursor.fetchall()
-        return set([row[0] for row in result])
+        return {row[0] for row in result}
 
     def get_database_version(self, cursor):
         cursor.execute("SELECT MAX(version) FROM patch")

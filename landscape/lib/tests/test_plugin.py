@@ -6,7 +6,7 @@ from landscape.lib import testing
 from landscape.lib.plugin import PluginRegistry
 
 
-class SamplePlugin(object):
+class SamplePlugin:
     plugin_name = "sample"
 
     def __init__(self):
@@ -20,7 +20,7 @@ class ExchangePlugin(SamplePlugin):
     """A plugin which records exchange notification events."""
 
     def __init__(self):
-        super(ExchangePlugin, self).__init__()
+        super().__init__()
         self.exchanged = 0
         self.waiter = None
 
@@ -34,11 +34,13 @@ class ExchangePlugin(SamplePlugin):
             self.waiter.callback(None)
 
 
-class PluginTest(testing.FSTestCase, testing.TwistedTestCase,
-                 unittest.TestCase):
-
+class PluginTest(
+    testing.FSTestCase,
+    testing.TwistedTestCase,
+    unittest.TestCase,
+):
     def setUp(self):
-        super(PluginTest, self).setUp()
+        super().setUp()
         self.registry = PluginRegistry()
 
     def test_register_plugin(self):

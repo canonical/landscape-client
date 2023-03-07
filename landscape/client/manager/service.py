@@ -1,10 +1,11 @@
 from twisted.python.reflect import namedClass
 
-from landscape.client.service import LandscapeService, run_landscape_service
-from landscape.client.manager.config import ManagerConfiguration
-from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.amp import ComponentPublisher
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.manager.config import ManagerConfiguration
 from landscape.client.manager.manager import Manager
+from landscape.client.service import LandscapeService
+from landscape.client.service import run_landscape_service
 
 
 class ManagerService(LandscapeService):
@@ -16,19 +17,26 @@ class ManagerService(LandscapeService):
     service_name = Manager.name
 
     def __init__(self, config):
-        super(ManagerService, self).__init__(config)
+        super().__init__(config)
         self.plugins = self.get_plugins()
         self.manager = Manager(self.reactor, self.config)
-        self.publisher = ComponentPublisher(self.manager, self.reactor,
-                                            self.config)
+        self.publisher = ComponentPublisher(
+            self.manager,
+            self.reactor,
+            self.config,
+        )
 
     def get_plugins(self):
         """Return instances of all the plugins enabled in the configuration."""
-        return [namedClass("landscape.client.manager.%s.%s"
-                           % (plugin_name.lower(), plugin_name))()
-                for plugin_name in self.config.plugin_factories]
+        return [
+            namedClass(
+                "landscape.client.manager."
+                f"{plugin_name.lower()}.{plugin_name}",
+            )()
+            for plugin_name in self.config.plugin_factories
+        ]
 
-    def startService(self):
+    def startService(self):  # noqa: N802
         """Start the manager service.
 
         This method does 3 things, in this order:
@@ -37,7 +45,7 @@ class ManagerService(LandscapeService):
           - Connect to the broker.
           - Add all configured plugins, that will in turn register themselves.
         """
-        super(ManagerService, self).startService()
+        super().startService()
         self.publisher.start()
 
         def start_plugins(broker):
@@ -51,11 +59,11 @@ class ManagerService(LandscapeService):
         connected = self.connector.connect()
         return connected.addCallback(start_plugins)
 
-    def stopService(self):
+    def stopService(self):  # noqa: N802
         """Stop the manager and close the connection with the broker."""
         self.connector.disconnect()
         deferred = self.publisher.stop()
-        super(ManagerService, self).stopService()
+        super().stopService()
         return deferred
 
 

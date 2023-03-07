@@ -1,8 +1,8 @@
-import os
 import logging
+import os
 
-from landscape.lib.compat import SafeConfigParser
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.compat import SafeConfigParser
 
 
 class UpdateManager(MonitorPlugin):
@@ -45,10 +45,10 @@ class UpdateManager(MonitorPlugin):
         valid_prompts = ["lts", "never", "normal"]
         if prompt not in valid_prompts:
             prompt = "normal"
-            message = ("%s contains invalid Prompt value. "
-                       "Should be one of %s." % (
-                           self.update_manager_filename,
-                           valid_prompts))
+            message = (
+                f"{self.update_manager_filename} contains invalid Prompt "
+                f"value. Should be one of {valid_prompts}."
+            )
             logging.warning(message)
         return prompt
 
@@ -60,11 +60,8 @@ class UpdateManager(MonitorPlugin):
         if prompt == self._persist.get("prompt"):
             return
         self._persist.set("prompt", prompt)
-        message = {
-            "type": "update-manager-info",
-            "prompt": prompt}
-        logging.info("Queueing message with updated "
-                     "update-manager status.")
+        message = {"type": "update-manager-info", "prompt": prompt}
+        logging.info("Queueing message with updated " "update-manager status.")
         return self.registry.broker.send_message(message, self._session_id)
 
     def run(self):
@@ -72,4 +69,6 @@ class UpdateManager(MonitorPlugin):
         Send the update-manager-info messages, if the server accepts them.
         """
         return self.registry.broker.call_if_accepted(
-            "update-manager-info", self.send_message)
+            "update-manager-info",
+            self.send_message,
+        )

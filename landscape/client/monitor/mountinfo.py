@@ -1,11 +1,12 @@
 import codecs
-import time
 import os
+import time
 
 from landscape.client.accumulate import Accumulator
-from landscape.lib.disk import get_mount_info, is_device_removable
-from landscape.lib.monitor import CoverageMonitor
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.disk import get_mount_info
+from landscape.lib.disk import is_device_removable
+from landscape.lib.monitor import CoverageMonitor
 
 
 class MountInfo(MonitorPlugin):
@@ -15,9 +16,15 @@ class MountInfo(MonitorPlugin):
 
     max_free_space_items_to_exchange = 200
 
-    def __init__(self, interval=300, monitor_interval=60 * 60,
-                 mounts_file="/proc/mounts", create_time=time.time,
-                 statvfs=None, mtab_file="/etc/mtab"):
+    def __init__(
+        self,
+        interval=300,
+        monitor_interval=60 * 60,
+        mounts_file="/proc/mounts",
+        create_time=time.time,
+        statvfs=None,
+        mtab_file="/etc/mtab",
+    ):
         self.run_interval = interval
         self._monitor_interval = monitor_interval
         self._create_time = create_time
@@ -33,21 +40,30 @@ class MountInfo(MonitorPlugin):
         self.is_device_removable = is_device_removable
 
     def register(self, registry):
-        super(MountInfo, self).register(registry)
+        super().register(registry)
         self._accumulate = Accumulator(self._persist, self.registry.step_size)
-        self._monitor = CoverageMonitor(self.run_interval, 0.8,
-                                        "mount info snapshot",
-                                        create_time=self._create_time)
-        self.registry.reactor.call_every(self._monitor_interval,
-                                         self._monitor.log)
+        self._monitor = CoverageMonitor(
+            self.run_interval,
+            0.8,
+            "mount info snapshot",
+            create_time=self._create_time,
+        )
+        self.registry.reactor.call_every(
+            self._monitor_interval,
+            self._monitor.log,
+        )
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
         self.call_on_accepted("mount-info", self.send_messages, True)
 
     def create_messages(self):
-        return [message
-                for message in [self.create_mount_info_message(),
-                                self.create_free_space_message()]
-                if message is not None]
+        return [
+            message
+            for message in [
+                self.create_mount_info_message(),
+                self.create_free_space_message(),
+            ]
+            if message is not None
+        ]
 
     def create_mount_info_message(self):
         if self._mount_info:
@@ -60,24 +76,27 @@ class MountInfo(MonitorPlugin):
     def create_free_space_message(self):
         if self._free_space:
             items_to_exchange = self._free_space[
-                :self.max_free_space_items_to_exchange]
-            message = {"type": "free-space",
-                       "free-space": items_to_exchange}
+                : self.max_free_space_items_to_exchange
+            ]
+            message = {"type": "free-space", "free-space": items_to_exchange}
             self._free_space = self._free_space[
-                self.max_free_space_items_to_exchange:]
+                self.max_free_space_items_to_exchange :
+            ]
             return message
         return None
 
     def send_messages(self, urgent=False):
         for message in self.create_messages():
             d = self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent)
+                message,
+                self._session_id,
+                urgent=urgent,
+            )
             if message["type"] == "mount-info":
                 d.addCallback(lambda x: self.persist_mount_info())
 
     def exchange(self):
-        self.registry.broker.call_if_accepted("mount-info",
-                                              self.send_messages)
+        self.registry.broker.call_if_accepted("mount-info", self.send_messages)
 
     def persist_mount_info(self):
         for timestamp, mount_info in self._mount_info_to_persist:
@@ -118,11 +137,12 @@ class MountInfo(MonitorPlugin):
         for info in get_mount_info(self._mounts_file, self._statvfs):
             device = info["device"]
             mount_point = info["mount-point"]
-            if (device.startswith("/dev/") and
-                not mount_point.startswith("/dev/") and
-                not self.is_device_removable(device) and
-                mount_point not in bound_mount_points
-                ):
+            if (
+                device.startswith("/dev/")
+                and not mount_point.startswith("/dev/")
+                and not self.is_device_removable(device)
+                and mount_point not in bound_mount_points
+            ):
 
                 yield info
 

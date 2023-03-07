@@ -1,7 +1,7 @@
-from landscape.client.manager.plugin import SUCCEEDED
-
 from landscape.client.manager.fakepackagemanager import FakePackageManager
-from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
 
 
 class FakePackageManagerTest(LandscapeTest):
@@ -10,7 +10,7 @@ class FakePackageManagerTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(FakePackageManagerTest, self).setUp()
+        super().setUp()
         self.package_manager = FakePackageManager()
         self.package_manager.randint = lambda x, y: 0
 
@@ -26,10 +26,17 @@ class FakePackageManagerTest(LandscapeTest):
         self.manager.dispatch_message(message)
         self.manager.reactor.advance(1)
 
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "change-packages-result",
-                              "result-text": "OK done.",
-                              "result-code": 1, "operation-id": 1}])
+        self.assertMessages(
+            service.message_store.get_pending_messages(),
+            [
+                {
+                    "type": "change-packages-result",
+                    "result-text": "OK done.",
+                    "result-code": 1,
+                    "operation-id": 1,
+                },
+            ],
+        )
 
     def test_handle_change_package_locks(self):
         """
@@ -43,12 +50,18 @@ class FakePackageManagerTest(LandscapeTest):
         self.manager.dispatch_message(message)
         self.manager.reactor.advance(1)
 
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "result-text":
-                                  "Package locks successfully changed.",
-                              "result-code": 0, "status": SUCCEEDED,
-                              "operation-id": 1}])
+        self.assertMessages(
+            service.message_store.get_pending_messages(),
+            [
+                {
+                    "type": "operation-result",
+                    "result-text": "Package locks successfully changed.",
+                    "result-code": 0,
+                    "status": SUCCEEDED,
+                    "operation-id": 1,
+                },
+            ],
+        )
 
     def test_handle_release_upgrade(self):
         """
@@ -62,9 +75,15 @@ class FakePackageManagerTest(LandscapeTest):
         self.manager.dispatch_message(message)
         self.manager.reactor.advance(1)
 
-        self.assertMessages(service.message_store.get_pending_messages(),
-                            [{"type": "operation-result",
-                              "result-text":
-                                  "Successful release upgrade.",
-                              "result-code": 0, "status": SUCCEEDED,
-                              "operation-id": 1}])
+        self.assertMessages(
+            service.message_store.get_pending_messages(),
+            [
+                {
+                    "type": "operation-result",
+                    "result-text": "Successful release upgrade.",
+                    "result-code": 0,
+                    "status": SUCCEEDED,
+                    "operation-id": 1,
+                },
+            ],
+        )

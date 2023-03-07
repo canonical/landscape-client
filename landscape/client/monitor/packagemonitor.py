@@ -3,10 +3,10 @@ import os
 
 from twisted.internet.utils import getProcessOutput
 
+from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.client.package.reporter import find_reporter_command
 from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.encoding import encode_values
-from landscape.client.package.reporter import find_reporter_command
-from landscape.client.monitor.plugin import MonitorPlugin
 
 
 class PackageMonitor(MonitorPlugin):
@@ -17,7 +17,7 @@ class PackageMonitor(MonitorPlugin):
     _reporter_command = None
 
     def __init__(self, package_store_filename=None):
-        super(PackageMonitor, self).__init__()
+        super().__init__()
         if package_store_filename:
             self._package_store = PackageStore(package_store_filename)
         else:
@@ -29,17 +29,23 @@ class PackageMonitor(MonitorPlugin):
         if self.config.clones and self.config.is_clone:
             # Run clones a bit more frequently in order to catch up
             self.run_interval = 60  # 300
-        super(PackageMonitor, self).register(registry)
+        super().register(registry)
 
         if not self._package_store:
-            filename = os.path.join(registry.config.data_path,
-                                    "package/database")
+            filename = os.path.join(
+                registry.config.data_path,
+                "package/database",
+            )
             self._package_store = PackageStore(filename)
 
-        registry.register_message("package-ids",
-                                  self._enqueue_message_as_reporter_task)
-        registry.reactor.call_on("server-uuid-changed",
-                                 self._server_uuid_changed)
+        registry.register_message(
+            "package-ids",
+            self._enqueue_message_as_reporter_task,
+        )
+        registry.reactor.call_on(
+            "server-uuid-changed",
+            self._server_uuid_changed,
+        )
         self.call_on_accepted("packages", self.spawn_reporter)
         self.run()
 
@@ -59,7 +65,7 @@ class PackageMonitor(MonitorPlugin):
     def _run_fake_reporter(self, args):
         """Run a fake-reporter in-process."""
 
-        class FakeFacade(object):
+        class FakeFacade:
             """
             A fake facade to workaround the issue that the AptFacade
             essentially allows only once instance per process.
@@ -67,34 +73,48 @@ class PackageMonitor(MonitorPlugin):
 
             def get_arch(self):
                 arch = os.uname()[-1]
-                result = {"pentium": "i386",
-                          "i86pc": "i386",
-                          "x86_64": "amd64"}.get(arch)
+                result = {
+                    "pentium": "i386",
+                    "i86pc": "i386",
+                    "x86_64": "amd64",
+                }.get(arch)
                 if result:
                     arch = result
-                elif (arch[0] == "i" and arch.endswith("86")):
+                elif arch[0] == "i" and arch.endswith("86"):
                     arch = "i386"
                 return arch
 
         if getattr(self, "_fake_reporter", None) is None:
 
             from landscape.client.package.reporter import (
-                FakeReporter, PackageReporterConfiguration)
+                FakeReporter,
+                PackageReporterConfiguration,
+            )
             from landscape.lib.apt.package.store import FakePackageStore
+
             package_facade = FakeFacade()
             package_config = PackageReporterConfiguration()
-            package_config.load(args + ["-d", self.config.data_path,
-                                        "-l", self.config.log_dir])
+            package_config.load(
+                args
+                + ["-d", self.config.data_path, "-l", self.config.log_dir],
+            )
             package_store = FakePackageStore(package_config.store_filename)
-            self._fake_reporter = FakeReporter(package_store, package_facade,
-                                               self.registry.broker,
-                                               package_config)
+            self._fake_reporter = FakeReporter(
+                package_store,
+                package_facade,
+                self.registry.broker,
+                package_config,
+            )
             self._fake_reporter.global_store_filename = os.path.join(
-                self.config.master_data_path, "package", "database")
+                self.config.master_data_path,
+                "package",
+                "database",
+            )
             self._fake_reporter_running = False
 
         if self._fake_reporter_running:
             from twisted.internet.defer import succeed
+
             return succeed(None)
 
         self._fake_reporter_running = True
@@ -123,16 +143,19 @@ class PackageMonitor(MonitorPlugin):
         # path is set to None so that getProcessOutput does not
         # chdir to "." see bug #211373
         env = encode_values(env)
-        result = getProcessOutput(self._reporter_command,
-                                  args=args, env=env,
-                                  errortoo=1,
-                                  path=None)
+        result = getProcessOutput(
+            self._reporter_command,
+            args=args,
+            env=env,
+            errortoo=1,
+            path=None,
+        )
         result.addCallback(self._got_reporter_output)
         return result
 
     def _got_reporter_output(self, output):
         if output:
-            logging.warning("Package reporter output:\n%s" % output)
+            logging.warning(f"Package reporter output:\n{output}")
 
     def _reset(self):
         """
@@ -146,8 +169,10 @@ class PackageMonitor(MonitorPlugin):
         resynchronize task and not causing sqlite to reset the serial
         key.
         """
-        task = self._package_store.add_task("reporter",
-                                            {"type": "resynchronize"})
+        task = self._package_store.add_task(
+            "reporter",
+            {"type": "resynchronize"},
+        )
         self._package_store.clear_tasks(except_tasks=(task,))
 
     def _server_uuid_changed(self, old_uuid, new_uuid):

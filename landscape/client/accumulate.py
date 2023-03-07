@@ -72,24 +72,31 @@ representative data at each step boundary.
 """
 
 
-class Accumulator(object):
-
+class Accumulator:
     def __init__(self, persist, step_size):
         self._persist = persist
         self._step_size = step_size
 
     def __call__(self, new_timestamp, new_free_space, key):
         previous_timestamp, accumulated_value = self._persist.get(key, (0, 0))
-        accumulated_value, step_data = \
-            accumulate(previous_timestamp, accumulated_value,
-                       new_timestamp, new_free_space, self._step_size)
+        accumulated_value, step_data = accumulate(
+            previous_timestamp,
+            accumulated_value,
+            new_timestamp,
+            new_free_space,
+            self._step_size,
+        )
         self._persist.set(key, (new_timestamp, accumulated_value))
         return step_data
 
 
-def accumulate(previous_timestamp, accumulated_value,
-               new_timestamp, new_value,
-               step_size):
+def accumulate(
+    previous_timestamp,
+    accumulated_value,
+    new_timestamp,
+    new_value,
+    step_size,
+):
     previous_step = previous_timestamp // step_size
     new_step = new_timestamp // step_size
     step_boundary = new_step * step_size

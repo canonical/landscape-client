@@ -32,15 +32,19 @@ def get_ubuntu_pro_info():
     try:
         completed_process = subprocess.run(
             ["ua", "status", "--format", "json"],
-            encoding="utf8", stdout=subprocess.PIPE)
+            encoding="utf8",
+            stdout=subprocess.PIPE,
+        )
     except FileNotFoundError:
         return {
-            "errors": [{
-                "message": "ubuntu-advantage-tools not found.",
-                "message_code": "tools-error",
-                "service": None,
-                "type": "system",
-            }],
+            "errors": [
+                {
+                    "message": "ubuntu-advantage-tools not found.",
+                    "message_code": "tools-error",
+                    "service": None,
+                    "type": "system",
+                },
+            ],
             "result": "failure",
         }
     else:

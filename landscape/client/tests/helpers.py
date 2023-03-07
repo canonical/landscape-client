@@ -1,45 +1,47 @@
 import pprint
 import unittest
 
+from landscape.client.broker.amp import FakeRemoteBroker
+from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.broker.service import BrokerService
+from landscape.client.broker.transport import FakeTransport
+from landscape.client.deployment import BaseConfiguration
+from landscape.client.manager.config import ManagerConfiguration
+from landscape.client.manager.manager import Manager
+from landscape.client.monitor.config import MonitorConfiguration
+from landscape.client.monitor.monitor import Monitor
 from landscape.client.tests.subunit import run_isolated
 from landscape.client.watchdog import bootstrap_list
-
+from landscape.lib import testing
 from landscape.lib.persist import Persist
 from landscape.lib.testing import FakeReactor
 
-from landscape.client.broker.config import BrokerConfiguration
-from landscape.client.broker.transport import FakeTransport
-from landscape.client.monitor.config import MonitorConfiguration
-from landscape.client.monitor.monitor import Monitor
-from landscape.client.manager.manager import Manager
-
-from landscape.client.broker.service import BrokerService
-from landscape.client.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
-from landscape.client.deployment import BaseConfiguration
-from landscape.client.manager.config import ManagerConfiguration
-
-from landscape.lib import testing
-
 
 DEFAULT_ACCEPTED_TYPES = [
-    "accepted-types", "registration", "resynchronize", "set-id",
-    "set-intervals", "unknown-id"]
+    "accepted-types",
+    "registration",
+    "resynchronize",
+    "set-id",
+    "set-intervals",
+    "unknown-id",
+]
 
 
 class MessageTestCase(unittest.TestCase):
-
-    def assertMessage(self, obtained, expected):
+    def assertMessage(self, obtained, expected):  # noqa: N802
         obtained = obtained.copy()
         for key in ["api", "timestamp"]:
             if key not in expected and key in obtained:
                 obtained.pop(key)
         if obtained != expected:
-            raise self.failureException("Messages don't match.\n"
-                                        "Expected:\n%s\nObtained:\n%s\n"
-                                        % (pprint.pformat(expected),
-                                           pprint.pformat(obtained)))
+            raise self.failureException(
+                "Messages don't match.\n"
+                f"Expected:\n{pprint.pformat(expected)}\n"
+                f"Obtained:\n{pprint.pformat(obtained)}\n",
+            )
 
-    def assertMessages(self, obtained, expected):
+    def assertMessages(self, obtained, expected):  # noqa: N802
         self.assertEqual(type(obtained), list)
         self.assertEqual(type(expected), list)
         for obtained_message, expected_message in zip(obtained, expected):
@@ -49,25 +51,32 @@ class MessageTestCase(unittest.TestCase):
         diff = abs(expected_len - obtained_len)
         if obtained_len < expected_len:
             extra = pprint.pformat(expected[-diff:])
-            raise self.failureException("Expected the following %d additional "
-                                        "messages:\n%s" % (diff, extra))
+            raise self.failureException(
+                f"Expected the following {diff:d} additional "
+                f"messages:\n{extra}",
+            )
         elif expected_len < obtained_len:
             extra = pprint.pformat(obtained[-diff:])
-            raise self.failureException("Got %d more messages than expected:\n"
-                                        "%s" % (diff, extra))
+            raise self.failureException(
+                f"Got {diff:d} more messages than expected:\n{extra}",
+            )
 
 
-class LandscapeTest(MessageTestCase, testing.TwistedTestCase,
-                    testing.HelperTestCase, testing.ConfigTestCase,
-                    testing.CompatTestCase):
-
+class LandscapeTest(
+    MessageTestCase,
+    testing.TwistedTestCase,
+    testing.HelperTestCase,
+    testing.ConfigTestCase,
+    testing.CompatTestCase,
+):
     def setUp(self):
         testing.TwistedTestCase.setUp(self)
         result = testing.HelperTestCase.setUp(self)
 
         self._orig_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = (
-                testing.BaseConfiguration.default_config_filenames)
+            testing.BaseConfiguration.default_config_filenames
+        )
 
         return result
 
@@ -77,7 +86,7 @@ class LandscapeTest(MessageTestCase, testing.TwistedTestCase,
         testing.TwistedTestCase.tearDown(self)
         testing.HelperTestCase.tearDown(self)
 
-    def makePersistFile(self, *args, **kwargs):
+    def makePersistFile(self, *args, **kwargs):  # noqa: N802
         """Return a temporary filename to be used by a L{Persist} object.
 
         The possible .old persist file is cleaned up after the test.
@@ -97,12 +106,13 @@ class LandscapeIsolatedTest(LandscapeTest):
                     return run_method(oself, *args, **kwargs)
                 finally:
                     self.doCleanups()
+
             LandscapeTest.run = run_wrapper
             LandscapeTest._cleanup_patch = True
         run_isolated(LandscapeTest, self, result)
 
 
-class FakeBrokerServiceHelper(object):
+class FakeBrokerServiceHelper:
     """
     The following attributes will be set in your test case:
       - broker_service: A C{BrokerService}.
@@ -119,11 +129,14 @@ class FakeBrokerServiceHelper(object):
             "computer_title = Some Computer\n"
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
-            "data_path = %s\n"
-            "log_dir = %s\n" % (test_case.data_path, log_dir))
+            f"data_path = {test_case.data_path}\n"
+            f"log_dir = {log_dir}\n",
+        )
 
-        bootstrap_list.bootstrap(data_path=test_case.data_path,
-                                 log_dir=log_dir)
+        bootstrap_list.bootstrap(
+            data_path=test_case.data_path,
+            log_dir=log_dir,
+        )
 
         config = BrokerConfiguration()
         config.load(["-c", test_case.config_filename])
@@ -137,7 +150,8 @@ class FakeBrokerServiceHelper(object):
         test_case.remote = FakeRemoteBroker(
             test_case.broker_service.exchanger,
             test_case.broker_service.message_store,
-            test_case.broker_service.broker)
+            test_case.broker_service.broker,
+        )
 
 
 class BrokerServiceHelper(FakeBrokerServiceHelper):
@@ -150,11 +164,13 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-        super(BrokerServiceHelper, self).set_up(test_case)
+        super().set_up(test_case)
         test_case.broker_service.startService()
         # Use different reactor to simulate separate processes
         self._connector = RemoteBrokerConnector(
-            FakeReactor(), test_case.broker_service.config)
+            FakeReactor(),
+            test_case.broker_service.config,
+        )
         deferred = self._connector.connect()
         test_case.remote = test_case.successResultOf(deferred)
 
@@ -170,7 +186,7 @@ class MonitorHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-        super(MonitorHelper, self).set_up(test_case)
+        super().set_up(test_case)
         persist = Persist()
         persist_filename = test_case.makePersistFile()
         test_case.config = MonitorConfiguration()
@@ -178,8 +194,11 @@ class MonitorHelper(FakeBrokerServiceHelper):
         test_case.config.stagger_launch = 0  # let's keep tests deterministic
         test_case.reactor = FakeReactor()
         test_case.monitor = Monitor(
-            test_case.reactor, test_case.config,
-            persist, persist_filename)
+            test_case.reactor,
+            test_case.config,
+            persist,
+            persist_filename,
+        )
         test_case.monitor.broker = test_case.remote
         test_case.mstore = test_case.broker_service.message_store
 
@@ -191,7 +210,7 @@ class ManagerHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-        super(ManagerHelper, self).set_up(test_case)
+        super().set_up(test_case)
         test_case.config = ManagerConfiguration()
         test_case.config.load(["-c", test_case.config_filename])
         test_case.reactor = FakeReactor()
@@ -199,10 +218,15 @@ class ManagerHelper(FakeBrokerServiceHelper):
         test_case.manager.broker = test_case.remote
 
 
-class MockCoverageMonitor(object):
-
-    def __init__(self, count=None, expected_count=None, percent=None,
-                 since_reset=None, warn=None):
+class MockCoverageMonitor:
+    def __init__(
+        self,
+        count=None,
+        expected_count=None,
+        percent=None,
+        since_reset=None,
+        warn=None,
+    ):
         self.count = count or 0
         self.expected_count = expected_count or 0
         self.percent = percent or 0.0
@@ -219,8 +243,7 @@ class MockCoverageMonitor(object):
         pass
 
 
-class MockFrequencyMonitor(object):
-
+class MockFrequencyMonitor:
     def __init__(self, count=None, expected_count=None, warn=None):
         self.count = count or 0
         self.expected_count = expected_count or 0
@@ -233,7 +256,7 @@ class MockFrequencyMonitor(object):
         pass
 
 
-class FakePersist(object):
+class FakePersist:
     """
     Incompletely fake a C{landscape.lib.Persist} to simplify higher level tests
     that result in an attempt to clear down persisted data.

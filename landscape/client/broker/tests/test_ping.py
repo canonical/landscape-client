@@ -1,15 +1,15 @@
-from landscape.client.tests.helpers import LandscapeTest
-
 from twisted.internet.defer import fail
 
+from landscape.client.broker.ping import PingClient
+from landscape.client.broker.ping import Pinger
+from landscape.client.broker.tests.helpers import ExchangeHelper
+from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
 from landscape.lib.testing import FakeReactor
-from landscape.client.broker.ping import PingClient, Pinger
-from landscape.client.broker.tests.helpers import ExchangeHelper
 
 
-class FakePageGetter(object):
+class FakePageGetter:
     """An fake web client."""
 
     def __init__(self, response):
@@ -39,9 +39,8 @@ class FakePageGetter(object):
 
 
 class PingClientTest(LandscapeTest):
-
     def setUp(self):
-        super(PingClientTest, self).setUp()
+        super().setUp()
         self.reactor = FakeReactor()
 
     def test_default_get_page(self):
@@ -64,8 +63,15 @@ class PingClientTest(LandscapeTest):
         pinger.ping(url, insecure_id)
         self.assertEqual(
             client.fetches,
-            [(url, True, {"Content-Type": "application/x-www-form-urlencoded"},
-              "insecure_id=10")])
+            [
+                (
+                    url,
+                    True,
+                    {"Content-Type": "application/x-www-form-urlencoded"},
+                    "insecure_id=10",
+                ),
+            ],
+        )
 
     def test_ping_no_insecure_id(self):
         """
@@ -100,6 +106,7 @@ class PingClientTest(LandscapeTest):
 
         def errback(failure):
             failures.append(failure)
+
         d.addErrback(errback)
         self.assertEqual(len(failures), 1)
         self.assertEqual(failures[0].getErrorMessage(), "That's a failure!")
@@ -116,7 +123,7 @@ class PingerTest(LandscapeTest):
     install_exchanger = False
 
     def setUp(self):
-        super(PingerTest, self).setUp()
+        super().setUp()
         self.page_getter = FakePageGetter(None)
 
         def factory(reactor):
@@ -125,21 +132,25 @@ class PingerTest(LandscapeTest):
         self.config.ping_url = "http://localhost:8081/whatever"
         self.config.ping_interval = 10
 
-        self.pinger = Pinger(self.reactor,
-                             self.identity,
-                             self.exchanger,
-                             self.config,
-                             ping_client_factory=factory)
+        self.pinger = Pinger(
+            self.reactor,
+            self.identity,
+            self.exchanger,
+            self.config,
+            ping_client_factory=factory,
+        )
 
     def test_default_ping_client(self):
         """
         The C{ping_client_factory} argument to L{Pinger} should be optional,
         and default to L{PingClient}.
         """
-        pinger = Pinger(self.reactor,
-                        self.identity,
-                        self.exchanger,
-                        self.config)
+        pinger = Pinger(
+            self.reactor,
+            self.identity,
+            self.exchanger,
+            self.config,
+        )
         self.assertEqual(pinger.ping_client_factory, PingClient)
 
     def test_occasional_ping(self):
@@ -195,7 +206,7 @@ class PingerTest(LandscapeTest):
         self.log_helper.ignore_errors(ZeroDivisionError)
         self.identity.insecure_id = 42
 
-        class BadPingClient(object):
+        class BadPingClient:
             def __init__(self, *args, **kwargs):
                 pass
 
@@ -204,11 +215,13 @@ class PingerTest(LandscapeTest):
                 return fail(ZeroDivisionError("Couldn't fetch page"))
 
         self.config.ping_url = "http://foo.com/"
-        pinger = Pinger(self.reactor,
-                        self.identity,
-                        self.exchanger,
-                        self.config,
-                        ping_client_factory=BadPingClient)
+        pinger = Pinger(
+            self.reactor,
+            self.identity,
+            self.exchanger,
+            self.config,
+            ping_client_factory=BadPingClient,
+        )
         pinger.start()
 
         self.reactor.advance(30)
@@ -238,8 +251,10 @@ class PingerTest(LandscapeTest):
         self.assertEqual(len(self.page_getter.fetches), 1)
 
     def test_get_url(self):
-        self.assertEqual(self.pinger.get_url(),
-                         "http://localhost:8081/whatever")
+        self.assertEqual(
+            self.pinger.get_url(),
+            "http://localhost:8081/whatever",
+        )
 
     def test_config_url(self):
         """

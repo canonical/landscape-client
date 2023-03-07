@@ -3,8 +3,7 @@ from twisted.internet.defer import succeed
 from landscape.lib.process import ProcessInformation
 
 
-class Processes(object):
-
+class Processes:
     def __init__(self, proc_dir="/proc"):
         self._proc_dir = proc_dir
 
@@ -23,7 +22,7 @@ class Processes(object):
             if num_zombies == 1:
                 msg = "There is 1 zombie process."
             else:
-                msg = "There are %d zombie processes." % (num_zombies,)
+                msg = f"There are {num_zombies:d} zombie processes."
             self._sysinfo.add_note(msg)
         self._sysinfo.add_header("Processes", str(num_processes))
         return succeed(None)

@@ -1,14 +1,14 @@
 import logging
 import os
 
-from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import succeed
+from twisted.internet.utils import getProcessOutput
 
-from landscape.lib.encoding import encode_values
-from landscape.lib.apt.package.store import PackageStore
+from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.package.changer import PackageChanger
 from landscape.client.package.releaseupgrader import ReleaseUpgrader
-from landscape.client.manager.plugin import ManagerPlugin
+from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.encoding import encode_values
 
 
 class PackageManager(ManagerPlugin):
@@ -17,20 +17,28 @@ class PackageManager(ManagerPlugin):
     _package_store = None
 
     def register(self, registry):
-        super(PackageManager, self).register(registry)
+        super().register(registry)
         self.config = registry.config
 
         if not self._package_store:
-            filename = os.path.join(registry.config.data_path,
-                                    "package/database")
+            filename = os.path.join(
+                registry.config.data_path,
+                "package/database",
+            )
             self._package_store = PackageStore(filename)
 
-        registry.register_message("change-packages",
-                                  self.handle_change_packages)
-        registry.register_message("change-package-locks",
-                                  self.handle_change_package_locks)
-        registry.register_message("release-upgrade",
-                                  self.handle_release_upgrade)
+        registry.register_message(
+            "change-packages",
+            self.handle_change_packages,
+        )
+        registry.register_message(
+            "change-package-locks",
+            self.handle_change_package_locks,
+        )
+        registry.register_message(
+            "release-upgrade",
+            self.handle_release_upgrade,
+        )
 
         # When the package reporter notifies us that something has changed,
         # we want to run again to see if we can now fulfill tasks that were
@@ -74,7 +82,12 @@ class PackageManager(ManagerPlugin):
             # path is set to None so that getProcessOutput does not
             # chdir to "." see bug #211373
             result = getProcessOutput(
-                command, args=args, env=environ, errortoo=1, path=None)
+                command,
+                args=args,
+                env=environ,
+                errortoo=1,
+                path=None,
+            )
             result.addCallback(self._got_output, cls)
         else:
             result = succeed(None)
@@ -82,5 +95,6 @@ class PackageManager(ManagerPlugin):
 
     def _got_output(self, output, cls):
         if output:
-            logging.warning("Package %s output:\n%s" %
-                            (cls.queue_name, output))
+            logging.warning(
+                f"Package {cls.queue_name} output:\n{output}",
+            )

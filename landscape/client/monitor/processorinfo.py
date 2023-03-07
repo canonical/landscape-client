@@ -2,8 +2,8 @@ import logging
 import os
 import re
 
-from landscape.lib.plugin import PluginConfigError
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.lib.plugin import PluginConfigError
 
 
 class ProcessorInfo(MonitorPlugin):
@@ -37,16 +37,22 @@ class ProcessorInfo(MonitorPlugin):
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, delay=2, machine_name=None,
-                 source_filename="/proc/cpuinfo"):
+    def __init__(
+        self,
+        delay=2,
+        machine_name=None,
+        source_filename="/proc/cpuinfo",
+    ):
         self._delay = delay
         self._source_filename = source_filename
 
         if machine_name is None:
             machine_name = os.uname()[4]
 
-        self._cpu_info_reader = self._create_cpu_info_reader(machine_name,
-                                                             source_filename)
+        self._cpu_info_reader = self._create_cpu_info_reader(
+            machine_name,
+            source_filename,
+        )
 
     def _create_cpu_info_reader(self, machine_name, source_filename):
         """Return a message factory suitable for the specified machine name."""
@@ -56,19 +62,22 @@ class ProcessorInfo(MonitorPlugin):
             if regexp.match(machine_name):
                 return pair[1](source_filename)
 
-        raise PluginConfigError("A processor info reader for '%s' is not "
-                                "available." % machine_name)
+        raise PluginConfigError(
+            f"A processor info reader for '{machine_name}' is not available.",
+        )
 
     def register(self, registry):
         """Register this plugin with the specified plugin registry."""
-        super(ProcessorInfo, self).register(registry)
+        super().register(registry)
         self.registry.reactor.call_later(self._delay, self.run)
         self.call_on_accepted("processor-info", self.send_message, True)
 
     def create_message(self):
         """Retrieve processor information and generate a message."""
-        return {"type": "processor-info",
-                "processors": self._cpu_info_reader.create_message()}
+        return {
+            "type": "processor-info",
+            "processors": self._cpu_info_reader.create_message(),
+        }
 
     def send_message(self, urgent=False):
         dirty = False
@@ -90,12 +99,18 @@ class ProcessorInfo(MonitorPlugin):
             logging.info("Queueing updated processor info.  Contents:")
             logging.info(message)
             self.registry.broker.send_message(
-                message, self._session_id, urgent=urgent)
+                message,
+                self._session_id,
+                urgent=urgent,
+            )
 
     def run(self, urgent=False):
         """Create a message and put it on the message queue."""
-        self.registry.broker.call_if_accepted("processor-info",
-                                              self.send_message, urgent)
+        self.registry.broker.call_if_accepted(
+            "processor-info",
+            self.send_message,
+            urgent,
+        )
 
     def _has_changed(self, processor, message):
         """Returns true if processor details changed since the last read."""
@@ -116,8 +131,10 @@ class ProcessorInfo(MonitorPlugin):
         processor["model"] = message["model"]
         processor["cache_size"] = message.get("cache-size", -1)
         processor["vendor"] = message.get("vendor", "")
-        self._persist.set(("processor", str(message["processor-id"])),
-                          processor)
+        self._persist.set(
+            ("processor", str(message["processor-id"])),
+            processor,
+        )
 
 
 class PowerPCMessageFactory:
@@ -218,8 +235,10 @@ class SparcMessageFactory:
                     model = parts[1].strip()
                 elif regexp.match(key):
                     start, end = re.compile(r"\d+").search(key).span()
-                    message = {"processor-id": int(key[start:end]),
-                               "model": model}
+                    message = {
+                        "processor-id": int(key[start:end]),
+                        "model": model,
+                    }
                     processors.append(message)
         finally:
             file.close()
@@ -352,9 +371,11 @@ class RISCVMessageFactory:
         return processors
 
 
-message_factories = [("(arm*|aarch64)", ARMMessageFactory),
-                     ("ppc(64)?", PowerPCMessageFactory),
-                     ("sparc[64]", SparcMessageFactory),
-                     ("i[3-7]86|x86_64", X86MessageFactory),
-                     ("s390x", S390XMessageFactory),
-                     ("riscv64", RISCVMessageFactory)]
+message_factories = [
+    ("(arm*|aarch64)", ARMMessageFactory),
+    ("ppc(64)?", PowerPCMessageFactory),
+    ("sparc[64]", SparcMessageFactory),
+    ("i[3-7]86|x86_64", X86MessageFactory),
+    ("s390x", S390XMessageFactory),
+    ("riscv64", RISCVMessageFactory),
+]
