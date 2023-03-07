@@ -10,14 +10,15 @@ This module implements a few conveniences built around L{landscape.lib.amp} to
 let the various services connect to each other in an easy and idiomatic way,
 and have them respond to standard requests like "ping" or "exit".
 """
-import os
 import logging
+import os
 
-from landscape.lib.amp import (
-    MethodCallClientFactory, MethodCallServerFactory, RemoteObject)
+from landscape.lib.amp import MethodCallClientFactory
+from landscape.lib.amp import MethodCallServerFactory
+from landscape.lib.amp import RemoteObject
 
 
-class ComponentPublisher(object):
+class ComponentPublisher:
     """Publish a Landscape client component using a UNIX socket.
 
     Other Landscape client processes can then connect to the socket and invoke
@@ -72,7 +73,7 @@ def remote(method):
     return method
 
 
-class ComponentConnector(object):
+class ComponentConnector:
     """Utility superclass for creating connections with a Landscape component.
 
     @cvar component: The class of the component to connect to, it is expected
@@ -90,6 +91,7 @@ class ComponentConnector(object):
 
     @see: L{MethodCallClientFactory}.
     """
+
     factory = MethodCallClientFactory
     component = None  # Must be defined by sub-classes
     remote = RemoteObject
@@ -123,14 +125,14 @@ class ComponentConnector(object):
             factory.factor = factor
 
         def fire_reconnect(ignored):
-            self._reactor.fire("%s-reconnect" % self.component.name)
+            self._reactor.fire(f"{self.component.name}-reconnect")
 
         def connected(remote):
             factory.notifyOnConnect(fire_reconnect)
             return remote
 
         def log_error(failure):
-            logging.error("Error while connecting to %s", self.component.name)
+            logging.error(f"Error while connecting to {self.component.name}")
             return failure
 
         socket_path = _get_socket_path(self.component, self._config)

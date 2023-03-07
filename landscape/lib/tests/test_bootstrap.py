@@ -1,11 +1,13 @@
 import os
 import unittest
-
-from mock import patch, Mock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 from landscape.lib import testing
-from landscape.lib.bootstrap import (
-    BootstrapPath, BootstrapFile, BootstrapDirectory, BootstrapList)
+from landscape.lib.bootstrap import BootstrapDirectory
+from landscape.lib.bootstrap import BootstrapFile
+from landscape.lib.bootstrap import BootstrapList
+from landscape.lib.bootstrap import BootstrapPath
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -17,7 +19,7 @@ class BootstrapPathTest(BaseTestCase):
     bootstrap_class = BootstrapPath
 
     def setUp(self):
-        super(BootstrapPathTest, self).setUp()
+        super().setUp()
         self.dirname = self.makeDir()
         self.path = os.path.join(self.dirname, "$my_var")
         self.real_path = os.path.join(self.dirname, "my_var_value")
@@ -111,7 +113,6 @@ class BootstrapCreationTest(BootstrapPathTest):
 
 
 class BootstrapFileTest(BootstrapCreationTest):
-
     def test_creation_wont_overwrite(self):
         filename = self.makeFile("CONTENT")
         file = self.bootstrap_class(filename)
@@ -139,17 +140,21 @@ class BootstrapDirectoryTest(BootstrapCreationTest):
 
 
 class BootstrapListTest(BaseTestCase):
-
     def test_creation(self):
         dirname = self.makeDir()
 
-        list = BootstrapList([BootstrapFile("$dirname/filename"),
-                              BootstrapDirectory("$dirname/dirname"),
-                              BootstrapFile("$dirname/dirname/filename")])
+        list = BootstrapList(
+            [
+                BootstrapFile("$dirname/filename"),
+                BootstrapDirectory("$dirname/dirname"),
+                BootstrapFile("$dirname/dirname/filename"),
+            ],
+        )
 
         list.bootstrap(dirname=dirname)
 
         self.assertTrue(os.path.isfile(os.path.join(dirname, "filename")))
         self.assertTrue(os.path.isdir(os.path.join(dirname, "dirname")))
-        self.assertTrue(os.path.isfile(os.path.join(dirname,
-                                                    "dirname/filename")))
+        self.assertTrue(
+            os.path.isfile(os.path.join(dirname, "dirname/filename")),
+        )

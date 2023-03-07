@@ -3,25 +3,30 @@ Functionality for running arbitrary shell scripts.
 
 @var ALL_USERS: A token indicating all users should be allowed.
 """
-import os
-import sys
 import os.path
-import tempfile
 import shutil
+import sys
+import tempfile
 
-from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.defer import (
-    Deferred, fail, inlineCallbacks, returnValue, succeed)
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import returnValue
+from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
+from twisted.internet.protocol import ProcessProtocol
 from twisted.python.compat import unicode
 
 from landscape import VERSION
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.plugin import SUCCEEDED
 from landscape.constants import UBUNTU_PATH
-from landscape.lib.fetch import fetch_async, HTTPCodeError
+from landscape.lib.fetch import fetch_async
+from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.persist import Persist
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.user import get_user_info
-from landscape.client.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 ALL_USERS = object()
@@ -65,10 +70,10 @@ class UnknownInterpreterError(Exception):
         Exception.__init__(self, self._get_message())
 
     def _get_message(self):
-        return "Unknown interpreter: '%s'" % self.interpreter
+        return f"Unknown interpreter: '{self.interpreter}'"
 
 
-class ScriptRunnerMixin(object):
+class ScriptRunnerMixin:
     """
     @param process_factory: The L{IReactorProcess} provider to run the
         process with.
@@ -108,46 +113,61 @@ class ScriptRunnerMixin(object):
             gid = None
         env = {
             key: (
-                value.encode(sys.getfilesystemencoding(), errors='replace')
-                if isinstance(value, unicode) else value
+                value.encode(sys.getfilesystemencoding(), errors="replace")
+                if isinstance(value, unicode)
+                else value
             )
             for key, value in env.items()
         }
 
         pp = ProcessAccumulationProtocol(
-            self.registry.reactor, self.registry.config.script_output_limit,
-            self.truncation_indicator)
+            self.registry.reactor,
+            self.registry.config.script_output_limit,
+            self.truncation_indicator,
+        )
         args = (filename,)
         self.process_factory.spawnProcess(
-            pp, filename, args=args, uid=uid, gid=gid, path=path, env=env)
+            pp,
+            filename,
+            args=args,
+            uid=uid,
+            gid=gid,
+            path=path,
+            env=env,
+        )
         if time_limit is not None:
             pp.schedule_cancel(time_limit)
         return pp.result_deferred
 
 
 class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
-    """A plugin which allows execution of arbitrary shell scripts.
-
-    """
+    """A plugin which allows execution of arbitrary shell scripts."""
 
     def register(self, registry):
-        super(ScriptExecutionPlugin, self).register(registry)
+        super().register(registry)
         registry.register_message(
-            "execute-script", self._handle_execute_script)
+            "execute-script",
+            self._handle_execute_script,
+        )
 
     def _respond(self, status, data, opid, result_code=None):
         if not isinstance(data, unicode):
             # Let's decode result-text, replacing non-printable
             # characters
             data = data.decode("utf-8", "replace")
-        message = {"type": "operation-result",
-                   "status": status,
-                   "result-text": data,
-                   "operation-id": opid}
+        message = {
+            "type": "operation-result",
+            "status": status,
+            "result-text": data,
+            "operation-id": opid,
+        }
         if result_code:
             message["result-code"] = result_code
         return self.registry.broker.send_message(
-            message, self._session_id, True)
+            message,
+            self._session_id,
+            True,
+        )
 
     def _handle_execute_script(self, message):
         opid = message["operation-id"]
@@ -156,14 +176,19 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             if not self.is_user_allowed(user):
                 return self._respond(
                     FAILED,
-                    u"Scripts cannot be run as user %s." % (user,),
-                    opid)
+                    f"Scripts cannot be run as user {user}.",
+                    opid,
+                )
             server_supplied_env = message.get("env", None)
 
-            d = self.run_script(message["interpreter"], message["code"],
-                                time_limit=message["time-limit"], user=user,
-                                attachments=message["attachments"],
-                                server_supplied_env=server_supplied_env)
+            d = self.run_script(
+                message["interpreter"],
+                message["code"],
+                time_limit=message["time-limit"],
+                user=user,
+                attachments=message["attachments"],
+                server_supplied_env=server_supplied_env,
+            )
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
@@ -172,7 +197,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             raise
 
     def _format_exception(self, e):
-        return u"%s: %s" % (e.__class__.__name__, e.args[0])
+        return "{}: {}".format(e.__class__.__name__, e.args[0])
 
     def _respond_success(self, data, opid):
         return self._respond(SUCCEEDED, data, opid)
@@ -186,8 +211,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         elif failure.check(HTTPCodeError):
             code = FETCH_ATTACHMENTS_FAILED_RESULT
             return self._respond(
-                FAILED, str(failure.value), opid,
-                FETCH_ATTACHMENTS_FAILED_RESULT)
+                FAILED,
+                str(failure.value),
+                opid,
+                FETCH_ATTACHMENTS_FAILED_RESULT,
+            )
 
         if code is not None:
             return self._respond(FAILED, failure.value.data, opid, code)
@@ -198,9 +226,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     def _save_attachments(self, attachments, uid, gid, computer_id, env):
         root_path = self.registry.config.url.rsplit("/", 1)[0] + "/attachment/"
         env["LANDSCAPE_ATTACHMENTS"] = attachment_dir = tempfile.mkdtemp()
-        headers = {"User-Agent": "landscape-client/%s" % VERSION,
-                   "Content-Type": "application/octet-stream",
-                   "X-Computer-ID": computer_id}
+        headers = {
+            "User-Agent": f"landscape-client/{VERSION}",
+            "Content-Type": "application/octet-stream",
+            "X-Computer-ID": computer_id,
+        }
         for filename, attachment_id in attachments.items():
             if isinstance(attachment_id, str):
                 # Backward compatible behavior
@@ -208,9 +238,10 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 yield succeed(None)
             else:
                 data = yield fetch_async(
-                    "%s%d" % (root_path, attachment_id),
+                    f"{root_path}{attachment_id:d}",
                     cainfo=self.registry.config.ssl_public_key,
-                    headers=headers)
+                    headers=headers,
+                )
             full_filename = os.path.join(attachment_dir, filename)
             with open(full_filename, "wb") as attachment:
                 os.chmod(full_filename, 0o600)
@@ -222,8 +253,15 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             os.chown(attachment_dir, uid, gid)
         returnValue(attachment_dir)
 
-    def run_script(self, shell, code, user=None, time_limit=None,
-                   attachments=None, server_supplied_env=None):
+    def run_script(
+        self,
+        shell,
+        code,
+        user=None,
+        time_limit=None,
+        attachments=None,
+        server_supplied_env=None,
+    ):
         """
         Run a script based on a shell and the code.
 
@@ -245,15 +283,13 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             or fail with a L{ProcessTimeLimitReachedError}.
         """
         if not os.path.exists(shell.split()[0]):
-            return fail(
-                UnknownInterpreterError(shell))
+            return fail(UnknownInterpreterError(shell))
 
         uid, gid, path = get_user_info(user)
 
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "wb")
-        self.write_script_file(
-            script_file, filename, shell, code, uid, gid)
+        self.write_script_file(script_file, filename, shell, code, uid, gid)
 
         env = {
             "PATH": UBUNTU_PATH,
@@ -269,8 +305,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         if attachments:
             persist = Persist(
-                filename=os.path.join(self.registry.config.data_path,
-                                      "broker.bpickle"))
+                filename=os.path.join(
+                    self.registry.config.data_path,
+                    "broker.bpickle",
+                ),
+            )
             persist = persist.root_at("registration")
             computer_id = persist.get("secure-id")
             try:
@@ -283,8 +322,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         def prepare_script(attachment_dir):
 
-            return self._run_script(
-                filename, uid, gid, path, env, time_limit)
+            return self._run_script(filename, uid, gid, path, env, time_limit)
 
         d.addCallback(prepare_script)
         return d.addBoth(self._cleanup, filename, env, old_umask)
@@ -323,9 +361,11 @@ class ProcessAccumulationProtocol(ProcessProtocol):
 
     def schedule_cancel(self, time_limit):
         self._scheduled_cancel = self.reactor.call_later(
-            time_limit, self._cancel)
+            time_limit,
+            self._cancel,
+        )
 
-    def childDataReceived(self, fd, data):
+    def childDataReceived(self, fd, data):  # noqa: N802
         """Some data was received from the child.
 
         Add it to our buffer, as long as it doesn't go over L{size_limit}
@@ -334,14 +374,14 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         if self._size < self.size_limit:
             data_length = len(data)
             if (self._size + data_length) >= self._truncated_size_limit:
-                extent = (self._truncated_size_limit - self._size)
+                extent = self._truncated_size_limit - self._size
                 self.data.append(data[:extent] + self._truncation_indicator)
                 self._size = self.size_limit
             else:
                 self.data.append(data)
                 self._size += data_length
 
-    def processEnded(self, reason):
+    def processEnded(self, reason):  # noqa: N802
         """Fire back the deferred.
 
         The deferred will be fired with the string of data received from the
@@ -366,7 +406,8 @@ class ProcessAccumulationProtocol(ProcessProtocol):
                 self.result_deferred.callback(data)
             else:
                 self.result_deferred.errback(
-                    ProcessFailedError(data, exit_code))
+                    ProcessFailedError(data, exit_code),
+                )
 
     def _cancel(self):
         """
@@ -391,11 +432,12 @@ class ScriptExecution(ManagerPlugin):
 
     def __init__(self):
         from landscape.client.manager.customgraph import CustomGraphPlugin
+
         self._script_execution = ScriptExecutionPlugin()
         self._custom_graph = CustomGraphPlugin()
 
     def register(self, registry):
-        super(ScriptExecution, self).register(registry)
+        super().register(registry)
         self._script_execution.register(registry)
         self._custom_graph.register(registry)
 

@@ -1,8 +1,6 @@
-from __future__ import absolute_import
-
-import os
 import json
 import logging
+import os
 
 from landscape.lib.fs import read_text_file
 
@@ -23,7 +21,8 @@ def get_juju_info(config):
     # return None in any case.
     except Exception:
         logging.exception(
-            "Error attempting to read JSON from %s" % config.juju_filename)
+            f"Error attempting to read JSON from {config.juju_filename}",
+        )
         return None
 
     juju_info["api-addresses"] = juju_info["api-addresses"].split()

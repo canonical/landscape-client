@@ -1,18 +1,17 @@
-# -*- coding: utf-8 -*-
 import os
 
-from landscape import VERSION
-from landscape.client.broker.transport import HTTPTransport
-from landscape.lib import bpickle
-from landscape.lib.fetch import PyCurlError
-from landscape.lib.testing import LogKeeperHelper
-
-from landscape.client.tests.helpers import LandscapeTest
-
-from twisted.web import server, resource
 from twisted.internet import reactor
 from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.internet.threads import deferToThread
+from twisted.web import resource
+from twisted.web import server
+
+from landscape import VERSION
+from landscape.client.broker.transport import HTTPTransport
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.lib import bpickle
+from landscape.lib.fetch import PyCurlError
+from landscape.lib.testing import LogKeeperHelper
 
 
 def sibpath(path):
@@ -29,7 +28,7 @@ class DataCollectingResource(resource.Resource):
 
     request = content = None
 
-    def getChild(self, request, name):
+    def getChild(self, request, name):  # noqa: N802
         return self
 
     def render(self, request):
@@ -43,23 +42,33 @@ class HTTPTransportTest(LandscapeTest):
     helpers = [LogKeeperHelper]
 
     def setUp(self):
-        super(HTTPTransportTest, self).setUp()
+        super().setUp()
         self.ports = []
 
     def tearDown(self):
-        super(HTTPTransportTest, self).tearDown()
+        super().tearDown()
         for port in self.ports:
             port.stopListening()
 
     def request_with_payload(self, payload):
         resource = DataCollectingResource()
         port = reactor.listenTCP(
-            0, server.Site(resource), interface="127.0.0.1")
+            0,
+            server.Site(resource),
+            interface="127.0.0.1",
+        )
         self.ports.append(port)
         transport = HTTPTransport(
-            None, "http://localhost:%d/" % (port.getHost().port,))
-        result = deferToThread(transport.exchange, payload, computer_id="34",
-                               exchange_token="abcd-efgh", message_api="X.Y")
+            None,
+            f"http://localhost:{port.getHost().port:d}/",
+        )
+        result = deferToThread(
+            transport.exchange,
+            payload,
+            computer_id="34",
+            exchange_token="abcd-efgh",
+            message_api="X.Y",
+        )
 
         def got_result(ignored):
             try:
@@ -70,12 +79,15 @@ class HTTPTransportTest(LandscapeTest):
                 def get_header(header):
                     return [resource.request.received_headers[header]]
 
-            self.assertEqual(get_header(u"x-computer-id"), ["34"])
+            self.assertEqual(get_header("x-computer-id"), ["34"])
             self.assertEqual(get_header("x-exchange-token"), ["abcd-efgh"])
             self.assertEqual(
-                get_header("user-agent"), ["landscape-client/%s" % (VERSION,)])
+                get_header("user-agent"),
+                [f"landscape-client/{VERSION}"],
+            )
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), payload)
+
         result.addCallback(got_result)
         return result
 
@@ -103,7 +115,7 @@ class HTTPTransportTest(LandscapeTest):
         When a payload contains unicode characters they are properly handled
         by bpickle.
         """
-        return self.request_with_payload(payload=u"проба")
+        return self.request_with_payload(payload="проба")
 
     def test_ssl_verification_positive(self):
         """
@@ -113,13 +125,24 @@ class HTTPTransportTest(LandscapeTest):
         """
         resource = DataCollectingResource()
         context_factory = DefaultOpenSSLContextFactory(PRIVKEY, PUBKEY)
-        port = reactor.listenSSL(0, server.Site(resource), context_factory,
-                                 interface="127.0.0.1")
+        port = reactor.listenSSL(
+            0,
+            server.Site(resource),
+            context_factory,
+            interface="127.0.0.1",
+        )
         self.ports.append(port)
         transport = HTTPTransport(
-            None, "https://localhost:%d/" % (port.getHost().port,), PUBKEY)
-        result = deferToThread(transport.exchange, "HI", computer_id="34",
-                               message_api="X.Y")
+            None,
+            f"https://localhost:{port.getHost().port:d}/",
+            PUBKEY,
+        )
+        result = deferToThread(
+            transport.exchange,
+            "HI",
+            computer_id="34",
+            message_api="X.Y",
+        )
 
         def got_result(ignored):
             try:
@@ -129,11 +152,15 @@ class HTTPTransportTest(LandscapeTest):
                 # without requestHeaders
                 def get_header(header):
                     return [resource.request.received_headers[header]]
+
             self.assertEqual(get_header("x-computer-id"), ["34"])
             self.assertEqual(
-                get_header("user-agent"), ["landscape-client/%s" % (VERSION,)])
+                get_header("user-agent"),
+                [f"landscape-client/{VERSION}"],
+            )
             self.assertEqual(get_header("x-message-api"), ["X.Y"])
             self.assertEqual(bpickle.loads(resource.content), "HI")
+
         result.addCallback(got_result)
         return result
 
@@ -145,21 +172,34 @@ class HTTPTransportTest(LandscapeTest):
         """
         self.log_helper.ignore_errors(PyCurlError)
         r = DataCollectingResource()
-        context_factory = DefaultOpenSSLContextFactory(
-            BADPRIVKEY, BADPUBKEY)
-        port = reactor.listenSSL(0, server.Site(r), context_factory,
-                                 interface="127.0.0.1")
+        context_factory = DefaultOpenSSLContextFactory(BADPRIVKEY, BADPUBKEY)
+        port = reactor.listenSSL(
+            0,
+            server.Site(r),
+            context_factory,
+            interface="127.0.0.1",
+        )
         self.ports.append(port)
-        transport = HTTPTransport(None, "https://localhost:%d/"
-                                  % (port.getHost().port,), pubkey=PUBKEY)
+        transport = HTTPTransport(
+            None,
+            f"https://localhost:{port.getHost().port:d}/",
+            pubkey=PUBKEY,
+        )
 
-        result = deferToThread(transport.exchange, "HI", computer_id="34",
-                               message_api="X.Y")
+        result = deferToThread(
+            transport.exchange,
+            "HI",
+            computer_id="34",
+            message_api="X.Y",
+        )
 
         def got_result(ignored):
             self.assertIs(r.request, None)
             self.assertIs(r.content, None)
-            self.assertTrue("server certificate verification failed"
-                            in self.logfile.getvalue())
+            self.assertTrue(
+                "server certificate verification failed"
+                in self.logfile.getvalue(),
+            )
+
         result.addErrback(got_result)
         return result

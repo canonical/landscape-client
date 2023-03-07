@@ -3,7 +3,8 @@ Network introspection utilities using ioctl and the /proc filesystem.
 """
 import os
 
-from landscape.lib.fs import read_binary_file, read_text_file
+from landscape.lib.fs import read_binary_file
+from landscape.lib.fs import read_text_file
 
 
 DMI_FILES = ("sys_vendor", "chassis_vendor", "bios_vendor", "product_name")
@@ -79,7 +80,7 @@ def _get_vm_by_vendor(sys_vendor_path):
         (b"kvm", b"kvm"),
         (b"vmware", b"vmware"),
         (b"rhev", b"kvm"),
-        (b"parallels", b"kvm")
+        (b"parallels", b"kvm"),
     )
     for name, vm_type in content_vendors_map:
         if name in vendor:
@@ -92,7 +93,7 @@ def _get_vm_legacy(root_path):
     """Check if the host is virtualized looking at /proc/cpuinfo content."""
     try:
         cpuinfo = read_text_file(os.path.join(root_path, "proc/cpuinfo"))
-    except (IOError, OSError):
+    except OSError:
         return b""
 
     if "qemu" in cpuinfo:

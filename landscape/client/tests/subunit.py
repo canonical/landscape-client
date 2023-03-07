@@ -26,6 +26,7 @@ from landscape.lib.compat import StringIO
 
 def test_suite():
     import subunit.tests
+
     return subunit.tests.test_suite()
 
 
@@ -43,7 +44,7 @@ def join_dir(base_path, path):
     return os.path.join(os.path.dirname(os.path.abspath(base_path)), path)
 
 
-class TestProtocolServer(object):
+class TestProtocolServer:
     """A class for receiving results from a TestProtocol client."""
 
     OUTSIDE_TEST = 0
@@ -55,150 +56,173 @@ class TestProtocolServer(object):
         """Create a TestProtocol server instance.
 
         client should be an object that provides
-         - startTest
-         - addSuccess
-         - addFailure
-         - addError
-         - stopTest
+         - starttest
+         - addsuccess
+         - addfailure
+         - adderror
+         - stoptest
         methods, i.e. a TestResult.
         """
         self.state = TestProtocolServer.OUTSIDE_TEST
         self.client = client
         self._stream = stream
 
-    def _addError(self, offset, line):
-        if (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description == line[offset:-1]
-            ):
+    def _adderror(self, offset, line):
+        if (
+            self.state == TestProtocolServer.TEST_STARTED
+            and self.current_test_description == line[offset:-1]
+        ):
 
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
-            self.client.addError(self._current_test, RemoteError(""))
+            self.client.adderror(self._current_test, RemoteError(""))
             self.client.stopTest(self._current_test)
             self._current_test = None
-        elif (self.state == TestProtocolServer.TEST_STARTED and
-              self.current_test_description + " [" == line[offset:-1]):
+        elif (
+            self.state == TestProtocolServer.TEST_STARTED
+            and self.current_test_description + " [" == line[offset:-1]
+        ):
             self.state = TestProtocolServer.READING_ERROR
             self._message = ""
         else:
-            self.stdOutLineReceived(line)
+            self.stdoutlinereceived(line)
 
-    def _addFailure(self, offset, line):
-        if (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description == line[offset:-1]
-            ):
+    def _addfailure(self, offset, line):
+        if (
+            self.state == TestProtocolServer.TEST_STARTED
+            and self.current_test_description == line[offset:-1]
+        ):
 
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
-            self.client.addFailure(self._current_test, RemoteError())
+            self.client.addfailure(self._current_test, RemoteError())
             self.client.stopTest(self._current_test)
-        elif (self.state == TestProtocolServer.TEST_STARTED and
-              self.current_test_description + " [" == line[offset:-1]):
+        elif (
+            self.state == TestProtocolServer.TEST_STARTED
+            and self.current_test_description + " [" == line[offset:-1]
+        ):
             self.state = TestProtocolServer.READING_FAILURE
             self._message = ""
         else:
-            self.stdOutLineReceived(line)
+            self.stdoutlinereceived(line)
 
-    def _addSuccess(self, offset, line):
-        if (self.state == TestProtocolServer.TEST_STARTED and
-            self.current_test_description == line[offset:-1]
-            ):
+    def _addsuccess(self, offset, line):
+        if (
+            self.state == TestProtocolServer.TEST_STARTED
+            and self.current_test_description == line[offset:-1]
+        ):
 
-            self.client.addSuccess(self._current_test)
+            self.client.addsuccess(self._current_test)
             self.client.stopTest(self._current_test)
             self.current_test_description = None
             self._current_test = None
             self.state = TestProtocolServer.OUTSIDE_TEST
         else:
-            self.stdOutLineReceived(line)
+            self.stdoutlinereceived(line)
 
-    def _appendMessage(self, line):
+    def _appendmessage(self, line):
         if line[0:2] == " ]":
             # quoted ] start
             self._message += line[1:]
         else:
             self._message += line
 
-    def endQuote(self, line):
+    def endquote(self, line):
         if self.state == TestProtocolServer.READING_FAILURE:
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
-            self.client.addFailure(self._current_test,
-                                   RemoteError(self._message))
+            self.client.addfailure(
+                self._current_test,
+                RemoteError(self._message),
+            )
             self.client.stopTest(self._current_test)
         elif self.state == TestProtocolServer.READING_ERROR:
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
-            self.client.addError(self._current_test,
-                                 RemoteError(self._message))
+            self.client.adderror(
+                self._current_test,
+                RemoteError(self._message),
+            )
             self.client.stopTest(self._current_test)
         else:
-            self.stdOutLineReceived(line)
+            self.stdoutlinereceived(line)
 
-    def lineReceived(self, line):
+    def linereceived(self, line):
         """Call the appropriate local method for the received line."""
         if line == "]\n":
-            self.endQuote(line)
-        elif (self.state == TestProtocolServer.READING_FAILURE or
-              self.state == TestProtocolServer.READING_ERROR):
-            self._appendMessage(line)
+            self.endquote(line)
+        elif (
+            self.state == TestProtocolServer.READING_FAILURE
+            or self.state == TestProtocolServer.READING_ERROR
+        ):
+            self._appendmessage(line)
         else:
             parts = line.split(None, 1)
             if len(parts) == 2:
                 cmd, rest = parts
                 offset = len(cmd) + 1
-                cmd = cmd.strip(':')
-                if cmd in ('test', 'testing'):
-                    self._startTest(offset, line)
-                elif cmd == 'error':
-                    self._addError(offset, line)
-                elif cmd == 'failure':
-                    self._addFailure(offset, line)
-                elif cmd in ('success', 'successful'):
-                    self._addSuccess(offset, line)
+                cmd = cmd.strip(":")
+                if cmd in ("test", "testing"):
+                    self._starttest(offset, line)
+                elif cmd == "error":
+                    self._adderror(offset, line)
+                elif cmd == "failure":
+                    self._addfailure(offset, line)
+                elif cmd in ("success", "successful"):
+                    self._addsuccess(offset, line)
                 else:
-                    self.stdOutLineReceived(line)
+                    self.stdoutLinereceived(line)
             else:
-                self.stdOutLineReceived(line)
+                self.stdOutLinereceived(line)
 
-    def lostConnection(self):
+    def lostconnection(self):
         """The input connection has finished."""
         if self.state == TestProtocolServer.TEST_STARTED:
-            self.client.addError(self._current_test,
-                                 RemoteError("lost connection during test '%s'"
-                                             % self.current_test_description))
+            self.client.adderror(
+                self._current_test,
+                RemoteError(
+                    "lost connection during test "
+                    f"'{self.current_test_description}'",
+                ),
+            )
             self.client.stopTest(self._current_test)
         elif self.state == TestProtocolServer.READING_ERROR:
-            self.client.addError(self._current_test,
-                                 RemoteError("lost connection during "
-                                             "error report of test "
-                                             "'%s'" %
-                                             self.current_test_description))
+            self.client.adderror(
+                self._current_test,
+                RemoteError(
+                    "lost connection during "
+                    "error report of test "
+                    f"'{self.current_test_description}'",
+                ),
+            )
             self.client.stopTest(self._current_test)
         elif self.state == TestProtocolServer.READING_FAILURE:
-            self.client.addError(self._current_test,
-                                 RemoteError("lost connection during "
-                                             "failure report of test "
-                                             "'%s'" %
-                                             self.current_test_description))
+            self.client.adderror(
+                self._current_test,
+                RemoteError(
+                    "lost connection during "
+                    "failure report of test "
+                    f"'{self.current_test_description}'",
+                ),
+            )
             self.client.stopTest(self._current_test)
 
-    def readFrom(self, pipe):
+    def readfrom(self, pipe):
         for line in pipe.readlines():
-            self.lineReceived(line)
-        self.lostConnection()
+            self.linereceived(line)
+        self.lostconnection()
 
-    def _startTest(self, offset, line):
-        """Internal call to change state machine. Override startTest()."""
+    def _starttest(self, offset, line):
+        """Internal call to change state machine. Override starttest()."""
         if self.state == TestProtocolServer.OUTSIDE_TEST:
             self.state = TestProtocolServer.TEST_STARTED
             self._current_test = RemotedTestCase(line[offset:-1])
             self.current_test_description = line[offset:-1]
             self.client.startTest(self._current_test)
         else:
-            self.stdOutLineReceived(line)
+            self.stdoutlinereceived(line)
 
-    def stdOutLineReceived(self, line):
+    def stdoutlinereceived(self, line):
         self._stream.write(line)
 
 
@@ -219,30 +243,30 @@ class TestProtocolClient(unittest.TestResult):
         unittest.TestResult.__init__(self)
         self._stream = stream
 
-    def addError(self, test, error):
+    def adderror(self, test, error):
         """Report an error in test test."""
-        self._stream.write("error: %s [\n" % test.shortDescription())
+        self._stream.write(f"error: {test.shortDescription()} [\n")
         for line in self._exc_info_to_string(error, test).splitlines():
-            self._stream.write("%s\n" % line)
+            self._stream.write(f"{line}\n")
         self._stream.write("]\n")
 
-    def addFailure(self, test, error):
+    def addfailure(self, test, error):
         """Report a failure in test test."""
-        self._stream.write("failure: %s [\n" % test.shortDescription())
+        self._stream.write(f"failure: {test.shortDescription()} [\n")
         for line in self._exc_info_to_string(error, test).splitlines():
-            self._stream.write("%s\n" % line)
+            self._stream.write(f"{line}\n")
         self._stream.write("]\n")
 
-    def addSuccess(self, test):
+    def addsuccess(self, test):
         """Report a success in a test."""
-        self._stream.write("successful: %s\n" % test.shortDescription())
+        self._stream.write(f"successful: {test.shortDescription()}\n")
 
-    def startTest(self, test):
+    def starttest(self, test):
         """Mark a test as starting its test run."""
-        self._stream.write("test: %s\n" % test.shortDescription())
+        self._stream.write(f"test: {test.shortDescription()}\n")
 
 
-def RemoteError(description=""):
+def RemoteError(description=""):  # noqa: N802
     if description == "":
         description = "\n"
     return (RemoteException, RemoteException(description), None)
@@ -263,7 +287,8 @@ class RemotedTestCase(unittest.TestCase):
 
     def error(self, label):
         raise NotImplementedError(
-                "%s on RemotedTestCases is not permitted." % label)
+            f"{label} on RemotedTestCases is not permitted.",
+        )
 
     def setUp(self):
         self.error("setUp")
@@ -271,45 +296,46 @@ class RemotedTestCase(unittest.TestCase):
     def tearDown(self):
         self.error("tearDown")
 
-    def shortDescription(self):
+    def shortDescription(self):  # noqa: N802
         return self.__description
 
     def id(self):
-        return "%s.%s" % (self._strclass(), self.__description)
+        return f"{self._strclass()}.{self.__description}"
 
     def __str__(self):
-        return "%s (%s)" % (self.__description, self._strclass())
+        return f"{self.__description} ({self._strclass()})"
 
     def __repr__(self):
-        return "<%s description='%s'>" % \
-               (self._strclass(), self.__description)
+        return f"<{self._strclass()} description='{self.__description}'>"
 
     def run(self, result=None):
         if result is None:
             result = self.defaultTestResult()
-        result.startTest(self)
-        result.addError(self, RemoteError("Cannot run RemotedTestCases.\n"))
+        result.starttest(self)
+        result.adderror(self, RemoteError("Cannot run RemotedTestCases.\n"))
         result.stopTest(self)
 
     def _strclass(self):
         cls = self.__class__
-        return "%s.%s" % (cls.__module__, cls.__name__)
+        return f"{cls.__module__}.{cls.__name__}"
 
 
 class ExecTestCase(unittest.TestCase):
     """A test case which runs external scripts for test fixtures."""
 
-    def __init__(self, methodName='runTest'):
+    def __init__(self, methodName="runTest"):  # noqa: N803
         """Create an instance of the class that will use the named test
-           method when executed. Raises a ValueError if the instance does
-           not have a method with the specified name.
+        method when executed. Raises a ValueError if the instance does
+        not have a method with the specified name.
         """
         unittest.TestCase.__init__(self, methodName)
-        testMethod = getattr(self, methodName)
-        self.script = join_dir(sys.modules[self.__class__.__module__].__file__,
-                               testMethod.__doc__)
+        testmethod = getattr(self, methodName)
+        self.script = join_dir(
+            sys.modules[self.__class__.__module__].__file__,
+            testmethod.__doc__,
+        )
 
-    def countTestCases(self):
+    def countTestCases(self):  # noqa: N802
         return 1
 
     def run(self, result=None):
@@ -323,9 +349,11 @@ class ExecTestCase(unittest.TestCase):
 
     def _run(self, result):
         protocol = TestProtocolServer(result)
-        output = subprocess.Popen([self.script],
-                                  stdout=subprocess.PIPE).communicate()[0]
-        protocol.readFrom(StringIO(output))
+        output = subprocess.Popen(
+            [self.script],
+            stdout=subprocess.PIPE,
+        ).communicate()[0]
+        protocol.readfrom(StringIO(output))
 
 
 class IsolatedTestCase(unittest.TestCase):
@@ -347,8 +375,7 @@ class IsolatedTestSuite(unittest.TestSuite):
 
 
 def run_isolated(klass, self, result):
-    """Run a test suite or case in a subprocess, using the run method on klass.
-    """
+    """Test suite or case in a subprocess, using the run method on klass."""
     c2pread, c2pwrite = os.pipe()
     # fixme - error -> result
     # now fork
@@ -364,7 +391,7 @@ def run_isolated(klass, self, result):
 
         # at this point, sys.stdin is redirected, now we want
         # to filter it to escape ]'s.
-        ### XXX: test and write that bit.
+        # XXX: test and write that bit.
 
         result = TestProtocolClient(sys.stdout)
         klass.run(self, result)
@@ -378,7 +405,7 @@ def run_isolated(klass, self, result):
         os.close(c2pwrite)
         # hookup a protocol engine
         protocol = TestProtocolServer(result)
-        protocol.readFrom(os.fdopen(c2pread, 'rU'))
+        protocol.readfrom(os.fdopen(c2pread, "rU"))
         os.waitpid(pid, 0)
         # TODO return code evaluation.
     return result

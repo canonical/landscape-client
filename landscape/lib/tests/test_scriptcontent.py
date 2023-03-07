@@ -1,17 +1,18 @@
 import unittest
 
-from landscape.lib.scriptcontent import (build_script, generate_script_hash)
+from landscape.lib.scriptcontent import build_script
+from landscape.lib.scriptcontent import generate_script_hash
 
 
 class ScriptContentTest(unittest.TestCase):
-
     def test_concatenate(self):
-        self.assertEqual(build_script(u"/bin/sh", u"echo 1.0\n"),
-                         "#!/bin/sh\necho 1.0\n")
+        self.assertEqual(
+            build_script("/bin/sh", "echo 1.0\n"),
+            "#!/bin/sh\necho 1.0\n",
+        )
 
     def test_concatenate_null_strings(self):
-        self.assertEqual(build_script(None, None),
-                         "#!\n")
+        self.assertEqual(build_script(None, None), "#!\n")
 
     def test_generate_script_hash(self):
         hash1 = generate_script_hash("#!/bin/sh\necho 1.0\n")

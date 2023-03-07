@@ -51,8 +51,9 @@ def got_next_expected(store, next_expected):
         # No messages transferred, or
         # "Old": We'll try to send these old messages that the
         # other side still wants.
-        pending_offset = (store.get_pending_offset() +
-                          next_expected - old_sequence)
+        pending_offset = (
+            store.get_pending_offset() + next_expected - old_sequence
+        )
 
     store.set_pending_offset(pending_offset)
     store.set_sequence(next_expected)

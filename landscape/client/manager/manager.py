@@ -1,5 +1,5 @@
-from landscape.client.manager.store import ManagerStore
 from landscape.client.broker.client import BrokerClient
+from landscape.client.manager.store import ManagerStore
 
 # Protocol messages! Same constants are defined in the server.
 FAILED = 5
@@ -12,7 +12,7 @@ class Manager(BrokerClient):
     name = "manager"
 
     def __init__(self, reactor, config):
-        super(Manager, self).__init__(reactor, config)
+        super().__init__(reactor, config)
         self.reactor = reactor
         self.config = config
         self.store = ManagerStore(self.config.store_filename)

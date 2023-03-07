@@ -2,7 +2,8 @@ import os
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.vm_info import get_vm_info, get_container_info
+from landscape.lib.vm_info import get_container_info
+from landscape.lib.vm_info import get_vm_info
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -10,15 +11,16 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 
 class GetVMInfoTest(BaseTestCase):
-
     def setUp(self):
-        super(GetVMInfoTest, self).setUp()
+        super().setUp()
         self.root_path = self.makeDir()
         self.proc_path = self.makeDir(
-            path=os.path.join(self.root_path, "proc"))
+            path=os.path.join(self.root_path, "proc"),
+        )
         self.sys_path = self.makeDir(path=os.path.join(self.root_path, "sys"))
         self.proc_sys_path = self.makeDir(
-            path=os.path.join(self.proc_path, "sys"))
+            path=os.path.join(self.proc_path, "sys"),
+        )
 
     def make_dmi_info(self, name, content):
         """Create /sys/class/dmi/id/<name> with the specified content."""
@@ -167,7 +169,8 @@ class GetVMInfoTest(BaseTestCase):
         cpuinfo = (
             "platform   : Some Machine\n"
             "model  : Some CPU (emulated by qemu)\n"
-            "machine    : Some Machine (emulated by qemu)\n")
+            "machine    : Some Machine (emulated by qemu)\n"
+        )
         self.makeFile(path=cpuinfo_path, content=cpuinfo)
         self.assertEqual(b"kvm", get_vm_info(root_path=self.root_path))
 
@@ -198,9 +201,8 @@ class GetVMInfoTest(BaseTestCase):
 
 
 class GetContainerInfoTest(BaseTestCase):
-
     def setUp(self):
-        super(GetContainerInfoTest, self).setUp()
+        super().setUp()
         self.run_path = self.makeDir()
 
     def test_no_container(self):

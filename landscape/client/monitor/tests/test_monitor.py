@@ -1,9 +1,10 @@
-from mock import Mock
+from unittest.mock import Mock
 
-from landscape.client.monitor.monitor import Monitor
-from landscape.lib.persist import Persist
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.client.broker.client import BrokerClientPlugin
+from landscape.client.monitor.monitor import Monitor
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.persist import Persist
 
 
 class MonitorTest(LandscapeTest):
@@ -51,7 +52,8 @@ class MonitorTest(LandscapeTest):
         self.monitor.persist.save = Mock()
         self.reactor.advance(self.config.flush_interval * 3)
         self.monitor.persist.save.assert_called_with(
-            self.monitor.persist_filename)
+            self.monitor.persist_filename,
+        )
         self.assertEqual(self.monitor.persist.save.call_count, 3)
 
     def test_creating_loads_persist(self):
@@ -64,6 +66,10 @@ class MonitorTest(LandscapeTest):
         persist.set("a", "Hi there!")
         persist.save(filename)
 
-        monitor = Monitor(self.reactor, self.config, persist=Persist(),
-                          persist_filename=filename)
+        monitor = Monitor(
+            self.reactor,
+            self.config,
+            persist=Persist(),
+            persist_filename=filename,
+        )
         self.assertEqual(monitor.persist.get("a"), "Hi there!")

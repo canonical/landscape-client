@@ -1,17 +1,24 @@
 import unittest
 
+from twisted.internet.defer import fail
+from twisted.internet.defer import succeed
+
 from landscape.lib import testing
-from landscape.lib.cloud import (
-    EC2_API, _fetch_ec2_item, fetch_ec2_meta_data, MAX_LENGTH)
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
-from twisted.internet.defer import succeed, fail
+from landscape.lib.cloud import _fetch_ec2_item
+from landscape.lib.cloud import EC2_API
+from landscape.lib.cloud import fetch_ec2_meta_data
+from landscape.lib.cloud import MAX_LENGTH
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
 
 
-class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
-                unittest.TestCase):
-
+class CloudTest(
+    testing.HelperTestCase,
+    testing.TwistedTestCase,
+    unittest.TestCase,
+):
     def setUp(self):
-        super(CloudTest, self).setUp()
+        super().setUp()
         self.query_results = {}
         self.kwargs = {}
 
@@ -34,7 +41,7 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
         self.fetch_func. C{value} must be bytes or an Error as the original
         fetch returns bytes.
         """
-        url = "%s/meta-data/%s" % (EC2_API, name)
+        url = f"{EC2_API}/meta-data/{name}"
         self.query_results[url] = value
 
     def test_fetch_ec2_meta_data_error_on_any_item_error(self):
@@ -52,13 +59,14 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
                 if setup_item == item:
                     self.add_query_result(item, error)
                 else:
-                    self.add_query_result(setup_item, "value%s" % setup_item)
+                    self.add_query_result(setup_item, f"value{setup_item}")
 
             deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
             failure = self.failureResultOf(deferred)
             self.assertEqual(
                 "Server returned HTTP code 404",
-                failure.getErrorMessage())
+                failure.getErrorMessage(),
+            )
 
     def test_fetch_ec2_meta_data(self):
         """
@@ -68,10 +76,13 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
         deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
         result = self.successResultOf(deferred)
         self.assertEqual(
-            {"ami-id": u"ami-00002",
-             "instance-id": u"i00001",
-             "instance-type": u"hs1.8xlarge"},
-            result)
+            {
+                "ami-id": "ami-00002",
+                "instance-id": "i00001",
+                "instance-type": "hs1.8xlarge",
+            },
+            result,
+        )
 
     def test_fetch_ec2_meta_data_utf8(self):
         """
@@ -81,10 +92,14 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
         self.add_query_result("ami-id", b"asdf\xe1\x88\xb4")
         deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
         result = self.successResultOf(deferred)
-        self.assertEqual({"instance-id": u"i00001",
-                          "ami-id": u"asdf\u1234",
-                          "instance-type": u"hs1.8xlarge"},
-                         result)
+        self.assertEqual(
+            {
+                "instance-id": "i00001",
+                "ami-id": "asdf\u1234",
+                "instance-type": "hs1.8xlarge",
+            },
+            result,
+        )
 
     def test_fetch_ec2_meta_data_truncates(self):
         """L{_fetch_ec2_meta_data} truncates values that are too long."""
@@ -94,10 +109,13 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
         deferred = fetch_ec2_meta_data(fetch=self.fetch_func)
         result = self.successResultOf(deferred)
         self.assertEqual(
-            {"ami-id": "a" * MAX_LENGTH,
-             "instance-id": "b" * MAX_LENGTH,
-             "instance-type": "c" * MAX_LENGTH},
-            result)
+            {
+                "ami-id": "a" * MAX_LENGTH,
+                "instance-id": "b" * MAX_LENGTH,
+                "instance-type": "c" * MAX_LENGTH,
+            },
+            result,
+        )
 
     def test_wb_fetch_ec2_item_multiple_items_appends_accumulate_list(self):
         """
@@ -107,10 +125,15 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
         """
         accumulate = []
         self.successResultOf(
-            _fetch_ec2_item("instance-id", accumulate, fetch=self.fetch_func))
+            _fetch_ec2_item("instance-id", accumulate, fetch=self.fetch_func),
+        )
         self.successResultOf(
             _fetch_ec2_item(
-                "instance-type", accumulate, fetch=self.fetch_func))
+                "instance-type",
+                accumulate,
+                fetch=self.fetch_func,
+            ),
+        )
         self.assertEqual([b"i00001", b"hs1.8xlarge"], accumulate)
 
     def test_wb_fetch_ec2_item_error_returns_failure(self):
@@ -122,7 +145,10 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
         self.add_query_result("other-id", PyCurlError(60, "pycurl error"))
         accumulate = []
         deferred = _fetch_ec2_item(
-            "other-id", accumulate, fetch=self.fetch_func)
+            "other-id",
+            accumulate,
+            fetch=self.fetch_func,
+        )
         failure = self.failureResultOf(deferred)
         self.assertEqual("Error 60: pycurl error", failure.getErrorMessage())
 
@@ -135,6 +161,9 @@ class CloudTest(testing.HelperTestCase, testing.TwistedTestCase,
         self.add_query_result("other-id", PyCurlError(60, "pycurl error"))
         accumulate = []
         deferred = _fetch_ec2_item(
-            "other-id", accumulate, fetch=self.fetch_func)
+            "other-id",
+            accumulate,
+            fetch=self.fetch_func,
+        )
         self.failureResultOf(deferred)
         self.assertEqual({"follow": False}, self.kwargs)

@@ -1,12 +1,12 @@
+import io
 import os
 import sys
-import io
-
 from optparse import OptionParser
 
 from twisted.internet.defer import DeferredList
 from twisted.internet.threads import deferToThread
-from twisted.python.compat import iteritems, networkString
+from twisted.python.compat import iteritems
+from twisted.python.compat import networkString
 
 
 class FetchError(Exception):
@@ -14,39 +14,47 @@ class FetchError(Exception):
 
 
 class HTTPCodeError(FetchError):
-
     def __init__(self, http_code, body):
         self.http_code = http_code
         self.body = body
 
     def __str__(self):
-        return "Server returned HTTP code %d" % self.http_code
+        return f"Server returned HTTP code {self.http_code:d}"
 
     def __repr__(self):
-        return "<HTTPCodeError http_code=%d>" % self.http_code
+        return f"<HTTPCodeError http_code={self.http_code:d}>"
 
 
 class PyCurlError(FetchError):
-
     def __init__(self, error_code, message):
         self.error_code = error_code
         self._message = message
 
     def __str__(self):
-        return "Error %d: %s" % (self.error_code, self.message)
+        return f"Error {self.error_code:d}: {self.message}"
 
     def __repr__(self):
-        return "<PyCurlError args=(%d, '%s')>" % (self.error_code,
-                                                  self.message)
+        return f"<PyCurlError args=({self.error_code:d}, '{self.message}')>"
 
     @property
     def message(self):
         return self._message
 
 
-def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
-          connect_timeout=30, total_timeout=600, insecure=False, follow=True,
-          user_agent=None, proxy=None):
+def fetch(
+    url,
+    post=False,
+    data="",
+    headers={},
+    cainfo=None,
+    curl=None,
+    connect_timeout=30,
+    total_timeout=600,
+    insecure=False,
+    follow=True,
+    user_agent=None,
+    proxy=None,
+):
     """Retrieve a URL and return the content.
 
     @param url: The url to be fetched.
@@ -65,6 +73,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     @param proxy: The proxy url to use for the request.
     """
     import pycurl
+
     if not isinstance(data, bytes):
         data = data.encode("utf-8")
     output = io.BytesIO(data)
@@ -88,8 +97,10 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
         curl.setopt(pycurl.CAINFO, networkString(cainfo))
 
     if headers:
-        curl.setopt(pycurl.HTTPHEADER,
-                    ["%s: %s" % pair for pair in sorted(iteritems(headers))])
+        curl.setopt(
+            pycurl.HTTPHEADER,
+            [f"{key}: {value}" for (key, value) in sorted(iteritems(headers))],
+        )
 
     if insecure:
         curl.setopt(pycurl.SSL_VERIFYPEER, False)
@@ -189,8 +200,12 @@ def fetch_to_files(urls, directory, logger=None, **kwargs):
 
     def log_error(failure, url):
         if logger:
-            logger("Couldn't fetch file from %s (%s)" % (
-                url, str(failure.value)))
+            logger(
+                "Couldn't fetch file from {} ({})".format(
+                    url,
+                    str(failure.value),
+                ),
+            )
         return failure
 
     return fetch_many_async(urls, callback=write, errback=log_error, **kwargs)
@@ -202,8 +217,14 @@ def test(args):
     parser.add_option("--data", default="")
     parser.add_option("--cainfo")
     options, (url,) = parser.parse_args(args)
-    print(fetch(url, post=options.post, data=options.data,
-                cainfo=options.cainfo))
+    print(
+        fetch(
+            url,
+            post=options.post,
+            data=options.data,
+            cainfo=options.cainfo,
+        ),
+    )
 
 
 if __name__ == "__main__":

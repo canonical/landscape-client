@@ -1,29 +1,30 @@
-from __future__ import division
-
 import os
 
 from twisted.internet.defer import succeed
 
-from landscape.lib.disk import (get_mount_info, get_filesystem_for_path)
+from landscape.lib.disk import get_filesystem_for_path
+from landscape.lib.disk import get_mount_info
 
 
 def format_megabytes(megabytes):
     if megabytes >= 1024 * 1024:
-        return "%.2fTB" % (megabytes / (1024 * 1024))
+        return f"{megabytes / (1024 * 1024):.2f}TB"
     elif megabytes >= 1024:
-        return "%.2fGB" % (megabytes / 1024)
+        return f"{megabytes / 1024:.2f}GB"
     else:
-        return "%dMB" % (megabytes)
+        return f"{megabytes:d}MB"
 
 
 def usage(info):
     total = info["total-space"]
     used = total - info["free-space"]
-    return "%0.1f%% of %s" % ((used / total) * 100, format_megabytes(total))
+    return "{:0.1f}% of {}".format(
+        (used / total) * 100,
+        format_megabytes(total),
+    )
 
 
-class Disk(object):
-
+class Disk:
     def __init__(self, mounts_file="/proc/mounts", statvfs=os.statvfs):
         self._mounts_file = mounts_file
         self._statvfs = statvfs
@@ -32,13 +33,19 @@ class Disk(object):
         self._sysinfo = sysinfo
 
     def run(self):
-        main_info = get_filesystem_for_path("/home", self._mounts_file,
-                                            self._statvfs)
+        main_info = get_filesystem_for_path(
+            "/home",
+            self._mounts_file,
+            self._statvfs,
+        )
         if main_info is not None:
             total = main_info["total-space"]
             if total <= 0:
                 root_main_info = get_filesystem_for_path(
-                    "/", self._mounts_file, self._statvfs)
+                    "/",
+                    self._mounts_file,
+                    self._statvfs,
+                )
                 if root_main_info is not None:
                     total = root_main_info["total-space"]
                     main_info = root_main_info
@@ -46,8 +53,10 @@ class Disk(object):
                 main_usage = "unknown"
             else:
                 main_usage = usage(main_info)
-            self._sysinfo.add_header("Usage of " + main_info["mount-point"],
-                                     main_usage)
+            self._sysinfo.add_header(
+                "Usage of " + main_info["mount-point"],
+                main_usage,
+            )
         else:
             self._sysinfo.add_header("Usage of /home", "unknown")
 
@@ -70,6 +79,7 @@ class Disk(object):
 
             used = ((total - info["free-space"]) / total) * 100
             if used >= 85:
-                self._sysinfo.add_note("%s is using %s"
-                                       % (info["mount-point"], usage(info)))
+                self._sysinfo.add_note(
+                    "{} is using {}".format(info["mount-point"], usage(info)),
+                )
         return succeed(None)

@@ -1,19 +1,25 @@
-import mock
 import os
 import re
+from unittest import mock
 
-from twisted.internet.defer import succeed, fail, inlineCallbacks
+from twisted.internet.defer import fail
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import succeed
 
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.client.monitor.computerinfo import ComputerInfo
+from landscape.client.monitor.computerinfo import METADATA_RETRY_MAX
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
+from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import create_text_file
-from landscape.client.monitor.computerinfo import (
-        ComputerInfo, METADATA_RETRY_MAX)
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
-SAMPLE_LSB_RELEASE = "DISTRIB_ID=Ubuntu\n"                         \
-                     "DISTRIB_RELEASE=6.06\n"                      \
-                     "DISTRIB_CODENAME=dapper\n"                   \
-                     "DISTRIB_DESCRIPTION=\"Ubuntu 6.06.1 LTS\"\n"
+SAMPLE_LSB_RELEASE = (
+    "DISTRIB_ID=Ubuntu\n"
+    "DISTRIB_RELEASE=6.06\n"
+    "DISTRIB_CODENAME=dapper\n"
+    'DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"\n'
+)
 
 
 def get_fqdn():
@@ -109,7 +115,6 @@ VmallocChunk:   107432 kB
         self.assertEqual(len(messages), 1)
 
     def test_report_changed_hostnames(self):
-
         def hostname_factory(hostnames=["ooga", "wubble", "wubble"]):
             i = 0
             while i < len(hostnames):
@@ -118,8 +123,10 @@ VmallocChunk:   107432 kB
 
         self.mstore.set_accepted_types(["computer-info"])
         hostname_fact = hostname_factory()
-        plugin = ComputerInfo(get_fqdn=lambda: next(hostname_fact),
-                              fetch_async=self.fetch_func)
+        plugin = ComputerInfo(
+            get_fqdn=lambda: next(hostname_fact),
+            fetch_async=self.fetch_func,
+        )
         self.monitor.add(plugin)
 
         plugin.exchange()
@@ -135,8 +142,10 @@ VmallocChunk:   107432 kB
     def test_get_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
         meminfo_filename = self.makeFile(self.sample_memory_info)
-        plugin = ComputerInfo(meminfo_filename=meminfo_filename,
-                              fetch_async=self.fetch_func)
+        plugin = ComputerInfo(
+            meminfo_filename=meminfo_filename,
+            fetch_async=self.fetch_func,
+        )
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -260,12 +269,14 @@ VmallocChunk:   107432 kB
         self.assertEqual(message["release"], "6.06")
         self.assertEqual(message["code-name"], "dapper")
 
-        plugin._lsb_release_filename = self.makeFile("""\
+        plugin._lsb_release_filename = self.makeFile(
+            """\
 DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
 DISTRIB_DESCRIPTION="Ubuntu 6.10"
-""")
+""",
+        )
         plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
         self.assertEqual(message["type"], "distribution-info")
@@ -276,13 +287,15 @@ DISTRIB_DESCRIPTION="Ubuntu 6.10"
 
     def test_unknown_distribution_key(self):
         self.mstore.set_accepted_types(["distribution-info"])
-        lsb_release_filename = self.makeFile("""\
+        lsb_release_filename = self.makeFile(
+            """\
 DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
 DISTRIB_DESCRIPTION="Ubuntu 6.10"
 DISTRIB_NEW_UNEXPECTED_KEY=ooga
-""")
+""",
+        )
         plugin = ComputerInfo(lsb_release_filename=lsb_release_filename)
         self.monitor.add(plugin)
 
@@ -301,25 +314,36 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         """
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         meminfo_filename = self.makeFile(self.sample_memory_info)
-        plugin = ComputerInfo(get_fqdn=get_fqdn,
-                              meminfo_filename=meminfo_filename,
-                              lsb_release_filename=self.lsb_release_filename,
-                              root_path=self.makeDir(),
-                              fetch_async=self.fetch_func)
+        plugin = ComputerInfo(
+            get_fqdn=get_fqdn,
+            meminfo_filename=meminfo_filename,
+            lsb_release_filename=self.lsb_release_filename,
+            root_path=self.makeDir(),
+            fetch_async=self.fetch_func,
+        )
         self.monitor.add(plugin)
         plugin.exchange()
         self.reactor.fire("resynchronize", scopes=["computer"])
         plugin.exchange()
-        computer_info = {"type": "computer-info", "hostname": "ooga.local",
-                         "timestamp": 0, "total-memory": 1510,
-                         "total-swap": 1584}
+        computer_info = {
+            "type": "computer-info",
+            "hostname": "ooga.local",
+            "timestamp": 0,
+            "total-memory": 1510,
+            "total-swap": 1584,
+        }
 
-        dist_info = {"type": "distribution-info",
-                     "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
-                     "distributor-id": "Ubuntu", "release": "6.06"}
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [computer_info, dist_info,
-                             computer_info, dist_info])
+        dist_info = {
+            "type": "distribution-info",
+            "code-name": "dapper",
+            "description": "Ubuntu 6.06.1 LTS",
+            "distributor-id": "Ubuntu",
+            "release": "6.06",
+        }
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [computer_info, dist_info, computer_info, dist_info],
+        )
 
     def test_computer_info_call_on_accepted(self):
         plugin = ComputerInfo(fetch_async=self.fetch_func)
@@ -327,10 +351,15 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["computer-info"])
 
         with mock.patch.object(self.remote, "send_message"):
-            self.reactor.fire(("message-type-acceptance-changed",
-                               "computer-info"), True)
+            self.reactor.fire(
+                ("message-type-acceptance-changed", "computer-info"),
+                True,
+            )
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY, urgent=True)
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
+            )
 
     def test_distribution_info_call_on_accepted(self):
         plugin = ComputerInfo()
@@ -339,10 +368,15 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["distribution-info"])
 
         with mock.patch.object(self.remote, "send_message"):
-            self.reactor.fire(("message-type-acceptance-changed",
-                               "distribution-info"), True)
+            self.reactor.fire(
+                ("message-type-acceptance-changed", "distribution-info"),
+                True,
+            )
             self.remote.send_message.assert_called_once_with(
-                mock.ANY, mock.ANY, urgent=True)
+                mock.ANY,
+                mock.ANY,
+                urgent=True,
+            )
 
     def test_message_if_not_accepted(self):
         """
@@ -371,9 +405,13 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         annotations_dir = self.monitor.config.annotations_path
         os.mkdir(annotations_dir)
         create_text_file(
-            os.path.join(annotations_dir, "annotation1"), "value1")
+            os.path.join(annotations_dir, "annotation1"),
+            "value1",
+        )
         create_text_file(
-            os.path.join(annotations_dir, "annotation2"), "value2")
+            os.path.join(annotations_dir, "annotation2"),
+            "value2",
+        )
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
@@ -400,9 +438,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertEqual(u"i00001", messages[0]["instance-id"])
-        self.assertEqual(u"ami-00002", messages[0]["ami-id"])
-        self.assertEqual(u"hs1.8xlarge", messages[0]["instance-type"])
+        self.assertEqual("i00001", messages[0]["instance-id"])
+        self.assertEqual("ami-00002", messages[0]["ami-id"])
+        self.assertEqual("hs1.8xlarge", messages[0]["instance-type"])
 
     def test_send_cloud_instance_metadata_only_once(self):
         """Only send the cloud information once per client restart."""
@@ -440,12 +478,19 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         """
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         result = yield plugin._fetch_ec2_meta_data()
-        self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
-                          "instance-type": u"hs1.8xlarge"}, result)
+        self.assertEqual(
+            {
+                "instance-id": "i00001",
+                "ami-id": "ami-00002",
+                "instance-type": "hs1.8xlarge",
+            },
+            result,
+        )
         self.assertEqual(
             "    INFO: Querying cloud meta-data.\n"
             "    INFO: Acquired cloud meta-data.\n",
-            self.logfile.getvalue())
+            self.logfile.getvalue(),
+        )
 
     @inlineCallbacks
     def test_fetch_ec2_meta_data_no_cloud_api_max_retry(self):
@@ -460,8 +505,9 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_ec2_meta_data()
         self.assertIn(
-            "INFO: No cloud meta-data available. "
-            "Error 60: pycurl error\n", self.logfile.getvalue())
+            "INFO: No cloud meta-data available. " "Error 60: pycurl error\n",
+            self.logfile.getvalue(),
+        )
         self.assertEqual(None, result)
 
     @inlineCallbacks
@@ -478,7 +524,8 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertIn(
             "INFO: No cloud meta-data available. Server returned "
             "HTTP code 404",
-            self.logfile.getvalue())
+            self.logfile.getvalue(),
+        )
         self.assertEqual(None, result)
 
     @inlineCallbacks
@@ -498,6 +545,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         # Fix the error condition for the retry.
         self.add_query_result("ami-id", b"ami-00002")
         result = yield plugin._fetch_ec2_meta_data()
-        self.assertEqual({"instance-id": u"i00001", "ami-id": u"ami-00002",
-                          "instance-type": u"hs1.8xlarge"},
-                         result)
+        self.assertEqual(
+            {
+                "instance-id": "i00001",
+                "ami-id": "ami-00002",
+                "instance-type": "hs1.8xlarge",
+            },
+            result,
+        )

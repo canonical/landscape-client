@@ -4,30 +4,40 @@ import unittest
 from twisted.internet.defer import Deferred
 
 from landscape.lib.testing import FSTestCase
-from landscape.sysinfo.disk import Disk, format_megabytes
+from landscape.sysinfo.disk import Disk
+from landscape.sysinfo.disk import format_megabytes
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 
 class DiskTest(FSTestCase, unittest.TestCase):
-
     def setUp(self):
-        super(DiskTest, self).setUp()
+        super().setUp()
         self.mount_file = self.makeFile("")
         self.stat_results = {}
 
-        self.disk = Disk(mounts_file=self.mount_file,
-                         statvfs=self.stat_results.get)
+        self.disk = Disk(
+            mounts_file=self.mount_file,
+            statvfs=self.stat_results.get,
+        )
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.disk)
 
-    def add_mount(self, point, block_size=4096, capacity=1000, unused=1000,
-                  fs="ext3", device=None):
+    def add_mount(
+        self,
+        point,
+        block_size=4096,
+        capacity=1000,
+        unused=1000,
+        fs="ext3",
+        device=None,
+    ):
         if device is None:
             device = "/dev/" + point.replace("/", "_")
         self.stat_results[point] = os.statvfs_result(
-            (block_size, 0, capacity, unused, 0, 0, 0, 0, 0, 0))
+            (block_size, 0, capacity, unused, 0, 0, 0, 0, 0, 0),
+        )
         f = open(self.mount_file, "a")
-        f.write("/dev/%s %s %s rw 0 0\n" % (device, point, fs))
+        f.write(f"/dev/{device} {point} {fs} rw 0 0\n")
         f.close()
 
     def test_run_returns_succeeded_deferred(self):
@@ -66,8 +76,10 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/home", capacity=0, unused=0)
         self.add_mount("/", capacity=1000, unused=1000)
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Usage of /", "0.0% of 3MB")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Usage of /", "0.0% of 3MB")],
+        )
 
     def test_zero_total_space_for_home_and_root(self):
         """
@@ -77,8 +89,10 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/home", capacity=0, unused=0)
         self.add_mount("/", capacity=0, unused=0)
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Usage of /", "unknown")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Usage of /", "unknown")],
+        )
 
     def test_over_85_percent(self):
         """
@@ -87,12 +101,14 @@ class DiskTest(FSTestCase, unittest.TestCase):
         """
         self.add_mount("/", capacity=1000000, unused=150000)
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_notes(),
-                         ["/ is using 85.0% of 3.81GB"])
+        self.assertEqual(
+            self.sysinfo.get_notes(),
+            ["/ is using 85.0% of 3.81GB"],
+        )
 
     def test_under_85_percent(self):
-        """No note is displayed for a filesystem using less than 85% capacity.
-        """
+        """No note is displayed for a filesystem using less
+        than 85% capacity."""
         self.add_mount("/", block_size=1024, capacity=1000000, unused=151000)
         self.disk.run()
         self.assertEqual(self.sysinfo.get_notes(), [])
@@ -104,13 +120,22 @@ class DiskTest(FSTestCase, unittest.TestCase):
         """
         self.add_mount("/", block_size=1024, capacity=1000000, unused=150000)
         self.add_mount(
-            "/use", block_size=2048, capacity=2000000, unused=200000)
+            "/use",
+            block_size=2048,
+            capacity=2000000,
+            unused=200000,
+        )
         self.add_mount(
-            "/emp", block_size=4096, capacity=3000000, unused=460000)
+            "/emp",
+            block_size=4096,
+            capacity=3000000,
+            unused=460000,
+        )
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_notes(),
-                         ["/ is using 85.0% of 976MB",
-                          "/use is using 90.0% of 3.81GB"])
+        self.assertEqual(
+            self.sysinfo.get_notes(),
+            ["/ is using 85.0% of 976MB", "/use is using 90.0% of 3.81GB"],
+        )
 
     def test_format_megabytes(self):
         self.assertEqual(format_megabytes(100), "100MB")
@@ -127,8 +152,10 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/")
         self.add_mount("/home", capacity=1024, unused=512)
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Usage of /home", "50.0% of 4MB")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Usage of /home", "50.0% of 4MB")],
+        )
 
     def test_header_shows_actual_filesystem(self):
         """
@@ -137,8 +164,10 @@ class DiskTest(FSTestCase, unittest.TestCase):
         """
         self.add_mount("/", capacity=1024, unused=512)
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Usage of /", "50.0% of 4MB")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Usage of /", "50.0% of 4MB")],
+        )
 
     def test_ignore_boring_filesystem_types(self):
         """
@@ -151,11 +180,19 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/", capacity=1000, unused=1000, fs="ext3")
         self.add_mount("/media/dvdrom", capacity=1000, unused=0, fs="udf")
         self.add_mount("/media/cdrom", capacity=1000, unused=0, fs="iso9660")
-        self.add_mount("/home/radix/.gvfs", capacity=1000, unused=0,
-                       fs="fuse.gvfs-fuse-daemon")
+        self.add_mount(
+            "/home/radix/.gvfs",
+            capacity=1000,
+            unused=0,
+            fs="fuse.gvfs-fuse-daemon",
+        )
         self.add_mount("/mnt/livecd", capacity=1000, unused=0, fs="squashfs")
-        self.add_mount("/home/mg/.Private", capacity=1000, unused=0,
-                       fs="ecryptfs")
+        self.add_mount(
+            "/home/mg/.Private",
+            capacity=1000,
+            unused=0,
+            fs="ecryptfs",
+        )
         self.disk.run()
         self.assertEqual(self.sysinfo.get_notes(), [])
 
@@ -163,24 +200,38 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/", capacity=0, unused=0, fs="ext4")
         self.add_mount("/", capacity=1000, unused=1, fs="ext3")
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_notes(),
-                         ["/ is using 100.0% of 3MB"])
+        self.assertEqual(
+            self.sysinfo.get_notes(),
+            ["/ is using 100.0% of 3MB"],
+        )
 
     def test_no_duplicate_devices(self):
         self.add_mount("/", capacity=1000, unused=1, device="/dev/horgle")
-        self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
-                       device="/dev/horgle")
+        self.add_mount(
+            "/dev/.static/dev",
+            capacity=1000,
+            unused=1,
+            device="/dev/horgle",
+        )
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_notes(),
-                         ["/ is using 100.0% of 3MB"])
+        self.assertEqual(
+            self.sysinfo.get_notes(),
+            ["/ is using 100.0% of 3MB"],
+        )
 
     def test_shorter_mount_point_in_case_of_duplicate_devices(self):
-        self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
-                       device="/dev/horgle")
+        self.add_mount(
+            "/dev/.static/dev",
+            capacity=1000,
+            unused=1,
+            device="/dev/horgle",
+        )
         self.add_mount("/", capacity=1000, unused=1, device="/dev/horgle")
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_notes(),
-                         ["/ is using 100.0% of 3MB"])
+        self.assertEqual(
+            self.sysinfo.get_notes(),
+            ["/ is using 100.0% of 3MB"],
+        )
 
     def test_shorter_not_lexical(self):
         """
@@ -191,8 +242,10 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/abc", capacity=1000, unused=1, device="/dev/horgle")
         self.add_mount("/b", capacity=1000, unused=1, device="/dev/horgle")
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_notes(),
-                         ["/b is using 100.0% of 3MB"])
+        self.assertEqual(
+            self.sysinfo.get_notes(),
+            ["/b is using 100.0% of 3MB"],
+        )
 
     def test_duplicate_device_and_duplicate_mountpoint_horribleness(self):
         """
@@ -210,11 +263,17 @@ class DiskTest(FSTestCase, unittest.TestCase):
         """
         self.add_mount("/", capacity=0, unused=0, device="rootfs")
         self.add_mount("/", capacity=1000, unused=1, device="/dev/horgle")
-        self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
-                       device="/dev/horgle")
+        self.add_mount(
+            "/dev/.static/dev",
+            capacity=1000,
+            unused=1,
+            device="/dev/horgle",
+        )
         self.disk.run()
-        self.assertEqual(self.sysinfo.get_notes(),
-                         ["/ is using 100.0% of 3MB"])
+        self.assertEqual(
+            self.sysinfo.get_notes(),
+            ["/ is using 100.0% of 3MB"],
+        )
 
     def test_ignore_filesystems(self):
         """
@@ -233,8 +292,10 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/", capacity=1000, unused=1000, fs="nfs")
         self.disk.run()
         self.assertEqual(self.sysinfo.get_notes(), [])
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Usage of /home", "unknown")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Usage of /home", "unknown")],
+        )
 
     def test_nfs_as_root_but_not_home(self):
         """
@@ -245,5 +306,7 @@ class DiskTest(FSTestCase, unittest.TestCase):
         self.add_mount("/home", capacity=0, unused=0, fs="ext3")
         self.disk.run()
         self.assertEqual(self.sysinfo.get_notes(), [])
-        self.assertEqual(self.sysinfo.get_headers(),
-                         [("Usage of /home", "unknown")])
+        self.assertEqual(
+            self.sysinfo.get_headers(),
+            [("Usage of /home", "unknown")],
+        )

@@ -1,8 +1,9 @@
-from landscape.lib.persist import Persist
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import MonitorHelper
 from landscape.client.user.changes import UserChanges
-from landscape.client.user.tests.helpers import FakeUserInfo, FakeUserProvider
-
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.user.tests.helpers import FakeUserInfo
+from landscape.client.user.tests.helpers import FakeUserProvider
+from landscape.lib.persist import Persist
 
 
 class UserChangesTest(LandscapeTest):
@@ -10,13 +11,15 @@ class UserChangesTest(LandscapeTest):
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(UserChangesTest, self).setUp()
+        super().setUp()
         self.persist = Persist()
-        self.shadow_file = self.makeFile("""\
+        self.shadow_file = self.makeFile(
+            """\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
-""")
+""",
+        )
 
     def test_no_existing_snapshot(self):
         """
@@ -30,17 +33,25 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
-        self.assertEqual(changes.create_diff(),
-                         {"create-users": [{"username": "jdoe",
-                                            "home-phone": None,
-                                            "name": u"JD",
-                                            "enabled": True,
-                                            "location": None,
-                                            "work-phone": None,
-                                            "uid": 1000,
-                                            "primary-gid": 1000}],
-                          "create-groups": [{"gid": 1000, "name": "webdev"}],
-                          "create-group-members": {"webdev": ["jdoe"]}})
+        self.assertEqual(
+            changes.create_diff(),
+            {
+                "create-users": [
+                    {
+                        "username": "jdoe",
+                        "home-phone": None,
+                        "name": "JD",
+                        "enabled": True,
+                        "location": None,
+                        "work-phone": None,
+                        "uid": 1000,
+                        "primary-gid": 1000,
+                    },
+                ],
+                "create-groups": [{"gid": 1000, "name": "webdev"}],
+                "create-group-members": {"webdev": ["jdoe"]},
+            },
+        )
 
     def test_snapshot(self):
         """
@@ -118,15 +129,23 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         users.append(("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh"))
-        self.assertEqual(changes.create_diff(),
-                         {"create-users": [{"username": "bo",
-                                            "home-phone": None,
-                                            "name": u"Bo",
-                                            "enabled": True,
-                                            "location": None,
-                                            "work-phone": None,
-                                            "uid": 1001,
-                                            "primary-gid": 1001}]})
+        self.assertEqual(
+            changes.create_diff(),
+            {
+                "create-users": [
+                    {
+                        "username": "bo",
+                        "home-phone": None,
+                        "name": "Bo",
+                        "enabled": True,
+                        "location": None,
+                        "work-phone": None,
+                        "uid": 1001,
+                        "primary-gid": 1001,
+                    },
+                ],
+            },
+        )
 
     def test_update_user(self):
         """
@@ -139,25 +158,42 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
         changes.snapshot()
-        users[0] = ("jdoe", "x", 1000, 1001, "John Doe,Here,789WORK,321HOME",
-                    "/home/john", "/bin/zsh")
-        self.assertEqual(changes.create_diff(),
-                         {"update-users": [{"username": "jdoe",
-                                            "home-phone": u"321HOME",
-                                            "name": u"John Doe",
-                                            "enabled": True,
-                                            "location": "Here",
-                                            "work-phone": "789WORK",
-                                            "uid": 1000,
-                                            "primary-gid": 1001}]})
+        users[0] = (
+            "jdoe",
+            "x",
+            1000,
+            1001,
+            "John Doe,Here,789WORK,321HOME",
+            "/home/john",
+            "/bin/zsh",
+        )
+        self.assertEqual(
+            changes.create_diff(),
+            {
+                "update-users": [
+                    {
+                        "username": "jdoe",
+                        "home-phone": "321HOME",
+                        "name": "John Doe",
+                        "enabled": True,
+                        "location": "Here",
+                        "work-phone": "789WORK",
+                        "uid": 1000,
+                        "primary-gid": 1001,
+                    },
+                ],
+            },
+        )
 
     def test_delete_user(self):
         """
         L{UserChanges.create_diff} should report users removed
         externally with C{deluser} or similar tools.
         """
-        users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
-                 ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
+            ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh"),
+        ]
         provider = FakeUserProvider(users=users)
         FakeUserInfo(provider=provider)
 
@@ -181,8 +217,10 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups.append(("bizdev", "x", 60, []))
-        self.assertEqual(changes.create_diff(),
-                         {"create-groups": [{"gid": 60, "name": "bizdev"}]})
+        self.assertEqual(
+            changes.create_diff(),
+            {"create-groups": [{"gid": 60, "name": "bizdev"}]},
+        )
 
     def test_add_group_with_members(self):
         """
@@ -198,9 +236,13 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups.append(("bizdev", "x", 60, ["jdoe"]))
-        self.assertEqual(changes.create_diff(),
-                         {"create-groups": [{"gid": 60, "name": "bizdev"}],
-                          "create-group-members": {"bizdev": ["jdoe"]}})
+        self.assertEqual(
+            changes.create_diff(),
+            {
+                "create-groups": [{"gid": 60, "name": "bizdev"}],
+                "create-group-members": {"bizdev": ["jdoe"]},
+            },
+        )
 
     def test_update_group(self):
         """
@@ -215,16 +257,20 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups[0] = ("webdev", "x", 1001, [])
-        self.assertEqual(changes.create_diff(),
-                         {"update-groups": [{"gid": 1001, "name": "webdev"}]})
+        self.assertEqual(
+            changes.create_diff(),
+            {"update-groups": [{"gid": 1001, "name": "webdev"}]},
+        )
 
     def test_add_group_members(self):
         """
         L{UserChanges.create_diff} should report new members added to
         groups externally with C{gpasswd} or similar tools.
         """
-        users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
-                 ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh")]
+        users = [
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
+            ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh"),
+        ]
         groups = [("webdev", "x", 50, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
         FakeUserInfo(provider=provider)
@@ -233,8 +279,10 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups[0] = ("webdev", "x", 50, ["jdoe", "bo"])
-        self.assertEqual(changes.create_diff(),
-                         {"create-group-members": {"webdev": ["bo"]}})
+        self.assertEqual(
+            changes.create_diff(),
+            {"create-group-members": {"webdev": ["bo"]}},
+        )
 
     def test_delete_group_members(self):
         """
@@ -250,8 +298,10 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups[0] = ("webdev", "x", 50, [])
-        self.assertEqual(changes.create_diff(),
-                         {"delete-group-members": {"webdev": ["jdoe"]}})
+        self.assertEqual(
+            changes.create_diff(),
+            {"delete-group-members": {"webdev": ["jdoe"]}},
+        )
 
     def test_delete_group(self):
         """
@@ -274,10 +324,11 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         L{UserChanges.create_diff} should be able to report multiple
         kinds of changes at the same time.
         """
-        users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
-                 ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh")]
-        groups = [("webdev", "x", 50, ["jdoe"]),
-                  ("bizdev", "x", 60, ["bo"])]
+        users = [
+            ("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
+            ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh"),
+        ]
+        groups = [("webdev", "x", 50, ["jdoe"]), ("bizdev", "x", 60, ["bo"])]
         provider = FakeUserProvider(users=users, groups=groups)
         FakeUserInfo(provider=provider)
         changes = UserChanges(self.persist, provider)
@@ -293,9 +344,16 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
         self.assertCountEqual(
             changes.create_diff(),
-            {"create-groups": [{"gid": 50, "name": "developers"},
-                               {"gid": 70, "name": "sales"}],
-             "delete-users": ["jdoe"],
-             "delete-groups": ["webdev"],
-             "create-group-members": {"developers": ["bo"],
-                                      "sales": ["bo"]}})
+            {
+                "create-groups": [
+                    {"gid": 50, "name": "developers"},
+                    {"gid": 70, "name": "sales"},
+                ],
+                "delete-users": ["jdoe"],
+                "delete-groups": ["webdev"],
+                "create-group-members": {
+                    "developers": ["bo"],
+                    "sales": ["bo"],
+                },
+            },
+        )

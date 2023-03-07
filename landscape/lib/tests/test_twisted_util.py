@@ -6,11 +6,13 @@ from landscape.lib.fs import create_text_file
 from landscape.lib.twisted_util import spawn_process
 
 
-class SpawnProcessTest(testing.TwistedTestCase, testing.FSTestCase,
-                       unittest.TestCase):
-
+class SpawnProcessTest(
+    testing.TwistedTestCase,
+    testing.FSTestCase,
+    unittest.TestCase,
+):
     def setUp(self):
-        super(SpawnProcessTest, self).setUp()
+        super().setUp()
         self.command = self.makeFile("#!/bin/sh\necho -n $@")
         os.chmod(self.command, 0o755)
 
@@ -34,6 +36,7 @@ class SpawnProcessTest(testing.TwistedTestCase, testing.FSTestCase,
         """
         The process returns the expected standard output.
         """
+
         def callback(args):
             out, err, code = args
             self.assertEqual(out, b"a b")
@@ -77,8 +80,11 @@ class SpawnProcessTest(testing.TwistedTestCase, testing.FSTestCase,
             out, err, code = args
             self.assertEqual(expected, lines)
 
-        result = spawn_process(self.command, args=(param,),
-                               line_received=line_received)
+        result = spawn_process(
+            self.command,
+            args=(param,),
+            line_received=line_received,
+        )
         result.addCallback(callback)
         return result
 
@@ -98,8 +104,11 @@ class SpawnProcessTest(testing.TwistedTestCase, testing.FSTestCase,
             out, err, code = args
             self.assertEqual(expected, lines)
 
-        result = spawn_process(self.command, args=(param,),
-                               line_received=line_received)
+        result = spawn_process(
+            self.command,
+            args=(param,),
+            line_received=line_received,
+        )
         result.addCallback(callback)
         return result
 
@@ -120,8 +129,11 @@ class SpawnProcessTest(testing.TwistedTestCase, testing.FSTestCase,
             out, err, code = args
             self.assertEqual(expected, lines)
 
-        result = spawn_process(self.command, args=(param,),
-                               line_received=line_received)
+        result = spawn_process(
+            self.command,
+            args=(param,),
+            line_received=line_received,
+        )
         result.addCallback(callback)
         return result
 
@@ -145,10 +157,13 @@ class SpawnProcessTest(testing.TwistedTestCase, testing.FSTestCase,
         C{SignalError}.
         """
         # This script will kill itself.
-        create_text_file(self.command, """\
+        create_text_file(
+            self.command,
+            """\
 #!/bin/sh
 kill $$
-""")
+""",
+        )
 
         def callback(args):
             raise RuntimeError("Errback was not called.")

@@ -1,8 +1,9 @@
 import os
-from landscape.client.tests.helpers import LandscapeTest
 
 from landscape.client.manager.keystonetoken import KeystoneToken
-from landscape.client.tests.helpers import ManagerHelper, FakePersist
+from landscape.client.tests.helpers import FakePersist
+from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import ManagerHelper
 
 
 class KeystoneTokenTest(LandscapeTest):
@@ -10,7 +11,7 @@ class KeystoneTokenTest(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(KeystoneTokenTest, self).setUp()
+        super().setUp()
         self.keystone_file = os.path.join(self.makeDir(), "keystone.conf")
         self.plugin = KeystoneToken(self.keystone_file)
 
@@ -45,7 +46,8 @@ class KeystoneTokenTest(LandscapeTest):
         """
         self.makeFile(
             path=self.keystone_file,
-            content="[DEFAULT]\nadmin_token = foobar")
+            content="[DEFAULT]\nadmin_token = foobar",
+        )
         # As we allow arbitrary bytes, we also need bytes here.
         self.assertEqual(b"foobar", self.plugin.get_data())
 
@@ -54,10 +56,7 @@ class KeystoneTokenTest(LandscapeTest):
         The data can be arbitrary bytes.
         """
         content = b"[DEFAULT]\nadmin_token = \xff"
-        self.makeFile(
-            path=self.keystone_file,
-            content=content,
-            mode="wb")
+        self.makeFile(path=self.keystone_file, content=content, mode="wb")
         self.assertEqual(b"\xff", self.plugin.get_data())
 
     def test_get_message(self):
@@ -67,12 +66,14 @@ class KeystoneTokenTest(LandscapeTest):
         """
         self.makeFile(
             path=self.keystone_file,
-            content="[DEFAULT]\nadmin_token = foobar")
+            content="[DEFAULT]\nadmin_token = foobar",
+        )
         self.plugin.register(self.manager)
         message = self.plugin.get_message()
         self.assertEqual(
-            {'type': 'keystone-token', 'data': b'foobar'},
-            message)
+            {"type": "keystone-token", "data": b"foobar"},
+            message,
+        )
         message = self.plugin.get_message()
         self.assertIs(None, message)
 
@@ -82,8 +83,10 @@ class KeystoneTokenTest(LandscapeTest):
         creates the perists file.
         """
         flush_interval = self.config.flush_interval
-        persist_filename = os.path.join(self.config.data_path,
-                                        "keystone.bpickle")
+        persist_filename = os.path.join(
+            self.config.data_path,
+            "keystone.bpickle",
+        )
 
         self.assertFalse(os.path.exists(persist_filename))
         self.manager.add(self.plugin)
@@ -139,8 +142,10 @@ class KeystoneTokenTest(LandscapeTest):
         If the plugin could not extract the C{admin_token} from the Keystone
         config file, upon exchange, C{None} is returned.
         """
-        self.makeFile(path=self.keystone_file,
-                      content="[DEFAULT]\nadmin_token =")
+        self.makeFile(
+            path=self.keystone_file,
+            content="[DEFAULT]\nadmin_token =",
+        )
         self.manager.add(self.plugin)
 
         def check(result):

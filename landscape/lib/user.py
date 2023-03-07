@@ -2,7 +2,6 @@ import os.path
 import pwd
 
 from landscape.lib.compat import _PY3
-
 from landscape.lib.encoding import encode_if_needed
 
 
@@ -32,7 +31,7 @@ def get_user_info(username=None):
             # locale.setlocale() to use UTF-8 was not successful.
             info = pwd.getpwnam(username_str)
         except (KeyError, UnicodeEncodeError):
-            raise UnknownUserError(u"Unknown user '%s'" % username)
+            raise UnknownUserError(f"Unknown user '{username}'")
         uid = info.pw_uid
         gid = info.pw_gid
         path = info.pw_dir

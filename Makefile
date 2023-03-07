@@ -5,6 +5,11 @@ PYTHON3 ?= python3
 TRIAL ?= -m twisted.trial
 TRIAL_ARGS ?=
 
+# PEP8 rules ignored:
+# W503 https://www.flake8rules.com/rules/W503.html
+# E203 Whitespace before ':' (enforced by Black)
+PEP8_IGNORED = W503,E203
+
 .PHONY: help
 help:  ## Print help about available targets
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -15,11 +20,15 @@ depends: depends3  ## py2 is deprecated
 
 .PHONY: depends2
 depends2:
-	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl
+	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl python-pip
+	pip install pre-commit
+	pre-commit install
 
 .PHONY: depends3
 depends3:
-	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl python3-dateutil python3-pydantic rkhunter
+	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl python3-pip python3-dateutil python3-pydantic rkhunter
+	pip3 install pre-commit
+	pre-commit install
 
 all: build
 
@@ -56,8 +65,7 @@ coverage:
 
 .PHONY: lint
 lint:
-	$(PYTHON3) -m flake8 --ignore E24,E121,E123,E125,E126,E221,E226,E266,E704,E265,W504 \
-		`find landscape -name \*.py`
+	$(PYTHON3) -m flake8 --ignore $(PEP8_IGNORED) `find landscape -name \*.py`
 
 .PHONY: pyflakes
 pyflakes:

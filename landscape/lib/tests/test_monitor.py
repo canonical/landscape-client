@@ -1,20 +1,22 @@
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.monitor import (
-    Timer, Monitor, BurstMonitor, CoverageMonitor, FrequencyMonitor)
+from landscape.lib.monitor import BurstMonitor
+from landscape.lib.monitor import CoverageMonitor
+from landscape.lib.monitor import FrequencyMonitor
+from landscape.lib.monitor import Monitor
+from landscape.lib.monitor import Timer
 
 
 class ReactorHavingTest(testing.HelperTestCase, unittest.TestCase):
     def setUp(self):
-        super(ReactorHavingTest, self).setUp()
+        super().setUp()
         self.reactor = testing.FakeReactor()
 
 
 class TimerTest(ReactorHavingTest):
-
     def setUp(self):
-        super(TimerTest, self).setUp()
+        super().setUp()
         self.timer = Timer(create_time=self.reactor.time)
 
     def test_since_start(self):
@@ -39,9 +41,8 @@ class TimerTest(ReactorHavingTest):
 
 
 class MonitorTest(ReactorHavingTest):
-
     def setUp(self):
-        super(MonitorTest, self).setUp()
+        super().setUp()
         self.monitor = Monitor("test", create_time=self.reactor.time)
 
     def test_ping(self):
@@ -70,16 +71,21 @@ class MonitorTest(ReactorHavingTest):
             self.monitor.ping()
             self.reactor.advance(1)
         self.monitor.log()
-        self.assertTrue("INFO: 100 test events occurred in the last 100.00s."
-                        in self.logfile.getvalue())
+        self.assertTrue(
+            "INFO: 100 test events occurred in the last 100.00s."
+            in self.logfile.getvalue(),
+        )
 
 
 class BurstMonitorTest(ReactorHavingTest):
-
     def setUp(self):
-        super(BurstMonitorTest, self).setUp()
-        self.monitor = BurstMonitor(60, 1, "test",
-                                    create_time=self.reactor.time)
+        super().setUp()
+        self.monitor = BurstMonitor(
+            60,
+            1,
+            "test",
+            create_time=self.reactor.time,
+        )
 
     def test_warn_no_pings(self):
         self.assertFalse(self.monitor.warn())
@@ -148,11 +154,14 @@ class BurstMonitorTest(ReactorHavingTest):
 
 
 class CoverageMonitorTest(ReactorHavingTest):
-
     def setUp(self):
-        super(CoverageMonitorTest, self).setUp()
-        self.monitor = CoverageMonitor(1, 1.0, "test",
-                                       create_time=self.reactor.time)
+        super().setUp()
+        self.monitor = CoverageMonitor(
+            1,
+            1.0,
+            "test",
+            create_time=self.reactor.time,
+        )
 
     def test_warn(self):
         self.monitor.ping()
@@ -177,8 +186,12 @@ class CoverageMonitorTest(ReactorHavingTest):
         If time < interval has passed and the monitor has received some pings,
         it should still return 100%.
         """
-        monitor = CoverageMonitor(10, 1.0, "test",
-                                  create_time=self.reactor.time)
+        monitor = CoverageMonitor(
+            10,
+            1.0,
+            "test",
+            create_time=self.reactor.time,
+        )
         monitor.reset()
         self.reactor.advance(1)
         monitor.ping()
@@ -221,25 +234,30 @@ class CoverageMonitorTest(ReactorHavingTest):
             self.monitor.ping()
             self.reactor.advance(1)
         self.monitor.log()
-        self.assertTrue("INFO: 100 of 100 expected test events (100.00%) "
-                        "occurred in the last 100.00s."
-                        in self.logfile.getvalue())
+        self.assertTrue(
+            "INFO: 100 of 100 expected test events (100.00%) "
+            "occurred in the last 100.00s." in self.logfile.getvalue(),
+        )
 
     def test_log_warning(self):
         for i in range(100):
             self.reactor.advance(1)
         self.monitor.log()
-        self.assertTrue("WARNING: 0 of 100 expected test events (0.00%) "
-                        "occurred in the last 100.00s."
-                        in self.logfile.getvalue())
+        self.assertTrue(
+            "WARNING: 0 of 100 expected test events (0.00%) "
+            "occurred in the last 100.00s." in self.logfile.getvalue(),
+        )
 
 
 class FrequencyMonitorTest(ReactorHavingTest):
-
     def setUp(self):
-        super(FrequencyMonitorTest, self).setUp()
-        self.monitor = FrequencyMonitor(100, 1, "test",
-                                        create_time=self.reactor.time)
+        super().setUp()
+        self.monitor = FrequencyMonitor(
+            100,
+            1,
+            "test",
+            create_time=self.reactor.time,
+        )
 
     def test_expected_count(self):
         self.assertEqual(self.monitor.expected_count, 0)
@@ -270,10 +288,12 @@ class FrequencyMonitorTest(ReactorHavingTest):
         self.monitor.ping()
         self.reactor.advance(100)
         self.monitor.log()
-        self.assertTrue("minimum expected test events"
-                        not in self.logfile.getvalue())
+        self.assertTrue(
+            "minimum expected test events" not in self.logfile.getvalue(),
+        )
         self.reactor.advance(1)
         self.monitor.log()
-        self.assertTrue("WARNING: Only 0 of 1 minimum expected test events "
-                        "occurred in the last 100.00s."
-                        in self.logfile.getvalue())
+        self.assertTrue(
+            "WARNING: Only 0 of 1 minimum expected test events "
+            "occurred in the last 100.00s." in self.logfile.getvalue(),
+        )
