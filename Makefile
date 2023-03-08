@@ -22,11 +22,13 @@ depends: depends3  ## py2 is deprecated
 depends2:
 	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl python-pip
 	pip install pre-commit
+	pre-commit install
 
 .PHONY: depends3
 depends3:
 	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl python3-pip
-	pip install pre-commit
+	pip3 install pre-commit
+	pre-commit install
 
 all: build
 
@@ -68,6 +70,9 @@ lint:
 .PHONY: pyflakes
 pyflakes:
 	-pyflakes `find landscape -name \*.py`
+
+pre-commit:
+	-pre-commit run -a
 
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;
