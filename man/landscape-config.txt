@@ -54,8 +54,6 @@ OPTIONS
                            runs (default: 21600).
   --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
   --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
-  --cloud                  Set this if this computer is a cloud instance in
-                           EC2 or UEC. Read below for details.
   --tags=TAGS              Comma separated list of tag names to be sent to the
                            server.
   --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to scatter various
@@ -74,7 +72,6 @@ OPTIONS
                            registered.
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
-  --otp=OTP                The one-time password (OTP) to use in cloud configuration.
   --is-registered          Exit with code 0 (success) if client
                            is registered else returns 5. Display
                            registration info.
@@ -97,8 +94,7 @@ automatically with Landscape as soon as it starts up.
 You can deploy your own AMI, but if you wish the instance to become
 "Landscape managed" you need to take a few steps:
 * make sure the cloud is created in Landscape
-* either add "CLOUD=1" to /etc/default/landscape-client or use the
---cloud switch in the landscape-config(1) command line
+* add "CLOUD=1" to /etc/default/landscape-client
 * make sure the client is configured to start at boot (i.e., the
 /etc/default/landscape-client has the line "RUN=1")
 
