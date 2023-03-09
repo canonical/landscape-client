@@ -78,6 +78,12 @@ OPTIONS
   --is-registered          Exit with code 0 (success) if client
                            is registered else returns 5. Display
                            registration info.
+  --init                   Set up the client directories structure and exit.
+  --access-group           Suggested access group for this computer.
+  --flush-interval         The number of seconds between flushes to disk for
+                           persisent data.
+  --manage-sources-list-d  Reposity profiles manage the files in
+                           etc/apt/sources.list.d
 
 CLOUD
 
