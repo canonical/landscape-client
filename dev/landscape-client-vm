@@ -136,7 +136,7 @@ cat > script <<EOF
 #!/bin/sh -e
 chown landscape /etc/landscape/client.conf
 chmod 600 /etc/landscape/client.conf
-apt-key add /root/ppa-key
+cp /root/ppa-key /etc/apt/trusted.gpg.d/landscape-server-mirror-root-ppa-key.asc
 echo "RUN=1" > /etc/default/landscape-client
 EOF
 chmod 755 script

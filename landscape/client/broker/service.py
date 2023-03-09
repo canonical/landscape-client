@@ -13,6 +13,7 @@ from landscape.client.broker.store import get_default_message_store
 from landscape.client.broker.transport import HTTPTransport
 from landscape.client.service import LandscapeService
 from landscape.client.service import run_landscape_service
+from landscape.client.watchdog import bootstrap_list
 
 
 class BrokerService(LandscapeService):
@@ -45,6 +46,7 @@ class BrokerService(LandscapeService):
     service_name = BrokerServer.name
 
     def __init__(self, config):
+        self._config = config
         self.persist_filename = os.path.join(
             config.data_path,
             f"{self.service_name}.bpickle",
@@ -106,6 +108,10 @@ class BrokerService(LandscapeService):
         L{MessageExchange} and L{Pinger} services.
         """
         super().startService()
+        bootstrap_list.bootstrap(
+            data_path=self._config.data_path,
+            log_dir=self._config.log_dir,
+        )
         self.publisher.start()
         self.exchanger.start()
         self.pinger.start()

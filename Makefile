@@ -71,6 +71,9 @@ lint:
 pyflakes:
 	-pyflakes `find landscape -name \*.py`
 
+pre-commit:
+	-pre-commit run -a
+
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;
 	-find landscape -name \*.pyc -exec rm -f {} \;

@@ -21,6 +21,7 @@ ALL_PLUGINS = [
     "CephUsage",
     "ComputerTags",
     "UbuntuProInfo",
+    "LivePatch",
     "ListeningPorts",
     "RKHunterInfo",
 ]
