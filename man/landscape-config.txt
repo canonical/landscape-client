@@ -52,12 +52,17 @@ OPTIONS
                            package monitor runs (default: 1800).
   --apt-update-interval=APT_UPDATE_INTERVAL  The interval between apt update
                            runs (default: 21600).
-  --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
-  --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
-  --tags=TAGS              Comma separated list of tag names to be sent to the
-                           server.
+  --flush-interval         The number of seconds between flushes to disk for
+                           persisent data.
   --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to scatter various
                            tasks of landscape.
+  --manage-sources-list-d  Reposity profiles manage the files in
+                           'etc/apt/sources.list.d'.
+  --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
+  --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
+  --access-group           Suggested access group for this computer.
+  --tags=TAGS              Comma separated list of tag names to be sent to the
+                           server.
   --import=FILENAME_OR_URL   Filename or URL to import configuration from.
                            Imported options behave as if they were passed in
                            the command line, with precedence being given to
@@ -72,15 +77,10 @@ OPTIONS
                            registered.
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
+  --init                   Set up the client directories structure and exit.
   --is-registered          Exit with code 0 (success) if client
                            is registered else returns 5. Display
                            registration info.
-  --init                   Set up the client directories structure and exit.
-  --access-group           Suggested access group for this computer.
-  --flush-interval         The number of seconds between flushes to disk for
-                           persisent data.
-  --manage-sources-list-d  Reposity profiles manage the files in
-                           etc/apt/sources.list.d
 
 CLOUD
 
