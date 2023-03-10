@@ -29,7 +29,7 @@ case "$1" in
     rm -f "${LOG_DIR}/package-reporter.log"*
     rm -f "${LOG_DIR}/package-changer.log"*
 
-    rm -f "${GPG_DIR}/landscape-server"*.asc
+    rm -f "${GPG_DIR}/landscape-server-mirror"*.asc
 
     rm -rf "${DATA_DIR}/client"
     rm -rf "${DATA_DIR}/.gnupg"
