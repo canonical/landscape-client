@@ -26,3 +26,4 @@ _last_py2_res
 *.pyc
 .cache
 _trial_temp*
+*.snap
