@@ -140,7 +140,7 @@ snap-shell: snap-install
 .PHONY: snap-shell
 
 snap-debug:
-	$(SNAPCRAFT) -v --debug --bind-ssh
+	$(SNAPCRAFT) -v --debug
 .PHONY: snap-debug
 
 snap-clean: snap-remove
@@ -148,7 +148,7 @@ snap-clean: snap-remove
 .PHONY: snap-clean
 
 snap:
-	$(SNAPCRAFT) --bind-ssh
+	$(SNAPCRAFT)
 .PHONY: snap
 
 include Makefile.packaging
