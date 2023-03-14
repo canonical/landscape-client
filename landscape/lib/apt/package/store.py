@@ -454,6 +454,7 @@ class PackageTask:
         self._db = db
         self.id = id
 
+        row = None
         cursor = db.cursor()
         try:
             cursor.execute(
@@ -464,9 +465,12 @@ class PackageTask:
         finally:
             cursor.close()
 
-        self.queue = row[0]
-        self.timestamp = row[1]
-        self.data = bpickle.loads(bytes(row[2]))
+        if row:
+            self.queue = row[0]
+            self.timestamp = row[1]
+            self.data = bpickle.loads(bytes(row[2]))
+
+        return None
 
     @with_cursor
     def remove(self, cursor):
