@@ -23,8 +23,8 @@ environment:
   PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10/dist-packages
 
 apps:
-  debug-shell:
-    command: bin/debug-shell.wrapper
+  landscape-client:
+    command: bin/landscape-client
     plugs:
       - network
   landscape-config:
@@ -59,7 +59,6 @@ parts:
       - python3-pycurl
       - software-properties-common
     override-build: |
-      #snapcraftctl build
       python3 -m venv build/venv --system-site-packages
       ln -sf build/venv/bin bin
       bin/pip install -U convoy-python distutils-extra-python twisted pre-commit
@@ -72,13 +71,17 @@ parts:
       - python3-pip
       - python3-twisted
     override-stage: |
-      #snapcraftctl stage
-      craftctl default
       # Copy the landscape-config script over
       mkdir -p "${SNAPCRAFT_PRIME}/bin"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-broker" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-client" "${SNAPCRAFT_PRIME}/bin/"
       cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-config" "${SNAPCRAFT_PRIME}/bin/"
-    override-prime: |
-      rm -rf $CRAFT_PRIME/bin/debug-shell.wrapper
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-manager" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-monitor" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-package-changer" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-package-reporter" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-release-upgrader" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-sysinfo" "${SNAPCRAFT_PRIME}/bin/"
       craftctl default
   local:
     plugin: dump

@@ -132,11 +132,11 @@ snap-install:
 .PHONY: snap-install
 
 snap-remove:
-	sudo snap remove landscape-server-quickstart
+	sudo snap remove --purge landscape-client
 .PHONY: snap-remove
 
 snap-shell: snap-install
-	sudo snap run --shell landscape-client.debug-shell
+	sudo snap run --shell landscape-client.landscape-client
 .PHONY: snap-shell
 
 snap-debug:
