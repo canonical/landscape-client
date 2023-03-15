@@ -329,21 +329,23 @@ class PackageStore(HashIdStore):
     @with_cursor
     def add_task(self, cursor, queue, data):
         data = bpickle.dumps(data)
+        now = time.time()
         cursor.execute(
             "INSERT INTO task (queue, timestamp, data) VALUES (?,?,?)",
-            (queue, time.time(), sqlite3.Binary(data)),
+            (queue, now, sqlite3.Binary(data)),
         )
-        return PackageTask(self._db, cursor.lastrowid)
+        return PackageTask(self._db, cursor.lastrowid, queue, now, data)
 
     @with_cursor
     def get_next_task(self, cursor, queue):
         cursor.execute(
-            "SELECT id FROM task WHERE queue=? ORDER BY timestamp",
+            "SELECT id, queue, timestamp, data FROM task "
+            "WHERE queue=? ORDER BY timestamp",
             (queue,),
         )
         row = cursor.fetchone()
         if row:
-            return PackageTask(self._db, row[0])
+            return PackageTask(self._db, row[0], row[1], row[2], row[3])
         return None
 
     @with_cursor
@@ -450,23 +452,12 @@ class HashIDRequest:
 
 
 class PackageTask:
-    def __init__(self, db, id):
+    def __init__(self, db, cid, queue, timestamp, data):
         self._db = db
-        self.id = id
-
-        cursor = db.cursor()
-        try:
-            cursor.execute(
-                "SELECT queue, timestamp, data FROM task " "WHERE id=?",
-                (id,),
-            )
-            row = cursor.fetchone()
-        finally:
-            cursor.close()
-
-        self.queue = row[0]
-        self.timestamp = row[1]
-        self.data = bpickle.loads(bytes(row[2]))
+        self.id = cid
+        self.queue = queue
+        self.timestamp = timestamp
+        self.data = bpickle.loads(data)
 
     @with_cursor
     def remove(self, cursor):
