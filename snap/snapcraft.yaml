@@ -24,6 +24,7 @@ environment:
 
 apps:
   landscape-client:
+    daemon: simple
     command: bin/landscape-client
     plugs:
       - network
@@ -83,6 +84,3 @@ parts:
       cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-release-upgrader" "${SNAPCRAFT_PRIME}/bin/"
       cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-sysinfo" "${SNAPCRAFT_PRIME}/bin/"
       craftctl default
-  local:
-    plugin: dump
-    source: tree
