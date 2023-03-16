@@ -148,7 +148,7 @@ class Configuration(BaseConfiguration):
             dest="stagger_launch",
             default=0.1,
             type=float,
-            help="Ratio, between 0 and 1, by which to scatter "
+            help="Ratio, between 0 and 1, by which to stagger "
             "various tasks of landscape.",
         )
         parser.add_option(
