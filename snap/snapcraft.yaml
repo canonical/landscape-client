@@ -13,13 +13,15 @@ architectures:
   - build-on: ppc64le
   - build-on: riscv
   - build-on: s390x
-confinement: devmode # use 'strict' once you have the right plugs and slots
+#confinement: devmode
+confinement: strict
 
 layout:
   /var/lib/landscape:
     bind: $SNAP_DATA/var/lib/landscape
 
 environment:
+  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/x86_64-linux-gnu
   PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10/dist-packages
 
 apps:
