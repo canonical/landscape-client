@@ -40,9 +40,15 @@ parts:
     python-packages:
       - convoy-python
       - distutils-extra-python
+      - sasl
       - twisted
     build-packages:
       - build-essential
+      - libsasl2-2
+      - libsasl2-dev
+      - libsasl2-modules
+      - libsasl2-modules-db
+      - libsasl2-modules-gssapi-mit
       - python3-flake8 
       - python3-coverage
       - python3-twisted 
@@ -62,16 +68,22 @@ parts:
     override-build: |
       python3 -m venv build/venv --system-site-packages
       ln -sf build/venv/bin bin
-      bin/pip install -U convoy-python distutils-extra-python twisted pre-commit
+      bin/pip install -U convoy-python distutils-extra-python twisted pre-commit sasl
       make build3
     stage-packages:
       - landscape-client
       - landscape-common
       - language-pack-en
+      - libsasl2-2
+      - libsasl2-dev
+      - libsasl2-modules
+      - libsasl2-modules-db
+      - libsasl2-modules-gssapi-mit
       - python3-oops
       - python3-pip
       - python3-twisted
     override-stage: |
+      craftctl default
       # Copy the landscape-config script over
       mkdir -p "${SNAPCRAFT_PRIME}/bin"
       cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-broker" "${SNAPCRAFT_PRIME}/bin/"
@@ -83,4 +95,3 @@ parts:
       cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-package-reporter" "${SNAPCRAFT_PRIME}/bin/"
       cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-release-upgrader" "${SNAPCRAFT_PRIME}/bin/"
       cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-sysinfo" "${SNAPCRAFT_PRIME}/bin/"
-      craftctl default
