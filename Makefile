@@ -145,6 +145,7 @@ snap-debug:
 
 snap-clean: snap-remove
 	$(SNAPCRAFT) clean
+	rm landscape-client_0.1_amd64.snap
 .PHONY: snap-clean
 
 snap:
