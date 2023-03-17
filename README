@@ -91,7 +91,7 @@ make lint
 
 First, you need to ensure that you have the appropriate tools installed:
 ```
-$ sudo snap install snapcraft
+$ sudo snap install snapcraft --classic
 $ lxd init --auto
 ```
 
