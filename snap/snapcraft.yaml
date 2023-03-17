@@ -1,0 +1,99 @@
+name: landscape-client
+base: core22
+version: '0.1'
+summary: Client for the Canonical systems managemenet product Landscape
+description: |
+  This client, when installed, allows a machine to connect to the
+  Landscape server and be remotely managed by it.
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+  - build-on: ppc64le
+  - build-on: riscv
+  - build-on: s390x
+#confinement: devmode
+confinement: strict
+
+layout:
+  /var/lib/landscape:
+    bind: $SNAP_DATA/var/lib/landscape
+
+environment:
+  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/x86_64-linux-gnu
+  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10/dist-packages
+
+apps:
+  landscape-client:
+    daemon: simple
+    command: bin/landscape-client
+    plugs:
+      - network
+  landscape-config:
+    command: bin/landscape-config
+    plugs:
+      - network
+
+parts:
+  landscape-client:
+    plugin: python
+    source: https://github.com/bceverly/landscape-client.git
+    python-packages:
+      - convoy-python
+      - distutils-extra-python
+      - sasl
+      - twisted
+    build-packages:
+      - build-essential
+      - libsasl2-2
+      - libsasl2-dev
+      - libsasl2-modules
+      - libsasl2-modules-db
+      - libsasl2-modules-gssapi-mit
+      - python3-flake8 
+      - python3-coverage
+      - python3-twisted 
+      - python3-distutils-extra
+      - python3-mock 
+      - python3-configobj 
+      - python3-netifaces 
+      - python3-pycurl 
+      - python3-pip
+      - python3-distutils
+      - python3-twisted 
+      - python3-mock 
+      - python3-configobj 
+      - python3-netifaces 
+      - python3-pycurl
+      - software-properties-common
+    override-build: |
+      python3 -m venv build/venv --system-site-packages
+      ln -sf build/venv/bin bin
+      bin/pip install -U convoy-python distutils-extra-python twisted pre-commit sasl
+      make build3
+    stage-packages:
+      - landscape-client
+      - landscape-common
+      - language-pack-en
+      - libsasl2-2
+      - libsasl2-dev
+      - libsasl2-modules
+      - libsasl2-modules-db
+      - libsasl2-modules-gssapi-mit
+      - python3-oops
+      - python3-pip
+      - python3-twisted
+    override-stage: |
+      craftctl default
+      # Copy the landscape-config script over
+      mkdir -p "${SNAPCRAFT_PRIME}/bin"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-broker" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-client" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-config" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-manager" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-monitor" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-package-changer" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-package-reporter" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-release-upgrader" "${SNAPCRAFT_PRIME}/bin/"
+      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-sysinfo" "${SNAPCRAFT_PRIME}/bin/"

@@ -2,6 +2,7 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
 PYTHON2 ?= python2
 PYTHON3 ?= python3
+SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
 TRIAL ?= -m twisted.trial
 TRIAL_ARGS ?=
 
@@ -125,6 +126,31 @@ tags:
 .PHONY: etags
 etags:
 	-etags --languages=python -R .
+
+snap-install:
+	sudo snap install --devmode landscape-client_0.1_amd64.snap
+.PHONY: snap-install
+
+snap-remove:
+	sudo snap remove --purge landscape-client
+.PHONY: snap-remove
+
+snap-shell: snap-install
+	sudo snap run --shell landscape-client.landscape-client
+.PHONY: snap-shell
+
+snap-debug:
+	$(SNAPCRAFT) -v --debug
+.PHONY: snap-debug
+
+snap-clean: snap-remove
+	$(SNAPCRAFT) clean
+	-rm landscape-client_0.1_amd64.snap
+.PHONY: snap-clean
+
+snap:
+	$(SNAPCRAFT)
+.PHONY: snap
 
 include Makefile.packaging
 
