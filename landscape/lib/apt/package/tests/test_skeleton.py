@@ -22,11 +22,13 @@ from landscape.lib.apt.package.testing import HASH_MULTIPLE_RELATIONS
 from landscape.lib.apt.package.testing import HASH_OR_RELATIONS
 from landscape.lib.apt.package.testing import HASH_SIMPLE_RELATIONS
 from landscape.lib.apt.package.testing import HASH_VERSION_RELATIONS
+from landscape.lib.apt.package.testing import PKGDEB_BROKEN_DESCRIPTION
 from landscape.lib.apt.package.testing import PKGDEB_MINIMAL
 from landscape.lib.apt.package.testing import PKGDEB_MULTIPLE_RELATIONS
 from landscape.lib.apt.package.testing import PKGDEB_OR_RELATIONS
 from landscape.lib.apt.package.testing import PKGDEB_SIMPLE_RELATIONS
 from landscape.lib.apt.package.testing import PKGDEB_VERSION_RELATIONS
+from landscape.lib.apt.package.testing import PKGNAME_BROKEN_DESCRIPTION
 from landscape.lib.apt.package.testing import PKGNAME_MINIMAL
 from landscape.lib.apt.package.testing import PKGNAME_MULTIPLE_RELATIONS
 from landscape.lib.apt.package.testing import PKGNAME_OR_RELATIONS
@@ -64,6 +66,11 @@ class SkeletonTestHelper:
             test_case.skeleton_repository_dir,
             PKGNAME_OR_RELATIONS,
             PKGDEB_OR_RELATIONS,
+        )
+        create_deb(
+            test_case.skeleton_repository_dir,
+            PKGNAME_BROKEN_DESCRIPTION,
+            PKGDEB_BROKEN_DESCRIPTION,
         )
 
 
@@ -146,6 +153,14 @@ class SkeletonAptTest(BaseTestCase):
         self.assertTrue(isinstance(skeleton.name, unicode))
         self.assertTrue(isinstance(skeleton.version, unicode))
         self.assertEqual(HASH1, skeleton.get_hash())
+
+    def test_build_skeleton_with_broken_description(self):
+        """
+        A package that has only the required fields and a broken description.
+        """
+        brokendescription_package = self.get_package("brokendescription")
+        with self.assertRaises(UnicodeDecodeError):
+            build_skeleton_apt(brokendescription_package)
 
     def test_build_skeleton_with_info(self):
         """
