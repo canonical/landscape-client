@@ -131,6 +131,10 @@ snap-install:
 	sudo snap install --devmode landscape-client_0.1_amd64.snap
 .PHONY: snap-install
 
+snap-remote-build:
+	snapcraft --remote-build
+.PHONY: snap-remote-build
+
 snap-remove:
 	sudo snap remove --purge landscape-client
 .PHONY: snap-remove
