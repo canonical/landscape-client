@@ -16,8 +16,7 @@ grade: devel # must be 'stable' to release into candidate/stable channels
 architectures:
   - build-on: amd64
   - build-on: arm64
-  - build-on: ppc64le
-  - build-on: riscv
+  - build-on: ppc64el
   - build-on: s390x
 confinement: strict
 
@@ -56,21 +55,16 @@ parts:
       - libsasl2-modules
       - libsasl2-modules-db
       - libsasl2-modules-gssapi-mit
+      - python3-distutils
       - python3-flake8 
+      - python3-configobj 
       - python3-coverage
-      - python3-twisted 
       - python3-distutils-extra
       - python3-mock 
-      - python3-configobj 
       - python3-netifaces 
       - python3-pycurl 
       - python3-pip
-      - python3-distutils
       - python3-twisted 
-      - python3-mock 
-      - python3-configobj 
-      - python3-netifaces 
-      - python3-pycurl
       - software-properties-common
     override-build: |
       python3 -m venv build/venv --system-site-packages
