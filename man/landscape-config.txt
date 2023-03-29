@@ -52,14 +52,17 @@ OPTIONS
                            package monitor runs (default: 1800).
   --apt-update-interval=APT_UPDATE_INTERVAL  The interval between apt update
                            runs (default: 21600).
+  --flush-interval         The number of seconds between flushes to disk for
+                           persisent data.
+  --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to stagger various
+                           tasks of landscape.
+  --manage-sources-list-d  Repository profiles manage the files in
+                           'etc/apt/sources.list.d'.
   --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
   --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
-  --cloud                  Set this if this computer is a cloud instance in
-                           EC2 or UEC. Read below for details.
+  --access-group           Suggested access group for this computer.
   --tags=TAGS              Comma separated list of tag names to be sent to the
                            server.
-  --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to scatter various
-                           tasks of landscape.
   --import=FILENAME_OR_URL   Filename or URL to import configuration from.
                            Imported options behave as if they were passed in
                            the command line, with precedence being given to
@@ -74,7 +77,7 @@ OPTIONS
                            registered.
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
-  --otp=OTP                The one-time password (OTP) to use in cloud configuration.
+  --init                   Set up the client directories structure and exit.
   --is-registered          Exit with code 0 (success) if client
                            is registered else returns 5. Display
                            registration info.
@@ -91,8 +94,7 @@ automatically with Landscape as soon as it starts up.
 You can deploy your own AMI, but if you wish the instance to become
 "Landscape managed" you need to take a few steps:
 * make sure the cloud is created in Landscape
-* either add "CLOUD=1" to /etc/default/landscape-client or use the
---cloud switch in the landscape-config(1) command line
+* add "CLOUD=1" to /etc/default/landscape-client
 * make sure the client is configured to start at boot (i.e., the
 /etc/default/landscape-client has the line "RUN=1")
 

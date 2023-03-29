@@ -86,7 +86,7 @@ class AptSources(ManagerPlugin):
                       "-----END PGP PUBLIC KEY BLOCK-----"]}
         """
         deferred = succeed(None)
-        prefix = "landscape-server-"
+        prefix = 'landscape-server-mirror'
         for key in message["gpg-keys"]:
             filename = prefix + str(uuid.uuid4()) + ".asc"
             key_path = os.path.join(self.TRUSTED_GPG_D, filename)

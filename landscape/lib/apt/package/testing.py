@@ -183,6 +183,7 @@ PKGNAME_SIMPLE_RELATIONS = "simple-relations_1.0_all.deb"
 PKGNAME_VERSION_RELATIONS = "version-relations_1.0_all.deb"
 PKGNAME_MULTIPLE_RELATIONS = "multiple-relations_1.0_all.deb"
 PKGNAME_OR_RELATIONS = "or-relations_1.0_all.deb"
+PKGNAME_BROKEN_DESCRIPTION = "brokendescription_1.0_all.deb"
 
 PKGDEB1 = (
     b"ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDQ5MyAgMCAgICAgMCAgICAgMT"
@@ -356,6 +357,19 @@ PKGDEB_OR_RELATIONS = (
     b"1/9yNK"
     b"GadWR2ltRC651hGpxw4et/u8phTny3Vdfvy2dgAAAAAAAAAAANjRE6Lr2rEAKAAACg=="
 )
+PKGDEB_BROKEN_DESCRIPTION = (
+    b"ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTY3OTIzNzM2MyAgMCAgICAgMCAgICAgMTAwNj"
+    b"Q0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuenN0IDE2NzkyMzczNjMgIDAgICAg"
+    b"IDAgICAgIDEwMDY0NCAgMjY4ICAgICAgIGAKKLUv/QBoHQgAwk4uInBJ21bxEmhb1HK7ih"
+    b"shSQan5wcgNCga0N2kn+wSVP33XwppIIeGBx1QBNf1M9H1XWE3fk4z9afsrX5H3l+GtZlz"
+    b"e4+y5nUOhExsDOqo26a91qhCFwIjoHFGy9YXGwUUALQ1b58CXb7ja2tgOLf/RO7YGH6FkZ"
+    b"DSBX4jGM9bdNozbPZ6wX+hSyfsAu9B0kzUoVTKxFLKOtZKnH98zgiU0f1T9TfCJxPRRJSi"
+    b"HCmRIGktlSkRREmJQAEcILBKRqwcAxUD8QEAkmWFeAkIIKSmWvDwQBNwfBxuFeZKr7/ACR"
+    b"VYL8ABU/3amMvgAU33hMJwAGz/tzlrw2MACcQUwHyabmRhdGEudGFyLnpzdCAgICAxNjc5"
+    b"MjM3MzYzICAwICAgICAwICAgICAxMDA2NDQgIDg0ICAgICAgICBgCii1L/0AaF0CADQDLi"
+    b"8AMDc1NTE3NTEAMTQ0MDU1NjU3NDcAMDEwNTcwACA1AAB1c3RhciAgAGJyMHRoM3IACSCQ"
+    b"mwfMBhyGBqrXn71BlmwNcH3CQw=="
+)
 
 
 HASH1 = base64.decodebytes(b"/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
@@ -373,6 +387,9 @@ HASH_MULTIPLE_RELATIONS = (
 )
 HASH_OR_RELATIONS = (
     b"\xa1q\xf4*\x1c\xd4L\xa1\xca\xf1\xfa?\xc3\xc7\x9f\x88\xd53B\xc9"
+)
+HASH_BROKEN_DESCRIPTION = (
+    b"\x16\xbd\xb8+\xed\xc0\x07\x84f!\xe6d\xea\xe7\xaf\xc6\xe4\t\xad\xd7"
 )
 
 

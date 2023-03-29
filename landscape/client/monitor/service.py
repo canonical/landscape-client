@@ -1,4 +1,5 @@
 """Deployment code for the monitor."""
+import logging
 import os
 
 from twisted.python.reflect import namedClass
@@ -39,13 +40,23 @@ class MonitorService(LandscapeService):
         )
 
     def get_plugins(self):
-        return [
-            namedClass(
-                "landscape.client.monitor."
-                f"{plugin_name.lower()}.{plugin_name}",
-            )()
-            for plugin_name in self.config.plugin_factories
-        ]
+        plugins = []
+
+        for plugin_name in self.config.plugin_factories:
+            try:
+                plugin = namedClass(
+                    "landscape.client.monitor."
+                    f"{plugin_name.lower()}.{plugin_name}"
+                )
+                plugins.append(plugin())
+            except ModuleNotFoundError:
+                logging.warning(
+                    "Invalid monitor plugin specified: '{}'. "
+                    "See `example.conf` for a full list of monitor plugins.",
+                    plugin_name,
+                )
+
+        return plugins
 
     def startService(self):  # noqa: N802
         """Start the monitor."""
