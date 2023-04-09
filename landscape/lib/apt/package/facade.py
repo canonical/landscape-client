@@ -265,15 +265,15 @@ class AptFacade:
             if not self._is_main_architecture(package):
                 continue
             for version in package.versions:
-                hash = self.get_package_skeleton(
+                skeleton_hash = self.get_package_skeleton(
                     version,
                     with_info=False,
                 ).get_hash()
                 # Use a tuple including the package, since the Version
                 # objects of two different packages can have the same
                 # hash.
-                self._pkg2hash[(package, version)] = hash
-                self._hash2pkg[hash] = version
+                self._pkg2hash[(package, version)] = skeleton_hash
+                self._hash2pkg[skeleton_hash] = version
         self._channels_loaded = True
 
     def ensure_channels_reloaded(self):

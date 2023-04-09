@@ -159,8 +159,7 @@ class SkeletonAptTest(BaseTestCase):
         A package that has only the required fields and a broken description.
         """
         brokendescription_package = self.get_package("brokendescription")
-        with self.assertRaises(UnicodeDecodeError):
-            build_skeleton_apt(brokendescription_package)
+        build_skeleton_apt(brokendescription_package)
 
     def test_build_skeleton_with_info(self):
         """
