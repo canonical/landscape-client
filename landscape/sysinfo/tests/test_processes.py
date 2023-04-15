@@ -54,6 +54,7 @@ class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
             uid=0,
             gid=0,
             process_name="ZOMBERS",
+            stat_data="0 0 Z 0 0 0 0",
         )
         self.processes.run()
         self.assertEqual(
@@ -70,6 +71,7 @@ class ProcessesTest(FSTestCase, TwistedTestCase, unittest.TestCase):
                 uid=0,
                 gid=0,
                 process_name=f"ZOMBERS{i:d}",
+                stat_data="0 0 Z 0 0 0 0",
             )
         self.processes.run()
         self.assertEqual(
