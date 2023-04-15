@@ -67,6 +67,13 @@ class SysInfoConfiguration(BaseConfiguration):
             "plugins to include.",
         )
 
+        parser.add_option(
+            "--width",
+            type=int,
+            default=80,
+            help="Maximum width for each column of output.",
+        )
+
         parser.epilog = "Default plugins: {}".format(", ".join(ALL_PLUGINS))
         return parser
 
@@ -144,6 +151,7 @@ def run(args, reactor=None, sysinfo=None):
                 sysinfo.get_headers(),
                 sysinfo.get_notes(),
                 sysinfo.get_footnotes(),
+                width=config.width,
                 indent="  ",
             ),
         )
