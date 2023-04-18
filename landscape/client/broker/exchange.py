@@ -475,6 +475,7 @@ class MessageExchange:
 
         @param message: Same as in L{MessageStore.add}.
         """
+        logging.debug("Considering message %s", message)
         if self._message_is_obsolete(message):
             logging.info(
                 "Response message with operation-id "
@@ -491,6 +492,7 @@ class MessageExchange:
             message["timestamp"] = int(self._reactor.time())
         message_id = self._message_store.add(message)
         if urgent:
+            logging.debug("Urgently...")
             self.schedule_exchange(urgent=True)
         return message_id
 

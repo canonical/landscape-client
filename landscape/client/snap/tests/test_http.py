@@ -1,15 +1,16 @@
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
-from landscape.client.snap.http import SnapHttp, SnapdHttpException
+from landscape.client.snap.http import SnapdHttpException
+from landscape.client.snap.http import SnapHttp
 
 
 class SnapHttpTestCase(TestCase):
-
     def test_get_snaps(self):
-        """get_snaps() returns a list of installed snaps."""
+        """get_snaps() returns a dict with a list of installed snaps."""
         http = SnapHttp()
-        result = http.get_snaps()
+        result = http.get_snaps()["result"]
 
         self.assertTrue(isinstance(result, list))
         self.assertGreater(len(result), 0)

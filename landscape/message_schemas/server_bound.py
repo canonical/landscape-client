@@ -749,9 +749,7 @@ COMPUTER_TAGS = Message(
 
 UBUNTU_PRO_INFO = Message("ubuntu-pro-info", {"ubuntu-pro-info": Unicode()})
 
-LIVEPATCH = Message(
-    "livepatch",
-    {"livepatch": Unicode()})
+LIVEPATCH = Message("livepatch", {"livepatch": Unicode()})
 
 UBUNTU_PRO_REBOOT_REQUIRED = Message(
     "ubuntu-pro-reboot-required",
@@ -761,34 +759,32 @@ UBUNTU_PRO_REBOOT_REQUIRED = Message(
 SNAPS = Message(
     "snaps",
     {
-        "snaps": KeyDict({
-            "installed": List(KeyDict({
-                "id": Unicode(),
-                "name": Unicode(),
-                "version": Unicode(),
-                "revision": Unicode(),
-                "tracking-channel": Unicode(),
-                "publisher": KeyDict({
-                    "username": Unicode(),
-                    "validation": Unicode(),
-                }, strict=False),
-                "confinement": Unicode(),
-            }, strict=False)),
-        }),
+        "snaps": KeyDict(
+            {
+                "installed": List(
+                    KeyDict(
+                        {
+                            "id": Unicode(),
+                            "name": Unicode(),
+                            "version": Unicode(),
+                            "revision": Unicode(),
+                            "tracking-channel": Unicode(),
+                            "publisher": KeyDict(
+                                {
+                                    "username": Unicode(),
+                                    "validation": Unicode(),
+                                },
+                                strict=False,
+                            ),
+                            "confinement": Unicode(),
+                        },
+                        strict=False,
+                    ),
+                ),
+            },
+        ),
     },
 )
-
-# DO WE EVEN NEED THIS???
-#INSTALL_SNAPS = Message(
-#    "install-snaps",
-#    {
-#        "snaps": List(KeyDict({
-#            "name": Unicode(),
-#            "revision": Unicode(),
-#            "tracking-channel": Unicode(),
-#        }))
-#    }
-#)
 
 message_schemas = (
     ACTIVE_PROCESS_INFO,

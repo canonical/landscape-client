@@ -3,15 +3,25 @@ Functions for interacting with the snapd REST API.
 See https://snapcraft.io/docs/snapd-api for documentation of the API.
 """
 import json
-import pycurl
 from io import BytesIO
+
+import pycurl
 
 SNAPD_SOCKET = "/run/snapd.socket"
 BASE_URL = "http://localhost/v2"
 
+# For the below, refer to https://snapcraft.io/docs/snapd-api#heading--changes
+COMPLETE_STATUSES = {"Done"}
+INCOMPLETE_STATUSES = {"Do", "Doing"}
+
 
 class SnapdHttpException(Exception):
-    pass
+    @property
+    def json(self):
+        """Attempts to parse the body of this exception as json."""
+        body = self.args[0]
+
+        return json.loads(body)
 
 
 class SnapHttp:
@@ -43,12 +53,16 @@ class SnapHttp:
         If `revision` is not provided, latest will be used.
         If `channel` is not provided, stable will be used.
         """
-        body = {k: v for k, v in {
-            "action": "install",
-            "revision": revision,
-            "channel": channel,
-            "classic": classic,
-        }.items() if v is not None}
+        body = {
+            k: v
+            for k, v in {
+                "action": "install",
+                "revision": revision,
+                "channel": channel,
+                "classic": classic,
+            }.items()
+            if v is not None
+        }
 
         return self._post("/snaps/" + name, body)
 
@@ -60,12 +74,16 @@ class SnapHttp:
         If `classic` is provided, snap will be changed to the classic
         confinement if True, or out of classic confinement if False.
         """
-        body = {k: v for k, v in {
-            "action": "refresh",
-            "revision": revision,
-            "channel": channel,
-            "classic": classic,
-        }.items() if v is not None}
+        body = {
+            k: v
+            for k, v in {
+                "action": "refresh",
+                "revision": revision,
+                "channel": channel,
+                "classic": classic,
+            }.items()
+            if v is not None
+        }
 
         return self._post("/snaps/" + name, body)
 
@@ -73,13 +91,17 @@ class SnapHttp:
         """Removes a snap by `name`."""
         return self._post("/snaps/" + name, {"action": "remove"})
 
+    def check_change(self, cid):
+        """Checks the status of the snap change with `id`."""
+        return self._get("/changes/" + cid)
+
     def _get(self, path):
         """Perform a GET request of `path` to the snap REST API."""
         curl, buff = self._setup_curl(path)
 
         self._perform(curl, buff)
 
-        return json.loads(buff.getvalue())["result"]
+        return json.loads(buff.getvalue())
 
     def _perform(self, curl, buff, raise_on_error=True):
         """
@@ -106,7 +128,7 @@ class SnapHttp:
         curl.setopt(curl.POSTFIELDS, json_body)
         self._perform(curl, buff)
 
-        return json.loads(buff.getvalue())["result"]
+        return json.loads(buff.getvalue())
 
     def _setup_curl(self, path):
         """

@@ -1,7 +1,8 @@
 import logging
 
-from landscape.client.snap.http import SnapHttp, SnapdHttpException
 from landscape.client.monitor.plugin import DataWatcher
+from landscape.client.snap.http import SnapdHttpException
+from landscape.client.snap.http import SnapHttp
 
 
 class SnapMonitor(DataWatcher):
@@ -30,4 +31,4 @@ class SnapMonitor(DataWatcher):
             logging.error(f"Unable to list installed snaps: {e}")
             return
 
-        return {"installed": snaps}
+        return {"installed": snaps["result"]}
