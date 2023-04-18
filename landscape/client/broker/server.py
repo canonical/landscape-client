@@ -228,7 +228,6 @@ class BrokerServer:
             urgent = True
             session_id = self.get_session_id()
 
-        logging.debug("Session ID is %s", session_id)
         if session_id is None:
             raise RuntimeError(
                 "Session ID must be set before attempting to send a message",

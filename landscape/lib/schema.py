@@ -176,6 +176,7 @@ class KeyDict:
     @param schema: A dict mapping keys to schemas that the values of those
         keys must match.
     """
+
     def __init__(self, schema, optional=None, strict=True):
         if optional is None:
             optional = []
@@ -186,14 +187,15 @@ class KeyDict:
     def coerce(self, value):
         new_dict = {}
         if not isinstance(value, dict):
-            raise InvalidError("%r is not a dict." % (value,))
+            raise InvalidError(f"{value!r} is not a dict.")
 
         for k, v in iteritems(value):
             unknown_key = k not in self.schema
 
             if unknown_key and self._strict:
-                raise InvalidError("%r is not a valid key as per %r"
-                                   % (k, self.schema))
+                raise InvalidError(
+                    "%r is not a valid key as per %r" % (k, self.schema),
+                )
             elif unknown_key:
                 # We are in non-strict mode, so we ignore unknown keys.
                 continue
