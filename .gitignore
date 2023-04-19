@@ -27,7 +27,7 @@ _last_py2_res
 .cache
 _trial_temp*
 *.snap
-landscape-client_amd64.txt
-landscape-client_arm64.txt
-landscape-client_ppc64el.txt
-landscape-client_s390x.txt
+landscape-client_amd64*.txt
+landscape-client_arm64*.txt
+landscape-client_ppc64el*.txt
+landscape-client_s390x*.txt
