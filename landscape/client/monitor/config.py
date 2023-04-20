@@ -22,6 +22,7 @@ ALL_PLUGINS = [
     "ComputerTags",
     "UbuntuProInfo",
     "LivePatch",
+    "UbuntuProRebootRequired",
 ]
 
 
