@@ -86,7 +86,7 @@ class AptSources(ManagerPlugin):
                       "-----END PGP PUBLIC KEY BLOCK-----"]}
         """
         deferred = succeed(None)
-        prefix = 'landscape-server-mirror'
+        prefix = "landscape-server-mirror"
         for key in message["gpg-keys"]:
             filename = prefix + str(uuid.uuid4()) + ".asc"
             key_path = os.path.join(self.TRUSTED_GPG_D, filename)
@@ -132,7 +132,13 @@ class AptSources(ManagerPlugin):
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
-        if self.registry.config.manage_sources_list_d:
+        if self.registry.config.manage_sources_list_d not in (
+            False,
+            "False",
+            "false",
+            "0",
+            "no",
+        ):
             filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list"))
             for filename in filenames:
                 shutil.move(filename, f"{filename}.save")
