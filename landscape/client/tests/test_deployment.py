@@ -122,6 +122,11 @@ class BaseConfigurationTest(LandscapeTest):
         self.config.load([])
         self.assertEqual(self.config.whatever, "yay")
 
+    def test_manage_sources_list_d(self):
+        self.write_config_file(manage_sources_list_d="False")
+        self.config.reload()
+        self.assertEqual(self.config.manage_sources_list_d, "False")
+
     # CLI options
 
     def test_config_file_default(self):

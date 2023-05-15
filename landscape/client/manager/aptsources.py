@@ -10,6 +10,7 @@ from twisted.internet.defer import succeed
 
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.package.reporter import find_reporter_command
+from landscape.constants import FALSE_VALUES
 from landscape.lib.twisted_util import spawn_process
 
 
@@ -86,7 +87,7 @@ class AptSources(ManagerPlugin):
                       "-----END PGP PUBLIC KEY BLOCK-----"]}
         """
         deferred = succeed(None)
-        prefix = 'landscape-server-mirror'
+        prefix = "landscape-server-mirror"
         for key in message["gpg-keys"]:
             filename = prefix + str(uuid.uuid4()) + ".asc"
             key_path = os.path.join(self.TRUSTED_GPG_D, filename)
@@ -132,7 +133,7 @@ class AptSources(ManagerPlugin):
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
-        if self.registry.config.manage_sources_list_d:
+        if self.registry.config.manage_sources_list_d not in FALSE_VALUES:
             filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list"))
             for filename in filenames:
                 shutil.move(filename, f"{filename}.save")

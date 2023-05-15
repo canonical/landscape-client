@@ -41,3 +41,8 @@ POLICY_ALLOW_ALL_CHANGES = 2
 # So we'll give the problem one chance to resolve itself, by only waiting for
 # one run of apt-update.
 UNKNOWN_PACKAGE_DATA_TIMEOUT = 70 * 60
+
+# Until we modernize config-parsing, here are all the string values we
+# accept as `False` in the conf file. Any other value is `True`,
+# conventionally.
+FALSE_VALUES = (False, "False", "false", 0, "no")
