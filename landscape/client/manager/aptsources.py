@@ -10,6 +10,7 @@ from twisted.internet.defer import succeed
 
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.package.reporter import find_reporter_command
+from landscape.constants import FALSE_VALUES
 from landscape.lib.twisted_util import spawn_process
 
 
@@ -132,13 +133,7 @@ class AptSources(ManagerPlugin):
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
-        if self.registry.config.manage_sources_list_d not in (
-            False,
-            "False",
-            "false",
-            "0",
-            "no",
-        ):
+        if self.registry.config.manage_sources_list_d not in FALSE_VALUES:
             filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list"))
             for filename in filenames:
                 shutil.move(filename, f"{filename}.save")
