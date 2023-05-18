@@ -11,8 +11,10 @@ SNAPD_SOCKET = "/run/snapd.socket"
 BASE_URL = "http://localhost/v2"
 
 # For the below, refer to https://snapcraft.io/docs/snapd-api#heading--changes
-COMPLETE_STATUSES = {"Done"}
-INCOMPLETE_STATUSES = {"Do", "Doing"}
+COMPLETE_STATUSES = {"Done", "Error", "Hold", "Abort"}
+INCOMPLETE_STATUSES = {"Do", "Doing", "Undo", "Undoing"}
+SUCCESS_STATUSES = {"Done"}
+ERROR_STATUSES = {"Error", "Hold", "Unknown"}
 
 
 class SnapdHttpException(Exception):
@@ -87,13 +89,14 @@ class SnapHttp:
 
         return self._post("/snaps/" + name, body)
 
-    def remove_snap(self, name):
-        """Removes a snap by `name`."""
+    def remove_snap(self, name, **kwargs):
         return self._post("/snaps/" + name, {"action": "remove"})
 
     def check_change(self, cid):
-        """Checks the status of the snap change with `id`."""
         return self._get("/changes/" + cid)
+
+    def check_changes(self):
+        return self._get("/changes?select=all")
 
     def _get(self, path):
         """Perform a GET request of `path` to the snap REST API."""

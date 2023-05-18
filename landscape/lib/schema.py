@@ -194,7 +194,7 @@ class KeyDict:
 
             if unknown_key and self._strict:
                 raise InvalidError(
-                    "%r is not a valid key as per %r" % (k, self.schema),
+                    f"{k!r} is not a valid key as per {self.schema!r}",
                 )
             elif unknown_key:
                 # We are in non-strict mode, so we ignore unknown keys.

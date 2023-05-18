@@ -25,10 +25,14 @@ class SnapMonitor(DataWatcher):
         super(SnapMonitor, self).register(registry)
 
     def get_data(self):
-        try:
-            snaps = self._snap_http.get_snaps()
-        except SnapdHttpException as e:
-            logging.error(f"Unable to list installed snaps: {e}")
-            return
+        return get_installed_snaps(self._snap_http)
 
-        return {"installed": snaps["result"]}
+
+def get_installed_snaps(snap_http):
+    try:
+        snaps = snap_http.get_snaps()
+    except SnapdHttpException as e:
+        logging.error(f"Unable to list installed snaps: {e}")
+        return
+
+    return {"installed": snaps["result"]}

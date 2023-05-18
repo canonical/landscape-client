@@ -15,6 +15,16 @@ class SnapManagerTest(LandscapeTest):
     def setUp(self):
         super().setUp()
 
+        self.snap_http = mock.Mock(spec_set=OrigSnapHttp)
+        self.SnapHttp = mock.patch(
+            "landscape.client.manager.snapmanager.SnapHttp",
+        ).start()
+        self.get_installed_snaps = mock.patch(
+            "landscape.client.manager.snapmanager.get_installed_snaps",
+        ).start()
+
+        self.SnapHttp.return_value = self.snap_http
+
         self.broker_service.message_store.set_accepted_types(
             ["operation-result"],
         )
@@ -24,16 +34,27 @@ class SnapManagerTest(LandscapeTest):
         self.manager.config.snapd_poll_attempts = 2
         self.manager.config.snapd_poll_interval = 0.1
 
-    @mock.patch("landscape.client.manager.snapmanager.SnapHttp")
-    def test_install_snaps(self, SnapHttp):
-        snap_http = mock.Mock(
-            spec_set=OrigSnapHttp,
-            install_snap=mock.Mock(return_value={"change": "1"}),
-            check_change=mock.Mock(
-                return_value={"result": {"status": "Done"}},
-            ),
-        )
-        SnapHttp.return_value = snap_http
+    def tearDown(self):
+        mock.patch.stopall()
+
+    def test_install_snaps(self):
+        self.snap_http.install_snap.return_value = {"change": "1"}
+        self.snap_http.check_changes.return_value = {
+            "result": [{"id": "1", "status": "Done"}],
+        }
+        self.get_installed_snaps.return_value = {
+            "installed": [
+                {
+                    "name": "hello",
+                    "id": "test",
+                    "confinement": "strict",
+                    "tracking-channel": "latest/stable",
+                    "revision": "100",
+                    "publisher": {"validation": "yep", "username": "me"},
+                    "version": "1.2.3",
+                },
+            ],
+        }
 
         result = self.manager.dispatch_message(
             {
@@ -50,8 +71,8 @@ class SnapManagerTest(LandscapeTest):
                     {
                         "type": "operation-result",
                         "status": SUCCEEDED,
-                        "result-text": "{'completed': ['1'], 'errored': [], "
-                        "'errors': {}}",
+                        "result-text": "{'completed': ['hello'], 'errored': "
+                        "[], 'errors': {}}",
                         "operation-id": 123,
                     },
                 ],
@@ -59,15 +80,11 @@ class SnapManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.client.manager.snapmanager.SnapHttp")
-    def test_install_snap_immediate_error(self, SnapHttp):
-        snap_http = mock.Mock(
-            spec_set=OrigSnapHttp,
-            install_snap=mock.Mock(
-                side_effect=SnapdHttpException(b'{"result": "whoops"}'),
-            ),
+    def test_install_snap_immediate_error(self):
+        self.snap_http.install_snap.side_effect = SnapdHttpException(
+            b'{"result": "whoops"}',
         )
-        SnapHttp.return_value = snap_http
+        self.get_installed_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -96,16 +113,10 @@ class SnapManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.client.manager.snapmanager.SnapHttp")
-    def test_install_snap_timeout(self, SnapHttp):
-        snap_http = mock.Mock(
-            spec_set=OrigSnapHttp,
-            install_snap=mock.Mock(return_value={"change": "1"}),
-            check_change=mock.Mock(
-                return_value={"result": {"status": "Doing"}},
-            ),
-        )
-        SnapHttp.return_value = snap_http
+    def test_install_snap_no_status(self):
+        self.snap_http.install_snap.return_value = {"change": "1"}
+        self.snap_http.check_changes.return_value = {"result": []}
+        self.get_installed_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -122,8 +133,8 @@ class SnapManagerTest(LandscapeTest):
                     {
                         "type": "operation-result",
                         "status": FAILED,
-                        "result-text": "{'completed': [], 'errored': ['1'], "
-                        "'errors': {'1': 'hello: Timeout'}}",
+                        "result-text": "{'completed': [], 'errored': ['hello']"
+                        ", 'errors': {'hello': 'Unknown'}}",
                         "operation-id": 123,
                     },
                 ],
@@ -131,47 +142,10 @@ class SnapManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.client.manager.snapmanager.SnapHttp")
-    def test_install_snap_no_status(self, SnapHttp):
-        snap_http = mock.Mock(
-            spec_set=OrigSnapHttp,
-            install_snap=mock.Mock(return_value={"change": "1"}),
-            check_change=mock.Mock(return_value={"result": {}}),
-        )
-        SnapHttp.return_value = snap_http
-
-        result = self.manager.dispatch_message(
-            {
-                "type": "install-snaps",
-                "operation-id": 123,
-                "snaps": [{"name": "hello"}],
-            },
-        )
-
-        def got_result(r):
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [
-                    {
-                        "type": "operation-result",
-                        "status": FAILED,
-                        "result-text": "{'completed': [], 'errored': ['1'], "
-                        "'errors': {'1': 'hello: SnapdError'}}",
-                        "operation-id": 123,
-                    },
-                ],
-            )
-
-        return result.addCallback(got_result)
-
-    @mock.patch("landscape.client.manager.snapmanager.SnapHttp")
-    def test_install_snap_check_error(self, SnapHttp):
-        snap_http = mock.Mock(
-            spec_set=OrigSnapHttp,
-            install_snap=mock.Mock(return_value={"change": "1"}),
-            check_change=mock.Mock(side_effect=SnapdHttpException("whoops")),
-        )
-        SnapHttp.return_value = snap_http
+    def test_install_snap_check_error(self):
+        self.snap_http.install_snap.return_value = {"change": "1"}
+        self.snap_http.check_changes.side_effect = SnapdHttpException("whoops")
+        self.get_installed_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -190,8 +164,8 @@ class SnapManagerTest(LandscapeTest):
                     {
                         "type": "operation-result",
                         "status": FAILED,
-                        "result-text": "{'completed': [], 'errored': ['1'], "
-                        "'errors': {'1': 'hello: whoops'}}",
+                        "result-text": "{'completed': [], 'errored': ['hello']"
+                        ", 'errors': {'hello': 'whoops'}}",
                         "operation-id": 123,
                     },
                 ],
@@ -199,16 +173,12 @@ class SnapManagerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    @mock.patch("landscape.client.manager.snapmanager.SnapHttp")
-    def test_remove_snap(self, SnapHttp):
-        snap_http = mock.Mock(
-            spec_set=OrigSnapHttp,
-            remove_snap=mock.Mock(return_value={"change": "1"}),
-            check_change=mock.Mock(
-                return_value={"result": {"status": "Done"}},
-            ),
-        )
-        SnapHttp.return_value = snap_http
+    def test_remove_snap(self):
+        self.snap_http.remove_snap.return_value = {"change": "1"}
+        self.snap_http.check_changes.return_value = {
+            "result": [{"id": "1", "status": "Done"}],
+        }
+        self.get_installed_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -225,8 +195,8 @@ class SnapManagerTest(LandscapeTest):
                     {
                         "type": "operation-result",
                         "status": SUCCEEDED,
-                        "result-text": "{'completed': ['1'], 'errored': [], "
-                        "'errors': {}}",
+                        "result-text": "{'completed': ['hello'], 'errored': []"
+                        ", 'errors': {}}",
                         "operation-id": 123,
                     },
                 ],

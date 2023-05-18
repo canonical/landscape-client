@@ -1,15 +1,16 @@
 import logging
+from collections import deque
 
-from twisted.internet import defer
 from twisted.internet import task
 
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.snap.http import COMPLETE_STATUSES
+from landscape.client.monitor.snapmonitor import get_installed_snaps
 from landscape.client.snap.http import INCOMPLETE_STATUSES
 from landscape.client.snap.http import SnapdHttpException
 from landscape.client.snap.http import SnapHttp
+from landscape.client.snap.http import SUCCESS_STATUSES
 
 
 class SnapManager(ManagerPlugin):
@@ -23,21 +24,28 @@ class SnapManager(ManagerPlugin):
     def register(self, registry):
         super().register(registry)
         self.config = registry.config
+        self._snap_http = SnapHttp()
 
-        registry.register_message("install-snaps", self._handle_install_snaps)
-        registry.register_message("remove-snaps", self._handle_remove_snaps)
+        self.SNAP_METHODS = {
+            "install-snaps": self._snap_http.install_snap,
+            "remove-snaps": self._snap_http.remove_snap,
+        }
 
-    def _handle_install_snaps(self, message):
+        registry.register_message("install-snaps", self._handle_snap_task)
+        registry.register_message("remove-snaps", self._handle_snap_task)
+
+    def _handle_snap_task(self, message):
         """
-        Installs the snaps indicated in `message` using the snap interface.
+        Performs a generic task, `snap_method`, on a group of snaps.
         """
+        message_type = message["type"]
         snaps = message["snaps"]
         opid = message["operation-id"]
-        snap_http = SnapHttp()
+        snap_method = self.SNAP_METHODS[message_type]
         errors = {}
-        installing = []
+        queue = deque()
 
-        logging.info("Installing snaps: %s", snaps)
+        logging.info(f"Performing {message_type} action for snaps {snaps}")
 
         # Naively doing this synchronously because each is an HTTP call to the
         # snap REST API that returns basically immediately. We poll for their
@@ -48,144 +56,92 @@ class SnapManager(ManagerPlugin):
             channel = snap.get("tracking-channel") or None
 
             try:
-                response = snap_http.install_snap(
+                response = snap_method(
                     name,
                     revision=revision,
                     channel=channel,
                 )
 
                 if "change" not in response:
+                    message = response["result"]["message"]
                     logging.error(
-                        "Error installing snap '%s': %s",
-                        name,
-                        response["result"]["message"],
+                        f"Error in {message_type} for '{name}': {message}",
                     )
                     errors[(name, revision, channel)] = str(response)
 
-                installing.append((response["change"], name))
+                queue.append((response["change"], name))
             except SnapdHttpException as e:
                 result = e.json["result"]
-                logging.error("Error installing snap '%s': %s", name, result)
+                logging.error(
+                    f"Error in {message_type} for '{name}': {result}",
+                )
                 errors[(name, revision, channel)] = result
 
-        return self._check_statuses(installing, opid, errors)
+        deferred = self._check_statuses(queue)
+        deferred.addCallback(self._respond, opid, errors)
 
-    def _handle_remove_snaps(self, message):
+        return deferred
+
+    def _check_statuses(self, change_queue):
         """
-        Removes the snaps indicated in `message` using the snap interface.
+        Repeatedly polls for the status of each change in `change_queue`
+        until all are no longer in-progress.
         """
-        snaps = message["snaps"]
-        opid = message["operation-id"]
-        snap_http = SnapHttp()
-        errors = {}
-        removing = []
-
-        logging.info("Removing snaps: %s", snaps)
-
-        # See comment in `_handle_install_snaps` for reasoning behind this sync
-        # approach.
-        for snap in snaps:
-            name = snap["name"]
-
-            try:
-                response = snap_http.remove_snap(name)
-
-                if "change" not in response:
-                    logging.error(
-                        "Error removing snap '%s': %s",
-                        name,
-                        response["result"]["message"],
-                    )
-                    errors[name] = str(response)
-
-                removing.append((response["change"], name))
-            except SnapdHttpException as e:
-                result = e.json["result"]
-                logging.error("Error removing snap '%s':%s", name, result)
-                errors[name] = result
-
-        return self._check_statuses(removing, opid, errors)
-
-    def _check_statuses(self, change_ids, opid, errors):
-        """
-        Repeatedly polls for the status of each change in `change_ids`
-        until all are done.
-
-        Because there might be multiple changes kicked off at once, we use
-        `gatherResults` to wait until all of them are completed (successfully
-        or otherwise).
-        """
-        deferred_results = defer.gatherResults(
-            [self._get_status(cid, name) for cid, name in change_ids],
-            consumeErrors=True,
-        )
-
-        deferred_results.addCallback(
-            lambda results: self._respond(results, opid, errors),
-        )
-
-        return deferred_results
-
-    def _get_status(self, change_id, snap_name):
-        """
-        Uses the snap interface to retrieve the status of a snap change.
-        Polls every `interval` seconds a maximum of `attempts` times, as
-        configured in the registry.
-        """
-        counter = 0
-        attempts = getattr(self.registry.config, "snapd_poll_attempts", 5)
+        completed_changes = []
         interval = getattr(self.registry.config, "snapd_poll_interval", 15)
-        snap_http = SnapHttp()
 
         def get_status():
             """
-            Looping function that stashes results in loop.result. Exits when a
-            non-incomplete snap change status is found, or upon an error.
+            Looping function that polls snapd for the status of
+            changes, moving them from the queue when they are done.
             """
-            nonlocal counter
-            counter += 1
-
-            logging.debug("Polling snapd for status of change %s", change_id)
-
-            if counter >= attempts:
+            if not change_queue:
                 loop.stop()
-                loop.result = (change_id, f"{snap_name}: Timeout")
                 return
+
+            logging.info("Polling snapd for status of pending snap changes")
 
             try:
-                response = snap_http.check_change(change_id)
+                result = self._snap_http.check_changes().get("result", [])
             except SnapdHttpException as e:
-                logging.error(
-                    "Error checking status of snap change %s: %s",
-                    change_id,
-                    e,
+                logging.error(f"Error checking status of snap changes: {e}")
+                completed_changes.extend(
+                    [(name, str(e)) for _, name in change_queue],
                 )
                 loop.stop()
-                loop.result = (change_id, f"{snap_name}: {e}")
                 return
 
-            status = response.get("result", {}).get("status")
+            for _ in range(len(change_queue)):
+                cid, name = change_queue.popleft()
 
-            logging.debug("Got status %s for change %s", status, change_id)
+                # It's possible (though unlikely) that a change is not in the
+                # list - snapd could have dropped it for some reason. We need
+                # to know if that happens, hence the extra `found` check.
+                found = False
+                for change in result:
+                    if change["id"] != cid:
+                        continue
 
-            if status and status in INCOMPLETE_STATUSES:
-                logging.debug("Incomplete status, waiting...")
-                loop.result = None
-                return
+                    found = True
+                    status = change["status"]
+                    if status in INCOMPLETE_STATUSES:
+                        logging.info(
+                            f"Incomplete status for {name}, waiting...",
+                        )
+                        change_queue.append((cid, name))
+                    else:
+                        logging.info(f"Complete status for {name}")
+                        completed_changes.append((name, status))
 
-            loop.stop()
+                    break
 
-            if status:
-                logging.debug("Complete status, finishing...")
-                loop.result = change_id, status
-                return
-
-            loop.result = (change_id, f"{snap_name}: SnapdError")
-            return
+                if not found:
+                    completed_changes.append((name, "Unknown"))
 
         loop = task.LoopingCall(get_status)
         loopDeferred = loop.start(interval)
-        return loopDeferred.addCallback(lambda done_loop: done_loop.result)
+
+        return loopDeferred.addCallback(lambda _: completed_changes)
 
     def _respond(self, snap_results, opid, errors):
         """
@@ -195,7 +151,7 @@ class SnapManager(ManagerPlugin):
         `completed` and `errored` are lists of snapd change ids.
         Text error messages are stored in `errors`.
         """
-        logging.debug("Preparing snap-install-done response: %s", snap_results)
+        logging.debug(f"Preparing snap-install-done response: {snap_results}")
 
         results = {
             "completed": [],
@@ -203,12 +159,12 @@ class SnapManager(ManagerPlugin):
             "errors": errors,
         }
 
-        for cid, status in snap_results:
-            if status in COMPLETE_STATUSES:
-                results["completed"].append(cid)
+        for name, status in snap_results:
+            if status not in SUCCESS_STATUSES:
+                results["errored"].append(name)
+                results["errors"][name] = status
             else:
-                results["errored"].append(cid)
-                results["errors"][cid] = status
+                results["completed"].append(name)
 
         message = {
             "type": "operation-result",
@@ -219,8 +175,23 @@ class SnapManager(ManagerPlugin):
 
         logging.debug("Sending snap-install-done response")
 
+        # Kick off an immediate SnapMonitor message as well.
+        self._send_installed_snap_update()
+
         return self.registry.broker.send_message(
             message,
             self._session_id,
             True,
         )
+
+    def _send_installed_snap_update(self):
+        installed_snaps = get_installed_snaps(self._snap_http)
+        if installed_snaps:
+            self.registry.broker.send_message(
+                {
+                    "type": "snaps",
+                    "snaps": installed_snaps,
+                },
+                self._session_id,
+                True,
+            )
