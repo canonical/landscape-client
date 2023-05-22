@@ -26,6 +26,8 @@ STABLE_FILESYSTEMS = frozenset(
         "simfs",
         "drvfs",
         "lxfs",
+        "zfs",
+        "btrfs",
     ],
 )
 

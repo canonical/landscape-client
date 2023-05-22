@@ -100,7 +100,7 @@ class Configuration(BaseConfiguration):
         )
         parser.add_option(
             "--ping-url",
-            help="The URL to perform lightweight exchange " "initiation with.",
+            help="The URL to perform lightweight exchange initiation with.",
             default="http://landscape.canonical.com/ping",
         )
         parser.add_option(
@@ -132,7 +132,7 @@ class Configuration(BaseConfiguration):
             "--apt-update-interval",
             default=6 * 60 * 60,
             type="int",
-            help="The interval between apt update runs " "(default: 21600).",
+            help="The interval between apt update runs (default: 21600).",
         )
         parser.add_option(
             "--flush-interval",
@@ -150,13 +150,6 @@ class Configuration(BaseConfiguration):
             type=float,
             help="Ratio, between 0 and 1, by which to stagger "
             "various tasks of landscape.",
-        )
-        parser.add_option(
-            "--manage-sources-list-d",
-            action="store_true",
-            default=True,
-            help="Repository profiles manage the files in "
-            "/etc/apt/sources.list.d",
         )
 
         # Hidden options, used for load-testing to run in-process clones

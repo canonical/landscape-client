@@ -1,6 +1,6 @@
-from twisted.internet.defer import succeed
+import os
 
-from landscape.lib.process import ProcessInformation
+from twisted.internet.defer import succeed
 
 
 class Processes:
@@ -13,11 +13,22 @@ class Processes:
     def run(self):
         num_processes = 0
         num_zombies = 0
-        info = ProcessInformation(proc_dir=self._proc_dir)
-        for process_info in info.get_all_process_info():
+        for pid in os.listdir(self._proc_dir):
+            if not pid.isdigit():
+                continue
+            status_path = os.path.join(self._proc_dir, pid, "stat")
+
+            try:
+                with open(status_path, "rb") as fd:
+                    data = fd.read()
+            except IOError:
+                continue
+
             num_processes += 1
-            if process_info["state"] == b"Z":
+
+            if b"Z" == data.split(b" ", 3)[2]:
                 num_zombies += 1
+
         if num_zombies:
             if num_zombies == 1:
                 msg = "There is 1 zombie process."
