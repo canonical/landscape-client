@@ -132,7 +132,7 @@ snap-install:
 .PHONY: snap-install
 
 snap-remote-build:
-	snapcraft --remote-build
+	snapcraft remote-build
 .PHONY: snap-remote-build
 
 snap-remove:

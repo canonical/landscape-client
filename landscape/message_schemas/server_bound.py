@@ -58,6 +58,7 @@ __all__ = [
     "COMPUTER_TAGS",
     "UBUNTU_PRO_INFO",
     "LIVEPATCH",
+    "UBUNTU_PRO_REBOOT_REQUIRED",
     "LISTENING_PORTS_INFO",
     "RKHUNTER_INFO",
 ]
@@ -785,6 +786,11 @@ RKHUNTER_INFO = Message(
     },
 )
 
+UBUNTU_PRO_REBOOT_REQUIRED = Message(
+    "ubuntu-pro-reboot-required",
+    {"ubuntu-pro-reboot-required": Unicode()},
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     COMPUTER_UPTIME,
@@ -830,6 +836,7 @@ message_schemas = (
     COMPUTER_TAGS,
     UBUNTU_PRO_INFO,
     LIVEPATCH,
+    UBUNTU_PRO_REBOOT_REQUIRED,
     LISTENING_PORTS_INFO,
     RKHUNTER_INFO,
 )

@@ -42,7 +42,7 @@ apps:
 parts:
   landscape-client:
     plugin: python
-    source: https://github.com/bceverly/landscape-client.git
+    source: https://github.com/CanonicalLtd/landscape-client.git
     python-packages:
       - convoy-python
       - distutils-extra-python
