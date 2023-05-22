@@ -3,6 +3,7 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+import subprocess
 import locale
 import logging
 import time
@@ -135,7 +136,6 @@ class PackageReporter(PackageTaskHandler):
         """
 
         def fetch_it(hash_id_db_filename):
-
             if hash_id_db_filename is None:
                 # Couldn't determine which hash=>id database to fetch,
                 # just ignore the failure and go on
@@ -183,11 +183,9 @@ class PackageReporter(PackageTaskHandler):
         return result
 
     def _get_hash_id_db_base_url(self):
-
         base_url = self._config.get("package_hash_id_url")
 
         if not base_url:
-
             if not self._config.get("url"):
                 # We really have no idea where to download from
                 return None
@@ -300,7 +298,6 @@ class PackageReporter(PackageTaskHandler):
                 self._config.apt_update_interval,
             )
         ) and not self._is_release_upgrader_running():
-
             accepted_apt_errors = (
                 "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
                 "Problem renaming the file /var/cache/apt/pkgcache.bin",
@@ -461,7 +458,6 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_autoremovable()
 
     def _handle_unknown_packages(self, hashes):
-
         self._facade.ensure_channels_reloaded()
 
         hashes = set(hashes)
@@ -943,7 +939,16 @@ class FakeReporter(PackageReporter):
 def main(args):
     # Force UTF-8 encoding only for the reporter, thus allowing libapt-pkg to
     # return unmangled descriptions.
-    locale.setlocale(locale.LC_CTYPE, ("C", "UTF-8"))
+    try:
+        locale.setlocale(locale.LC_CTYPE, ("C", "UTF-8"))
+    except locale.Error as e:
+        if str(e) == "unsupported locale setting":
+            subprocess.run(["sudo", "locale-gen", "en_US.UTF-8"], check=True)
+            subprocess.run(
+                ["sudo", "update-locale", "LANG=C.UTF-8"],
+                check=True,
+            )
+        raise
 
     if "FAKE_GLOBAL_PACKAGE_STORE" in os.environ:
         return run_task_handler(FakeGlobalReporter, args)

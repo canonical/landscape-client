@@ -60,7 +60,6 @@ class PackageReporterConfigurationTest(LandscapeTest):
 
 
 class PackageReporterAptTest(LandscapeTest):
-
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     Facade = AptFacade
@@ -152,7 +151,6 @@ class PackageReporterAptTest(LandscapeTest):
         return deferred.addCallback(got_result)
 
     def test_set_package_ids_with_unknown_request_id(self):
-
         self.store.add_task(
             "reporter",
             {"type": "package-ids", "ids": [123, 456], "request-id": 123},
@@ -377,7 +375,6 @@ class PackageReporterAptTest(LandscapeTest):
     )
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db(self, logging_mock, mock_fetch_async):
-
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = "http://fake.url/path/"
@@ -454,7 +451,6 @@ class PackageReporterAptTest(LandscapeTest):
 
     @mock.patch("landscape.client.package.reporter.fetch_async")
     def test_fetch_hash_id_db_does_not_download_twice(self, mock_fetch_async):
-
         # Let's say that the hash=>id database is already there
         self.config.package_hash_id_url = "http://fake.url/path/"
         self.config.data_path = self.makeDir()
@@ -504,7 +500,6 @@ class PackageReporterAptTest(LandscapeTest):
 
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_codename(self, logging_mock):
-
         # Fake uuid
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
@@ -522,7 +517,6 @@ class PackageReporterAptTest(LandscapeTest):
 
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_arch(self, logging_mock):
-
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
@@ -590,7 +584,6 @@ class PackageReporterAptTest(LandscapeTest):
         logging_mock,
         mock_fetch_async,
     ):
-
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = "http://fake.url/path/"
@@ -630,7 +623,6 @@ class PackageReporterAptTest(LandscapeTest):
 
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_with_undetermined_url(self, logging_mock):
-
         # We don't know where to fetch the hash=>id database from
         self.config.url = None
         self.config.package_hash_id_url = None
@@ -1431,6 +1423,24 @@ class PackageReporterAptTest(LandscapeTest):
             m.return_value = "RESULT"
             self.assertEqual("RESULT", main(["ARGS"]))
         m.assert_called_once_with(PackageReporter, ["ARGS"])
+
+    def test_unsupported_locale_setting(self):
+        """
+        Reporter entry point should try to repair 'unsupported locale setting'
+        when detected (LP: #2020064)
+        """
+
+        with mock.patch(
+            "locale.setlocale",
+            side_effect=locale.Error("unsupported locale setting"),
+        ):
+            with mock.patch("subprocess.run") as sub:
+                with mock.patch(
+                    "landscape.client.package.reporter.run_task_handler",
+                ):
+                    with self.assertRaises(locale.Error):
+                        main([])
+                    sub.assert_called()
 
     def test_main_resets_locale(self):
         """
@@ -2332,7 +2342,6 @@ class PackageReporterAptTest(LandscapeTest):
 
 
 class GlobalPackageReporterAptTest(LandscapeTest):
-
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
@@ -2398,7 +2407,6 @@ class GlobalPackageReporterAptTest(LandscapeTest):
 
 
 class FakePackageReporterTest(LandscapeTest):
-
     helpers = [EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
