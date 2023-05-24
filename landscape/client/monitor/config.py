@@ -23,6 +23,8 @@ ALL_PLUGINS = [
     "UbuntuProInfo",
     "LivePatch",
     "UbuntuProRebootRequired",
+    "ListeningPorts",
+    "RKHunterInfo",
 ]
 
 

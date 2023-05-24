@@ -59,6 +59,8 @@ __all__ = [
     "UBUNTU_PRO_INFO",
     "LIVEPATCH",
     "UBUNTU_PRO_REBOOT_REQUIRED",
+    "LISTENING_PORTS_INFO",
+    "ROOTKIT_SCAN_INFO",
 ]
 
 
@@ -748,9 +750,41 @@ COMPUTER_TAGS = Message(
 
 UBUNTU_PRO_INFO = Message("ubuntu-pro-info", {"ubuntu-pro-info": Unicode()})
 
-LIVEPATCH = Message(
-    "livepatch",
-    {"livepatch": Unicode()})
+LIVEPATCH = Message("livepatch", {"livepatch": Unicode()})
+
+LISTENING_PORTS_INFO = Message(
+    "listening-ports-info",
+    {
+        "ports": List(
+            KeyDict(
+                {
+                    "cmd": Unicode(),
+                    "pid": Int(),
+                    "user": Unicode(),
+                    "kind": Unicode(),
+                    "mode": Unicode(),
+                    "port": Int(),
+                },
+            ),
+        ),
+    },
+)
+
+ROOTKIT_SCAN_INFO = Message(
+    "rootkit-scan-info",
+    {
+        "report": KeyDict(
+            {
+                "timestamp": Unicode(),
+                "files_checked": Int(),
+                "files_suspect": Int(),
+                "rootkit_checked": Int(),
+                "rootkit_suspect": Int(),
+                "version": Unicode(),
+            },
+        ),
+    },
+)
 
 UBUNTU_PRO_REBOOT_REQUIRED = Message(
     "ubuntu-pro-reboot-required",
@@ -803,4 +837,6 @@ message_schemas = (
     UBUNTU_PRO_INFO,
     LIVEPATCH,
     UBUNTU_PRO_REBOOT_REQUIRED,
+    LISTENING_PORTS_INFO,
+    ROOTKIT_SCAN_INFO,
 )
