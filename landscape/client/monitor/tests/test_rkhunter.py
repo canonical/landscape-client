@@ -4,11 +4,11 @@ from landscape.client.monitor.rkhunterinfo import RKHunterInfo
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
 from landscape.lib.testing import LogKeeperHelper
+from landscape.lib.tests.test_security_rkhunter import COMMON_DATETIME
+from landscape.lib.tests.test_security_rkhunter import COMMON_VERSION
+from landscape.lib.tests.test_security_rkhunter import SAMPLE_RKHUNTER_LOG_2
 from landscape.lib.tests.test_security_rkhunter import (
     sample_subprocess_run_scan,
-    COMMON_VERSION,
-    COMMON_DATETIME,
-    SAMPLE_RKHUNTER_LOG_2,
 )
 
 
@@ -25,10 +25,11 @@ class RKHunterTest(LandscapeTest):
         super().setUp()
         self.plugin = RKHunterInfo(self.makeFile(SAMPLE_RKHUNTER_LOG_2))
         self.monitor.add(self.plugin)
-        self.mstore.set_accepted_types(["rkhunter-info"])
+        self.mstore.set_accepted_types(["rootkit-scan-info"])
 
     @mock.patch(
-        "landscape.lib.security.subprocess.run", sample_subprocess_run_scan
+        "landscape.lib.security.subprocess.run",
+        sample_subprocess_run_scan,
     )
     def test_resynchronize(self):
         """
@@ -54,7 +55,8 @@ class RKHunterTest(LandscapeTest):
         self.assertTrue(True, self.plugin.run_immediately)
 
     @mock.patch(
-        "landscape.lib.security.subprocess.run", sample_subprocess_run_scan
+        "landscape.lib.security.subprocess.run",
+        sample_subprocess_run_scan,
     )
     def test_run(self):
         """
@@ -71,7 +73,8 @@ class RKHunterTest(LandscapeTest):
         self.plugin.run()
 
     @mock.patch(
-        "landscape.lib.security.subprocess.run", sample_subprocess_run_scan
+        "landscape.lib.security.subprocess.run",
+        sample_subprocess_run_scan,
     )
     def test_send_message(self):
         """
@@ -80,7 +83,7 @@ class RKHunterTest(LandscapeTest):
         """
         self.plugin.send_message()
         self.assertIn(
-            "Queueing message with updated rkhunter status.",
+            "Queueing message with updated rootkit-scan status.",
             self.logfile.getvalue(),
         )
         dict_sample = {
@@ -94,7 +97,7 @@ class RKHunterTest(LandscapeTest):
 
         self.assertMessages(
             self.mstore.get_pending_messages(),
-            [{"type": "rkhunter-info", "report": dict_sample}],
+            [{"type": "rootkit-scan-info", "report": dict_sample}],
         )
         self.mstore.delete_all_messages()
         self.plugin.send_message()

@@ -1,10 +1,13 @@
+import logging
 import os
 import re
-import logging
-from dateutil import parser, tz
-from datetime import datetime
 import subprocess
-from pydantic import BaseModel, validator
+from datetime import datetime
+
+from dateutil import parser
+from dateutil import tz
+from pydantic import BaseModel
+from pydantic import validator
 
 __all__ = ["get_listeningports"]
 
@@ -56,15 +59,15 @@ def get_listeningports():
                     zip(
                         ["cmd", "pid", "user", "kind", "mode", "port"],
                         elements,
-                    )
-                )
-            )
+                    ),
+                ),
+            ),
         )
 
     return ports
 
 
-class RKHunterInfo(BaseModel):
+class RootkitScanInfo(BaseModel):
     timestamp: str
     files_checked: int
     files_suspect: int
@@ -150,7 +153,7 @@ class RKHunterLogReader(RKHunterBase):
         except PermissionError as e:
             logging.warning(
                 "Couldn't read RKHunter's log. Permission denied while "
-                f"accesing to {self._filename}: {e}"
+                f"accesing to {self._filename}: {e}",
             )
             size = None
 
@@ -169,7 +172,7 @@ class RKHunterLogReader(RKHunterBase):
 
         # We expect 5 fields found
         if len(result) == 5:
-            return RKHunterInfo(version=version, **result)
+            return RootkitScanInfo(version=version, **result)
         else:
             return None
 
@@ -198,8 +201,10 @@ class RKHunterLiveInfo(RKHunterBase):
 
         # We expect 4 fields found
         if len(result) == 4:
-            return RKHunterInfo(
-                timestamp=datetime.now(), version=version, **result
+            return RootkitScanInfo(
+                timestamp=datetime.now(),
+                version=version,
+                **result,
             )
         else:
             return None

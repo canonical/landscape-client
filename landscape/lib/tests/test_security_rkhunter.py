@@ -1,23 +1,23 @@
 import os
 from datetime import datetime
-from dateutil import parser
+from subprocess import run as run_orig
 from unittest import TestCase
 from unittest.mock import patch
-from subprocess import run as run_orig
+
+from dateutil import parser
 
 from landscape.lib import testing
+from landscape.lib.security import rkhunter_cmd
+from landscape.lib.security import RKHunterLiveInfo
+from landscape.lib.security import RKHunterLogReader
+from landscape.lib.security import RootkitScanInfo
 
 # from landscape.lib.security import get_listeningports
-from landscape.lib.security import (
-    RKHunterLogReader,
-    RKHunterLiveInfo,
-    RKHunterInfo,
-    rkhunter_cmd,
-)
 
 COMMON_VERSION = "8.4.3"
 COMMON_DATETIME = parser.parse(
-    "28 apr 2028 17:44:03 CET", tzinfos=RKHunterLogReader.tzmapping
+    "28 apr 2028 17:44:03 CET",
+    tzinfos=RKHunterLogReader.tzmapping,
 )
 
 SAMPLE_RKHUNTER_VERSION = """Rootkit Hunter 8.4.3
@@ -529,7 +529,7 @@ class RKHunterLogTest(BaseTestCase):
         rkinfo = RKHunterLogReader(filename)
         self.assertEqual(
             rkinfo.get_last_log().dict(),
-            RKHunterInfo(
+            RootkitScanInfo(
                 version=COMMON_VERSION,
                 files_checked=145,
                 files_suspect=0,
@@ -550,7 +550,7 @@ class RKHunterLogTest(BaseTestCase):
         rkinfo = RKHunterLogReader(filename)
         self.assertEqual(
             rkinfo.get_last_log().dict(),
-            RKHunterInfo(
+            RootkitScanInfo(
                 version=COMMON_VERSION,
                 files_checked=145,
                 files_suspect=48,
@@ -608,7 +608,7 @@ class RKHunterLiveTest(BaseTestCase):
         rklive = RKHunterLiveInfo()
         self.assertEqual(
             rklive.execute().dict(),
-            RKHunterInfo(
+            RootkitScanInfo(
                 version=COMMON_VERSION,
                 files_checked=145,
                 files_suspect=1,

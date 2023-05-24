@@ -7,7 +7,7 @@ from landscape.lib.security import RKHunterLogReader  # , RKHunterLiveInfo
 class RKHunterInfo(MonitorPlugin):
     """Plugin captures information about rkhunter results."""
 
-    persist_name = "rkhunter-info"
+    persist_name = "rootkit-scan-info"
     scope = "security"
     run_interval = 86400  # 1 day
     run_immediately = True
@@ -22,17 +22,17 @@ class RKHunterInfo(MonitorPlugin):
             return
         self._persist.set("report", report)
 
-        message = {"type": "rkhunter-info", "report": report.dict()}
+        message = {"type": "rootkit-scan-info", "report": report.dict()}
         logging.info(
-            "Queueing message with updated rkhunter status.",
+            "Queueing message with updated rootkit-scan status.",
         )
         return self.registry.broker.send_message(message, self._session_id)
 
     def run(self, urgent=False):
         """
-        Send the rkhunter-info messages, if the server accepted them.
+        Send the rootkit-scan-info messages, if the server accepted them.
         """
         return self.registry.broker.call_if_accepted(
-            "rkhunter-info",
+            "rootkit-scan-info",
             self.send_message,
         )

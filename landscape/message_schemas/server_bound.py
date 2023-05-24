@@ -60,7 +60,7 @@ __all__ = [
     "LIVEPATCH",
     "UBUNTU_PRO_REBOOT_REQUIRED",
     "LISTENING_PORTS_INFO",
-    "RKHUNTER_INFO",
+    "ROOTKIT_SCAN_INFO",
 ]
 
 
@@ -770,8 +770,8 @@ LISTENING_PORTS_INFO = Message(
     },
 )
 
-RKHUNTER_INFO = Message(
-    "rkhunter-info",
+ROOTKIT_SCAN_INFO = Message(
+    "rootkit-scan-info",
     {
         "report": KeyDict(
             {
@@ -838,5 +838,5 @@ message_schemas = (
     LIVEPATCH,
     UBUNTU_PRO_REBOOT_REQUIRED,
     LISTENING_PORTS_INFO,
-    RKHUNTER_INFO,
+    ROOTKIT_SCAN_INFO,
 )
