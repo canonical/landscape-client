@@ -29,19 +29,67 @@ class SnapManager(ManagerPlugin):
         self.SNAP_METHODS = {
             "install-snaps": self._snap_http.install_snap,
             "remove-snaps": self._snap_http.remove_snap,
+            "refresh-snaps": self._snap_http.refresh_snap,
+            "refresh-snaps-batch": self._snap_http.refresh_snaps,
         }
 
         registry.register_message("install-snaps", self._handle_snap_task)
         registry.register_message("remove-snaps", self._handle_snap_task)
+        registry.register_message("refresh-snaps", self._handle_snap_task)
 
     def _handle_snap_task(self, message):
         """
-        Performs a generic task, `snap_method`, on a group of snaps.
+        If there are no specific revisions or channels for the targeted
+        snaps, often the task can be done with a single snapd call, if
+        we have a handler for the action type.
         """
+        snaps = message["snaps"]
+
+        if any("revision" in s or "channel" in s for s in snaps):
+            return self._handle_multiple_snap_tasks(message)
+
+        if f"{message['type']}-batch" not in self.SNAP_METHODS:
+            return self._handle_multiple_snap_tasks(message)
+
+        return self._handle_batch_snap_task(message)
+
+    def _handle_batch_snap_task(self, message):
+        logging.debug(
+            f"Handling message {message} as a single batch snap task",
+        )
+        message_type = message["type"]
+        snaps = [s["name"] for s in message["snaps"]]
+        opid = message["operation-id"]
+        errors = {}
+        queue = deque()
+
+        logging.info(f"Performing {message_type} action for snaps {snaps}")
+
+        try:
+            response = self._start_snap_task(message_type + "-batch", snaps)
+            queue.append((response["change"], "all"))
+        except SnapdHttpException as e:
+            result = e.json["result"]
+            logging.error(
+                f"Error in {message_type}: {message}",
+            )
+            errors[("all", "", "")] = result
+
+        deferred = self._check_statuses(queue)
+        deferred.addCallback(self._respond, opid, errors)
+
+    def _handle_multiple_snap_tasks(self, message):
+        """
+        Performs a generic task, `snap_method`, on a group of snaps
+        where each task must be performed independently per-snap.
+
+        This is required when we want to provide metadata for refreshes
+        or installs and also specify the channel and/or revision.
+        """
+        logging.debug(f"Handling message {message} as multiple snap tasks")
         message_type = message["type"]
         snaps = message["snaps"]
         opid = message["operation-id"]
-        snap_method = self.SNAP_METHODS[message_type]
         errors = {}
         queue = deque()
 
@@ -56,24 +104,17 @@ class SnapManager(ManagerPlugin):
             channel = snap.get("tracking-channel") or None
 
             try:
-                response = snap_method(
+                response = self._start_snap_task(
+                    message_type,
                     name,
                     revision=revision,
                     channel=channel,
                 )
-
-                if "change" not in response:
-                    message = response["result"]["message"]
-                    logging.error(
-                        f"Error in {message_type} for '{name}': {message}",
-                    )
-                    errors[(name, revision, channel)] = str(response)
-
                 queue.append((response["change"], name))
             except SnapdHttpException as e:
                 result = e.json["result"]
                 logging.error(
-                    f"Error in {message_type} for '{name}': {result}",
+                    f"Error in {message_type} for '{name}': {message}",
                 )
                 errors[(name, revision, channel)] = result
 
@@ -143,6 +184,21 @@ class SnapManager(ManagerPlugin):
 
         return loopDeferred.addCallback(lambda _: completed_changes)
 
+    def _start_snap_task(self, action, *args, **kwargs):
+        """
+        Kicks off the appropriate SNAP_METHOD for `action`.
+
+        raises a `SnapdHttpException` in the event of issues.
+        """
+        snap_method = self.SNAP_METHODS[action]
+
+        response = snap_method(*args, **kwargs)
+
+        if "change" not in response:
+            raise SnapdHttpException(response)
+
+        return response
+
     def _respond(self, snap_results, opid, errors):
         """
         Queues a response to Landscape Server based on the contents of
@@ -151,7 +207,7 @@ class SnapManager(ManagerPlugin):
         `completed` and `errored` are lists of snapd change ids.
         Text error messages are stored in `errors`.
         """
-        logging.debug(f"Preparing snap-install-done response: {snap_results}")
+        logging.debug(f"Preparing snap change done response: {snap_results}")
 
         results = {
             "completed": [],
@@ -177,7 +233,6 @@ class SnapManager(ManagerPlugin):
 
         # Kick off an immediate SnapMonitor message as well.
         self._send_installed_snap_update()
-
         return self.registry.broker.send_message(
             message,
             self._session_id,
@@ -187,7 +242,7 @@ class SnapManager(ManagerPlugin):
     def _send_installed_snap_update(self):
         installed_snaps = get_installed_snaps(self._snap_http)
         if installed_snaps:
-            self.registry.broker.send_message(
+            return self.registry.broker.send_message(
                 {
                     "type": "snaps",
                     "snaps": installed_snaps,

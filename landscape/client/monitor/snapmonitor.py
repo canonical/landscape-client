@@ -13,9 +13,9 @@ class SnapMonitor(DataWatcher):
     persist_name = message_type
     scope = "snaps"
 
-    _reporter_command = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def __init__(self):
         self._snap_http = SnapHttp()
 
     def register(self, registry):

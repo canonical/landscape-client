@@ -5,13 +5,13 @@ from landscape.client.manager.scriptexecution import ALL_USERS
 
 
 ALL_PLUGINS = [
-    "ProcessKiller",
-    "PackageManager",
-    "UserManager",
-    "ShutdownManager",
-    "AptSources",
-    "HardwareInfo",
-    "KeystoneToken",
+    # "ProcessKiller",
+    # "PackageManager",
+    # "UserManager",
+    # "ShutdownManager",
+    # "AptSources",
+    # "HardwareInfo",
+    # "KeystoneToken",
     "SnapManager",
 ]
 

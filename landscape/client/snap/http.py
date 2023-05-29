@@ -68,6 +68,9 @@ class SnapHttp:
 
         return self._post("/snaps/" + name, body)
 
+    def install_snaps(self, snaps):
+        return self._post("/snaps", {"action": "install", "snaps": snaps})
+
     def refresh_snap(self, name, revision=None, channel=None, classic=None):
         """
         Refreshes a snap, switching to the given `revision` and `channel` if
@@ -88,6 +91,14 @@ class SnapHttp:
         }
 
         return self._post("/snaps/" + name, body)
+
+    def refresh_snaps(self, snaps=[]):
+        body = {"action": "refresh"}
+
+        if snaps:
+            body["snaps"] = snaps
+
+        return self._post("/snaps", body)
 
     def remove_snap(self, name, **kwargs):
         return self._post("/snaps/" + name, {"action": "remove"})
@@ -129,6 +140,7 @@ class SnapHttp:
         json_body = json.dumps(body)
 
         curl.setopt(curl.POSTFIELDS, json_body)
+        curl.setopt(curl.HTTPHEADER, ["Content-Type: application/json"])
         self._perform(curl, buff)
 
         return json.loads(buff.getvalue())
