@@ -19,9 +19,6 @@ class SnapManagerTest(LandscapeTest):
         self.SnapHttp = mock.patch(
             "landscape.client.manager.snapmanager.SnapHttp",
         ).start()
-        self.get_installed_snaps = mock.patch(
-            "landscape.client.manager.snapmanager.get_installed_snaps",
-        ).start()
 
         self.SnapHttp.return_value = self.snap_http
 
@@ -59,7 +56,7 @@ class SnapManagerTest(LandscapeTest):
                 {"id": "2", "status": "Done"},
             ],
         }
-        self.get_installed_snaps.return_value = {"installed": []}
+        self.snap_http.get_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -97,7 +94,7 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.check_changes.return_value = {
             "result": [{"id": "1", "status": "Done"}],
         }
-        self.get_installed_snaps.return_value = {
+        self.snap_http.get_snaps.return_value = {
             "installed": [
                 {
                     "name": "hello",
@@ -142,7 +139,7 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.install_snaps.side_effect = SnapdHttpException(
             b'{"result": "whoops"}',
         )
-        self.get_installed_snaps.return_value = {"installed": []}
+        self.snap_http.get_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -173,7 +170,7 @@ class SnapManagerTest(LandscapeTest):
     def test_install_snap_no_status(self):
         self.snap_http.install_snaps.return_value = {"change": "1"}
         self.snap_http.check_changes.return_value = {"result": []}
-        self.get_installed_snaps.return_value = {"installed": []}
+        self.snap_http.get_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -202,7 +199,7 @@ class SnapManagerTest(LandscapeTest):
     def test_install_snap_check_error(self):
         self.snap_http.install_snaps.return_value = {"change": "1"}
         self.snap_http.check_changes.side_effect = SnapdHttpException("whoops")
-        self.get_installed_snaps.return_value = {"installed": []}
+        self.snap_http.get_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {
@@ -235,7 +232,7 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.check_changes.return_value = {
             "result": [{"id": "1", "status": "Done"}],
         }
-        self.get_installed_snaps.return_value = {"installed": []}
+        self.snap_http.get_snaps.return_value = {"installed": []}
 
         result = self.manager.dispatch_message(
             {

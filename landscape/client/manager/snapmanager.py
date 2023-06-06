@@ -6,7 +6,6 @@ from twisted.internet import task
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.monitor.snapmonitor import get_installed_snaps
 from landscape.client.snap.http import INCOMPLETE_STATUSES
 from landscape.client.snap.http import SnapdHttpException
 from landscape.client.snap.http import SnapHttp
@@ -21,11 +20,10 @@ class SnapManager(ManagerPlugin):
     Changes trigger SnapMonitor to send an updated state message immediately.
     """
 
-    def register(self, registry):
-        super().register(registry)
-        self.config = registry.config
-        self._snap_http = SnapHttp()
+    def __init__(self):
+        super().__init__()
 
+        self._snap_http = SnapHttp()
         self.SNAP_METHODS = {
             "install-snaps": self._snap_http.install_snap,
             "install-snaps-batch": self._snap_http.install_snaps,
@@ -35,6 +33,10 @@ class SnapManager(ManagerPlugin):
             "refresh-snaps-batch": self._snap_http.refresh_snaps,
         }
 
+    def register(self, registry):
+        super().register(registry)
+        self.config = registry.config
+
         registry.register_message("install-snaps", self._handle_snap_task)
         registry.register_message("remove-snaps", self._handle_snap_task)
         registry.register_message("refresh-snaps", self._handle_snap_task)
@@ -43,11 +45,12 @@ class SnapManager(ManagerPlugin):
         """
         If there are no per-snap arguments for the targeted
         snaps, often the task can be done with a single snapd call, if
-        we have a handler for the action type.
+        we have a handler for the action type, which we call via a kind
+        of dynamic dispatch.
         """
         snaps = message["snaps"]
 
-        if snaps and len(snaps[0]) > 1:
+        if snaps and any(len(s) > 1 for s in snaps):
             # "name" key only means no per-snap args.
             return self._handle_multiple_snap_tasks(message)
 
@@ -153,6 +156,7 @@ class SnapManager(ManagerPlugin):
 
             try:
                 result = self._snap_http.check_changes().get("result", [])
+                result_dict = {c["id"]: c for c in result}
             except SnapdHttpException as e:
                 logging.error(f"Error checking status of snap changes: {e}")
                 completed_changes.extend(
@@ -166,27 +170,20 @@ class SnapManager(ManagerPlugin):
 
                 # It's possible (though unlikely) that a change is not in the
                 # list - snapd could have dropped it for some reason. We need
-                # to know if that happens, hence the extra `found` check.
-                found = False
-                for change in result:
-                    if change["id"] != cid:
-                        continue
-
-                    found = True
-                    status = change["status"]
-                    if status in INCOMPLETE_STATUSES:
-                        logging.info(
-                            f"Incomplete status for {name}, waiting...",
-                        )
-                        change_queue.append((cid, name))
-                    else:
-                        logging.info(f"Complete status for {name}")
-                        completed_changes.append((name, status))
-
-                    break
-
-                if not found:
+                # to know if that happens, hence this check.
+                if cid not in result_dict:
                     completed_changes.append((name, "Unknown"))
+                    continue
+
+                status = result_dict[cid]["status"]
+                if status in INCOMPLETE_STATUSES:
+                    logging.info(
+                        f"Incomplete status for {name}, waiting...",
+                    )
+                    change_queue.append((cid, name))
+                else:
+                    logging.info(f"Complete status for {name}")
+                    completed_changes.append((name, status))
 
         loop = task.LoopingCall(get_status)
         loopDeferred = loop.start(interval)
@@ -249,7 +246,14 @@ class SnapManager(ManagerPlugin):
         )
 
     def _send_installed_snap_update(self):
-        installed_snaps = get_installed_snaps(self._snap_http)
+        try:
+            installed_snaps = self._snap_http.get_snaps()
+        except SnapdHttpException as e:
+            logging.error(
+                f"Unable to list installed snaps after snap change: {e}",
+            )
+            return
+
         if installed_snaps:
             return self.registry.broker.send_message(
                 {
