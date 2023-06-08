@@ -20,6 +20,7 @@ class ManagerConfigurationTest(LandscapeTest):
                 "AptSources",
                 "HardwareInfo",
                 "KeystoneToken",
+                "SnapManager",
             ],
             ALL_PLUGINS,
         )
