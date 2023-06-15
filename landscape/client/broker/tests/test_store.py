@@ -137,6 +137,85 @@ class MessageStoreTest(LandscapeTest):
         self.assertEqual(self.store.get_pending_offset(), 0)
         self.assertEqual(self.store.get_pending_messages(), [])
 
+    def test_messages_over_limit(self):
+        """
+        Create six messages, two per directory. Since there is a limit of 
+        one directory then only the last 2 messages should be in the queue
+        """
+    
+        self.store._directory_size = 2
+        self.store._max_dirs = 1
+        for num in range(6):  # 0,1  2,3  4,5
+            message = {"type": "data", "data": f"{num}".encode()}
+            self.store.add(message)
+        messages = self.store.get_pending_messages(200)
+        self.assertMessages(
+            messages,
+            [{"type": "data", "data": b"4"},
+             {"type": "data", "data": b"5"}],
+        )
+        
+
+    def test_messages_under_limit(self):
+        """
+        Create six messages, all of which should be in the queue, since 3 
+        directories are active
+        """
+    
+        self.store._directory_size = 2
+        self.store._max_dirs = 3
+        messages_sent = []
+        for num in range(6):  # 0,1  2,3  4,5
+            message = {"type": "data", "data": f"{num}".encode()}
+            messages_sent.append(message)
+            self.store.add(message)
+        messages = self.store.get_pending_messages(200)
+        self.assertMessages(
+            messages,
+            messages_sent
+        )
+        
+    def test_messages_over_mb(self):
+        """
+        Create three messages with the second one being very large. The 
+        max size should get triggered, so all should be cleared except for the
+        last one.
+        """
+    
+        self.store._directory_size = 2
+        self.store._max_size_mb = 0.01
+        self.store.add({"type": "data", "data": b"a"})
+        self.store.add({"type": "data", "data": b"b"*15000})
+        self.store.add({"type": "data", "data": b"c"})
+        messages = self.store.get_pending_messages(200)
+        self.assertMessages(
+            messages,
+            [
+             {"type": "data", "data": b"c"}],
+        )
+        
+    @mock.patch("shutil.rmtree")
+    def test_exception_on_message_limit(self, rmtree_mock):
+        """
+        If an exception occurs while deleting it shouldn't affect the next 
+        message sent
+        """
+        rmtree_mock.side_effect = IOError("Error!")
+        self.store._directory_size = 1
+        self.store._max_dirs = 1
+        self.store.add({"type": "data", "data": b"a"})
+        self.store.add({"type": "data", "data": b"b"})
+        self.store.add({"type": "data", "data": b"c"})
+        messages = self.store.get_pending_messages(200)
+
+        self.assertMessages(
+            messages,
+            [
+        {"type": "data", "data": b"a"},
+        {"type": "data", "data": b"b"},
+        {"type": "data", "data": b"c"},          ],
+        )
+
     def test_one_message(self):
         self.store.add(dict(type="data", data=b"A thing"))
         messages = self.store.get_pending_messages(200)

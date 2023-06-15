@@ -94,6 +94,8 @@ strategy for updating the pending offset and the sequence is implemented.
 import itertools
 import logging
 import os
+import shutil
+import traceback
 import uuid
 
 from twisted.python.compat import iteritems
@@ -135,9 +137,11 @@ class MessageStore:
     # in case the server supports it.
     _api = DEFAULT_SERVER_API
 
-    def __init__(self, persist, directory, directory_size=1000):
+    def __init__(self, persist, directory, directory_size=1000, max_dirs=4, max_size_mb=400):
         self._directory = directory
         self._directory_size = directory_size
+        self._max_dirs = max_dirs  # Maximum number of directories in store
+        self._max_size_mb = max_size_mb  # Maximum size of message store
         self._schemas = {}
         self._original_persist = persist
         self._persist = persist.root_at("message-store")
@@ -293,6 +297,47 @@ class MessageStore:
                 else:
                     messages.append(message)
         return messages
+    
+    def get_messages_total_size(self):
+        """Get total size of messages directory"""
+        sizes = []
+        for dirname in os.listdir(self._directory):
+            dirpath = os.path.join(self._directory, dirname)
+            dirsize = sum(file.stat().st_size for file in os.scandir(dirpath))
+            sizes.append(dirsize)
+        return sum(sizes)
+
+    def delete_messages_over_limit(self):
+        """
+        Delete messages dirs if there's any over the max, which happens if
+        messages are queued up but not able to be sent
+        """
+            
+        cur_dirs = os.listdir(self._directory)
+        cur_dirs.sort(key=int)  # Since you could have 0, .., 9, 10
+        num_dirs = len(cur_dirs)
+
+        num_dirs_to_delete = max(0, num_dirs - self._max_dirs)  # No negatives
+        dirs_to_delete = cur_dirs[:num_dirs_to_delete]  # Chop off beginning
+        
+        for dirname in dirs_to_delete:
+            dirpath = os.path.join(self._directory, dirname)
+            try:
+                logging.debug(f"Trimming message store: {dirpath}")
+                shutil.rmtree(dirpath)
+            except Exception:  # We want to continue like normal if any error
+                logging.warning(traceback.format_exc())
+                logging.warning("Unable to delete message directory!")
+                logging.warning(dirpath)
+            
+        # Something is wrong if after deleting a bunch of files, we are still
+        # using too much space. Rather then look around for big files, we just
+        # start over.
+        num_bytes = self.get_messages_total_size()
+        num_mb = num_bytes / 1e6
+        if num_mb > self._max_size_mb:
+            logging.warning("Messages too large! Clearing all messages!")
+            self.delete_all_messages()
 
     def delete_old_messages(self):
         """Delete messages which are unlikely to be needed in the future."""
@@ -378,6 +423,8 @@ class MessageStore:
         if self._persist.get("blackhole-messages"):
             logging.debug("Dropped message, awaiting resync.")
             return
+
+        self.delete_messages_over_limit()
 
         server_api = self.get_server_api()
 
