@@ -312,14 +312,14 @@ class MessageStore:
         Delete messages dirs if there's any over the max, which happens if
         messages are queued up but not able to be sent
         """
-            
+
         cur_dirs = os.listdir(self._directory)
         cur_dirs.sort(key=int)  # Since you could have 0, .., 9, 10
         num_dirs = len(cur_dirs)
 
         num_dirs_to_delete = max(0, num_dirs - self._max_dirs)  # No negatives
         dirs_to_delete = cur_dirs[:num_dirs_to_delete]  # Chop off beginning
-        
+
         for dirname in dirs_to_delete:
             dirpath = os.path.join(self._directory, dirname)
             try:
@@ -329,7 +329,7 @@ class MessageStore:
                 logging.warning(traceback.format_exc())
                 logging.warning("Unable to delete message directory!")
                 logging.warning(dirpath)
-            
+
         # Something is wrong if after deleting a bunch of files, we are still
         # using too much space. Rather then look around for big files, we just
         # start over.
