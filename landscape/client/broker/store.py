@@ -137,7 +137,8 @@ class MessageStore:
     # in case the server supports it.
     _api = DEFAULT_SERVER_API
 
-    def __init__(self, persist, directory, directory_size=1000, max_dirs=4, max_size_mb=400):
+    def __init__(self, persist, directory, directory_size=1000, max_dirs=4,
+                 max_size_mb=400):
         self._directory = directory
         self._directory_size = directory_size
         self._max_dirs = max_dirs  # Maximum number of directories in store
@@ -297,7 +298,7 @@ class MessageStore:
                 else:
                     messages.append(message)
         return messages
-    
+
     def get_messages_total_size(self):
         """Get total size of messages directory"""
         sizes = []
