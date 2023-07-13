@@ -38,16 +38,22 @@ def init_app_logging(logdir, level="info", progname=None, quiet=False):
     """Given a log dir, set up logging for an application."""
     if progname is None:
         progname = os.path.basename(sys.argv[0])
-    level = logging.getLevelName(level.upper())
-    _init_logging(
-        logging.getLogger(),
-        level,
-        logdir,
-        progname,
-        logging.Formatter(FORMAT),
-        sys.stdout if not quiet else None,
-    )
-    return logging.getLogger()
+    levelcode = logging.getLevelName(level.upper())
+    if isinstance(levelcode, int):
+        _init_logging(
+            logging.getLogger(),
+            levelcode,
+            logdir,
+            progname,
+            logging.Formatter(FORMAT),
+            sys.stdout if not quiet else None,
+        )
+        return logging.getLogger()
+    else:
+        raise AttributeError(
+            f"Unknown level {level!r}, "
+            f"conversion to logging code was {levelcode!r}",
+        )
 
 
 def _init_logging(logger, level, logdir, logname, formatter, stdout=None):
