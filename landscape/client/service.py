@@ -8,6 +8,7 @@ from twisted.application.service import Service
 from landscape.client.deployment import get_versioned_persist
 from landscape.client.deployment import init_logging
 from landscape.client.reactor import LandscapeReactor
+from landscape.lib.logging import LoggingAttributeError
 from landscape.lib.logging import rotate_logs
 
 
@@ -79,13 +80,15 @@ def run_landscape_service(configuration_class, service_class, args):
 
     configuration = configuration_class()
     configuration.load(args)
-    init_logging(configuration, service_class.service_name)
+    try:
+        init_logging(configuration, service_class.service_name)
+    except LoggingAttributeError:
+        return
     application = Application(f"landscape-{service_class.service_name}")
     service = service_class(configuration)
     service.setServiceParent(application)
 
     if configuration.clones > 0:
-
         # Increase the timeout of AMP's MethodCalls
         # XXX: we should find a better way to expose this knot, and
         # not set it globally on the class

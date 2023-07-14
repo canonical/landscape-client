@@ -2,8 +2,11 @@ import logging
 import os.path
 import sys
 
-
 FORMAT = "%(asctime)s %(levelname)-8s [%(threadName)-10s] %(message)s"
+
+
+class LoggingAttributeError(Exception):
+    pass
 
 
 def add_cli_options(parser, level="info", logdir=None):
@@ -50,10 +53,20 @@ def init_app_logging(logdir, level="info", progname=None, quiet=False):
         )
         return logging.getLogger()
     else:
-        raise AttributeError(
-            f"Unknown level {level!r}, "
-            f"conversion to logging code was {levelcode!r}",
+        _init_logging(
+            logging.getLogger(),
+            logging.INFO,
+            logdir,
+            progname,
+            logging.Formatter(FORMAT),
+            sys.stdout if not quiet else None,
         )
+        msg = (
+            f"Unknown level {level!r}, conversion to "
+            f"logging code was {levelcode!r}"
+        )
+        logging.error(msg)
+        raise LoggingAttributeError(msg)
 
 
 def _init_logging(logger, level, logdir, logname, formatter, stdout=None):
