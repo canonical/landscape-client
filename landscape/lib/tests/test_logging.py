@@ -1,6 +1,8 @@
 import logging
 import unittest
 
+from landscape.lib.logging import init_app_logging
+from landscape.lib.logging import LoggingAttributeError
 from landscape.lib.logging import rotate_logs
 from landscape.lib.testing import FSTestCase
 
@@ -23,3 +25,12 @@ class RotateLogsTest(FSTestCase, unittest.TestCase):
 
         for stream in new_streams:
             self.assertTrue(stream not in original_streams)
+
+    def test_wrong_log_level(self):
+        tmpdir = self.makeDir()
+        with self.assertRaises(LoggingAttributeError) as exp:
+            init_app_logging(tmpdir, "'INFO'")
+        self.assertTrue(
+            "Unknown level \"'INFO'\", conversion to "
+            "logging code was \"Level 'INFO'\"" in str(exp.exception),
+        )

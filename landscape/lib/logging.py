@@ -2,8 +2,11 @@ import logging
 import os.path
 import sys
 
-
 FORMAT = "%(asctime)s %(levelname)-8s [%(threadName)-10s] %(message)s"
+
+
+class LoggingAttributeError(Exception):
+    pass
 
 
 def add_cli_options(parser, level="info", logdir=None):
@@ -38,16 +41,32 @@ def init_app_logging(logdir, level="info", progname=None, quiet=False):
     """Given a log dir, set up logging for an application."""
     if progname is None:
         progname = os.path.basename(sys.argv[0])
-    level = logging.getLevelName(level.upper())
-    _init_logging(
-        logging.getLogger(),
-        level,
-        logdir,
-        progname,
-        logging.Formatter(FORMAT),
-        sys.stdout if not quiet else None,
-    )
-    return logging.getLogger()
+    levelcode = logging.getLevelName(level.upper())
+    if isinstance(levelcode, int):
+        _init_logging(
+            logging.getLogger(),
+            levelcode,
+            logdir,
+            progname,
+            logging.Formatter(FORMAT),
+            sys.stdout if not quiet else None,
+        )
+        return logging.getLogger()
+    else:
+        _init_logging(
+            logging.getLogger(),
+            logging.INFO,
+            logdir,
+            progname,
+            logging.Formatter(FORMAT),
+            sys.stdout if not quiet else None,
+        )
+        msg = (
+            f"Unknown level {level!r}, conversion to "
+            f"logging code was {levelcode!r}"
+        )
+        logging.error(msg)
+        raise LoggingAttributeError(msg)
 
 
 def _init_logging(logger, level, logdir, logname, formatter, stdout=None):
