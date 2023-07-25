@@ -1197,6 +1197,27 @@ url = https://landscape.canonical.com/message-system
         )
 
     @mock.patch("landscape.client.configuration.SysVConfig")
+    def test_silent_setup_unicode_computer_title(self, mock_sysvconfig):
+        """
+        Setup accepts a non-ascii computer title and registration is
+        attempted.
+        """
+        config = self.get_config(["--silent", "-a", "account", "-t", "mélody"])
+        setup(config)
+        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        self.assertConfigEqual(
+            self.get_content(config),
+            f"""\
+[client]
+computer_title = mélody
+data_path = {config.data_path}
+account_name = account
+url = https://landscape.canonical.com/message-system
+""",
+        )
+
+    @mock.patch("landscape.client.configuration.SysVConfig")
     def test_silent_setup_without_computer_title(self, mock_sysvconfig):
         """A computer title is required."""
         config = self.get_config(["--silent", "-a", "account"])

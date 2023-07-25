@@ -107,6 +107,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "import_from",
     )
 
+    encoding = "utf-8"
+
     def _load_external_options(self):
         """Handle the --import parameter.
 
