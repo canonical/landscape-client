@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import time
+from subprocess import check_output
 from unittest import mock
 
 import apt_pkg
@@ -60,7 +61,6 @@ class PackageReporterConfigurationTest(LandscapeTest):
 
 
 class PackageReporterAptTest(LandscapeTest):
-
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     Facade = AptFacade
@@ -152,7 +152,6 @@ class PackageReporterAptTest(LandscapeTest):
         return deferred.addCallback(got_result)
 
     def test_set_package_ids_with_unknown_request_id(self):
-
         self.store.add_task(
             "reporter",
             {"type": "package-ids", "ids": [123, 456], "request-id": 123},
@@ -377,7 +376,6 @@ class PackageReporterAptTest(LandscapeTest):
     )
     @mock.patch("logging.info", return_value=None)
     def test_fetch_hash_id_db(self, logging_mock, mock_fetch_async):
-
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = "http://fake.url/path/"
@@ -454,7 +452,6 @@ class PackageReporterAptTest(LandscapeTest):
 
     @mock.patch("landscape.client.package.reporter.fetch_async")
     def test_fetch_hash_id_db_does_not_download_twice(self, mock_fetch_async):
-
         # Let's say that the hash=>id database is already there
         self.config.package_hash_id_url = "http://fake.url/path/"
         self.config.data_path = self.makeDir()
@@ -504,7 +501,6 @@ class PackageReporterAptTest(LandscapeTest):
 
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_codename(self, logging_mock):
-
         # Fake uuid
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
@@ -520,9 +516,56 @@ class PackageReporterAptTest(LandscapeTest):
         )
         return result
 
+    def test_parse_lsb_release_no_modules(self):
+        def lsb_output(cmd, *args, **kwargs):
+            if len(cmd) and cmd[0] == "/usr/bin/lsb_release":
+                return (
+                    b"Ubuntu\nUbuntu 22.04.2 LTS\n22.04\njammy\n"  # noqa: E501
+                )
+            else:
+                return check_output(cmd, *args, **kwargs)
+
+        mocktarget = "landscape.lib.lsb_release.check_output"
+        with mock.patch(mocktarget) as mock_bar:
+            mock_bar.side_effect = lsb_output
+            self.assertEqual(
+                parse_lsb_release(),
+                {
+                    "modules": [],
+                    "distributor-id": "Ubuntu",
+                    "release": "22.04",
+                    "code-name": "jammy",
+                    "description": "Ubuntu 22.04.2 LTS",
+                },
+            )
+
+    def test_parse_lsb_release_several_modules(self):
+        def lsb_output(cmd, *args, **kwargs):
+            if len(cmd) and cmd[0] == "/usr/bin/lsb_release":
+                return b"core-11.1.0ubuntu4-noarch:printing-11.1.0ubuntu4-noarch:security-11.1.0ubuntu4-noarch\nUbuntu\nUbuntu 22.04.2 LTS\n22.04\njammy\n"  # noqa: E501
+            else:
+                return check_output(cmd, *args, **kwargs)
+
+        mocktarget = "landscape.lib.lsb_release.check_output"
+        with mock.patch(mocktarget) as mock_bar:
+            mock_bar.side_effect = lsb_output
+            self.assertEqual(
+                parse_lsb_release(),
+                {
+                    "modules": [
+                        "core-11.1.0ubuntu4-noarch",
+                        "printing-11.1.0ubuntu4-noarch",
+                        "security-11.1.0ubuntu4-noarch",
+                    ],
+                    "distributor-id": "Ubuntu",
+                    "release": "22.04",
+                    "code-name": "jammy",
+                    "description": "Ubuntu 22.04.2 LTS",
+                },
+            )
+
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_arch(self, logging_mock):
-
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
@@ -590,7 +633,6 @@ class PackageReporterAptTest(LandscapeTest):
         logging_mock,
         mock_fetch_async,
     ):
-
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = "http://fake.url/path/"
@@ -630,7 +672,6 @@ class PackageReporterAptTest(LandscapeTest):
 
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_with_undetermined_url(self, logging_mock):
-
         # We don't know where to fetch the hash=>id database from
         self.config.url = None
         self.config.package_hash_id_url = None
@@ -2332,7 +2373,6 @@ class PackageReporterAptTest(LandscapeTest):
 
 
 class GlobalPackageReporterAptTest(LandscapeTest):
-
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
@@ -2398,7 +2438,6 @@ class GlobalPackageReporterAptTest(LandscapeTest):
 
 
 class FakePackageReporterTest(LandscapeTest):
-
     helpers = [EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):

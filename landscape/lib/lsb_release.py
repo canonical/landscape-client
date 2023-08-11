@@ -29,9 +29,18 @@ def parse_lsb_release(lsb_release_filename=None):
             # Fall back to reading file, even if it doesn't exist.
             return parse_lsb_release_file(lsb_release_filename)
         else:
-            dist, desc, release, code_name, _ = lsb_info.decode().split("\n")
+            lsb_info_split = lsb_info.decode().split("\n")
+            if len(lsb_info_split) == 5:
+                dist, desc, release, code_name, _ = lsb_info_split
+                modules = []
+            elif len(lsb_info_split) == 6:
+                mods, dist, desc, release, code_name, _ = lsb_info_split
+                modules = mods.split(":")
+            else:
+                raise NotImplementedError
 
             return {
+                "modules": modules,
                 "distributor-id": dist,
                 "release": release,
                 "code-name": code_name,
