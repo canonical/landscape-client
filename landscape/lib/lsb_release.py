@@ -55,7 +55,7 @@ def parse_lsb_release_file(filename):
 
     @raises: A FileNotFoundError if C{filename} does not exist.
     """
-    info = {}
+    info = {"modules": []}
 
     with open(filename) as fd:
         for line in fd:
