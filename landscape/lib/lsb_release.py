@@ -32,15 +32,12 @@ def parse_lsb_release(lsb_release_filename=None):
             lsb_info_split = lsb_info.decode().split("\n")
             if len(lsb_info_split) == 5:
                 dist, desc, release, code_name, _ = lsb_info_split
-                modules = []
             elif len(lsb_info_split) == 6:
-                mods, dist, desc, release, code_name, _ = lsb_info_split
-                modules = mods.split(":")
+                _, dist, desc, release, code_name, _ = lsb_info_split
             else:
                 raise NotImplementedError
 
             return {
-                "modules": modules,
                 "distributor-id": dist,
                 "release": release,
                 "code-name": code_name,
@@ -55,7 +52,7 @@ def parse_lsb_release_file(filename):
 
     @raises: A FileNotFoundError if C{filename} does not exist.
     """
-    info = {"modules": []}
+    info = {}
 
     with open(filename) as fd:
         for line in fd:

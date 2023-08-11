@@ -531,7 +531,6 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(
                 parse_lsb_release(),
                 {
-                    "modules": [],
                     "distributor-id": "Ubuntu",
                     "release": "22.04",
                     "code-name": "jammy",
@@ -552,11 +551,6 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual(
                 parse_lsb_release(),
                 {
-                    "modules": [
-                        "core-11.1.0ubuntu4-noarch",
-                        "printing-11.1.0ubuntu4-noarch",
-                        "security-11.1.0ubuntu4-noarch",
-                    ],
                     "distributor-id": "Ubuntu",
                     "release": "22.04",
                     "code-name": "jammy",
