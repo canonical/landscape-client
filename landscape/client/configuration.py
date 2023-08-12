@@ -17,8 +17,8 @@ from landscape.client.broker.registration import Identity
 from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.service import BrokerService
 from landscape.client.reactor import LandscapeReactor
-from landscape.client.sysvconfig import ProcessError
-from landscape.client.sysvconfig import SysVConfig
+from landscape.client.serviceconfig import ServiceConfig
+from landscape.client.serviceconfig import ServiceConfigException
 from landscape.lib import base64
 from landscape.lib.amp import MethodCallError
 from landscape.lib.bootstrap import BootstrapDirectory
@@ -514,21 +514,13 @@ class LandscapeSetupScript:
         self.query_tags()
 
 
-def setup_init_script_and_start_client():
-    "Configure the init script to start the client on boot."
-    # XXX This function is misnamed; it doesn't start the client.
-    sysvconfig = SysVConfig()
-    sysvconfig.set_start_on_boot(True)
-
-
 def stop_client_and_disable_init_script():
     """
     Stop landscape-client and change configuration to prevent starting
     landscape-client on boot.
     """
-    sysvconfig = SysVConfig()
-    sysvconfig.stop_landscape()
-    sysvconfig.set_start_on_boot(False)
+    ServiceConfig.stop_landscape()
+    ServiceConfig.set_start_on_boot(False)
 
 
 def setup_http_proxy(config):
@@ -593,18 +585,17 @@ def setup(config):
     """
     bootstrap_tree(config)
 
-    sysvconfig = SysVConfig()
     if not config.no_start:
         if config.silent:
-            setup_init_script_and_start_client()
-        elif not sysvconfig.is_configured_to_run():
+            ServiceConfig.set_start_on_boot(True)
+        elif not ServiceConfig.is_configured_to_run():
             answer = prompt_yes_no(
                 "\nThe Landscape client must be started "
                 "on boot to operate correctly.\n\n"
                 "Start Landscape client on boot?",
             )
             if answer:
-                setup_init_script_and_start_client()
+                ServiceConfig.set_start_on_boot(True)
             else:
                 sys.exit("Aborting Landscape configuration")
 
@@ -620,9 +611,9 @@ def setup(config):
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start:
         try:
-            sysvconfig.restart_landscape()
-        except ProcessError:
-            print_text("Couldn't restart the Landscape client.", error=True)
+            ServiceConfig.restart_landscape()
+        except ServiceConfigException as exc:
+            print_text(str(exc), error=True)
             print_text(
                 "This machine will be registered with the provided "
                 "details when the client runs.",
