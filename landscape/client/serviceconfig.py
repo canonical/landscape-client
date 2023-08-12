@@ -7,7 +7,7 @@ provide the following interface:
 set_start_on_boot(flag: bool) -> None
 restart_landscape() -> None
 stop_landscape() -> None
-is_configured_to_run -> bool
+is_configured_to_run() -> bool
 
 Methods should raise `ServiceConfigException` if necessary.
 """
