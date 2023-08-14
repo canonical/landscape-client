@@ -35,40 +35,40 @@ class SystemdConfig:
     @staticmethod
     def set_start_on_boot(flag: bool) -> None:
         action = "enable" if flag else "disable"
-        subprocess.run(
-            [SYSTEMCTL, action, SYSTEMD_SERVICE],
-            stdout=subprocess.PIPE,
-        )
+        SystemdConfig._call_systemctl(action)
 
     @staticmethod
     def restart_landscape() -> None:
         try:
-            subprocess.run(
-                [SYSTEMCTL, "restart", SYSTEMD_SERVICE],
-                check=True,
-                stdout=subprocess.PIPE,
-            )
+            SystemdConfig._call_systemctl("restart", check=True)
         except subprocess.CalledProcessError:
             raise ServiceConfigException(f"Could not restart {SERVICE_NAME}")
 
     @staticmethod
     def stop_landscape() -> None:
         try:
-            subprocess.run(
-                [SYSTEMCTL, "stop", SYSTEMD_SERVICE],
-                check=True,
-                stdout=subprocess.PIPE,
-            )
+            SystemdConfig._call_systemctl("stop", check=True)
         except subprocess.CalledProcessError:
             raise ServiceConfigException(f"Could not stop {SERVICE_NAME}")
 
     @staticmethod
     def is_configured_to_run() -> bool:
-        completed_process = subprocess.run(
-            [SYSTEMCTL, "is-enabled", SYSTEMD_SERVICE],
-            stdout=subprocess.PIPE,
-        )
+        completed_process = SystemdConfig._call_systemctl("is-enabled")
         return completed_process.returncode == 0
+
+    @staticmethod
+    def _call_systemctl(
+        action: str,
+        **run_kwargs,
+    ) -> subprocess.CompletedProcess:
+        """Calls systemctl, passing `action` and `run_kwargs`, while consuming
+        stdout.
+        """
+        return subprocess.run(
+            [SYSTEMCTL, action, SYSTEMD_SERVICE],
+            stdout=subprocess.PIPE,
+            **run_kwargs,
+        )
 
 
 class SnapdConfig:
@@ -85,42 +85,43 @@ class SnapdConfig:
             cmd = "stop"
             param = "--disable"
 
-        subprocess.run(
-            [SNAPCTL, cmd, SERVICE_NAME, param],
-            stdout=subprocess.PIPE,
-        )
+        SnapdConfig._call_snapctl(cmd, param)
 
     @staticmethod
     def restart_landscape() -> None:
         try:
-            subprocess.run(
-                [SNAPCTL, "restart", SERVICE_NAME],
-                check=True,
-                stdout=subprocess.PIPE,
-            )
+            SnapdConfig._call_snapctl("restart", check=True)
         except subprocess.CalledProcessError:
             raise ServiceConfigException(f"Could not restart {SERVICE_NAME}")
 
     @staticmethod
     def stop_landscape() -> None:
         try:
-            subprocess.run(
-                [SNAPCTL, "stop", SERVICE_NAME],
-                check=True,
-                stdout=subprocess.PIPE,
-            )
+            SnapdConfig._call_snapctl("stop", check=True)
         except subprocess.CalledProcessError:
             raise ServiceConfigException(f"Could not stop {SERVICE_NAME}")
 
     @staticmethod
     def is_configured_to_run() -> bool:
-        completed_process = subprocess.run(
-            [SNAPCTL, "services", SERVICE_NAME],
-            stdout=subprocess.PIPE,
-        )
+        completed_process = SnapdConfig._call_snapctl("services")
         stdout = completed_process.stdout
 
         return stdout and "enabled" in stdout
+
+    @staticmethod
+    def _call_snapctl(
+        action: str,
+        *cmd_args,
+        **run_kwargs,
+    ) -> subprocess.CompletedProcess:
+        """Calls snapctl, passing `action`, `cmd_args`, and `run_kwargs`, while
+        consuming stdout.
+        """
+        return subprocess.run(
+            [SNAPCTL, action, SERVICE_NAME, *cmd_args],
+            stdout=subprocess.PIPE,
+            **run_kwargs,
+        )
 
 
 if os.environ.get("SNAP_REVISION"):
