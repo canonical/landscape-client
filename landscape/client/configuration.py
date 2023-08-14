@@ -13,15 +13,14 @@ import textwrap
 from functools import partial
 from urllib.parse import urlparse
 
-
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.service import BrokerService
 from landscape.client.reactor import LandscapeReactor
-from landscape.client.sysvconfig import ProcessError
-from landscape.client.sysvconfig import SysVConfig
+from landscape.client.serviceconfig import ServiceConfig
+from landscape.client.serviceconfig import ServiceConfigException
 from landscape.lib import base64
 from landscape.lib.amp import MethodCallError
 from landscape.lib.bootstrap import BootstrapDirectory
@@ -30,8 +29,8 @@ from landscape.lib.compat import input
 from landscape.lib.fetch import fetch
 from landscape.lib.fetch import FetchError
 from landscape.lib.fs import create_binary_file
-from landscape.lib.persist import Persist
 from landscape.lib.network import get_fqdn
+from landscape.lib.persist import Persist
 from landscape.lib.tag import is_valid_tag
 from landscape.lib.twisted_util import gather_results
 
@@ -348,8 +347,12 @@ class LandscapeSetupScript:
             computer in the Landscape dashboard.
             """,
         )
-        self.prompt("computer_title", "This computer's title",
-                    False, default=get_fqdn())
+        self.prompt(
+            "computer_title",
+            "This computer's title",
+            False,
+            default=get_fqdn(),
+        )
 
     def query_account_name(self):
         if "account_name" in self.config.get_command_line_options():
@@ -361,7 +364,8 @@ class LandscapeSetupScript:
                 You must now specify the name of the Landscape account you
                 want to register this computer with. Your account name is shown
                 under 'Account name' at https://landscape.canonical.com .
-                """,)
+                """,
+            )
             self.prompt("account_name", "Account name", True)
         else:
             self.config.account_name = "standalone"
@@ -447,8 +451,8 @@ class LandscapeSetupScript:
 
     def query_landscape_edition(self):
         show_help(
-            """Manage this machine with Landscape (https://ubuntu.com/landscape):
-            """
+            "Manage this machine with Landscape "
+            "(https://ubuntu.com/landscape):\n",
         )
         options = self.config.get_command_line_options()
         if "ping_url" in options and "url" in options:
@@ -460,18 +464,14 @@ class LandscapeSetupScript:
             show_help(
                 "Provide the fully qualified domain name "
                 "of your Landscape Server e.g. "
-                "landscape.yourdomain.com"
+                "landscape.yourdomain.com",
             )
             self.landscape_domain = self.prompt_get_input(
                 "Landscape Domain: ",
                 True,
             )
-            self.config.ping_url = (
-                f"http://{self.landscape_domain}/ping"
-            )
-            self.config.url = (
-                f"https://{self.landscape_domain}/message-system"
-            )
+            self.config.ping_url = f"http://{self.landscape_domain}/ping"
+            self.config.url = f"https://{self.landscape_domain}/message-system"
         else:
             self.landscape_domain = ""
             self.config.ping_url = self.config._command_line_defaults[
@@ -493,7 +493,7 @@ class LandscapeSetupScript:
         if self.config.http_proxy or self.config.https_proxy:
             show_help(
                 f"""HTTPS Proxy: {self.config.https_proxy}
-                    HTTP  Proxy: {self.config.http_proxy}"""
+                    HTTP  Proxy: {self.config.http_proxy}""",
             )
 
         params = (
@@ -518,7 +518,7 @@ class LandscapeSetupScript:
                     cmd.append(shlex.quote(value))
         show_help(
             "The landscape-config parameters to repeat this registration"
-            " on another machine are:"
+            " on another machine are:",
         )
         show_help(" ".join(cmd))
 
@@ -537,21 +537,13 @@ class LandscapeSetupScript:
         self.show_summary()
 
 
-def setup_init_script_and_start_client():
-    "Configure the init script to start the client on boot."
-    # XXX This function is misnamed; it doesn't start the client.
-    sysvconfig = SysVConfig()
-    sysvconfig.set_start_on_boot(True)
-
-
 def stop_client_and_disable_init_script():
     """
     Stop landscape-client and change configuration to prevent starting
     landscape-client on boot.
     """
-    sysvconfig = SysVConfig()
-    sysvconfig.stop_landscape()
-    sysvconfig.set_start_on_boot(False)
+    ServiceConfig.stop_landscape()
+    ServiceConfig.set_start_on_boot(False)
 
 
 def setup_http_proxy(config):
@@ -616,12 +608,11 @@ def setup(config):
     """
     bootstrap_tree(config)
 
-    sysvconfig = SysVConfig()
     if not config.no_start:
         if config.silent:
-            setup_init_script_and_start_client()
-        elif not sysvconfig.is_configured_to_run():
-            setup_init_script_and_start_client()
+            ServiceConfig.set_start_on_boot(True)
+        elif not ServiceConfig.is_configured_to_run():
+            ServiceConfig.set_start_on_boot(True)
 
     setup_http_proxy(config)
     check_account_name_and_password(config)
@@ -635,9 +626,9 @@ def setup(config):
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start:
         try:
-            sysvconfig.restart_landscape()
-        except ProcessError:
-            print_text("Couldn't restart the Landscape client.", error=True)
+            ServiceConfig.restart_landscape()
+        except ServiceConfigException as exc:
+            print_text(str(exc), error=True)
             print_text(
                 "This machine will be registered with the provided "
                 "details when the client runs.",
