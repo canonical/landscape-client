@@ -356,6 +356,58 @@ class LandscapeSetupScriptTest(LandscapeTest):
         mock_input.assert_called_once_with("Message [Desktop]: ")
         self.assertEqual(self.config.computer_title, "Desktop")
 
+    @mock.patch(
+        "landscape.client.configuration.input",
+        return_value="landscape.hello.com",
+    )
+    @mock.patch(
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
+    )
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_prompt_landscape_edition(
+        self,
+        mock_help,
+        prompt_yes_no,
+        mock_input,
+    ):
+        self.script.query_landscape_edition()
+        self.script.query_account_name()
+        self.assertEqual(
+            self.config.ping_url,
+            "http://landscape.hello.com/ping",
+        )
+        self.assertEqual(
+            self.config.url,
+            "https://landscape.hello.com/message-system",
+        )
+        self.assertEqual(self.config.account_name, "standalone")
+
+    @mock.patch(
+        "landscape.client.configuration.input",
+        return_value="landscape.hello.com",
+    )
+    @mock.patch(
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=False,
+    )
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_prompt_landscape_edition_saas(
+        self,
+        mock_help,
+        prompt_yes_no,
+        mock_input,
+    ):
+        self.script.query_landscape_edition()
+        self.assertEqual(
+            self.config.ping_url,
+            "http://landscape.canonical.com/ping",
+        )
+        self.assertEqual(
+            self.config.url,
+            "https://landscape.canonical.com/message-system",
+        )
+
     @mock.patch("landscape.client.configuration.input", return_value="Yay")
     def test_prompt_for_unknown_variable(self, mock_input):
         """
@@ -423,19 +475,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         )
         self.assertEqual(self.config.registration_key, "password")
 
-    @mock.patch("landscape.client.configuration.show_help")
-    def test_query_computer_title(self, mock_show_help):
-        help_snippet = "The computer title you"
-        self.script.prompt = mock.Mock()
-        self.script.query_computer_title()
-        self.script.prompt.assert_called_once_with(
-            "computer_title",
-            "This computer's title",
-            True,
-        )
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
     @mock.patch("landscape.client.configuration.input")
     def test_query_computer_title_defined_on_command_line(self, mock_input):
         self.config.load_command_line(["-t", "Computer title"])
@@ -470,7 +509,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_registration_key()
         self.script.password_prompt.assert_called_once_with(
             "registration_key",
-            "Account registration key",
+            "(Optional) Registration Key",
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
@@ -533,221 +572,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=False,
-    )
-    def test_query_script_plugin_no(self, mock_prompt_yes_no, mock_show_help):
-        help_snippet = "Landscape has a feature which enables administrators"
-
-        self.script.query_script_plugin()
-        self.assertEqual(self.config.include_manager_plugins, "")
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_query_script_plugin_yes(self, mock_prompt_yes_no, mock_show_help):
-        """
-        If the user *does* want script execution, then the script asks which
-        users to enable it for.
-        """
-        help_snippet = "Landscape has a feature which enables administrators"
-        self.script.prompt = mock.Mock()
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-        first_call, second_call = mock_show_help.mock_calls
-        self.assertTrue(first_call.strip().startswith(help_snippet))
-        self.assertTrue(
-            second_call.strip().startswith(
-                "By default, scripts are restricted",
-            ),
-        )
-
-        self.script.prompt.assert_called_once_with(
-            "script_users",
-            "Script users",
-        )
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "ScriptExecution",
-        )
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=False,
-    )
-    def test_disable_script_plugin(self, mock_prompt_yes_no, mock_show_help):
-        """
-        Answering NO to enabling the script plugin while it's already enabled
-        will disable it.
-        """
-        self.config.include_manager_plugins = "ScriptExecution"
-        help_snippet = "Landscape has a feature which enables administrators"
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=True,
-        )
-        self.assertEqual(self.config.include_manager_plugins, "")
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=False,
-    )
-    def test_disabling_script_plugin_leaves_existing_inclusions(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        Disabling the script execution plugin doesn't remove other included
-        plugins.
-        """
-        self.config.include_manager_plugins = "FooPlugin, ScriptExecution"
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=True,
-        )
-        self.assertEqual(self.config.include_manager_plugins, "FooPlugin")
-        mock_show_help.assert_called_once_with(mock.ANY)
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_enabling_script_plugin_leaves_existing_inclusions(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        Enabling the script execution plugin doesn't remove other included
-        plugins.
-        """
-        self.config.include_manager_plugins = "FooPlugin"
-
-        self.script.prompt = mock.Mock()
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-
-        self.script.prompt.assert_called_once_with(
-            "script_users",
-            "Script users",
-        )
-        self.assertEqual(2, mock_show_help.call_count)
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "FooPlugin, ScriptExecution",
-        )
-
-    @mock.patch("landscape.client.configuration.input")
-    def test_query_script_plugin_defined_on_command_line(self, mock_input):
-        self.config.load_command_line(
-            [
-                "--include-manager-plugins",
-                "ScriptExecution",
-                "--script-users",
-                "root, nobody",
-            ],
-        )
-        self.script.query_script_plugin()
-        mock_input.assert_not_called()
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "ScriptExecution",
-        )
-        self.assertEqual(self.config.script_users, "root, nobody")
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_query_script_manager_plugins_defined_on_command_line(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        self.script.prompt = mock.Mock()
-
-        self.config.load_command_line(
-            ["--include-manager-plugins", "FooPlugin, ScriptExecution"],
-        )
-        self.script.query_script_plugin()
-        self.script.prompt.assert_called_once_with(
-            "script_users",
-            "Script users",
-        )
-        self.assertEqual(2, mock_show_help.call_count)
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "FooPlugin, ScriptExecution",
-        )
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    @mock.patch(
-        "landscape.client.configuration.pwd.getpwnam",
-        return_value=None,
-    )
-    def test_query_script_users_defined_on_command_line(
-        self,
-        mock_getpwnam,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        Confirm with the user for users specified for the ScriptPlugin.
-        """
-        self.script.prompt_get_input = mock.Mock(return_value=None)
-
-        self.config.include_manager_plugins = "FooPlugin"
-
-        self.config.load_command_line(
-            ["--script-users", "root, nobody, landscape"],
-        )
-        self.script.query_script_plugin()
-
-        mock_getpwnam.assert_called_with("landscape")
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-        self.script.prompt_get_input.assert_called_once_with(
-            "Script users [root, nobody, landscape]: ",
-            False,
-        )
-        self.assertEqual(2, mock_show_help.call_count)
-        self.assertEqual(self.config.script_users, "root, nobody, landscape")
 
     @mock.patch(
         "landscape.client.configuration.pwd.getpwnam",
@@ -826,87 +650,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         )
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_invalid_user_entered_by_user(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        If an invalid user is entered on the command line the user should be
-        informed and prompted again.
-        """
-        help_snippet = "Landscape has a feature which enables administrators"
-        self.script.prompt_get_input = mock.Mock(
-            side_effect=("nonexistent", "root"),
-        )
-
-        self.script.query_script_plugin()
-        self.assertEqual(self.config.script_users, "root")
-        first_call, second_call, third_call = mock_show_help.mock_calls
-        self.assertTrue(first_call.strip().startswith(help_snippet))
-        self.assertTrue(
-            second_call.strip().startswith(
-                "By default, scripts are restricted",
-            ),
-        )
-        self.assertTrue(
-            third_call.strip().startswith(
-                "Unknown system users: nonexistsent",
-            ),
-        )
-
-    @mock.patch("landscape.client.configuration.show_help")
-    def test_tags_not_defined_on_command_line(self, mock_show_help):
-        """
-        If tags are not provided, the user should be prompted for them.
-        """
-        help_snippet = (
-            "You may provide tags for this computer e.g. server,precise."
-        )
-        self.script.prompt = mock.Mock()
-
-        self.script.query_tags()
-        self.script.prompt.assert_called_once_with("tags", "Tags", False)
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch("landscape.client.configuration.prompt_yes_no")
-    def test_invalid_tags_entered_by_user(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        If tags are not provided, the user should be prompted for them, and
-        they should be valid tags, if not the user should be prompted for them
-        again.
-        """
-        self.script.prompt_get_input = mock.Mock(
-            side_effect=("<script>alert();</script>", "london"),
-        )
-
-        self.script.query_tags()
-        first_call, second_call = mock_show_help.mock_calls
-        self.assertTrue(
-            first_call.strip().startswith(
-                "You may provide tags for this "
-                "computer e.g. server,precise.",
-            ),
-        )
-        self.assertTrue(
-            second_call.strip().startswith(
-                "Tag names may only contain " "alphanumeric characters.",
-            ),
-        )
-        calls = [("Tags: ", False), ("Tags: ", False)]
-        self.script.prompt_get_input.has_calls(calls)
-
     @mock.patch("landscape.client.configuration.input")
     def test_tags_defined_on_command_line(self, mock_input):
         """
@@ -960,33 +703,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.load_command_line(["--stagger-launch", "0.5"])
         self.assertEqual(self.config.stagger_launch, 0.5)
         mock_input.assert_not_called()
-
-    @mock.patch("landscape.client.configuration.show_help")
-    def test_show_header(self, mock_show_help):
-        help_snippet = "This script will"
-        self.script.show_header()
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    def test_run(self):
-        self.script.show_header = mock.Mock()
-        self.script.query_computer_title = mock.Mock()
-        self.script.query_account_name = mock.Mock()
-        self.script.query_registration_key = mock.Mock()
-        self.script.query_proxies = mock.Mock()
-        self.script.query_script_plugin = mock.Mock()
-        self.script.query_access_group = mock.Mock()
-        self.script.query_tags = mock.Mock()
-        self.script.run()
-
-        self.script.show_header.assert_called_once_with()
-        self.script.query_computer_title.assert_called_once_with()
-        self.script.query_account_name.assert_called_once_with()
-        self.script.query_registration_key.assert_called_once_with()
-        self.script.query_proxies.assert_called_once_with()
-        self.script.query_script_plugin.assert_called_once_with()
-        self.script.query_access_group.assert_called_once_with()
-        self.script.query_tags.assert_called_once_with()
 
 
 class BootstrapTreeTest(LandscapeConfigurationTest):
@@ -1045,7 +761,8 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.getpass.getpass")
     @mock.patch("landscape.client.configuration.input")
-    def test_setup(self, mock_input, mock_getpass, mock_print_text):
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_setup(self, mock_help, mock_input, mock_getpass, mock_print_text):
         filename = self.makeFile(
             "[client]\n"
             "computer_title = Old Title\n"
@@ -1053,10 +770,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
             "registration_key = Old Password\n"
             "http_proxy = http://old.proxy\n"
             "https_proxy = https://old.proxy\n"
-            "url = http://url\n"
-            "include_manager_plugins = ScriptExecution\n"
-            "access_group = webservers\n"
-            "tags = london, server",
+            "url = http://url\n",
         )
 
         def side_effect_input(prompt):
@@ -1065,9 +779,8 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "[Old Name]": "New Name",
                 "[http://old.proxy]": "http://new.proxy",
                 "[https://old.proxy]": "https://new.proxy",
-                "Enable script execution? [Y/n]": "n",
-                "Access group [webservers]: ": "databases",
-                "Tags [london, server]: ": "glasgow, laptop",
+                "Will you be using your own "
+                "Self-Hosted Landscape installation? [y/N]": "n",
             }
             for key, value in iteritems(fixtures):
                 if key in prompt:
@@ -1076,7 +789,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
         def side_effect_getpass(prompt):
             fixtures = {
-                "Account registration key:": "New Password",
+                "(Optional) Registration Key:": "New Password",
                 "Please confirm:": "New Password",
             }
             for key, value in iteritems(fixtures):
@@ -1094,14 +807,31 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         # Reload it to ensure it was written down.
         config.reload()
 
+        self.assertEqual(
+            "sudo landscape-config "
+            "--account-name 'New Name' "
+            "--registration-key HIDDEN "
+            "--https-proxy https://new.proxy "
+            "--http-proxy http://new.proxy",
+            mock_help.mock_calls[-1].args[0],
+        )
+
+        proxy_arg = mock_help.mock_calls[-3].args[0]
+        self.assertIn("https://new.proxy", proxy_arg)
+        self.assertIn("http://new.proxy", proxy_arg)
+
+        summary_arg = mock_help.mock_calls[-4].args[0]
+        self.assertIn("Computer's Title: New Title", summary_arg)
+        self.assertIn("Account Name: New Name", summary_arg)
+        self.assertIn("Landscape FQDN: landscape.canonical.com", summary_arg)
+        self.assertIn("Registration Key: True", summary_arg)
+
         self.assertEqual(config.computer_title, "New Title")
         self.assertEqual(config.account_name, "New Name")
         self.assertEqual(config.registration_key, "New Password")
         self.assertEqual(config.http_proxy, "http://new.proxy")
         self.assertEqual(config.https_proxy, "https://new.proxy")
         self.assertEqual(config.include_manager_plugins, "")
-        self.assertEqual(config.access_group, "databases")
-        self.assertEqual(config.tags, "glasgow, laptop")
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_silent_setup(self, mock_serviceconfig):
@@ -1193,6 +923,27 @@ url = https://landscape.canonical.com/message-system
             "ping_interval = 30\n"
             "ping_url = http://landscape.canonical.com/ping\n"
             "urgent_exchange_interval = 60\n",
+        )
+
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_unicode_computer_title(self, mock_serviceconfig):
+        """
+        Setup accepts a non-ascii computer title and registration is
+        attempted.
+        """
+        config = self.get_config(["--silent", "-a", "account", "-t", "mélody"])
+        setup(config)
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
+        self.assertConfigEqual(
+            self.get_content(config),
+            f"""\
+[client]
+computer_title = mélody
+data_path = {config.data_path}
+account_name = account
+url = https://landscape.canonical.com/message-system
+""",
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
@@ -1475,7 +1226,7 @@ registration_key = shared-secret
         self.assertEqual(
             [
                 ("Please wait...", sys.stdout),
-                ("System successfully registered.", sys.stdout),
+                ("Registration request sent successfully.", sys.stdout),
             ],
             printed,
         )
@@ -1552,7 +1303,7 @@ registration_key = shared-secret
         self.assertEqual(
             [
                 ("Please wait...", sys.stdout),
-                ("System successfully registered.", sys.stdout),
+                ("Registration request sent successfully.", sys.stdout),
             ],
             printed,
         )
@@ -1632,11 +1383,6 @@ registration_key = shared-secret
         mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_setup_script().run.assert_called_once_with()
         mock_register.assert_called_once_with(mock.ANY, mock.ANY)
-        mock_input.assert_any_call(
-            "\nThe Landscape client must be started "
-            "on boot to operate correctly.\n\n"
-            "Start Landscape client on boot? [Y/n]: ",
-        )
         mock_input.assert_called_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -2755,7 +2501,7 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
 
     def test_success_case(self):
         report_registration_outcome("success", print=self.record_result)
-        self.assertIn("System successfully registered.", self.result)
+        self.assertIn("Registration request sent successfully.", self.result)
         self.assertIn(sys.stdout.name, self.output)
 
     def test_unknown_account_case(self):
