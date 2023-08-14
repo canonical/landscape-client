@@ -449,9 +449,8 @@ class LandscapeSetupScript:
             """
         )
         options = self.config.get_command_line_options()
-        if "ping_url" in options:
-            if "url" in options:
-                return
+        if "ping_url" in options and "url" in options:
+            return
         if prompt_yes_no(
             "Will you be using your own Self-Hosted Landscape installation?",
             default=False,
