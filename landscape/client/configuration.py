@@ -924,8 +924,6 @@ def main(args, print=print):
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 
-    print("Please wait...")
-
     # Attempt to register the client.
     reactor = LandscapeReactor()
     if config.silent:

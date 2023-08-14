@@ -1225,7 +1225,6 @@ registration_key = shared-secret
         )
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
                 ("Registration request sent successfully.", sys.stdout),
             ],
             printed,
@@ -1265,7 +1264,6 @@ registration_key = shared-secret
         # Note that the error is output via sys.stderr.
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
                 ("Invalid account name or registration key.", sys.stderr),
             ],
             printed,
@@ -1302,7 +1300,6 @@ registration_key = shared-secret
 
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
                 ("Registration request sent successfully.", sys.stdout),
             ],
             printed,
@@ -1341,7 +1338,6 @@ registration_key = shared-secret
         # Note that the error is output via sys.stderr.
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
                 ("Invalid account name or registration key.", sys.stderr),
             ],
             printed,
