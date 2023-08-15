@@ -23,14 +23,14 @@ class SystemdConfigTestCase(TestCase):
     def test_set_to_run_on_boot(self):
         SystemdConfig.set_start_on_boot(True)
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "enable", "landscape-client.service"],
+            [SYSTEMCTL, "enable", "landscape-client.service", "--quiet"],
             stdout=subprocess.PIPE,
         )
 
     def test_set_to_not_run_on_boot(self):
         SystemdConfig.set_start_on_boot(False)
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "disable", "landscape-client.service"],
+            [SYSTEMCTL, "disable", "landscape-client.service", "--quiet"],
             stdout=subprocess.PIPE,
         )
 
@@ -39,7 +39,7 @@ class SystemdConfigTestCase(TestCase):
 
         self.assertTrue(SystemdConfig.is_configured_to_run())
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "is-enabled", "landscape-client.service"],
+            [SYSTEMCTL, "is-enabled", "landscape-client.service", "--quiet"],
             stdout=subprocess.PIPE,
         )
 
@@ -48,14 +48,14 @@ class SystemdConfigTestCase(TestCase):
 
         self.assertFalse(SystemdConfig.is_configured_to_run())
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "is-enabled", "landscape-client.service"],
+            [SYSTEMCTL, "is-enabled", "landscape-client.service", "--quiet"],
             stdout=subprocess.PIPE,
         )
 
     def test_run_landscape(self):
         SystemdConfig.restart_landscape()
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "restart", "landscape-client.service"],
+            [SYSTEMCTL, "restart", "landscape-client.service", "--quiet"],
             check=True,
             stdout=subprocess.PIPE,
         )
@@ -68,7 +68,7 @@ class SystemdConfigTestCase(TestCase):
             SystemdConfig.restart_landscape,
         )
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "restart", "landscape-client.service"],
+            [SYSTEMCTL, "restart", "landscape-client.service", "--quiet"],
             check=True,
             stdout=subprocess.PIPE,
         )
@@ -76,7 +76,7 @@ class SystemdConfigTestCase(TestCase):
     def test_stop_landscape(self):
         SystemdConfig.stop_landscape()
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "stop", "landscape-client.service"],
+            [SYSTEMCTL, "stop", "landscape-client.service", "--quiet"],
             check=True,
             stdout=subprocess.PIPE,
         )
@@ -89,7 +89,7 @@ class SystemdConfigTestCase(TestCase):
             SystemdConfig.stop_landscape,
         )
         self.run_mock.assert_called_once_with(
-            [SYSTEMCTL, "stop", "landscape-client.service"],
+            [SYSTEMCTL, "stop", "landscape-client.service", "--quiet"],
             check=True,
             stdout=subprocess.PIPE,
         )
