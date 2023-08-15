@@ -65,7 +65,7 @@ class SystemdConfig:
         stdout.
         """
         return subprocess.run(
-            [SYSTEMCTL, action, SYSTEMD_SERVICE],
+            [SYSTEMCTL, action, SYSTEMD_SERVICE, "--quiet"],
             stdout=subprocess.PIPE,
             **run_kwargs,
         )
