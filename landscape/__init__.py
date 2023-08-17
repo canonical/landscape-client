@@ -1,5 +1,5 @@
 DEBIAN_REVISION = ""
-UPSTREAM_VERSION = "23.02"
+UPSTREAM_VERSION = "23.08"
 VERSION = f"{UPSTREAM_VERSION}{DEBIAN_REVISION}"
 
 # The minimum server API version that all Landscape servers are known to speak
