@@ -18,7 +18,6 @@ SCRIPTS = []
 # Dependencies
 
 DEB_REQUIRES = [
-    "lsb-base",
     "lsb-release",
     "lshw",
 ]
