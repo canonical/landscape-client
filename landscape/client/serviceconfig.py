@@ -18,7 +18,7 @@ SERVICE_NAME = "landscape-client"
 SYSTEMD_SERVICE = f"{SERVICE_NAME}.service"
 
 SNAPCTL = "/usr/bin/snapctl"
-SYSTEMCTL = "/usr/bin/systemctl"
+SYSTEMCTL = "systemctl"  # Cannot hardcode here as bionic is in different path
 
 
 class ServiceConfigException(Exception):
