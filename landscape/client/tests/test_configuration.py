@@ -35,11 +35,10 @@ from landscape.client.configuration import register
 from landscape.client.configuration import registration_info_text
 from landscape.client.configuration import report_registration_outcome
 from landscape.client.configuration import setup
-from landscape.client.configuration import setup_init_script_and_start_client
 from landscape.client.configuration import show_help
 from landscape.client.configuration import store_public_key_data
 from landscape.client.configuration import success
-from landscape.client.sysvconfig import ProcessError
+from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import FakeBrokerServiceHelper
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.amp import MethodCallError
@@ -357,6 +356,58 @@ class LandscapeSetupScriptTest(LandscapeTest):
         mock_input.assert_called_once_with("Message [Desktop]: ")
         self.assertEqual(self.config.computer_title, "Desktop")
 
+    @mock.patch(
+        "landscape.client.configuration.input",
+        return_value="landscape.hello.com",
+    )
+    @mock.patch(
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
+    )
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_prompt_landscape_edition(
+        self,
+        mock_help,
+        prompt_yes_no,
+        mock_input,
+    ):
+        self.script.query_landscape_edition()
+        self.script.query_account_name()
+        self.assertEqual(
+            self.config.ping_url,
+            "http://landscape.hello.com/ping",
+        )
+        self.assertEqual(
+            self.config.url,
+            "https://landscape.hello.com/message-system",
+        )
+        self.assertEqual(self.config.account_name, "standalone")
+
+    @mock.patch(
+        "landscape.client.configuration.input",
+        return_value="landscape.hello.com",
+    )
+    @mock.patch(
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=False,
+    )
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_prompt_landscape_edition_saas(
+        self,
+        mock_help,
+        prompt_yes_no,
+        mock_input,
+    ):
+        self.script.query_landscape_edition()
+        self.assertEqual(
+            self.config.ping_url,
+            "http://landscape.canonical.com/ping",
+        )
+        self.assertEqual(
+            self.config.url,
+            "https://landscape.canonical.com/message-system",
+        )
+
     @mock.patch("landscape.client.configuration.input", return_value="Yay")
     def test_prompt_for_unknown_variable(self, mock_input):
         """
@@ -424,19 +475,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         )
         self.assertEqual(self.config.registration_key, "password")
 
-    @mock.patch("landscape.client.configuration.show_help")
-    def test_query_computer_title(self, mock_show_help):
-        help_snippet = "The computer title you"
-        self.script.prompt = mock.Mock()
-        self.script.query_computer_title()
-        self.script.prompt.assert_called_once_with(
-            "computer_title",
-            "This computer's title",
-            True,
-        )
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
     @mock.patch("landscape.client.configuration.input")
     def test_query_computer_title_defined_on_command_line(self, mock_input):
         self.config.load_command_line(["-t", "Computer title"])
@@ -471,7 +509,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_registration_key()
         self.script.password_prompt.assert_called_once_with(
             "registration_key",
-            "Account registration key",
+            "(Optional) Registration Key",
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
@@ -534,221 +572,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         )
         [call] = mock_show_help.mock_calls
         self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=False,
-    )
-    def test_query_script_plugin_no(self, mock_prompt_yes_no, mock_show_help):
-        help_snippet = "Landscape has a feature which enables administrators"
-
-        self.script.query_script_plugin()
-        self.assertEqual(self.config.include_manager_plugins, "")
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_query_script_plugin_yes(self, mock_prompt_yes_no, mock_show_help):
-        """
-        If the user *does* want script execution, then the script asks which
-        users to enable it for.
-        """
-        help_snippet = "Landscape has a feature which enables administrators"
-        self.script.prompt = mock.Mock()
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-        first_call, second_call = mock_show_help.mock_calls
-        self.assertTrue(first_call.strip().startswith(help_snippet))
-        self.assertTrue(
-            second_call.strip().startswith(
-                "By default, scripts are restricted",
-            ),
-        )
-
-        self.script.prompt.assert_called_once_with(
-            "script_users",
-            "Script users",
-        )
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "ScriptExecution",
-        )
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=False,
-    )
-    def test_disable_script_plugin(self, mock_prompt_yes_no, mock_show_help):
-        """
-        Answering NO to enabling the script plugin while it's already enabled
-        will disable it.
-        """
-        self.config.include_manager_plugins = "ScriptExecution"
-        help_snippet = "Landscape has a feature which enables administrators"
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=True,
-        )
-        self.assertEqual(self.config.include_manager_plugins, "")
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=False,
-    )
-    def test_disabling_script_plugin_leaves_existing_inclusions(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        Disabling the script execution plugin doesn't remove other included
-        plugins.
-        """
-        self.config.include_manager_plugins = "FooPlugin, ScriptExecution"
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=True,
-        )
-        self.assertEqual(self.config.include_manager_plugins, "FooPlugin")
-        mock_show_help.assert_called_once_with(mock.ANY)
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_enabling_script_plugin_leaves_existing_inclusions(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        Enabling the script execution plugin doesn't remove other included
-        plugins.
-        """
-        self.config.include_manager_plugins = "FooPlugin"
-
-        self.script.prompt = mock.Mock()
-
-        self.script.query_script_plugin()
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-
-        self.script.prompt.assert_called_once_with(
-            "script_users",
-            "Script users",
-        )
-        self.assertEqual(2, mock_show_help.call_count)
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "FooPlugin, ScriptExecution",
-        )
-
-    @mock.patch("landscape.client.configuration.input")
-    def test_query_script_plugin_defined_on_command_line(self, mock_input):
-        self.config.load_command_line(
-            [
-                "--include-manager-plugins",
-                "ScriptExecution",
-                "--script-users",
-                "root, nobody",
-            ],
-        )
-        self.script.query_script_plugin()
-        mock_input.assert_not_called()
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "ScriptExecution",
-        )
-        self.assertEqual(self.config.script_users, "root, nobody")
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_query_script_manager_plugins_defined_on_command_line(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        self.script.prompt = mock.Mock()
-
-        self.config.load_command_line(
-            ["--include-manager-plugins", "FooPlugin, ScriptExecution"],
-        )
-        self.script.query_script_plugin()
-        self.script.prompt.assert_called_once_with(
-            "script_users",
-            "Script users",
-        )
-        self.assertEqual(2, mock_show_help.call_count)
-        self.assertEqual(
-            self.config.include_manager_plugins,
-            "FooPlugin, ScriptExecution",
-        )
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    @mock.patch(
-        "landscape.client.configuration.pwd.getpwnam",
-        return_value=None,
-    )
-    def test_query_script_users_defined_on_command_line(
-        self,
-        mock_getpwnam,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        Confirm with the user for users specified for the ScriptPlugin.
-        """
-        self.script.prompt_get_input = mock.Mock(return_value=None)
-
-        self.config.include_manager_plugins = "FooPlugin"
-
-        self.config.load_command_line(
-            ["--script-users", "root, nobody, landscape"],
-        )
-        self.script.query_script_plugin()
-
-        mock_getpwnam.assert_called_with("landscape")
-        mock_prompt_yes_no.assert_called_once_with(
-            "Enable script execution?",
-            default=False,
-        )
-        self.script.prompt_get_input.assert_called_once_with(
-            "Script users [root, nobody, landscape]: ",
-            False,
-        )
-        self.assertEqual(2, mock_show_help.call_count)
-        self.assertEqual(self.config.script_users, "root, nobody, landscape")
 
     @mock.patch(
         "landscape.client.configuration.pwd.getpwnam",
@@ -827,87 +650,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         )
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch(
-        "landscape.client.configuration.prompt_yes_no",
-        return_value=True,
-    )
-    def test_invalid_user_entered_by_user(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        If an invalid user is entered on the command line the user should be
-        informed and prompted again.
-        """
-        help_snippet = "Landscape has a feature which enables administrators"
-        self.script.prompt_get_input = mock.Mock(
-            side_effect=("nonexistent", "root"),
-        )
-
-        self.script.query_script_plugin()
-        self.assertEqual(self.config.script_users, "root")
-        first_call, second_call, third_call = mock_show_help.mock_calls
-        self.assertTrue(first_call.strip().startswith(help_snippet))
-        self.assertTrue(
-            second_call.strip().startswith(
-                "By default, scripts are restricted",
-            ),
-        )
-        self.assertTrue(
-            third_call.strip().startswith(
-                "Unknown system users: nonexistsent",
-            ),
-        )
-
-    @mock.patch("landscape.client.configuration.show_help")
-    def test_tags_not_defined_on_command_line(self, mock_show_help):
-        """
-        If tags are not provided, the user should be prompted for them.
-        """
-        help_snippet = (
-            "You may provide tags for this computer e.g. server,precise."
-        )
-        self.script.prompt = mock.Mock()
-
-        self.script.query_tags()
-        self.script.prompt.assert_called_once_with("tags", "Tags", False)
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    @mock.patch("landscape.client.configuration.show_help")
-    @mock.patch("landscape.client.configuration.prompt_yes_no")
-    def test_invalid_tags_entered_by_user(
-        self,
-        mock_prompt_yes_no,
-        mock_show_help,
-    ):
-        """
-        If tags are not provided, the user should be prompted for them, and
-        they should be valid tags, if not the user should be prompted for them
-        again.
-        """
-        self.script.prompt_get_input = mock.Mock(
-            side_effect=("<script>alert();</script>", "london"),
-        )
-
-        self.script.query_tags()
-        first_call, second_call = mock_show_help.mock_calls
-        self.assertTrue(
-            first_call.strip().startswith(
-                "You may provide tags for this "
-                "computer e.g. server,precise.",
-            ),
-        )
-        self.assertTrue(
-            second_call.strip().startswith(
-                "Tag names may only contain " "alphanumeric characters.",
-            ),
-        )
-        calls = [("Tags: ", False), ("Tags: ", False)]
-        self.script.prompt_get_input.has_calls(calls)
-
     @mock.patch("landscape.client.configuration.input")
     def test_tags_defined_on_command_line(self, mock_input):
         """
@@ -961,33 +703,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.load_command_line(["--stagger-launch", "0.5"])
         self.assertEqual(self.config.stagger_launch, 0.5)
         mock_input.assert_not_called()
-
-    @mock.patch("landscape.client.configuration.show_help")
-    def test_show_header(self, mock_show_help):
-        help_snippet = "This script will"
-        self.script.show_header()
-        [call] = mock_show_help.mock_calls
-        self.assertTrue(call.strip().startswith(help_snippet))
-
-    def test_run(self):
-        self.script.show_header = mock.Mock()
-        self.script.query_computer_title = mock.Mock()
-        self.script.query_account_name = mock.Mock()
-        self.script.query_registration_key = mock.Mock()
-        self.script.query_proxies = mock.Mock()
-        self.script.query_script_plugin = mock.Mock()
-        self.script.query_access_group = mock.Mock()
-        self.script.query_tags = mock.Mock()
-        self.script.run()
-
-        self.script.show_header.assert_called_once_with()
-        self.script.query_computer_title.assert_called_once_with()
-        self.script.query_account_name.assert_called_once_with()
-        self.script.query_registration_key.assert_called_once_with()
-        self.script.query_proxies.assert_called_once_with()
-        self.script.query_script_plugin.assert_called_once_with()
-        self.script.query_access_group.assert_called_once_with()
-        self.script.query_tags.assert_called_once_with()
 
 
 class BootstrapTreeTest(LandscapeConfigurationTest):
@@ -1046,7 +761,8 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.getpass.getpass")
     @mock.patch("landscape.client.configuration.input")
-    def test_setup(self, mock_input, mock_getpass, mock_print_text):
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_setup(self, mock_help, mock_input, mock_getpass, mock_print_text):
         filename = self.makeFile(
             "[client]\n"
             "computer_title = Old Title\n"
@@ -1054,10 +770,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
             "registration_key = Old Password\n"
             "http_proxy = http://old.proxy\n"
             "https_proxy = https://old.proxy\n"
-            "url = http://url\n"
-            "include_manager_plugins = ScriptExecution\n"
-            "access_group = webservers\n"
-            "tags = london, server",
+            "url = http://url\n",
         )
 
         def side_effect_input(prompt):
@@ -1066,9 +779,8 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "[Old Name]": "New Name",
                 "[http://old.proxy]": "http://new.proxy",
                 "[https://old.proxy]": "https://new.proxy",
-                "Enable script execution? [Y/n]": "n",
-                "Access group [webservers]: ": "databases",
-                "Tags [london, server]: ": "glasgow, laptop",
+                "Will you be using your own "
+                "Self-Hosted Landscape installation? [y/N]": "n",
             }
             for key, value in iteritems(fixtures):
                 if key in prompt:
@@ -1077,7 +789,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
         def side_effect_getpass(prompt):
             fixtures = {
-                "Account registration key:": "New Password",
+                "(Optional) Registration Key:": "New Password",
                 "Please confirm:": "New Password",
             }
             for key, value in iteritems(fixtures):
@@ -1095,25 +807,42 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         # Reload it to ensure it was written down.
         config.reload()
 
+        self.assertEqual(
+            "sudo landscape-config "
+            "--account-name 'New Name' "
+            "--registration-key HIDDEN "
+            "--https-proxy https://new.proxy "
+            "--http-proxy http://new.proxy",
+            mock_help.mock_calls[-1].args[0],
+        )
+
+        proxy_arg = mock_help.mock_calls[-3].args[0]
+        self.assertIn("https://new.proxy", proxy_arg)
+        self.assertIn("http://new.proxy", proxy_arg)
+
+        summary_arg = mock_help.mock_calls[-4].args[0]
+        self.assertIn("Computer's Title: New Title", summary_arg)
+        self.assertIn("Account Name: New Name", summary_arg)
+        self.assertIn("Landscape FQDN: landscape.canonical.com", summary_arg)
+        self.assertIn("Registration Key: True", summary_arg)
+
         self.assertEqual(config.computer_title, "New Title")
         self.assertEqual(config.account_name, "New Name")
         self.assertEqual(config.registration_key, "New Password")
         self.assertEqual(config.http_proxy, "http://new.proxy")
         self.assertEqual(config.https_proxy, "https://new.proxy")
         self.assertEqual(config.include_manager_plugins, "")
-        self.assertEqual(config.access_group, "databases")
-        self.assertEqual(config.tags, "glasgow, laptop")
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_silent_setup(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup(self, mock_serviceconfig):
         """
         Only command-line options are used in silent mode and registration is
         attempted.
         """
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         self.assertConfigEqual(
             self.get_content(config),
             f"""\
@@ -1125,8 +854,8 @@ url = https://landscape.canonical.com/message-system
 """,
         )
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_silent_setup_no_register(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_no_register(self, mock_serviceconfig):
         """
         Called with command line options to write a config file but no
         registration or validation of parameters is attempted.
@@ -1142,10 +871,10 @@ url = https://landscape.canonical.com/message-system
 """,
         )
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_silent_setup_no_register_with_default_preseed_params(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
     ):
         """
         Make sure that the configuration can be used to write the
@@ -1196,24 +925,45 @@ url = https://landscape.canonical.com/message-system
             "urgent_exchange_interval = 60\n",
         )
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_silent_setup_without_computer_title(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_unicode_computer_title(self, mock_serviceconfig):
+        """
+        Setup accepts a non-ascii computer title and registration is
+        attempted.
+        """
+        config = self.get_config(["--silent", "-a", "account", "-t", "mélody"])
+        setup(config)
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
+        self.assertConfigEqual(
+            self.get_content(config),
+            f"""\
+[client]
+computer_title = mélody
+data_path = {config.data_path}
+account_name = account
+url = https://landscape.canonical.com/message-system
+""",
+        )
+
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_without_computer_title(self, mock_serviceconfig):
         """A computer title is required."""
         config = self.get_config(["--silent", "-a", "account"])
         self.assertRaises(ConfigurationError, setup, config)
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_silent_setup_without_account_name(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_without_account_name(self, mock_serviceconfig):
         """An account name is required."""
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
 
     @mock.patch("landscape.client.configuration.input")
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_silent_script_users_imply_script_execution_plugin(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
         mock_input,
     ):
         """
@@ -1241,10 +991,10 @@ bus = session
                 "root, nobody",
             ],
         )
-        mock_sysvconfig().restart_landscape.return_value = True
+        mock_serviceconfig.restart_landscape.return_value = True
         setup(config)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_input.assert_not_called()
         parser = ConfigParser()
         parser.read(filename)
@@ -1260,8 +1010,8 @@ bus = session
             dict(parser.items("client")),
         )
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_silent_script_users_with_all_user(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_script_users_with_all_user(self, mock_serviceconfig):
         """
         In silent mode, we shouldn't accept invalid users, it should raise a
         configuration error.
@@ -1280,11 +1030,11 @@ bus = session
             ],
         )
         self.assertRaises(ConfigurationError, setup, config)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_silent_setup_with_ping_url(self, mock_sysvconfig):
-        mock_sysvconfig().restart_landscape.return_value = True
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_with_ping_url(self, mock_serviceconfig):
+        mock_serviceconfig.restart_landscape.return_value = True
         filename = self.makeFile(
             """
 [client]
@@ -1309,8 +1059,8 @@ random_key = random_value
             ],
         )
         setup(config)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         parser = ConfigParser()
         parser.read(filename)
@@ -1344,8 +1094,11 @@ random_key = random_value
         self.assertEqual(config.http_proxy, "http://environ")
         self.assertEqual(config.https_proxy, "https://environ")
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_silent_setup_with_proxies_from_environment(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_with_proxies_from_environment(
+        self,
+        mock_serviceconfig,
+    ):
         """
         Only command-line options are used in silent mode and registration is
         attempted.
@@ -1363,8 +1116,8 @@ registration_key = shared-secret
             ["--config", filename, "--silent", "-a", "account", "-t", "rex"],
         )
         setup(config)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         parser = ConfigParser()
         parser.read(filename)
         self.assertEqual(
@@ -1472,8 +1225,7 @@ registration_key = shared-secret
         )
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
-                ("System successfully registered.", sys.stdout),
+                ("Registration request sent successfully.", sys.stdout),
             ],
             printed,
         )
@@ -1512,7 +1264,6 @@ registration_key = shared-secret
         # Note that the error is output via sys.stderr.
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
                 ("Invalid account name or registration key.", sys.stderr),
             ],
             printed,
@@ -1549,8 +1300,7 @@ registration_key = shared-secret
 
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
-                ("System successfully registered.", sys.stdout),
+                ("Registration request sent successfully.", sys.stdout),
             ],
             printed,
         )
@@ -1588,7 +1338,6 @@ registration_key = shared-secret
         # Note that the error is output via sys.stderr.
         self.assertEqual(
             [
-                ("Please wait...", sys.stdout),
                 ("Invalid account name or registration key.", sys.stderr),
             ],
             printed,
@@ -1610,40 +1359,35 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.input", return_value="")
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.LandscapeSetupScript")
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_register(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
         mock_setup_script,
         mock_register,
         mock_input,
     ):
-        mock_sysvconfig().is_configured_to_run.return_value = False
+        mock_serviceconfig.is_configured_to_run.return_value = False
         self.assertRaises(
             SystemExit,
             main,
             ["--config", self.make_working_config()],
             print=noop_print,
         )
-        mock_sysvconfig().is_configured_to_run.assert_called_once_with()
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.is_configured_to_run.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_setup_script().run.assert_called_once_with()
         mock_register.assert_called_once_with(mock.ANY, mock.ANY)
-        mock_input.assert_any_call(
-            "\nThe Landscape client must be started "
-            "on boot to operate correctly.\n\n"
-            "Start Landscape client on boot? [Y/n]: ",
-        )
         mock_input.assert_called_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
 
     @mock.patch("landscape.client.configuration.print_text")
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_errors_from_restart_landscape(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
         mock_print_text,
     ):
         """
@@ -1651,13 +1395,15 @@ registration_key = shared-secret
         the client failed to be restarted), an informative message is printed
         and the script exits.
         """
-        mock_sysvconfig().restart_landscape.side_effect = ProcessError()
+        mock_serviceconfig.restart_landscape.side_effect = (
+            ServiceConfigException("Couldn't restart the Landscape client.")
+        )
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         system_exit = self.assertRaises(SystemExit, setup, config)
         self.assertEqual(system_exit.code, 2)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_print_text.assert_any_call(
             "Couldn't restart the Landscape client.",
             error=True,
@@ -1669,25 +1415,27 @@ registration_key = shared-secret
         )
 
     @mock.patch("landscape.client.configuration.print_text")
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_errors_from_restart_landscape_ok_no_register(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
         mock_print_text,
     ):
         """
         Exit code 0 will be returned if the client fails to be restarted and
         --ok-no-register was passed.
         """
-        mock_sysvconfig().restart_landscape.side_effect = ProcessError()
+        mock_serviceconfig.restart_landscape.side_effect = (
+            ServiceConfigException("Couldn't restart the Landscape client.")
+        )
 
         config = self.get_config(
             ["--silent", "-a", "account", "-t", "rex", "--ok-no-register"],
         )
         system_exit = self.assertRaises(SystemExit, setup, config)
         self.assertEqual(system_exit.code, 0)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_print_text.assert_any_call(
             "Couldn't restart the Landscape client.",
             error=True,
@@ -1713,22 +1461,6 @@ registration_key = shared-secret
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
-
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_setup_init_script_and_start_client(self, mock_sysvconfig):
-        setup_init_script_and_start_client()
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-
-    @mock.patch("landscape.client.configuration.input")
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_setup_init_script_and_start_client_silent(
-        self,
-        mock_sysvconfig,
-        mock_input,
-    ):
-        setup_init_script_and_start_client()
-        mock_input.assert_not_called()
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.register")
@@ -1759,11 +1491,11 @@ registration_key = shared-secret
         mock_register.assert_not_called()
         mock_input.assert_not_called()
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_stop_client_and_disable_init_scripts(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_stop_client_and_disable_init_scripts(self, mock_serviceconfig):
         main(["--disable", "-c", self.make_working_config()])
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(False)
-        mock_sysvconfig().stop_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(False)
+        mock_serviceconfig.stop_landscape.assert_called_once_with()
 
     def test_non_root(self):
         self.mock_getuid.return_value = 1000
@@ -1795,8 +1527,8 @@ registration_key = shared-secret
             mock_stdout.getvalue(),
         )
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_import_from_file(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_import_from_file(self, mock_serviceconfig):
         configuration = (
             "[client]\n"
             "computer_title = New Title\n"
@@ -1824,8 +1556,8 @@ registration_key = shared-secret
         )
         setup(config)
 
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -1964,8 +1696,8 @@ registration_key = shared-secret
         )
         self.assertEqual(str(error), expected_message)
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_import_from_file_preserves_old_options(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_import_from_file_preserves_old_options(self, mock_serviceconfig):
         old_configuration = (
             "[client]\n"
             "computer_title = Old Title\n"
@@ -2006,8 +1738,8 @@ registration_key = shared-secret
         )
         setup(config)
 
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         options = ConfigParser()
         options.read(config_filename)
 
@@ -2023,8 +1755,8 @@ registration_key = shared-secret
             },
         )
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
-    def test_import_from_file_may_reset_old_options(self, mock_sysvconfig):
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_import_from_file_may_reset_old_options(self, mock_serviceconfig):
         """
         This test ensures that setting an empty option in an imported
         configuration file will actually set the local value to empty
@@ -2059,8 +1791,8 @@ registration_key = shared-secret
             ],
         )
         setup(config)
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -2077,14 +1809,14 @@ registration_key = shared-secret
 
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.fetch")
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_import_from_url(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
         mock_fetch,
         mock_print_text,
     ):
-        mock_sysvconfig().restart_landscape.return_value = True
+        mock_serviceconfig.restart_landscape.return_value = True
         configuration = (
             b"[client]\n"
             b"computer_title = New Title\n"
@@ -2113,8 +1845,8 @@ registration_key = shared-secret
         mock_print_text.assert_called_once_with(
             "Fetching configuration from https://config.url...",
         )
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -2273,13 +2005,13 @@ registration_key = shared-secret
         )
 
     @mock.patch("landscape.client.configuration.print_text")
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_base64_ssl_public_key_is_exported_to_file(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
         mock_print_text,
     ):
-        mock_sysvconfig().restart_landscape.return_value = True
+        mock_serviceconfig.restart_landscape.return_value = True
         data_path = self.makeDir()
         config_filename = self.makeFile(f"[client]\ndata_path={data_path}")
         key_filename = os.path.join(
@@ -2305,8 +2037,8 @@ registration_key = shared-secret
         config.data_path = data_path
         setup(config)
 
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_print_text.assert_called_once_with(
             f"Writing SSL CA certificate to {key_filename}...",
         )
@@ -2316,12 +2048,12 @@ registration_key = shared-secret
         options.read(config_filename)
         self.assertEqual(options.get("client", "ssl_public_key"), key_filename)
 
-    @mock.patch("landscape.client.configuration.SysVConfig")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_normal_ssl_public_key_is_not_exported_to_file(
         self,
-        mock_sysvconfig,
+        mock_serviceconfig,
     ):
-        mock_sysvconfig().restart_landscape.return_value = True
+        mock_serviceconfig.restart_landscape.return_value = True
         config_filename = self.makeFile("")
 
         config = self.get_config(
@@ -2341,8 +2073,8 @@ registration_key = shared-secret
         )
         setup(config)
 
-        mock_sysvconfig().set_start_on_boot.assert_called_once_with(True)
-        mock_sysvconfig().restart_landscape.assert_called_once_with()
+        mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+        mock_serviceconfig.restart_landscape.assert_called_once_with()
         key_filename = config_filename + ".ssl_public_key"
         self.assertFalse(os.path.isfile(key_filename))
 
@@ -2765,7 +2497,7 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
 
     def test_success_case(self):
         report_registration_outcome("success", print=self.record_result)
-        self.assertIn("System successfully registered.", self.result)
+        self.assertIn("Registration request sent successfully.", self.result)
         self.assertIn(sys.stdout.name, self.output)
 
     def test_unknown_account_case(self):

@@ -31,6 +31,10 @@ class SnapManager(ManagerPlugin):
             "remove-snaps-batch": self._snap_http.remove_snaps,
             "refresh-snaps": self._snap_http.refresh_snap,
             "refresh-snaps-batch": self._snap_http.refresh_snaps,
+            "hold-snaps": self._snap_http.hold_snap,
+            "hold-snaps-batch": self._snap_http.hold_snaps,
+            "unhold-snaps": self._snap_http.unhold_snap,
+            "unhold-snaps-batch": self._snap_http.unhold_snaps,
         }
 
     def register(self, registry):
@@ -40,6 +44,8 @@ class SnapManager(ManagerPlugin):
         registry.register_message("install-snaps", self._handle_snap_task)
         registry.register_message("remove-snaps", self._handle_snap_task)
         registry.register_message("refresh-snaps", self._handle_snap_task)
+        registry.register_message("hold-snaps", self._handle_snap_task)
+        registry.register_message("unhold-snaps", self._handle_snap_task)
 
     def _handle_snap_task(self, message):
         """
@@ -235,7 +241,7 @@ class SnapManager(ManagerPlugin):
             "operation-id": opid,
         }
 
-        logging.debug("Sending snap-install-done response")
+        logging.debug("Sending snap-action-done response")
 
         # Kick off an immediate SnapMonitor message as well.
         self._send_installed_snap_update()

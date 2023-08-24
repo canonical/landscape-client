@@ -14,7 +14,7 @@ try:
     from swift.cli.recon import Scout
 
     has_swift = True
-except ImportError:
+except (ImportError, AttributeError):
     has_swift = False
 
 
