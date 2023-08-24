@@ -11,6 +11,7 @@ WantedBy=multi-user.target
 [Service]
 Type=simple
 Group=landscape
+ExecCondition=/usr/bin/landscape-config --is-registered
 ExecStart=/usr/bin/landscape-client
 # Don't kill cgroup as child dpkg may restart the service during an upgrade.
 KillMode=process

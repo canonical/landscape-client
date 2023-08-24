@@ -242,6 +242,7 @@ class BaseConfiguration:
                 list_values=False,
                 raise_errors=False,
                 write_empty_values=True,
+                encoding=getattr(self, "encoding", None),
             )
         except ConfigObjError as e:
             logger = getLogger()

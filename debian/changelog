@@ -1,6 +1,51 @@
-landscape-client (23.02-0ubuntu1) focal; urgency=medium
+landscape-client (23.08-0ubuntu1) mantic; urgency=medium
 
-  * New upstream release for focal, jammy, kinetic, lunar
+  * New upstream release 23.08
+    - Restructure landscape-config wizard (LP: #2031673)
+    - Add SnapMonitor, SnapManager, and related machinery (LP: #2031682)
+    - Limit message data directory size (LP: #2004591)
+    - Add zfs and btrfs to stable fs-lists (LP: #1499104)
+    - Test for broken control file (LP: #1813442)
+    - Config man page and help info fixes (LP: #1662222)
+    - Removed unnecesary select to the database (LP: #1994951)
+    - Last apt-key removal (LP: #1990435)
+    - Added a logging level check to provide a better error (LP: #2027521) 
+    - Broker is able to bootstrap the landscape-client folder (LP: #1868730)
+    - Changed gpg file name to be less generic (LP: #2008432)
+    - Improve Dependency data is read from the deb packages (LP: #1813442)
+    - Fix error in swift plugin (LP: #2031674)
+    - Repository profiles do not overwrite all configurations (LP: #2031680)
+    - Remove old plugins (LP: #1989968)
+    - Send ubuntu pro reboot output (LP: #2031684)
+
+ -- Kevin Nasto <kevin.nasto@canonical.com>  Thu, 17 Aug 2023 13:41:21 -0500
+
+landscape-client (23.02-0ubuntu1) lunar; urgency=medium
+
+  * New upstream release 23.02:
+    - Preventing the generation of large messages and logs that can overwhelm
+      Landscape Server (LP: #1995775)
+    - Improved MOTD slowdown on machines with many tap network interfaces
+      (LP: #2006396)
+    - No longer using deprecated apt-key when storing trusted GPG keys
+      (LP: #1973202)
+    - Fixed issue recognising Parallels VMs as Virtual Machine clients
+      (LP: #1827909)
+    - Fixes for incorrect logfile rotation config (LP: #1968189)
+    - Client-side backoff handling to moderate traffic to Landscape Server
+      during high load (LP: #1947399)
+    - Avoid sending empty messages when catching up to expected next message
+      (LP: #1917540)
+    - --is-registered CLI option to quickly check if client is registered
+      (LP: #1912516)
+    - Can now report Ubuntu Pro attachment information if the version of
+      Landscape Server it is registered to supports this (LP: #2006401)
+    - Packages installed as dependencies as part of package profiles are now
+      appropriately autoremovable (LP: #1878957)
+    - Registration timeouts give an error instead of timing out (LP: #1889464)
+    - RHEV hypervisor VMs are now recognized as virtual machines (LP: #1884116)
+    - Doing a Landscape-driven release upgrade from a release running python 2
+      to one running python 3 no longer hangs forever (LP: #1943291)
 
  -- Mitch Burton <mitch.burton@canonical.com>  Wed, 08 Feb 2023 10:23:31 -0800
 

@@ -769,6 +769,7 @@ SNAPS = Message(
                             "version": Unicode(),
                             "revision": Unicode(),
                             "tracking-channel": Unicode(),
+                            "hold": Unicode(),
                             "publisher": KeyDict(
                                 {
                                     "username": Unicode(),
@@ -777,8 +778,10 @@ SNAPS = Message(
                                 strict=False,
                             ),
                             "confinement": Unicode(),
+                            "summary": Unicode(),
                         },
                         strict=False,
+                        optional=["hold", "summary"],
                     ),
                 ),
             },
