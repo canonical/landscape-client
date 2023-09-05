@@ -51,11 +51,12 @@ from landscape.lib.log import log_failure
 class PingClient:
     """An HTTP client which knows how to talk to the ping server."""
 
-    def __init__(self, reactor, get_page=None):
+    def __init__(self, reactor, get_page=None, cainfo=None):
         if get_page is None:
             get_page = fetch
         self._reactor = reactor
         self.get_page = get_page
+        self._cainfo = cainfo
 
     def ping(self, url, insecure_id):
         """Ask the question: are there messages for this computer ID?
@@ -83,6 +84,7 @@ class PingClient:
                 post=True,
                 data=data,
                 headers=headers,
+                cainfo=self._cainfo,
             )
             page_deferred.addCallback(self._got_result)
             return page_deferred
@@ -94,8 +96,7 @@ class PingClient:
         the response indicates that their are messages waiting for
         this computer, False otherwise.
         """
-        if bpickle.loads(webtext) == {"messages": True}:
-            return True
+        return bpickle.loads(webtext) == {"messages": True}
 
 
 class Pinger:
@@ -138,7 +139,10 @@ class Pinger:
 
     def start(self):
         """Start pinging."""
-        self._ping_client = self.ping_client_factory(self._reactor)
+        self._ping_client = self.ping_client_factory(
+            self._reactor,
+            cainfo=self._config.ssl_public_key,
+        )
         self._schedule()
 
     def ping(self):

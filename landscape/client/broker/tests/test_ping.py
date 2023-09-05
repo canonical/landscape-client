@@ -16,7 +16,7 @@ class FakePageGetter:
         self.response = response
         self.fetches = []
 
-    def get_page(self, url, post, headers, data):
+    def get_page(self, url, post, headers, data, cainfo=None):
         """
         A method which is supposed to act like a limited version of
         L{landscape.lib.fetch.fetch}.
@@ -27,7 +27,7 @@ class FakePageGetter:
         self.fetches.append((url, post, headers, data))
         return bpickle.dumps(self.response)
 
-    def failing_get_page(self, url, post, headers, data):
+    def failing_get_page(self, url, post, headers, data, cainfo=None):
         """
         A method which is supposed to act like a limited version of
         L{landscape.lib.fetch.fetch}.
@@ -126,8 +126,12 @@ class PingerTest(LandscapeTest):
         super().setUp()
         self.page_getter = FakePageGetter(None)
 
-        def factory(reactor):
-            return PingClient(reactor, get_page=self.page_getter.get_page)
+        def factory(reactor, **kwargs):
+            return PingClient(
+                reactor,
+                get_page=self.page_getter.get_page,
+                **kwargs,
+            )
 
         self.config.ping_url = "http://localhost:8081/whatever"
         self.config.ping_interval = 10
