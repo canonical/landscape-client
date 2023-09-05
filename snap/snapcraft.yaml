@@ -1,98 +1,100 @@
 name: landscape-client
 base: core22
-version: '0.1'
+version: '0.0.1'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
 summary: Client for the Canonical systems management product Landscape
 description: |
-  This client, when installed, allows a machine to connect to the
-  Landscape server and be remotely managed by it.  Be aware that
-  this snap is not a replacement for the apt package that is
-  traditionally used.  This snap is specifically designed for
-  coreXX based systems and as such can only interact with other
-  snaps, not apt packages.
+  Landcape is a web-based tool for managing Ubuntu systems. This snap, or the
+  equivalent debian package is necessary if you want your machine to be managed
+  in a Landscape account. It provides the Landscape client and requires a
+  Landscape account.
 
 grade: devel # must be 'stable' to release into candidate/stable channels
-architectures:
-  - build-on: amd64
-  - build-on: arm64
-  - build-on: ppc64el
-  - build-on: s390x
+architectures: [amd64, arm64, armhf, ppc64el, s390x]
 confinement: strict
-
-layout:
-  /var/lib/landscape:
-    bind: $SNAP_DATA/var/lib/landscape
-
-environment:
-  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/x86_64-linux-gnu
-  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10/dist-packages
 
 apps:
   landscape-client:
     daemon: simple
-    command: bin/landscape-client
-    plugs:
-      - network
-  landscape-config:
-    command: bin/landscape-config
-    plugs:
-      - network
+    install-mode: disable
+    command: usr/bin/landscape-client
+    plugs: [network-bind, system-observe]
+    environment:
+      LANDSCAPE_CLIENT_SNAP: 1
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
+  config:
+    command: usr/bin/landscape-config
+    plugs: [network-bind]
+    environment:
+      LANDSCAPE_CLIENT_SNAP: 1
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
+
+layout:
+  /etc/landscape-client.conf:
+    bind-file: $SNAP_DATA/etc/landscape-client.conf
+  /var/lib/landscape/client:
+    bind: $SNAP_DATA/var/lib/landscape/client
+  /var/log/landscape:
+    bind: $SNAP_DATA/var/log/landscape
+
+package-repositories:
+  - type: apt
+    ppa: landscape/self-hosted-beta
 
 parts:
   landscape-client:
-    plugin: python
-    source: https://github.com/CanonicalLtd/landscape-client.git
-    python-packages:
-      - convoy-python
-      - distutils-extra-python
-      - sasl
-      - twisted
+    plugin: dump
+    source: .
+    source-type: local  # Don't use 'git' - it forces you to commit your changes
     build-packages:
-      - build-essential
-      - libsasl2-2
-      - libsasl2-dev
-      - libsasl2-modules
-      - libsasl2-modules-db
-      - libsasl2-modules-gssapi-mit
-      - python3-distutils
-      - python3-flake8 
-      - python3-configobj 
-      - python3-coverage
+      - debhelper
+      - devscripts
+      - dh-python
+      - gawk
+      - libdistro-info-perl
+      - lsb-release
+      - net-tools
+      - po-debconf
+      - python3-apt
+      - python3-configobj
+      - python3-dev
       - python3-distutils-extra
-      - python3-mock 
-      - python3-netifaces 
-      - python3-pycurl 
-      - python3-pip
-      - python3-twisted 
-      - software-properties-common
-    override-build: |
-      python3 -m venv build/venv --system-site-packages
-      ln -sf build/venv/bin bin
-      bin/pip install -U convoy-python distutils-extra-python twisted pre-commit sasl
-      make build3
-    stage-packages:
-      - landscape-client
-      - landscape-common
-      - language-pack-en
-      - libsasl2-2
-      - libsasl2-dev
-      - libsasl2-modules
-      - libsasl2-modules-db
-      - libsasl2-modules-gssapi-mit
-      - python3-oops
-      - python3-pip
       - python3-twisted
-    override-stage: |
+    override-build: |
+      git commit -n -a -m "dev build for snap" --no-gpg-sign
+      cat << EOF > debian/changelog
+      landscape-client (0.0.1) UNRELEASED; urgency=medium
+
+        * Test build for snap
+
+       -- Guy Incognito <guy.incognito@landscape.client>  Fri, 1 Sep 2023 00:00:00 +0000
+      EOF
+      git archive --prefix landscape-client-0.0.1/ HEAD | tar -x
+      rm -rf landscape-client-0.0.1/debian
+      tar -czf landscape-client-0.0.1.tar.gz landscape-client-0.0.1
+      cp -r debian landscape-client-0.0.1
+      cd landscape-client-0.0.1 && debuild -b --no-sign
+      cp ../landscape-*_0.0.1_*.deb $CRAFT_PART_INSTALL
+    stage-packages:
+      - adduser
+      - bc
+      - ca-certificates
+      - debconf
+      - libpam-modules
+      - lsb-base
+      - lsb-release
+      - lshw
+      - python3
+      - python3-apt
+      - python3-configobj
+      - python3-gdbm
+      - python3-netifaces
+      - python3-pycurl
+      - python3-twisted
+      - ubuntu-advantage-tools
+    override-prime: |
       craftctl default
-      # Copy the landscape-config script over
-      mkdir -p "${SNAPCRAFT_PRIME}/bin"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-broker" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-client" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-config" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-manager" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-monitor" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-package-changer" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-package-reporter" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-release-upgrader" "${SNAPCRAFT_PRIME}/bin/"
-      cp  "${SNAPCRAFT_PART_SRC}/scripts/landscape-sysinfo" "${SNAPCRAFT_PRIME}/bin/"
+      rm $CRAFT_PRIME/landscape-*_0.0.1_*.deb
+      dpkg-deb -x $CRAFT_STAGE/landscape-common_0.0.1_*.deb $CRAFT_PRIME
+      dpkg-deb -x $CRAFT_STAGE/landscape-client_0.0.1_*.deb $CRAFT_PRIME

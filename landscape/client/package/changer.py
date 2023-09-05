@@ -8,6 +8,8 @@ from twisted.internet import reactor
 from twisted.internet.defer import maybeDeferred
 from twisted.internet.defer import succeed
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.shutdownmanager import ShutdownProcessProtocol
 from landscape.client.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
@@ -118,8 +120,8 @@ class PackageChanger(PackageTaskHandler):
             return
 
         if os.getuid() == 0:
-            os.setgid(grp.getgrnam("landscape").gr_gid)
-            os.setuid(pwd.getpwnam("landscape").pw_uid)
+            os.setgid(grp.getgrnam(GROUP).gr_gid)
+            os.setuid(pwd.getpwnam(USER).pw_uid)
         command = find_reporter_command(self._config)
         if self._config.config is not None:
             command += f" -c {self._config.config}"

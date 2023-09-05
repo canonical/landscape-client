@@ -13,6 +13,8 @@ import textwrap
 from functools import partial
 from urllib.parse import urlparse
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
@@ -643,13 +645,8 @@ def setup(config):
 def bootstrap_tree(config):
     """Create the client directories tree."""
     bootstrap_list = [
-        BootstrapDirectory("$data_path", "landscape", "root", 0o755),
-        BootstrapDirectory(
-            "$annotations_path",
-            "landscape",
-            "landscape",
-            0o755,
-        ),
+        BootstrapDirectory("$data_path", USER, "root", 0o755),
+        BootstrapDirectory("$annotations_path", USER, GROUP, 0o755),
     ]
     BootstrapList(bootstrap_list).bootstrap(
         data_path=config.data_path,

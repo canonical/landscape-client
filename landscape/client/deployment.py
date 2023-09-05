@@ -5,6 +5,7 @@ from optparse import SUPPRESS_HELP
 from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
+from landscape.client import DEFAULT_CONFIG
 from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging
 from landscape.lib.config import BaseConfiguration as _BaseConfiguration
@@ -37,7 +38,7 @@ class BaseConfiguration(_BaseConfiguration):
 
     version = VERSION
 
-    default_config_filename = "/etc/landscape/client.conf"
+    default_config_filename = DEFAULT_CONFIG
     if _is_script():
         default_config_filenames = (
             "landscape-client.conf",

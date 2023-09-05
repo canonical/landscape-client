@@ -8,6 +8,8 @@ import uuid
 
 from twisted.internet.defer import succeed
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.package.reporter import find_reporter_command
 from landscape.constants import FALSE_VALUES
@@ -167,8 +169,8 @@ class AptSources(ManagerPlugin):
             args.append(f"--config={self.registry.config.config}")
 
         if os.getuid() == 0:
-            uid = pwd.getpwnam("landscape").pw_uid
-            gid = grp.getgrnam("landscape").gr_gid
+            uid = pwd.getpwnam(USER).pw_uid
+            gid = grp.getgrnam(GROUP).gr_gid
         else:
             uid = None
             gid = None

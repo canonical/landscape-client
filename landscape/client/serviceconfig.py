@@ -103,7 +103,7 @@ class SnapdConfig:
 
     @staticmethod
     def is_configured_to_run() -> bool:
-        completed_process = SnapdConfig._call_snapctl("services")
+        completed_process = SnapdConfig._call_snapctl("services", text=True)
         stdout = completed_process.stdout
 
         return stdout and "enabled" in stdout
