@@ -1,0 +1,20 @@
+work:
+SnapMonitor
+CPUUsage
+MemoryInfo
+MountInfo (with interface warnings)
+LoadAverage
+Temperature (seems to but no results for temp in my VM)
+
+do not work:
+UbuntuProRebootRequired: no pro tools
+UbuntuProInfo: no pro tools
+ComputerInfo: FileNotFoundError: [Errno 2] No such file or directory: '/etc/lsb_release'
+
+ones we don't care about (currently):
+LivePatch
+CephUsage
+SwiftUsage
+
+To leave running to test:
+UserMonitor

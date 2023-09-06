@@ -142,11 +142,13 @@ class BrokerClientPlugin:
 
     def _error_log(self, failure):
         """Errback to log and reraise uncaught run errors."""
-        msg = "{} raised an uncaught exception".format(type(self).__name__)
+        cls = type(self).__name__
+        msg = f"{cls} raised an uncaught exception"
         if sys.exc_info() == (None, None, None):
             error(msg)
         else:
             exception(msg)
+        debug(str(failure.value))
         return failure
 
 

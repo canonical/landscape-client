@@ -46,14 +46,17 @@ class MonitorService(LandscapeService):
             try:
                 plugin = namedClass(
                     "landscape.client.monitor."
-                    f"{plugin_name.lower()}.{plugin_name}"
+                    f"{plugin_name.lower()}.{plugin_name}",
                 )
                 plugins.append(plugin())
             except ModuleNotFoundError:
                 logging.warning(
-                    "Invalid monitor plugin specified: '{}'. "
+                    f"Invalid monitor plugin specified: '{plugin_name}'. "
                     "See `example.conf` for a full list of monitor plugins.",
-                    plugin_name,
+                )
+            except Exception as exc:
+                logging.warning(
+                    f"Unable to load monitor plugin '{plugin_name}': {exc}",
                 )
 
         return plugins

@@ -1,6 +1,6 @@
 name: landscape-client
 base: core22
-version: '0.0.1'
+version: '23.08'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
 summary: Client for the Canonical systems management product Landscape
@@ -19,20 +19,30 @@ apps:
     daemon: simple
     install-mode: disable
     command: usr/bin/landscape-client
-    plugs: [network-bind, system-observe]
+    plugs:
+      - hardware-observe
+      - mount-observe
+      - network
+      - network-bind
+      - network-observe
+      - scsi-generic
+      - snapd-control
+      - system-observe
     environment:
       LANDSCAPE_CLIENT_SNAP: 1
+      LANDSCAPE_CLIENT_CORE: 1
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
   config:
     command: usr/bin/landscape-config
-    plugs: [network-bind]
+    plugs: [network]
     environment:
       LANDSCAPE_CLIENT_SNAP: 1
+      LANDSCAPE_CLIENT_CORE: 1
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
 
 layout:
   /etc/landscape-client.conf:
-    bind-file: $SNAP_DATA/etc/landscape-client.conf
+    bind-file: $SNAP_COMMON/etc/landscape-client.conf
   /var/lib/landscape/client:
     bind: $SNAP_DATA/var/lib/landscape/client
   /var/log/landscape:

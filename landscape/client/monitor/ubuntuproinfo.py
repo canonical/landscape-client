@@ -1,6 +1,7 @@
 import json
 import subprocess
 
+from landscape.client import IS_CORE
 from landscape.client.monitor.plugin import DataWatcher
 
 
@@ -28,7 +29,25 @@ class UbuntuProInfo(DataWatcher):
         return json.dumps(ubuntu_pro_info, separators=(",", ":"))
 
 
-def get_ubuntu_pro_info():
+def get_ubuntu_pro_info() -> dict:
+    """Query ua tools for Ubuntu Pro status as JSON, parsing it to a dict.
+
+    If we are running on Ubuntu Core, Pro does not exist - returns a message
+    indicating this.
+    """
+    if IS_CORE:
+        return {
+            "errors": [
+                {
+                    "message": "Ubuntu Pro is not available on Ubuntu Core.",
+                    "message_code": "core-unsupported",
+                    "service": None,
+                    "type": "system",
+                },
+            ],
+            "result": "failure",
+        }
+
     try:
         completed_process = subprocess.run(
             ["ua", "status", "--format", "json"],
