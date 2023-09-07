@@ -14,12 +14,19 @@ from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import create_text_file
 
-SAMPLE_LSB_RELEASE = (
-    "DISTRIB_ID=Ubuntu\n"
-    "DISTRIB_RELEASE=6.06\n"
-    "DISTRIB_CODENAME=dapper\n"
-    'DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"\n'
-)
+SAMPLE_OS_RELEASE = """PRETTY_NAME="Ubuntu 22.04.3 LTS"
+NAME="Ubuntu"
+VERSION_ID="22.04"
+VERSION="22.04.3 LTS (Jammy Jellyfish)"
+VERSION_CODENAME=codename
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=codename
+"""
 
 
 def get_fqdn():
@@ -27,7 +34,6 @@ def get_fqdn():
 
 
 class ComputerInfoTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     sample_memory_info = """
@@ -58,7 +64,7 @@ VmallocChunk:   107432 kB
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.query_results = {}
 
         def fetch_stub(url, **kwargs):
@@ -223,16 +229,16 @@ VmallocChunk:   107432 kB
         the distribution data reported by the plugin.
         """
         self.mstore.set_accepted_types(["distribution-info"])
-        plugin = ComputerInfo(lsb_release_filename=self.lsb_release_filename)
+        plugin = ComputerInfo(os_release_filename=self.os_release_filename)
         self.monitor.add(plugin)
 
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "distribution-info")
         self.assertEqual(message["distributor-id"], "Ubuntu")
-        self.assertEqual(message["description"], "Ubuntu 6.06.1 LTS")
-        self.assertEqual(message["release"], "6.06")
-        self.assertEqual(message["code-name"], "dapper")
+        self.assertEqual(message["description"], "Ubuntu 22.04.3 LTS")
+        self.assertEqual(message["release"], "22.04")
+        self.assertEqual(message["code-name"], "codename")
 
     def test_distribution_reported_only_once(self):
         """
@@ -258,23 +264,23 @@ VmallocChunk:   107432 kB
         the server.
         """
         self.mstore.set_accepted_types(["distribution-info"])
-        plugin = ComputerInfo(lsb_release_filename=self.lsb_release_filename)
+        plugin = ComputerInfo(os_release_filename=self.os_release_filename)
         self.monitor.add(plugin)
 
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "distribution-info")
         self.assertEqual(message["distributor-id"], "Ubuntu")
-        self.assertEqual(message["description"], "Ubuntu 6.06.1 LTS")
-        self.assertEqual(message["release"], "6.06")
-        self.assertEqual(message["code-name"], "dapper")
+        self.assertEqual(message["description"], "Ubuntu 22.04.3 LTS")
+        self.assertEqual(message["release"], "22.04")
+        self.assertEqual(message["code-name"], "codename")
 
-        plugin._lsb_release_filename = self.makeFile(
+        plugin._os_release_filename = self.makeFile(
             """\
-DISTRIB_ID=Ubuntu
-DISTRIB_RELEASE=6.10
-DISTRIB_CODENAME=edgy
-DISTRIB_DESCRIPTION="Ubuntu 6.10"
+NAME=Ubuntu
+VERSION_ID=6.10
+VERSION_CODENAME=edgy
+PRETTY_NAME="Ubuntu 6.10"
 """,
         )
         plugin.exchange()
@@ -287,25 +293,25 @@ DISTRIB_DESCRIPTION="Ubuntu 6.10"
 
     def test_unknown_distribution_key(self):
         self.mstore.set_accepted_types(["distribution-info"])
-        lsb_release_filename = self.makeFile(
+        os_release_filename = self.makeFile(
             """\
-DISTRIB_ID=Ubuntu
-DISTRIB_RELEASE=6.10
-DISTRIB_CODENAME=edgy
-DISTRIB_DESCRIPTION="Ubuntu 6.10"
+NAME=Ubuntu
+VERSION_ID=22.04
+VERSION_CODENAME=codename
+PRETTY_NAME="Ubuntu 22.04.3 LTS"
 DISTRIB_NEW_UNEXPECTED_KEY=ooga
 """,
         )
-        plugin = ComputerInfo(lsb_release_filename=lsb_release_filename)
+        plugin = ComputerInfo(os_release_filename=os_release_filename)
         self.monitor.add(plugin)
 
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
         self.assertEqual(message["type"], "distribution-info")
         self.assertEqual(message["distributor-id"], "Ubuntu")
-        self.assertEqual(message["description"], "Ubuntu 6.10")
-        self.assertEqual(message["release"], "6.10")
-        self.assertEqual(message["code-name"], "edgy")
+        self.assertEqual(message["description"], "Ubuntu 22.04.3 LTS")
+        self.assertEqual(message["release"], "22.04")
+        self.assertEqual(message["code-name"], "codename")
 
     def test_resynchronize(self):
         """
@@ -317,7 +323,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin = ComputerInfo(
             get_fqdn=get_fqdn,
             meminfo_filename=meminfo_filename,
-            lsb_release_filename=self.lsb_release_filename,
+            os_release_filename=self.os_release_filename,
             root_path=self.makeDir(),
             fetch_async=self.fetch_func,
         )
@@ -335,10 +341,10 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         dist_info = {
             "type": "distribution-info",
-            "code-name": "dapper",
-            "description": "Ubuntu 6.06.1 LTS",
+            "code-name": "codename",
+            "description": "Ubuntu 22.04.3 LTS",
             "distributor-id": "Ubuntu",
-            "release": "6.06",
+            "release": "22.04",
         }
         self.assertMessages(
             self.mstore.get_pending_messages(),

@@ -28,7 +28,7 @@ from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file, create_binary_file
-from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
+from landscape.lib.os_release import parse_os_release
 from landscape.client.package.taskhandler import (
     PackageTaskHandlerConfiguration,
     PackageTaskHandler,
@@ -135,7 +135,6 @@ class PackageReporter(PackageTaskHandler):
         """
 
         def fetch_it(hash_id_db_filename):
-
             if hash_id_db_filename is None:
                 # Couldn't determine which hash=>id database to fetch,
                 # just ignore the failure and go on
@@ -183,11 +182,9 @@ class PackageReporter(PackageTaskHandler):
         return result
 
     def _get_hash_id_db_base_url(self):
-
         base_url = self._config.get("package_hash_id_url")
 
         if not base_url:
-
             if not self._config.get("url"):
                 # We really have no idea where to download from
                 return None
@@ -300,7 +297,6 @@ class PackageReporter(PackageTaskHandler):
                 self._config.apt_update_interval,
             )
         ) and not self._is_release_upgrader_running():
-
             accepted_apt_errors = (
                 "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
                 "Problem renaming the file /var/cache/apt/pkgcache.bin",
@@ -461,7 +457,6 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_autoremovable()
 
     def _handle_unknown_packages(self, hashes):
-
         self._facade.ensure_channels_reloaded()
 
         hashes = set(hashes)
@@ -696,9 +691,9 @@ class PackageReporter(PackageTaskHandler):
         current_locked = set()
         current_autoremovable = set()
         current_security = set()
-        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
-        backports_archive = "{}-backports".format(lsb["code-name"])
-        security_archive = "{}-security".format(lsb["code-name"])
+        os_release_info = parse_os_release()
+        backports_archive = "{}-backports".format(os_release_info["code-name"])
+        security_archive = "{}-security".format(os_release_info["code-name"])
 
         for package in self._facade.get_packages():
             # Don't include package versions from the official backports
