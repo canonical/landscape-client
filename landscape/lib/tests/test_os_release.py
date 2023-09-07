@@ -126,7 +126,7 @@ class OsReleaseTest(testing.FSTestCase, unittest.TestCase):
 
     def test_parse_os_release_with_file_not_found(self):
         """
-        L{parse_os_release} should failt with FileNotFound
+        L{parse_os_release} should fail with FileNotFound
         if given OS release file doesn't exists.
         """
 
