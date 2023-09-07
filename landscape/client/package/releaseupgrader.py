@@ -23,8 +23,8 @@ from landscape.lib.fetch import fetch_to_files
 from landscape.lib.fetch import url_to_filename
 from landscape.lib.fs import read_text_file
 from landscape.lib.gpg import gpg_verify
-from landscape.lib.lsb_release import LSB_RELEASE_FILENAME
-from landscape.lib.lsb_release import parse_lsb_release
+from landscape.lib.os_release import OS_RELEASE_FILENAME
+from landscape.lib.os_release import parse_os_release
 from landscape.lib.twisted_util import spawn_process
 
 
@@ -45,7 +45,7 @@ class ReleaseUpgrader(PackageTaskHandler):
     @cvar config_factory: The configuration class to use to build configuration
         objects to be passed to our constructor.
     @cvar queue_name: The queue we pick tasks from.
-    @cvar lsb_release_filename: The path to the LSB data on the file system.
+    @cvar os_release_filename: The path to the OS data on the file system.
     @cvar landscape_ppa_url: The URL of the Landscape PPA, if it is present
         in the computer's sources.list it won't be commented out.
     @cvar logs_directory: Path to the directory holding the upgrade-tool logs.
@@ -55,7 +55,7 @@ class ReleaseUpgrader(PackageTaskHandler):
 
     config_factory = ReleaseUpgraderConfiguration
     queue_name = "release-upgrader"
-    lsb_release_filename = LSB_RELEASE_FILENAME
+    os_release_filename = OS_RELEASE_FILENAME
     landscape_ppa_url = "http://ppa.launchpad.net/landscape/trunk/ubuntu/"
     logs_directory = "/var/log/dist-upgrade"
     logs_limit = 100000  # characters
@@ -83,8 +83,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         """
         target_code_name = message["code-name"]
         operation_id = message["operation-id"]
-        lsb_release_info = parse_lsb_release(self.lsb_release_filename)
-        current_code_name = lsb_release_info["code-name"]
+        os_release_info = parse_os_release(self.os_release_filename)
+        current_code_name = os_release_info["code-name"]
 
         if target_code_name == current_code_name:
             message = self.make_operation_result_message(

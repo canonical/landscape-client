@@ -15,8 +15,8 @@ from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.lock import lock_path
 from landscape.lib.lock import LockError
 from landscape.lib.log import log_failure
-from landscape.lib.lsb_release import LSB_RELEASE_FILENAME
-from landscape.lib.lsb_release import parse_lsb_release
+from landscape.lib.os_release import OS_RELEASE_FILENAME
+from landscape.lib.os_release import parse_os_release
 
 
 class PackageTaskError(Exception):
@@ -75,7 +75,6 @@ class LazyRemoteBroker:
         self._remote = None
 
     def __getattr__(self, method):
-
         if self._remote:
             return getattr(self._remote, method)
 
@@ -91,11 +90,10 @@ class LazyRemoteBroker:
 
 
 class PackageTaskHandler:
-
     config_factory = PackageTaskHandlerConfiguration
 
     queue_name = "default"
-    lsb_release_filename = LSB_RELEASE_FILENAME
+    os_release_filename = OS_RELEASE_FILENAME
     package_store_class = PackageStore
 
     # This file is touched after every succesful 'apt-get update' run if the
@@ -184,7 +182,6 @@ class PackageTaskHandler:
         """
 
         def use_it(hash_id_db_filename):
-
             if hash_id_db_filename is None:
                 # Couldn't determine which hash=>id database to use,
                 # just ignore the failure and go on
@@ -218,7 +215,6 @@ class PackageTaskHandler:
         """
 
         def got_server_uuid(server_uuid):
-
             warning = "Couldn't determine which hash=>id database to use: %s"
 
             if server_uuid is None:
@@ -226,16 +222,16 @@ class PackageTaskHandler:
                 return None
 
             try:
-                lsb_release_info = parse_lsb_release(self.lsb_release_filename)
+                os_release_info = parse_os_release(self.os_release_filename)
             except OSError as error:
                 logging.warning(warning % str(error))
                 return None
             try:
-                codename = lsb_release_info["code-name"]
+                codename = os_release_info["code-name"]
             except KeyError:
                 logging.warning(
                     warning
-                    % f"missing code-name key in {self.lsb_release_filename}",
+                    % f"missing code-name key in {self.os_release_filename}",
                 )
                 return None
 
