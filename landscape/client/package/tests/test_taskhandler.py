@@ -1,5 +1,4 @@
 import os
-from subprocess import CalledProcessError
 from unittest.mock import ANY
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -26,7 +25,7 @@ from landscape.lib.testing import EnvironSaverHelper
 from landscape.lib.testing import FakeReactor
 
 
-SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
+SAMPLE_OS_RELEASE = "VERSION_CODENAME=codename\n"
 
 
 class PackageTaskHandlerConfigurationTest(LandscapeTest):
@@ -43,7 +42,6 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
 
 
 class PackageTaskHandlerTest(LandscapeTest):
-
     helpers = [AptFacadeHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
@@ -60,7 +58,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         )
 
     def test_use_hash_id_db(self):
-
         # We don't have this hash=>id mapping
         self.assertEqual(self.store.get_hash_id(b"hash"), None)
 
@@ -78,7 +75,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.handler.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Attach the hash=>id database to our store
@@ -94,13 +91,12 @@ class PackageTaskHandlerTest(LandscapeTest):
 
     @patch("logging.warning")
     def test_use_hash_id_db_undetermined_codename(self, logging_mock):
-
         # Fake uuid
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
 
         # Undetermined codename
-        self.handler.lsb_release_filename = self.makeFile("Foo=bar")
+        self.handler.os_release_filename = self.makeFile("Foo=bar")
 
         # Go!
         result = self.handler.use_hash_id_db()
@@ -108,31 +104,28 @@ class PackageTaskHandlerTest(LandscapeTest):
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
-            f"missing code-name key in {self.handler.lsb_release_filename}",
+            f"missing code-name key in {self.handler.os_release_filename}",
         )
 
         return result
 
     @patch("logging.warning")
-    def test_use_hash_id_db_wit_non_existing_lsb_release(self, logging_mock):
-
+    def test_use_hash_id_db_with_non_existing_os_release(self, logging_mock):
         # Fake uuid
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
 
-        # Undetermined codename
-        self.handler.lsb_release_filename = self.makeFile()
+        # Undetermined os release filename
+        self.handler.os_release_filename = ""
 
         # Go!
-        with patch("landscape.lib.lsb_release.check_output") as co_mock:
-            co_mock.side_effect = CalledProcessError(127, "")
-            result = self.handler.use_hash_id_db()
+        result = self.handler.use_hash_id_db()
 
         # The failure should be properly logged
         logging_mock.assert_called_with(
             "Couldn't determine which hash=>id database to use: "
             "[Errno 2] No such file or directory: "
-            f"'{self.handler.lsb_release_filename}'",
+            f"'{self.handler.os_release_filename}'",
         )
 
         return result
@@ -189,11 +182,10 @@ class PackageTaskHandlerTest(LandscapeTest):
 
     @patch("logging.warning")
     def test_use_hash_id_db_undetermined_arch(self, logging_mock):
-
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.handler.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
 
         # Undetermined arch
         self.facade.set_arch(None)
@@ -210,14 +202,13 @@ class PackageTaskHandlerTest(LandscapeTest):
         return result
 
     def test_use_hash_id_db_database_not_found(self):
-
         # Clean path, we don't have an appropriate hash=>id database
         self.config.data_path = self.makeDir()
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.handler.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's try
@@ -233,7 +224,6 @@ class PackageTaskHandlerTest(LandscapeTest):
 
     @patch("logging.warning")
     def test_use_hash_id_with_invalid_database(self, logging_mock):
-
         # Let's say the appropriate database is actually garbage
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
@@ -248,7 +238,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.handler.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Try to attach it
@@ -399,7 +389,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         reactor_mock.run.side_effect = lambda: call_when_running[0]()
 
         def assert_task_handler(ignored):
-
             store, facade, broker, config, reactor = handler_args
 
             # Verify the arguments passed to the reporter constructor.
@@ -446,7 +435,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         return result.addCallback(assert_task_handler)
 
     def test_run_task_handler_when_already_locked(self):
-
         lock_path(os.path.join(self.data_path, "package", "default.lock"))
 
         try:
@@ -496,7 +484,6 @@ class PackageTaskHandlerTest(LandscapeTest):
 
 
 class LazyRemoteBrokerTest(LandscapeTest):
-
     helpers = [BrokerServiceHelper]
 
     def test_wb_is_lazy(self):

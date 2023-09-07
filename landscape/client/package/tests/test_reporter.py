@@ -4,7 +4,6 @@ import shutil
 import subprocess
 import sys
 import time
-from subprocess import check_output
 from unittest import mock
 
 import apt_pkg
@@ -38,13 +37,25 @@ from landscape.lib.apt.package.testing import SimpleRepositoryHelper
 from landscape.lib.fetch import FetchError
 from landscape.lib.fs import create_text_file
 from landscape.lib.fs import touch_file
-from landscape.lib.lsb_release import LSB_RELEASE_FILENAME
-from landscape.lib.lsb_release import parse_lsb_release
+from landscape.lib.os_release import OS_RELEASE_FILENAME
+from landscape.lib.os_release import parse_os_release
 from landscape.lib.testing import EnvironSaverHelper
 from landscape.lib.testing import FakeReactor
 
 
-SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
+SAMPLE_OS_RELEASE = """PRETTY_NAME="Ubuntu 22.04.3 LTS"
+NAME="Ubuntu"
+VERSION_ID="22.04"
+VERSION="22.04.3 LTS (Jammy Jellyfish)"
+VERSION_CODENAME=codename
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=codename
+"""
 
 
 class PackageReporterConfigurationTest(LandscapeTest):
@@ -390,7 +401,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's say fetch_async is successful
@@ -433,7 +444,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's say fetch_async is successful
@@ -467,7 +478,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         result = self.reporter.fetch_hash_id_db()
@@ -506,64 +517,22 @@ class PackageReporterAptTest(LandscapeTest):
         message_store.set_server_uuid("uuid")
 
         # Undetermined codename
-        self.reporter.lsb_release_filename = self.makeFile("Foo=bar")
+        self.reporter.os_release_filename = self.makeFile("Foo=bar")
 
         result = self.reporter.fetch_hash_id_db()
 
         logging_mock.assert_called_once_with(
             "Couldn't determine which hash=>id database to use: "
-            f"missing code-name key in {self.reporter.lsb_release_filename}",
+            f"missing code-name key in {self.reporter.os_release_filename}",
         )
         return result
-
-    def test_parse_lsb_release_no_modules(self):
-        def lsb_output(cmd, *args, **kwargs):
-            if len(cmd) and cmd[0] == "/usr/bin/lsb_release":
-                return (
-                    b"Ubuntu\nUbuntu 22.04.2 LTS\n22.04\njammy\n"  # noqa: E501
-                )
-            else:
-                return check_output(cmd, *args, **kwargs)
-
-        mocktarget = "landscape.lib.lsb_release.check_output"
-        with mock.patch(mocktarget) as mock_bar:
-            mock_bar.side_effect = lsb_output
-            self.assertEqual(
-                parse_lsb_release(),
-                {
-                    "distributor-id": "Ubuntu",
-                    "release": "22.04",
-                    "code-name": "jammy",
-                    "description": "Ubuntu 22.04.2 LTS",
-                },
-            )
-
-    def test_parse_lsb_release_several_modules(self):
-        def lsb_output(cmd, *args, **kwargs):
-            if len(cmd) and cmd[0] == "/usr/bin/lsb_release":
-                return b"core-11.1.0ubuntu4-noarch:printing-11.1.0ubuntu4-noarch:security-11.1.0ubuntu4-noarch\nUbuntu\nUbuntu 22.04.2 LTS\n22.04\njammy\n"  # noqa: E501
-            else:
-                return check_output(cmd, *args, **kwargs)
-
-        mocktarget = "landscape.lib.lsb_release.check_output"
-        with mock.patch(mocktarget) as mock_bar:
-            mock_bar.side_effect = lsb_output
-            self.assertEqual(
-                parse_lsb_release(),
-                {
-                    "distributor-id": "Ubuntu",
-                    "release": "22.04",
-                    "code-name": "jammy",
-                    "description": "Ubuntu 22.04.2 LTS",
-                },
-            )
 
     @mock.patch("logging.warning", return_value=None)
     def test_fetch_hash_id_db_undetermined_arch(self, logging_mock):
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
 
         # Undetermined arch
         self.facade.set_arch("")
@@ -595,7 +564,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
@@ -634,7 +603,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's say fetch_async fails
@@ -673,7 +642,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         result = self.reporter.fetch_hash_id_db()
@@ -711,7 +680,7 @@ class PackageReporterAptTest(LandscapeTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
@@ -1213,10 +1182,12 @@ class PackageReporterAptTest(LandscapeTest):
         """Packages versions coming from security are reported as such."""
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
-        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        os_release_info = parse_os_release(OS_RELEASE_FILENAME)
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
-            release.write("Suite: {}-security".format(lsb["code-name"]))
+            release.write(
+                "Suite: {}-security".format(os_release_info["code-name"]),
+            )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
 
@@ -1270,10 +1241,12 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        os_release_info = parse_os_release(OS_RELEASE_FILENAME)
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
-            release.write("Suite: {}-backports".format(lsb["code-name"]))
+            release.write(
+                "Suite: {}-backports".format(os_release_info["code-name"]),
+            )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
 
@@ -1328,10 +1301,12 @@ class PackageReporterAptTest(LandscapeTest):
         os.remove(os.path.join(other_backport_dir, "Packages"))
         self.facade.add_channel_deb_dir(other_backport_dir)
 
-        lsb = parse_lsb_release(LSB_RELEASE_FILENAME)
+        os_release_info = parse_os_release(OS_RELEASE_FILENAME)
         official_release_path = os.path.join(self.repository_dir, "Release")
         with open(official_release_path, "w") as release:
-            release.write("Suite: {}-backports".format(lsb["code-name"]))
+            release.write(
+                "Suite: {}-backports".format(os_release_info["code-name"]),
+            )
         unofficial_release_path = os.path.join(other_backport_dir, "Release")
         with open(unofficial_release_path, "w") as release:
             release.write("Suite: my-personal-backports")
@@ -1566,7 +1541,7 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = self.reporter.run()
         self.reactor.advance(0)
         with mock.patch(
-            "landscape.client.package.taskhandler.parse_lsb_release",
+            "landscape.client.package.taskhandler.parse_os_release",
             side_effect=lambda _: {"code-name": "codename"},
         ):
             yield deferred
