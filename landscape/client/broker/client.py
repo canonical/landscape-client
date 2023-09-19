@@ -1,5 +1,6 @@
 import random
 import sys
+import traceback
 from logging import debug
 from logging import error
 from logging import exception
@@ -148,7 +149,8 @@ class BrokerClientPlugin:
             error(msg)
         else:
             exception(msg)
-        debug(str(failure.value))
+            debug(traceback.format_exc(limit=15))
+
         return failure
 
 

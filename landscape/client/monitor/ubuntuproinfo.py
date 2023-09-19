@@ -36,17 +36,10 @@ def get_ubuntu_pro_info() -> dict:
     indicating this.
     """
     if IS_CORE:
-        return {
-            "errors": [
-                {
-                    "message": "Ubuntu Pro is not available on Ubuntu Core.",
-                    "message_code": "core-unsupported",
-                    "service": None,
-                    "type": "system",
-                },
-            ],
-            "result": "failure",
-        }
+        return _ubuntu_pro_error_message(
+            "Ubuntu Pro is not available on Ubuntu Core.",
+            "core-unsupported",
+        )
 
     try:
         completed_process = subprocess.run(
@@ -55,16 +48,26 @@ def get_ubuntu_pro_info() -> dict:
             stdout=subprocess.PIPE,
         )
     except FileNotFoundError:
-        return {
-            "errors": [
-                {
-                    "message": "ubuntu-advantage-tools not found.",
-                    "message_code": "tools-error",
-                    "service": None,
-                    "type": "system",
-                },
-            ],
-            "result": "failure",
-        }
+        return _ubuntu_pro_error_message(
+            "ubuntu pro tools not found.",
+            "tools-error",
+        )
     else:
         return json.loads(completed_process.stdout)
+
+
+def _ubuntu_pro_error_message(message: str, code: str) -> dict:
+    """Marshall `message` and `code` into a format matching that expected from
+    an error from ua tools.
+    """
+    return {
+        "errors": [
+            {
+                "message": message,
+                "message_code": code,
+                "service": None,
+                "type": "system",
+            },
+        ],
+        "result": "failure",
+    }
