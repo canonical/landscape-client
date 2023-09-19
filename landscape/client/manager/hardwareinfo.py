@@ -12,7 +12,7 @@ class HardwareInfo(ManagerPlugin):
     message_type = "hardware-info"
     run_interval = 60 * 60 * 24
     run_immediately = True
-    command = "/usr/bin/lshw"
+    command = "lshw"
 
     def register(self, registry):
         super().register(registry)

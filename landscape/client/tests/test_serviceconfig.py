@@ -132,6 +132,7 @@ class SnapdConfigTestCase(TestCase):
         self.run_mock.assert_called_once_with(
             [SNAPCTL, "services", "landscape-client"],
             stdout=subprocess.PIPE,
+            text=True,
         )
 
     def test_not_configured_to_run(self):
@@ -148,6 +149,7 @@ class SnapdConfigTestCase(TestCase):
         self.run_mock.assert_called_once_with(
             [SNAPCTL, "services", "landscape-client"],
             stdout=subprocess.PIPE,
+            text=True,
         )
 
     def test_run_landscape(self):

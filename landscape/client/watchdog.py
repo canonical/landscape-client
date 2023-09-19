@@ -25,6 +25,7 @@ from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
+from landscape.client import USER
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.amp import RemoteManagerConnector
 from landscape.client.broker.amp import RemoteMonitorConnector
@@ -78,7 +79,7 @@ class Daemon:
         program.  Defaults to False.
     """
 
-    username = "landscape"
+    username = USER
     max_retries = 3
     factor = 1.1
     options = None
@@ -649,41 +650,26 @@ class WatchDogService(Service):
 
 bootstrap_list = BootstrapList(
     [
-        BootstrapDirectory("$data_path", "landscape", "root", 0o755),
-        BootstrapDirectory("$data_path/package", "landscape", "root", 0o755),
-        BootstrapDirectory(
-            "$data_path/package/hash-id",
-            "landscape",
-            "root",
-            0o755,
-        ),
-        BootstrapDirectory(
-            "$data_path/package/binaries",
-            "landscape",
-            "root",
-            0o755,
-        ),
+        BootstrapDirectory("$data_path", USER, "root", 0o755),
+        BootstrapDirectory("$data_path/package", USER, "root", 0o755),
+        BootstrapDirectory("$data_path/package/hash-id", USER, "root", 0o755),
+        BootstrapDirectory("$data_path/package/binaries", USER, "root", 0o755),
         BootstrapDirectory(
             "$data_path/package/upgrade-tool",
-            "landscape",
+            USER,
             "root",
             0o755,
         ),
-        BootstrapDirectory("$data_path/messages", "landscape", "root", 0o755),
-        BootstrapDirectory("$data_path/sockets", "landscape", "root", 0o750),
+        BootstrapDirectory("$data_path/messages", USER, "root", 0o755),
+        BootstrapDirectory("$data_path/sockets", USER, "root", 0o750),
         BootstrapDirectory(
             "$data_path/custom-graph-scripts",
-            "landscape",
+            USER,
             "root",
             0o755,
         ),
-        BootstrapDirectory("$log_dir", "landscape", "root", 0o755),
-        BootstrapFile(
-            "$data_path/package/database",
-            "landscape",
-            "root",
-            0o644,
-        ),
+        BootstrapDirectory("$log_dir", USER, "root", 0o755),
+        BootstrapFile("$data_path/package/database", USER, "root", 0o644),
     ],
 )
 
@@ -724,12 +710,12 @@ def run(args=sys.argv, reactor=None):
     config.load(args)
 
     try:
-        landscape_uid = pwd.getpwnam("landscape").pw_uid
+        landscape_uid = pwd.getpwnam(USER).pw_uid
     except KeyError:
-        sys.exit("The 'landscape' user doesn't exist!")
+        sys.exit(f"The '{USER}' user doesn't exist!")
 
     if os.getuid() not in (0, landscape_uid):
-        sys.exit("landscape-client can only be run as 'root' or 'landscape'.")
+        sys.exit(f"landscape-client can only be run as 'root' or '{USER}'.")
 
     init_logging(config, "watchdog")
 

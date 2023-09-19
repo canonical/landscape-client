@@ -1,5 +1,6 @@
 from unittest import mock
 
+from landscape.client.monitor.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.client.monitor.ubuntuproinfo import UbuntuProInfo
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
@@ -45,3 +46,17 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertIn("errors", messages[0]["ubuntu-pro-info"])
+
+    def test_get_ubuntu_pro_info_core(self):
+        """In Ubuntu Core, there is no pro info, so return a reasonable erro
+        message.
+        """
+        with mock.patch(
+            "landscape.client.monitor.ubuntuproinfo.IS_CORE",
+            new="1",
+        ):
+            result = get_ubuntu_pro_info()
+
+        self.assertIn("errors", result)
+        self.assertIn("not available", result["errors"][0]["message"])
+        self.assertEqual(result["result"], "failure")

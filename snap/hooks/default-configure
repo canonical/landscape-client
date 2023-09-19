@@ -1,0 +1,33 @@
+#!/bin/sh -e
+
+CLIENT_CONF="${SNAP_COMMON}/etc/landscape-client.conf"
+
+_access_group=$(snapctl get access-group)
+_account=$(snapctl get account-name)
+_registration_key=$(snapctl get registration-key)
+_title=$(snapctl get computer-title)
+_url=$(snapctl get landscape-url)
+
+if [ -z "$_url" ]; then
+  _url="https://landscape.canonical.com"
+fi
+
+cat > "$CLIENT_CONF" << EOF
+[client]
+account_name = $_account
+computer_title = $_title
+url = ${_url}/message-system
+ping_url = ${_url}/ping
+log_level = info
+script_users = ALL
+manager_plugins = ProcessKiller,UserManager,ShutdownManager,HardwareInfo,KeystoneToken,SnapManager
+monitor_plugins = ActiveProcessInfo,ComputerInfo,LoadAverage,MemoryInfo,MountInfo,ProcessorInfo,Temperature,UserMonitor,RebootRequired,NetworkActivity,NetworkDevice,CPUUsage,SwiftUsage,CephUsage,ComputerTags,SnapMonitor
+EOF
+
+if [ -n "$_access_group" ]; then
+  echo "access_group = $_access_group" >> "$CLIENT_CONF"
+fi
+
+if [ -n "$_registration_key" ]; then
+  echo "registration_key = $_registration_key" >> "$CLIENT_CONF"
+fi

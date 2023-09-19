@@ -8,6 +8,8 @@ import tarfile
 
 from twisted.internet.defer import succeed
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.manager import SUCCEEDED
 from landscape.client.package.reporter import find_reporter_command
@@ -289,8 +291,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         shutil.rmtree(self._config.upgrade_tool_directory)
 
         if os.getuid() == 0:
-            uid = pwd.getpwnam("landscape").pw_uid
-            gid = grp.getgrnam("landscape").gr_gid
+            uid = pwd.getpwnam(USER).pw_uid
+            gid = grp.getgrnam(GROUP).gr_gid
         else:
             uid = None
             gid = None

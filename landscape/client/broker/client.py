@@ -1,5 +1,6 @@
 import random
 import sys
+import traceback
 from logging import debug
 from logging import error
 from logging import exception
@@ -142,11 +143,14 @@ class BrokerClientPlugin:
 
     def _error_log(self, failure):
         """Errback to log and reraise uncaught run errors."""
-        msg = "{} raised an uncaught exception".format(type(self).__name__)
+        cls = type(self).__name__
+        msg = f"{cls} raised an uncaught exception"
         if sys.exc_info() == (None, None, None):
             error(msg)
         else:
             exception(msg)
+            debug(traceback.format_exc(limit=15))
+
         return failure
 
 

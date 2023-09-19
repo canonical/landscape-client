@@ -1,6 +1,7 @@
 import json
 import subprocess
 
+from landscape.client import IS_CORE
 from landscape.client.monitor.plugin import DataWatcher
 
 
@@ -28,7 +29,18 @@ class UbuntuProInfo(DataWatcher):
         return json.dumps(ubuntu_pro_info, separators=(",", ":"))
 
 
-def get_ubuntu_pro_info():
+def get_ubuntu_pro_info() -> dict:
+    """Query ua tools for Ubuntu Pro status as JSON, parsing it to a dict.
+
+    If we are running on Ubuntu Core, Pro does not exist - returns a message
+    indicating this.
+    """
+    if IS_CORE:
+        return _ubuntu_pro_error_message(
+            "Ubuntu Pro is not available on Ubuntu Core.",
+            "core-unsupported",
+        )
+
     try:
         completed_process = subprocess.run(
             ["ua", "status", "--format", "json"],
@@ -36,16 +48,26 @@ def get_ubuntu_pro_info():
             stdout=subprocess.PIPE,
         )
     except FileNotFoundError:
-        return {
-            "errors": [
-                {
-                    "message": "ubuntu-advantage-tools not found.",
-                    "message_code": "tools-error",
-                    "service": None,
-                    "type": "system",
-                },
-            ],
-            "result": "failure",
-        }
+        return _ubuntu_pro_error_message(
+            "ubuntu pro tools not found.",
+            "tools-error",
+        )
     else:
         return json.loads(completed_process.stdout)
+
+
+def _ubuntu_pro_error_message(message: str, code: str) -> dict:
+    """Marshall `message` and `code` into a format matching that expected from
+    an error from ua tools.
+    """
+    return {
+        "errors": [
+            {
+                "message": message,
+                "message_code": code,
+                "service": None,
+                "type": "system",
+            },
+        ],
+        "result": "failure",
+    }

@@ -1,3 +1,5 @@
+from unittest import mock
+
 from landscape.client.manager.config import ALL_PLUGINS
 from landscape.client.manager.config import ManagerConfiguration
 from landscape.client.manager.processkiller import ProcessKiller
@@ -36,6 +38,34 @@ class ManagerServiceTest(LandscapeTest):
         self.service.config.load(["--manager-plugins", "ProcessKiller"])
         [plugin] = self.service.get_plugins()
         self.assertTrue(isinstance(plugin, ProcessKiller))
+
+    def test_get_plugins_module_not_found(self):
+        """If a module is not found, a warning is logged."""
+        self.service.config.load(["--manager-plugins", "TotallyDoesNotExist"])
+
+        with self.assertLogs(level="WARN") as cm:
+            plugins = self.service.get_plugins()
+
+        self.assertEqual(len(plugins), 0)
+        self.assertIn("Invalid manager plugin", cm.output[0])
+        self.assertIn("TotallyDoesNotExist", cm.output[0])
+
+    def test_get_plugins_other_exception(self):
+        """If loading a plugin fails for another reason, a warning is logged,
+        with the exception.
+        """
+        self.service.config.load(["--manager-plugins", "ProcessKiller"])
+
+        with self.assertLogs(level="WARN") as cm:
+            with mock.patch(
+                "landscape.client.manager.service.namedClass",
+            ) as namedClass:
+                namedClass.side_effect = Exception("Is there life on Mars?")
+                plugins = self.service.get_plugins()
+
+        self.assertEqual(len(plugins), 0)
+        self.assertIn("Unable to load", cm.output[0])
+        self.assertIn("Mars?", cm.output[0])
 
     def test_start_service(self):
         """

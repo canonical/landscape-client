@@ -456,3 +456,46 @@ class AptSourcesTests(LandscapeTest):
         )
 
         return deferred
+
+    def test_run_reporter_snap(self):
+        """After receiving a message, `AptSources` in a snap triggers a
+        reporter run as root to have the new packages reported to the server.
+        """
+        deferred = Deferred()
+
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
+            self.assertEqual(
+                find_reporter_command(self.manager.config),
+                command,
+            )
+            self.assertEqual(
+                [
+                    "--force-apt-update",
+                    f"--config={self.manager.config.config}",
+                ],
+                args,
+            )
+            self.assertEqual(uid, 0)
+            self.assertEqual(gid, 0)
+            deferred.callback(("ok", "", 0))
+            return deferred
+
+        self.sourceslist._run_process = _run_process
+
+        with mock.patch.multiple(
+            "landscape.client.manager.aptsources",
+            USER="root",
+            GROUP="root",
+        ):
+            with mock.patch("os.getuid") as getuid:
+                getuid.return_value = 0
+                self.manager.dispatch_message(
+                    {
+                        "type": "apt-sources-replace",
+                        "sources": [],
+                        "gpg-keys": [],
+                        "operation-id": 1,
+                    },
+                )
+
+        return deferred

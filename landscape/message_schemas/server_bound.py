@@ -781,7 +781,12 @@ SNAPS = Message(
                             "summary": Unicode(),
                         },
                         strict=False,
-                        optional=["hold", "summary"],
+                        optional=[
+                            "hold",
+                            "summary",
+                            "publisher",
+                            "tracking-channel",
+                        ],
                     ),
                 ),
             },

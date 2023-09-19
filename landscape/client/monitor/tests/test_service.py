@@ -1,4 +1,5 @@
 from unittest.mock import Mock
+from unittest.mock import patch
 
 from landscape.client.monitor.computerinfo import ComputerInfo
 from landscape.client.monitor.config import ALL_PLUGINS
@@ -43,6 +44,34 @@ class MonitorServiceTest(LandscapeTest):
         plugins = self.service.get_plugins()
         self.assertTrue(isinstance(plugins[0], ComputerInfo))
         self.assertTrue(isinstance(plugins[1], LoadAverage))
+
+    def test_get_plugins_module_not_found(self):
+        """If a module is not found, a warning is logged."""
+        self.service.config.load(["--monitor-plugins", "TotallyDoesNotExist"])
+
+        with self.assertLogs(level="WARN") as cm:
+            plugins = self.service.get_plugins()
+
+        self.assertEqual(len(plugins), 0)
+        self.assertIn("Invalid monitor plugin", cm.output[0])
+        self.assertIn("TotallyDoesNotExist", cm.output[0])
+
+    def test_get_plugins_other_exception(self):
+        """If loading a plugin fails for another reason, a warning is logged,
+        with the exception.
+        """
+        self.service.config.load(["--monitor-plugins", "ComputerInfo"])
+
+        with self.assertLogs(level="WARN") as cm:
+            with patch(
+                "landscape.client.monitor.service.namedClass",
+            ) as namedClass:
+                namedClass.side_effect = Exception("Is there life on Mars?")
+                plugins = self.service.get_plugins()
+
+        self.assertEqual(len(plugins), 0)
+        self.assertIn("Unable to load", cm.output[0])
+        self.assertIn("Mars?", cm.output[0])
 
     def test_start_service(self):
         """
