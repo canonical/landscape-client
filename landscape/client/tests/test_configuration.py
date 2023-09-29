@@ -34,6 +34,7 @@ from landscape.client.configuration import prompt_yes_no
 from landscape.client.configuration import register
 from landscape.client.configuration import registration_info_text
 from landscape.client.configuration import report_registration_outcome
+from landscape.client.configuration import set_secure_id
 from landscape.client.configuration import setup
 from landscape.client.configuration import show_help
 from landscape.client.configuration import store_public_key_data
@@ -1385,7 +1386,7 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.LandscapeSetupScript")
     @mock.patch("landscape.client.configuration.ServiceConfig")
-    def test_register(
+    def test_register_system_exit(
         self,
         mock_serviceconfig,
         mock_setup_script,
@@ -2327,6 +2328,27 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
 
+    def test_register_got_error(self):
+        """If there is an error from the connection, raises `SystemExit`."""
+        reactor = mock.Mock()
+        connector_factory = mock.Mock()
+        results = []
+
+        def add_error():
+            results.append(SystemExit())
+
+        reactor.run.side_effect = add_error
+
+        self.assertRaises(
+            SystemExit,
+            register,
+            self.config,
+            reactor,
+            connector_factory,
+            max_retries=2,
+            results=results,
+        )
+
     @mock.patch("landscape.client.configuration.LandscapeReactor")
     def test_register_without_reactor(self, mock_reactor):
         """If no reactor is passed, a LandscapeReactor will be instantiated.
@@ -2720,3 +2742,21 @@ class RegistrationInfoTest(LandscapeTest):
             print=noop_print,
         )
         self.assertEqual(EXIT_NOT_REGISTERED, exception.code)
+
+
+class SetSecureIdTest(LandscapeTest):
+    """Tests for the `set_secure_id` function."""
+
+    @mock.patch("landscape.client.configuration.Persist")
+    @mock.patch("landscape.client.configuration.Identity")
+    def test_function(self, Identity, Persist):
+        config = mock.Mock(data_path="/tmp/landscape")
+
+        set_secure_id(config, "fancysecureid")
+
+        Persist.assert_called_once_with(
+            filename="/tmp/landscape/broker.bpickle",
+        )
+        Persist().save.assert_called_once_with()
+        Identity.assert_called_once_with(config, Persist())
+        self.assertEqual(Identity().secure_id, "fancysecureid")
