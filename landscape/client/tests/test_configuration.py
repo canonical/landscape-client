@@ -738,12 +738,17 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         bootstrap_tree_patcher = mock.patch(
             "landscape.client.configuration.bootstrap_tree",
         )
+        set_secure_id_patch = mock.patch(
+            "landscape.client.configuration.set_secure_id",
+        )
         self.mock_getuid = getuid_patcher.start()
         self.mock_bootstrap_tree = bootstrap_tree_patcher.start()
+        set_secure_id_patch.start()
 
         def cleanup():
             getuid_patcher.stop()
             bootstrap_tree_patcher.stop()
+            set_secure_id_patch.stop()
 
         self.addCleanup(cleanup)
 
@@ -1191,7 +1196,11 @@ registration_key = shared-secret
         )
         self.assertEqual(0, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
 
     @mock.patch("landscape.client.configuration.input", return_value="y")
     @mock.patch(
@@ -1219,7 +1228,11 @@ registration_key = shared-secret
         )
         self.assertEqual(0, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1256,7 +1269,11 @@ registration_key = shared-secret
         )
         self.assertEqual(2, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1295,7 +1312,11 @@ registration_key = shared-secret
         )
         self.assertEqual(0, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_not_called()
 
         self.assertEqual(
@@ -1333,7 +1354,11 @@ registration_key = shared-secret
         )
         self.assertEqual(2, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_not_called()
         # Note that the error is output via sys.stderr.
         self.assertEqual(
@@ -1378,7 +1403,11 @@ registration_key = shared-secret
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
         mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_setup_script().run.assert_called_once_with()
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1457,7 +1486,11 @@ registration_key = shared-secret
             print=noop_print,
         )
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1477,7 +1510,11 @@ registration_key = shared-secret
             print=noop_print,
         )
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_not_called()
 
     @mock.patch("landscape.client.configuration.input")
