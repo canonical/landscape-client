@@ -626,8 +626,10 @@ def setup(config):
     decode_base64_ssl_public_certificate(config)
     config.write()
     # Restart the client to ensure that it's using the new configuration.
+
     if not config.no_start:
         try:
+            set_secure_id(config, "registering")
             ServiceConfig.restart_landscape()
         except ServiceConfigException as exc:
             print_text(str(exc), error=True)
@@ -793,13 +795,14 @@ def register(
     # Results will be things like "success" or "ssl-error".
     result = results[0]
 
-    if isinstance(result, SystemExit):
-        raise result
-
     # If there was an error and the caller requested that errors be reported
     # to the on_error callable, then do so.
     if result != "success" and on_error is not None:
         on_error(1)
+
+    if isinstance(result, SystemExit):
+        raise result
+
     return result
 
 
@@ -880,6 +883,21 @@ def registration_info_text(config, registration_status):
     return text
 
 
+def set_secure_id(config, new_id):
+    """Persists a secure id in the identity data file. This is used to indicate
+    whether we are currently in the process of registering.
+    """
+    persist = Persist(
+        filename=os.path.join(
+            config.data_path,
+            f"{BrokerService.service_name}.bpickle",
+        ),
+    )
+    identity = Identity(config, persist)
+    identity.secure_id = new_id
+    persist.save()
+
+
 def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
 
@@ -924,7 +942,11 @@ def main(args, print=print):
     # Attempt to register the client.
     reactor = LandscapeReactor()
     if config.silent:
-        result = register(config, reactor)
+        result = register(
+            config,
+            reactor,
+            on_error=lambda _: set_secure_id(config, None),
+        )
         report_registration_outcome(result, print=print)
         sys.exit(determine_exit_code(result))
     else:
@@ -934,6 +956,10 @@ def main(args, print=print):
             default=default_answer,
         )
         if answer:
-            result = register(config, reactor)
+            result = register(
+                config,
+                reactor,
+                on_error=lambda _: set_secure_id(config, None),
+            )
             report_registration_outcome(result, print=print)
             sys.exit(determine_exit_code(result))

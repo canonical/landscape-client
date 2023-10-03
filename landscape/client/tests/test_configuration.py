@@ -34,6 +34,7 @@ from landscape.client.configuration import prompt_yes_no
 from landscape.client.configuration import register
 from landscape.client.configuration import registration_info_text
 from landscape.client.configuration import report_registration_outcome
+from landscape.client.configuration import set_secure_id
 from landscape.client.configuration import setup
 from landscape.client.configuration import show_help
 from landscape.client.configuration import store_public_key_data
@@ -738,12 +739,17 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         bootstrap_tree_patcher = mock.patch(
             "landscape.client.configuration.bootstrap_tree",
         )
+        set_secure_id_patch = mock.patch(
+            "landscape.client.configuration.set_secure_id",
+        )
         self.mock_getuid = getuid_patcher.start()
         self.mock_bootstrap_tree = bootstrap_tree_patcher.start()
+        set_secure_id_patch.start()
 
         def cleanup():
             getuid_patcher.stop()
             bootstrap_tree_patcher.stop()
+            set_secure_id_patch.stop()
 
         self.addCleanup(cleanup)
 
@@ -1191,7 +1197,11 @@ registration_key = shared-secret
         )
         self.assertEqual(0, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
 
     @mock.patch("landscape.client.configuration.input", return_value="y")
     @mock.patch(
@@ -1219,7 +1229,11 @@ registration_key = shared-secret
         )
         self.assertEqual(0, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1256,7 +1270,11 @@ registration_key = shared-secret
         )
         self.assertEqual(2, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1295,7 +1313,11 @@ registration_key = shared-secret
         )
         self.assertEqual(0, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_not_called()
 
         self.assertEqual(
@@ -1333,7 +1355,11 @@ registration_key = shared-secret
         )
         self.assertEqual(2, exception.code)
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_not_called()
         # Note that the error is output via sys.stderr.
         self.assertEqual(
@@ -1360,7 +1386,7 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.LandscapeSetupScript")
     @mock.patch("landscape.client.configuration.ServiceConfig")
-    def test_register(
+    def test_register_system_exit(
         self,
         mock_serviceconfig,
         mock_setup_script,
@@ -1378,7 +1404,11 @@ registration_key = shared-secret
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
         mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_setup_script().run.assert_called_once_with()
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1457,7 +1487,11 @@ registration_key = shared-secret
             print=noop_print,
         )
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1477,7 +1511,11 @@ registration_key = shared-secret
             print=noop_print,
         )
         mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(mock.ANY, mock.ANY)
+        mock_register.assert_called_once_with(
+            mock.ANY,
+            mock.ANY,
+            on_error=mock.ANY,
+        )
         mock_input.assert_not_called()
 
     @mock.patch("landscape.client.configuration.input")
@@ -2290,6 +2328,27 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         # We ask for retries because networks aren't reliable.
         self.assertEqual(99, connector.max_retries)
 
+    def test_register_got_error(self):
+        """If there is an error from the connection, raises `SystemExit`."""
+        reactor = mock.Mock()
+        connector_factory = mock.Mock()
+        results = []
+
+        def add_error():
+            results.append(SystemExit())
+
+        reactor.run.side_effect = add_error
+
+        self.assertRaises(
+            SystemExit,
+            register,
+            self.config,
+            reactor,
+            connector_factory,
+            max_retries=2,
+            results=results,
+        )
+
     @mock.patch("landscape.client.configuration.LandscapeReactor")
     def test_register_without_reactor(self, mock_reactor):
         """If no reactor is passed, a LandscapeReactor will be instantiated.
@@ -2683,3 +2742,21 @@ class RegistrationInfoTest(LandscapeTest):
             print=noop_print,
         )
         self.assertEqual(EXIT_NOT_REGISTERED, exception.code)
+
+
+class SetSecureIdTest(LandscapeTest):
+    """Tests for the `set_secure_id` function."""
+
+    @mock.patch("landscape.client.configuration.Persist")
+    @mock.patch("landscape.client.configuration.Identity")
+    def test_function(self, Identity, Persist):
+        config = mock.Mock(data_path="/tmp/landscape")
+
+        set_secure_id(config, "fancysecureid")
+
+        Persist.assert_called_once_with(
+            filename="/tmp/landscape/broker.bpickle",
+        )
+        Persist().save.assert_called_once_with()
+        Identity.assert_called_once_with(config, Persist())
+        self.assertEqual(Identity().secure_id, "fancysecureid")
