@@ -72,7 +72,7 @@ parts:
       - python3-distutils-extra
       - python3-twisted
     override-build: |
-      git commit -n -a -m "dev build for snap" --no-gpg-sign
+      git commit -n -a -m "dev build for snap" --no-gpg-sign --allow-empty
       cat << EOF > debian/changelog
       landscape-client (0.0.1) UNRELEASED; urgency=medium
 
