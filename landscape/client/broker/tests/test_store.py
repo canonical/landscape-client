@@ -700,11 +700,11 @@ class MessageStoreTest(LandscapeTest):
         """Messages stop accumulating after one week of not being sent."""
         self.store.record_failure(0)
         self.store.record_failure(7 * 24 * 60 * 60)
-        self.assertIsNot(None, self.store.add({"type": "empty"}))
+        self.assertIsNotNone(self.store.add({"type": "empty"}))
         self.store.record_failure((7 * 24 * 60 * 60) + 1)
-        self.assertIs(None, self.store.add({"type": "empty"}))
+        self.assertIsNone(self.store.add({"type": "empty"}))
         self.assertIn(
-            "WARNING: Unable to succesfully communicate with "
+            "WARNING: Unable to successfully communicate with "
             "Landscape server for more than a week. Waiting for "
             "resync.",
             self.logfile.getvalue(),

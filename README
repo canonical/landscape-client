@@ -81,10 +81,15 @@ system bus.
 $ sudo ./scripts/landscape-client -c root-client.conf
 ```
 
-Before opening a PR, make sure to run the full testsuite and lint
+Before opening a PR, make sure to run the full test suite and lint:
 ```
 make check3
 make lint
+```
+
+You can run a specific test by running the following (for example):
+```
+python3 -m twisted.trial landscape.client.broker.tests.test_client.BrokerClientTest.test_ping
 ```
 
 ### Building the Landscape Client snap
@@ -158,7 +163,7 @@ $ gnome-keyring-daemon --unlock
 The gnome-keyring-daemon will prompt you (without a prompt) to type in
 the initial unlock password (typically the same password for the account
 you are using - if you are using the default multipass or lxc "ubuntu"
-login, use sudo passwd ubuntu to set it to a known value before doing 
+login, use sudo passwd ubuntu to set it to a known value before doing
 the above step).
 
 Type the login password and hit <ENTER> followed by <CTRL>+D to end

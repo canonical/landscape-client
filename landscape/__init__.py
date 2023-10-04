@@ -22,7 +22,7 @@ DEFAULT_SERVER_API = b"3.2"
 # 3.3:
 #  * Add new schema for the "registration" message, providing Juju information
 #
-SERVER_API = b"3.3"
+SERVER_API = b"3.4"
 
 # The "client-api" field of outgoing messages will be set to this value, and
 # used by the server to know which schema do the message types accepted by the

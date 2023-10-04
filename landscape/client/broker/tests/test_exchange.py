@@ -565,7 +565,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         If the server asks for messages that we no longer have, the message
         exchange plugin should send a message to the server indicating that a
-        resynchronization is occuring and then fire a "resynchronize-clients"
+        resynchronization is occurring and then fire a "resynchronize-clients"
         reactor message, so that plugins can generate new data -- if the server
         got out of synch with the client, then we're best off synchronizing
         everything back to it.
@@ -859,7 +859,7 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.advance(1)
         self.assertEqual(events, [True])
 
-    def test_impending_exchange_gets_reschudeled_with_urgent_reschedule(self):
+    def test_impending_exchange_gets_rescheduled_with_urgent_reschedule(self):
         """
         When an urgent exchange is scheduled after a regular exchange was
         scheduled but before it executed, the old C{impending-exchange} event
@@ -955,7 +955,7 @@ class MessageExchangeTest(LandscapeTest):
         self.wait_for_exchange()
         self.assertFalse(self.transport.payloads)
 
-    def test_stop_twice_doesnt_break(self):
+    def test_stop_twice_does_not_break(self):
         self.exchanger.schedule_exchange()
         self.exchanger.stop()
         self.exchanger.stop()
@@ -1014,7 +1014,7 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_register_message(self):
         """
-        The exchanger expsoses a mechanism for subscribing to messages
+        The exchanger exposes a mechanism for subscribing to messages
         of a particular type.
         """
         messages = []

@@ -30,6 +30,7 @@ __all__ = [
     "FREE_SPACE",
     "REGISTER",
     "REGISTER_3_3",
+    "REGISTER_3_4",
     "TEMPERATURE",
     "PROCESSOR_INFO",
     "USERS",
@@ -362,6 +363,48 @@ REGISTER_3_3 = Message(
         "juju-info",
         "clone_secure_id",
         "ubuntu_pro_info",
+    ],
+)
+
+
+REGISTER_3_4 = Message(
+    "register",
+    # The term used in the UI is actually 'registration_key', but we keep
+    # the message schema field as 'registration_password' in case a new
+    # client contacts an older server.
+    {
+        "registration_password": Any(Unicode(), Constant(None)),
+        "computer_title": Unicode(),
+        "hostname": Unicode(),
+        "account_name": Unicode(),
+        "tags": Any(Unicode(), Constant(None)),
+        "vm-info": Bytes(),
+        "container-info": Unicode(),
+        "juju-info": KeyDict(
+            {
+                "environment-uuid": Unicode(),
+                "api-addresses": List(Unicode()),
+                "machine-id": Unicode(),
+            },
+        ),
+        "access_group": Unicode(),
+        "clone_secure_id": Any(Unicode(), Constant(None)),
+        "ubuntu_pro_info": Unicode(),
+        "hostagent_uid": Unicode(),
+        # "hostagent_uid": Any(Unicode(), Constant(None)),
+    },
+    api=b"3.4",
+    optional=[
+        "registration_password",
+        "hostname",
+        "tags",
+        "vm-info",
+        "container-info",
+        "access_group",
+        "juju-info",
+        "clone_secure_id",
+        "ubuntu_pro_info",
+        "hostagent_uid",
     ],
 )
 
@@ -811,6 +854,7 @@ message_schemas = (
     FREE_SPACE,
     REGISTER,
     REGISTER_3_3,
+    REGISTER_3_4,
     TEMPERATURE,
     PROCESSOR_INFO,
     USERS,

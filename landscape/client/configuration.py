@@ -206,7 +206,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--include-manager-plugins",
             metavar="PLUGINS",
             default="",
-            help="A comma-separated list of manager plugins to " "load.",
+            help="A comma-separated list of manager plugins to load.",
         )
         parser.add_option(
             "-n",
@@ -230,13 +230,13 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--disable",
             action="store_true",
             default=False,
-            help="Stop running clients and disable start at " "boot.",
+            help="Stop running clients and disable start at boot.",
         )
         parser.add_option(
             "--init",
             action="store_true",
             default=False,
-            help="Set up the client directories structure " "and exit.",
+            help="Set up the client directories structure and exit.",
         )
         parser.add_option(
             "--is-registered",
@@ -567,7 +567,7 @@ def check_account_name_and_password(config):
     if config.silent and not config.no_start:
         if not (config.get("account_name") and config.get("computer_title")):
             raise ConfigurationError(
-                "An account name and computer title are " "required.",
+                "An account name and computer title are required.",
             )
 
 

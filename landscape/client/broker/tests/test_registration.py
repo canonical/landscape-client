@@ -78,6 +78,9 @@ class IdentityTest(LandscapeTest):
     def test_access_group(self):
         self.check_config_property("access_group")
 
+    def test_hostagent_uid(self):
+        self.check_config_property("hostagent_uid")
+
 
 class RegistrationHandlerTestBase(LandscapeTest):
 
@@ -382,6 +385,47 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         # Make sure the key does not appear in the outgoing message.
         self.assertNotIn("access_group", messages[0])
+
+    def test_queue_message_on_exchange_with_hostagent_uid(self):
+        """
+        If the admin has defined a hostagent_uid for this computer, we send
+        it to the server.
+        """
+        self.mstore.set_accepted_types(["register"])
+        # hostagent_uid is introduced in the 3.4 message schema
+        self.mstore.set_server_api(b"3.4")
+        self.config.account_name = "account_name"
+        self.config.hostagent_uid = "dinosaur computer"
+        self.config.tags = "server,london"
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual("dinosaur computer", messages[0]["hostagent_uid"])
+
+    def test_queue_message_on_exchange_with_empty_hostagent_uid(self):
+        """
+        If the hostagent_uid is "", then the outgoing message does not define
+        a "hostagent_uid" key.
+        """
+        self.mstore.set_accepted_types(["register"])
+        # hostagent_uid is introduced in the 3.4 message schema
+        self.mstore.set_server_api(b"3.4")
+        self.config.hostagent_uid = ""
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertNotIn("hostagent_uid", messages[0])
+
+    def test_queue_message_on_exchange_with_none_hostagent_uid(self):
+        """
+        If the hostagent_uid is None, then the outgoing message does not define
+        a "hostagent_uid" key.
+        """
+        self.mstore.set_accepted_types(["register"])
+        # hostagent_uid is introduced in the 3.4 message schema
+        self.mstore.set_server_api(b"3.4")
+        self.config.hostagent_uid = None
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertNotIn("hostagent_uid", messages[0])
 
     def test_queueing_registration_message_resets_message_store(self):
         """

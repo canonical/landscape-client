@@ -76,6 +76,7 @@ class Identity:
     registration_key = config_property("registration_key")
     tags = config_property("tags")
     access_group = config_property("access_group")
+    hostagent_uid = config_property("hostagent_uid")
 
     def __init__(self, config, persist):
         self._config = config
@@ -190,6 +191,7 @@ class RegistrationHandler:
         tags = identity.tags
         group = identity.access_group
         registration_key = identity.registration_key
+        hostagent_uid = identity.hostagent_uid
 
         self._message_store.delete_all_messages()
 
@@ -217,6 +219,8 @@ class RegistrationHandler:
 
         if group:
             message["access_group"] = group
+        if hostagent_uid:
+            message["hostagent_uid"] = hostagent_uid
 
         server_api = self._message_store.get_server_api()
         # If we have juju data to send and if the server is recent enough to

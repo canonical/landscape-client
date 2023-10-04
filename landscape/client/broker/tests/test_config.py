@@ -12,7 +12,7 @@ class ConfigurationTests(LandscapeTest):
     def test_loading_sets_http_proxies(self):
         """
         The L{BrokerConfiguration.load} method sets the 'http_proxy' and
-        'https_proxy' enviroment variables to the provided values.
+        'https_proxy' environment variables to the provided values.
         """
         if "http_proxy" in os.environ:
             del os.environ["http_proxy"]
@@ -36,7 +36,7 @@ class ConfigurationTests(LandscapeTest):
     def test_loading_without_http_proxies_does_not_touch_environment(self):
         """
         The L{BrokerConfiguration.load} method doesn't override the
-        'http_proxy' and 'https_proxy' enviroment variables if they
+        'http_proxy' and 'https_proxy' environment variables if they
         are already set and no new value was specified.
         """
         os.environ["http_proxy"] = "heyo"
@@ -71,7 +71,7 @@ class ConfigurationTests(LandscapeTest):
         self.assertEqual(os.environ["https_proxy"], "originals")
 
     def test_default_exchange_intervals(self):
-        """Exchange intervales are set to sane defaults."""
+        """Exchange intervals are set to sane defaults."""
         configuration = BrokerConfiguration()
         self.assertEqual(60, configuration.urgent_exchange_interval)
         self.assertEqual(900, configuration.exchange_interval)
@@ -135,3 +135,27 @@ class ConfigurationTests(LandscapeTest):
             configuration.url,
             "https://landscape.canonical.com/message-system",
         )
+
+    def test_hostagent_uid_handling(self):
+        """
+        The 'hostagent_uid' value specified in the configuration file is
+        passed through.
+        """
+        filename = self.makeFile("[client]\nhostagent_uid = AWESOME COMPUTER")
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertEqual(configuration.hostagent_uid, "AWESOME COMPUTER")
+
+    def test_missing_hostagent_uid_is_none(self):
+        """
+        Test that if we don't explicitly pass a hostagent_uid, then this value
+        is None.
+        """
+        filename = self.makeFile("[client]\n")
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertIsNone(configuration.hostagent_uid)
