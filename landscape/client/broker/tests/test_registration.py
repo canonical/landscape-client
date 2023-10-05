@@ -392,8 +392,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         it to the server.
         """
         self.mstore.set_accepted_types(["register"])
-        # hostagent_uid is introduced in the 3.4 message schema
-        self.mstore.set_server_api(b"3.4")
+        # hostagent_uid is introduced in the 3.3 message schema
+        self.mstore.set_server_api(b"3.3")
         self.config.account_name = "account_name"
         self.config.hostagent_uid = "dinosaur computer"
         self.config.tags = "server,london"
@@ -407,8 +407,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         a "hostagent_uid" key.
         """
         self.mstore.set_accepted_types(["register"])
-        # hostagent_uid is introduced in the 3.4 message schema
-        self.mstore.set_server_api(b"3.4")
+        # hostagent_uid is introduced in the 3.3 message schema
+        self.mstore.set_server_api(b"3.3")
         self.config.hostagent_uid = ""
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
@@ -420,8 +420,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         a "hostagent_uid" key.
         """
         self.mstore.set_accepted_types(["register"])
-        # hostagent_uid is introduced in the 3.4 message schema
-        self.mstore.set_server_api(b"3.4")
+        # hostagent_uid is introduced in the 3.3 message schema
+        self.mstore.set_server_api(b"3.3")
         self.config.hostagent_uid = None
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
