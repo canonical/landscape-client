@@ -26,6 +26,7 @@ apps:
       - network-bind
       - network-observe
       - scsi-generic
+      - shutdown
       - snapd-control
       - system-observe
     environment:
