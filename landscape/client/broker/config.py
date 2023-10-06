@@ -31,6 +31,7 @@ class BrokerConfiguration(Configuration):
               - C{urgent_exchange_interval} (C{1*60})
               - C{http_proxy}
               - C{https_proxy}
+              - C{hostagent_uid}
         """
         parser = super().make_parser()
 
@@ -44,7 +45,7 @@ class BrokerConfiguration(Configuration):
             "-p",
             "--registration-key",
             metavar="KEY",
-            help="The account-wide key used for " "registering clients.",
+            help="The account-wide key used for registering clients.",
         )
         parser.add_option(
             "-t",
@@ -57,14 +58,14 @@ class BrokerConfiguration(Configuration):
             default=15 * 60,
             type="int",
             metavar="INTERVAL",
-            help="The number of seconds between server " "exchanges.",
+            help="The number of seconds between server exchanges.",
         )
         parser.add_option(
             "--urgent-exchange-interval",
             default=1 * 60,
             type="int",
             metavar="INTERVAL",
-            help="The number of seconds between urgent server " "exchanges.",
+            help="The number of seconds between urgent server exchanges.",
         )
         parser.add_option(
             "--ping-interval",
@@ -92,6 +93,12 @@ class BrokerConfiguration(Configuration):
             "--tags",
             help="Comma separated list of tag names to be sent "
             "to the server.",
+        )
+        parser.add_option(
+            "--hostagent-uid",
+            help="Only set this value if this computer is a WSL instance "
+            "managed by Landscape, in which case set it to be the uid that "
+            "Landscape assigned to the host machine.",
         )
 
         return parser

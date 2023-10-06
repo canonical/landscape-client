@@ -350,6 +350,7 @@ REGISTER_3_3 = Message(
         "access_group": Unicode(),
         "clone_secure_id": Any(Unicode(), Constant(None)),
         "ubuntu_pro_info": Unicode(),
+        "hostagent_uid": Unicode(),
     },
     api=b"3.3",
     optional=[
@@ -362,6 +363,7 @@ REGISTER_3_3 = Message(
         "juju-info",
         "clone_secure_id",
         "ubuntu_pro_info",
+        "hostagent_uid",
     ],
 )
 
