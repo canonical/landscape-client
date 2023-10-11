@@ -1,3 +1,14 @@
+landscape-client (23.10-0ubuntu0) bionic; urgency=medium
+
+  * New upstream release 23.10
+    - Update snapcraft.yaml.
+    - Add optional hostagent_uid field to registration message.
+    - Allow landscape-config to start landscape-client systemd service. (LP: #2027613)
+    - Pinger supports self-signed certificates.
+    - Enable dev build for strictly-confined snap.
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Wed, 11 Oct 2023 16:15:18 -0700
+
 landscape-client (23.08-0ubuntu1) mantic; urgency=medium
 
   * New upstream release 23.08
@@ -9,7 +20,7 @@ landscape-client (23.08-0ubuntu1) mantic; urgency=medium
     - Config man page and help info fixes (LP: #1662222)
     - Removed unnecesary select to the database (LP: #1994951)
     - Last apt-key removal (LP: #1990435)
-    - Added a logging level check to provide a better error (LP: #2027521) 
+    - Added a logging level check to provide a better error (LP: #2027521)
     - Broker is able to bootstrap the landscape-client folder (LP: #1868730)
     - Changed gpg file name to be less generic (LP: #2008432)
     - Improve Dependency data is read from the deb packages (LP: #1813442)
