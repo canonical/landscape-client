@@ -23,7 +23,7 @@ from landscape.lib.fetch import fetch_to_files
 from landscape.lib.fetch import url_to_filename
 from landscape.lib.fs import read_text_file
 from landscape.lib.gpg import gpg_verify
-from landscape.lib.os_release import OS_RELEASE_FILENAME
+from landscape.lib.os_release import get_os_filename
 from landscape.lib.os_release import parse_os_release
 from landscape.lib.twisted_util import spawn_process
 
@@ -55,7 +55,7 @@ class ReleaseUpgrader(PackageTaskHandler):
 
     config_factory = ReleaseUpgraderConfiguration
     queue_name = "release-upgrader"
-    os_release_filename = OS_RELEASE_FILENAME
+    os_release_filename = get_os_filename()
     landscape_ppa_url = "http://ppa.launchpad.net/landscape/trunk/ubuntu/"
     logs_directory = "/var/log/dist-upgrade"
     logs_limit = 100000  # characters

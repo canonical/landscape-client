@@ -15,7 +15,7 @@ from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.lock import lock_path
 from landscape.lib.lock import LockError
 from landscape.lib.log import log_failure
-from landscape.lib.os_release import OS_RELEASE_FILENAME
+from landscape.lib.os_release import get_os_filename
 from landscape.lib.os_release import parse_os_release
 
 
@@ -93,7 +93,7 @@ class PackageTaskHandler:
     config_factory = PackageTaskHandlerConfiguration
 
     queue_name = "default"
-    os_release_filename = OS_RELEASE_FILENAME
+    os_release_filename = get_os_filename()
     package_store_class = PackageStore
 
     # This file is touched after every succesful 'apt-get update' run if the

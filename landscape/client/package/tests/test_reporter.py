@@ -37,7 +37,7 @@ from landscape.lib.apt.package.testing import SimpleRepositoryHelper
 from landscape.lib.fetch import FetchError
 from landscape.lib.fs import create_text_file
 from landscape.lib.fs import touch_file
-from landscape.lib.os_release import OS_RELEASE_FILENAME
+from landscape.lib.os_release import get_os_filename
 from landscape.lib.os_release import parse_os_release
 from landscape.lib.testing import EnvironSaverHelper
 from landscape.lib.testing import FakeReactor
@@ -1182,7 +1182,7 @@ class PackageReporterAptTest(LandscapeTest):
         """Packages versions coming from security are reported as such."""
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
-        os_release_info = parse_os_release(OS_RELEASE_FILENAME)
+        os_release_info = parse_os_release(get_os_filename())
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
             release.write(
@@ -1241,7 +1241,7 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        os_release_info = parse_os_release(OS_RELEASE_FILENAME)
+        os_release_info = parse_os_release(get_os_filename())
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
             release.write(
@@ -1301,7 +1301,7 @@ class PackageReporterAptTest(LandscapeTest):
         os.remove(os.path.join(other_backport_dir, "Packages"))
         self.facade.add_channel_deb_dir(other_backport_dir)
 
-        os_release_info = parse_os_release(OS_RELEASE_FILENAME)
+        os_release_info = parse_os_release(get_os_filename())
         official_release_path = os.path.join(self.repository_dir, "Release")
         with open(official_release_path, "w") as release:
             release.write(
