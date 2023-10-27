@@ -1182,7 +1182,7 @@ class PackageReporterAptTest(LandscapeTest):
         """Packages versions coming from security are reported as such."""
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
-        os_release_info = parse_os_release(get_os_filename)
+        os_release_info = parse_os_release(get_os_filename())
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
             release.write(
