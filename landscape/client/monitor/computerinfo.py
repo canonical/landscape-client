@@ -9,7 +9,7 @@ from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_text_file
 from landscape.lib.network import get_fqdn
-from landscape.lib.os_release import OS_RELEASE_FILENAME
+from landscape.lib.os_release import get_os_filename
 from landscape.lib.os_release import parse_os_release
 
 METADATA_RETRY_MAX = 3  # Number of retries to get EC2 meta-data
@@ -29,7 +29,7 @@ class ComputerInfo(MonitorPlugin):
         self,
         get_fqdn=get_fqdn,
         meminfo_filename="/proc/meminfo",
-        os_release_filename=OS_RELEASE_FILENAME,
+        os_release_filename=get_os_filename(),
         root_path="/",
         fetch_async=fetch_async,
     ):
