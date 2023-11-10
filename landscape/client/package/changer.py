@@ -3,6 +3,7 @@ import logging
 import os
 import pwd
 import time
+import dbus
 
 from twisted.internet import reactor
 from twisted.internet.defer import maybeDeferred
@@ -11,7 +12,6 @@ from twisted.internet.defer import succeed
 from landscape.client import GROUP
 from landscape.client import USER
 from landscape.client.manager.manager import FAILED
-from landscape.client.manager.shutdownmanager import ShutdownProcessProtocol
 from landscape.client.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
 from landscape.client.package.reporter import find_reporter_command
 from landscape.client.package.taskhandler import PackageTaskError
@@ -369,25 +369,16 @@ class PackageChanger(PackageTaskHandler):
 
     def _run_reboot(self):
         """
-        Create a C{ShutdownProcessProtocol} and return its result deferred.
+        Fire a dbus system shutdown 
         """
-        protocol = ShutdownProcessProtocol()
-        minutes = "now"
-        protocol.set_timeout(self._landscape_reactor)
-        protocol.result.addCallback(self._log_reboot, minutes)
-        protocol.result.addErrback(log_failure, "Reboot failed.")
-        args = [
-            "/sbin/shutdown",
-            "-r",
-            minutes,
-            "Landscape is rebooting the system",
-        ]
-        self._process_factory.spawnProcess(
-            protocol,
-            "/sbin/shutdown",
-            args=args,
-        )
-        return protocol.result
+        bus = dbus.SystemBus()
+        bus_object = bus.get_object(
+            "org.freedesktop.login1",
+            "/org/freedesktop/login1")
+        bus_object.Reboot(
+            True,
+            dbus_interface="org.freedesktop.login1.Manager")
+
 
     def _log_reboot(self, result, minutes):
         """Log the reboot."""
