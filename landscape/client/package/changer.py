@@ -30,7 +30,6 @@ from landscape.constants import UNKNOWN_PACKAGE_DATA_TIMEOUT
 from landscape.lib import base64
 from landscape.lib.config import get_bindir
 from landscape.lib.fs import create_binary_file
-from landscape.lib.log import log_failure
 
 
 class UnknownPackageData(Exception):
@@ -369,7 +368,7 @@ class PackageChanger(PackageTaskHandler):
 
     def _run_reboot(self):
         """
-        Fire a dbus system shutdown 
+        Fire a dbus system shutdown
         """
         bus = dbus.SystemBus()
         bus_object = bus.get_object(
@@ -378,7 +377,6 @@ class PackageChanger(PackageTaskHandler):
         bus_object.Reboot(
             True,
             dbus_interface="org.freedesktop.login1.Manager")
-
 
     def _log_reboot(self, result, minutes):
         """Log the reboot."""

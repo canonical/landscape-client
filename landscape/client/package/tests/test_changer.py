@@ -6,9 +6,6 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 from twisted.internet.defer import Deferred
-from twisted.internet.error import ProcessDone
-from twisted.internet.error import ProcessTerminated
-from twisted.python.failure import Failure
 
 from landscape.client.manager.manager import FAILED
 from landscape.client.package.changer import ChangePackagesResult
