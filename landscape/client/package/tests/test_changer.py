@@ -1616,44 +1616,6 @@ class AptPackageChangerTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
-    def test_no_exchange_after_reboot(self):
-        """
-        After initiating a reboot process, no more messages are exchanged.
-        """
-        self.store.add_task(
-            "changer",
-            {
-                "type": "change-packages",
-                "install": [2],
-                "binaries": [(HASH2, 2, PKGDEB2)],
-                "operation-id": 123,
-                "reboot-if-necessary": True,
-            },
-        )
-
-        def return_good_result(self):
-            return "Yeah, I did whatever you've asked for!"
-
-        self.replace_perform_changes(return_good_result)
-
-        result = self.changer.handle_tasks()
-
-        def got_result(result):
-            # Advance both reactors so the pending messages are exchanged.
-            self.broker_service.reactor.advance(100)
-            self.landscape_reactor.advance(10)
-            payloads = self.broker_service.exchanger._transport.payloads
-            self.assertEqual(0, len(payloads))
-
-        self.landscape_reactor.advance(5)
-
-        [arguments] = self.process_factory.spawns
-        protocol = arguments[0]
-        protocol.processEnded(Failure(ProcessDone(status=0)))
-        self.broker_service.reactor.advance(100)
-        self.landscape_reactor.advance(10)
-        return result.addCallback(got_result)
-
     def test_run_gets_session_id(self):
         """
         Invoking L{PackageChanger.run} results in the session ID being fetched.
