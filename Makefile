@@ -4,6 +4,7 @@ PYTHON ?= python3
 SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
 TRIAL ?= -m twisted.trial
 TRIAL_ARGS ?=
+PRE_COMMIT ?= $(HOME)/.local/bin/pre-commit
 
 # PEP8 rules ignored:
 # W503 https://www.flake8rules.com/rules/W503.html
@@ -15,20 +16,11 @@ help:  ## Print help about available targets
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: depends
-depends: depends3  ## py2 is deprecated
-	sudo apt-get -y install python3-flake8 python3-coverage
-
-.PHONY: depends2
-depends2:
-	sudo apt-get -y install python-twisted-core python-distutils-extra python-mock python-configobj python-netifaces python-pycurl python-pip
+depends:
+	sudo apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
+		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted
 	pip install pre-commit
-	pre-commit install
-
-.PHONY: depends3
-depends3:
-	sudo apt-get -y install python3-twisted python3-distutils-extra python3-mock python3-configobj python3-netifaces python3-pycurl python3-pip
-	pip3 install pre-commit
-	pre-commit install
+	$(PRE_COMMIT) install
 
 all: build
 
