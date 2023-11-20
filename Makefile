@@ -1,7 +1,6 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
-PYTHON2 ?= python2
-PYTHON3 ?= python3
+PYTHON ?= python3
 SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
 TRIAL ?= -m twisted.trial
 TRIAL_ARGS ?=
@@ -34,39 +33,25 @@ depends3:
 all: build
 
 .PHONY: build
-build: build2 build3   ## Build.
-
-.PHONY: build2
-build2:
-	$(PYTHON2) setup.py build_ext -i
-
-.PHONY: build3
-build3:
-	$(PYTHON3) setup.py build_ext -i
-
-.PHONY: check
-check: check2 check3  ## Run all the tests.
-
-.PHONY: check2
-check2: build2
-	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON2) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
+build:
+	$(PYTHON) setup.py build_ext -i
 
 # trial3 does not support threading via `-j` at the moment
 # so we ignore TRIAL_ARGS.
 # TODO: Respect $TRIAL_ARGS once trial3 is fixed.
-.PHONY: check3
-check3: TRIAL_ARGS=
-check3: build3
-	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
+.PHONY: check
+check: TRIAL_ARGS=
+check: build
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape
 
 .PHONY: coverage
 coverage:
-	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) -m coverage run $(TRIAL) --unclean-warnings landscape
-	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON3) -m coverage xml
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) -m coverage run $(TRIAL) --unclean-warnings landscape
+	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) -m coverage xml
 
 .PHONY: lint
 lint:
-	$(PYTHON3) -m flake8 --ignore $(PEP8_IGNORED) `find landscape -name \*.py`
+	$(PYTHON) -m flake8 --ignore $(PEP8_IGNORED) `find landscape -name \*.py`
 
 .PHONY: pyflakes
 pyflakes:

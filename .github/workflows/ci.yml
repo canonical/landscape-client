@@ -1,7 +1,7 @@
 name: ci
 on: [pull_request, workflow_dispatch]
 jobs:
-  check3:
+  check:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -13,7 +13,7 @@ jobs:
           # -common seems a catch-22, but this is just a shortcut to
           # initialize user and dirs, some used through tests.
           sudo apt-get -y install landscape-common
-      - run: make check3 TRIAL=/usr/bin/trial3
+      - run: make check TRIAL=/usr/bin/trial3
   lint:
     runs-on: ubuntu-latest
     steps:
