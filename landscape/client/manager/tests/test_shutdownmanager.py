@@ -24,9 +24,6 @@ class ShutdownManagerTest(LandscapeTest):
 
         self.manager.add(self.plugin)
 
-    def tearDown(self):
-        return super().tearDown()
-
     @patch('landscape.client.manager.shutdownmanager.ShutdownManager._Reboot')
     def test_reboot(self, mock_reboot):
         message = {"type": "shutdown", "reboot": True, "operation-id": 100}
