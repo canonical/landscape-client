@@ -1,0 +1,17 @@
+name: Codecov upload
+
+on: [push, pull_request]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          make depends
+          # -common seems a catch-22, but this is just a shortcut to
+          # initialize user and dirs, some used through tests.
+          sudo apt-get -y install landscape-common
+      - run: make coverage TRIAL=/usr/bin/trial3
+      - name: upload
+        uses: codecov/codecov-action@v3
