@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from twisted.internet import task
 
 from landscape.client.manager.shutdownmanager import ShutdownManager
@@ -20,27 +20,36 @@ class ShutdownManagerTest(LandscapeTest):
 
         self.clock = task.Clock()
         self.plugin = ShutdownManager()
-        self.plugin.reactor = self.clock
-
         self.manager.add(self.plugin)
+        self.plugin.callLater = self.clock.callLater
 
-    @patch('landscape.client.manager.shutdownmanager.ShutdownManager._Reboot')
-    def test_reboot(self, mock_reboot):
+        self.dbus_mock = patch(
+            "landscape.client.manager.shutdownmanager.dbus").start()
+
+    def test_reboot(self):
+        bus_object = Mock()
+        self.dbus_mock.SystemBus.return_value = bus_object
+
         message = {"type": "shutdown", "reboot": True, "operation-id": 100}
         deferred = self.plugin._handle_shutdown(message)
 
-        mock_reboot.assert_called_once()
+        def check(_):
+            bus_object.get_object.assert_called_once()
+            bus_object.Reboot.assert_called_once()
+
         return deferred
 
-    @patch('landscape.client.manager.shutdownmanager.reactor')
-    def test_shutdown(self, mock_reactor):
+    def test_shutdown(self):
+        bus_object = Mock()
+        self.dbus_mock.SystemBus.return_value = bus_object
 
-        message = {"type": "shutdown", "reboot": False, "operation-id": 101}
-        self.plugin._handle_shutdown(message)
+        message = {"type": "shutdown", "reboot": False, "operation-id": 100}
+        deferred = self.plugin._handle_shutdown(message)
 
-        mock_reactor.callLater.assert_called_once()
+        self.clock.advance(self.plugin.shutdown_delay)
 
-        # check it was the shutdown method requested
-        arg = mock_reactor.callLater.call_args.args[1]
-        name = getattr(arg, "__name__", str(arg))
-        self.assertEqual(name, "_Shutdown")
+        def check(_):
+            bus_object.get_object.assert_called_once()
+            bus_object.PowerOff.assert_called_once()
+
+        return deferred

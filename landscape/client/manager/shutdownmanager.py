@@ -21,6 +21,9 @@ class ShutdownManager(ManagerPlugin):
     This is usually sufficent.
     """
 
+    callLater = reactor.callLater
+    shutdown_delay = 120
+
     def register(self, registry):
         super().register(registry)
         self.config = registry.config
@@ -75,7 +78,7 @@ class ShutdownManager(ManagerPlugin):
 
     def _respond_shutdown_success(self, data, operation_id):
         deferred = self._respond(SUCCEEDED, data, operation_id)
-        reactor.callLater(120, self._Shutdown)
+        self.callLater(self.shutdown_delay, self._Shutdown)
         deferred.addErrback(self._respond_fail)
         return deferred
 
