@@ -37,6 +37,7 @@ class ShutdownManagerTest(LandscapeTest):
             bus_object.get_object.assert_called_once()
             bus_object.Reboot.assert_called_once()
 
+        deferred.addCallback(check)
         return deferred
 
     def test_shutdown(self):
@@ -52,4 +53,5 @@ class ShutdownManagerTest(LandscapeTest):
             bus_object.get_object.assert_called_once()
             bus_object.PowerOff.assert_called_once()
 
+        deferred.addCallback(check)
         return deferred
