@@ -1624,3 +1624,16 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer._session_id = None
         result = self.changer.run()
         return result.addCallback(assert_session_id)
+
+    def test_reboot_flag(self):
+        self.dbus_mock = patch(
+            "landscape.client.package.changer.dbus").start()
+        bus_object = Mock()
+        
+        self.dbus_mock.SystemBus.return_value = bus_object
+
+        self.changer._run_reboot()
+
+        def check(_):
+            bus_object.get_object.assert_called_once()
+            bus_object.Reboot.assert_called_once()
