@@ -1637,3 +1637,4 @@ class AptPackageChangerTest(LandscapeTest):
         def check(_):
             bus_object.get_object.assert_called_once()
             bus_object.Reboot.assert_called_once()
+            
