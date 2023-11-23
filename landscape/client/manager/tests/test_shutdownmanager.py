@@ -21,7 +21,6 @@ class ShutdownManagerTest(LandscapeTest):
         self.clock = task.Clock()
         self.plugin = ShutdownManager()
         self.manager.add(self.plugin)
-        self.plugin.callLater = self.clock.callLater
 
         self.dbus_mock = patch(
             "landscape.client.manager.shutdownmanager.dbus").start()
