@@ -90,6 +90,12 @@ case "$1" in
         WRAPPER=/usr/share/landscape/landscape-sysinfo.wrapper
         PROFILE_LOCATION=/etc/profile.d/50-landscape-sysinfo.sh
         UPDATE_MOTD_LOCATION=/etc/update-motd.d/50-landscape-sysinfo
+        STAMP_LOCATION=/var/lib/landscape/landscape-sysinfo.cache
+
+        touch $STAMP_LOCATION
+        chown landscape:root $STAMP_LOCATION
+        chmod 666 $STAMP_LOCATION
+
         if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
             rm -f $PROFILE_LOCATION 2>/dev/null || true
             ln -sf $WRAPPER $UPDATE_MOTD_LOCATION
