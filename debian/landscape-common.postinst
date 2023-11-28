@@ -94,7 +94,7 @@ case "$1" in
 
         touch $STAMP_LOCATION
         chown landscape:root $STAMP_LOCATION
-        chmod 666 $STAMP_LOCATION
+        chmod 0644 $STAMP_LOCATION
 
         if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
             rm -f $PROFILE_LOCATION 2>/dev/null || true
