@@ -74,7 +74,7 @@ def get_mount_info(
             continue
         block_size = stats.f_bsize
         total_space = (stats.f_blocks * block_size) // megabytes
-        free_space = (stats.f_bfree * block_size) // megabytes
+        free_space = (stats.f_bavail * block_size) // megabytes
         yield {
             "device": device,
             "mount-point": mount_point,
