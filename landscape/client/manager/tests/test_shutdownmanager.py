@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import twisted.internet.defer
+
 from landscape.client.manager.shutdownmanager import ShutdownManager
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
@@ -44,3 +46,7 @@ class ShutdownManagerTest(LandscapeTest):
 
         self.plugin.shutdown_deferred.addCallback(check)
         return deferred
+
+    def test_shutdown_failed(self):
+        deferred = self.plugin._respond_fail("", 100)
+        self.assertIsInstance(deferred, twisted.internet.defer.Deferred)

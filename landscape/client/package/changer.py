@@ -3,8 +3,8 @@ import logging
 import os
 import pwd
 import time
-import dbus
 
+import dbus
 from twisted.internet import reactor
 from twisted.internet.defer import maybeDeferred
 from twisted.internet.defer import succeed
@@ -366,17 +366,19 @@ class PackageChanger(PackageTaskHandler):
     def _reboot_later(self, result):
         self._landscape_reactor.call_later(5, self._run_reboot)
 
-    def _run_reboot(self):
+    def _run_reboot(self, bus=dbus.SystemBus()):
         """
         Fire a dbus system shutdown
         """
-        bus = dbus.SystemBus()
-        bus_object = bus.get_object(
+        self.bus = bus
+        self.bus_object = self.bus.get_object(
             "org.freedesktop.login1",
-            "/org/freedesktop/login1")
-        bus_object.Reboot(
+            "/org/freedesktop/login1",
+        )
+        self.bus_object.Reboot(
             True,
-            dbus_interface="org.freedesktop.login1.Manager")
+            dbus_interface="org.freedesktop.login1.Manager",
+        )
 
     def _log_reboot(self, result, minutes):
         """Log the reboot."""
