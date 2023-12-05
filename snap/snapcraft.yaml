@@ -108,6 +108,7 @@ parts:
       - python3-netifaces
       - python3-pycurl
       - python3-twisted
+      - python3-dbus
       - ubuntu-advantage-tools
     override-prime: |
       craftctl default
