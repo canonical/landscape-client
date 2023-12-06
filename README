@@ -83,7 +83,7 @@ $ sudo ./scripts/landscape-client -c root-client.conf
 
 Before opening a PR, make sure to run the full test suite and lint:
 ```
-make check3
+make check
 make lint
 ```
 

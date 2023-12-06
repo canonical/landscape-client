@@ -199,14 +199,15 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--script-users",
             metavar="USERS",
             help="A comma-separated list of users to allow "
-            "scripts to run.  To allow scripts to be run "
+            "scripts to run. To allow scripts to be run "
             "by any user, enter: ALL",
         )
         parser.add_option(
             "--include-manager-plugins",
             metavar="PLUGINS",
             default="",
-            help="A comma-separated list of manager plugins to load.",
+            help="A comma-separated list of manager plugins "
+            "to enable in addition to the defaults.",
         )
         parser.add_option(
             "-n",
