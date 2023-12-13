@@ -20,7 +20,6 @@ set -e
 case "$1" in
     remove|upgrade|deconfigure)
        rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null || true
-       update-motd 2>/dev/null || true
        rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true
     ;;
 
