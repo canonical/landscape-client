@@ -19,7 +19,7 @@ class SnapHttpTestCase(TestCase):
     def test_get_snaps(self):
         """get_snaps() returns a dict with a list of installed snaps."""
         http = SnapHttp()
-        result = http.get_snaps()["result"]
+        result = http.list()["result"]
 
         self.assertTrue(isinstance(result, list))
         self.assertGreater(len(result), 0)
@@ -39,7 +39,7 @@ class SnapHttpTestCase(TestCase):
             getinfo_mock = Mock(return_value=400)
             curl_mock.return_value = Mock(getinfo=getinfo_mock)
 
-            self.assertRaises(SnapdHttpException, http.get_snaps)
+            self.assertRaises(SnapdHttpException, http.list)
 
     def test_get_snaps_couldnt_connect(self):
         """
@@ -48,4 +48,4 @@ class SnapHttpTestCase(TestCase):
         """
         http = SnapHttp(snap_socket="/run/garbage.socket")
 
-        self.assertRaises(SnapdHttpException, http.get_snaps)
+        self.assertRaises(SnapdHttpException, http.list)

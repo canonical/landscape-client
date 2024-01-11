@@ -6,10 +6,19 @@ from twisted.internet import task
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.snap.http import INCOMPLETE_STATUSES
-from landscape.client.snap.http import SnapdHttpException
-from landscape.client.snap.http import SnapHttp
-from landscape.client.snap.http import SUCCESS_STATUSES
+
+try:
+    import snap_http
+    from snap_http import INCOMPLETE_STATUSES
+    from snap_http import SnapdHttpException
+    from snap_http import SUCCESS_STATUSES
+except ImportError:
+    from landscape.client.snap.http import INCOMPLETE_STATUSES
+    from landscape.client.snap.http import SnapdHttpException
+    from landscape.client.snap.http import SnapHttp
+    from landscape.client.snap.http import SUCCESS_STATUSES
+
+    snap_http = SnapHttp()
 
 
 class SnapManager(ManagerPlugin):
@@ -23,18 +32,17 @@ class SnapManager(ManagerPlugin):
     def __init__(self):
         super().__init__()
 
-        self._snap_http = SnapHttp()
         self.SNAP_METHODS = {
-            "install-snaps": self._snap_http.install_snap,
-            "install-snaps-batch": self._snap_http.install_snaps,
-            "remove-snaps": self._snap_http.remove_snap,
-            "remove-snaps-batch": self._snap_http.remove_snaps,
-            "refresh-snaps": self._snap_http.refresh_snap,
-            "refresh-snaps-batch": self._snap_http.refresh_snaps,
-            "hold-snaps": self._snap_http.hold_snap,
-            "hold-snaps-batch": self._snap_http.hold_snaps,
-            "unhold-snaps": self._snap_http.unhold_snap,
-            "unhold-snaps-batch": self._snap_http.unhold_snaps,
+            "install-snaps": snap_http.install,
+            "install-snaps-batch": snap_http.install_all,
+            "remove-snaps": snap_http.remove,
+            "remove-snaps-batch": snap_http.remove_all,
+            "refresh-snaps": snap_http.refresh,
+            "refresh-snaps-batch": snap_http.refresh_all,
+            "hold-snaps": snap_http.hold,
+            "hold-snaps-batch": snap_http.hold_all,
+            "unhold-snaps": snap_http.unhold,
+            "unhold-snaps-batch": snap_http.unhold_all,
         }
 
     def register(self, registry):
@@ -161,7 +169,7 @@ class SnapManager(ManagerPlugin):
             logging.info("Polling snapd for status of pending snap changes")
 
             try:
-                result = self._snap_http.check_changes().get("result", [])
+                result = snap_http.check_changes().get("result", [])
                 result_dict = {c["id"]: c for c in result}
             except SnapdHttpException as e:
                 logging.error(f"Error checking status of snap changes: {e}")
@@ -253,7 +261,7 @@ class SnapManager(ManagerPlugin):
 
     def _send_installed_snap_update(self):
         try:
-            installed_snaps = self._snap_http.get_snaps()
+            installed_snaps = snap_http.list()
         except SnapdHttpException as e:
             logging.error(
                 f"Unable to list installed snaps after snap change: {e}",

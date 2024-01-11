@@ -1,9 +1,16 @@
 import logging
 
 from landscape.client.monitor.plugin import DataWatcher
-from landscape.client.snap.http import SnapdHttpException
-from landscape.client.snap.http import SnapHttp
 from landscape.message_schemas.server_bound import SNAPS
+
+try:
+    import snap_http
+    from snap_http import SnapdHttpException
+except ImportError:
+    from landscape.client.snap.http import SnapHttp
+    from landscape.client.snap.http import SnapdHttpException
+
+    snap_http = SnapHttp()
 
 
 class SnapMonitor(DataWatcher):
@@ -12,11 +19,6 @@ class SnapMonitor(DataWatcher):
     message_key = message_type
     persist_name = message_type
     scope = "snaps"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self._snap_http = SnapHttp()
 
     def register(self, registry):
         self.config = registry.config
@@ -27,7 +29,7 @@ class SnapMonitor(DataWatcher):
 
     def get_data(self):
         try:
-            snaps = self._snap_http.get_snaps()
+            snaps = snap_http.list()
         except SnapdHttpException as e:
             logging.error(f"Unable to list installed snaps: {e}")
             return

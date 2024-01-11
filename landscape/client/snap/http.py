@@ -39,11 +39,11 @@ class SnapHttp:
         """Check the status of all snapd changes."""
         return self._get("/changes?select=all")
 
-    def enable_snap(self, name):
+    def enable(self, name):
         """Enables a previously disabled snap by `name`."""
         return self._post("/snaps/" + name, {"action": "enable"})
 
-    def enable_snaps(self, snaps):
+    def enable_all(self, snaps):
         """See `self.enable_snap`."""
         return self._post(
             "/snaps",
@@ -53,14 +53,14 @@ class SnapHttp:
             },
         )
 
-    def disable_snap(self, name):
+    def disable(self, name):
         """
         Disables a snap by `name`, making its binaries and services
         unavailable.
         """
         return self._post("/snaps/" + name, {"action": "disable"})
 
-    def disable_snaps(self, snaps):
+    def disable_all(self, snaps):
         """See `self.disable_snap`."""
         return self._post(
             "/snaps",
@@ -70,11 +70,11 @@ class SnapHttp:
             },
         )
 
-    def get_snaps(self):
+    def list(self):
         """GETs a list of installed snaps."""
         return self._get("/snaps")
 
-    def hold_snap(self, name, hold_level="general", time="forever"):
+    def hold(self, name, hold_level="general", time="forever"):
         """
         Holds a snap by `name` at `hold_level` until `time`.
 
@@ -91,7 +91,7 @@ class SnapHttp:
 
         return self._post("/snaps/" + name, body)
 
-    def hold_snaps(self, snaps, hold_level="general", time="forever"):
+    def hold_all(self, snaps, hold_level="general", time="forever"):
         """
         Same as `self.hold_snap`, except for a batch of snaps.
         """
@@ -106,7 +106,7 @@ class SnapHttp:
 
         return self._post("/snaps", body)
 
-    def install_snap(self, name, revision=None, channel=None, classic=False):
+    def install(self, name, revision=None, channel=None, classic=False):
         """
         Installs a snap by `name` at `revision`, tracking `channel`. If
         `classic`, then snap is installed in classic containment mode.
@@ -125,10 +125,10 @@ class SnapHttp:
 
         return self._post("/snaps/" + name, body)
 
-    def install_snaps(self, snaps):
+    def install_all(self, snaps):
         return self._post("/snaps", {"action": "install", "snaps": snaps})
 
-    def refresh_snap(self, name, revision=None, channel=None, classic=None):
+    def refresh(self, name, revision=None, channel=None, classic=None):
         """
         Refreshes a snap, switching to the given `revision` and `channel` if
         provided.
@@ -147,7 +147,7 @@ class SnapHttp:
 
         return self._post("/snaps/" + name, body)
 
-    def refresh_snaps(self, snaps=[]):
+    def refresh_all(self, snaps=[]):
         """
         Refreshes `snaps` to the latest revision. If `snaps` is empty,
         all snaps are refreshed.
@@ -159,7 +159,7 @@ class SnapHttp:
 
         return self._post("/snaps", body)
 
-    def revert_snap(self, name, revision=None, classic=None):
+    def revert(self, name, revision=None, classic=None):
         """
         Reverts a snap, switching to the given `revision` is provided.
         Otherwise switches to the revision used prior to the last
@@ -178,7 +178,7 @@ class SnapHttp:
 
         return self._post("/snaps/" + name, body)
 
-    def revert_snaps(self, snaps):
+    def revert_all(self, snaps):
         """
         Reverts `snaps` to the revision used prior to the last refresh.
         """
@@ -190,10 +190,10 @@ class SnapHttp:
             },
         )
 
-    def remove_snap(self, name):
+    def remove(self, name):
         return self._post("/snaps/" + name, {"action": "remove"})
 
-    def remove_snaps(self, snaps):
+    def remove_all(self, snaps):
         return self._post(
             "/snaps",
             {
@@ -202,7 +202,7 @@ class SnapHttp:
             },
         )
 
-    def switch_snap(self, name, channel="stable"):
+    def switch(self, name, channel="stable"):
         """Switches the channel that a snap is tracking."""
         return self._post(
             "/snaps/" + name,
@@ -214,7 +214,7 @@ class SnapHttp:
             ),
         )
 
-    def switch_snaps(self, snaps, channel="stable"):
+    def switch_all(self, snaps, channel="stable"):
         return self._post(
             "/snaps",
             _clean_dict(
@@ -226,14 +226,14 @@ class SnapHttp:
             ),
         )
 
-    def unhold_snap(self, name):
+    def unhold(self, name):
         """
         Remove a hold on a snap, allowing it to refresh on it's usual
         schedule.
         """
         return self._post("/snaps/" + name, {"action": "unhold"})
 
-    def unhold_snaps(self, snaps):
+    def unhold_all(self, snaps):
         """See `self.unhold_snap`."""
         return self._post(
             "/snaps",
