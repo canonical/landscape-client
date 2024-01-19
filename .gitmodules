@@ -1,0 +1,3 @@
+[submodule "snap-http"]
+	path = snap-http
+	url = https://github.com/Perfect5th/snap-http

@@ -1,16 +1,9 @@
 import logging
 
+from landscape.client import snap_http
 from landscape.client.monitor.plugin import DataWatcher
+from landscape.client.snap_http import SnapdHttpException
 from landscape.message_schemas.server_bound import SNAPS
-
-try:
-    import snap_http
-    from snap_http import SnapdHttpException
-except ImportError:
-    from landscape.client.snap.http import SnapHttp
-    from landscape.client.snap.http import SnapdHttpException
-
-    snap_http = SnapHttp()
 
 
 class SnapMonitor(DataWatcher):
@@ -37,7 +30,7 @@ class SnapMonitor(DataWatcher):
         for i in range(len(snaps)):
             try:
                 config = snap_http.get_conf(snaps[i]["name"])
-            except SnapdHttpException as e:
+            except SnapdHttpException:
                 config = {}
 
             snaps[i]["config"] = config

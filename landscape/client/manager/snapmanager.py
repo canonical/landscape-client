@@ -1,24 +1,16 @@
+import json
 import logging
 from collections import deque
 
 from twisted.internet import task
 
+from landscape.client import snap_http
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
-
-try:
-    import snap_http
-    from snap_http import INCOMPLETE_STATUSES
-    from snap_http import SnapdHttpException
-    from snap_http import SUCCESS_STATUSES
-except ImportError:
-    from landscape.client.snap.http import INCOMPLETE_STATUSES
-    from landscape.client.snap.http import SnapdHttpException
-    from landscape.client.snap.http import SnapHttp
-    from landscape.client.snap.http import SUCCESS_STATUSES
-
-    snap_http = SnapHttp()
+from landscape.client.snap_http import INCOMPLETE_STATUSES
+from landscape.client.snap_http import SnapdHttpException
+from landscape.client.snap_http import SUCCESS_STATUSES
 
 
 class SnapManager(ManagerPlugin):
@@ -43,7 +35,7 @@ class SnapManager(ManagerPlugin):
             "hold-snaps-batch": snap_http.hold_all,
             "unhold-snaps": snap_http.unhold,
             "unhold-snaps-batch": snap_http.unhold_all,
-            "set-config": snap_http.set_conf,
+            "set-snap-config": snap_http.set_conf,
         }
 
     def register(self, registry):
@@ -55,7 +47,7 @@ class SnapManager(ManagerPlugin):
         registry.register_message("refresh-snaps", self._handle_snap_task)
         registry.register_message("hold-snaps", self._handle_snap_task)
         registry.register_message("unhold-snaps", self._handle_snap_task)
-        registry.register_message("set-config", self._handle_snap_task)
+        registry.register_message("set-snap-config", self._handle_snap_task)
 
     def _handle_snap_task(self, message):
         """
@@ -96,7 +88,7 @@ class SnapManager(ManagerPlugin):
             )
             queue.append((response["change"], "BATCH"))
         except SnapdHttpException as e:
-            result = e.json["result"]
+            result = json.loads(e.args[0])["result"]
             logging.error(
                 f"Error in {message_type}: {message}",
             )
@@ -127,7 +119,7 @@ class SnapManager(ManagerPlugin):
 
         # Naively doing this synchronously because each is an HTTP call to the
         # snap REST API that returns basically immediately. We poll for their
-        # completion statuses once they've all been kicked off.
+        # completion statuses once they've all been kicked off
         for snap in snaps:
             name = snap["name"]
             snap_args = snap.get("args", {})
@@ -140,7 +132,7 @@ class SnapManager(ManagerPlugin):
                 )
                 queue.append((response["change"], name))
             except SnapdHttpException as e:
-                result = e.json["result"]
+                result = json.loads(e.args[0])["result"]
                 logging.error(
                     f"Error in {message_type} for '{name}': {message}",
                 )
@@ -263,7 +255,7 @@ class SnapManager(ManagerPlugin):
 
     def _send_installed_snap_update(self):
         try:
-            installed_snaps = snap_http.list()
+            installed_snaps = snap_http.list().result
         except SnapdHttpException as e:
             logging.error(
                 f"Unable to list installed snaps after snap change: {e}",

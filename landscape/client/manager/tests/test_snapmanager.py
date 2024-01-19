@@ -3,13 +3,10 @@ from unittest import mock
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.manager import SUCCEEDED
 from landscape.client.manager.snapmanager import SnapManager
+from landscape.client.snap_http import SnapdHttpException
+from landscape.client.snap_http import SnapdResponse
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
-
-try:
-    from snap_http import SnapdHttpException
-except ImportError:
-    from landscape.client.snap.http import SnapdHttpException
 
 
 class SnapManagerTest(LandscapeTest):
@@ -56,7 +53,12 @@ class SnapManagerTest(LandscapeTest):
                 {"id": "2", "status": "Done"},
             ],
         }
-        self.snap_http.list.return_value = {"installed": []}
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"installed": []},
+        )
 
         result = self.manager.dispatch_message(
             {
@@ -94,19 +96,24 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.check_changes.return_value = {
             "result": [{"id": "1", "status": "Done"}],
         }
-        self.snap_http.list.return_value = {
-            "installed": [
-                {
-                    "name": "hello",
-                    "id": "test",
-                    "confinement": "strict",
-                    "tracking-channel": "latest/stable",
-                    "revision": "100",
-                    "publisher": {"validation": "yep", "username": "me"},
-                    "version": "1.2.3",
-                },
-            ],
-        }
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {
+                "installed": [
+                    {
+                        "name": "hello",
+                        "id": "test",
+                        "confinement": "strict",
+                        "tracking-channel": "latest/stable",
+                        "revision": "100",
+                        "publisher": {"validation": "yep", "username": "me"},
+                        "version": "1.2.3",
+                    },
+                ],
+            },
+        )
 
         result = self.manager.dispatch_message(
             {
@@ -139,7 +146,12 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.install_all.side_effect = SnapdHttpException(
             b'{"result": "whoops"}',
         )
-        self.snap_http.list.return_value = {"installed": []}
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"installed": []},
+        )
 
         result = self.manager.dispatch_message(
             {
@@ -170,7 +182,9 @@ class SnapManagerTest(LandscapeTest):
     def test_install_snap_no_status(self):
         self.snap_http.install_all.return_value = {"change": "1"}
         self.snap_http.check_changes.return_value = {"result": []}
-        self.snap_http.list.return_value = {"installed": []}
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync", 200, "OK", {"installed": []}
+        )
 
         result = self.manager.dispatch_message(
             {
@@ -199,7 +213,9 @@ class SnapManagerTest(LandscapeTest):
     def test_install_snap_check_error(self):
         self.snap_http.install_all.return_value = {"change": "1"}
         self.snap_http.check_changes.side_effect = SnapdHttpException("whoops")
-        self.snap_http.list.return_value = {"installed": []}
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync", 200, "OK", {"installed": []}
+        )
 
         result = self.manager.dispatch_message(
             {
@@ -232,7 +248,9 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.check_changes.return_value = {
             "result": [{"id": "1", "status": "Done"}],
         }
-        self.snap_http.list.return_value = {"installed": []}
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync", 200, "OK", {"installed": []}
+        )
 
         result = self.manager.dispatch_message(
             {
@@ -263,11 +281,13 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.check_changes.return_value = {
             "result": [{"id": "1", "status": "Done"}],
         }
-        self.snap_http.list.return_value = {"installed": []}
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync", 200, "OK", {"installed": []}
+        )
 
         result = self.manager.dispatch_message(
             {
-                "type": "set-config",
+                "type": "set-snap-config",
                 "operation-id": 123,
                 "snaps": [
                     {

@@ -812,6 +812,7 @@ SNAPS = Message(
                             "summary",
                             "publisher",
                             "tracking-channel",
+                            "config",
                         ],
                     ),
                 ),
