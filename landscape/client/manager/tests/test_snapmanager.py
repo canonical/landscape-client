@@ -257,3 +257,39 @@ class SnapManagerTest(LandscapeTest):
             )
 
         return result.addCallback(got_result)
+
+    def test_set_config(self):
+        self.snap_http.set_conf.return_value = {"change": "1"}
+        self.snap_http.check_changes.return_value = {
+            "result": [{"id": "1", "status": "Done"}],
+        }
+        self.snap_http.list.return_value = {"installed": []}
+
+        result = self.manager.dispatch_message(
+            {
+                "type": "set-config",
+                "operation-id": 123,
+                "snaps": [
+                    {
+                        "name": "hello",
+                        "config": {"foo": {"bar": "qux", "baz": "quux"}},
+                    }
+                ],
+            }
+        )
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "result-text": "{'completed': ['hello'], "
+                        "'errored': [], 'errors': {}}",
+                        "operation-id": 123,
+                    },
+                ],
+            )
+
+        return result.addCallback(got_result)

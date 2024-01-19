@@ -43,6 +43,7 @@ class SnapManager(ManagerPlugin):
             "hold-snaps-batch": snap_http.hold_all,
             "unhold-snaps": snap_http.unhold,
             "unhold-snaps-batch": snap_http.unhold_all,
+            "set-config": snap_http.set_conf,
         }
 
     def register(self, registry):
@@ -54,6 +55,7 @@ class SnapManager(ManagerPlugin):
         registry.register_message("refresh-snaps", self._handle_snap_task)
         registry.register_message("hold-snaps", self._handle_snap_task)
         registry.register_message("unhold-snaps", self._handle_snap_task)
+        registry.register_message("set-config", self._handle_snap_task)
 
     def _handle_snap_task(self, message):
         """

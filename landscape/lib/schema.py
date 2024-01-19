@@ -1,4 +1,6 @@
 """A schema system. Yes. Another one!"""
+from functools import singledispatchmethod
+
 from twisted.python.compat import iteritems
 from twisted.python.compat import long
 from twisted.python.compat import unicode
@@ -232,4 +234,50 @@ class Dict:
         new_dict = {}
         for k, v in value.items():
             new_dict[self.key_schema.coerce(k)] = self.value_schema.coerce(v)
+        return new_dict
+
+
+class Nested:
+    """"""
+
+    def __init__(self, schema):
+        if not isinstance(schema, (List, Dict, KeyDict)):
+            raise TypeError(f"{schema} does not support nesting")
+
+        self.schema = schema
+
+    @singledispatchmethod
+    def coerce(self, value):
+        raise InvalidError(
+            f"{value!r} could not coerce with {self.schema}: "
+            "type does not support nesting"
+        )
+
+    @coerce.register(list)
+    def _(self, value):
+        if not isinstance(self.schema, List):
+            raise InvalidError(f"{self.schema} must be a list type")
+
+        new_sequence = []
+        for subvalue in value:
+            if isinstance(subvalue, list):
+                coerced = Nested(self.schema).coerce(subvalue)
+            else:
+                coerced = self.schema.schema.coerce(subvalue)
+            new_sequence.append(coerced)
+        return new_sequence
+
+    @coerce.register(dict)
+    def _(self, value):
+        if not isinstance(self.schema, Dict):
+            raise InvalidError(f"{self.schema} must be a dictionary type")
+
+        new_dict = {}
+        for k, v in value.items():
+            coerced_key = self.schema.key_schema.coerce(k)
+            if isinstance(v, dict):
+                coerced_value = Nested(self.schema).coerce(v)
+            else:
+                coerced_value = self.schema.value_schema.coerce(v)
+            new_dict[coerced_key] = coerced_value
         return new_dict

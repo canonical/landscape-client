@@ -9,6 +9,7 @@ from landscape.lib.schema import Float
 from landscape.lib.schema import Int
 from landscape.lib.schema import KeyDict
 from landscape.lib.schema import List
+from landscape.lib.schema import Nested
 from landscape.lib.schema import Tuple
 from landscape.lib.schema import Unicode
 
@@ -758,6 +759,28 @@ UBUNTU_PRO_REBOOT_REQUIRED = Message(
     {"ubuntu-pro-reboot-required": Unicode()},
 )
 
+snap_config_vals = Nested(
+    Dict(
+        Unicode(),
+        Any(
+            Unicode(),
+            Int(),
+            Bool(),
+            Float(),
+            Nested(
+                List(
+                    Any(
+                        Unicode(),
+                        Int(),
+                        Bool(),
+                        Float(),
+                    ),
+                )
+            ),
+        ),
+    ),
+)
+
 SNAPS = Message(
     "snaps",
     {
@@ -781,6 +804,7 @@ SNAPS = Message(
                             ),
                             "confinement": Unicode(),
                             "summary": Unicode(),
+                            "config": snap_config_vals,
                         },
                         strict=False,
                         optional=[
