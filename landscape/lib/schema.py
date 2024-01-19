@@ -238,11 +238,14 @@ class Dict:
 
 
 class Nested:
-    """"""
+    """A type that allows nesting of C{list} and C{dict}.
+
+    @param schema: A `List`, `Dict`, or `KeyDict` schema.
+    """
 
     def __init__(self, schema):
         if not isinstance(schema, (List, Dict, KeyDict)):
-            raise TypeError(f"{schema} does not support nesting")
+            raise InvalidError(f"{schema} does not support nesting")
 
         self.schema = schema
 
@@ -256,7 +259,9 @@ class Nested:
     @coerce.register(list)
     def _(self, value):
         if not isinstance(self.schema, List):
-            raise InvalidError(f"{self.schema} must be a list type")
+            raise InvalidError(
+                f"{value!r} has type list which doesn't match {self.schema}"
+            )
 
         new_sequence = []
         for subvalue in value:
@@ -270,7 +275,9 @@ class Nested:
     @coerce.register(dict)
     def _(self, value):
         if not isinstance(self.schema, Dict):
-            raise InvalidError(f"{self.schema} must be a dictionary type")
+            raise InvalidError(
+                f"{value!r} has type dict which doesn't match {self.schema}"
+            )
 
         new_dict = {}
         for k, v in value.items():

@@ -50,8 +50,8 @@ class SnapMonitorTest(LandscapeTest):
         )
 
     @patch("landscape.client.monitor.snapmonitor.snap_http")
-    def test_get_data_with_simple_snap_config(self, snap_http_mock):
-        """"""
+    def test_get_simple_snap_config(self, snap_http_mock):
+        """Tests that we can get and coerce simple snap config."""
         plugin = SnapMonitor()
         self.monitor.add(plugin)
 
@@ -88,8 +88,8 @@ class SnapMonitorTest(LandscapeTest):
         )
 
     @patch("landscape.client.monitor.snapmonitor.snap_http")
-    def test_get_data_with_complex_snap_config(self, snap_http_mock):
-        """"""
+    def test_get_complex_snap_config(self, snap_http_mock):
+        """Tests that we can get and coerce complex snap config."""
         plugin = SnapMonitor()
         self.monitor.add(plugin)
 

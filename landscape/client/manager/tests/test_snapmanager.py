@@ -313,3 +313,45 @@ class SnapManagerTest(LandscapeTest):
             )
 
         return result.addCallback(got_result)
+
+    def test_set_config_sync_error(self):
+        self.snap_http.set_conf.side_effect = SnapdHttpException(
+            b'{"result": "whoops"}',
+        )
+        self.snap_http.check_changes.return_value = {
+            "result": [{"id": "1", "status": "Done"}],
+        }
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync", 200, "OK", {"installed": []}
+        )
+
+        result = self.manager.dispatch_message(
+            {
+                "type": "set-snap-config",
+                "operation-id": 123,
+                "snaps": [
+                    {
+                        "name": "hello",
+                        "config": {"foo": {"bar": "qux", "baz": "quux"}},
+                    }
+                ],
+            }
+        )
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "status": FAILED,
+                        "result-text": (
+                            "{'completed': [], 'errored': [], "
+                            "'errors': {'hello': 'whoops'}}"
+                        ),
+                        "operation-id": 123,
+                    },
+                ],
+            )
+
+        return result.addCallback(got_result)

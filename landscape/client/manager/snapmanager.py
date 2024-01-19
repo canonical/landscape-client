@@ -119,7 +119,7 @@ class SnapManager(ManagerPlugin):
 
         # Naively doing this synchronously because each is an HTTP call to the
         # snap REST API that returns basically immediately. We poll for their
-        # completion statuses once they've all been kicked off
+        # completion statuses once they've all been kicked off.
         for snap in snaps:
             name = snap["name"]
             snap_args = snap.get("args", {})
