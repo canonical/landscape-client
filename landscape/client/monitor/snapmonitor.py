@@ -1,3 +1,4 @@
+import json
 import logging
 
 from landscape.client import snap_http
@@ -33,7 +34,7 @@ class SnapMonitor(DataWatcher):
             except SnapdHttpException:
                 config = {}
 
-            snaps[i]["config"] = config
+            snaps[i]["config"] = json.dumps(config)
 
         # We get a lot of extra info from snapd. To avoid caching it all
         # or invalidating the cache on timestamp changes, we use Message

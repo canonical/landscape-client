@@ -50,46 +50,8 @@ class SnapMonitorTest(LandscapeTest):
         )
 
     @patch("landscape.client.monitor.snapmonitor.snap_http")
-    def test_get_simple_snap_config(self, snap_http_mock):
-        """Tests that we can get and coerce simple snap config."""
-        plugin = SnapMonitor()
-        self.monitor.add(plugin)
-
-        snap_http_mock.list.return_value = SnapdResponse(
-            "sync",
-            200,
-            "OK",
-            [
-                {
-                    "name": "test-snap",
-                    "revision": "1",
-                    "confinement": "strict",
-                    "version": "v1.0",
-                    "id": "123",
-                }
-            ],
-        )
-        snap_http_mock.get_conf.return_value = {"bar": "default", "baz": False}
-        plugin.exchange()
-
-        messages = self.mstore.get_pending_messages()
-
-        self.assertTrue(len(messages) > 0)
-        self.assertDictEqual(
-            messages[0]["snaps"]["installed"][0],
-            {
-                "name": "test-snap",
-                "revision": "1",
-                "confinement": "strict",
-                "version": "v1.0",
-                "id": "123",
-                "config": {"bar": "default", "baz": False},
-            },
-        )
-
-    @patch("landscape.client.monitor.snapmonitor.snap_http")
-    def test_get_complex_snap_config(self, snap_http_mock):
-        """Tests that we can get and coerce complex snap config."""
+    def test_get_snap_config(self, snap_http_mock):
+        """Tests that we can get and coerce snap config."""
         plugin = SnapMonitor()
         self.monitor.add(plugin)
 
@@ -124,9 +86,9 @@ class SnapMonitorTest(LandscapeTest):
                 "confinement": "strict",
                 "version": "v1.0",
                 "id": "123",
-                "config": {
-                    "foo": {"baz": "default", "qux": [1, True, 2.0]},
-                    "bar": "enabled",
-                },
+                "config": (
+                    '{"foo": {"baz": "default", "qux": [1, true, 2.0]}, '
+                    '"bar": "enabled"}'
+                ),
             },
         )

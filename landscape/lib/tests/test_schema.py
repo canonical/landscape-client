@@ -12,7 +12,6 @@ from landscape.lib.schema import Int
 from landscape.lib.schema import InvalidError
 from landscape.lib.schema import KeyDict
 from landscape.lib.schema import List
-from landscape.lib.schema import Nested
 from landscape.lib.schema import Tuple
 from landscape.lib.schema import Unicode
 
@@ -226,54 +225,3 @@ class BasicTypesTest(unittest.TestCase):
 
     def test_dict_wrong_type(self):
         self.assertRaises(InvalidError, Dict(Int(), Int()).coerce, 32)
-
-    def test_nested_list_correct_types_only(self):
-        schema = Nested(List(Any(Int(), Unicode())))
-        data = [[1, "foo"], [[5]]]
-        self.assertEqual(schema.coerce(data), [[1, "foo"], [[5]]])
-
-    def test_nested_list_bad_types_only(self):
-        schema = Nested(List(Any(Int(), Unicode())))
-        data = [[5.0]]
-        self.assertRaises(InvalidError, schema.coerce, data)
-
-    def test_nested_list_mixed_correct_and_bad_types_only(self):
-        schema = Nested(List(Any(Int(), Unicode())))
-        data = [[1.0, "foo"], [[5]]]
-        self.assertRaises(InvalidError, schema.coerce, data)
-
-    def test_nested_list_with_dictionary(self):
-        schema = Nested(List(Any(Int(), Unicode())))
-        data = {"foo": "bar"}
-        self.assertRaises(InvalidError, schema.coerce, data)
-
-    def test_nested_dict_correct_types_only(self):
-        schema = Nested(Dict(Unicode(), Any(Int(), Unicode())))
-        data = {"foo": 5, "bar": {"baz": "default"}}
-        self.assertEqual(
-            schema.coerce(data), {"foo": 5, "bar": {"baz": "default"}}
-        )
-
-    def test_nested_dict_bad_types_only(self):
-        schema = Nested(Dict(Unicode(), Any(Int(), Unicode())))
-        data = {2: 5.0}
-        self.assertRaises(InvalidError, schema.coerce, data)
-
-    def test_nested_dict_mixed_correct_and_bad_types_only(self):
-        schema = Nested(Dict(Unicode(), Any(Int(), Unicode())))
-        data = {"bar": {"baz": "default"}, 2: 5.0}
-        self.assertRaises(InvalidError, schema.coerce, data)
-
-    def test_nested_dict_with_list(self):
-        schema = Nested(Dict(Unicode(), Any(Int(), Unicode())))
-        data = []
-        self.assertRaises(InvalidError, schema.coerce, data)
-
-    def test_nested_with_type_that_doesnt_support_nesting(self):
-        with self.assertRaises(InvalidError):
-            Nested(Int())
-
-    def test_nested_coerce_unsupported_type(self):
-        schema = Nested(List(Any(Int(), Unicode())))
-        data = 4
-        self.assertRaises(InvalidError, schema.coerce, data)
