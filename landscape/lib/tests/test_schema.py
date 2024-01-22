@@ -171,7 +171,8 @@ class BasicTypesTest(unittest.TestCase):
     def test_key_dict_unknown_key_not_strict(self):
         self.assertEqual(
             KeyDict({"foo": Int()}, strict=False).coerce({"foo": 1, "bar": 2}),
-            {"foo": 1})
+            {"foo": 1},
+        )
 
     def test_key_dict_bad(self):
         self.assertRaises(InvalidError, KeyDict({}).coerce, object())

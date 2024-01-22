@@ -1,15 +1,16 @@
+import json
 import logging
 from collections import deque
 
 from twisted.internet import task
 
+from landscape.client import snap_http
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.snap.http import INCOMPLETE_STATUSES
-from landscape.client.snap.http import SnapdHttpException
-from landscape.client.snap.http import SnapHttp
-from landscape.client.snap.http import SUCCESS_STATUSES
+from landscape.client.snap_http import INCOMPLETE_STATUSES
+from landscape.client.snap_http import SnapdHttpException
+from landscape.client.snap_http import SUCCESS_STATUSES
 
 
 class SnapManager(ManagerPlugin):
@@ -23,18 +24,18 @@ class SnapManager(ManagerPlugin):
     def __init__(self):
         super().__init__()
 
-        self._snap_http = SnapHttp()
         self.SNAP_METHODS = {
-            "install-snaps": self._snap_http.install_snap,
-            "install-snaps-batch": self._snap_http.install_snaps,
-            "remove-snaps": self._snap_http.remove_snap,
-            "remove-snaps-batch": self._snap_http.remove_snaps,
-            "refresh-snaps": self._snap_http.refresh_snap,
-            "refresh-snaps-batch": self._snap_http.refresh_snaps,
-            "hold-snaps": self._snap_http.hold_snap,
-            "hold-snaps-batch": self._snap_http.hold_snaps,
-            "unhold-snaps": self._snap_http.unhold_snap,
-            "unhold-snaps-batch": self._snap_http.unhold_snaps,
+            "install-snaps": snap_http.install,
+            "install-snaps-batch": snap_http.install_all,
+            "remove-snaps": snap_http.remove,
+            "remove-snaps-batch": snap_http.remove_all,
+            "refresh-snaps": snap_http.refresh,
+            "refresh-snaps-batch": snap_http.refresh_all,
+            "hold-snaps": snap_http.hold,
+            "hold-snaps-batch": snap_http.hold_all,
+            "unhold-snaps": snap_http.unhold,
+            "unhold-snaps-batch": snap_http.unhold_all,
+            "set-snap-config": snap_http.set_conf,
         }
 
     def register(self, registry):
@@ -46,6 +47,7 @@ class SnapManager(ManagerPlugin):
         registry.register_message("refresh-snaps", self._handle_snap_task)
         registry.register_message("hold-snaps", self._handle_snap_task)
         registry.register_message("unhold-snaps", self._handle_snap_task)
+        registry.register_message("set-snap-config", self._handle_snap_task)
 
     def _handle_snap_task(self, message):
         """
@@ -86,7 +88,7 @@ class SnapManager(ManagerPlugin):
             )
             queue.append((response["change"], "BATCH"))
         except SnapdHttpException as e:
-            result = e.json["result"]
+            result = json.loads(e.args[0])["result"]
             logging.error(
                 f"Error in {message_type}: {message}",
             )
@@ -130,7 +132,7 @@ class SnapManager(ManagerPlugin):
                 )
                 queue.append((response["change"], name))
             except SnapdHttpException as e:
-                result = e.json["result"]
+                result = json.loads(e.args[0])["result"]
                 logging.error(
                     f"Error in {message_type} for '{name}': {message}",
                 )
@@ -161,7 +163,7 @@ class SnapManager(ManagerPlugin):
             logging.info("Polling snapd for status of pending snap changes")
 
             try:
-                result = self._snap_http.check_changes().get("result", [])
+                result = snap_http.check_changes().get("result", [])
                 result_dict = {c["id"]: c for c in result}
             except SnapdHttpException as e:
                 logging.error(f"Error checking status of snap changes: {e}")
@@ -253,7 +255,7 @@ class SnapManager(ManagerPlugin):
 
     def _send_installed_snap_update(self):
         try:
-            installed_snaps = self._snap_http.get_snaps()
+            installed_snaps = snap_http.list().result
         except SnapdHttpException as e:
             logging.error(
                 f"Unable to list installed snaps after snap change: {e}",

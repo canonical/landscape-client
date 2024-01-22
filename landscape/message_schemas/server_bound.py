@@ -781,6 +781,7 @@ SNAPS = Message(
                             ),
                             "confinement": Unicode(),
                             "summary": Unicode(),
+                            "config": Unicode(),
                         },
                         strict=False,
                         optional=[
@@ -788,6 +789,7 @@ SNAPS = Message(
                             "summary",
                             "publisher",
                             "tracking-channel",
+                            "config",
                         ],
                     ),
                 ),
