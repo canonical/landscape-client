@@ -1,3 +1,4 @@
+import glob
 import os.path
 import struct
 import time
@@ -95,13 +96,14 @@ def get_uptime(uptime_file="/proc/uptime"):
 
 def get_thermal_zones(thermal_zone_path=None):
     if thermal_zone_path is None:
-        if os.path.isdir("/sys/class/thermal"):
-            thermal_zone_path = "/sys/class/thermal"
+        if os.path.isdir("/sys/class/hwmon"):
+            thermal_zone_path = "/sys/class/hwmon/*/temp*_input"
+        elif os.path.isdir("/sys/class/thermal"):
+            thermal_zone_path = "/sys/class/thermal/*/temp"
         else:
-            thermal_zone_path = "/proc/acpi/thermal_zone"
-    if os.path.isdir(thermal_zone_path):
-        for zone_name in sorted(os.listdir(thermal_zone_path)):
-            yield ThermalZone(thermal_zone_path, zone_name)
+            thermal_zone_path = "/proc/acpi/thermal_zone/*/temperature"
+    for temperature_path in sorted(glob.glob(thermal_zone_path)):
+        yield ThermalZone(temperature_path)
 
 
 class ThermalZone:
@@ -110,37 +112,29 @@ class ThermalZone:
     temperature_value = None
     temperature_unit = None
 
-    def __init__(self, base_path, name):
-        self.name = name
-        self.path = os.path.join(base_path, name)
-        temperature_path = os.path.join(self.path, "temp")
-        if os.path.isfile(temperature_path):
-            try:
-                with open(temperature_path) as f:
-                    line = f.readline()
-                    try:
-                        self.temperature_value = int(line.strip()) / 1000.0
-                        self.temperature_unit = "C"
-                        self.temperature = "{:.1f} {}".format(
-                            self.temperature_value,
-                            self.temperature_unit,
-                        )
-                    except ValueError:
-                        pass
-            except OSError:
-                pass
-        else:
-            temperature_path = os.path.join(self.path, "temperature")
-            if os.path.isfile(temperature_path):
-                for line in open(temperature_path):
-                    if line.startswith("temperature:"):
-                        self.temperature = line[12:].strip()
-                        try:
+    def __init__(self, temperature_path):
+        self.path = os.path.dirname(temperature_path)
+        self.name = os.path.basename(self.path)
+        try:
+            with open(temperature_path) as f:
+                if os.path.basename(temperature_path) == "temperature":
+                    for line in f:
+                        if line.startswith("temperature:"):
+                            self.temperature = line[12:].strip()
                             value, unit = self.temperature.split()
                             self.temperature_value = int(value)
                             self.temperature_unit = unit
-                        except ValueError:
-                            pass
+                            break
+                else:
+                    line = f.readline()
+                    self.temperature_value = int(line.strip()) / 1000.0
+                    self.temperature_unit = "C"
+                    self.temperature = "{:.1f} {}".format(
+                        self.temperature_value,
+                        self.temperature_unit,
+                    )
+        except (ValueError, OSError):
+            pass
 
 
 class LoginInfo:

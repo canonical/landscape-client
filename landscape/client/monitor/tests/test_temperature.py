@@ -5,10 +5,10 @@ from unittest import mock
 from landscape.client.monitor.temperature import Temperature
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
-from landscape.lib.tests.test_sysstats import ThermalZoneTest
+from landscape.lib.tests.test_sysstats import SysfsThermalZoneTest
 
 
-class TemperatureTestWithSampleData(ThermalZoneTest, LandscapeTest):
+class TemperatureTestWithSampleData(SysfsThermalZoneTest, LandscapeTest):
     """Tests for the temperature plugin."""
 
     helpers = [MonitorHelper]

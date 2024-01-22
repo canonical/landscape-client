@@ -1,7 +1,7 @@
 import os
 import re
-import unittest
 from datetime import datetime
+from unittest import TestCase, mock
 
 from landscape.lib import testing
 from landscape.lib.sysstats import BootTimes
@@ -44,7 +44,7 @@ VmallocChunk:   510252 kB
 class BaseTestCase(
     testing.TwistedTestCase,
     testing.FSTestCase,
-    unittest.TestCase,
+    TestCase,
 ):
     pass
 
@@ -146,13 +146,14 @@ class UptimeTest(BaseTestCase):
 class ProcfsThermalZoneTest(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.thermal_zone_path = self.makeDir()
+        self.base_path = self.makeDir()
+        self.thermal_zone_path = os.path.join(self.base_path, "*/temperature")
 
     def get_thermal_zones(self):
         return list(get_thermal_zones(self.thermal_zone_path))
 
     def write_thermal_zone(self, name, temperature):
-        zone_path = os.path.join(self.thermal_zone_path, name)
+        zone_path = os.path.join(self.base_path, name)
         if not os.path.isdir(zone_path):
             os.mkdir(zone_path)
         file = open(os.path.join(zone_path, "temperature"), "w")
@@ -161,6 +162,14 @@ class ProcfsThermalZoneTest(BaseTestCase):
 
 
 class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
+    @mock.patch("glob.glob")
+    @mock.patch("os.path.isdir")
+    def test_default_thermal_zone_path(self, isdir_mock, glob_mock):
+        isdir_mock.side_effect = (lambda dir: dir == "/proc/acpi/thermal_zone")
+        thermal_zones = list(get_thermal_zones(None))
+        self.assertEqual(thermal_zones, [])
+        glob_mock.assert_called_with("/proc/acpi/thermal_zone/*/temperature")
+
     def test_non_existent_thermal_zone_directory(self):
         thermal_zones = list(get_thermal_zones("/non-existent/thermal_zone"))
         self.assertEqual(thermal_zones, [])
@@ -179,7 +188,7 @@ class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
         self.assertEqual(thermal_zones[0].temperature_unit, "C")
         self.assertEqual(
             thermal_zones[0].path,
-            os.path.join(self.thermal_zone_path, "THM0"),
+            os.path.join(self.base_path, "THM0"),
         )
 
     def test_two_thermal_zones(self):
@@ -212,10 +221,7 @@ class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
 
     def test_temperature_file_with_missing_label(self):
         self.write_thermal_zone("THM0", "SOMETHINGBAD")
-        temperature_path = os.path.join(
-            self.thermal_zone_path,
-            "THM0/temperature",
-        )
+        temperature_path = os.path.join(self.base_path, "THM0/temperature")
         file = open(temperature_path, "w")
         file.write("bad-label: foo bar\n")
         file.close()
@@ -226,16 +232,17 @@ class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
         self.assertEqual(thermal_zones[0].temperature_unit, None)
 
 
-class ThermalZoneTest(BaseTestCase):
+class SysfsThermalZoneTest(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.thermal_zone_path = self.makeDir()
+        self.base_path = self.makeDir()
+        self.thermal_zone_path = os.path.join(self.base_path, "*/temp")
 
     def get_thermal_zones(self):
         return list(get_thermal_zones(self.thermal_zone_path))
 
     def write_thermal_zone(self, name, temperature):
-        zone_path = os.path.join(self.thermal_zone_path, name)
+        zone_path = os.path.join(self.base_path, name)
         if not os.path.isdir(zone_path):
             os.mkdir(zone_path)
         file = open(os.path.join(zone_path, "temp"), "w")
@@ -243,7 +250,15 @@ class ThermalZoneTest(BaseTestCase):
         file.close()
 
 
-class GetSysfsThermalZonesTest(ThermalZoneTest):
+class GetSysfsThermalZonesTest(SysfsThermalZoneTest):
+    @mock.patch("glob.glob")
+    @mock.patch("os.path.isdir")
+    def test_default_thermal_zone_path(self, isdir_mock, glob_mock):
+        isdir_mock.side_effect = (lambda dir: dir == "/sys/class/thermal")
+        thermal_zones = list(get_thermal_zones(None))
+        self.assertEqual(thermal_zones, [])
+        glob_mock.assert_called_with("/sys/class/thermal/*/temp")
+
     def test_non_existent_thermal_zone_directory(self):
         thermal_zones = list(get_thermal_zones("/non-existent/thermal_zone"))
         self.assertEqual(thermal_zones, [])
@@ -262,7 +277,7 @@ class GetSysfsThermalZonesTest(ThermalZoneTest):
         self.assertEqual(thermal_zones[0].temperature_unit, "C")
         self.assertEqual(
             thermal_zones[0].path,
-            os.path.join(self.thermal_zone_path, "THM0"),
+            os.path.join(self.base_path, "THM0"),
         )
 
     def test_two_thermal_zones(self):
@@ -288,7 +303,7 @@ class GetSysfsThermalZonesTest(ThermalZoneTest):
         self.assertEqual(thermal_zones[0].temperature_unit, "C")
         self.assertEqual(
             thermal_zones[0].path,
-            os.path.join(self.thermal_zone_path, "THM0"),
+            os.path.join(self.base_path, "THM0"),
         )
 
     def test_badly_formatted_temperature(self):
@@ -301,7 +316,104 @@ class GetSysfsThermalZonesTest(ThermalZoneTest):
 
     def test_read_error(self):
         self.write_thermal_zone("THM0", "50000")
-        temperature_path = os.path.join(self.thermal_zone_path, "THM0/temp")
+        temperature_path = os.path.join(self.base_path, "THM0/temp")
+        os.chmod(temperature_path, 0o200)  # --w-------
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+        self.assertEqual(thermal_zones[0].temperature, None)
+        self.assertEqual(thermal_zones[0].temperature_value, None)
+        self.assertEqual(thermal_zones[0].temperature_unit, None)
+
+
+class HwmonThermalZoneTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.base_path = self.makeDir()
+        self.thermal_zone_path = os.path.join(self.base_path, "*/temp*_input")
+
+    def get_thermal_zones(self):
+        return list(get_thermal_zones(self.thermal_zone_path))
+
+    def write_thermal_zone(self, name, number, temperature):
+        zone_path = os.path.join(self.base_path, name)
+        if not os.path.isdir(zone_path):
+            os.mkdir(zone_path)
+        file = open(os.path.join(zone_path, f"temp{number}_input"), "w")
+        file.write(temperature)
+        file.close()
+
+
+class GetHwmonThermalZonesTest(HwmonThermalZoneTest):
+    @mock.patch("glob.glob")
+    @mock.patch("os.path.isdir")
+    def test_default_thermal_zone_path(self, isdir_mock, glob_mock):
+        isdir_mock.side_effect = (lambda dir: dir == "/sys/class/hwmon")
+        thermal_zones = list(get_thermal_zones(None))
+        self.assertEqual(thermal_zones, [])
+        glob_mock.assert_called_with("/sys/class/hwmon/*/temp*_input")
+
+    def test_non_existent_thermal_zone_directory(self):
+        thermal_zones = list(get_thermal_zones("/non-existent/thermal_zone"))
+        self.assertEqual(thermal_zones, [])
+
+    def test_empty_thermal_zone_directory(self):
+        self.assertEqual(self.get_thermal_zones(), [])
+
+    def test_one_thermal_zone(self):
+        self.write_thermal_zone("THM0", "1", "50000")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+
+        self.assertEqual(thermal_zones[0].name, "THM0")
+        self.assertEqual(thermal_zones[0].temperature, "50.0 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50.0)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(
+            thermal_zones[0].path,
+            os.path.join(self.base_path, "THM0"),
+        )
+
+    def test_three_thermal_zones(self):
+        self.write_thermal_zone("THM0", "1", "50000")
+        self.write_thermal_zone("THM0", "2", "51000")
+        self.write_thermal_zone("THM1", "1", "52000")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 3)
+        self.assertEqual(thermal_zones[0].temperature, "50.0 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50.0)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(thermal_zones[1].temperature, "51.0 C")
+        self.assertEqual(thermal_zones[1].temperature_value, 51.0)
+        self.assertEqual(thermal_zones[1].temperature_unit, "C")
+        self.assertEqual(thermal_zones[2].temperature, "52.0 C")
+        self.assertEqual(thermal_zones[2].temperature_value, 52.0)
+        self.assertEqual(thermal_zones[2].temperature_unit, "C")
+
+    def test_non_int_temperature(self):
+        self.write_thermal_zone("THM0", "1", "50432")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+
+        self.assertEqual(thermal_zones[0].name, "THM0")
+        self.assertEqual(thermal_zones[0].temperature, "50.4 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50.432)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(
+            thermal_zones[0].path,
+            os.path.join(self.base_path, "THM0"),
+        )
+
+    def test_badly_formatted_temperature(self):
+        self.write_thermal_zone("THM0", "1", "SOMETHING BAD")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEqual(len(thermal_zones), 1)
+        self.assertEqual(thermal_zones[0].temperature, None)
+        self.assertEqual(thermal_zones[0].temperature_value, None)
+        self.assertEqual(thermal_zones[0].temperature_unit, None)
+
+    def test_read_error(self):
+        self.write_thermal_zone("THM0", "1", "50000")
+        temperature_path = os.path.join(self.base_path, "THM0/temp1_input")
         os.chmod(temperature_path, 0o200)  # --w-------
         thermal_zones = self.get_thermal_zones()
         self.assertEqual(len(thermal_zones), 1)
