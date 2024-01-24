@@ -559,3 +559,46 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
             },
             result,
         )
+
+    @mock.patch("landscape.client.monitor.computerinfo.get_assertions")
+    def test_snap_info(self, mock_get_assertions):
+        """Test getting the snap info message."""
+        mock_get_assertions.return_value = [
+            {
+                "authority-id": "canonical",
+                "brand-id": "canonical",
+                "model": "pc-amd64",
+                "serial": "03961d5d-26e5-443f-838d-6db046126bea",
+            },
+        ]
+
+        self.mstore.set_accepted_types(["snap-info"])
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["type"], "snap-info")
+        self.assertEqual(messages[0]["brand"], "canonical")
+        self.assertEqual(messages[0]["model"], "pc-amd64")
+        self.assertEqual(
+            messages[0]["serial"],
+            "03961d5d-26e5-443f-838d-6db046126bea",
+        )
+
+    @mock.patch("landscape.client.monitor.computerinfo.get_assertions")
+    def test_snap_info_no_results(self, mock_get_assertions):
+        """Test getting the snap info message when there are no results.
+
+        No results can happen when:
+            - A SnapdHttpException occurs
+            - No serial assertion is found
+        """
+        mock_get_assertions.return_value = None
+
+        self.mstore.set_accepted_types(["snap-info"])
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(len(messages), 0)
