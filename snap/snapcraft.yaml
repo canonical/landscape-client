@@ -86,7 +86,8 @@ parts:
 
        -- Guy Incognito <guy.incognito@landscape.client>  Fri, 1 Sep 2023 00:00:00 +0000
       EOF
-      git archive --prefix landscape-client-0.0.1/ HEAD | tar -x
+      mkdir -p landscape-client-0.0.1
+      git ls-files --recurse-submodules | xargs -I {} cp -r --parents {} landscape-client-0.0.1/
       rm -rf landscape-client-0.0.1/debian
       tar -czf landscape-client-0.0.1.tar.gz landscape-client-0.0.1
       cp -r debian landscape-client-0.0.1

@@ -58,6 +58,12 @@ Landscape service. There are two ways to do this:
 
 ## Developing
 
+After cloning the repository, make sure you run the following command to pull the `snap-http` submodule:
+
+```shell
+git submodule update --init
+```
+
 To run the full test suite, run the following command:
 
 ```
