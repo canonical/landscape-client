@@ -25,6 +25,7 @@ from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
+from landscape.client import IS_SNAP
 from landscape.client import USER
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.amp import RemoteManagerConnector
@@ -718,6 +719,9 @@ def run(args=sys.argv, reactor=None):
         sys.exit(f"landscape-client can only be run as 'root' or '{USER}'.")
 
     init_logging(config, "watchdog")
+
+    if IS_SNAP:
+        config.auto_configure()
 
     application = Application("landscape-client")
     watchdog_service = WatchDogService(config)

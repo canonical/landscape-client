@@ -560,7 +560,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
             result,
         )
 
-    @mock.patch("landscape.client.monitor.computerinfo.get_assertions")
+    @mock.patch("landscape.client.snap_utils.get_assertions")
     def test_snap_info(self, mock_get_assertions):
         """Test getting the snap info message."""
         mock_get_assertions.return_value = [
@@ -586,7 +586,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
             "03961d5d-26e5-443f-838d-6db046126bea",
         )
 
-    @mock.patch("landscape.client.monitor.computerinfo.get_assertions")
+    @mock.patch("landscape.client.snap_utils.get_assertions")
     def test_snap_info_no_results(self, mock_get_assertions):
         """Test getting the snap info message when there are no results.
 

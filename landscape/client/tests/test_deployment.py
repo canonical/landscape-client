@@ -1,9 +1,13 @@
+from datetime import datetime
 from unittest import mock
+from unittest import TestCase
 
 from landscape.client.deployment import BaseConfiguration
 from landscape.client.deployment import Configuration
+from landscape.client.deployment import generate_computer_title
 from landscape.client.deployment import get_versioned_persist
 from landscape.client.deployment import init_logging
+from landscape.client.snap_http import SnapdResponse
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.fs import create_text_file
 from landscape.lib.fs import read_text_file
@@ -273,6 +277,83 @@ class ConfigurationTest(LandscapeTest):
             self.config.juju_filename,
         )
 
+    # auto configuration
+
+    @mock.patch("landscape.client.deployment.generate_computer_title")
+    @mock.patch("landscape.client.deployment.snap_http")
+    def test_auto_configuration(self, mock_snap_http, mock_generate_title):
+        """Automatically configures the client."""
+        mock_snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"auto-register": {"enabled": True, "configured": False}},
+        )
+        mock_generate_title.return_value = "ubuntu-123"
+
+        self.assertIsNone(self.config.get("computer_title"))
+
+        self.config.auto_configure()
+        self.assertEqual(self.config.get("computer_title"), "ubuntu-123")
+        mock_snap_http.set_conf.assert_called_once_with(
+            "landscape-client",
+            {"auto-register": {"enabled": True, "configured": True}},
+        )
+
+    @mock.patch("landscape.client.deployment.snap_http")
+    def test_auto_configuration_not_enabled(self, mock_snap_http):
+        """The client is not configured."""
+        mock_snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"auto-register": {"enabled": False, "configured": False}},
+        )
+
+        self.assertIsNone(self.config.get("computer_title"))
+
+        self.config.auto_configure()
+        self.assertIsNone(self.config.get("computer_title"))
+        mock_snap_http.set_conf.assert_not_called()
+
+    @mock.patch("landscape.client.deployment.snap_http")
+    def test_auto_configuration_already_configured(self, mock_snap_http):
+        """The client is not re-configured."""
+        mock_snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"auto-register": {"enabled": True, "configured": True}},
+        )
+
+        self.config.computer_title = "foo-bar"
+
+        self.config.auto_configure()
+        self.assertEqual(self.config.get("computer_title"), "foo-bar")
+        mock_snap_http.set_conf.assert_not_called()
+
+    @mock.patch("landscape.client.deployment.generate_computer_title")
+    @mock.patch("landscape.client.deployment.snap_http")
+    def test_auto_configuration_no_title_generated(
+        self,
+        mock_snap_http,
+        mock_generate_title,
+    ):
+        """The client is not configured."""
+        mock_snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"auto-register": {"enabled": True, "configured": False}},
+        )
+        mock_generate_title.return_value = None
+
+        self.assertIsNone(self.config.get("computer_title"))
+
+        self.config.auto_configure()
+        self.assertIsNone(self.config.get("computer_title"))
+        mock_snap_http.set_conf.assert_not_called()
+
 
 class GetVersionedPersistTest(LandscapeTest):
     def test_upgrade_service(self):
@@ -287,3 +368,205 @@ class GetVersionedPersistTest(LandscapeTest):
         ):
             persist = get_versioned_persist(FakeService())
             mock_monitor.apply.assert_called_with(persist)
+
+
+class GenerateComputerTitleTest(TestCase):
+    """Tests for the `generate_computer_title` function."""
+
+    @mock.patch("landscape.client.deployment.subprocess")
+    @mock.patch("landscape.client.deployment.get_active_device_info")
+    @mock.patch("landscape.client.deployment.get_fqdn")
+    @mock.patch("landscape.client.deployment.get_snap_info")
+    def test_generate_computer_title(
+        self,
+        mock_snap_info,
+        mock_fqdn,
+        mock_active_device_info,
+        mock_subprocess,
+    ):
+        """Returns a computer title matching `computer-title-pattern`."""
+        mock_snap_info.return_value = {
+            "serial": "f315cab5-ba74-4d3c-be85-713406455773",
+            "model": "generic-classic",
+            "brand": "generic",
+        }
+        mock_fqdn.return_value = "terra"
+        mock_active_device_info.return_value = [
+            {
+                "interface": "wlp108s0",
+                "ip_address": "192.168.0.104",
+                "mac_address": "5c:80:b6:99:42:8d",
+                "broadcast_address": "192.168.0.255",
+                "netmask": "255.255.255.0",
+            },
+        ]
+        mock_subprocess.run.return_value.stdout = """
+[{
+  "id" : "terra",
+  "class" : "system",
+  "claimed" : true,
+  "handle" : "DMI:0002",
+  "description" : "Convertible",
+  "product" : "HP EliteBook x360 1030 G4 (8TK37UC#ABA)",
+  "vendor" : "HP",
+  "serial" : "ABCDE"
+}]
+"""
+
+        title = generate_computer_title(
+            {
+                "enabled": True,
+                "configured": False,
+                "computer-title-pattern": "${model:8:7}-${serial:0:8}",
+                "wait-for-serial-as": True,
+                "wait-for-hostname": True,
+            },
+        )
+        self.assertEqual(title, "classic-f315cab5")
+
+    @mock.patch("landscape.client.deployment.get_snap_info")
+    def test_generate_computer_title_wait_for_serial_no_serial_assertion(
+        self,
+        mock_snap_info,
+    ):
+        """Returns `None`."""
+        mock_snap_info.return_value = {}
+
+        title = generate_computer_title(
+            {
+                "enabled": True,
+                "configured": False,
+                "computer-title-pattern": "${model:8:7}-${serial:0:8}",
+                "wait-for-serial-as": True,
+                "wait-for-hostname": True,
+            },
+        )
+        self.assertIsNone(title)
+
+    @mock.patch("landscape.client.deployment.get_fqdn")
+    @mock.patch("landscape.client.deployment.get_snap_info")
+    def test_generate_computer_title_wait_for_hostname(
+        self,
+        mock_snap_info,
+        mock_fqdn,
+    ):
+        """Returns `None`."""
+        mock_snap_info.return_value = {
+            "serial": "f315cab5-ba74-4d3c-be85-713406455773",
+            "model": "generic-classic",
+            "brand": "generic",
+        }
+        mock_fqdn.return_value = "localhost"
+
+        title = generate_computer_title(
+            {
+                "enabled": True,
+                "configured": False,
+                "computer-title-pattern": "${model:8:7}-${serial:0:8}",
+                "wait-for-serial-as": True,
+                "wait-for-hostname": True,
+            },
+        )
+        self.assertIsNone(title)
+
+    @mock.patch("landscape.client.deployment.subprocess")
+    @mock.patch("landscape.client.deployment.get_active_device_info")
+    @mock.patch("landscape.client.deployment.get_fqdn")
+    @mock.patch("landscape.client.deployment.get_snap_info")
+    def test_generate_computer_title_no_nic(
+        self,
+        mock_snap_info,
+        mock_fqdn,
+        mock_active_device_info,
+        mock_subprocess,
+    ):
+        """Returns a title (almost) matching `computer-title-pattern`."""
+        mock_snap_info.return_value = {
+            "serial": "f315cab5-ba74-4d3c-be85-713406455773",
+            "model": "generic-classic",
+            "brand": "generic",
+        }
+        mock_fqdn.return_value = "terra"
+        mock_active_device_info.return_value = []
+        mock_subprocess.run.return_value.stdout = """
+[{
+  "id" : "terra",
+  "class" : "system",
+  "claimed" : true,
+  "handle" : "DMI:0002",
+  "description" : "Convertible",
+  "product" : "HP EliteBook x360 1030 G4 (8TK37UC#ABA)",
+  "vendor" : "HP",
+  "serial" : "ABCDE"
+}]
+"""
+
+        title = generate_computer_title(
+            {
+                "enabled": True,
+                "configured": False,
+                "computer-title-pattern": "${serialno:1}-${ip}",
+                "wait-for-serial-as": True,
+                "wait-for-hostname": True,
+            },
+        )
+        self.assertEqual(title, "BCDE-")
+
+    @mock.patch("landscape.client.deployment.subprocess")
+    @mock.patch("landscape.client.deployment.get_active_device_info")
+    @mock.patch("landscape.client.deployment.get_fqdn")
+    @mock.patch("landscape.client.deployment.get_snap_info")
+    def test_generate_computer_title_with_missing_data(
+        self,
+        mock_snap_info,
+        mock_fqdn,
+        mock_active_device_info,
+        mock_subprocess,
+    ):
+        """Returns the default title `hostname`."""
+        mock_snap_info.return_value = {}
+        mock_fqdn.return_value = "localhost"
+        mock_active_device_info.return_value = []
+        mock_subprocess.run.return_value.stdout = "[{}]"
+
+        title = generate_computer_title(
+            {
+                "enabled": True,
+                "configured": False,
+                "computer-title-pattern": "${mac}${serialno}",
+                "wait-for-serial-as": False,
+                "wait-for-hostname": False,
+            },
+        )
+        self.assertEqual(title, "localhost")
+
+    @mock.patch("landscape.client.deployment.datetime")
+    @mock.patch("landscape.client.deployment.subprocess")
+    @mock.patch("landscape.client.deployment.get_active_device_info")
+    @mock.patch("landscape.client.deployment.get_fqdn")
+    @mock.patch("landscape.client.deployment.get_snap_info")
+    def test_generate_computer_title_with_date(
+        self,
+        mock_snap_info,
+        mock_fqdn,
+        mock_active_device_info,
+        mock_subprocess,
+        mock_datetime,
+    ):
+        """Returns a computer title matching `computer-title-pattern`."""
+        mock_snap_info.return_value = {}
+        mock_fqdn.return_value = "localhost"
+        mock_active_device_info.return_value = []
+        mock_subprocess.run.return_value.stdout = "[{}]"
+        mock_datetime.now.return_value = datetime(2024, 1, 2, 0, 0, 0)
+
+        title = generate_computer_title(
+            {
+                "enabled": True,
+                "configured": False,
+                "computer-title-pattern": "${datetime:0:4}-machine",
+                "wait-for-serial-as": False,
+                "wait-for-hostname": False,
+            },
+        )
+        self.assertEqual(title, "2024-machine")

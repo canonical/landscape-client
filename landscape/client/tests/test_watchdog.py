@@ -1509,3 +1509,23 @@ class WatchDogRunTests(LandscapeTest):
         self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)
         self.assertNotIn("MAIL", os.environ)
         self.assertEqual(os.environ["UNRELATED"], "unrelated")
+
+    @mock.patch.object(WatchDogConfiguration, "auto_configure")
+    @mock.patch("landscape.client.watchdog.IS_SNAP", "1")
+    def test_is_snap(self, mock_auto_configure):
+        """Should call `WatchDogConfiguration.auto_configure`."""
+        reactor = FakeReactor()
+        self.fake_pwd.addUser(
+            "landscape",
+            None,
+            os.getuid(),
+            None,
+            None,
+            None,
+            None,
+        )
+        with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
+            run(["--log-dir", self.makeDir()], reactor=reactor)
+
+        mock_auto_configure.assert_called_once_with()
+        self.assertTrue(reactor.running)
