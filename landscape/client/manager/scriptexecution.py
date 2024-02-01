@@ -99,8 +99,9 @@ class ScriptRunnerMixin:
         # to mention we can't get errno.
         # Don't attempt to change file owner if the client is a snap
         os.chmod(filename, 0o700)
-        if uid is not None or not IS_SNAP:
-            os.chown(filename, uid, gid)
+        if not IS_SNAP:
+            if uid is not None:
+                os.chown(filename, uid, gid)
 
         script = build_script(shell, code)
         script = script.encode("utf-8")
@@ -249,12 +250,14 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             full_filename = os.path.join(attachment_dir, filename)
             with open(full_filename, "wb") as attachment:
                 os.chmod(full_filename, 0o600)
-                if uid is not None or not IS_SNAP:
-                    os.chown(full_filename, uid, gid)
+                if not IS_SNAP:
+                    if uid is not None:
+                        os.chown(full_filename, uid, gid)
                 attachment.write(data)
         os.chmod(attachment_dir, 0o700)
-        if uid is not None or not IS_SNAP:
-            os.chown(attachment_dir, uid, gid)
+        if not IS_SNAP:
+            if uid is not None:
+                os.chown(attachment_dir, uid, gid)
         returnValue(attachment_dir)
 
     def run_script(
@@ -300,15 +303,15 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             "USER": user or "",
             "HOME": path or "",
         }
-        for locale_var in (
+        for env_var in (
             "LANG",
             "LC_ALL",
             "LC_CTYPE",
             "LD_LIBRARY_PATH",
             "PYTHONPATH",
         ):
-            if locale_var in os.environ:
-                env[locale_var] = os.environ[locale_var]
+            if env_var in os.environ:
+                env[env_var] = os.environ[env_var]
         if server_supplied_env:
             env.update(server_supplied_env)
         old_umask = os.umask(0o022)
