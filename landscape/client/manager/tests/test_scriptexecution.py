@@ -42,11 +42,13 @@ def get_default_environment():
         "USER": username,
         "HOME": home,
     }
-    for var in {"LANG", 
-                "LC_ALL", 
-                "LC_CTYPE",
-                "LD_LIBRARY_PATH",
-                "PYTHONPATH",}:
+    for var in {
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "LD_LIBRARY_PATH",
+        "PYTHONPATH",
+    }:
         if var in os.environ:
             env[var] = os.environ[var]
     return env
