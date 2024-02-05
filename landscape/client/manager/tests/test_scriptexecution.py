@@ -421,9 +421,14 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result
 
-    def _run_script(self, username, uid, gid, path):
-        expected_uid = uid if uid != os.getuid() else None
-        expected_gid = gid if gid != os.getgid() else None
+    def _run_script(self, username, uid, gid, path, from_snap=False):
+
+        if from_snap:
+            expected_gid = None
+            expected_uid = None
+        else:
+            expected_uid = uid if uid != os.getuid() else None
+            expected_gid = gid if gid != os.getgid() else None
 
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
@@ -431,6 +436,10 @@ class RunScriptTests(LandscapeTest):
         # ignore the call to chown!
         patch_chown = mock.patch("os.chown")
         mock_chown = patch_chown.start()
+
+        patch_issnap = mock.patch("landscape.client.IS_SNAP")
+        patch_issnap.return_value = from_snap
+        patch_issnap.start()
 
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username)
 
@@ -447,11 +456,15 @@ class RunScriptTests(LandscapeTest):
         protocol.processEnded(Failure(ProcessDone(0)))
 
         def check(result):
-            mock_chown.assert_called_with()
-            self.assertEqual(result, "foobar")
+            if from_snap:
+                mock.chown.assert_not_called()
+            else:
+                mock_chown.assert_called_with()
+                self.assertEqual(result, "foobar")
 
         def cleanup(result):
             patch_chown.stop()
+            patch_issnap.stop()
             return result
 
         return result.addErrback(check).addBoth(cleanup)
@@ -469,7 +482,27 @@ class RunScriptTests(LandscapeTest):
         gid = info.pw_gid
         path = info.pw_dir
 
-        return self._run_script(username, uid, gid, path)
+        return self._run_script(username, uid, gid, path, from_snap=False)
+
+    def test_user_from_snap(self):
+        """
+        Running a script as a particular user calls
+        C{IReactorProcess.spawnProcess} with an appropriate C{uid} argument,
+        with the user's primary group as the C{gid} argument and with the user
+        home as C{path} argument.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        gid = info.pw_gid
+        path = info.pw_dir
+
+        if gid == 0:
+            gid = 1234
+        if uid == 0:
+            uid = 5678
+
+        return self._run_script(username, uid, gid, path, from_snap=True)
 
     def test_user_no_home(self):
         """
