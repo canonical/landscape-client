@@ -5,7 +5,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.defer import returnValue
 
 from landscape.client.monitor.plugin import MonitorPlugin
-from landscape.client.snap_utils import get_assertions
+from landscape.client.snap_utils import get_snap_info
 from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_text_file
@@ -221,10 +221,9 @@ class ComputerInfo(MonitorPlugin):
     def _create_snap_info_message(self):
         """Create message with the snapd serial metadata."""
         message = {}
-        assertions = get_assertions("serial")
-        if assertions:
-            assertion = assertions[0]
-            self._add_if_new(message, "brand", assertion["brand-id"])
-            self._add_if_new(message, "model", assertion["model"])
-            self._add_if_new(message, "serial", assertion["serial"])
+        snap_info = get_snap_info()
+        if snap_info:
+            self._add_if_new(message, "brand", snap_info["brand"])
+            self._add_if_new(message, "model", snap_info["model"])
+            self._add_if_new(message, "serial", snap_info["serial"])
         return message

@@ -1,14 +1,23 @@
+import json
 import os.path
+import subprocess
 import sys
+from datetime import datetime
+from datetime import timezone
 from optparse import SUPPRESS_HELP
 
 from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
 from landscape.client import DEFAULT_CONFIG
+from landscape.client import snap_http
+from landscape.client.snap_utils import get_snap_info
 from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging
 from landscape.lib.config import BaseConfiguration as _BaseConfiguration
+from landscape.lib.format import expandvars
+from landscape.lib.network import get_active_device_info
+from landscape.lib.network import get_fqdn
 from landscape.lib.persist import Persist
 
 
@@ -189,6 +198,25 @@ class Configuration(BaseConfiguration):
         backwards-compatibility."""
         return os.path.join(self.data_path, "juju-info.json")
 
+    def auto_configure(self):
+        """Automatically configure the client snap."""
+        client_conf = snap_http.get_conf("landscape-client").result
+        auto_enroll_conf = client_conf.get("auto-register", {})
+
+        enabled = auto_enroll_conf.get("enabled", False)
+        configured = auto_enroll_conf.get("configured", False)
+        if not enabled or configured:
+            return
+
+        title = generate_computer_title(auto_enroll_conf)
+        if title:
+            self.computer_title = title
+            self.write()
+
+            auto_enroll_conf["configured"] = True
+            client_conf["auto-register"] = auto_enroll_conf
+            snap_http.set_conf("landscape-client", client_conf)
+
 
 def get_versioned_persist(service):
     """Get a L{Persist} database with upgrade rules applied.
@@ -204,3 +232,52 @@ def get_versioned_persist(service):
         upgrade_manager.initialize(persist)
     persist.save(service.persist_filename)
     return persist
+
+
+def generate_computer_title(auto_enroll_config):
+    """Generate the computer title.
+
+    This follows the LA017 specification and falls back to `hostname`
+    if generating the title fails due to missing data.
+    """
+    snap_info = get_snap_info()
+    wait_for_serial = auto_enroll_config.get("wait-for-serial-as", True)
+    if "serial" not in snap_info and wait_for_serial:
+        return
+
+    hostname = get_fqdn()
+    wait_for_hostname = auto_enroll_config.get("wait-for-hostname", False)
+    if hostname == "localhost" and wait_for_hostname:
+        return
+
+    nics = get_active_device_info(default_only=True)
+    nic = nics[0] if nics else {}
+
+    lshw = subprocess.run(
+        ["lshw", "-json", "-quiet", "-c", "system"],
+        capture_output=True,
+        text=True,
+    )
+    hardware = json.loads(lshw.stdout)[0]
+
+    computer_title_pattern = auto_enroll_config.get(
+        "computer-title-pattern",
+        "${hostname}",
+    )
+    title = expandvars(
+        computer_title_pattern,
+        serial=snap_info.get("serial", ""),
+        model=snap_info.get("model", ""),
+        brand=snap_info.get("brand", ""),
+        hostname=hostname,
+        ip=nic.get("ip_address", ""),
+        mac=nic.get("mac_address", ""),
+        prodiden=hardware.get("product", ""),
+        serialno=hardware.get("serial", ""),
+        datetime=datetime.now(timezone.utc),
+    )
+
+    if title == "":  # on the off-chance substitute values are missing
+        title = hostname
+
+    return title
