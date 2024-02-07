@@ -66,13 +66,18 @@ class SnapMonitorTest(LandscapeTest):
                     "confinement": "strict",
                     "version": "v1.0",
                     "id": "123",
-                }
+                },
             ],
         )
-        snap_http_mock.get_conf.return_value = {
-            "foo": {"baz": "default", "qux": [1, True, 2.0]},
-            "bar": "enabled",
-        }
+        snap_http_mock.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {
+                "foo": {"baz": "default", "qux": [1, True, 2.0]},
+                "bar": "enabled",
+            },
+        )
         plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
