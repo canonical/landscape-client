@@ -86,7 +86,7 @@ class SnapManager(ManagerPlugin):
                 snaps,
                 **snap_args,
             )
-            queue.append((response["change"], "BATCH"))
+            queue.append((response.change, "BATCH"))
         except SnapdHttpException as e:
             result = json.loads(e.args[0])["result"]
             logging.error(
@@ -130,7 +130,7 @@ class SnapManager(ManagerPlugin):
                     name,
                     **snap_args,
                 )
-                queue.append((response["change"], name))
+                queue.append((response.change, name))
             except SnapdHttpException as e:
                 result = json.loads(e.args[0])["result"]
                 logging.error(
@@ -163,7 +163,7 @@ class SnapManager(ManagerPlugin):
             logging.info("Polling snapd for status of pending snap changes")
 
             try:
-                result = snap_http.check_changes().get("result", [])
+                result = snap_http.check_changes().result
                 result_dict = {c["id"]: c for c in result}
             except SnapdHttpException as e:
                 logging.error(f"Error checking status of snap changes: {e}")
@@ -208,7 +208,7 @@ class SnapManager(ManagerPlugin):
 
         response = snap_method(*args, **kwargs)
 
-        if "change" not in response:
+        if response.change is None:
             raise SnapdHttpException(response)
 
         return response
