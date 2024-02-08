@@ -3,12 +3,12 @@
 # API, with thorough usage of exceptions and such, instead of pipes to
 # subprocesses. liboobs (i.e. System Tools) is a possibility, and has
 # documentation now in the 2.17 series, but is not wrapped to Python.
-import json
 import logging
 import subprocess
 
 from landscape.client import snap_http
 from landscape.client.snap_http import SnapdHttpException
+from landscape.client.snap_utils import parse_assertion
 from landscape.client.user.provider import UserManagementError
 from landscape.client.user.provider import UserProvider
 
@@ -301,9 +301,23 @@ class SnapdUserManagement:
         )
 
     def add_user(self, message):
-        """Add a user via the Snapd API."""
-        username = message["username"]
-        email = message["email"]
+        """Add a user via the Snapd API.
+
+        Message formats can be in two forms:
+            - SSO User (username, email, sudoer, force-managed)
+            - System User (assertion, sudoer, force-managed)
+        """
+        if "assertion" in message:
+            assertion = self._add_system_user_assertion(message["assertion"])
+            username = assertion["username"]
+            email = assertion["email"]
+            known = True
+        else:
+            # Ubuntu One SSO User
+            username = message["username"]
+            email = message["email"]
+            known = False
+
         sudoer = message.get("sudoer", False)
         force_managed = message.get("force-managed", False)
 
@@ -313,12 +327,24 @@ class SnapdUserManagement:
                 email,
                 sudoer=sudoer,
                 force_managed=force_managed,
+                known=known,
             )
         except SnapdHttpException as e:
-            result = json.loads(e.args[0])["result"]
+            result = e.json["result"]
             raise UserManagementError(result)
 
         return response.result
+
+    def _add_system_user_assertion(self, assertion):
+        """Add a system user assertion."""
+        try:
+            # adding an assertion is idempotent
+            snap_http.add_assertion(assertion)
+        except SnapdHttpException as e:
+            result = e.json["result"]
+            raise UserManagementError(result)
+
+        return parse_assertion(*assertion.split("\n\n"))
 
     def set_user_details(self, *_):
         """Update a user's details."""
@@ -334,7 +360,7 @@ class SnapdUserManagement:
         try:
             response = snap_http.remove_user(message["username"])
         except SnapdHttpException as e:
-            result = json.loads(e.args[0])["result"]
+            result = e.json["result"]
             raise UserManagementError(result)
 
         return response.result
