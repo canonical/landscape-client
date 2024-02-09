@@ -1,10 +1,12 @@
 import logging
 
+from landscape.client import IS_CORE
 from landscape.client.amp import ComponentConnector
 from landscape.client.amp import ComponentPublisher
 from landscape.client.amp import remote
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector
+from landscape.client.user.management import SnapdUserManagement
 from landscape.client.user.management import UserManagement
 
 
@@ -13,7 +15,13 @@ class UserManager(ManagerPlugin):
     name = "usermanager"
 
     def __init__(self, management=None, shadow_file="/etc/shadow"):
-        self._management = management or UserManagement()
+        if IS_CORE:
+            management = management or SnapdUserManagement()
+            shadow_file = shadow_file or "/var/lib/extrausers/shadow"
+        else:
+            management = management or UserManagement()
+
+        self._management = management
         self._shadow_file = shadow_file
         self._message_types = {
             "add-user": self._add_user,
@@ -107,16 +115,7 @@ class UserManager(ManagerPlugin):
 
     def _add_user(self, message):
         """Run an C{add-user} operation."""
-        return self._management.add_user(
-            message["username"],
-            message["name"],
-            message["password"],
-            message["require-password-reset"],
-            message["primary-group-name"],
-            message["location"],
-            message["work-number"],
-            message["home-number"],
-        )
+        return self._management.add_user(message)
 
     def _edit_user(self, message):
         """Run an C{edit-user} operation."""
@@ -140,10 +139,7 @@ class UserManager(ManagerPlugin):
 
     def _remove_user(self, message):
         """Run a C{remove-user} operation."""
-        return self._management.remove_user(
-            message["username"],
-            message["delete-home"],
-        )
+        return self._management.remove_user(message)
 
     def _add_group(self, message):
         """Run an C{add-group} operation."""

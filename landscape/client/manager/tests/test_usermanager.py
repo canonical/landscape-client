@@ -1,5 +1,6 @@
 import os
 from unittest.mock import Mock
+from unittest.mock import patch
 
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import SUCCEEDED
@@ -9,6 +10,7 @@ from landscape.client.monitor.usermonitor import UserMonitor
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
 from landscape.client.user.provider import UserManagementError
+from landscape.client.user.tests.helpers import FakeSnapdUserManagement
 from landscape.client.user.tests.helpers import FakeUserManagement
 from landscape.client.user.tests.helpers import FakeUserProvider
 from landscape.lib.persist import Persist
@@ -36,14 +38,18 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         for plugin in self.plugins:
             plugin.stop()
 
-    def setup_environment(self, users, groups, shadow_file):
+    def setup_environment(self, users, groups, shadow_file, is_core=False):
         provider = FakeUserProvider(
             users=users,
             groups=groups,
             shadow_file=shadow_file,
         )
         user_monitor = UserMonitor(provider=provider)
-        management = FakeUserManagement(provider=provider)
+
+        if is_core:
+            management = FakeSnapdUserManagement(provider=provider)
+        else:
+            management = FakeUserManagement(provider=provider)
         user_manager = UserManager(
             management=management,
             shadow_file=shadow_file,
@@ -375,6 +381,64 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                 "home-number": "+123456",
             },
         )
+        result.addCallback(handle_callback)
+        return result
+
+    @patch("landscape.client.manager.usermanager.IS_CORE", "1")
+    def test_add_user_event_on_core(self):
+        """
+        When an C{add-user} event is received the user should be
+        added. Two messages should be generated: a C{users} message
+        with details about the change and an C{operation-result} with
+        details of the outcome of the operation.
+        """
+
+        def handle_callback(result):
+            messages = self.broker_service.message_store.get_pending_messages()
+            self.assertMessages(
+                messages,
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 123,
+                        "timestamp": 0,
+                        "result-text": "add_user succeeded",
+                    },
+                    {
+                        "timestamp": 0,
+                        "type": "users",
+                        "operation-id": 123,
+                        "create-users": [
+                            {
+                                "home-phone": None,
+                                "username": "john-doe",
+                                "uid": 1000,
+                                "enabled": True,
+                                "location": None,
+                                "work-phone": None,
+                                "name": "john.doe@example.com",
+                                "primary-gid": 1000,
+                            },
+                        ],
+                    },
+                ],
+            )
+
+        shadow_file = self.makeFile("""st3v3nmw:*:19758:0:99999:7:::""")
+        self.setup_environment([], [], shadow_file, is_core=True)
+
+        result = self.manager.dispatch_message(
+            {
+                "type": "add-user",
+                "username": "john-doe",
+                "email": "john.doe@example.com",
+                "sudoer": False,
+                "force-managed": True,
+                "operation-id": 123,
+            },
+        )
+
         result.addCallback(handle_callback)
         return result
 
@@ -826,6 +890,71 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result = self.manager.dispatch_message(
             {
                 "username": "jdoe",
+                "delete-home": True,
+                "type": "remove-user",
+                "operation-id": 39,
+            },
+        )
+        result.addCallback(handle_callback)
+        return result
+
+    @patch("landscape.client.manager.usermanager.IS_CORE", "1")
+    def test_remove_user_event_on_core(self):
+        """
+        When a C{remove-user} event is received, the user should be removed.
+        Two messages should be generated: a C{users} message with details
+        about the change and an C{operation-result} with details of the
+        outcome of the operation.
+        """
+
+        def handle_callback(result):
+            messages = self.broker_service.message_store.get_pending_messages()
+            self.assertEqual(len(messages), 3)
+            # Ignore the message created by plugin.run.
+            self.assertMessages(
+                [messages[2], messages[1]],
+                [
+                    {
+                        "timestamp": 0,
+                        "delete-users": ["john-doe"],
+                        "type": "users",
+                        "operation-id": 39,
+                    },
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "operation-id": 39,
+                        "timestamp": 0,
+                        "result-text": "remove_user succeeded",
+                    },
+                ],
+            )
+
+        users = [
+            (
+                "john-doe",
+                "x",
+                1000,
+                1000,
+                "john.doe@example.com,BtrGAhK,,",
+                "/home/user",
+                "/bin/zsh",
+            ),
+            (
+                "jane-doe",
+                "x",
+                1001,
+                1001,
+                "jane.doe@example.com,BtrGAhK,,",
+                "/home/user",
+                "/bin/zsh",
+            ),
+        ]
+        shadow_file = self.makeFile("""st3v3nmw:*:19758:0:99999:7:::""")
+        self.setup_environment(users, [], shadow_file, is_core=True)
+        result = self.manager.dispatch_message(
+            {
+                "username": "john-doe",
                 "delete-home": True,
                 "type": "remove-user",
                 "operation-id": 39,
