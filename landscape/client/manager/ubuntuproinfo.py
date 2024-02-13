@@ -24,10 +24,7 @@ class UbuntuProInfo(ManagerPlugin):
 
     def send_message(self):
         result = self.get_data()
-        return result.addCallback(self._got_output)
-
-    def _got_output(self, output):
-        message = {"type": self.message_type, "data": output}
+        message = {"type": self.message_type, "data": result}
         return self.registry.broker.send_message(message, self._session_id)
 
     def get_data(self):
