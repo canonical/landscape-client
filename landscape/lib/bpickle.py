@@ -125,13 +125,23 @@ def loads_float(bytestring, pos, as_is=False):
 
 def loads_bytes(bytestring, pos, as_is=False):
     startpos = bytestring.index(b":", pos) + 1
-    endpos = startpos + int(bytestring[pos + 1 : startpos - 1])
+    step = int(bytestring[pos + 1 : startpos - 1])
+
+    if step < 0:
+        raise ValueError(f"Negative bytestring length: {step}")
+
+    endpos = startpos + step
     return bytestring[startpos:endpos], endpos
 
 
 def loads_unicode(bytestring, pos, as_is=False):
     startpos = bytestring.index(b":", pos) + 1
-    endpos = startpos + int(bytestring[pos + 1 : startpos - 1])
+    step = int(bytestring[pos + 1 : startpos - 1])
+
+    if step < 0:
+        raise ValueError(f"Negative unicode length: {step}")
+
+    endpos = startpos + step
     return bytestring[startpos:endpos].decode("utf-8"), endpos
 
 
