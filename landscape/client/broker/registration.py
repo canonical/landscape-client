@@ -14,7 +14,7 @@ import logging
 from twisted.internet.defer import Deferred
 
 from landscape.client.broker.exchange import maybe_bytes
-from landscape.client.monitor.ubuntuproinfo import get_ubuntu_pro_info
+from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.lib.juju import get_juju_info
 from landscape.lib.network import get_fqdn
 from landscape.lib.tag import is_valid_tag_list
