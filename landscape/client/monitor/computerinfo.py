@@ -5,6 +5,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.defer import returnValue
 
 from landscape.client.monitor.plugin import MonitorPlugin
+from landscape.client.snap_utils import get_snap_info
 from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_text_file
@@ -59,6 +60,11 @@ class ComputerInfo(MonitorPlugin):
             self.send_cloud_instance_metadata_message,
             True,
         )
+        self.call_on_accepted(
+            "snap-info",
+            self.send_snap_message,
+            True,
+        )
 
     def send_computer_message(self, urgent=False):
         message = self._create_computer_info_message()
@@ -96,6 +102,17 @@ class ComputerInfo(MonitorPlugin):
                 urgent=urgent,
             )
 
+    def send_snap_message(self, urgent=False):
+        message = self._create_snap_info_message()
+        if message:
+            message["type"] = "snap-info"
+            logging.info("Queueing message with updated snap info.")
+            self.registry.broker.send_message(
+                message,
+                self._session_id,
+                urgent=urgent,
+            )
+
     def exchange(self, urgent=False):
         broker = self.registry.broker
         broker.call_if_accepted(
@@ -111,6 +128,11 @@ class ComputerInfo(MonitorPlugin):
         broker.call_if_accepted(
             "cloud-instance-metadata",
             self.send_cloud_instance_metadata_message,
+            urgent,
+        )
+        broker.call_if_accepted(
+            "snap-info",
+            self.send_snap_message,
             urgent,
         )
 
@@ -195,3 +217,13 @@ class ComputerInfo(MonitorPlugin):
         deferred.addCallback(log_success)
         deferred.addErrback(log_no_meta_data_found)
         return deferred
+
+    def _create_snap_info_message(self):
+        """Create message with the snapd serial metadata."""
+        message = {}
+        snap_info = get_snap_info()
+        if snap_info:
+            self._add_if_new(message, "brand", snap_info["brand"])
+            self._add_if_new(message, "model", snap_info["model"])
+            self._add_if_new(message, "serial", snap_info["serial"])
+        return message

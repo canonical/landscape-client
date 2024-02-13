@@ -60,6 +60,7 @@ __all__ = [
     "LIVEPATCH",
     "UBUNTU_PRO_REBOOT_REQUIRED",
     "SNAPS",
+    "SNAP_INFO",
 ]
 
 
@@ -160,6 +161,15 @@ CLOUD_METADATA = Message(
         "instance-id": Unicode(),
         "ami-id": Unicode(),
         "instance-type": Unicode(),
+    },
+)
+
+SNAP_INFO = Message(
+    "snap-info",
+    {
+        "brand": Unicode(),
+        "model": Unicode(),
+        "serial": Unicode(),
     },
 )
 
@@ -845,4 +855,5 @@ message_schemas = (
     LIVEPATCH,
     UBUNTU_PRO_REBOOT_REQUIRED,
     SNAPS,
+    SNAP_INFO,
 )

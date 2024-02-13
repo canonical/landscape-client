@@ -25,6 +25,7 @@ MODULES = [
     "landscape.client.patch",
     "landscape.client.reactor",
     "landscape.client.service",
+    "landscape.client.snap_utils",
     "landscape.client.sysvconfig",
     "landscape.client.watchdog",
 ]
