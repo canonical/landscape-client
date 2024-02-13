@@ -175,9 +175,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     def _handle_execute_script(self, message):
         opid = message["operation-id"]
         try:
-            user = message["username"]
-            if IS_SNAP:
-                user = "root"
+            user = message["username"] if not IS_SNAP else "root"
+
             if not self.is_user_allowed(user):
                 return self._respond(
                     FAILED,

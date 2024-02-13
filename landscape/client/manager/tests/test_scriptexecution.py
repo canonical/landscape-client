@@ -456,18 +456,15 @@ class RunScriptTests(LandscapeTest):
         protocol.processEnded(Failure(ProcessDone(0)))
 
         def check(result):
-            if from_snap:
-                mock.chown.assert_not_called()
-            else:
-                mock_chown.assert_called_with()
-                self.assertEqual(result, "foobar")
+            mock_chown.assert_called()
+            self.assertEqual(result, "foobar")
 
         def cleanup(result):
             patch_chown.stop()
             patch_issnap.stop()
             return result
 
-        return result.addErrback(check).addBoth(cleanup)
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_user(self):
         """
@@ -496,11 +493,6 @@ class RunScriptTests(LandscapeTest):
         username = info.pw_name
         gid = info.pw_gid
         path = info.pw_dir
-
-        if gid == 0:
-            gid = 1234
-        if uid == 0:
-            uid = 5678
 
         return self._run_script(username, uid, gid, path, from_snap=True)
 
