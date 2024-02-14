@@ -6,7 +6,15 @@ from landscape.client.manager.plugin import ManagerPlugin
 
 
 class UbuntuProInfo(ManagerPlugin):
-    """A plugin to retrieve Ubuntu Pro information."""
+    """
+    Plugin that captures and reports Ubuntu Pro registration
+    information.
+
+    We use the `pro` CLI with output formatted as JSON. This is sent
+    as-is and parsed by Landscape Server because the JSON content is
+    considered "Experimental" and we don't want to have to change in
+    both Client and Server in the event that the format changes.
+    """
 
     message_type = "ubuntu-pro-info"
     run_interval = 900  # 15 minutes
@@ -47,7 +55,7 @@ def get_ubuntu_pro_info() -> dict:
 
     try:
         completed_process = subprocess.run(
-            ["ua", "status", "--format", "json"],
+            ["pro", "status", "--format", "json"],
             encoding="utf8",
             stdout=subprocess.PIPE,
         )
