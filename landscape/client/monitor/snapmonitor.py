@@ -29,20 +29,37 @@ class SnapMonitor(DataWatcher):
             return
 
         for i in range(len(snaps)):
+            snap_name = snaps[i]["name"]
             try:
-                config = snap_http.get_conf(snaps[i]["name"]).result
-            except SnapdHttpException:
+                config = snap_http.get_conf(snap_name).result
+            except SnapdHttpException as e:
+                logging.warning(
+                    f"Unable to get config for snap {snap_name}: {e}",
+                )
                 config = {}
 
             snaps[i]["config"] = json.dumps(config)
+
+        try:
+            services = snap_http.get_apps(services_only=True).result
+        except SnapdHttpException as e:
+            logging.warning(f"Unable to list services: {e}")
+            services = []
 
         # We get a lot of extra info from snapd. To avoid caching it all
         # or invalidating the cache on timestamp changes, we use Message
         # coercion to strip out the unnecessaries, then sort on the snap
         # IDs to order the list.
         data = SNAPS.coerce(
-            {"type": "snaps", "snaps": {"installed": snaps}},
+            {
+                "type": "snaps",
+                "snaps": {
+                    "installed": snaps,
+                    "services": services,
+                },
+            },
         )
         data["snaps"]["installed"].sort(key=lambda x: x["id"])
+        data["snaps"]["services"].sort(key=lambda x: x["name"])
 
         return data["snaps"]
