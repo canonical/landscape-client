@@ -24,7 +24,7 @@ class UbuntuProInfo(ManagerPlugin):
 
     def send_message(self):
         result = self.get_data()
-        message = {"type": self.message_type, "data": result}
+        message = {"type": self.message_type, "ubuntu-pro-info": result}
         return self.registry.broker.send_message(message, self._session_id)
 
     def get_data(self):
