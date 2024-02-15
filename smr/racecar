@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+TMUXCMD=${TMUXCMD:-byobu-tmux}
+
+
+have_tmux=0
+tmux info >/dev/null 2>/dev/null && have_tmux=1
+if [ $have_tmux -eq 1 ] ; then
+   TMUX= $TMUXCMD set-option update-environment "DISPLAY SSH_ASKPASS SSH_AUTH_SOCK SSH_AGENT_PID SSH_CONNECTION WINDOWID XAUTHORITY" >/dev/null;
+fi
+TMUX= $TMUXCMD new-session -d -s racecar -n supervisor 'bin/ls-supervisord -n'
+for service in {landscape-broker,landscape-manager,landscape-monitor}; do
+    TMUX= $TMUXCMD new-window -t racecar -n $service "tail -f $service"
+done
+TMUX= $TMUXCMD select-window -t racecar:^
+TMUX= $TMUXCMD attach-session -t racecar
