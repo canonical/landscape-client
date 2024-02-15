@@ -36,3 +36,16 @@ def get_assertions(assertion_type: str):
             assertions.append(assertion)
 
     return assertions
+
+
+def get_snap_info():
+    """Get the snap device information."""
+    info = {}
+
+    serial_as = get_assertions("serial")
+    if serial_as:
+        info["serial"] = serial_as[0]["serial"]
+        info["model"] = serial_as[0]["model"]
+        info["brand"] = serial_as[0]["brand-id"]
+
+    return info

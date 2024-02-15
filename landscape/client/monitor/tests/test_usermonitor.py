@@ -1,6 +1,7 @@
 import os
 from unittest.mock import ANY
 from unittest.mock import Mock
+from unittest.mock import patch
 
 from twisted.internet.defer import fail
 
@@ -200,6 +201,50 @@ class UserMonitorTest(LandscapeTest):
                             "primary-gid": 1000,
                             "uid": 1000,
                             "username": "jdoe",
+                            "work-phone": None,
+                        },
+                    ],
+                    "type": "users",
+                },
+            ],
+        )
+
+    @patch("landscape.client.monitor.usermonitor.IS_CORE", "1")
+    def test_new_message_after_resynchronize_event_on_core(self):
+        """
+        When a 'resynchronize' reactor event is fired, a new session is
+        created and the UserMonitor creates a new message.
+        """
+        self.provider.users = [
+            (
+                "john-doe",
+                "x",
+                1000,
+                1000,
+                "john.doe@example.com",
+                "/home/user",
+                "/bin/zsh",
+            ),
+        ]
+        self.broker_service.message_store.set_accepted_types(["users"])
+        plugin = UserMonitor(self.provider)
+        self.monitor.add(plugin)
+        plugin.client.broker.message_store.drop_session_ids()
+        deferred = self.reactor.fire("resynchronize")[0]
+        self.successResultOf(deferred)
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [
+                {
+                    "create-users": [
+                        {
+                            "enabled": True,
+                            "home-phone": None,
+                            "location": None,
+                            "name": "john.doe@example.com",
+                            "primary-gid": 1000,
+                            "uid": 1000,
+                            "username": "john-doe",
                             "work-phone": None,
                         },
                     ],

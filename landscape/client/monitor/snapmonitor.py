@@ -30,7 +30,7 @@ class SnapMonitor(DataWatcher):
 
         for i in range(len(snaps)):
             try:
-                config = snap_http.get_conf(snaps[i]["name"])
+                config = snap_http.get_conf(snaps[i]["name"]).result
             except SnapdHttpException:
                 config = {}
 

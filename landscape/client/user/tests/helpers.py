@@ -26,17 +26,14 @@ class FakeUserManagement:
             shadow_file.write(entry.format(user, "qweqweqeqweqw"))
         shadow_file.close()
 
-    def add_user(
-        self,
-        username,
-        name,
-        password,
-        require_password_reset,
-        primary_group_name,
-        location,
-        work_phone,
-        home_phone,
-    ):
+    def add_user(self, message):
+        username = message["username"]
+        name = message["name"]
+        primary_group_name = message["primary-group-name"]
+        location = message["location"]
+        work_phone = message["work-number"]
+        home_phone = message["home-number"]
+
         try:
             uid = 1000
             if self._users:
@@ -94,7 +91,9 @@ class FakeUserManagement:
             return "unlock_user succeeded"
         raise UserManagementError("unlock_user failed")
 
-    def remove_user(self, username, delete_home=False):
+    def remove_user(self, message):
+        username = message["username"]
+
         try:
             del self._users[username]
         except KeyError:
@@ -189,6 +188,55 @@ class FakeUserManagement:
         for k, v in iteritems(self._groups):
             provider_list.append((k, "x", v["gid"], v["members"]))
         self.provider.groups = provider_list
+
+
+class FakeSnapdUserManagement:
+    def __init__(self, provider=None):
+        self.shadow_file = getattr(provider, "shadow_file", None)
+        self.provider = provider
+        self._users = {}
+        self._next_uid = 1000
+
+        for data in self.provider.get_users():
+            self._users[data["username"]] = data
+            self._next_uid = max(data["uid"], self._next_uid)
+
+    def add_user(self, message):
+        username = message["username"]
+        email = message["email"]
+        sudoer = message["sudoer"]
+        force_managed = message["force-managed"]
+
+        self._users[self._next_uid] = {
+            "uid": self._next_uid,
+            "username": username,
+            "email": email,
+            "sudoer": sudoer,
+            "force-managed": force_managed,
+        }
+        userdata = (
+            username,
+            "x",
+            self._next_uid,
+            self._next_uid,
+            email,
+            "/home/user",
+            "/bin/zsh",
+        )
+        self.provider.users.append(userdata)
+        self._next_uid += 1
+        return "add_user succeeded"
+
+    def remove_user(self, message):
+        username = message["username"]
+
+        del self._users[username]
+        remaining_users = []
+        for user in self.provider.users:
+            if user[0] != username:
+                remaining_users.append(user)
+        self.provider.users = remaining_users
+        return "remove_user succeeded"
 
 
 class FakeUserProvider(UserProviderBase):

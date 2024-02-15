@@ -1,4 +1,8 @@
+from unittest import mock
+
+from landscape.client.snap_http import SnapdHttpException
 from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.user.management import SnapdUserManagement
 from landscape.client.user.management import UserManagement
 from landscape.client.user.management import UserManagementError
 from landscape.client.user.provider import GroupNotFoundError
@@ -24,14 +28,16 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(groups=groups, popen=MockPopen(""))
         management = UserManagement(provider=provider)
         management.add_user(
-            "jdoe",
-            "John Doe",
-            "password",
-            False,
-            "users",
-            "Room 101",
-            "+123456",
-            None,
+            {
+                "username": "jdoe",
+                "name": "John Doe",
+                "password": "password",
+                "require-password-reset": False,
+                "primary-group-name": "users",
+                "location": "Room 101",
+                "work-number": "+123456",
+                "home-number": None,
+            },
         )
         self.assertEqual(len(provider.popen.popen_inputs), 2)
         self.assertEqual(
@@ -61,14 +67,16 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         self.assertRaises(
             UserManagementError,
             management.add_user,
-            "jdoe",
-            "John Doe",
-            "password",
-            False,
-            None,
-            None,
-            None,
-            None,
+            {
+                "username": "jdoe",
+                "name": "John Doe",
+                "password": "password",
+                "require-password-reset": False,
+                "primary-group-name": None,
+                "location": None,
+                "work-number": None,
+                "home-number": None,
+            },
         )
 
     def test_change_password_error(self):
@@ -81,14 +89,16 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         with self.assertRaises(UserManagementError) as e:
             management.add_user(
-                "jdoe",
-                "John Doe",
-                "password",
-                False,
-                None,
-                None,
-                None,
-                None,
+                {
+                    "username": "jdoe",
+                    "name": "John Doe",
+                    "password": "password",
+                    "require-password-reset": False,
+                    "primary-group-name": None,
+                    "location": None,
+                    "work-number": None,
+                    "home-number": None,
+                },
             )
         expected = "Error setting password for user {}.\n {}".format(
             b"jdoe",
@@ -108,14 +118,16 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         self.assertRaises(
             UserManagementError,
             management.add_user,
-            "jdoe",
-            "John Doe",
-            "password",
-            True,
-            None,
-            None,
-            None,
-            None,
+            {
+                "username": "jdoe",
+                "name": "John Doe",
+                "password": "password",
+                "require-password-reset": True,
+                "primary-group-name": None,
+                "location": None,
+                "work-number": None,
+                "home-number": None,
+            },
         )
 
     def test_set_password(self):
@@ -475,7 +487,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
             popen=popen,
         )
         management = UserManagement(provider=provider)
-        management.remove_user("jdoe")
+        management.remove_user({"username": "jdoe"})
         self.assertEqual(popen.popen_inputs, [["deluser", "jdoe"]])
 
     def test_remove_user_with_unknown_username(self):
@@ -485,7 +497,11 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         """
         provider = FakeUserProvider(popen=MockPopen(""))
         management = UserManagement(provider=provider)
-        self.assertRaises(UserNotFoundError, management.remove_user, "smith")
+        self.assertRaises(
+            UserNotFoundError,
+            management.remove_user,
+            {"username": "smith"},
+        )
 
     def test_remove_user_fails(self):
         """
@@ -505,7 +521,11 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
             popen=popen,
         )
         management = UserManagement(provider=provider)
-        self.assertRaises(UserNotFoundError, management.remove_user, "smith")
+        self.assertRaises(
+            UserNotFoundError,
+            management.remove_user,
+            {"username": "smith"},
+        )
 
     def test_remove_user_and_home(self):
         """
@@ -520,7 +540,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
             popen=popen,
         )
         management = UserManagement(provider=provider)
-        management.remove_user("jdoe", delete_home=True)
+        management.remove_user({"username": "jdoe", "delete-home": True})
         self.assertEqual(
             popen.popen_inputs,
             [["deluser", "jdoe", "--remove-home"]],
@@ -833,3 +853,120 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
             management.remove_group,
             "ubuntu",
         )
+
+
+class SnapdUserManagementTest(LandscapeTest):
+    def setUp(self):
+        LandscapeTest.setUp(self)
+        self.shadow_file = self.makeFile("""st3v3nmw:*:19758:0:99999:7:::""")
+
+        self.snap_http = mock.patch(
+            "landscape.client.user.management.snap_http",
+        ).start()
+
+    def tearDown(self):
+        mock.patch.stopall()
+
+    def test_add_user(self):
+        """L{SnapdUserManagement.add_user} should add a user."""
+        groups = [("users", "x", 1001, [])]
+        provider = FakeUserProvider(
+            groups=groups,
+            popen=MockPopen(""),
+            shadow_file=self.shadow_file,
+        )
+        management = SnapdUserManagement(provider=provider)
+        management.add_user(
+            {
+                "username": "john-doe",
+                "email": "john.doe@example.com",
+                "force-managed": True,
+            },
+        )
+
+        self.snap_http.add_user.assert_called_once_with(
+            "john-doe",
+            "john.doe@example.com",
+            sudoer=False,
+            force_managed=True,
+        )
+
+    def test_add_user_exception(self):
+        """
+        L{SnapdUserManagement.add_user} should raise C{SnapdHttpException}.
+        """
+        self.snap_http.add_user.side_effect = SnapdHttpException(
+            '{"type":"error","status-code":400,"status":"Bad Request","result"'
+            ':{"message":"cannot create user: device already managed"}}',
+        )
+
+        groups = [("users", "x", 1001, [])]
+        provider = FakeUserProvider(
+            groups=groups,
+            popen=MockPopen(""),
+            shadow_file=self.shadow_file,
+        )
+        management = SnapdUserManagement(provider=provider)
+
+        with self.assertRaises(UserManagementError):
+            management.add_user(
+                {
+                    "username": "john-doe",
+                    "email": "john.doe@example.com",
+                    "sudoer": True,
+                },
+            )
+
+        self.snap_http.add_user.assert_called_once_with(
+            "john-doe",
+            "john.doe@example.com",
+            sudoer=True,
+            force_managed=False,
+        )
+
+    def test_remove_user(self):
+        """L{SnapdUserManagement.add_user} should remove a user."""
+        users = [
+            (
+                "john-doe",
+                "x",
+                1000,
+                1000,
+                "john.doe@example.com,,",
+                "/home/jdoe",
+                "/bin/zsh",
+            ),
+        ]
+        groups = [("users", "x", 1001, [])]
+        provider = FakeUserProvider(
+            users=users,
+            groups=groups,
+            popen=MockPopen(""),
+            shadow_file=self.shadow_file,
+        )
+        management = SnapdUserManagement(provider=provider)
+        management.remove_user({"username": "john-doe"})
+
+        self.snap_http.remove_user.assert_called_once_with("john-doe")
+
+    def test_remove_user_exception(self):
+        """
+        L{SnapdUserManagement.remove_user} should raise C{SnapdHttpException}.
+        """
+        self.snap_http.remove_user.side_effect = SnapdHttpException(
+            '{"type":"error","status-code":400,"status":"Bad Request",'
+            '"result":{"message":"user \\"asfd\\" is not known"}}',
+        )
+
+        groups = [("users", "x", 1001, [])]
+        provider = FakeUserProvider(
+            groups=groups,
+            popen=MockPopen(""),
+            shadow_file=self.shadow_file,
+        )
+        management = SnapdUserManagement(provider=provider)
+
+        with self.assertRaises(UserManagementError):
+            management.remove_user({"username": "jane-doe"})
+
+        self.snap_http.remove_user.assert_called_once_with("jane-doe")

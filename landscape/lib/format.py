@@ -1,4 +1,5 @@
 import inspect
+import subprocess
 
 
 def format_object(object):
@@ -29,3 +30,24 @@ def format_percent(percent):
     if not percent:
         percent = 0.0
     return f"{float(percent):.02f}%"
+
+
+def expandvars(pattern: str, **kwargs) -> str:
+    """Expand the pattern by replacing the params with values in `kwargs`.
+
+    This uses bash shell parameter expansion. Here are some examples of
+    possible patterns:
+        - ${parameter}
+        - ${parameter:offset} - start at `offset` to the end
+        - ${parameter:offset:length} - start at `offset` to `offset + length`
+    """
+    values = {k: str(v) for k, v in kwargs.items()}
+    shell = subprocess.run(
+        f'echo -n "{pattern.lower()}"',
+        text=True,
+        capture_output=True,
+        shell=True,
+        executable="/usr/bin/bash",
+        env=values,
+    )
+    return shell.stdout

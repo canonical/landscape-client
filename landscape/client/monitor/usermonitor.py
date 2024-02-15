@@ -3,6 +3,7 @@ import os.path
 
 from twisted.internet.defer import maybeDeferred
 
+from landscape.client import IS_CORE
 from landscape.client.amp import ComponentConnector
 from landscape.client.amp import ComponentPublisher
 from landscape.client.amp import remote
@@ -27,8 +28,14 @@ class UserMonitor(MonitorPlugin):
     name = "usermonitor"
 
     def __init__(self, provider=None):
-        if provider is None:
-            provider = UserProvider()
+        if IS_CORE:
+            provider = provider or UserProvider(
+                passwd_file="/var/lib/extrausers/passwd",
+                group_file="/var/lib/extrausers/group",
+            )
+        else:
+            provider = provider or UserProvider()
+
         self._provider = provider
         self._publisher = None
 
