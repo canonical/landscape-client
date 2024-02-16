@@ -68,7 +68,7 @@ class SnapManagerTest(LandscapeTest):
                 "type": "install-snaps",
                 "operation-id": 123,
                 "snaps": [
-                    {"name": "hello", "revision": 9001},
+                    {"name": "hello", "args": {"revision": 9001}},
                     {"name": "goodbye"},
                 ],
             },
@@ -351,7 +351,9 @@ class SnapManagerTest(LandscapeTest):
                 "snaps": [
                     {
                         "name": "hello",
-                        "config": {"foo": {"bar": "qux", "baz": "quux"}},
+                        "args": {
+                            "config": {"foo": {"bar": "qux", "baz": "quux"}},
+                        },
                     },
                 ],
             },
@@ -377,12 +379,6 @@ class SnapManagerTest(LandscapeTest):
         self.snap_http.set_conf.side_effect = SnapdHttpException(
             b'{"result": "whoops"}',
         )
-        self.snap_http.check_changes.return_value = SnapdResponse(
-            "sync",
-            200,
-            "OK",
-            [{"id": "1", "status": "Done"}],
-        )
         self.snap_http.list.return_value = SnapdResponse(
             "sync",
             200,
@@ -397,7 +393,9 @@ class SnapManagerTest(LandscapeTest):
                 "snaps": [
                     {
                         "name": "hello",
-                        "config": {"foo": {"bar": "qux", "baz": "quux"}},
+                        "args": {
+                            "config": {"foo": {"bar": "qux", "baz": "quux"}},
+                        },
                     },
                 ],
             },
@@ -418,5 +416,206 @@ class SnapManagerTest(LandscapeTest):
                     },
                 ],
             )
+
+        return result.addCallback(got_result)
+
+    def test_start_service(self):
+        self.snap_http.start.return_value = SnapdResponse(
+            "async",
+            202,
+            "Accepted",
+            None,
+            change="1",
+        )
+        self.snap_http.check_changes.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [{"id": "1", "status": "Done"}],
+        )
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"installed": []},
+        )
+
+        result = self.manager.dispatch_message(
+            {
+                "type": "start-snap-service",
+                "operation-id": 123,
+                "snaps": [
+                    {"name": "test-snap.hello-svc", "args": {"enable": True}},
+                ],
+            },
+        )
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "result-text": "{'completed': ['test-snap.hello-svc'],"
+                        " 'errored': [], 'errors': {}}",
+                        "operation-id": 123,
+                    },
+                ],
+            )
+
+        self.snap_http.start.assert_called_once_with(
+            "test-snap.hello-svc",
+            enable=True,
+        )
+
+        return result.addCallback(got_result)
+
+    def test_start_service_error(self):
+        self.snap_http.start.side_effect = SnapdHttpException(
+            b'{"result": "snap idonotexist not found"}',
+        )
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"installed": []},
+        )
+
+        result = self.manager.dispatch_message(
+            {
+                "type": "start-snap-service",
+                "operation-id": 123,
+                "snaps": [{"name": "idonotexist", "args": {"enable": True}}],
+            },
+        )
+
+        self.log_helper.ignore_errors(r".+idonotexist$")
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "status": FAILED,
+                        "result-text": "{'completed': [], "
+                        "'errored': [], 'errors': {'idonotexist': "
+                        "'snap idonotexist not found'}}",
+                        "operation-id": 123,
+                    },
+                ],
+            )
+
+        self.snap_http.start.assert_called_once_with(
+            "idonotexist",
+            enable=True,
+        )
+
+        return result.addCallback(got_result)
+
+    def test_stop_service_batch(self):
+        self.snap_http.stop_all.return_value = SnapdResponse(
+            "async",
+            202,
+            "Accepted",
+            None,
+            change="1",
+        )
+        self.snap_http.check_changes.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [{"id": "1", "status": "Done"}],
+        )
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"installed": []},
+        )
+
+        result = self.manager.dispatch_message(
+            {
+                "type": "stop-snap-service",
+                "operation-id": 123,
+                "snaps": [
+                    {"name": "lxd"},
+                    {"name": "landscape-client"},
+                ],
+                "args": {"disable": False},
+            },
+        )
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "result-text": "{'completed': ['BATCH'], "
+                        "'errored': [], 'errors': {}}",
+                        "operation-id": 123,
+                    },
+                ],
+            )
+
+        self.snap_http.stop_all.assert_called_once_with(
+            ["lxd", "landscape-client"],
+            disable=False,
+        )
+
+        return result.addCallback(got_result)
+
+    def test_restart_service(self):
+        self.snap_http.restart_all.return_value = SnapdResponse(
+            "async",
+            202,
+            "Accepted",
+            None,
+            change="1",
+        )
+        self.snap_http.check_changes.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [{"id": "1", "status": "Done"}],
+        )
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"installed": []},
+        )
+
+        result = self.manager.dispatch_message(
+            {
+                "type": "restart-snap-service",
+                "operation-id": 123,
+                "snaps": [
+                    {"name": "test-snap"},
+                    {"name": "lxd"},
+                ],
+            },
+        )
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "status": SUCCEEDED,
+                        "result-text": "{'completed': ['BATCH'], "
+                        "'errored': [], 'errors': {}}",
+                        "operation-id": 123,
+                    },
+                ],
+            )
+
+        self.snap_http.restart_all.assert_called_once_with(
+            ["test-snap", "lxd"],
+        )
 
         return result.addCallback(got_result)

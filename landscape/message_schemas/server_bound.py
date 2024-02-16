@@ -803,7 +803,34 @@ SNAPS = Message(
                         ],
                     ),
                 ),
+                "services": List(
+                    KeyDict(
+                        {
+                            "name": Unicode(),
+                            "snap": Unicode(),
+                            "desktop-file": Unicode(),
+                            "daemon": Unicode(),
+                            "daemon-scope": Unicode(),
+                            "enabled": Bool(),
+                            "active": Bool(),
+                            "activators": List(
+                                Dict(Unicode(), Any(Unicode(), Bool())),
+                            ),
+                        },
+                        strict=False,
+                        optional=[
+                            "snap",
+                            "desktop-file",
+                            "daemon",
+                            "daemon-scope",
+                            "enabled",
+                            "active",
+                            "activators",
+                        ],
+                    ),
+                ),
             },
+            optional=["services"],
         ),
     },
 )
