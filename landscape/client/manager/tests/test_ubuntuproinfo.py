@@ -61,10 +61,91 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertIn("not available", result["errors"][0]["message"])
         self.assertEqual(result["result"], "failure")
 
-    def test_persistence(self):
+    def test_persistence_unchanged_data(self):
         """If data hasn't changed, a new message is not sent"""
         plugin = UbuntuProInfo()
         self.monitor.add(plugin)
+        data = '"Initial data!"'
 
-        # TODO
-        pass
+        with mock.patch("subprocess.run") as run_mock:
+            run_mock.return_value = mock.Mock(
+                stdout=data,
+            )
+            plugin.run()
+
+        messages = self.mstore.get_pending_messages()
+        run_mock.assert_called_once()
+        self.assertEqual(1, len(messages))
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertEqual(messages[0]["ubuntu-pro-info"], data)
+
+        with mock.patch("subprocess.run") as run_mock:
+            run_mock.return_value = mock.Mock(
+                stdout=data,
+            )
+            plugin.run()
+
+        run_mock.assert_called_once()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+
+    def test_persistence_changed_data(self):
+        """New data will be sent in a new message in the queue"""
+        plugin = UbuntuProInfo()
+        self.monitor.add(plugin)
+
+        with mock.patch("subprocess.run") as run_mock:
+            run_mock.return_value = mock.Mock(
+                stdout='"Initial data!"',
+            )
+            plugin.run()
+
+        messages = self.mstore.get_pending_messages()
+        run_mock.assert_called_once()
+        self.assertEqual(1, len(messages))
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertEqual(messages[0]["ubuntu-pro-info"], '"Initial data!"')
+
+        with mock.patch("subprocess.run") as run_mock:
+            run_mock.return_value = mock.Mock(
+                stdout='"New data!"',
+            )
+            plugin.run()
+
+        run_mock.assert_called_once()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(2, len(messages))
+        self.assertEqual(messages[1]["ubuntu-pro-info"], '"New data!"')
+
+    def test_persistence_reset(self):
+        """Resetting the plugin will allow a message with identical data to
+        be sent"""
+        plugin = UbuntuProInfo()
+        self.monitor.add(plugin)
+        data = '"Initial data!"'
+
+        with mock.patch("subprocess.run") as run_mock:
+            run_mock.return_value = mock.Mock(
+                stdout=data,
+            )
+            plugin.run()
+
+        messages = self.mstore.get_pending_messages()
+        run_mock.assert_called_once()
+        self.assertEqual(1, len(messages))
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertEqual(messages[0]["ubuntu-pro-info"], data)
+
+        plugin._reset()
+
+        with mock.patch("subprocess.run") as run_mock:
+            run_mock.return_value = mock.Mock(
+                stdout=data,
+            )
+            plugin.run()
+
+        run_mock.assert_called_once()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(2, len(messages))
+        self.assertTrue("ubuntu-pro-info" in messages[1])
+        self.assertEqual(messages[1]["ubuntu-pro-info"], data)

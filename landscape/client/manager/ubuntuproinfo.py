@@ -1,8 +1,10 @@
 import json
 import subprocess
+from pathlib import Path
 
 from landscape.client import IS_CORE
 from landscape.client.manager.plugin import ManagerPlugin
+from landscape.lib.persist import Persist
 
 
 class UbuntuProInfo(ManagerPlugin):
@@ -21,6 +23,11 @@ class UbuntuProInfo(ManagerPlugin):
 
     def register(self, registry):
         super().register(registry)
+        self._persist_filename = Path(
+            self.registry.config.data_path,
+            "ubuntu-pro-info.bpickle",
+        )
+        self._persist = Persist(filename=self._persist_filename)
         self.call_on_accepted(self.message_type, self.send_message)
 
     def run(self):
@@ -30,14 +37,25 @@ class UbuntuProInfo(ManagerPlugin):
         )
 
     def send_message(self):
+        """Send a message to the broker if the data has changed since the last
+        call"""
         result = self.get_data()
+        if not result:
+            return
         message = {"type": self.message_type, "ubuntu-pro-info": result}
         return self.registry.broker.send_message(message, self._session_id)
 
     def get_data(self):
+        """Persist data to avoid sending messages if result hasn't changed"""
         ubuntu_pro_info = get_ubuntu_pro_info()
 
-        return json.dumps(ubuntu_pro_info, separators=(",", ":"))
+        if self._persist.get("data") != ubuntu_pro_info:
+            self._persist.set("data", ubuntu_pro_info)
+            return json.dumps(ubuntu_pro_info, separators=(",", ":"))
+
+    def _reset(self):
+        """Reset the persist."""
+        self._persist.remove("data")
 
 
 def get_ubuntu_pro_info() -> dict:
