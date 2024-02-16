@@ -23,7 +23,7 @@ class UbuntuProInfoTest(LandscapeTest):
             run_mock.return_value = mock.Mock(
                 stdout='"This is a test"',
             )
-            self.monitor.add(plugin)  # runs immediately
+            self.monitor.add(plugin)
             plugin.run()
 
         run_mock.assert_called()
@@ -31,26 +31,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(messages[0]["ubuntu-pro-info"], '"This is a test"')
-        self.assertEqual(messages[1]["ubuntu-pro-info"], '"This is a test"')
 
-    def test_ubuntu_pro_info_runs_immediately(self):
-        """Tests that Ubuntu Pro status runs on registration"""
-        plugin = UbuntuProInfo()
-
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout='"Registered"',
-            )
-            self.monitor.add(plugin)  # runs immediately
-
-        run_mock.assert_called_once()
-        messages = self.mstore.get_pending_messages()
-        self.assertTrue(len(messages) > 0)
-        self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(messages[0]["ubuntu-pro-info"], '"Registered"')
-
-    def test_ubuntu_pro_info_no_ua(self):
-        """Tests calling `ua status` when it is not installed."""
+    def test_ubuntu_pro_info_no_pro(self):
+        """Tests calling `pro status` when it is not installed."""
         plugin = UbuntuProInfo()
         self.monitor.add(plugin)
 
@@ -77,3 +60,11 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertIn("errors", result)
         self.assertIn("not available", result["errors"][0]["message"])
         self.assertEqual(result["result"], "failure")
+
+    def test_persistence(self):
+        """If data hasn't changed, a new message is not sent"""
+        plugin = UbuntuProInfo()
+        self.monitor.add(plugin)
+
+        # TODO
+        pass

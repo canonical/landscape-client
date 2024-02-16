@@ -18,7 +18,6 @@ class UbuntuProInfo(ManagerPlugin):
 
     message_type = "ubuntu-pro-info"
     run_interval = 900  # 15 minutes
-    run_immediately = True
 
     def register(self, registry):
         super().register(registry)
