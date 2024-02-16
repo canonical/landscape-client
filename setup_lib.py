@@ -20,7 +20,6 @@ SCRIPTS = []
 DEB_REQUIRES = [
     "lsb-release",
     "lshw",
-    "net-tools",
 ]
 REQUIRES = [
     "twisted",
