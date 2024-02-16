@@ -1,7 +1,43 @@
+from copy import deepcopy
+
 import yaml
 
 from landscape.client import snap_http
 from landscape.client.snap_http import SnapdHttpException
+
+
+class IgnoreYamlAliasesLoader(yaml.SafeLoader):
+    """Patch `yaml.SafeLoader` to ignore aliases like *alias when loading.
+
+    For instance, a system-user assertion can have the following json:
+      {
+          [...]
+           "system-user-authority": "*",
+          [...]
+      }
+    which after signing gets converted to yaml that looks like:
+      [...]
+      system-user-authority: *
+      [...]
+    pyyaml tries to parse the * as the start of an alias leading to errors.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.yaml_implicit_resolvers = deepcopy(
+            super().yaml_implicit_resolvers,
+        )
+        self.yaml_implicit_resolvers.pop("*", None)
+
+    def fetch_alias(self):
+        return super().fetch_plain()
+
+
+def parse_assertion(headers, signature):
+    """Parse an assertion."""
+    assertion = yaml.load(headers, IgnoreYamlAliasesLoader)
+    assertion["signature"] = signature
+    return assertion
 
 
 def get_assertions(assertion_type: str):
@@ -31,9 +67,8 @@ def get_assertions(assertion_type: str):
         rest = sections
         while rest:
             headers, signature, *rest = rest
-            assertion = yaml.safe_load(headers)
-            assertion["signature"] = signature
-            assertions.append(assertion)
+            parsed = parse_assertion(headers, signature)
+            assertions.append(parsed)
 
     return assertions
 

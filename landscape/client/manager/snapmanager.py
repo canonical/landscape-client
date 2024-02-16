@@ -1,4 +1,3 @@
-import json
 import logging
 from collections import deque
 
@@ -112,7 +111,7 @@ class SnapManager(ManagerPlugin):
             )
             queue.append((response.change, "BATCH"))
         except SnapdHttpException as e:
-            result = json.loads(e.args[0])["result"]
+            result = e.json["result"]
             logging.error(
                 f"Error in {message_type}: {message}",
             )
@@ -156,7 +155,7 @@ class SnapManager(ManagerPlugin):
                 )
                 queue.append((response.change, name))
             except SnapdHttpException as e:
-                result = json.loads(e.args[0])["result"]
+                result = e.json["result"]
                 logging.error(
                     f"Error in {message_type} for '{name}': {message}",
                 )
