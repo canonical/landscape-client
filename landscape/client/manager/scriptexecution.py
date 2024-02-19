@@ -86,6 +86,7 @@ class ScriptRunnerMixin:
         if process_factory is None:
             from twisted.internet import reactor as process_factory
         self.process_factory = process_factory
+        self.IS_SNAP = IS_SNAP
 
     def is_user_allowed(self, user):
         allowed_users = self.registry.config.get_allowed_script_users()
@@ -99,9 +100,8 @@ class ScriptRunnerMixin:
         # to mention we can't get errno.
         # Don't attempt to change file owner if the client is a snap
         os.chmod(filename, 0o700)
-        if not IS_SNAP:
-            if uid is not None:
-                os.chown(filename, uid, gid)
+        if not self.IS_SNAP and uid is not None:
+            os.chown(filename, uid, gid)
 
         script = build_script(shell, code)
         script = script.encode("utf-8")
@@ -175,7 +175,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     def _handle_execute_script(self, message):
         opid = message["operation-id"]
         try:
-            user = message["username"] if not IS_SNAP else "root"
+            user = message["username"] if not self.IS_SNAP else "root"
 
             if not self.is_user_allowed(user):
                 return self._respond(
@@ -249,14 +249,12 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             full_filename = os.path.join(attachment_dir, filename)
             with open(full_filename, "wb") as attachment:
                 os.chmod(full_filename, 0o600)
-                if not IS_SNAP:
-                    if uid is not None:
-                        os.chown(full_filename, uid, gid)
+                if not self.IS_SNAP and uid is not None:
+                    os.chown(full_filename, uid, gid)
                 attachment.write(data)
         os.chmod(attachment_dir, 0o700)
-        if not IS_SNAP:
-            if uid is not None:
-                os.chown(attachment_dir, uid, gid)
+        if not self.IS_SNAP and uid is not None:
+            os.chown(attachment_dir, uid, gid)
         returnValue(attachment_dir)
 
     def run_script(

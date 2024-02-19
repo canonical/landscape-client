@@ -437,10 +437,7 @@ class RunScriptTests(LandscapeTest):
         patch_chown = mock.patch("os.chown")
         mock_chown = patch_chown.start()
 
-        patch_issnap = mock.patch("landscape.client.IS_SNAP")
-        patch_issnap.return_value = from_snap
-        patch_issnap.start()
-
+        self.plugin.IS_SNAP = from_snap
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username)
 
         self.assertEqual(len(factory.spawns), 1)
@@ -456,12 +453,15 @@ class RunScriptTests(LandscapeTest):
         protocol.processEnded(Failure(ProcessDone(0)))
 
         def check(result):
-            mock_chown.assert_called()
+            if from_snap:
+                mock_chown.assert_not_called()
+            else:
+                mock_chown.assert_called()
+
             self.assertEqual(result, "foobar")
 
         def cleanup(result):
             patch_chown.stop()
-            patch_issnap.stop()
             return result
 
         return result.addCallback(check).addBoth(cleanup)
