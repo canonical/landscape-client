@@ -421,7 +421,7 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result
 
-    def _run_script(self, username, uid, gid, path, from_snap=False):
+    def _run_script(self, username, uid, gid, path, from_snap=None):
 
         if from_snap:
             expected_gid = None
@@ -479,7 +479,7 @@ class RunScriptTests(LandscapeTest):
         gid = info.pw_gid
         path = info.pw_dir
 
-        return self._run_script(username, uid, gid, path, from_snap=False)
+        return self._run_script(username, uid, gid, path, from_snap=None)
 
     def test_user_from_snap(self):
         """
