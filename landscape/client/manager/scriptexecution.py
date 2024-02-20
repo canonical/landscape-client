@@ -18,6 +18,7 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.python.compat import unicode
 
 from landscape import VERSION
+from landscape.client import IS_SNAP
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
@@ -85,6 +86,7 @@ class ScriptRunnerMixin:
         if process_factory is None:
             from twisted.internet import reactor as process_factory
         self.process_factory = process_factory
+        self.IS_SNAP = IS_SNAP
 
     def is_user_allowed(self, user):
         allowed_users = self.registry.config.get_allowed_script_users()
@@ -96,8 +98,9 @@ class ScriptRunnerMixin:
         # It would be nice to use fchown(2) and fchmod(2), but they're not
         # available in python and using it with ctypes is pretty tedious, not
         # to mention we can't get errno.
+        # Don't attempt to change file owner if the client is a snap
         os.chmod(filename, 0o700)
-        if uid is not None:
+        if not self.IS_SNAP and uid is not None:
             os.chown(filename, uid, gid)
 
         script = build_script(shell, code)
@@ -172,7 +175,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     def _handle_execute_script(self, message):
         opid = message["operation-id"]
         try:
-            user = message["username"]
+            user = message["username"] if not self.IS_SNAP else "root"
+
             if not self.is_user_allowed(user):
                 return self._respond(
                     FAILED,
@@ -245,11 +249,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             full_filename = os.path.join(attachment_dir, filename)
             with open(full_filename, "wb") as attachment:
                 os.chmod(full_filename, 0o600)
-                if uid is not None:
+                if not self.IS_SNAP and uid is not None:
                     os.chown(full_filename, uid, gid)
                 attachment.write(data)
         os.chmod(attachment_dir, 0o700)
-        if uid is not None:
+        if not self.IS_SNAP and uid is not None:
             os.chown(attachment_dir, uid, gid)
         returnValue(attachment_dir)
 
@@ -296,9 +300,15 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             "USER": user or "",
             "HOME": path or "",
         }
-        for locale_var in ("LANG", "LC_ALL", "LC_CTYPE"):
-            if locale_var in os.environ:
-                env[locale_var] = os.environ[locale_var]
+        for env_var in (
+            "LANG",
+            "LC_ALL",
+            "LC_CTYPE",
+            "LD_LIBRARY_PATH",
+            "PYTHONPATH",
+        ):
+            if env_var in os.environ:
+                env[env_var] = os.environ[env_var]
         if server_supplied_env:
             env.update(server_supplied_env)
         old_umask = os.umask(0o022)

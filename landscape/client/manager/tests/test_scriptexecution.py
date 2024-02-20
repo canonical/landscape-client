@@ -42,7 +42,13 @@ def get_default_environment():
         "USER": username,
         "HOME": home,
     }
-    for var in {"LANG", "LC_ALL", "LC_CTYPE"}:
+    for var in {
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "LD_LIBRARY_PATH",
+        "PYTHONPATH",
+    }:
         if var in os.environ:
             env[var] = os.environ[var]
     return env
@@ -415,9 +421,14 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result
 
-    def _run_script(self, username, uid, gid, path):
-        expected_uid = uid if uid != os.getuid() else None
-        expected_gid = gid if gid != os.getgid() else None
+    def _run_script(self, username, uid, gid, path, from_snap=None):
+
+        if from_snap:
+            expected_gid = None
+            expected_uid = None
+        else:
+            expected_uid = uid if uid != os.getuid() else None
+            expected_gid = gid if gid != os.getgid() else None
 
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
@@ -426,6 +437,7 @@ class RunScriptTests(LandscapeTest):
         patch_chown = mock.patch("os.chown")
         mock_chown = patch_chown.start()
 
+        self.plugin.IS_SNAP = from_snap
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username)
 
         self.assertEqual(len(factory.spawns), 1)
@@ -441,14 +453,18 @@ class RunScriptTests(LandscapeTest):
         protocol.processEnded(Failure(ProcessDone(0)))
 
         def check(result):
-            mock_chown.assert_called_with()
+            if from_snap:
+                mock_chown.assert_not_called()
+            else:
+                mock_chown.assert_called()
+
             self.assertEqual(result, "foobar")
 
         def cleanup(result):
             patch_chown.stop()
             return result
 
-        return result.addErrback(check).addBoth(cleanup)
+        return result.addCallback(check).addBoth(cleanup)
 
     def test_user(self):
         """
@@ -463,7 +479,22 @@ class RunScriptTests(LandscapeTest):
         gid = info.pw_gid
         path = info.pw_dir
 
-        return self._run_script(username, uid, gid, path)
+        return self._run_script(username, uid, gid, path, from_snap=None)
+
+    def test_user_from_snap(self):
+        """
+        Running a script as a particular user calls
+        C{IReactorProcess.spawnProcess} with an appropriate C{uid} argument,
+        with the user's primary group as the C{gid} argument and with the user
+        home as C{path} argument.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        gid = info.pw_gid
+        path = info.pw_dir
+
+        return self._run_script(username, uid, gid, path, from_snap=True)
 
     def test_user_no_home(self):
         """
