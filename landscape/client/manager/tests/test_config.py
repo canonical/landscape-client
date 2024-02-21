@@ -21,6 +21,7 @@ class ManagerConfigurationTest(LandscapeTest):
                 "HardwareInfo",
                 "KeystoneToken",
                 "SnapManager",
+                "UbuntuProInfo",
             ],
             ALL_PLUGINS,
         )
