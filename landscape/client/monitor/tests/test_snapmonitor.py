@@ -15,11 +15,25 @@ class SnapMonitorTest(LandscapeTest):
     def setUp(self):
         super(SnapMonitorTest, self).setUp()
         self.mstore.set_accepted_types(["snaps"])
+        self.snap_http = patch(
+            "landscape.client.monitor.snapmonitor.snap_http",
+        ).start()
+
+    def tearDown(self):
+        patch.stopall()
 
     def test_get_data(self):
         """Tests getting installed snap data."""
         plugin = SnapMonitor()
         self.monitor.add(plugin)
+
+        self.snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {},
+        )
+        self.snap_http.list.return_value = SnapdResponse("sync", 200, "OK", [])
 
         plugin.exchange()
 
@@ -35,10 +49,8 @@ class SnapMonitorTest(LandscapeTest):
         plugin = SnapMonitor()
         self.monitor.add(plugin)
 
-        with patch(
-            "landscape.client.monitor.snapmonitor.snap_http",
-        ) as snap_http_mock, self.assertLogs(level="ERROR") as cm:
-            snap_http_mock.list.side_effect = SnapdHttpException
+        with self.assertLogs(level="ERROR") as cm:
+            self.snap_http.list.side_effect = SnapdHttpException
             plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
@@ -49,13 +61,23 @@ class SnapMonitorTest(LandscapeTest):
             ["ERROR:root:Unable to list installed snaps: "],
         )
 
-    @patch("landscape.client.monitor.snapmonitor.snap_http")
-    def test_get_snap_config(self, snap_http_mock):
+    def test_get_snap_config(self):
         """Tests that we can get and coerce snap config."""
         plugin = SnapMonitor()
         self.monitor.add(plugin)
 
-        snap_http_mock.list.return_value = SnapdResponse(
+        def _mock_get_config(name, *_):
+            if name == "landscape-client":
+                result = {"experimental": {"monitor-config": True}}
+            else:
+                result = {
+                    "foo": {"baz": "default", "qux": [1, True, 2.0]},
+                    "bar": "enabled",
+                }
+
+            return SnapdResponse("sync", 200, "OK", result)
+
+        self.snap_http.list.return_value = SnapdResponse(
             "sync",
             200,
             "OK",
@@ -69,16 +91,8 @@ class SnapMonitorTest(LandscapeTest):
                 },
             ],
         )
-        snap_http_mock.get_conf.return_value = SnapdResponse(
-            "sync",
-            200,
-            "OK",
-            {
-                "foo": {"baz": "default", "qux": [1, True, 2.0]},
-                "bar": "enabled",
-            },
-        )
-        snap_http_mock.get_apps.return_value = SnapdResponse(
+        self.snap_http.get_conf.side_effect = _mock_get_config
+        self.snap_http.get_apps.return_value = SnapdResponse(
             "sync",
             200,
             "OK",
@@ -104,11 +118,62 @@ class SnapMonitorTest(LandscapeTest):
             },
         )
 
-    @patch("landscape.client.monitor.snapmonitor.snap_http")
-    def test_get_snap_services(self, snap_http_mock):
+    def test_get_snap_config_experimental_flag_off(self):
+        """Tests attempt to get snap config with the feature flag off."""
+        plugin = SnapMonitor()
+        self.monitor.add(plugin)
+
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [
+                {
+                    "name": "test-snap",
+                    "revision": "1",
+                    "confinement": "strict",
+                    "version": "v1.0",
+                    "id": "123",
+                },
+            ],
+        )
+        self.snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {
+                "experimental": {"monitor-config": False},
+            },
+        )
+        self.snap_http.get_apps.return_value = []
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+
+        self.assertTrue(len(messages) > 0)
+        self.assertDictEqual(
+            messages[0]["snaps"]["installed"][0],
+            {
+                "name": "test-snap",
+                "revision": "1",
+                "confinement": "strict",
+                "version": "v1.0",
+                "id": "123",
+            },
+        )
+
+    def test_get_snap_services(self):
         """Tests that we can get and coerce snap services."""
         plugin = SnapMonitor()
         self.monitor.add(plugin)
+
+        def _mock_get_config(name, *_):
+            if name == "landscape-client":
+                result = {"experimental": {"monitor-services": True}}
+            else:
+                result = {}
+
+            return SnapdResponse("sync", 200, "OK", result)
 
         services = [
             {
@@ -140,14 +205,9 @@ class SnapMonitorTest(LandscapeTest):
                 "snap": "lxd",
             },
         ]
-        snap_http_mock.list.return_value = SnapdResponse("sync", 200, "OK", [])
-        snap_http_mock.get_conf.return_value = SnapdResponse(
-            "sync",
-            200,
-            "OK",
-            {},
-        )
-        snap_http_mock.get_apps.return_value = SnapdResponse(
+        self.snap_http.list.return_value = SnapdResponse("sync", 200, "OK", [])
+        self.snap_http.get_conf.side_effect = _mock_get_config
+        self.snap_http.get_apps.return_value = SnapdResponse(
             "sync",
             200,
             "OK",
@@ -160,22 +220,54 @@ class SnapMonitorTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertCountEqual(messages[0]["snaps"]["services"], services)
 
-    @patch("landscape.client.monitor.snapmonitor.snap_http")
-    def test_get_snap_services_error(self, snap_http_mock):
+    def test_get_snap_services_experimental_flag_off(self):
+        """Tests attempt to get snap services with the feature flag off."""
+        plugin = SnapMonitor()
+        self.monitor.add(plugin)
+
+        def _mock_get_config(name, *_):
+            if name == "landscape-client":
+                result = {
+                    "experimental": {"monitor-services": False},
+                }
+            else:
+                result = {}
+
+            return SnapdResponse("sync", 200, "OK", result)
+
+        self.snap_http.list.return_value = SnapdResponse("sync", 200, "OK", [])
+        self.snap_http.get_conf.side_effect = _mock_get_config
+        self.snap_http.get_apps.return_value = []
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+
+        self.assertTrue(len(messages) > 0)
+        self.assertNotIn("services", messages[0]["snaps"])
+
+    def test_get_snap_services_error(self):
         """Tests that we can get and coerce snap services."""
         plugin = SnapMonitor()
         self.monitor.add(plugin)
 
-        snap_http_mock.list.return_value = SnapdResponse("sync", 200, "OK", [])
-        snap_http_mock.get_conf.return_value = SnapdResponse(
-            "sync",
-            200,
-            "OK",
-            {},
-        )
+        def _mock_get_config(name, *_):
+            if name == "landscape-client":
+                result = {
+                    "experimental": {
+                        "monitor-config": True,
+                        "monitor-services": True,
+                    },
+                }
+            else:
+                result = {}
+
+            return SnapdResponse("sync", 200, "OK", result)
+
+        self.snap_http.list.return_value = SnapdResponse("sync", 200, "OK", [])
+        self.snap_http.get_conf.side_effect = _mock_get_config
 
         with self.assertLogs(level="WARNING") as cm:
-            snap_http_mock.get_apps.side_effect = SnapdHttpException
+            self.snap_http.get_apps.side_effect = SnapdHttpException
             plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
@@ -185,4 +277,3 @@ class SnapMonitorTest(LandscapeTest):
             cm.output,
             ["WARNING:root:Unable to list services: "],
         )
-        self.assertCountEqual(messages[0]["snaps"]["services"], [])
