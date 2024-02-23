@@ -36,14 +36,12 @@ apps:
       - system-observe
     environment:
       LANDSCAPE_CLIENT_SNAP: 1
-      LANDSCAPE_CLIENT_CORE: 1
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
   config:
     command: usr/bin/landscape-config
     plugs: [network]
     environment:
       LANDSCAPE_CLIENT_SNAP: 1
-      LANDSCAPE_CLIENT_CORE: 1
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
 
 layout:
