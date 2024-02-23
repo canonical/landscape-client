@@ -20,8 +20,8 @@ url = ${_url}/message-system
 ping_url = ${_url}/ping
 log_level = info
 script_users = ALL
-manager_plugins = ProcessKiller,UserManager,ShutdownManager,HardwareInfo,KeystoneToken,SnapManager,ScriptExecution
-monitor_plugins = ActiveProcessInfo,ComputerInfo,LoadAverage,MemoryInfo,MountInfo,ProcessorInfo,Temperature,UserMonitor,RebootRequired,NetworkActivity,NetworkDevice,CPUUsage,SwiftUsage,CephUsage,ComputerTags,SnapMonitor
+manager_plugins = ProcessKiller,UserManager,ShutdownManager,HardwareInfo,KeystoneToken,SnapManager,SnapServicesManager,ScriptExecution
+monitor_plugins = ActiveProcessInfo,ComputerInfo,LoadAverage,MemoryInfo,MountInfo,ProcessorInfo,Temperature,UserMonitor,RebootRequired,NetworkActivity,NetworkDevice,CPUUsage,SwiftUsage,CephUsage,ComputerTags,SnapMonitor,SnapServicesMonitor
 EOF
 
 if [ -n "$_access_group" ]; then

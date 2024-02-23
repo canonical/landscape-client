@@ -803,7 +803,17 @@ SNAPS = Message(
                         ],
                     ),
                 ),
-                "services": List(
+            },
+        ),
+    },
+)
+
+SNAP_SERVICES = Message(
+    "snap-services",
+    {
+        "services": KeyDict(
+            {
+                "running": List(
                     KeyDict(
                         {
                             "name": Unicode(),
@@ -830,7 +840,7 @@ SNAPS = Message(
                     ),
                 ),
             },
-            optional=["services"],
+            strict=False,
         ),
     },
 )
@@ -883,4 +893,5 @@ message_schemas = (
     UBUNTU_PRO_REBOOT_REQUIRED,
     SNAPS,
     SNAP_INFO,
+    SNAP_SERVICES,
 )

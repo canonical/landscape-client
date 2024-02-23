@@ -20,6 +20,7 @@ class UserManager(ManagerPlugin):
             shadow_file = shadow_file or "/var/lib/extrausers/shadow"
         else:
             management = management or UserManagement()
+            shadow_file = shadow_file
 
         self._management = management
         self._shadow_file = shadow_file

@@ -19,7 +19,7 @@ class SnapMonitor(DataWatcher):
         # The default interval is 30 minutes.
         self.run_interval = self.config.snap_monitor_interval
 
-        super(SnapMonitor, self).register(registry)
+        super().register(registry)
 
     def get_data(self):
         try:
@@ -40,12 +40,6 @@ class SnapMonitor(DataWatcher):
 
             snaps[i]["config"] = json.dumps(config)
 
-        try:
-            services = snap_http.get_apps(services_only=True).result
-        except SnapdHttpException as e:
-            logging.warning(f"Unable to list services: {e}")
-            services = []
-
         # We get a lot of extra info from snapd. To avoid caching it all
         # or invalidating the cache on timestamp changes, we use Message
         # coercion to strip out the unnecessaries, then sort on the snap
@@ -53,13 +47,9 @@ class SnapMonitor(DataWatcher):
         data = SNAPS.coerce(
             {
                 "type": "snaps",
-                "snaps": {
-                    "installed": snaps,
-                    "services": services,
-                },
+                "snaps": {"installed": snaps},
             },
         )
         data["snaps"]["installed"].sort(key=lambda x: x["id"])
-        data["snaps"]["services"].sort(key=lambda x: x["name"])
 
         return data["snaps"]
