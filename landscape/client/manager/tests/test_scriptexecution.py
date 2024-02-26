@@ -479,6 +479,9 @@ class RunScriptTests(LandscapeTest):
         gid = info.pw_gid
         path = info.pw_dir
 
+        if not os.path.exists(path):
+            path = "/"
+
         return self._run_script(username, uid, gid, path, from_snap=None)
 
     def test_user_from_snap(self):
@@ -493,6 +496,9 @@ class RunScriptTests(LandscapeTest):
         username = info.pw_name
         gid = info.pw_gid
         path = info.pw_dir
+
+        if not os.path.exists(path):
+            path = "/"
 
         return self._run_script(username, uid, gid, path, from_snap=True)
 

@@ -1,3 +1,27 @@
+landscape-client (24.02-0ubuntu0) noble; urgency=medium
+
+  * Improvements:
+    - use dbus in shutdown manager instead of subprocess
+    - improve messages about manager plugin configuration
+    - add getting and settings snap configurations
+    - read temperature from hwmon devices
+    - add snapd device information to ComputerInfo message
+    - add snap services management
+  * Fixes:
+    - d/landscape-common.postinst d/landscape-common.prerm: do not call
+    update-motd when installing/removing landscape-sysinfo.wrapper
+    - Livepatch status reporting bug
+    - bpickle: guard against negative string/bytestring lengths
+    - Makefile: remove check2, depends2, and references to python2
+  * Ubuntu Core:
+    - add path for os-release inside a snap
+    - computer title generation for zero-touch deployment on Core
+    - user management on Core
+    - deploy system user assertion to device
+    - remote script execution for snaps
+
+ -- Mitch Burton <mitch.burton@canonical.com>  Mon, 26 Feb 2024 14:26:36 -0800
+
 landscape-client (23.10-0ubuntu0) bionic; urgency=medium
 
   * New upstream release 23.10

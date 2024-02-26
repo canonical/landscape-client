@@ -40,7 +40,7 @@ class UpdateManager(MonitorPlugin):
             return "normal"
         config_file = open(self.update_manager_filename)
         parser = SafeConfigParser()
-        parser.readfp(config_file)
+        parser.read_file(config_file)
         prompt = parser.get("DEFAULT", "Prompt")
         valid_prompts = ["lts", "never", "normal"]
         if prompt not in valid_prompts:

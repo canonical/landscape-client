@@ -30,8 +30,7 @@ class ProcessorInfoTest(LandscapeTest):
         self.assertTrue(len(message["processors"]) > 0)
 
         for processor in message["processors"]:
-            self.assertTrue("processor-id" in processor)
-            self.assertTrue("model" in processor)
+            self.assertIn("processor-id", processor)
 
     def test_call_on_accepted(self):
         """
@@ -325,6 +324,22 @@ Hardware        : Foundation-v8A
             "AArch64 Processor rev 0 (aarch64)",
         )
         self.assertEqual(processor_0["processor-id"], 0)
+
+    def test_no_model_default(self):
+        """If there is no 'Processor' field, then the model defaults to
+        'arm'.
+        """
+        filename = self.makeFile("processor        : 0\n")
+        plugin = ProcessorInfo(
+            machine_name="aarch64",
+            source_filename=filename,
+        )
+        message = plugin.create_message()
+        self.assertEqual(message["type"], "processor-info")
+        self.assertTrue(len(message["processors"]) == 1)
+
+        processor_0 = message["processors"][0]
+        self.assertEqual(processor_0["model"], "arm")
 
 
 class SparcMessageTest(LandscapeTest):
@@ -631,3 +646,60 @@ bogomips        : 1198.25
 
         self.mstore.set_accepted_types(["processor-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+
+class RISCVMessageTest(LandscapeTest):
+    """Test for RISCV-specific message handling."""
+
+    helpers = [MonitorHelper]
+
+    VISION_FIVE = """
+processor      : 0
+hart           : 0
+isa            : rv64imafdc
+mmu            : sv39
+uarch          : sifive,u74-mc
+mvendorid      : 0x489
+marchid        : 0x8000000000000007
+mimpid         : 0x20190531
+
+processor      : 1
+hart           : 1
+isa            : rv64imafdc
+mmu            : sv39
+uarch          : sifive,u74-mc
+mvendorid      : 0x489
+marchid        : 0x8000000000000007
+mimpid         : 0x20190531
+
+    """
+
+    def setUp(self):
+        super().setUp()
+
+        self.mstore.set_accepted_types(["processor-info"])
+
+    def test_read_sample_data(self):
+        """Ensure the plugin can parse a simple /proc/cpuinfo from a VisionFive
+        v1.
+        """
+        filename = self.makeFile(self.VISION_FIVE)
+        plugin = ProcessorInfo(
+            machine_name="riscv64",
+            source_filename=filename,
+        )
+        message = plugin.create_message()
+        self.assertEqual(message["type"], "processor-info")
+        self.assertEqual(len(message["processors"]), 2)
+
+        processor_0, processor_1 = message["processors"]
+
+        self.assertEqual(len(processor_0), 3)
+        self.assertEqual(processor_0["processor-id"], 0)
+        self.assertEqual(processor_0["model"], "sifive,u74-mc")
+        self.assertEqual(processor_0["vendor"], "rv64imafdc")
+
+        self.assertEqual(len(processor_1), 3)
+        self.assertEqual(processor_1["processor-id"], 1)
+        self.assertEqual(processor_1["model"], "sifive,u74-mc")
+        self.assertEqual(processor_1["vendor"], "rv64imafdc")

@@ -389,7 +389,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
 
         def cleanup(ignored):
-            os.environ = env_backup
+            os.environ.clear()
+            os.environ.update(env_backup)
             return ignored
 
         return deferred.addBoth(cleanup)
@@ -448,7 +449,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
 
         def cleanup(ignored):
-            os.environ = env_backup
+            os.environ.clear()
+            os.environ.update(env_backup)
             return ignored
 
         return deferred.addBoth(cleanup)

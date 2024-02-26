@@ -366,11 +366,15 @@ class PackageChanger(PackageTaskHandler):
     def _reboot_later(self, result):
         self._landscape_reactor.call_later(5, self._run_reboot)
 
-    def _run_reboot(self, bus=dbus.SystemBus()):
+    def _run_reboot(self, bus=None):
         """
         Fire a dbus system shutdown
         """
-        self.bus = bus
+        if bus is None:
+            self.bus = dbus.SystemBus()
+        else:
+            self.bus = bus
+
         self.bus_object = self.bus.get_object(
             "org.freedesktop.login1",
             "/org/freedesktop/login1",

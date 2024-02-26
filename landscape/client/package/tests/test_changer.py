@@ -422,7 +422,7 @@ class AptPackageChangerTest(LandscapeTest):
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
-        self.facade.perform_changes.has_calls([call(), call()])
+        self.facade.perform_changes.assert_has_calls([call(), call()])
         self.facade.mark_install.assert_called_once_with(package1)
 
         self.assertEqual(result.code, SUCCESS_RESULT)
@@ -476,7 +476,7 @@ class AptPackageChangerTest(LandscapeTest):
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
-        self.facade.perform_changes.has_calls([call(), call()])
+        self.facade.perform_changes.assert_has_calls([call(), call()])
 
         self.assertEqual(result.code, DEPENDENCY_ERROR_RESULT)
         self.assertEqual(result.text, None)
@@ -531,7 +531,7 @@ class AptPackageChangerTest(LandscapeTest):
 
         result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
 
-        self.facade.perform_changes.has_calls([call(), call()])
+        self.facade.perform_changes.assert_has_calls([call(), call()])
         self.facade.mark_install.assert_called_once_with(package2)
         self.facade.mark_remove.assert_called_once_with(package1)
 

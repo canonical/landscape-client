@@ -99,7 +99,7 @@ class ProcessKillerTests(LandscapeTest):
         signaller.register(self.manager)
         popen = get_active_process()
         process_info = process_info_factory.get_process_info(popen.pid)
-        self.assertNotEquals(process_info, None)
+        self.assertNotEqual(process_info, None)
         start_time = process_info["start-time"]
 
         self.manager.dispatch_message(

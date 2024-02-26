@@ -106,7 +106,7 @@ VmallocChunk:   107432 kB
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 1)
         self.assertEqual(messages[0]["type"], "computer-info")
-        self.assertNotEquals(len(messages[0]["hostname"]), 0)
+        self.assertNotEqual(len(messages[0]["hostname"]), 0)
         self.assertTrue(re.search(r"\w", messages[0]["hostname"]))
 
     def test_only_report_changed_hostnames(self):

@@ -181,30 +181,43 @@ class ARMMessageFactory:
     def create_message(self):
         """Returns a list containing information about each processor."""
         processors = []
-        file = open(self._source_filename)
+        regexp = re.compile(r"(?P<key>.*?)\s*:\s*(?P<value>.*)")
+        current = {}
 
-        try:
-            regexp = re.compile(r"(?P<key>.*?)\s*:\s*(?P<value>.*)")
-            current = {}
+        with open(self._source_filename) as fp:
+            for line in fp:
+                line = line.strip()
 
-            for line in file:
+                if not line:
+                    if current:
+                        processors.append(current.copy())
+                        current = {}
+
+                    continue
+
                 match = regexp.match(line.strip())
+
                 if match:
                     key = match.group("key")
                     value = match.group("value")
 
-                    if key == "Processor":
-                        # ARM doesn't support SMP, thus no processor-id in
-                        # the cpuinfo
-                        current["processor-id"] = 0
+                    if key == "processor":
+                        current["processor-id"] = int(value)
+                        if "model" not in current:
+                            current["model"] = "arm"
+                    elif key == "Processor":
                         current["model"] = value
                     elif key == "Cache size":
                         current["cache-size"] = int(value)
 
-            if current:
-                processors.append(current)
-        finally:
-            file.close()
+        if current:
+            processors.append(current)
+
+        # Older ARM machines may not have processor-ids, but we need them, so
+        # we set missing ones to 0.
+        for processor in processors:
+            if "processor-id" not in processor:
+                processor["processor-id"] = 0
 
         return processors
 
@@ -357,6 +370,8 @@ class RISCVMessageFactory:
 
                 if key == "processor":
                     current = {"processor-id": int(parts[1].strip())}
+                    # A placeholder in case there is no model provided.
+                    current["model"] = "riscv"
                     processors.append(current)
                 elif key == "isa":
                     current["vendor"] = parts[1].strip()

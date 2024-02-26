@@ -61,7 +61,7 @@ class ReactorTestMixin:
         reactor.call_every(0.01, called.append, "hi")
         reactor.call_later(0.5, reactor.stop)
         reactor.run()
-        self.failUnless(5 < len(called) < 100, len(called))
+        self.assertTrue(5 < len(called) < 100, len(called))
 
     def test_cancel_call_every(self):
         reactor = self.get_reactor()
@@ -278,7 +278,7 @@ class ReactorTestMixin:
         self.assertEqual(called[0], (1, 2, 3))
 
         if not isinstance(reactor, FakeReactor):
-            self.assertNotEquals(called[1], thread.get_ident())
+            self.assertNotEqual(called[1], thread.get_ident())
 
     def test_call_in_thread_with_callback(self):
         reactor = self.get_reactor()
@@ -379,7 +379,7 @@ class ReactorTestMixin:
         self.assertEqual(len(called), 4)
         self.assertEqual(called[0], "f")
         if not isinstance(reactor, FakeReactor):
-            self.assertNotEquals(called[1], thread.get_ident())
+            self.assertNotEqual(called[1], thread.get_ident())
         self.assertEqual(called[2], "g")
         self.assertEqual(called[3], thread.get_ident())
 

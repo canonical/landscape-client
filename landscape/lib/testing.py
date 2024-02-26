@@ -178,11 +178,11 @@ class ConfigTestCase(FSTestCase):
         """
         first_fp = cstringio(first)
         first_parser = ConfigParser()
-        first_parser.readfp(first_fp)
+        first_parser.read_file(first_fp)
 
         second_fp = cstringio(second)
         second_parser = ConfigParser()
-        second_parser.readfp(second_fp)
+        second_parser.read_file(second_fp)
 
         self.assertEqual(
             set(first_parser.sections()),

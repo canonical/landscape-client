@@ -15,8 +15,23 @@ class SnapServicesMonitorTest(LandscapeTest):
         super().setUp()
         self.mstore.set_accepted_types(["snap-services"])
 
-    def test_get_data(self):
+    @patch("landscape.client.monitor.snapservicesmonitor.snap_http")
+    def test_get_data(self, snap_http_mock):
         """Tests getting running snap services data."""
+        snap_http_mock.get_apps.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [
+                {
+                    "snap": "test-snap",
+                    "name": "bye-svc",
+                    "daemon": "simple",
+                    "daemon-scope": "system",
+                },
+            ],
+        )
+
         plugin = SnapServicesMonitor()
         self.monitor.add(plugin)
 
