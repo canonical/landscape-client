@@ -34,6 +34,9 @@ apps:
       - shutdown
       - snapd-control
       - system-observe
+      - netlink-audit
+      - account-control
+      - landscape-client-user-management
     environment:
       LANDSCAPE_CLIENT_SNAP: 1
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
@@ -44,9 +47,24 @@ apps:
       LANDSCAPE_CLIENT_SNAP: 1
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
 
+plugs:
+  # Access is granted to the entire /etc directory because the user management
+  #  packages like groupadd create temporary files with random suffices
+  #  (e.g. /etc/group.716838] leading to permission errors.
+  # Regexes like /etc/group* aren't supported unfortunately since these are
+  #  reserved apparmor characters.
+  landscape-client-user-management:
+    interface: system-files
+    write:
+      - /etc
+      - /var/log/faillog
+      - /var/log/lastlog
+      - /var/log/tallylog
+      - /home
+    read:
+      - /var/lib/extrausers
+
 layout:
-  /etc/landscape-client.conf:
-    bind-file: $SNAP_COMMON/etc/landscape-client.conf
   /var/lib/landscape/client:
     bind: $SNAP_DATA/var/lib/landscape/client
   /var/log/landscape:
@@ -75,6 +93,12 @@ parts:
       - python3-dev
       - python3-distutils-extra
       - python3-twisted
+      - python3-pycurl
+      - python3-netifaces
+      - python3-yaml
+      - ubuntu-advantage-tools
+      - locales-all
+      - python3-dbus
     override-build: |
       git commit -n -a -m "dev build for snap" --no-gpg-sign --allow-empty
       cat << EOF > debian/changelog
@@ -91,6 +115,13 @@ parts:
       cp -r debian landscape-client-0.0.1
       cd landscape-client-0.0.1 && debuild -b --no-sign
       cp ../landscape-*_0.0.1_*.deb $CRAFT_PART_INSTALL
+
+      # The adduser package modifies $PATH which makes us use the external
+      #  /sbin/groupadd instead of the groupadd package baked into the snap.
+      # This is problematic since landscape-client is strictly confined and can't
+      #  run arbitrary commands on the host system.
+      # This sed patch will delete the line that modifies $PATH
+      sed -i '\#/bin:/usr/bin:/sbin:/usr/sbin#d' $SNAPCRAFT_PART_INSTALL/usr/sbin/adduser
     stage-packages:
       - adduser
       - bc
@@ -100,6 +131,7 @@ parts:
       - lsb-base
       - lsb-release
       - lshw
+      - passwd
       - python3
       - python3-apt
       - python3-configobj
