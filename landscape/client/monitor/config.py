@@ -23,6 +23,7 @@ ALL_PLUGINS = [
     "LivePatch",
     "UbuntuProRebootRequired",
     "SnapMonitor",
+    "SnapServicesMonitor",
 ]
 
 
