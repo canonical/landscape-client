@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if ! landscape-config --is-registered >/dev/null 2>&1; then
+    /etc/update-motd.d/90-updates-available.pre-landscape
+fi
