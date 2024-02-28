@@ -13,22 +13,31 @@ class ManagerServiceTest(LandscapeTest):
 
     helpers = [FakeBrokerServiceHelper]
 
+    class FakeManagerService(ManagerService):
+        reactor_factory = FakeReactor
+
     def setUp(self):
         super().setUp()
         config = ManagerConfiguration()
         config.load(["-c", self.config_filename])
 
-        class FakeManagerService(ManagerService):
-            reactor_factory = FakeReactor
+        self.service = self.FakeManagerService(config)
 
-        self.service = FakeManagerService(config)
-
-    def test_plugins(self):
+    @mock.patch("dbus.SystemBus")
+    def test_plugins(self, system_bus_mock):
         """
         By default the L{ManagerService.plugins} list holds an instance of
         every enabled manager plugin.
+
+        We mock `dbus` because in some build environments that run these tests,
+        such as buildd, SystemBus is not available.
         """
-        self.assertEqual(len(self.service.plugins), len(ALL_PLUGINS))
+        config = ManagerConfiguration()
+        config.load(["-c", self.config_filename])
+        service = self.FakeManagerService(config)
+
+        self.assertEqual(len(service.plugins), len(ALL_PLUGINS))
+        system_bus_mock.assert_called_once_with()
 
     def test_get_plugins(self):
         """

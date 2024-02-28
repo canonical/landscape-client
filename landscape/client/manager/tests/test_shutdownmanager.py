@@ -22,7 +22,7 @@ class ShutdownManagerTest(LandscapeTest):
         self.dbus_mock = Mock()
         self.dbus_sysbus_mock = Mock()
         self.dbus_mock.get_object.return_value = self.dbus_sysbus_mock
-        self.plugin = ShutdownManager(dbus=self.dbus_mock, shutdown_delay=0)
+        self.plugin = ShutdownManager(self.dbus_mock, shutdown_delay=0)
         self.manager.add(self.plugin)
 
     def test_reboot(self):

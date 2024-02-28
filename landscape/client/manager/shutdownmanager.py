@@ -23,8 +23,12 @@ class ShutdownManager(ManagerPlugin):
     This is usually sufficent.
     """
 
-    def __init__(self, dbus=dbus, shutdown_delay=120):
-        self.dbus_sysbus = dbus.SystemBus()
+    def __init__(self, dbus_provider=None, shutdown_delay=120):
+        if dbus_provider is None:
+            self.dbus_sysbus = dbus.SystemBus()
+        else:
+            self.dbus_sysbus = dbus_provider.SystemBus()
+
         self.shutdown_delay = shutdown_delay
 
     def register(self, registry):

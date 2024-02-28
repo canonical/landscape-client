@@ -377,7 +377,11 @@ class PackageReporter(PackageTaskHandler):
             env["http_proxy"] = self._config.http_proxy
         if self._config.https_proxy:
             env["https_proxy"] = self._config.https_proxy
-        result = spawn_process(self.apt_update_filename, env=env)
+
+        try:
+            result = spawn_process(self.apt_update_filename, env=env)
+        except Exception as e:
+            return deferred.callback((b"", str(e).encode(), e.errno))
 
         def callback(args, deferred):
             return deferred.callback(args)

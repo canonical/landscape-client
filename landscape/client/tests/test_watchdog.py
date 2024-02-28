@@ -792,7 +792,7 @@ time.sleep(999)
             "GRACEFUL_WAIT_PERIOD",
             landscape.client.watchdog.GRACEFUL_WAIT_PERIOD,
         )
-        landscape.client.watchdog.GRACEFUL_WAIT_PERIOD = 0.2
+        landscape.client.watchdog.GRACEFUL_WAIT_PERIOD = 1
         self.daemon.start()
 
         def got_result(result):

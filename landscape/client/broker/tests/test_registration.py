@@ -501,7 +501,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
             {"type": b"registration", "info": b"blah-blah"},
         )
         for name, args, kwargs in reactor_fire_mock.mock_calls:
-            self.assertNotEquals("registration-failed", args[0])
+            self.assertNotEqual("registration-failed", args[0])
 
     def test_register_resets_ids(self):
         self.identity.secure_id = "foo"

@@ -1,4 +1,5 @@
 import locale
+import logging
 import os
 import shutil
 import subprocess
@@ -1677,7 +1678,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.reactor.advance(0)
         return result
 
-    @mock.patch("logging.warning", return_value=None)
+    @mock.patch("logging.warning", spec=logging.warning, return_value=None)
     def test_run_apt_update_warns_about_lock_failure(self, logging_mock):
         """
         The L{PackageReporter.run_apt_update} method logs a warnings when
@@ -1713,12 +1714,12 @@ class PackageReporterAptTest(LandscapeTest):
             mock.call(message.format(20)),
             mock.call(message.format(40)),
             mock.call(
-                "'{}' exited with status 1000 ()".format(
+                "'{}' exited with status 100 ()".format(
                     self.reporter.apt_update_filename,
                 ),
             ),
         ]
-        logging_mock.has_calls(calls)
+        logging_mock.assert_has_calls(calls)
         return result
 
     def test_run_apt_update_stops_retrying_after_lock_acquired(self):
