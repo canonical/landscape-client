@@ -81,7 +81,7 @@ class ExpandVarsTest(unittest.TestCase):
             "f315cab5:after",
         )
         self.assertEqual(
-            expandvars("be\\$fore:${serial}:after", serial="f315cab5"),
+            expandvars("be$fore:${serial}:after", serial="f315cab5"),
             "be$fore:f315cab5:after",
         )
 
@@ -100,7 +100,7 @@ class ExpandVarsTest(unittest.TestCase):
         )
         self.assertEqual(
             expandvars(
-                "be\\$fore:${serial:7}:after",
+                "be$fore:${serial:7}:after",
                 serial="01234567890abcdefgh",
             ),
             "be$fore:7890abcdefgh:after",
@@ -121,7 +121,7 @@ class ExpandVarsTest(unittest.TestCase):
         )
         self.assertEqual(
             expandvars(
-                "be\\$fore:${serial:7:2}:after",
+                "be$fore:${serial:7:2}:after",
                 serial="01234567890abcdefgh",
             ),
             "be$fore:78:after",
