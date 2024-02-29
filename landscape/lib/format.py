@@ -1,5 +1,5 @@
 import inspect
-import subprocess
+import re
 
 
 def format_object(object):
@@ -35,19 +35,31 @@ def format_percent(percent):
 def expandvars(pattern: str, **kwargs) -> str:
     """Expand the pattern by replacing the params with values in `kwargs`.
 
-    This uses bash shell parameter expansion. Here are some examples of
-    possible patterns:
+    This implements a small subset of shell parameter expansion and the
+    patterns can only be in the following forms:
         - ${parameter}
         - ${parameter:offset} - start at `offset` to the end
         - ${parameter:offset:length} - start at `offset` to `offset + length`
+    For simplicity, `offset` and `length` MUST be positive values.
     """
-    values = {k: str(v) for k, v in kwargs.items()}
-    shell = subprocess.run(
-        f'echo -n "{pattern.lower()}"',
-        text=True,
-        capture_output=True,
-        shell=True,
-        executable="/usr/bin/bash",
-        env=values,
+    regex = re.compile(
+        r"\$\{([a-zA-Z][a-zA-Z0-9]*)(?::([0-9]+))?(?::([0-9]+))?\}",
+        re.MULTILINE,
     )
-    return shell.stdout
+    values = {k: str(v) for k, v in kwargs.items()}
+
+    def _replace(match):
+        param = match.group(1)
+        result = values[param.lower()]
+
+        offset, length = match.group(2), match.group(3)
+        if offset:
+            start = int(offset)
+            end = None
+            if length:
+                end = start + int(length)
+            return result[start:end]
+
+        return result
+
+    return re.sub(regex, _replace, pattern)
