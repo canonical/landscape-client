@@ -34,6 +34,7 @@ apps:
       - shutdown
       - snapd-control
       - system-observe
+      - account-control
     environment:
       LANDSCAPE_CLIENT_SNAP: 1
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
