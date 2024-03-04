@@ -19,6 +19,10 @@ architectures:
   - build-on: [s390x]
 confinement: strict
 
+environment:
+  LANDSCAPE_CLIENT_SNAP: 1
+  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10/site-packages:$PYTHONPATH
+
 apps:
   landscape-client:
     daemon: simple
@@ -35,16 +39,9 @@ apps:
       - snapd-control
       - system-observe
       - account-control
-    environment:
-      LANDSCAPE_CLIENT_SNAP: 1
-      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
   config:
     command: usr/bin/landscape-config
     plugs: [network]
-    environment:
-      LANDSCAPE_CLIENT_SNAP: 1
-      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
-
 layout:
   /etc/landscape-client.conf:
     bind-file: $SNAP_COMMON/etc/landscape-client.conf
@@ -53,19 +50,11 @@ layout:
   /var/log/landscape:
     bind: $SNAP_DATA/var/log/landscape
 
-package-repositories:
-  - type: apt
-    ppa: landscape/self-hosted-beta
-
 parts:
   landscape-client:
-    plugin: dump
+    plugin: python
     source: .
-    source-type: local  # Don't use 'git' - it forces you to commit your changes
     build-packages:
-      - debhelper
-      - devscripts
-      - dh-python
       - gawk
       - libdistro-info-perl
       - lsb-release
@@ -83,21 +72,8 @@ parts:
       - locales-all
       - python3-dbus
     override-build: |
-      git commit -n -a -m "dev build for snap" --no-gpg-sign --allow-empty
-      cat << EOF > debian/changelog
-      landscape-client (0.0.1) UNRELEASED; urgency=medium
-
-        * Test build for snap
-
-       -- Guy Incognito <guy.incognito@landscape.client>  Fri, 1 Sep 2023 00:00:00 +0000
-      EOF
-      mkdir -p landscape-client-0.0.1
-      git ls-files --recurse-submodules | xargs -I {} cp -r --parents {} landscape-client-0.0.1/
-      rm -rf landscape-client-0.0.1/debian
-      tar -czf landscape-client-0.0.1.tar.gz landscape-client-0.0.1
-      cp -r debian landscape-client-0.0.1
-      cd landscape-client-0.0.1 && debuild -b --no-sign
-      cp ../landscape-*_0.0.1_*.deb $CRAFT_PART_INSTALL
+      make build
+      python3 setup.py install --prefix ${SNAPCRAFT_PRIME}/usr
     stage-packages:
       - adduser
       - bc
@@ -116,8 +92,8 @@ parts:
       - python3-twisted
       - python3-dbus
       - ubuntu-advantage-tools
-    override-prime: |
+    override-stage: |
       craftctl default
-      rm $CRAFT_PRIME/landscape-*_0.0.1_*.deb
-      dpkg-deb -x $CRAFT_STAGE/landscape-common_0.0.1_*.deb $CRAFT_PRIME
-      dpkg-deb -x $CRAFT_STAGE/landscape-client_0.0.1_*.deb $CRAFT_PRIME
+      # Copy the scripts over
+      mkdir -p ${SNAPCRAFT_PRIME}/usr/bin/
+      cp -r ${SNAPCRAFT_PART_SRC}/scripts/. ${SNAPCRAFT_PRIME}/usr/bin/
