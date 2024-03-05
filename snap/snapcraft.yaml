@@ -39,6 +39,7 @@ apps:
       - snapd-control
       - system-observe
       - account-control
+      - process-control
   config:
     command: usr/bin/landscape-config
     plugs: [network]
