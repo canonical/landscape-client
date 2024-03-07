@@ -106,7 +106,8 @@ etags:
 	-etags --languages=python -R .
 
 snap-install:
-	sudo snap install --devmode landscape-client_0.1_amd64.snap
+	$(eval VERSION=$(shell yq ".version" snap/snapcraft.yaml))
+	sudo snap install --devmode landscape-client_$(VERSION)_amd64.snap
 .PHONY: snap-install
 
 snap-remote-build:
@@ -126,8 +127,9 @@ snap-debug:
 .PHONY: snap-debug
 
 snap-clean: snap-remove
+	$(eval VERSION=$(shell yq ".version" snap/snapcraft.yaml))
 	$(SNAPCRAFT) clean
-	-rm landscape-client_0.1_amd64.snap
+	-rm landscape-client_$(VERSION)_amd64.snap
 .PHONY: snap-clean
 
 snap:

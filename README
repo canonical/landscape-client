@@ -120,6 +120,13 @@ snap container in the event of an error:
 $ make snap-debug
 ```
 
+To use the make targets below, make sure you have [yq](https://github.com/mikefarah/yq) installed. You can install it using [Homebrew](https://brew.sh/) or as a snap:
+
+```console
+$ brew install yq
+$ snap install yq
+```
+
 To install the resulting snap:
 ```
 $ make snap-install
