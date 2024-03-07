@@ -839,6 +839,65 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         self.assertEqual(config.https_proxy, "https://new.proxy")
         self.assertEqual(config.include_manager_plugins, "")
 
+    @mock.patch("landscape.client.configuration.IS_SNAP", "1")
+    @mock.patch("landscape.client.configuration.print_text")
+    @mock.patch("landscape.client.configuration.getpass.getpass")
+    @mock.patch("landscape.client.configuration.input")
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_setup_on_the_snap_version(
+        self,
+        mock_help,
+        mock_input,
+        mock_getpass,
+        mock_print_text,
+    ):
+        filename = self.makeFile(
+            "[client]\n"
+            "computer_title = Old Title\n"
+            "account_name = Old Name\n"
+            "registration_key = Old Password\n"
+            "http_proxy = http://old.proxy\n"
+            "https_proxy = https://old.proxy\n"
+            "url = http://url\n",
+        )
+
+        def side_effect_input(prompt):
+            fixtures = {
+                "[Old Title]": "New Title",
+                "[Old Name]": "New Name",
+                "[http://old.proxy]": "http://new.proxy",
+                "[https://old.proxy]": "https://new.proxy",
+                "Will you be using your own "
+                "Self-Hosted Landscape installation? [y/N]": "n",
+            }
+            for key, value in iteritems(fixtures):
+                if key in prompt:
+                    return value
+
+        def side_effect_getpass(prompt):
+            fixtures = {
+                "(Optional) Registration Key:": "New Password",
+                "Please confirm:": "New Password",
+            }
+            for key, value in iteritems(fixtures):
+                if key in prompt:
+                    return value
+
+        mock_input.side_effect = side_effect_input
+        mock_getpass.side_effect = side_effect_getpass
+
+        config = self.get_config(["--no-start", "--config", filename])
+        setup(config)
+
+        self.assertEqual(
+            "sudo landscape-client.config "
+            "--account-name 'New Name' "
+            "--registration-key HIDDEN "
+            "--https-proxy https://new.proxy "
+            "--http-proxy http://new.proxy",
+            mock_help.mock_calls[-1].args[0],
+        )
+
     @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_silent_setup(self, mock_serviceconfig):
         """
