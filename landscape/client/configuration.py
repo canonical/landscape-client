@@ -14,6 +14,7 @@ from functools import partial
 from urllib.parse import urlparse
 
 from landscape.client import GROUP
+from landscape.client import IS_SNAP
 from landscape.client import USER
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
@@ -507,7 +508,10 @@ class LandscapeSetupScript:
             "https_proxy",
             "http_proxy",
         )
-        cmd = ["sudo", "landscape-config"]
+        cmd = [
+            "sudo",
+            "landscape-client.config" if IS_SNAP else "landscape-config",
+        ]
         for param in params:
             value = self.config.get(param)
             if value:
@@ -520,7 +524,7 @@ class LandscapeSetupScript:
                 else:
                     cmd.append(shlex.quote(value))
         show_help(
-            "The landscape-config parameters to repeat this registration"
+            "The landscape config parameters to repeat this registration"
             " on another machine are:",
         )
         show_help(" ".join(cmd))
