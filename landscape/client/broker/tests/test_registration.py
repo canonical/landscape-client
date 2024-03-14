@@ -660,6 +660,16 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(socket.getfqdn(), messages[0]["hostname"])
 
+    def test_ubuntu_pro_info_present_in_registration(self):
+        """Ubuntu Pro info is included to handle licensing in Server"""
+        self.mstore.set_server_api(b"3.3")
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertIn("ubuntu_pro_info", messages[0])
+
 
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
