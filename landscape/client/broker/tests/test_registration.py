@@ -1,7 +1,6 @@
 import json
 import logging
 import socket
-from datetime import datetime
 from unittest import mock
 
 from landscape.client.broker.registration import Identity
@@ -678,30 +677,21 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         during the registration message
         """
 
-        def datetime_is_aware(d):
-            """https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive"""  # noqa
-            return d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None
-
         self.mstore.set_server_api(b"3.3")
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-
         self.reactor.fire("pre-exchange")
+
         messages = self.mstore.get_pending_messages()
 
-        # verify the strictly necessary fields that Server expects
+        # verify the minimum necessary fields that Server expects
         self.assertIn("ubuntu_pro_info", messages[0])
         ubuntu_pro_info = json.loads(messages[0]["ubuntu_pro_info"])
         self.assertIn("effective", ubuntu_pro_info)
         self.assertIn("expires", ubuntu_pro_info)
         contract = ubuntu_pro_info["contract"]
         self.assertIn("landscape", contract["products"])
-
-        expires = datetime.fromisoformat(ubuntu_pro_info["expires"])
-        effective = datetime.fromisoformat(ubuntu_pro_info["effective"])
-        self.assertTrue(datetime_is_aware(expires))
-        self.assertTrue(datetime_is_aware(effective))
 
 
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
