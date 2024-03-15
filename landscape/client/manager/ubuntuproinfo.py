@@ -1,5 +1,8 @@
 import json
 import subprocess
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 from pathlib import Path
 
 from landscape.client import IS_CORE
@@ -65,10 +68,7 @@ def get_ubuntu_pro_info() -> dict:
     indicating this.
     """
     if IS_CORE:
-        return _ubuntu_pro_error_message(
-            "Ubuntu Pro is not available on Ubuntu Core.",
-            "core-unsupported",
-        )
+        return _get_core_ubuntu_pro_info()
 
     try:
         completed_process = subprocess.run(
@@ -99,4 +99,70 @@ def _ubuntu_pro_error_message(message: str, code: str) -> dict:
             },
         ],
         "result": "failure",
+    }
+
+
+def _get_core_ubuntu_pro_info():
+    """Mock Ubuntu Pro info for a Core distribution"""
+    return {
+        "_doc": (
+            "Content provided in json response is currently considered "
+            "Experimental and may change"
+        ),
+        "_schema_version": "0.1",
+        "account": {
+            "created_at": "",
+            "external_account_ids": [],
+            "id": "",
+            "name": "",
+        },
+        "attached": False,
+        "config": {
+            "contract_url": "https://contracts.canonical.com",
+            "data_dir": "/var/lib/ubuntu-advantage",
+            "log_file": "/var/log/ubuntu-advantage.log",
+            "log_level": "debug",
+            "security_url": "https://ubuntu.com/security",
+            "ua_config": {
+                "apt_news": False,
+                "apt_news_url": "https://motd.ubuntu.com/aptnews.json",
+                "global_apt_http_proxy": None,
+                "global_apt_https_proxy": None,
+                "http_proxy": None,
+                "https_proxy": None,
+                "metering_timer": 14400,
+                "ua_apt_http_proxy": None,
+                "ua_apt_https_proxy": None,
+                "update_messaging_timer": 21600,
+            },
+        },
+        "config_path": "/etc/ubuntu-advantage/uaclient.conf",
+        "contract": {
+            "created_at": "",
+            "id": "",
+            "name": "",
+            "products": ["landscape"],
+            "tech_support_level": "n/a",
+        },
+        "effective": datetime.now(tz=timezone.utc).isoformat(),
+        "environment_vars": [],
+        "errors": [],
+        "execution_details": "No Ubuntu Pro operations are running",
+        "execution_status": "inactive",
+        "expires": (datetime.now(tz=timezone.utc) + timedelta(30)).isoformat(),
+        "features": {},
+        "machine_id": None,
+        "notices": [],
+        "result": "success",
+        "services": [
+            {
+                "available": "yes",
+                "description": "Management and administration tool for Ubuntu",
+                "description_override": None,
+                "name": "landscape",
+            },
+        ],
+        "simulated": False,
+        "version": "31.1",
+        "warnings": [],
     }
