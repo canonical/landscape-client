@@ -2,8 +2,9 @@ import json
 import subprocess
 from datetime import datetime
 from datetime import timedelta
-from datetime import timezone
 from pathlib import Path
+
+from pytz import UTC
 
 from landscape.client import IS_CORE
 from landscape.client.manager.plugin import ManagerPlugin
@@ -64,11 +65,19 @@ class UbuntuProInfo(ManagerPlugin):
 def get_ubuntu_pro_info() -> dict:
     """Query ua tools for Ubuntu Pro status as JSON, parsing it to a dict.
 
-    If we are running on Ubuntu Core, Pro does not exist - returns a message
-    indicating this.
+    If we are running on Ubuntu Core, Pro does not exist.  Include a mocked
+    message to allow us to register under an Ubuntu Pro license on Server.
     """
     if IS_CORE:
-        return _get_core_ubuntu_pro_info()
+        effective_datetime = datetime.now(tz=UTC)
+
+        # expiration_datetime affects how long a computer could remain pending
+        # and still pass the licensing expiration check.  30 days is ample.
+        expiration_datetime = effective_datetime + timedelta(30)
+        return _get_core_ubuntu_pro_info(
+            effective_datetime,
+            expiration_datetime,
+        )
 
     try:
         completed_process = subprocess.run(
@@ -102,8 +111,15 @@ def _ubuntu_pro_error_message(message: str, code: str) -> dict:
     }
 
 
-def _get_core_ubuntu_pro_info():
-    """Mock Ubuntu Pro info for a Core distribution"""
+def _get_core_ubuntu_pro_info(
+    effective_datetime: datetime,
+    expiration_datetime: datetime,
+):
+    """Mock Ubuntu Pro info for a Core distribution.
+
+    Datetime parameters need to be timezone-aware to be understood by Server.
+    See https://docs.python.org/3/library/datetime.html#aware-and-naive-objects.  # noqa
+    """
     return {
         "_doc": (
             "Content provided in json response is currently considered "
@@ -144,12 +160,12 @@ def _get_core_ubuntu_pro_info():
             "products": ["landscape"],
             "tech_support_level": "n/a",
         },
-        "effective": datetime.now(tz=timezone.utc).isoformat(),
+        "effective": effective_datetime.isoformat(),
         "environment_vars": [],
         "errors": [],
         "execution_details": "No Ubuntu Pro operations are running",
         "execution_status": "inactive",
-        "expires": (datetime.now(tz=timezone.utc) + timedelta(30)).isoformat(),
+        "expires": expiration_datetime.isoformat(),
         "features": {},
         "machine_id": None,
         "notices": [],
