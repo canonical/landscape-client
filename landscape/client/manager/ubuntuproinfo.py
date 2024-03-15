@@ -2,9 +2,8 @@ import json
 import subprocess
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from pathlib import Path
-
-from pytz import UTC
 
 from landscape.client import IS_CORE
 from landscape.client.manager.plugin import ManagerPlugin
@@ -69,7 +68,7 @@ def get_ubuntu_pro_info() -> dict:
     message to allow us to register under an Ubuntu Pro license on Server.
     """
     if IS_CORE:
-        effective_datetime = datetime.now(tz=UTC)
+        effective_datetime = datetime.now(tz=timezone.utc)
 
         # expiration_datetime affects how long a computer could remain pending
         # and still pass the licensing expiration check.  30 days is ample.
