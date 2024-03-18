@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest import mock
 
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
@@ -48,18 +49,28 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertIn("errors", messages[0]["ubuntu-pro-info"])
 
     def test_get_ubuntu_pro_info_core(self):
-        """In Ubuntu Core, there is no pro info, so return a reasonable erro
-        message.
+        """In Ubuntu Core, there is no pro info, so mock the minimum necessary
+        parameters to register with Server.
         """
         with mock.patch(
             "landscape.client.manager.ubuntuproinfo.IS_CORE",
             new="1",
         ):
-            result = get_ubuntu_pro_info()
+            ubuntu_pro_info = get_ubuntu_pro_info()
 
-        self.assertIn("errors", result)
-        self.assertIn("not available", result["errors"][0]["message"])
-        self.assertEqual(result["result"], "failure")
+        def datetime_is_aware(d):
+            """https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive"""  # noqa
+            return d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None
+
+        self.assertIn("effective", ubuntu_pro_info)
+        self.assertIn("expires", ubuntu_pro_info)
+        contract = ubuntu_pro_info["contract"]
+        self.assertIn("landscape", contract["products"])
+
+        expires = datetime.fromisoformat(ubuntu_pro_info["expires"])
+        effective = datetime.fromisoformat(ubuntu_pro_info["effective"])
+        self.assertTrue(datetime_is_aware(expires))
+        self.assertTrue(datetime_is_aware(effective))
 
     def test_persistence_unchanged_data(self):
         """If data hasn't changed, a new message is not sent"""

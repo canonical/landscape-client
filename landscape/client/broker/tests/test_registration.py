@@ -670,6 +670,29 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         self.assertIn("ubuntu_pro_info", messages[0])
 
+    @mock.patch("landscape.client.manager.ubuntuproinfo.IS_CORE", new=True)
+    def test_ubuntu_pro_info_present_on_core_for_licensing(self):
+        """
+        Ubuntu Pro info is mocked and sufficient for licensing on Core distros
+        during the registration message
+        """
+
+        self.mstore.set_server_api(b"3.3")
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.reactor.fire("pre-exchange")
+
+        messages = self.mstore.get_pending_messages()
+
+        # verify the minimum necessary fields that Server expects
+        self.assertIn("ubuntu_pro_info", messages[0])
+        ubuntu_pro_info = json.loads(messages[0]["ubuntu_pro_info"])
+        self.assertIn("effective", ubuntu_pro_info)
+        self.assertIn("expires", ubuntu_pro_info)
+        contract = ubuntu_pro_info["contract"]
+        self.assertIn("landscape", contract["products"])
+
 
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
 
