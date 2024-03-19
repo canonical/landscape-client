@@ -1,3 +1,16 @@
+landscape-client (24.02+git6339-0ubuntu0) focal; urgency=medium
+
+  * Fixes:
+    - fix bash shell expansion vulnerability (LP: #2055348)
+    - snap build: including missing build packages and use python build plugin
+    - fix UserManager to use correct shadow file on Core
+    - snap: fix ProcessKiller to use process-control interface and display
+      landscape-config command on setup
+    - fix Ubuntu Pro info not being sent on registration (LP: #2057976)
+    - permit management of Ubuntu Core devices without a license
+
+ -- Spencer Runde <spencer.runde@canonical.com>  Mon, 18 Mar 2024 20:56:01 +0000
+
 landscape-client (24.02-0ubuntu0) noble; urgency=medium
 
   * Improvements:
