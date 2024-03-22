@@ -7,9 +7,29 @@ _account=$(snapctl get account-name)
 _registration_key=$(snapctl get registration-key)
 _title=$(snapctl get computer-title)
 _url=$(snapctl get landscape-url)
+_log_level=$(snapctl get log-level)
+_script_users=$(snapctl get script-users)
+_manager_plugins=$(snapctl get manager-plugins)
+_monitor_plugins=$(snapctl get monitor-plugins)
 
 if [ -z "$_url" ]; then
   _url="https://landscape.canonical.com"
+fi
+
+if [ -z "$_log_level" ]; then
+    _log_level="info"
+fi
+
+if [ -z "$_script_users" ]; then
+    _script_users="ALL"
+fi
+
+if [ -z "$_manager_plugins" ]; then
+    _manager_plugins="ProcessKiller,UserManager,ShutdownManager,HardwareInfo,KeystoneToken,SnapManager,SnapServicesManager,ScriptExecution"
+fi
+
+if [ -z "$_monitor_plugins" ]; then
+    _monitor_plugins="ActiveProcessInfo,ComputerInfo,LoadAverage,MemoryInfo,MountInfo,ProcessorInfo,Temperature,UserMonitor,RebootRequired,NetworkActivity,NetworkDevice,CPUUsage,SwiftUsage,CephUsage,ComputerTags,SnapMonitor,SnapServicesMonitor"
 fi
 
 cat > "$CLIENT_CONF" << EOF
@@ -18,10 +38,10 @@ account_name = $_account
 computer_title = $_title
 url = ${_url}/message-system
 ping_url = ${_url}/ping
-log_level = info
-script_users = ALL
-manager_plugins = ProcessKiller,UserManager,ShutdownManager,HardwareInfo,KeystoneToken,SnapManager,SnapServicesManager,ScriptExecution
-monitor_plugins = ActiveProcessInfo,ComputerInfo,LoadAverage,MemoryInfo,MountInfo,ProcessorInfo,Temperature,UserMonitor,RebootRequired,NetworkActivity,NetworkDevice,CPUUsage,SwiftUsage,CephUsage,ComputerTags,SnapMonitor,SnapServicesMonitor
+log_level = $_log_level
+script_users = $_script_users
+manager_plugins = $_manager_plugins
+monitor_plugins = $_monitor_plugins
 EOF
 
 if [ -n "$_access_group" ]; then

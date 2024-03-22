@@ -1,3 +1,52 @@
-#!/bin/sh -e
+#!/usr/bin/env python3
 
-# Do nothing for now
+import subprocess
+
+from landscape.client.deployment import Configuration
+
+
+def _snapctl(action, setting):
+    snapctl = subprocess.run(
+        ["snapctl", action, setting],
+        capture_output=True,
+        text=True,
+    )
+    return snapctl.stdout
+
+
+config = Configuration()
+config.load([])
+
+config_entries = [
+    # (snapctl key, landscape client config key, mapping function)
+    ("account-name", "account_name", None),
+    ("computer-title", "computer_title", None),
+    ("landscape-url", "url", lambda url: f"{url}/message-system"),
+    ("landscape-url", "ping_url", lambda url: f"{url}/ping"),
+    ("log-level", "log_level", None),
+    ("script-users", "script_users", None),
+    ("manager-plugins", "manager_plugins", None),
+    ("monitor-plugins", "monitor_plugins", None),
+    ("access-group", "access_group", None),
+    ("registration-key", "registration_key", None),
+]
+
+changed = set()
+for snapctl_key, landscape_key, mapping_fn in config_entries:
+    value = _snapctl("get", snapctl_key).strip()
+    if not value:
+        # empty, value not has not changed
+        continue
+
+    if mapping_fn:
+        value = mapping_fn(value)
+
+    setattr(config, landscape_key, value)
+    changed.add(snapctl_key)
+
+config.write()
+
+# unset the values from snapctl so that in the next run
+#  we know what has changed
+# the landscape-client.conf file is still the main source of truth
+_snapctl("unset", " ".join(changed))
