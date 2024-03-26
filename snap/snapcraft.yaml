@@ -40,6 +40,8 @@ apps:
       - system-observe
       - account-control
       - process-control
+      - network-control
+      - network-manager
   config:
     command: usr/bin/landscape-config
     plugs: [network]
