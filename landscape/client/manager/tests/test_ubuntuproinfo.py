@@ -160,3 +160,31 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(2, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[1])
         self.assertEqual(messages[1]["ubuntu-pro-info"], data)
+
+    @mock.patch("landscape.client.manager.ubuntuproinfo.IS_SNAP", new=True)
+    def test_pro_client_not_called_for_snap(self):
+        """
+        The snap will not currently allow calls to the pro client.
+
+        Ensure that get_ubuntu_pro_info returns an empty dictionary instead of
+        calling the subprocess for pro.
+        """
+        ubuntu_pro_info = get_ubuntu_pro_info()
+        self.assertEqual({}, ubuntu_pro_info)
+
+    def test_mock_info_sent_for_core_snap(self):
+        """
+        Ensure that a Core snap still receives mocked ubuntu pro info even if
+        the snap generally doesn't support *real* ubuntu pro info
+        """
+        with mock.patch.multiple(
+            "landscape.client.manager.ubuntuproinfo",
+            IS_CORE=True,
+            IS_SNAP=True,
+        ):
+            ubuntu_pro_info = get_ubuntu_pro_info()
+
+        self.assertIn("effective", ubuntu_pro_info)
+        self.assertIn("expires", ubuntu_pro_info)
+        contract = ubuntu_pro_info["contract"]
+        self.assertIn("landscape", contract["products"])

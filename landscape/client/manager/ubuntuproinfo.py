@@ -6,6 +6,7 @@ from datetime import timezone
 from pathlib import Path
 
 from landscape.client import IS_CORE
+from landscape.client import IS_SNAP
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.lib.persist import Persist
 
@@ -77,6 +78,11 @@ def get_ubuntu_pro_info() -> dict:
             effective_datetime,
             expiration_datetime,
         )
+
+    if IS_SNAP:
+        # Snap does not support Ubuntu Pro Info and throws an error if `pro` is
+        # called.
+        return {}
 
     try:
         completed_process = subprocess.run(
