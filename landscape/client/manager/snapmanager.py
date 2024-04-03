@@ -1,5 +1,7 @@
+import json
 import logging
 from collections import deque
+from pathlib import Path
 
 from twisted.internet import task
 
@@ -10,6 +12,8 @@ from landscape.client.manager.plugin import SUCCEEDED
 from landscape.client.snap_http import INCOMPLETE_STATUSES
 from landscape.client.snap_http import SnapdHttpException
 from landscape.client.snap_http import SUCCESS_STATUSES
+from landscape.lib.persist import Persist
+from landscape.message_schemas.server_bound import SNAPS
 
 
 class BaseSnapManager(ManagerPlugin):
@@ -230,11 +234,15 @@ class BaseSnapManager(ManagerPlugin):
 
 class SnapManager(BaseSnapManager):
     """
-    Plugin that updates the state of snaps on this machine, installing,
-    removing, refreshing, enabling, and disabling them in response to messages.
+    Plugin that updates the state of snaps on this machine in response to
+    messages and periodically sends an update on the installed snaps and
+    their config.
 
-    Changes trigger SnapMonitor to send an updated state message immediately.
+    Changes trigger a SNAPS message with the updated state which is sent
+    immediately.
     """
+
+    message_type = "snaps"
 
     def __init__(self):
         super().__init__()
@@ -256,6 +264,14 @@ class SnapManager(BaseSnapManager):
     def register(self, registry):
         super().register(registry)
         self.config = registry.config
+        # The default interval is 30 minutes.
+        self.run_interval = self.config.snap_monitor_interval
+        self._persist_filename = Path(
+            self.registry.config.data_path,
+            "snaps.bpickle",
+        )
+        self._persist = Persist(filename=self._persist_filename)
+        self.call_on_accepted(self.message_type, self._send_snap_update)
 
         registry.register_message("install-snaps", self._handle_snap_task)
         registry.register_message("remove-snaps", self._handle_snap_task)
@@ -264,21 +280,57 @@ class SnapManager(BaseSnapManager):
         registry.register_message("unhold-snaps", self._handle_snap_task)
         registry.register_message("set-snap-config", self._handle_snap_task)
 
-    def _send_snap_update(self):
+    def run(self):
+        return self.registry.broker.call_if_accepted(
+            self.message_type,
+            self._send_snap_update,
+        )
+
+    def get_data(self):
         try:
-            installed_snaps = snap_http.list().result
+            snaps = snap_http.list().result
         except SnapdHttpException as e:
-            logging.error(
-                f"Unable to list installed snaps after snap change: {e}",
-            )
+            logging.error(f"Unable to list installed snaps: {e}")
             return
 
-        if installed_snaps:
+        for i in range(len(snaps)):
+            snap_name = snaps[i]["name"]
+            try:
+                config = snap_http.get_conf(snap_name).result
+            except SnapdHttpException as e:
+                logging.warning(
+                    f"Unable to get config for snap {snap_name}: {e}",
+                )
+                config = {}
+
+            snaps[i]["config"] = json.dumps(config)
+
+        # We get a lot of extra info from snapd. To avoid caching it all
+        # or invalidating the cache on timestamp changes, we use Message
+        # coercion to strip out the unnecessaries, then sort on the snap
+        # IDs to order the list.
+        coerced = SNAPS.coerce(
+            {
+                "type": "snaps",
+                "snaps": {"installed": snaps},
+            },
+        )
+        coerced["snaps"]["installed"].sort(key=lambda x: x["id"])
+
+        data = coerced["snaps"]
+        if self._persist.get("snaps") != data:
+            self._persist.set("snaps", data)
+            return data
+
+    def _send_snap_update(self):
+        """
+        Send a message to the broker if the data has changed since the last
+        call.
+        """
+        data = self.get_data()
+        if data and data["installed"]:
             return self.registry.broker.send_message(
-                {
-                    "type": "snaps",
-                    "snaps": {"installed": installed_snaps},
-                },
+                {"type": "snaps", "snaps": data},
                 self._session_id,
                 True,
             )

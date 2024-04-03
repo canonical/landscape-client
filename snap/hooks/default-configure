@@ -29,7 +29,7 @@ if [ -z "$_manager_plugins" ]; then
 fi
 
 if [ -z "$_monitor_plugins" ]; then
-    _monitor_plugins="ActiveProcessInfo,ComputerInfo,LoadAverage,MemoryInfo,MountInfo,ProcessorInfo,Temperature,UserMonitor,RebootRequired,NetworkActivity,NetworkDevice,CPUUsage,SwiftUsage,CephUsage,ComputerTags,SnapMonitor,SnapServicesMonitor"
+    _monitor_plugins="ActiveProcessInfo,ComputerInfo,LoadAverage,MemoryInfo,MountInfo,ProcessorInfo,Temperature,UserMonitor,RebootRequired,NetworkActivity,NetworkDevice,CPUUsage,SwiftUsage,CephUsage,ComputerTags,SnapServicesMonitor"
 fi
 
 cat > "$CLIENT_CONF" << EOF
