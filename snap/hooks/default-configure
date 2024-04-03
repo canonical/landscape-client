@@ -12,6 +12,14 @@ if [ -z "$_url" ]; then
   _url="https://landscape.canonical.com"
 fi
 
+if [ -z "$_account" ]; then
+  _account="standalone"
+fi
+
+if [ -z "$_title" ]; then
+  _title=$(hostname)
+fi
+
 cat > "$CLIENT_CONF" << EOF
 [client]
 account_name = $_account
