@@ -14,14 +14,13 @@ class SnapManagerTest(LandscapeTest):
 
     def setUp(self):
         super().setUp()
+        self.mstore = self.broker_service.message_store
+        self.mstore.set_accepted_types(["snaps", "operation-result"])
 
         self.snap_http = mock.patch(
             "landscape.client.manager.snapmanager.snap_http",
         ).start()
 
-        self.broker_service.message_store.set_accepted_types(
-            ["operation-result"],
-        )
         self.plugin = SnapManager()
         self.manager.add(self.plugin)
 
@@ -103,21 +102,12 @@ class SnapManagerTest(LandscapeTest):
             "OK",
             [{"id": "1", "status": "Done"}],
         )
-        self.snap_http.list.return_value = SnapdResponse(
+        self.snap_http.list.return_value = SnapdResponse("sync", 200, "OK", [])
+        self.snap_http.get_conf.return_value = SnapdResponse(
             "sync",
             200,
             "OK",
-            [
-                {
-                    "name": "hello",
-                    "id": "test",
-                    "confinement": "strict",
-                    "tracking-channel": "latest/stable",
-                    "revision": "100",
-                    "publisher": {"validation": "yep", "username": "me"},
-                    "version": "1.2.3",
-                },
-            ],
+            {},
         )
 
         result = self.manager.dispatch_message(
@@ -381,3 +371,93 @@ class SnapManagerTest(LandscapeTest):
             )
 
         return result.addCallback(got_result)
+
+    def test_get_data(self):
+        """Tests getting installed snap data."""
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [
+                {
+                    "name": "test-snap",
+                    "revision": "1",
+                    "confinement": "strict",
+                    "version": "v1.0",
+                    "id": "123",
+                },
+            ],
+        )
+        self.snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {},
+        )
+
+        self.plugin.run()
+        messages = self.mstore.get_pending_messages()
+
+        self.assertTrue(len(messages) > 0)
+        self.assertIn("installed", messages[0]["snaps"])
+
+    def test_get_data_snapd_http_exception(self):
+        """
+        Tests that we return no data if there is an error getting it.
+        """
+        with self.assertLogs(level="ERROR") as cm:
+            self.snap_http.list.side_effect = SnapdHttpException
+            self.plugin.run()
+
+        messages = self.mstore.get_pending_messages()
+
+        self.assertEqual(len(messages), 0)
+        self.assertEqual(
+            cm.output,
+            ["ERROR:root:Unable to list installed snaps: "],
+        )
+
+    def test_get_snap_config(self):
+        """Tests that we can get and coerce snap config."""
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [
+                {
+                    "name": "test-snap",
+                    "revision": "1",
+                    "confinement": "strict",
+                    "version": "v1.0",
+                    "id": "123",
+                },
+            ],
+        )
+        self.snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {
+                "foo": {"baz": "default", "qux": [1, True, 2.0]},
+                "bar": "enabled",
+            },
+        )
+
+        self.plugin.run()
+        messages = self.mstore.get_pending_messages()
+
+        self.assertTrue(len(messages) > 0)
+        self.assertDictEqual(
+            messages[0]["snaps"]["installed"][0],
+            {
+                "name": "test-snap",
+                "revision": "1",
+                "confinement": "strict",
+                "version": "v1.0",
+                "id": "123",
+                "config": (
+                    '{"foo": {"baz": "default", "qux": [1, true, 2.0]}, '
+                    '"bar": "enabled"}'
+                ),
+            },
+        )
