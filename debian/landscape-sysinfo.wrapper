@@ -19,7 +19,7 @@ else
     export LANG
     CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
     [ "$CORES" -eq "0" ] && CORES=1
-    THRESHOLD="${cores:-1}.0"
+    THRESHOLD="${CORES:-1}.0"
 
     if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < $THRESHOLD" | bc) -eq 1 ]; then
         SYSINFO=$(printf "\n System information as of %s\n\n%s\n" \
