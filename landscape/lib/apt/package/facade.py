@@ -282,10 +282,16 @@ class AptFacade:
             return
         self.reload_channels()
 
+    @property
+    def _sourceparts_directory(self):
+        return apt_pkg.config.find_dir("Dir::Etc::sourceparts")
+
     def _get_internal_sources_list(self):
         """Return the path to the source.list file for the facade channels."""
-        sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
-        return os.path.join(sources_dir, "_landscape-internal-facade.list")
+        return os.path.join(
+            self._sourceparts_directory,
+            "_landscape-internal-facade.list",
+        )
 
     def add_channel_apt_deb(
         self,
@@ -358,6 +364,10 @@ class AptFacade:
         and type keys.
         """
         sources_list = SourcesList()
+        if hasattr(sources_list, "deb822"):
+            sources_list.deb822 = True
+            sources_list.refresh()
+
         return [
             {
                 "baseurl": entry.uri,
@@ -372,6 +382,10 @@ class AptFacade:
     def reset_channels(self):
         """Remove all the configured channels."""
         sources_list = SourcesList()
+        if hasattr(sources_list, "deb822"):
+            sources_list.deb822 = True
+            sources_list.refresh()
+
         for entry in sources_list:
             entry.set_enabled(False)
         sources_list.save()
