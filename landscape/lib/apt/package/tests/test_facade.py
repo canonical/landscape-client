@@ -6,6 +6,7 @@ import unittest
 import weakref
 from collections import namedtuple
 from unittest import mock
+from unittest import skipIf
 
 import apt
 import apt_pkg
@@ -595,6 +596,7 @@ class AptFacadeTest(
             self.facade.get_channels(),
         )
 
+    @skipIf(not hasattr(SourcesList(), "deb822"), "aptsources version too old")
     def test_get_channels_deb822(self):
         """`get_channels` includes *.source files with deb822 format."""
         sourceparts_dir = self.facade._sourceparts_directory
