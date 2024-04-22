@@ -6,6 +6,7 @@ import unittest
 import weakref
 from collections import namedtuple
 from unittest import mock
+from unittest import skipIf
 
 import apt
 import apt_pkg
@@ -594,6 +595,44 @@ class AptFacadeTest(
             ],
             self.facade.get_channels(),
         )
+
+    @skipIf(not hasattr(SourcesList(), "deb822"), "aptsources version too old")
+    def test_get_channels_deb822(self):
+        """`get_channels` includes *.source files with deb822 format."""
+        sourceparts_dir = self.facade._sourceparts_directory
+        sources_file_path = os.path.join(
+            sourceparts_dir,
+            "test_deb822.sources",
+        )
+
+        with open(sources_file_path, "w") as sources_file:
+            sources_file.write(
+                textwrap.dedent(
+                    """\
+                Types: deb
+                URIs: http://test.archive.ubuntu.com/ubuntu/
+                Suites: unicorn-test
+                Components: main restricted universe multiverse
+                Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+                """,
+                ),
+            )
+
+        channels = self.facade.get_channels()
+
+        self.assertEqual(
+            [
+                {
+                    "baseurl": "http://test.archive.ubuntu.com/ubuntu/",
+                    "components": "main restricted universe multiverse",
+                    "distribution": "unicorn-test",
+                    "type": "deb",
+                },
+            ],
+            channels,
+        )
+
+        os.remove(sources_file_path)
 
     def test_reset_channels(self):
         """

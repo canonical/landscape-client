@@ -15,6 +15,7 @@ class AptFacadeHelper:
 
     def set_up(self, test_case):
         test_case.apt_root = test_case.makeDir()
+        os.makedirs(os.path.join(test_case.apt_root, "etc/apt/preferences.d"))
         self.dpkg_status = os.path.join(
             test_case.apt_root,
             "var",
