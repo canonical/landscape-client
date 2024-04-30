@@ -1,3 +1,17 @@
+landscape-client (24.04-0landscape0) jammy; urgency=medium
+
+  * Improvements:
+    - use snap set to change snap configurations
+  * Fixes:
+    - include deb822 sources when collecting source channels (LP: #2062561)
+    - merge SnapMonitor into SnapManager to fix config reporting permissions
+    - d/landscape-sysinfo.wrapper: fix regression in core count logic
+  * Snap
+    - return empty Ubuntu Pro info for non-core Snap to unblock registration
+    - add network-manager and network-control plugs
+
+ -- Mitch Burton <mitch.burton@canonical.com>  Tue, 30 Apr 2024 11:30:57 -0700
+
 landscape-client (24.02+git6339-0ubuntu0) focal; urgency=medium
 
   * Fixes:
