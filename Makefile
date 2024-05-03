@@ -17,7 +17,7 @@ help:  ## Print help about available targets
 
 .PHONY: depends
 depends:
-	sudo apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
+	sudo apt update && apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
 		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted\
 		net-tools
 	pip install pre-commit
