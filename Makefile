@@ -136,6 +136,11 @@ snap:
 	$(SNAPCRAFT)
 .PHONY: snap
 
+tics-analysis: depends coverage
+	mkdir -p coverage
+	mv .coverage ./coverage/.coverage
+	mv coverage.xml ./coverage/coverage.xml
+
 include Makefile.packaging
 
 .DEFAULT_GOAL := help
