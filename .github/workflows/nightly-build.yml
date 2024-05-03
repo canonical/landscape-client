@@ -18,7 +18,7 @@ jobs:
         uses: tiobe/tics-github-action@v2
         with:
           projectName: landscape-client
-          ticsConfiguration: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=config
+          ticsConfiguration: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
           ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
           installTics: true
           filelist: .  # whole project for nightly/on-demand runs
