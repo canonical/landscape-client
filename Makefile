@@ -144,6 +144,7 @@ snap:
 .PHONY: snap
 
 tics-analysis: depends-ci coverage
+	sudo apt install pylint
 	mkdir -p coverage
 	mv .coverage ./coverage/.coverage
 	mv coverage.xml ./coverage/coverage.xml
