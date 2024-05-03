@@ -21,3 +21,5 @@ jobs:
           ticsConfiguration: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=config
           ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
           installTics: true
+          filelist: .  # whole project for nightly/on-demand runs
+
