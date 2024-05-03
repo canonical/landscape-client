@@ -1,6 +1,5 @@
 # flake8: noqa
 
-
 _PY3 = str != bytes
 
 
@@ -20,17 +19,17 @@ if _PY3:
     unicode = str
     long = int
 
-# else:
-#     import cPickle
-#     from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
+else:
+    import cPickle
+    from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
 
-#     import thread
+    import thread
 
-#     from StringIO import StringIO
+    from StringIO import StringIO
 
-#     stringio = StringIO
-#     from cStringIO import StringIO as cstringio
+    stringio = StringIO
+    from cStringIO import StringIO as cstringio
 
-#     input = raw_input
-#     long = long
-#     unicode = unicode
+    input = raw_input
+    long = long
+    unicode = unicode

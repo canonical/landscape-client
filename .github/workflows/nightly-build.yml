@@ -22,4 +22,3 @@ jobs:
           ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
           installTics: true
           filelist: .  # whole project for nightly/on-demand runs
-
