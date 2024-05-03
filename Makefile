@@ -21,7 +21,7 @@ depends:
 		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted\
 		net-tools
 	pip install pre-commit
-	$(PRE_COMMIT) install
+	# $(PRE_COMMIT) install
 
 all: build
 
