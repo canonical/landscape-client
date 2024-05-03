@@ -1,4 +1,6 @@
 # flake8: noqa
+# TICS -OBJ_*: TODO can we remove our Python 2 compat?
+
 
 _PY3 = str != bytes
 
