@@ -1,0 +1,20 @@
+name: nightly build
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  TICS:
+    runs-on: ubuntu-latest
+    steps:
+      # - name: Checkout `master` branch
+      #   uses: actions/checkout@v4
+      - name: Make coverage report and dependencies
+        run: make tics-analysis
+      - name: TICS GitHub Action
+        uses: tiobe/tics-github-action@v2
+        with:
+          projectName: landscape-client
+          ticsConfiguration: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=config
+          ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
+          installTics: true
