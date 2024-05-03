@@ -17,10 +17,11 @@ help:  ## Print help about available targets
 
 .PHONY: depends
 depends:
-	sudo apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
-		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted
+	sudo apt update && apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
+		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted\
+		net-tools
 	pip install pre-commit
-	$(PRE_COMMIT) install
+	# $(PRE_COMMIT) install
 
 all: build
 
@@ -105,7 +106,8 @@ etags:
 	-etags --languages=python -R .
 
 snap-install:
-	sudo snap install --devmode landscape-client_0.1_amd64.snap
+	$(eval VERSION=$(shell yq ".version" snap/snapcraft.yaml))
+	sudo snap install --devmode landscape-client_$(VERSION)_amd64.snap
 .PHONY: snap-install
 
 snap-remote-build:
@@ -125,13 +127,19 @@ snap-debug:
 .PHONY: snap-debug
 
 snap-clean: snap-remove
+	$(eval VERSION=$(shell yq ".version" snap/snapcraft.yaml))
 	$(SNAPCRAFT) clean
-	-rm landscape-client_0.1_amd64.snap
+	-rm landscape-client_$(VERSION)_amd64.snap
 .PHONY: snap-clean
 
 snap:
 	$(SNAPCRAFT)
 .PHONY: snap
+
+tics-analysis: depends coverage
+	mkdir -p coverage
+	mv .coverage ./coverage/.coverage
+	mv coverage.xml ./coverage/coverage.xml
 
 include Makefile.packaging
 
