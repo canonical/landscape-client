@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Checkout `master` branch
         uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Make coverage report and dependencies
         run: make tics-analysis
       - name: TICS GitHub Action

@@ -20,8 +20,15 @@ depends:
 	sudo apt update && sudo apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
 		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted\
 		net-tools
+
+depends-dev: depends
 	pip install pre-commit
-	# $(PRE_COMMIT) install
+	$(PRE_COMMIT) install
+
+# -common seems a catch-22, but this is just a shortcut to
+# initialize user and dirs, some used through tests.
+depends-ci: depends
+	sudo apt-get -y install landscape-common
 
 all: build
 
@@ -136,7 +143,7 @@ snap:
 	$(SNAPCRAFT)
 .PHONY: snap
 
-tics-analysis: depends coverage
+tics-analysis: depends-ci coverage
 	mkdir -p coverage
 	mv .coverage ./coverage/.coverage
 	mv coverage.xml ./coverage/coverage.xml
