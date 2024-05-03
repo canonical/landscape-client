@@ -8,8 +8,8 @@ jobs:
   TICS:
     runs-on: ubuntu-latest
     steps:
-      # - name: Checkout `master` branch
-      #   uses: actions/checkout@v4
+      - name: Checkout `master` branch
+        uses: actions/checkout@v4
       - name: Make coverage report and dependencies
         run: make tics-analysis
       - name: TICS GitHub Action
