@@ -1,4 +1,4 @@
-name: nightly build
+name: TiCS static analysis
 
 on:
   workflow_dispatch:
@@ -8,11 +8,11 @@ jobs:
   TICS:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout `master` branch
+      - name: Checkout master branch
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Make coverage report and dependencies
+      - name: Make coverage report for TiCS
         run: make tics-analysis
       - name: TICS GitHub Action
         uses: tiobe/tics-github-action@v2
