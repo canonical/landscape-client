@@ -8,7 +8,6 @@ from unittest import mock
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
-from twisted.python.compat import iteritems
 
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.registration import RegistrationError
@@ -386,6 +385,56 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
     @mock.patch(
         "landscape.client.configuration.input",
+        return_value="http://landscape.hello.com",
+    )
+    @mock.patch(
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
+    )
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_prompt_landscape_edition_strip_http(
+        self,
+        mock_help,
+        prompt_yes_no,
+        mock_input,
+    ):
+        self.script.query_landscape_edition()
+        self.assertEqual(
+            self.config.ping_url,
+            "http://landscape.hello.com/ping",
+        )
+        self.assertEqual(
+            self.config.url,
+            "https://landscape.hello.com/message-system",
+        )
+
+    @mock.patch(
+        "landscape.client.configuration.input",
+        return_value="https://landscape.hello.com",
+    )
+    @mock.patch(
+        "landscape.client.configuration.prompt_yes_no",
+        return_value=True,
+    )
+    @mock.patch("landscape.client.configuration.show_help")
+    def test_prompt_landscape_edition_strip_https(
+        self,
+        mock_help,
+        prompt_yes_no,
+        mock_input,
+    ):
+        self.script.query_landscape_edition()
+        self.assertEqual(
+            self.config.ping_url,
+            "http://landscape.hello.com/ping",
+        )
+        self.assertEqual(
+            self.config.url,
+            "https://landscape.hello.com/message-system",
+        )
+
+    @mock.patch(
+        "landscape.client.configuration.input",
         return_value="landscape.hello.com",
     )
     @mock.patch(
@@ -760,7 +809,9 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         try:
             config.config = config_file
             config.write()
-            return open(config.config).read().strip() + "\n"
+            with open(config.config) as fh:
+                text = fh.read().strip() + "\n"
+            return text
         finally:
             config.config = original_config
 
@@ -788,7 +839,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "Will you be using your own "
                 "Self-Hosted Landscape installation? [y/N]": "n",
             }
-            for key, value in iteritems(fixtures):
+            for key, value in fixtures.items():
                 if key in prompt:
                     return value
             raise KeyError(f"Couldn't find answer for {prompt}")
@@ -798,7 +849,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "(Optional) Registration Key:": "New Password",
                 "Please confirm:": "New Password",
             }
-            for key, value in iteritems(fixtures):
+            for key, value in fixtures.items():
                 if key in prompt:
                     return value
             raise KeyError(f"Couldn't find answer for {prompt}")
@@ -870,7 +921,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "Will you be using your own "
                 "Self-Hosted Landscape installation? [y/N]": "n",
             }
-            for key, value in iteritems(fixtures):
+            for key, value in fixtures.items():
                 if key in prompt:
                     return value
 
@@ -879,7 +930,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
                 "(Optional) Registration Key:": "New Password",
                 "Please confirm:": "New Password",
             }
-            for key, value in iteritems(fixtures):
+            for key, value in fixtures.items():
                 if key in prompt:
                     return value
 
@@ -1230,6 +1281,27 @@ registration_key = shared-secret
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
+
+    @mock.patch("landscape.client.configuration.input")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_skip_registration(self, mock_setup, mock_register, mock_input):
+        """
+        Registration and input asking user to register is not called
+        when flag on
+        """
+        main(["-c", self.make_working_config(), "--skip-registration"],
+             print=noop_print)
+        mock_register.assert_not_called()
+        mock_input.assert_not_called()
+
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_main_no_registration_silent(self, mock_setup, mock_register):
+        """Skip registration works in silent mode"""
+        main(["-c", self.make_working_config(), "--skip-registration",
+              "--silent"], print=noop_print)
+        mock_register.assert_not_called()
 
     @mock.patch(
         "landscape.client.configuration.register",
@@ -2139,7 +2211,8 @@ registration_key = shared-secret
         mock_print_text.assert_called_once_with(
             f"Writing SSL CA certificate to {key_filename}...",
         )
-        self.assertEqual("Hi there!", open(key_filename).read())
+        with open(key_filename) as fh:
+            self.assertEqual("Hi there!", fh.read())
 
         options = ConfigParser()
         options.read(config_filename)

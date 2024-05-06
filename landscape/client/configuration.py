@@ -7,6 +7,7 @@ import getpass
 import io
 import os
 import pwd
+import re
 import shlex
 import sys
 import textwrap
@@ -111,6 +112,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "silent",
         "ok_no_register",
         "import_from",
+        "skip_registration",
     )
 
     encoding = "utf-8"
@@ -246,6 +248,11 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             help="Exit with code 0 (success) if client is "
             "registered else returns {}. Displays "
             "registration info.".format(EXIT_NOT_REGISTERED),
+        )
+        parser.add_option(
+            "--skip-registration",
+            action="store_true",
+            help="Don't send a new registration request",
         )
         return parser
 
@@ -473,7 +480,9 @@ class LandscapeSetupScript:
             self.landscape_domain = self.prompt_get_input(
                 "Landscape Domain: ",
                 True,
-            )
+            ).strip('/')
+            self.landscape_domain = re.sub(r'^https?://', '',
+                                           self.landscape_domain)
             self.config.ping_url = f"http://{self.landscape_domain}/ping"
             self.config.url = f"https://{self.landscape_domain}/message-system"
         else:
@@ -946,6 +955,10 @@ def main(args, print=print):
 
     # Attempt to register the client.
     reactor = LandscapeReactor()
+
+    if config.skip_registration:
+        return
+
     if config.silent:
         result = register(
             config,
