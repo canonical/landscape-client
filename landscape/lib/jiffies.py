@@ -25,7 +25,7 @@ def detect_jiffies():
         # is called.
         pid = os.fork()
         if pid == 0:
-            os._exit(0)  # //TICS !W0212
+            os._exit(0)  # //TICS !W0212: private access is OK
 
         uptime2_data = read_uptime2()
 

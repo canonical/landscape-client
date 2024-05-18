@@ -15,7 +15,7 @@ class ComputerTags(DataWatcher):
     run_interval = 3600  # Every hour only when data changed
     run_immediately = True
 
-    def __init__(self, args=sys.argv):  # //TICS !W0102
+    def __init__(self, args=sys.argv):  # //TICS !W0102: mutable arg is OK
         super().__init__()
         self.args = args  # Defined to specify args in unit tests
 
