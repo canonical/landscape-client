@@ -51,7 +51,6 @@ class NetworkInfoTest(BaseTestCase):
                 or device["ip_address"] == "0.0.0.0"
             ):
                 continue
-            print("result is: ", result)
             self.assertIn(device["interface"], result)
             block = interface_blocks[device["interface"]]
             self.assertIn(device["netmask"], block)
@@ -289,6 +288,9 @@ class NetworkInfoTest(BaseTestCase):
         mock_get_flags,
         mock_get_network_interface_speed,
     ):
+        """
+        Make sure interfaces in the 'down' state are also reported
+        """
         mock_get_network_interface_speed.return_value = (100, True)
         mock_get_flags.return_value = 0
         mock_interfaces.return_value = ["test_iface"]
