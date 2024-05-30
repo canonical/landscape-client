@@ -152,20 +152,15 @@ def get_filtered_if_info(filters=(), extended=False):
                 continue
 
             ifaddresses = netifaces.ifaddresses(interface)
-            if not is_active(ifaddresses):
+            if (
+                not is_active(ifaddresses)
+                and netifaces.AF_LINK not in ifaddresses
+            ):
                 continue
 
             ifencoded = interface.encode()
             flags = get_flags(sock, ifencoded)
-            if not is_up(flags):
-                continue
-
             ip_addresses = get_ip_addresses(ifaddresses)
-            if not extended and netifaces.AF_INET not in ip_addresses:
-                # Skip interfaces with no IPv4 addr unless extended to
-                # keep backwards compatibility with single-IPv4 addr
-                # support.
-                continue
 
             ifinfo = {"interface": interface}
             ifinfo["flags"] = flags
@@ -184,6 +179,11 @@ def get_filtered_if_info(filters=(), extended=False):
                     ifaddresses,
                 )
                 ifinfo["netmask"] = get_netmask(ifaddresses)
+            elif netifaces.AF_LINK in ifaddresses and not extended:
+                ifinfo["ip_address"] = "0.0.0.0"
+                ifinfo["mac_address"] = get_mac_address(ifaddresses)
+                ifinfo["broadcast_address"] = "0.0.0.0"
+                ifinfo["netmask"] = "0.0.0.0"
 
             results.append(ifinfo)
     finally:
