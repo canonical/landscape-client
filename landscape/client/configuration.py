@@ -468,7 +468,7 @@ class LandscapeSetupScript:
             show_help(
                 "Provide the fully qualified domain name "
                 "of your Landscape Server e.g. "
-                "landscape.yourdomain.com",
+                "landscape.example.com",
             )
             self.landscape_domain = self.prompt_get_input(
                 "Landscape Domain: ",
