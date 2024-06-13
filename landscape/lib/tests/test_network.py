@@ -46,7 +46,10 @@ class NetworkInfoTest(BaseTestCase):
         }
 
         for device in device_info:
-            if device["mac_address"] == "00:00:00:00:00:00":
+            if (
+                device["mac_address"] == "00:00:00:00:00:00"
+                or device["ip_address"] == "0.0.0.0"
+            ):
                 continue
             self.assertIn(device["interface"], result)
             block = interface_blocks[device["interface"]]
@@ -146,8 +149,21 @@ class NetworkInfoTest(BaseTestCase):
         }
 
         device_info = get_active_device_info(extended=False)
-
-        self.assertEqual(device_info, [])
+        self.assertEqual(
+            device_info,
+            [
+                {
+                    "interface": "test_iface",
+                    "flags": 4163,
+                    "speed": 100,
+                    "duplex": True,
+                    "ip_address": "0.0.0.0",
+                    "mac_address": "aa:bb:cc:dd:ee:f0",
+                    "broadcast_address": "0.0.0.0",
+                    "netmask": "0.0.0.0",
+                },
+            ],
+        )
 
     @patch("landscape.lib.network.get_network_interface_speed")
     @patch("landscape.lib.network.get_flags")
@@ -169,7 +185,6 @@ class NetworkInfoTest(BaseTestCase):
         }
 
         device_info = get_active_device_info(extended=True)
-
         self.assertEqual(
             device_info,
             [
@@ -266,13 +281,16 @@ class NetworkInfoTest(BaseTestCase):
     @patch("landscape.lib.network.get_flags")
     @patch("landscape.lib.network.netifaces.ifaddresses")
     @patch("landscape.lib.network.netifaces.interfaces")
-    def test_skip_iface_down(
+    def test_iface_down(
         self,
         mock_interfaces,
         mock_ifaddresses,
         mock_get_flags,
         mock_get_network_interface_speed,
     ):
+        """
+        Make sure interfaces in the 'down' state are also reported
+        """
         mock_get_network_interface_speed.return_value = (100, True)
         mock_get_flags.return_value = 0
         mock_interfaces.return_value = ["test_iface"]
@@ -282,7 +300,7 @@ class NetworkInfoTest(BaseTestCase):
         }
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
-        self.assertNotIn("test_iface", interfaces)
+        self.assertEqual(["test_iface"], interfaces)
 
     @patch("landscape.lib.network.get_network_interface_speed")
     @patch("landscape.lib.network.get_flags")
