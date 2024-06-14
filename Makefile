@@ -143,6 +143,7 @@ snap:
 	$(SNAPCRAFT)
 .PHONY: snap
 
+# TICS expects coverage info to be in ./coverage/.coverage
 tics-analysis: depends-ci coverage
 	sudo apt install pylint
 	mkdir -p coverage
