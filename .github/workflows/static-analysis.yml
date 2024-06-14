@@ -3,7 +3,7 @@ name: TiCS static analysis
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 6 * * *'  # Run at 6:00a (arbitrary) to avoid peak activity on runners
 jobs:
   TICS:
     runs-on: ubuntu-latest
@@ -13,12 +13,12 @@ jobs:
         with:
           submodules: true
       - name: Make coverage report for TiCS
-        run: make tics-analysis
+        run: make prepare-tics-analysis
       - name: TICS GitHub Action
-        uses: tiobe/tics-github-action@v2
+        uses: tiobe/tics-github-action@v3
         with:
-          projectName: landscape-client
-          ticsConfiguration: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
+          project: landscape-client
+          viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
           ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
           installTics: true
           filelist: .  # whole project for nightly/on-demand runs
