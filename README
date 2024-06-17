@@ -205,3 +205,9 @@ uploading the snap or otherwise manipulating things in your store
 account.  You will need to repeat the dbus-run-session and
 gnome-keyring-daemon steps BEFORE logging in if you do need to be
 logged into the store.
+
+### Automatic Builds and Releases
+
+The latest version of landscape-client snap will be built from the most recent commit and
+published to the `latest/edge` channel via [a recipe on launchpad](https://launchpad.net/~landscape/landscape-client/+snap/core-dev).
+Other channels are promoted and released manually.
