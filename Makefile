@@ -17,11 +17,20 @@ help:  ## Print help about available targets
 
 .PHONY: depends
 depends:
-	sudo apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
+	sudo apt update && sudo apt-get -y install python3-configobj python3-coverage python3-distutils-extra\
 		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted\
 		net-tools
+
+.PHONY: depends-dev
+depends-dev: depends
 	pip install pre-commit
 	$(PRE_COMMIT) install
+
+# -common seems a catch-22, but this is just a shortcut to
+# initialize user and dirs, some used through tests.
+.PHONY: depends-ci
+depends-ci: depends
+	sudo apt-get -y install landscape-common
 
 all: build
 
@@ -53,10 +62,12 @@ pyflakes:
 pre-commit:
 	-pre-commit run -a
 
+.PHONY: clean
 clean:
 	-find landscape -name __pycache__ -exec rm -rf {} \;
 	-find landscape -name \*.pyc -exec rm -f {} \;
 	-rm -rf .coverage
+	-rm -rf coverage
 	-rm -rf tags
 	-rm -rf _trial_temp
 	-rm -rf docs/api
@@ -135,6 +146,14 @@ snap-clean: snap-remove
 snap:
 	$(SNAPCRAFT)
 .PHONY: snap
+
+# TICS expects coverage info to be in ./coverage/.coverage
+.PHONY: prepare-tics-analysis
+prepare-tics-analysis: depends-ci coverage
+	sudo apt install pylint
+	mkdir -p coverage
+	cp .coverage ./coverage/.coverage
+	cp coverage.xml ./coverage/coverage.xml
 
 include Makefile.packaging
 
