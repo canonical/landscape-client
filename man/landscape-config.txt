@@ -58,8 +58,6 @@ OPTIONS
                            persisent data.
   --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to stagger various
                            tasks of landscape.
-  --manage-sources-list-d  Repository profiles manage the files in
-                           'etc/apt/sources.list.d'.
   --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
   --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
   --access-group           Suggested access group for this computer.
