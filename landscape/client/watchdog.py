@@ -721,7 +721,7 @@ def run(args=sys.argv, reactor=None):
     init_logging(config, "watchdog")
 
     if IS_SNAP:
-        config.auto_configure()
+        config.auto_configure(retry=True)
 
     application = Application("landscape-client")
     watchdog_service = WatchDogService(config)

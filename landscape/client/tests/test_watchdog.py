@@ -1527,5 +1527,5 @@ class WatchDogRunTests(LandscapeTest):
         with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             run(["--log-dir", self.makeDir()], reactor=reactor)
 
-        mock_auto_configure.assert_called_once_with()
+        mock_auto_configure.assert_called_once_with(retry=True)
         self.assertTrue(reactor.running)

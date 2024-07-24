@@ -34,3 +34,5 @@ landscape-client_ppc64el*.txt
 landscape-client_s390x*.txt
 landscape_client.egg-info
 .pybuild
+venv
+.venv
