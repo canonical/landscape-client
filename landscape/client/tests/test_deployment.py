@@ -354,6 +354,29 @@ class ConfigurationTest(LandscapeTest):
         self.assertIsNone(self.config.get("computer_title"))
         mock_snap_http.set_conf.assert_not_called()
 
+    @mock.patch("landscape.client.deployment.generate_computer_title")
+    @mock.patch("landscape.client.deployment.snap_http")
+    def test_auto_configuration_no_title_generated_retry(
+        self,
+        mock_snap_http,
+        mock_generate_title,
+    ):
+        """The client is not configured."""
+        mock_snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {"auto-register": {"enabled": True, "configured": False}},
+        )
+        mock_generate_title.return_value = None
+
+        self.assertIsNone(self.config.get("computer_title"))
+
+        self.config.auto_configure(retry=True, delay=0.01, max_retries=2)
+        assert mock_generate_title.call_count == 2
+        self.assertIsNone(self.config.get("computer_title"))
+        mock_snap_http.set_conf.assert_not_called()
+
 
 class GetVersionedPersistTest(LandscapeTest):
     def test_upgrade_service(self):
@@ -424,10 +447,12 @@ class GenerateComputerTitleTest(TestCase):
         )
         self.assertEqual(title, "classic-f315cab5")
 
+    @mock.patch("landscape.client.deployment.debug")
     @mock.patch("landscape.client.deployment.get_snap_info")
     def test_generate_computer_title_wait_for_serial_no_serial_assertion(
         self,
         mock_snap_info,
+        mock_debug,
     ):
         """Returns `None`."""
         mock_snap_info.return_value = {}
@@ -442,13 +467,18 @@ class GenerateComputerTitleTest(TestCase):
             },
         )
         self.assertIsNone(title)
+        mock_debug.assert_called_once_with(
+            "No serial assertion in snap info {}, waiting..."
+        )
 
+    @mock.patch("landscape.client.deployment.debug")
     @mock.patch("landscape.client.deployment.get_fqdn")
     @mock.patch("landscape.client.deployment.get_snap_info")
     def test_generate_computer_title_wait_for_hostname(
         self,
         mock_snap_info,
         mock_fqdn,
+        mock_debug,
     ):
         """Returns `None`."""
         mock_snap_info.return_value = {
@@ -468,6 +498,7 @@ class GenerateComputerTitleTest(TestCase):
             },
         )
         self.assertIsNone(title)
+        mock_debug.assert_called_once_with("Waiting for hostname...")
 
     @mock.patch("landscape.client.deployment.subprocess")
     @mock.patch("landscape.client.deployment.get_active_device_info")

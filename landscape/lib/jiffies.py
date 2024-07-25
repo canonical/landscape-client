@@ -25,7 +25,8 @@ def detect_jiffies():
         # is called.
         pid = os.fork()
         if pid == 0:
-            os._exit(0)
+            # os._exit is standard practice to end a child process
+            os._exit(0)  # //TICS !W0212: private access is OK
 
         uptime2_data = read_uptime2()
 

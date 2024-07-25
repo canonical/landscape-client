@@ -9,11 +9,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - run: |
-          make depends
-          # -common seems a catch-22, but this is just a shortcut to
-          # initialize user and dirs, some used through tests.
-          sudo apt-get -y install landscape-common
+      - run: make depends-ci
       - run: make coverage TRIAL=/usr/bin/trial3
       - name: upload
         uses: codecov/codecov-action@v3

@@ -43,5 +43,3 @@ else
 
     printf "%s\n" "$SYSINFO"
 fi
-
-exit 0

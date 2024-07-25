@@ -2,8 +2,10 @@ import json
 import os.path
 import subprocess
 import sys
+import time
 from datetime import datetime
 from datetime import timezone
+from logging import debug
 from optparse import SUPPRESS_HELP
 
 from twisted.logger import globalLogBeginner
@@ -198,7 +200,7 @@ class Configuration(BaseConfiguration):
         backwards-compatibility."""
         return os.path.join(self.data_path, "juju-info.json")
 
-    def auto_configure(self):
+    def auto_configure(self, retry=False, delay=120, max_retries=5):
         """Automatically configure the client snap."""
         client_conf = snap_http.get_conf("landscape-client").result
         auto_enroll_conf = client_conf.get("auto-register", {})
@@ -208,14 +210,24 @@ class Configuration(BaseConfiguration):
         if not enabled or configured:
             return
 
-        title = generate_computer_title(auto_enroll_conf)
-        if title:
-            self.computer_title = title
-            self.write()
+        for _ in range(max_retries):
+            title = generate_computer_title(auto_enroll_conf)
+            if title:
+                self.computer_title = title
+                self.write()
 
-            auto_enroll_conf["configured"] = True
-            client_conf["auto-register"] = auto_enroll_conf
-            snap_http.set_conf("landscape-client", client_conf)
+                auto_enroll_conf["configured"] = True
+                client_conf["auto-register"] = auto_enroll_conf
+                snap_http.set_conf("landscape-client", client_conf)
+                break
+
+            if not retry:
+                break
+
+            # retry until we get the computer title (exponential backoff)
+            # number of retries capped by `max_retries`
+            time.sleep(delay)
+            delay *= 2
 
 
 def get_versioned_persist(service):
@@ -243,11 +255,13 @@ def generate_computer_title(auto_enroll_config):
     snap_info = get_snap_info()
     wait_for_serial = auto_enroll_config.get("wait-for-serial-as", True)
     if "serial" not in snap_info and wait_for_serial:
+        debug(f"No serial assertion in snap info {snap_info}, waiting...")
         return
 
     hostname = get_fqdn()
     wait_for_hostname = auto_enroll_config.get("wait-for-hostname", False)
     if hostname == "localhost" and wait_for_hostname:
+        debug("Waiting for hostname...")
         return
 
     nics = get_active_device_info(default_only=True)

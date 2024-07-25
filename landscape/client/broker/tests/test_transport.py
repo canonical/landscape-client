@@ -196,9 +196,12 @@ class HTTPTransportTest(LandscapeTest):
         def got_result(ignored):
             self.assertIs(r.request, None)
             self.assertIs(r.content, None)
+            logfile_value = self.logfile.getvalue()
+            # pycurl error messages vary by version.
+            # First is for <= noble, second for > noble.
             self.assertTrue(
-                "server certificate verification failed"
-                in self.logfile.getvalue(),
+                "server certificate verification failed" in logfile_value
+                or "SSL certificate problem" in logfile_value,
             )
 
         result.addErrback(got_result)

@@ -15,8 +15,10 @@ class ComputerTags(DataWatcher):
     run_interval = 3600  # Every hour only when data changed
     run_immediately = True
 
-    def __init__(self, args=sys.argv):
+    def __init__(self, args=None):
         super().__init__()
+        if args is None:
+            args = sys.argv
         self.args = args  # Defined to specify args in unit tests
 
     def get_data(self):
