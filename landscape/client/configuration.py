@@ -480,8 +480,8 @@ class LandscapeSetupScript:
             self.landscape_domain = self.prompt_get_input(
                 "Landscape Domain: ",
                 True,
-            ).strip('/')
-            self.landscape_domain = re.sub(r'^https?://', '',
+            ).strip("/")
+            self.landscape_domain = re.sub(r"^https?://", "",
                                            self.landscape_domain)
             self.config.ping_url = f"http://{self.landscape_domain}/ping"
             self.config.url = f"https://{self.landscape_domain}/message-system"
