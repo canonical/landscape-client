@@ -2,7 +2,7 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
 PYTHON ?= python3
 SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
-TRIAL ?= -m twisted.trial
+TRIAL ?= -m landscape.lib.run_tests
 TRIAL_ARGS ?=
 PRE_COMMIT ?= $(HOME)/.local/bin/pre-commit
 
