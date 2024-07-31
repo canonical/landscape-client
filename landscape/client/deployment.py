@@ -200,7 +200,7 @@ class Configuration(BaseConfiguration):
         backwards-compatibility."""
         return os.path.join(self.data_path, "juju-info.json")
 
-    def auto_configure(self, retry=False, delay=120, max_retries=5):
+    def auto_configure(self, retry=False, delay=15, max_retries=7):
         """Automatically configure the client snap."""
         client_conf = snap_http.get_conf("landscape-client").result
         auto_enroll_conf = client_conf.get("auto-register", {})
@@ -224,8 +224,10 @@ class Configuration(BaseConfiguration):
             if not retry:
                 break
 
-            # retry until we get the computer title (exponential backoff)
-            # number of retries capped by `max_retries`
+            # Retry until we get the computer title (with exponential backoff)
+            # The number of retries is capped by `max_retries`
+            # With the defaults (delay=15s, max_retries=7), we'll
+            # retry over a period of ~30 minutes.
             time.sleep(delay)
             delay *= 2
 
