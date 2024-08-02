@@ -113,6 +113,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "ok_no_register",
         "import_from",
         "skip_registration",
+        "force_registration",
     )
 
     encoding = "utf-8"
@@ -253,6 +254,11 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--skip-registration",
             action="store_true",
             help="Don't send a new registration request",
+        )
+        parser.add_option(
+            "--force-registration",
+            action="store_true",
+            help="Force sending a new registration request",
         )
         return parser
 
@@ -481,8 +487,11 @@ class LandscapeSetupScript:
                 "Landscape Domain: ",
                 True,
             ).strip("/")
-            self.landscape_domain = re.sub(r"^https?://", "",
-                                           self.landscape_domain)
+            self.landscape_domain = re.sub(
+                r"^https?://",
+                "",
+                self.landscape_domain,
+            )
             self.config.ping_url = f"http://{self.landscape_domain}/ping"
             self.config.url = f"https://{self.landscape_domain}/message-system"
         else:
@@ -643,7 +652,9 @@ def setup(config):
 
     if not config.no_start:
         try:
-            set_secure_id(config, "registering")
+            secure_id = get_secure_id(config)
+            if (not secure_id) or config.force_registration:
+                set_secure_id(config, "registering")
             ServiceConfig.restart_landscape()
         except ServiceConfigException as exc:
             print_text(str(exc), error=True)
@@ -732,7 +743,7 @@ def done(ignored_result, connector, reactor):
 
 
 def got_connection(add_result, connector, reactor, remote):
-    """Handle becomming connected to a broker."""
+    """Handle becoming connected to a broker."""
     handlers = {
         "registration-done": partial(success, add_result),
         "registration-failed": partial(failure, add_result),
@@ -817,6 +828,8 @@ def register(
     if isinstance(result, SystemExit):
         raise result
 
+    set_secure_id(config, "registering")
+
     return result
 
 
@@ -825,6 +838,7 @@ def report_registration_outcome(what_happened, print=print):
     human-readable form.
     """
     messages = {
+        "registration-skipped": "Registration skipped.",
         "success": "Registration request sent successfully.",
         "unknown-account": "Invalid account name or registration key.",
         "max-pending-computers": (
@@ -847,8 +861,9 @@ def report_registration_outcome(what_happened, print=print):
         ),
     }
     message = messages.get(what_happened)
+    use_std_out = what_happened in {"success", "registration-skipped"}
     if message:
-        fd = sys.stdout if what_happened == "success" else sys.stderr
+        fd = sys.stdout if use_std_out else sys.stderr
         print(message, file=fd)
 
 
@@ -856,7 +871,7 @@ def determine_exit_code(what_happened):
     """Return what the application's exit code should be depending on the
     registration result.
     """
-    if what_happened == "success":
+    if what_happened in {"success", "registration-skipped"}:
         return 0
     else:
         return 2  # An error happened
@@ -912,6 +927,17 @@ def set_secure_id(config, new_id):
     persist.save()
 
 
+def get_secure_id(config):
+    persist = Persist(
+        filename=os.path.join(
+            config.data_path,
+            f"{BrokerService.service_name}.bpickle",
+        ),
+    )
+    identity = Identity(config, persist)
+    return identity.secure_id
+
+
 def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
 
@@ -922,9 +948,17 @@ def main(args, print=print):
         print_text(str(error), error=True)
         sys.exit(1)
 
+    if config.skip_registration and config.force_registration:
+        sys.exit(
+            "Do not set both skip registration "
+            "and force registration together.",
+        )
+
+    already_registered = is_registered(config)
+
     if config.is_registered:
 
-        registration_status = is_registered(config)
+        registration_status = already_registered
 
         info_text = registration_info_text(config, registration_status)
         print(info_text)
@@ -953,31 +987,31 @@ def main(args, print=print):
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 
-    # Attempt to register the client.
-    reactor = LandscapeReactor()
-
     if config.skip_registration:
         return
 
-    if config.silent:
+    # Attempt to register the client.
+    reactor = LandscapeReactor()
+
+    should_register = False
+
+    if config.silent and (not already_registered):
+        should_register = True
+    elif config.force_registration:
+        should_register = True
+    elif not config.silent:
+        default_answer = not already_registered
+        should_register = prompt_yes_no(
+            "\nRequest a new registration for this computer now?",
+            default=default_answer,
+        )
+    if should_register:
         result = register(
             config,
             reactor,
             on_error=lambda _: set_secure_id(config, None),
         )
-        report_registration_outcome(result, print=print)
-        sys.exit(determine_exit_code(result))
     else:
-        default_answer = not is_registered(config)
-        answer = prompt_yes_no(
-            "\nRequest a new registration for this computer now?",
-            default=default_answer,
-        )
-        if answer:
-            result = register(
-                config,
-                reactor,
-                on_error=lambda _: set_secure_id(config, None),
-            )
-            report_registration_outcome(result, print=print)
-            sys.exit(determine_exit_code(result))
+        result = "registration-skipped"
+    report_registration_outcome(result, print=print)
+    sys.exit(determine_exit_code(result))

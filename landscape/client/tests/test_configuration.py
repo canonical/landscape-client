@@ -1266,16 +1266,23 @@ registration_key = shared-secret
         setup(config)
         mock_setup_script().run.assert_called_once_with()
 
-        # Reload it to enusre it was written down.
+        # Reload it to ensure it was written down.
         config.reload()
 
         self.assertEqual(config.http_proxy, "http://config")
         self.assertEqual(config.https_proxy, "https://config")
 
+    @mock.patch("landscape.client.configuration.sys.exit")
     @mock.patch("landscape.client.configuration.input", return_value="n")
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.setup")
-    def test_main_no_registration(self, mock_setup, mock_register, mock_input):
+    def test_main_no_registration(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_sys_exit,
+    ):
         main(["-c", self.make_working_config()], print=noop_print)
         mock_register.assert_not_called()
         mock_input.assert_called_once_with(
@@ -1290,8 +1297,10 @@ registration_key = shared-secret
         Registration and input asking user to register is not called
         when flag on
         """
-        main(["-c", self.make_working_config(), "--skip-registration"],
-             print=noop_print)
+        main(
+            ["-c", self.make_working_config(), "--skip-registration"],
+            print=noop_print,
+        )
         mock_register.assert_not_called()
         mock_input.assert_not_called()
 
@@ -1299,9 +1308,40 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.setup")
     def test_main_no_registration_silent(self, mock_setup, mock_register):
         """Skip registration works in silent mode"""
-        main(["-c", self.make_working_config(), "--skip-registration",
-              "--silent"], print=noop_print)
+        main(
+            [
+                "-c",
+                self.make_working_config(),
+                "--skip-registration",
+                "--silent",
+            ],
+            print=noop_print,
+        )
         mock_register.assert_not_called()
+
+    @mock.patch("landscape.client.configuration.sys.exit")
+    @mock.patch("landscape.client.configuration.input")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_main_force_registration_silent(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_sys_exit,
+    ):
+        """Force registration works in silent mode"""
+        main(
+            [
+                "-c",
+                self.make_working_config(),
+                "--force-registration",
+                "--silent",
+            ],
+            print=noop_print,
+        )
+        mock_register.assert_called_once()
+        mock_input.assert_not_called()
 
     @mock.patch(
         "landscape.client.configuration.register",
@@ -2691,6 +2731,14 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         self.assertIn("Registration request sent successfully.", self.result)
         self.assertIn(sys.stdout.name, self.output)
 
+    def test_registration_skipped_case(self):
+        report_registration_outcome(
+            "registration-skipped",
+            print=self.record_result,
+        )
+        self.assertIn("Registration skipped.", self.result)
+        self.assertIn(sys.stdout.name, self.output)
+
     def test_unknown_account_case(self):
         """
         If the unknown-account error is found, an appropriate message is
@@ -2756,6 +2804,13 @@ class DetermineExitCodeTest(unittest.TestCase):
         result = determine_exit_code("success")
         self.assertEqual(0, result)
 
+    def test_registration_skipped_means_exit_code_0(self):
+        """
+        When passed "success" the determine_exit_code function returns 0.
+        """
+        result = determine_exit_code("registration-skipped")
+        self.assertEqual(0, result)
+
     def test_a_failure_means_exit_code_2(self):
         """
         When passed a failure result, the determine_exit_code function returns
@@ -2783,13 +2838,13 @@ class IsRegisteredTest(LandscapeTest):
 
     def test_is_registered_false(self):
         """
-        If the client hasn't previouly registered, is_registered returns False.
+        If the client hasn't previously registered, is_registered returns False
         """
         self.assertFalse(is_registered(self.config))
 
     def test_is_registered_true(self):
         """
-        If the client has previouly registered, is_registered returns True.
+        If the client has previously registered, is_registered returns True.
         """
         self.persist.set("registration.secure-id", "super-secure")
         self.persist.save()
