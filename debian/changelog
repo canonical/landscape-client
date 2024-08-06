@@ -2,7 +2,7 @@ landscape-client (24.08-0landscape0) jammy; urgency=medium
 
   * feat: added flag to skip sending a registration request
   * fix(snap): reduce computer title retry delay
-  * fix(snap): retry setting the comptuer title
+  * fix(snap): retry setting the computer title
   * fix: remove system exit in landscape-sysinfo.wrapper
   * fix: allow for oracular version of pycurl error string (LP: #2068050)
   * fix: add non-filtered interfaces to the API response (LP: #2052834)
