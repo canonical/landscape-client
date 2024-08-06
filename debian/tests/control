@@ -1,0 +1,2 @@
+Tests: smoke
+Restrictions: allow-stderr, needs-sudo, superficial

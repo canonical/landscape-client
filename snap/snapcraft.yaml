@@ -1,6 +1,6 @@
 name: landscape-client
 base: core22
-version: '24.04'
+version: '24.08'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
 summary: Client for the Canonical systems management product Landscape
