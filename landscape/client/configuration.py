@@ -114,6 +114,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "import_from",
         "skip_registration",
         "force_registration",
+        "register_if_needed",
     )
 
     encoding = "utf-8"
@@ -259,6 +260,13 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--force-registration",
             action="store_true",
             help="Force sending a new registration request",
+        )
+        parser.add_option(
+            "--register-if-needed",
+            action="store_true",
+            help=(
+                "Send a new registration request only if one has not been sent"
+            ),
         )
         return parser
 
@@ -648,13 +656,13 @@ def setup(config):
         script.run()
     decode_base64_ssl_public_certificate(config)
     config.write()
-    # Restart the client to ensure that it's using the new configuration.
 
+
+def restart_client(config):
+    """Restart the client to ensure that it's using the new configuration."""
     if not config.no_start:
         try:
-            secure_id = get_secure_id(config)
-            if (not secure_id) or config.force_registration:
-                set_secure_id(config, "registering")
+            set_secure_id(config, "registering")
             ServiceConfig.restart_landscape()
         except ServiceConfigException as exc:
             print_text(str(exc), error=True)
@@ -988,24 +996,30 @@ def main(args, print=print):
         sys.exit("Aborting Landscape configuration")
 
     if config.skip_registration:
+        result = "registration-skipped"
+        report_registration_outcome(result, print=print)
         return
-
-    # Attempt to register the client.
-    reactor = LandscapeReactor()
 
     should_register = False
 
-    if config.silent and (not already_registered):
+    if config.force_registration:
         should_register = True
-    elif config.force_registration:
+    elif config.silent and not config.register_if_needed:
         should_register = True
-    elif not config.silent:
+    elif config.register_if_needed:
+        should_register = not already_registered
+    else:
         default_answer = not already_registered
         should_register = prompt_yes_no(
             "\nRequest a new registration for this computer now?",
             default=default_answer,
         )
+
+    if should_register or config.silent:
+        restart_client(config)
     if should_register:
+        # Attempt to register the client.
+        reactor = LandscapeReactor()
         result = register(
             config,
             reactor,
