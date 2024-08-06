@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -ex
+
+landscape-config --help | grep --silent is-registered
+# --is-registered expected to fail, as this is a fresh system and will
+# not be registered yet.
+is_registered=0
+sudo landscape-config --is-registered || is_registered=$?
+[ "$is_registered" -eq 5 ]
+landscape-client --help | grep --silent version
