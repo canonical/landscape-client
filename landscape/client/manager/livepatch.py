@@ -2,10 +2,11 @@ import json
 import subprocess
 import yaml
 
-from landscape.client.monitor.plugin import DataWatcher
+
+from landscape.client.manager.plugin import DataWatcherManager
 
 
-class LivePatch(DataWatcher):
+class LivePatch(DataWatcherManager):
     """
     Plugin that captures and reports Livepatch status information
     information.

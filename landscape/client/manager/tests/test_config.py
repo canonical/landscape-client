@@ -23,6 +23,7 @@ class ManagerConfigurationTest(LandscapeTest):
                 "SnapManager",
                 "SnapServicesManager",
                 "UbuntuProInfo",
+                "LivePatch"
             ],
             ALL_PLUGINS,
         )
