@@ -61,7 +61,8 @@ class LivePatchTest(LandscapeTest):
         self.assertEqual(message["json"]["return_code"], -1)
         self.assertEqual(message["humane"]["return_code"], -1)
 
-    def test_undefined_exception(self):
+    @mock.patch('landscape.client.manager.livepatch.logging.error')
+    def test_undefined_exception(self, logger_mock):
         """Tests calling livepatch when random exception occurs"""
         plugin = LivePatch()
 
@@ -69,6 +70,8 @@ class LivePatchTest(LandscapeTest):
             run_mock.side_effect = ValueError("Not found!")
             self.monitor.add(plugin)
             plugin.run()
+
+        logger_mock.assert_called()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["livepatch"])

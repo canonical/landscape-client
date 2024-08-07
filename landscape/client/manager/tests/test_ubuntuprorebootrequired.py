@@ -49,7 +49,7 @@ class UbuntuProRebootRequiredTest(LandscapeTest):
 
         messages = self.mstore.get_pending_messages()
 
-        mock_logger.assert_called_once()
+        mock_logger.assert_called()
         self.assertGreater(len(messages), 0)
         self.assertIn("ubuntu-pro-reboot-required", messages[0])
         info = json.loads(messages[0]["ubuntu-pro-reboot-required"])

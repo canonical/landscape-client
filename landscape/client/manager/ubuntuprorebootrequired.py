@@ -1,5 +1,6 @@
 import logging
 import json
+import traceback
 
 from landscape.client.manager.plugin import DataWatcherManager
 
@@ -39,5 +40,5 @@ class UbuntuProRebootRequired(DataWatcherManager):
         except Exception as exc:
             data["error"] = str(exc)
             data["output"] = {}
-            logging.error(str(exc))
+            logging.error(traceback.format_exc())
         return json.dumps(data, sort_keys=True)

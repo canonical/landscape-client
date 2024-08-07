@@ -1,5 +1,7 @@
 import json
+import logging
 import subprocess
+import traceback
 import yaml
 
 
@@ -47,6 +49,7 @@ def get_livepatch_status(format_type):
         data['return_code'] = -2
         data['error'] = str(exc)
         data['output'] = ""
+        logging.error(traceback.format_exc())
     else:
         output = completed_process.stdout.strip()
         try:
