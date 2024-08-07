@@ -23,6 +23,12 @@ environment:
   LANDSCAPE_CLIENT_SNAP: 1
   PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10/site-packages:$PYTHONPATH
 
+plugs:
+  var-lib-ubuntu-advantage-status:
+    interface: system-files
+    read:
+      - /var/lib/snapd/hostfs/var/lib/ubuntu-advantage/status.json
+
 apps:
   landscape-client:
     daemon: simple
@@ -42,6 +48,7 @@ apps:
       - process-control
       - network-control
       - network-manager
+      - var-lib-ubuntu-advantage-status
   config:
     command: usr/bin/landscape-config
     plugs: [network]

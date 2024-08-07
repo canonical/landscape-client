@@ -1,3 +1,6 @@
+import json
+import os
+import tempfile
 from datetime import datetime
 from unittest import mock
 
@@ -161,14 +164,40 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue("ubuntu-pro-info" in messages[1])
         self.assertEqual(messages[1]["ubuntu-pro-info"], data)
 
-    @mock.patch("landscape.client.manager.ubuntuproinfo.IS_SNAP", new=True)
-    def test_pro_client_not_called_for_snap(self):
-        """
-        The snap will not currently allow calls to the pro client.
+    @mock.patch.multiple(
+        "landscape.client.manager.ubuntuproinfo",
+        IS_SNAP=True,
+        UA_DATA_DIR=tempfile.gettempdir(),
+    )
+    def test_pro_status_file_read_for_snap(self):
+        """The snap should read the status file instead of calling `pro`."""
+        temp_file_path = os.path.join(tempfile.gettempdir(), "status.json")
+        with open(temp_file_path, "w") as fp:
+            mocked_info = {
+                "_schema_version": "0.1",
+                "account": {
+                    "created_at": "2024-01-08T13:26:52+00:00",
+                    "external_account_ids": [],
+                    "id": "zYxWvU_sRqPoNmLkJiHgFeDcBa9876543210ZyXwVuTsRqPon",
+                    "name": "jane.doe@example.com",
+                },
+                "foo": "bar"
+            }
+            json.dump(mocked_info, fp)
 
-        Ensure that get_ubuntu_pro_info returns an empty dictionary instead of
-        calling the subprocess for pro.
-        """
+        ubuntu_pro_info = get_ubuntu_pro_info()
+        del mocked_info["foo"]
+        self.assertEqual(mocked_info, ubuntu_pro_info)
+
+        os.remove(temp_file_path)
+
+    @mock.patch.multiple(
+        "landscape.client.manager.ubuntuproinfo",
+        IS_SNAP=True,
+        UA_DATA_DIR="/i/do/not/exist",
+    )
+    def test_pro_status_file_not_found_for_snap(self):
+        """The snap will return {} if the status file is not found."""
         ubuntu_pro_info = get_ubuntu_pro_info()
         self.assertEqual({}, ubuntu_pro_info)
 
