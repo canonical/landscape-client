@@ -7,6 +7,7 @@ from datetime import timezone
 from landscape.client import IS_CORE
 from landscape.client import IS_SNAP
 from landscape.client.manager.plugin import DataWatcherManager
+from landscape.client import UA_DATA_DIR
 
 
 class UbuntuProInfo(DataWatcherManager):
@@ -47,9 +48,47 @@ def get_ubuntu_pro_info() -> dict:
         )
 
     if IS_SNAP:
-        # Snap does not support Ubuntu Pro Info and throws an error if `pro` is
-        # called.
-        return {}
+        # By default, Ubuntu Advantage / Pro stores the status information
+        # in /var/lib/ubuntu-advantage/status.json (we have a `system-files`
+        # plug for this).
+        # This `data_dir` can however be changed in
+        # /etc/ubuntu-advantage/uaclient.conf which would lead to
+        # permission errors since we don't have a plug for arbitrary
+        # folders on the host fs.
+
+        try:
+            with open(f"{UA_DATA_DIR}/status.json") as fp:
+                pro_info = json.load(fp)
+        except (FileNotFoundError, PermissionError):
+            # Happens if the Ubuntu Pro client isn't installed, or
+            #  if the `data_dir` folder setting was changed from the default
+            return {}
+
+        # The status file has more information than `pro status`
+        keys_to_keep = [
+            "_doc",
+            "_schema_version",
+            "account",
+            "attached",
+            "config",
+            "config_path",
+            "contract",
+            "effective",
+            "environment_vars",
+            "errors",
+            "execution_details",
+            "execution_status",
+            "expires",
+            "features",
+            "machine_id",
+            "notices",
+            "result",
+            "services",
+            "simulated",
+            "version",
+            "warnings",
+        ]
+        return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
     try:
         completed_process = subprocess.run(
