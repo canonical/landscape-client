@@ -1,7 +1,7 @@
 from twisted.internet.defer import Deferred
 
 from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.plugin import ManagerPlugin, DataWatcherManager
 from landscape.client.manager.plugin import SUCCEEDED
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
@@ -126,3 +126,37 @@ class BrokerPluginTest(LandscapeTest):
         result.addCallback(assert_messages)
         deferred.callback("blah")
         return result
+
+
+class StubDataWatchingPlugin(DataWatcherManager):
+
+    message_type = "wubble"
+
+    def __init__(self, data=None):
+        self.data = data
+
+    def get_data(self):
+        return self.data
+
+
+class DataWatcherManagerTest(LandscapeTest):
+
+    helpers = [ManagerHelper]
+
+    def setUp(self):
+        LandscapeTest.setUp(self)
+        self.plugin = StubDataWatchingPlugin("hello world")
+        self.plugin.register(self.manager)
+
+    def test_get_message(self):
+        self.assertEqual(
+            self.plugin.get_new_data(),
+            "hello world",
+        )
+
+    def test_get_message_unchanging(self):
+        self.assertEqual(
+            self.plugin.get_new_data(),
+            "hello world",
+        )
+        self.assertEqual(self.plugin.get_new_data(), None)
