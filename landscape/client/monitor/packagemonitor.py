@@ -162,7 +162,7 @@ class PackageMonitor(MonitorPlugin):
         Remove all tasks *except* the resynchronize task.  This is
         because if we clear all tasks, then add the resynchronize,
         it's possible that the reporter may be running a task at this
-        time and when it finishes, it will unknowningly remove the
+        time and when it finishes, it will unknowingly remove the
         resynchronize task because sqlite resets its serial primary
         keys when you delete an entire table.  This problem is avoided
         by adding the task first and removing them all *except* the
