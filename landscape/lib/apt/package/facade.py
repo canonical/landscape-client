@@ -154,6 +154,7 @@ class AptFacade:
     def _ensure_dir_structure(self):
         apt_dir = self._ensure_sub_dir("etc/apt")
         self._ensure_sub_dir("etc/apt/sources.list.d")
+        self._ensure_sub_dir("etc/apt/preferences.d")
         self._ensure_sub_dir("var/cache/apt/archives/partial")
         self._ensure_sub_dir("var/lib/apt/lists/partial")
         dpkg_dir = self._ensure_sub_dir("var/lib/dpkg")
