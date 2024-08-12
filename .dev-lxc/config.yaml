@@ -1,0 +1,11 @@
+config:
+  user.user-data: |
+    #cloud-config
+    package_upgrade: true
+    packages:
+      - make
+    runcmd:
+      - usermod -a -G ubuntu landscape
+dev-lxc-exec:
+  - make depends
+  - git submodule update --init
