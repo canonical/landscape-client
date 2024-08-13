@@ -3,7 +3,7 @@ import yaml
 from unittest import mock
 
 from landscape.client.manager.livepatch import LivePatch
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 def subprocess_livepatch_mock(*args, **kwargs):
@@ -19,10 +19,11 @@ def subprocess_livepatch_mock(*args, **kwargs):
 class LivePatchTest(LandscapeTest):
     """Livepatch status plugin tests."""
 
-    helpers = [MonitorHelper]
+    helpers = [ManagerHelper]
 
     def setUp(self):
         super(LivePatchTest, self).setUp()
+        self.mstore = self.broker_service.message_store
         self.mstore.set_accepted_types(["livepatch"])
 
     def test_livepatch(self):
@@ -31,7 +32,7 @@ class LivePatchTest(LandscapeTest):
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = subprocess_livepatch_mock
-            self.monitor.add(plugin)
+            self.manager.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -50,7 +51,7 @@ class LivePatchTest(LandscapeTest):
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = FileNotFoundError("Not found!")
-            self.monitor.add(plugin)
+            self.manager.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -68,7 +69,7 @@ class LivePatchTest(LandscapeTest):
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = ValueError("Not found!")
-            self.monitor.add(plugin)
+            self.manager.add(plugin)
             plugin.run()
 
         logger_mock.assert_called()
@@ -91,7 +92,7 @@ class LivePatchTest(LandscapeTest):
         with mock.patch("subprocess.run") as run_mock:
             run_mock.return_value = mock.Mock(stdout=invalid_data)
             run_mock.return_value.returncode = 0
-            self.monitor.add(plugin)
+            self.manager.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -113,7 +114,7 @@ class LivePatchTest(LandscapeTest):
             run_mock.return_value = mock.Mock(stdout=invalid_data,
                                               stderr='Error')
             run_mock.return_value.returncode = 1
-            self.monitor.add(plugin)
+            self.manager.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -132,7 +133,7 @@ class LivePatchTest(LandscapeTest):
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = subprocess_livepatch_mock
-            self.monitor.add(plugin)
+            self.manager.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
