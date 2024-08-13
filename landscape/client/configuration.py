@@ -662,7 +662,9 @@ def restart_client(config):
     """Restart the client to ensure that it's using the new configuration."""
     if not config.no_start:
         try:
-            set_secure_id(config, "registering")
+            secure_id = get_secure_id(config)
+            if not secure_id:
+                set_secure_id(config, "registering")
             ServiceConfig.restart_landscape()
         except ServiceConfigException as exc:
             print_text(str(exc), error=True)

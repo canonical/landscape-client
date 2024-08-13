@@ -20,6 +20,7 @@ from landscape.client.configuration import done
 from landscape.client.configuration import exchange_failure
 from landscape.client.configuration import EXIT_NOT_REGISTERED
 from landscape.client.configuration import failure
+from landscape.client.configuration import get_secure_id
 from landscape.client.configuration import got_connection
 from landscape.client.configuration import got_error
 from landscape.client.configuration import handle_registration_errors
@@ -2868,7 +2869,8 @@ class DetermineExitCodeTest(unittest.TestCase):
 
     def test_registration_skipped_means_exit_code_0(self):
         """
-        When passed "success" the determine_exit_code function returns 0.
+        When passed "registration-skipped" the determine_exit_code
+        function returns 0.
         """
         result = determine_exit_code("registration-skipped")
         self.assertEqual(0, result)
@@ -3009,3 +3011,16 @@ class SetSecureIdTest(LandscapeTest):
         Persist().save.assert_called_once_with()
         Identity.assert_called_once_with(config, Persist())
         self.assertEqual(Identity().secure_id, "fancysecureid")
+
+
+class GetSecureIdTest(LandscapeTest):
+    @mock.patch("landscape.client.configuration.Persist")
+    @mock.patch("landscape.client.configuration.Identity")
+    def test_function(self, Identity, Persist):
+        config = mock.Mock(data_path="/tmp/landscape")
+
+        set_secure_id(config, "fancysecureid")
+
+        secure_id = get_secure_id(config)
+
+        self.assertEqual(secure_id, "fancysecureid")
