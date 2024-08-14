@@ -1,3 +1,8 @@
+# Run static code analysis through Tiobe TiCS
+# Requires repository configurations:
+# - TICSAUTHTOKEN secret to upload the results
+# - RUN_TICS_ANALYSIS repository variable set to truthy value run the workflow
+
 name: TiCS static analysis
 
 on:
@@ -7,6 +12,7 @@ on:
 jobs:
   TICS:
     runs-on: ubuntu-latest
+    if: ${{ vars.RUN_TICS_ANALYSIS }}
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v4
