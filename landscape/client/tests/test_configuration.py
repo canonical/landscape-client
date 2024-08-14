@@ -20,6 +20,7 @@ from landscape.client.configuration import done
 from landscape.client.configuration import exchange_failure
 from landscape.client.configuration import EXIT_NOT_REGISTERED
 from landscape.client.configuration import failure
+from landscape.client.configuration import get_secure_id
 from landscape.client.configuration import got_connection
 from landscape.client.configuration import got_error
 from landscape.client.configuration import handle_registration_errors
@@ -33,6 +34,7 @@ from landscape.client.configuration import prompt_yes_no
 from landscape.client.configuration import register
 from landscape.client.configuration import registration_info_text
 from landscape.client.configuration import report_registration_outcome
+from landscape.client.configuration import restart_client
 from landscape.client.configuration import set_secure_id
 from landscape.client.configuration import setup
 from landscape.client.configuration import show_help
@@ -952,13 +954,11 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
     @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_silent_setup(self, mock_serviceconfig):
         """
-        Only command-line options are used in silent mode and registration is
-        attempted.
+        Only command-line options are used in silent mode.
         """
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
         self.assertConfigEqual(
             self.get_content(config),
             f"""\
@@ -1050,7 +1050,6 @@ url = https://landscape.canonical.com/message-system
         config = self.get_config(["--silent", "-a", "account", "-t", "mélody"])
         setup(config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
         self.assertConfigEqual(
             self.get_content(config),
             f"""\
@@ -1110,7 +1109,6 @@ bus = session
         mock_serviceconfig.restart_landscape.return_value = True
         setup(config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_input.assert_not_called()
         parser = ConfigParser()
         parser.read(filename)
@@ -1176,7 +1174,6 @@ random_key = random_value
         )
         setup(config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         parser = ConfigParser()
         parser.read(filename)
@@ -1216,8 +1213,7 @@ random_key = random_value
         mock_serviceconfig,
     ):
         """
-        Only command-line options are used in silent mode and registration is
-        attempted.
+        Only command-line options are used in silent mode.
         """
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
@@ -1233,7 +1229,6 @@ registration_key = shared-secret
         )
         setup(config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
         parser = ConfigParser()
         parser.read(filename)
         self.assertEqual(
@@ -1266,32 +1261,48 @@ registration_key = shared-secret
         setup(config)
         mock_setup_script().run.assert_called_once_with()
 
-        # Reload it to enusre it was written down.
+        # Reload it to ensure it was written down.
         config.reload()
 
         self.assertEqual(config.http_proxy, "http://config")
         self.assertEqual(config.https_proxy, "https://config")
 
+    @mock.patch("landscape.client.configuration.sys.exit")
     @mock.patch("landscape.client.configuration.input", return_value="n")
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.setup")
-    def test_main_no_registration(self, mock_setup, mock_register, mock_input):
+    def test_main_no_registration(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_sys_exit,
+    ):
         main(["-c", self.make_working_config()], print=noop_print)
         mock_register.assert_not_called()
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
 
+    @mock.patch("landscape.client.configuration.sys.exit")
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.setup")
-    def test_skip_registration(self, mock_setup, mock_register, mock_input):
+    def test_skip_registration(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_sys_exit,
+    ):
         """
         Registration and input asking user to register is not called
         when flag on
         """
-        main(["-c", self.make_working_config(), "--skip-registration"],
-             print=noop_print)
+        main(
+            ["-c", self.make_working_config(), "--skip-registration"],
+            print=noop_print,
+        )
         mock_register.assert_not_called()
         mock_input.assert_not_called()
 
@@ -1299,16 +1310,115 @@ registration_key = shared-secret
     @mock.patch("landscape.client.configuration.setup")
     def test_main_no_registration_silent(self, mock_setup, mock_register):
         """Skip registration works in silent mode"""
-        main(["-c", self.make_working_config(), "--skip-registration",
-              "--silent"], print=noop_print)
+        main(
+            [
+                "-c",
+                self.make_working_config(),
+                "--skip-registration",
+                "--silent",
+            ],
+            print=noop_print,
+        )
         mock_register.assert_not_called()
 
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch("landscape.client.configuration.sys.exit")
+    @mock.patch("landscape.client.configuration.input")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_main_force_registration_silent(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_sys_exit,
+        mock_restart_client,
+    ):
+        """Force registration works in silent mode"""
+        main(
+            [
+                "-c",
+                self.make_working_config(),
+                "--force-registration",
+                "--silent",
+            ],
+            print=noop_print,
+        )
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
+        mock_input.assert_not_called()
+
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch("landscape.client.configuration.input")
     @mock.patch(
         "landscape.client.configuration.register",
         return_value="success",
     )
     @mock.patch("landscape.client.configuration.setup")
-    def test_main_silent(self, mock_setup, mock_register):
+    def test_main_register_if_needed_silent(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_restart_client,
+    ):
+        """Conditional registration works in silent mode"""
+        system_exit = self.assertRaises(
+            SystemExit,
+            main,
+            [
+                "-c",
+                self.make_working_config(),
+                "--register-if-needed",
+                "--silent",
+            ],
+            print=noop_print,
+        )
+        self.assertEqual(0, system_exit.code)
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
+        mock_input.assert_not_called()
+
+    @mock.patch(
+        "landscape.client.configuration.is_registered",
+        return_value=True,
+    )
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch("landscape.client.configuration.input")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_main_do_not_register_if_not_needed_silent(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_restart_client,
+        mock_is_registered,
+    ):
+        """Conditional registration works in silent mode"""
+        system_exit = self.assertRaises(
+            SystemExit,
+            main,
+            [
+                "-c",
+                self.make_working_config(),
+                "--register-if-needed",
+                "--silent",
+            ],
+            print=noop_print,
+        )
+        self.assertEqual(0, system_exit.code)
+        mock_restart_client.assert_called_once()
+        mock_register.assert_not_called()
+        mock_input.assert_not_called()
+
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch(
+        "landscape.client.configuration.register",
+        return_value="success",
+    )
+    @mock.patch("landscape.client.configuration.setup")
+    def test_main_silent(self, mock_setup, mock_register, mock_restart_client):
         """
         In silent mode, the client should register when the registration
         details are changed/set.
@@ -1327,13 +1437,11 @@ registration_key = shared-secret
             print=noop_print,
         )
         self.assertEqual(0, exception.code)
-        mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_setup.assert_called_once()
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
 
+    @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.input", return_value="y")
     @mock.patch(
         "landscape.client.configuration.register",
@@ -1345,6 +1453,7 @@ registration_key = shared-secret
         mock_setup,
         mock_register,
         mock_input,
+        mock_restart_client,
     ):
         """The successful result of register() is communicated to the user."""
         printed = []
@@ -1359,12 +1468,9 @@ registration_key = shared-secret
             print=faux_print,
         )
         self.assertEqual(0, exception.code)
-        mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_setup.assert_called_once()
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1375,6 +1481,7 @@ registration_key = shared-secret
             printed,
         )
 
+    @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.input", return_value="y")
     @mock.patch(
         "landscape.client.configuration.register",
@@ -1386,6 +1493,7 @@ registration_key = shared-secret
         mock_setup,
         mock_register,
         mock_input,
+        mock_restart_client,
     ):
         """The failed result of register() is communicated to the user."""
         printed = []
@@ -1400,12 +1508,9 @@ registration_key = shared-secret
             print=faux_print,
         )
         self.assertEqual(2, exception.code)
-        mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_setup.assert_called_once()
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1418,6 +1523,7 @@ registration_key = shared-secret
             printed,
         )
 
+    @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.input")
     @mock.patch(
         "landscape.client.configuration.register",
@@ -1429,6 +1535,7 @@ registration_key = shared-secret
         mock_setup,
         mock_register,
         mock_input,
+        mock_restart_client,
     ):
         """Successful result is communicated to the user even with --silent."""
         printed = []
@@ -1443,12 +1550,9 @@ registration_key = shared-secret
             print=faux_print,
         )
         self.assertEqual(0, exception.code)
-        mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_setup.assert_called_once()
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
         mock_input.assert_not_called()
 
         self.assertEqual(
@@ -1458,6 +1562,7 @@ registration_key = shared-secret
             printed,
         )
 
+    @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.input")
     @mock.patch(
         "landscape.client.configuration.register",
@@ -1469,6 +1574,7 @@ registration_key = shared-secret
         mock_setup,
         mock_register,
         mock_input,
+        mock_restart_client,
     ):
         """
         A failure result is communicated to the user even with --silent.
@@ -1485,12 +1591,9 @@ registration_key = shared-secret
             print=faux_print,
         )
         self.assertEqual(2, exception.code)
-        mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_setup.assert_called_once()
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
         mock_input.assert_not_called()
         # Note that the error is output via sys.stderr.
         self.assertEqual(
@@ -1535,11 +1638,7 @@ registration_key = shared-secret
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
         mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_setup_script().run.assert_called_once_with()
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_register.assert_called_once()
         mock_input.assert_called_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
@@ -1561,7 +1660,8 @@ registration_key = shared-secret
         )
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
-        system_exit = self.assertRaises(SystemExit, setup, config)
+        setup(config)
+        system_exit = self.assertRaises(SystemExit, restart_client, config)
         self.assertEqual(system_exit.code, 2)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
         mock_serviceconfig.restart_landscape.assert_called_once_with()
@@ -1593,7 +1693,8 @@ registration_key = shared-secret
         config = self.get_config(
             ["--silent", "-a", "account", "-t", "rex", "--ok-no-register"],
         )
-        system_exit = self.assertRaises(SystemExit, setup, config)
+        setup(config)
+        system_exit = self.assertRaises(SystemExit, restart_client, config)
         self.assertEqual(system_exit.code, 0)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
         mock_serviceconfig.restart_landscape.assert_called_once_with()
@@ -1607,30 +1708,41 @@ registration_key = shared-secret
             error=True,
         )
 
+    @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.input", return_value="")
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.setup")
-    def test_main_with_register(self, mock_setup, mock_register, mock_input):
+    def test_main_with_register(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_restart_client,
+    ):
         self.assertRaises(
             SystemExit,
             main,
             ["-c", self.make_working_config()],
             print=noop_print,
         )
-        mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_setup.assert_called_once()
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
         mock_input.assert_called_once_with(
             "\nRequest a new registration for this computer now? [Y/n]: ",
         )
 
+    @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.register")
     @mock.patch("landscape.client.configuration.setup")
-    def test_register_silent(self, mock_setup, mock_register, mock_input):
+    def test_register_silent(
+        self,
+        mock_setup,
+        mock_register,
+        mock_input,
+        mock_restart_client,
+    ):
         """
         Silent registration uses specified configuration to attempt a
         registration with the server.
@@ -1641,12 +1753,9 @@ registration_key = shared-secret
             ["--silent", "-c", self.make_working_config()],
             print=noop_print,
         )
-        mock_setup.assert_called_once_with(mock.ANY)
-        mock_register.assert_called_once_with(
-            mock.ANY,
-            mock.ANY,
-            on_error=mock.ANY,
-        )
+        mock_setup.assert_called_once()
+        mock_restart_client.assert_called_once()
+        mock_register.assert_called_once()
         mock_input.assert_not_called()
 
     @mock.patch("landscape.client.configuration.input")
@@ -1726,7 +1835,6 @@ registration_key = shared-secret
         setup(config)
 
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -1908,7 +2016,6 @@ registration_key = shared-secret
         setup(config)
 
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
         options = ConfigParser()
         options.read(config_filename)
 
@@ -1961,7 +2068,6 @@ registration_key = shared-secret
         )
         setup(config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -2015,7 +2121,6 @@ registration_key = shared-secret
             "Fetching configuration from https://config.url...",
         )
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
 
         options = ConfigParser()
         options.read(config_filename)
@@ -2207,7 +2312,6 @@ registration_key = shared-secret
         setup(config)
 
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
         mock_print_text.assert_called_once_with(
             f"Writing SSL CA certificate to {key_filename}...",
         )
@@ -2244,7 +2348,6 @@ registration_key = shared-secret
         setup(config)
 
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        mock_serviceconfig.restart_landscape.assert_called_once_with()
         key_filename = config_filename + ".ssl_public_key"
         self.assertFalse(os.path.isfile(key_filename))
 
@@ -2691,6 +2794,14 @@ class ReportRegistrationOutcomeTest(unittest.TestCase):
         self.assertIn("Registration request sent successfully.", self.result)
         self.assertIn(sys.stdout.name, self.output)
 
+    def test_registration_skipped_case(self):
+        report_registration_outcome(
+            "registration-skipped",
+            print=self.record_result,
+        )
+        self.assertIn("Registration skipped.", self.result)
+        self.assertIn(sys.stdout.name, self.output)
+
     def test_unknown_account_case(self):
         """
         If the unknown-account error is found, an appropriate message is
@@ -2756,6 +2867,14 @@ class DetermineExitCodeTest(unittest.TestCase):
         result = determine_exit_code("success")
         self.assertEqual(0, result)
 
+    def test_registration_skipped_means_exit_code_0(self):
+        """
+        When passed "registration-skipped" the determine_exit_code
+        function returns 0.
+        """
+        result = determine_exit_code("registration-skipped")
+        self.assertEqual(0, result)
+
     def test_a_failure_means_exit_code_2(self):
         """
         When passed a failure result, the determine_exit_code function returns
@@ -2783,13 +2902,13 @@ class IsRegisteredTest(LandscapeTest):
 
     def test_is_registered_false(self):
         """
-        If the client hasn't previouly registered, is_registered returns False.
+        If the client hasn't previously registered, is_registered returns False
         """
         self.assertFalse(is_registered(self.config))
 
     def test_is_registered_true(self):
         """
-        If the client has previouly registered, is_registered returns True.
+        If the client has previously registered, is_registered returns True.
         """
         self.persist.set("registration.secure-id", "super-secure")
         self.persist.save()
@@ -2892,3 +3011,16 @@ class SetSecureIdTest(LandscapeTest):
         Persist().save.assert_called_once_with()
         Identity.assert_called_once_with(config, Persist())
         self.assertEqual(Identity().secure_id, "fancysecureid")
+
+
+class GetSecureIdTest(LandscapeTest):
+    @mock.patch("landscape.client.configuration.Persist")
+    @mock.patch("landscape.client.configuration.Identity")
+    def test_function(self, Identity, Persist):
+        config = mock.Mock(data_path="/tmp/landscape")
+
+        set_secure_id(config, "fancysecureid")
+
+        secure_id = get_secure_id(config)
+
+        self.assertEqual(secure_id, "fancysecureid")

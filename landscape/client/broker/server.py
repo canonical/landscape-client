@@ -408,7 +408,7 @@ support this feature.
     @remote
     def stop_exchanger(self):
         """
-        Stop exchaging messages with the message server.
+        Stop exchanging messages with the message server.
 
         Eventually, it is required by the plugin that no more message exchanges
         are performed.

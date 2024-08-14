@@ -49,8 +49,8 @@ The values have the following semantics:
 
   - C{CLIENT_ACCEPTED_TYPES}: Optionally, a list of message types that the
     client accepts. The server is supposed to send the client only messages of
-    this type. It will be inlcuded in the payload only if the hash that the
-    server sends us is out-of-date. This behavior is simmetric with respect to
+    this type. It will be included in the payload only if the hash that the
+    server sends us is out-of-date. This behavior is symmetric with respect to
     the C{SERVER_ACCEPTED_TYPES_DIGEST} field described above.
 
 Server->Client Payload
@@ -91,7 +91,7 @@ where:
   - C{EXPECTED_EXCHANGE_TOKEN}: The token (UUID string) that the server expects
     to receive back the next time the client performs an exchange. Since the
     client receives a new token at each exchange, this can be used by the
-    server to detect cloned clients (either the orignal client or the cloned
+    server to detect cloned clients (either the original client or the cloned
     client will eventually send an expired token). The token is sent by the
     client as a special HTTP header (see L{landscape.broker.transport}).
 
@@ -163,7 +163,7 @@ in the role of Sender (which is by far its more burdened role):
     next-expected-sequence in the prior connection, or 0 if there was no
     previous connection.
 
-  - Get back a next-expected-sequence from the server. If that value is is not
+  - Get back a next-expected-sequence from the server. If that value is not
     len(messages) + previous-next-expected, then resynchronize.
 
 It does the following when acting as Receiver:
