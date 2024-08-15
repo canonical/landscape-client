@@ -21,6 +21,7 @@ jobs:
             echo "should-run=true"
           else
             echo "::notice::Repository secret TICSAUTHTOKEN not set. Skipping."
+            exit 1
           fi
 
   TICS:
