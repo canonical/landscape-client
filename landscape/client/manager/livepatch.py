@@ -1,11 +1,14 @@
 import json
+import logging
 import subprocess
+import traceback
 import yaml
 
-from landscape.client.monitor.plugin import DataWatcher
+
+from landscape.client.manager.plugin import DataWatcherManager
 
 
-class LivePatch(DataWatcher):
+class LivePatch(DataWatcherManager):
     """
     Plugin that captures and reports Livepatch status information
     information.
@@ -46,6 +49,7 @@ def get_livepatch_status(format_type):
         data['return_code'] = -2
         data['error'] = str(exc)
         data['output'] = ""
+        logging.error(traceback.format_exc())
     else:
         output = completed_process.stdout.strip()
         try:

@@ -2,8 +2,8 @@ import json
 import yaml
 from unittest import mock
 
-from landscape.client.monitor.livepatch import LivePatch
-from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.client.manager.livepatch import LivePatch
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 def subprocess_livepatch_mock(*args, **kwargs):
@@ -19,20 +19,21 @@ def subprocess_livepatch_mock(*args, **kwargs):
 class LivePatchTest(LandscapeTest):
     """Livepatch status plugin tests."""
 
-    helpers = [MonitorHelper]
+    helpers = [ManagerHelper]
 
     def setUp(self):
         super(LivePatchTest, self).setUp()
+        self.mstore = self.broker_service.message_store
         self.mstore.set_accepted_types(["livepatch"])
 
     def test_livepatch(self):
         """Tests calling livepatch status."""
         plugin = LivePatch()
-        self.monitor.add(plugin)
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = subprocess_livepatch_mock
-            plugin.exchange()
+            self.manager.add(plugin)
+            plugin.run()
 
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)
@@ -47,11 +48,11 @@ class LivePatchTest(LandscapeTest):
     def test_livepatch_when_not_installed(self):
         """Tests calling livepatch when it is not installed."""
         plugin = LivePatch()
-        self.monitor.add(plugin)
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = FileNotFoundError("Not found!")
-            plugin.exchange()
+            self.manager.add(plugin)
+            plugin.run()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["livepatch"])
@@ -61,14 +62,17 @@ class LivePatchTest(LandscapeTest):
         self.assertEqual(message["json"]["return_code"], -1)
         self.assertEqual(message["humane"]["return_code"], -1)
 
-    def test_undefined_exception(self):
+    @mock.patch('landscape.client.manager.livepatch.logging.error')
+    def test_undefined_exception(self, logger_mock):
         """Tests calling livepatch when random exception occurs"""
         plugin = LivePatch()
-        self.monitor.add(plugin)
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = ValueError("Not found!")
-            plugin.exchange()
+            self.manager.add(plugin)
+            plugin.run()
+
+        logger_mock.assert_called()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["livepatch"])
@@ -83,13 +87,13 @@ class LivePatchTest(LandscapeTest):
         If json or yaml parsing error than show exception and unparsed data
         """
         plugin = LivePatch()
-        self.monitor.add(plugin)
 
         invalid_data = "'"
         with mock.patch("subprocess.run") as run_mock:
             run_mock.return_value = mock.Mock(stdout=invalid_data)
             run_mock.return_value.returncode = 0
-            plugin.exchange()
+            self.manager.add(plugin)
+            plugin.run()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["livepatch"])
@@ -104,14 +108,14 @@ class LivePatchTest(LandscapeTest):
         If livepatch is disabled, stdout is empty string
         """
         plugin = LivePatch()
-        self.monitor.add(plugin)
 
         invalid_data = ""
         with mock.patch("subprocess.run") as run_mock:
             run_mock.return_value = mock.Mock(stdout=invalid_data,
                                               stderr='Error')
             run_mock.return_value.returncode = 1
-            plugin.exchange()
+            self.manager.add(plugin)
+            plugin.run()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["livepatch"])
@@ -126,11 +130,11 @@ class LivePatchTest(LandscapeTest):
         """This is so data doesn't keep getting sent if not changed"""
 
         plugin = LivePatch()
-        self.monitor.add(plugin)
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = subprocess_livepatch_mock
-            plugin.exchange()
+            self.manager.add(plugin)
+            plugin.run()
 
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)

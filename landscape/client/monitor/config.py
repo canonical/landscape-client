@@ -20,8 +20,6 @@ ALL_PLUGINS = [
     "SwiftUsage",
     "CephUsage",
     "ComputerTags",
-    "LivePatch",
-    "UbuntuProRebootRequired",
     "SnapServicesMonitor",
 ]
 

@@ -7,16 +7,17 @@ from unittest import mock
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.client.manager.ubuntuproinfo import UbuntuProInfo
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import ManagerHelper
 
 
 class UbuntuProInfoTest(LandscapeTest):
     """Ubuntu Pro info plugin tests."""
 
-    helpers = [MonitorHelper]
+    helpers = [ManagerHelper]
 
     def setUp(self):
         super().setUp()
+        self.mstore = self.broker_service.message_store
         self.mstore.set_accepted_types(["ubuntu-pro-info"])
 
     def test_ubuntu_pro_info(self):
@@ -27,7 +28,7 @@ class UbuntuProInfoTest(LandscapeTest):
             run_mock.return_value = mock.Mock(
                 stdout='"This is a test"',
             )
-            self.monitor.add(plugin)
+            self.manager.add(plugin)
             plugin.run()
 
         run_mock.assert_called()
@@ -39,7 +40,7 @@ class UbuntuProInfoTest(LandscapeTest):
     def test_ubuntu_pro_info_no_pro(self):
         """Tests calling `pro status` when it is not installed."""
         plugin = UbuntuProInfo()
-        self.monitor.add(plugin)
+        self.manager.add(plugin)
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = FileNotFoundError()
@@ -78,7 +79,7 @@ class UbuntuProInfoTest(LandscapeTest):
     def test_persistence_unchanged_data(self):
         """If data hasn't changed, a new message is not sent"""
         plugin = UbuntuProInfo()
-        self.monitor.add(plugin)
+        self.manager.add(plugin)
         data = '"Initial data!"'
 
         with mock.patch("subprocess.run") as run_mock:
@@ -106,7 +107,7 @@ class UbuntuProInfoTest(LandscapeTest):
     def test_persistence_changed_data(self):
         """New data will be sent in a new message in the queue"""
         plugin = UbuntuProInfo()
-        self.monitor.add(plugin)
+        self.manager.add(plugin)
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.return_value = mock.Mock(
@@ -135,7 +136,7 @@ class UbuntuProInfoTest(LandscapeTest):
         """Resetting the plugin will allow a message with identical data to
         be sent"""
         plugin = UbuntuProInfo()
-        self.monitor.add(plugin)
+        self.manager.add(plugin)
         data = '"Initial data!"'
 
         with mock.patch("subprocess.run") as run_mock:
