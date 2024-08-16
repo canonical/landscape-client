@@ -23,6 +23,9 @@ from landscape.client.broker.registration import Identity
 from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.service import BrokerService
 from landscape.client.reactor import LandscapeReactor
+from landscape.client.registration import ClientRegistrationInfo
+from landscape.client.registration import register
+from landscape.client.registration import RegistrationException
 from landscape.client.serviceconfig import ServiceConfig
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.lib import base64
@@ -631,13 +634,15 @@ def decode_base64_ssl_public_certificate(config):
         config.ssl_public_key = store_public_key_data(config, decoded_cert)
 
 
-def setup(config):
+def setup(config) -> Identity:
     """
     Perform steps to ensure that landscape-client is correctly configured
     before we attempt to register it with a landscape server.
 
     If we are not configured to be silent then interrogate the user to provide
     necessary details for registration.
+
+    :returns: a registration identity representing the configuration.
     """
     bootstrap_tree(config)
 
@@ -657,6 +662,15 @@ def setup(config):
     decode_base64_ssl_public_certificate(config)
     config.write()
 
+    persist = Persist(
+        filename=os.path.join(
+            config.data_path,
+            f"{BrokerService.service_name}.bpickle",
+        ),
+    )
+
+    return Identity(config, persist)
+
 
 def restart_client(config):
     """Restart the client to ensure that it's using the new configuration."""
@@ -668,11 +682,6 @@ def restart_client(config):
             ServiceConfig.restart_landscape()
         except ServiceConfigException as exc:
             print_text(str(exc), error=True)
-            print_text(
-                "This machine will be registered with the provided "
-                "details when the client runs.",
-                error=True,
-            )
             exit_code = 2
             if config.ok_no_register:
                 exit_code = 0
@@ -779,112 +788,39 @@ def got_error(failure, reactor, add_result, print=print):
     reactor.stop()
 
 
-def register(
-    config,
-    reactor=None,
-    connector_factory=RemoteBrokerConnector,
-    got_connection=got_connection,
-    max_retries=14,
-    on_error=None,
-    results=None,
-):
-    """Instruct the Landscape Broker to register the client.
+def attempt_registration(
+    identity: Identity,
+    config: LandscapeSetupConfiguration,
+    retries: int = 14,
+) -> int:
+    """Attempts to send a registration message, reporting the result to stdout
+    or stderr. Retries `retries` times.
 
-    The broker will be instructed to reload its configuration and then to
-    attempt a registration.
-
-    @param reactor: The reactor to use.  This parameter is optional because
-        the client charm does not pass it.
-    @param connector_factory: A callable that accepts a reactor and a
-        configuration object and returns a new remote broker connection.  Used
-        primarily for dependency injection.
-    @param got_connection: The handler to trigger when the remote broker
-        connects.  Used primarily for dependency injection.
-    @param max_retries: The number of times to retry connecting to the
-        landscape client service.  The delay between retries is calculated
-        by Twisted and increases geometrically.
-    @param on_error: A callable that will be passed a non-zero positive
-        integer argument in the case that some error occurs.  This is a legacy
-        API provided for use by the client charm.
-    @param results: This parameter provides a mechanism to pre-seed the result
-        of registering.  Used for testing.
+    :returns: an exit code based on the registration result.
     """
-    if reactor is None:
-        reactor = LandscapeReactor()
+    client_info = ClientRegistrationInfo.from_identity(identity)
 
-    if results is None:
-        results = []
-    add_result = results.append
-
-    connector = connector_factory(reactor, config)
-    connection = connector.connect(max_retries=max_retries, quiet=True)
-    connection.addCallback(
-        partial(got_connection, add_result, connector, reactor),
-    )
-    connection.addErrback(
-        partial(got_error, reactor=reactor, add_result=add_result),
-    )
-    reactor.run()
-
-    assert len(results) == 1, "We expect exactly one result."
-    # Results will be things like "success" or "ssl-error".
-    result = results[0]
-
-    # If there was an error and the caller requested that errors be reported
-    # to the on_error callable, then do so.
-    if result != "success" and on_error is not None:
-        on_error(1)
-
-    if isinstance(result, SystemExit):
-        raise result
-
-    set_secure_id(config, "registering")
-
-    return result
-
-
-def report_registration_outcome(what_happened, print=print):
-    """Report the registration interaction outcome to the user in
-    human-readable form.
-    """
-    messages = {
-        "registration-skipped": "Registration skipped.",
-        "success": "Registration request sent successfully.",
-        "unknown-account": "Invalid account name or registration key.",
-        "max-pending-computers": (
-            "Maximum number of computers pending approval reached. ",
-            "Login to your Landscape server account page to manage "
-            "pending computer approvals.",
-        ),
-        "ssl-error": (
-            "\nThe server's SSL information is incorrect, or fails "
-            "signature verification!\n"
-            "If the server is using a self-signed certificate, "
-            "please ensure you supply it with the --ssl-public-key "
-            "parameter."
-        ),
-        "non-ssl-error": (
-            "\nWe were unable to contact the server.\n"
-            "Your internet connection may be down. "
-            "The landscape client will continue to try and contact "
-            "the server periodically."
-        ),
-    }
-    message = messages.get(what_happened)
-    use_std_out = what_happened in {"success", "registration-skipped"}
-    if message:
-        fd = sys.stdout if use_std_out else sys.stderr
-        print(message, file=fd)
-
-
-def determine_exit_code(what_happened):
-    """Return what the application's exit code should be depending on the
-    registration result.
-    """
-    if what_happened in {"success", "registration-skipped"}:
-        return 0
+    for retry in range(retries):
+        try:
+            registration_info = register(client_info, config.url)
+            break
+        except RegistrationException as e:
+            # This is unlikely to be resolved by the time we retry, so we fail
+            # immediately.
+            print(str(e), file=sys.stderr)
+            return 2
+        except Exception as e:
+            print(str(e), file=sys.stderr)
+            print(f"Retrying... (attempt {retry + 1} of {retries})")
     else:
-        return 2  # An error happened
+        # We're finished retrying and haven't succeeded yet.
+        return 2
+
+    set_secure_id(config, registration_info.secure_id)
+    print("Registration request sent successfully")
+    restart_client(config)
+
+    return 0
 
 
 def is_registered(config):
@@ -992,14 +928,13 @@ def main(args, print=print):
 
     # Setup client configuration.
     try:
-        setup(config)
+        identity = setup(config)
     except Exception as e:
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 
     if config.skip_registration:
-        result = "registration-skipped"
-        report_registration_outcome(result, print=print)
+        print("Registration skipped.")
         return
 
     should_register = False
@@ -1017,17 +952,13 @@ def main(args, print=print):
             default=default_answer,
         )
 
-    if should_register or config.silent:
-        restart_client(config)
+    exit_code = 0
     if should_register:
-        # Attempt to register the client.
-        reactor = LandscapeReactor()
-        result = register(
-            config,
-            reactor,
-            on_error=lambda _: set_secure_id(config, None),
-        )
+        exit_code = attempt_registration(identity, config)
+        restart_client(config)
+    elif config.silent:
+        restart_client(config)
     else:
-        result = "registration-skipped"
-    report_registration_outcome(result, print=print)
-    sys.exit(determine_exit_code(result))
+        print("Registration skipped.")
+
+    sys.exit(exit_code)

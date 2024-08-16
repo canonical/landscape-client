@@ -31,11 +31,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
+from typing import Callable
+
 from landscape.lib.compat import _PY3
 from landscape.lib.compat import long
+from landscape.lib.compat import unicode
 
-dumps_table = {}
-loads_table = {}
+dumps_table: dict[type, Callable] = {}
+loads_table: dict[bytes, Callable] = {}
 
 
 def dumps(obj, _dt=dumps_table):

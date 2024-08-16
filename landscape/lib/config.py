@@ -2,6 +2,7 @@ import os.path
 import sys
 from logging import getLogger
 from optparse import OptionParser
+from typing import Sequence
 
 from configobj import ConfigObj
 from configobj import ConfigObjError
@@ -29,8 +30,6 @@ def add_cli_options(parser, filename=None):
 
 class ConfigSpecOptionParser(OptionParser):
 
-    _config_spec_definitions = {}
-
     def __init__(self, unsaved_options=None):
         OptionParser.__init__(self, unsaved_options)
 
@@ -55,13 +54,13 @@ class BaseConfiguration:
     Default values for supported options are set as in make_parser.
     """
 
-    version = None
+    version: str | None = None
 
     required_options = ()
     unsaved_options = ()
-    default_config_filenames = ()
-    default_data_dir = None
-    config_section = None
+    default_config_filenames: Sequence[str] = ()
+    default_data_dir: str | None = None
+    config_section: str | None = None
 
     def __init__(self):
         self._set_options = {}

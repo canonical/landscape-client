@@ -7,6 +7,7 @@ from datetime import datetime
 from datetime import timezone
 from logging import debug
 from optparse import SUPPRESS_HELP
+from typing import Sequence
 
 from twisted.logger import globalLogBeginner
 
@@ -51,7 +52,7 @@ class BaseConfiguration(_BaseConfiguration):
 
     default_config_filename = DEFAULT_CONFIG
     if _is_script():
-        default_config_filenames = (
+        default_config_filenames: Sequence[str] = (
             "landscape-client.conf",
             default_config_filename,
         )

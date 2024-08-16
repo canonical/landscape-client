@@ -67,7 +67,7 @@ class HTTPTransportTest(LandscapeTest):
             payload,
             computer_id="34",
             exchange_token="abcd-efgh",
-            message_api="X.Y",
+            message_api=b"X.Y",
         )
 
         def got_result(ignored):
@@ -141,7 +141,7 @@ class HTTPTransportTest(LandscapeTest):
             transport.exchange,
             "HI",
             computer_id="34",
-            message_api="X.Y",
+            message_api=b"X.Y",
         )
 
         def got_result(ignored):
@@ -190,7 +190,7 @@ class HTTPTransportTest(LandscapeTest):
             transport.exchange,
             "HI",
             computer_id="34",
-            message_api="X.Y",
+            message_api=b"X.Y",
         )
 
         def got_result(ignored):

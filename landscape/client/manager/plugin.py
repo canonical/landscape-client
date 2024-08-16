@@ -82,7 +82,7 @@ class DataWatcherManager(ManagerPlugin):
     a get_data method
     """
 
-    message_type = None
+    message_type: str | None = None
 
     def __init__(self):
         super().__init__()
