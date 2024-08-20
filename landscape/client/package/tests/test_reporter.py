@@ -1187,7 +1187,9 @@ class PackageReporterAptTest(LandscapeTest):
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
             release.write(
-                "Suite: {}-security".format(os_release_info["code-name"]),
+                f"Suite: {os_release_info['code-name']}-security\n"
+                "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
+                "MD5Sum: deadbeef"
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1246,7 +1248,9 @@ class PackageReporterAptTest(LandscapeTest):
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
             release.write(
-                "Suite: {}-backports".format(os_release_info["code-name"]),
+                f"Suite: {os_release_info['code-name']}-backports\n"
+                "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
+                "MD5Sum: deadbeef"
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1269,7 +1273,11 @@ class PackageReporterAptTest(LandscapeTest):
 
         release_path = os.path.join(self.repository_dir, "Release")
         with open(release_path, "w") as release:
-            release.write("Suite: my-personal-backports")
+            release.write(
+                "Suite: my-personal-backports"
+                "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
+                "MD5Sum: deadbeef"
+            )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
 
@@ -1306,11 +1314,17 @@ class PackageReporterAptTest(LandscapeTest):
         official_release_path = os.path.join(self.repository_dir, "Release")
         with open(official_release_path, "w") as release:
             release.write(
-                "Suite: {}-backports".format(os_release_info["code-name"]),
+                f"Suite: {os_release_info['code-name']}-backports\n"
+                "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
+                "MD5Sum: deadbeef"
             )
         unofficial_release_path = os.path.join(other_backport_dir, "Release")
         with open(unofficial_release_path, "w") as release:
-            release.write("Suite: my-personal-backports")
+            release.write(
+                "Suite: my-personal-backports\n"
+                "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
+                "MD5Sum: deadbeef"
+            )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
 
