@@ -43,9 +43,9 @@ class RegisterTestCase(TestCase):
             "https://my-server.local/message-system",
         )
 
-        self.assertEquals(registration_info.insecure_id, 1)
-        self.assertEquals(registration_info.secure_id, "mysecureid")
-        self.assertEquals(registration_info.server_uuid, "thisisaserveruuid")
+        self.assertEqual(registration_info.insecure_id, 1)
+        self.assertEqual(registration_info.secure_id, "mysecureid")
+        self.assertEqual(registration_info.server_uuid, "thisisaserveruuid")
 
     def test_exchange_http_code_error_404(self):
         """If a 404 is raised during the message exchange, a
