@@ -10,6 +10,12 @@ from dataclasses import dataclass
 import json
 import logging
 from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Type
+from typing import Union
 
 from landscape.client.broker.registration import Identity
 from landscape.client.exchange import exchange_messages
@@ -30,18 +36,18 @@ class ClientRegistrationInfo:
     account_name: str
     computer_title: str
 
-    container_info: str | None = None
-    hostagent_uid: str | None = None
-    hostname: str | None = None
+    container_info: Optional[str] = None
+    hostagent_uid: Optional[str] = None
+    hostname: Optional[str] = None
     juju_info: None = None  # We don't send Juju info currently.
-    registration_password: str | None = None
-    tags: str | None = None
-    ubuntu_pro_info: str | None = None
-    vm_info: bytes | None = None
+    registration_password: Optional[str] = None
+    tags: Optional[str] = None
+    ubuntu_pro_info: Optional[str] = None
+    vm_info: Optional[bytes] = None
 
     @classmethod
     def from_identity(
-        cls: type["ClientRegistrationInfo"],
+        cls: Type["ClientRegistrationInfo"],
         identity: Identity,
     ) -> "ClientRegistrationInfo":
         return cls(
@@ -135,7 +141,7 @@ def register(
 
 def _create_message(
     client_info: ClientRegistrationInfo,
-) -> dict[str, list[dict[str, Any]]]:
+) -> Dict[str, List[Dict[str, Any]]]:
     """Serializes `client_info` into a registration message suitable for
     message exchange. Values that are `None` are stripped.
     """
@@ -145,7 +151,7 @@ def _create_message(
     return {"messages": [message]}
 
 
-def _handle_message(message: dict[str, Any]) -> tuple[str, int] | None:
+def _handle_message(message: Dict[str, Any]) -> Union[Tuple[str, int], None]:
     """Parses a single message in the server's response to the registration
     message.
 
@@ -153,18 +159,26 @@ def _handle_message(message: dict[str, Any]) -> tuple[str, int] | None:
     :raises RegistrationException: If the message implies registration did not
         succeed.
     """
-    match message:
-        case {"type": "registration", "info": "unknown-account"}:
+    # Swap this out with (IMO) a reasonable `match` once we drop 3.8 support.
+    message_type = message.get("type")
+
+    if message_type == "registration":
+        info = message.get("info")
+
+        if info == "unknown-account":
             raise RegistrationException(
                 "Invalid account name or registration key."
             )
-        case {"type": "registration", "info": "max-pending-computers"}:
+        elif info == "max-pending-computers":
             raise RegistrationException(
                 "Maximum number of computers pending approval reached. "
                 "Log in to your Landscape server account page to manage "
                 "pending computer approvals."
             )
-        case {"type": "set-id", "id": secure_id, "insecure-id": insecure_id}:
-            return secure_id, insecure_id
-        case _:
-            return None
+    elif (
+        message_type == "set-id"
+        and "id" in message and "insecure-id" in message
+    ):
+        return message["id"], message["insecure-id"]
+
+    return None

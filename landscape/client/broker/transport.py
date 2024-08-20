@@ -1,6 +1,8 @@
 """Low-level server communication."""
 from dataclasses import asdict
 import uuid
+from typing import Optional
+from typing import Union
 
 from landscape import SERVER_API
 from landscape.client.exchange import exchange_messages
@@ -30,10 +32,10 @@ class HTTPTransport:
     def exchange(
         self,
         payload: dict,
-        computer_id: str | None = None,
-        exchange_token: str | None = None,
+        computer_id: Optional[str] = None,
+        exchange_token: Optional[str] = None,
         message_api: bytes = SERVER_API,
-    ) -> dict | None:
+    ) -> Union[dict, None]:
         """Exchange message data with the server.
 
         :param payload: The object to send. It must be `bpickle`-compatible.

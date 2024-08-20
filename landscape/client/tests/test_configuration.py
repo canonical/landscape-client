@@ -6,13 +6,11 @@ from functools import partial
 from unittest import mock
 
 from twisted.internet.defer import Deferred
-from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
 
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
-from landscape.client.broker.tests.helpers import RemoteBrokerHelper
 from landscape.client.configuration import bootstrap_tree
 from landscape.client.configuration import ConfigurationError
 from landscape.client.configuration import done
@@ -20,7 +18,6 @@ from landscape.client.configuration import exchange_failure
 from landscape.client.configuration import EXIT_NOT_REGISTERED
 from landscape.client.configuration import failure
 from landscape.client.configuration import get_secure_id
-from landscape.client.configuration import got_connection
 from landscape.client.configuration import got_error
 from landscape.client.configuration import handle_registration_errors
 from landscape.client.configuration import ImportOptionError
@@ -30,7 +27,6 @@ from landscape.client.configuration import LandscapeSetupScript
 from landscape.client.configuration import main
 from landscape.client.configuration import print_text
 from landscape.client.configuration import prompt_yes_no
-from landscape.client.configuration import register
 from landscape.client.configuration import registration_info_text
 from landscape.client.configuration import restart_client
 from landscape.client.configuration import set_secure_id
@@ -39,7 +35,6 @@ from landscape.client.configuration import show_help
 from landscape.client.configuration import store_public_key_data
 from landscape.client.configuration import success
 from landscape.client.serviceconfig import ServiceConfigException
-from landscape.client.tests.helpers import FakeBrokerServiceHelper
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.amp import MethodCallError
 from landscape.lib.compat import ConfigParser

@@ -6,6 +6,9 @@ import logging
 from pprint import pformat
 import time
 from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import pycurl
 
@@ -21,16 +24,16 @@ class ServerResponse:
     """The HTTP response from the server after a message exchange."""
 
     server_uuid: str
-    messages: list[dict[str, Any]]
+    messages: List[Dict[str, Any]]
 
 
 def exchange_messages(
     payload: dict,
     server_url: str,
     *,
-    cainfo: str | None = None,
-    computer_id: str | None = None,
-    exchange_token: str | None = None,
+    cainfo: Optional[str] = None,
+    computer_id: Optional[str] = None,
+    exchange_token: Optional[str] = None,
         server_api: str = SERVER_API.decode(),
 ) -> ServerResponse:
     """Sends `payload` via HTTP(S) to `server_url`, parsing and returning the

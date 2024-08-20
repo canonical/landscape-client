@@ -17,12 +17,10 @@ from urllib.parse import urlparse
 from landscape.client import GROUP
 from landscape.client import IS_SNAP
 from landscape.client import USER
-from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.service import BrokerService
-from landscape.client.reactor import LandscapeReactor
 from landscape.client.registration import ClientRegistrationInfo
 from landscape.client.registration import register
 from landscape.client.registration import RegistrationException

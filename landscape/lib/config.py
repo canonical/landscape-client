@@ -2,6 +2,7 @@ import os.path
 import sys
 from logging import getLogger
 from optparse import OptionParser
+from typing import Optional
 from typing import Sequence
 
 from configobj import ConfigObj
@@ -54,13 +55,13 @@ class BaseConfiguration:
     Default values for supported options are set as in make_parser.
     """
 
-    version: str | None = None
+    version: Optional[str] = None
 
     required_options = ()
     unsaved_options = ()
     default_config_filenames: Sequence[str] = ()
-    default_data_dir: str | None = None
-    config_section: str | None = None
+    default_data_dir: Optional[str] = None
+    config_section: Optional[str] = None
 
     def __init__(self):
         self._set_options = {}
