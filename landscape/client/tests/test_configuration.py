@@ -1,25 +1,16 @@
 import os
-import sys
 import textwrap
 import unittest
-from functools import partial
 from unittest import mock
 
-from twisted.internet.defer import Deferred
 from twisted.internet.defer import succeed
 
 from landscape.client.broker.registration import Identity
-from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.client.configuration import bootstrap_tree
 from landscape.client.configuration import ConfigurationError
-from landscape.client.configuration import done
-from landscape.client.configuration import exchange_failure
 from landscape.client.configuration import EXIT_NOT_REGISTERED
-from landscape.client.configuration import failure
 from landscape.client.configuration import get_secure_id
-from landscape.client.configuration import got_error
-from landscape.client.configuration import handle_registration_errors
 from landscape.client.configuration import ImportOptionError
 from landscape.client.configuration import is_registered
 from landscape.client.configuration import LandscapeSetupConfiguration
@@ -33,10 +24,8 @@ from landscape.client.configuration import set_secure_id
 from landscape.client.configuration import setup
 from landscape.client.configuration import show_help
 from landscape.client.configuration import store_public_key_data
-from landscape.client.configuration import success
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.amp import MethodCallError
 from landscape.lib.compat import ConfigParser
 from landscape.lib.compat import StringIO
 from landscape.lib.fetch import HTTPCodeError
@@ -62,182 +51,6 @@ url = https://landscape.canonical.com/message-system
         config = LandscapeSetupConfiguration()
         config.load(args)
         return config
-
-
-class SuccessTests(unittest.TestCase):
-    def test_success(self):
-        """The success handler records the success."""
-        results = []
-        success(results.append)
-        self.assertEqual(["success"], results)
-
-
-class FailureTests(unittest.TestCase):
-    def test_failure(self):
-        """The failure handler records the failure and returns non-zero."""
-        results = []
-        self.assertNotEqual(0, failure(results.append, "an-error"))
-        self.assertEqual(["an-error"], results)
-
-
-class ExchangeFailureTests(unittest.TestCase):
-    def test_exchange_failure_ssl(self):
-        """The exchange_failure() handler records whether or not the failure
-        involved SSL or not and returns non-zero."""
-        results = []
-        self.assertNotEqual(
-            0,
-            exchange_failure(results.append, ssl_error=True),
-        )
-        self.assertEqual(["ssl-error"], results)
-
-    def test_exchange_failure_non_ssl(self):
-        """
-        The exchange_failure() handler records whether or not the failure
-        involved SSL or not and returns non-zero.
-        """
-        results = []
-        self.assertNotEqual(
-            0,
-            exchange_failure(results.append, ssl_error=False),
-        )
-        self.assertEqual(["non-ssl-error"], results)
-
-
-class HandleRegistrationErrorsTests(unittest.TestCase):
-    def test_handle_registration_errors_traps(self):
-        """
-        The handle_registration_errors() function traps RegistrationError
-        and MethodCallError errors.
-        """
-
-        class FauxFailure:
-            def trap(self, *trapped):
-                self.trapped_exceptions = trapped
-
-        faux_connector = FauxConnector()
-        faux_failure = FauxFailure()
-
-        results = []
-        add_result = results.append
-
-        self.assertNotEqual(
-            0,
-            handle_registration_errors(
-                add_result,
-                faux_failure,
-                faux_connector,
-            ),
-        )
-        self.assertTrue(
-            [RegistrationError, MethodCallError],
-            faux_failure.trapped_exceptions,
-        )
-
-    def test_handle_registration_errors_disconnects_cleanly(self):
-        """
-        The handle_registration_errors function disconnects the broker
-        connector cleanly.
-        """
-
-        class FauxFailure:
-            def trap(self, *trapped):
-                pass
-
-        faux_connector = FauxConnector()
-        faux_failure = FauxFailure()
-
-        results = []
-        add_result = results.append
-
-        self.assertNotEqual(
-            0,
-            handle_registration_errors(
-                add_result,
-                faux_failure,
-                faux_connector,
-            ),
-        )
-        self.assertTrue(faux_connector.was_disconnected)
-
-    def test_handle_registration_errors_as_errback(self):
-        """
-        The handle_registration_errors functions works as an errback.
-
-        This test was put in place to assert the parameters passed to the
-        function when used as an errback are in the correct order.
-        """
-        faux_connector = FauxConnector()
-        calls = []
-
-        def i_raise(result):
-            calls.append(True)
-            return RegistrationError("Bad mojo")
-
-        results = []
-        add_result = results.append
-
-        deferred = Deferred()
-        deferred.addCallback(i_raise)
-        deferred.addErrback(
-            partial(handle_registration_errors, add_result),
-            faux_connector,
-        )
-        deferred.callback("")  # This kicks off the callback chain.
-
-        self.assertEqual([True], calls)
-
-
-class DoneTests(unittest.TestCase):
-    def test_done(self):
-        """The done() function handles cleaning up."""
-
-        class FauxConnector:
-            was_disconnected = False
-
-            def disconnect(self):
-                self.was_disconnected = True
-
-        class FauxReactor:
-            was_stopped = False
-
-            def stop(self):
-                self.was_stopped = True
-
-        faux_connector = FauxConnector()
-        faux_reactor = FauxReactor()
-
-        done(None, faux_connector, faux_reactor)
-        self.assertTrue(faux_connector.was_disconnected)
-        self.assertTrue(faux_reactor.was_stopped)
-
-
-class GotErrorTests(unittest.TestCase):
-    def test_got_error(self):
-        """The got_error() function handles displaying errors and exiting."""
-
-        class FauxFailure:
-            def getTraceback(self):  # noqa: N802
-                return "traceback"
-
-        results = []
-        printed = []
-
-        def faux_print(text, file):
-            printed.append((text, file))
-
-        mock_reactor = mock.Mock()
-
-        got_error(
-            FauxFailure(),
-            reactor=mock_reactor,
-            add_result=results.append,
-            print=faux_print,
-        )
-        mock_reactor.stop.assert_called_once_with()
-
-        self.assertIsInstance(results[0], SystemExit)
-        self.assertEqual([("traceback", sys.stderr)], printed)
 
 
 class PrintTextTest(LandscapeTest):

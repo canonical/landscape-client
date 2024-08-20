@@ -11,7 +11,6 @@ import re
 import shlex
 import sys
 import textwrap
-from functools import partial
 from urllib.parse import urlparse
 
 from landscape.client import GROUP
@@ -19,7 +18,6 @@ from landscape.client import IS_SNAP
 from landscape.client import USER
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
-from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.service import BrokerService
 from landscape.client.registration import ClientRegistrationInfo
 from landscape.client.registration import register
@@ -27,7 +25,6 @@ from landscape.client.registration import RegistrationException
 from landscape.client.serviceconfig import ServiceConfig
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.lib import base64
-from landscape.lib.amp import MethodCallError
 from landscape.lib.bootstrap import BootstrapDirectory
 from landscape.lib.bootstrap import BootstrapList
 from landscape.lib.compat import input
@@ -37,7 +34,6 @@ from landscape.lib.fs import create_binary_file
 from landscape.lib.network import get_fqdn
 from landscape.lib.persist import Persist
 from landscape.lib.tag import is_valid_tag
-from landscape.lib.twisted_util import gather_results
 
 
 EXIT_NOT_REGISTERED = 5
@@ -716,74 +712,6 @@ def store_public_key_data(config, certificate_data):
     print_text(f"Writing SSL CA certificate to {key_filename}...")
     create_binary_file(key_filename, certificate_data)
     return key_filename
-
-
-def failure(add_result, reason=None):
-    """Handle a failed communication by recording the kind of failure."""
-    if reason:
-        add_result(reason)
-
-
-def exchange_failure(add_result, ssl_error=False):
-    """Handle a failed call by recording if the failure was SSL-related."""
-    if ssl_error:
-        add_result("ssl-error")
-    else:
-        add_result("non-ssl-error")
-
-
-def handle_registration_errors(add_result, failure, connector):
-    """Handle registration errors.
-
-    The connection to the broker succeeded but the registration itself
-    failed, because of invalid credentials or excessive pending computers.
-    We need to trap the exceptions so they don't stacktrace (we know what is
-    going on), and try to cleanly disconnect from the broker.
-
-    Note: "results" contains a failure indication already (or will shortly)
-    since the registration-failed signal will fire."""
-    error = failure.trap(RegistrationError, MethodCallError)
-    if error is RegistrationError:
-        add_result(str(failure.value))
-    connector.disconnect()
-
-
-def success(add_result):
-    """Handle a successful communication by recording the fact."""
-    add_result("success")
-
-
-def done(ignored_result, connector, reactor):
-    """Clean up after communicating with the server."""
-    connector.disconnect()
-    reactor.stop()
-
-
-def got_connection(add_result, connector, reactor, remote):
-    """Handle becoming connected to a broker."""
-    handlers = {
-        "registration-done": partial(success, add_result),
-        "registration-failed": partial(failure, add_result),
-        "exchange-failed": partial(exchange_failure, add_result),
-    }
-    deferreds = [
-        remote.call_on_event(handlers),
-        remote.register().addErrback(
-            partial(handle_registration_errors, add_result),
-            connector,
-        ),
-    ]
-    results = gather_results(deferreds)
-    results.addCallback(done, connector, reactor)
-    return results
-
-
-def got_error(failure, reactor, add_result, print=print):
-    """Handle errors contacting broker."""
-    print(failure.getTraceback(), file=sys.stderr)
-    # Can't just raise SystemExit; it would be ignored by the reactor.
-    add_result(SystemExit())
-    reactor.stop()
 
 
 def attempt_registration(
