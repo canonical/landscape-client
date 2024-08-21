@@ -34,7 +34,7 @@ def exchange_messages(
     cainfo: Optional[str] = None,
     computer_id: Optional[str] = None,
     exchange_token: Optional[str] = None,
-        server_api: str = SERVER_API.decode(),
+    server_api: str = SERVER_API.decode(),
 ) -> ServerResponse:
     """Sends `payload` via HTTP(S) to `server_url`, parsing and returning the
     response.
