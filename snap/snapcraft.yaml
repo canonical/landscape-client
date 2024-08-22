@@ -48,6 +48,7 @@ apps:
       - process-control
       - network-control
       - network-manager
+      - log-observe
       - var-lib-ubuntu-advantage-status
   config:
     command: usr/bin/landscape-config
