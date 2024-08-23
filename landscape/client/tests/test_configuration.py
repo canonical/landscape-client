@@ -592,23 +592,17 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     def setUp(self):
         super().setUp()
-        getuid_patcher = mock.patch("os.getuid", return_value=0)
-        bootstrap_tree_patcher = mock.patch(
-            "landscape.client.configuration.bootstrap_tree",
-        )
-        set_secure_id_patch = mock.patch(
-            "landscape.client.configuration.set_secure_id",
-        )
-        self.mock_getuid = getuid_patcher.start()
-        self.mock_bootstrap_tree = bootstrap_tree_patcher.start()
-        set_secure_id_patch.start()
 
-        def cleanup():
-            getuid_patcher.stop()
-            bootstrap_tree_patcher.stop()
-            set_secure_id_patch.stop()
+        self.mock_getuid = mock.patch("os.getuid", return_value=0).start()
+        patches = mock.patch.multiple(
+            "landscape.client.configuration",
+            bootstrap_tree=mock.DEFAULT,
+            init_app_logging=mock.DEFAULT,
+            set_secure_id=mock.DEFAULT,
+        ).start()
+        self.mock_bootstrap_tree = patches["bootstrap_tree"]
 
-        self.addCleanup(cleanup)
+        self.addCleanup(mock.patch.stopall)
 
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
@@ -2264,6 +2258,7 @@ class RegistrationInfoTest(LandscapeTest):
 
     def setUp(self):
         super().setUp()
+
         self.custom_args = ["hello.py"]  # Fake python script name
         self.account_name = "world"
         self.data_path = self.makeDir()
@@ -2278,6 +2273,10 @@ class RegistrationInfoTest(LandscapeTest):
                 self.data_path,
             ),
         )
+
+        mock.patch("landscape.client.configuration.init_app_logging").start()
+
+        self.addCleanup(mock.patch.stopall)
 
     def test_not_registered(self):
         """False when client is not registered"""
