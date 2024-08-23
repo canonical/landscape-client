@@ -5,6 +5,7 @@ for the C{landscape-config} script.
 """
 import getpass
 import io
+import logging
 import os
 import pwd
 import re
@@ -31,6 +32,7 @@ from landscape.lib.compat import input
 from landscape.lib.fetch import fetch
 from landscape.lib.fetch import FetchError
 from landscape.lib.fs import create_binary_file
+from landscape.lib.logging import init_app_logging
 from landscape.lib.network import get_fqdn
 from landscape.lib.persist import Persist
 from landscape.lib.tag import is_valid_tag
@@ -727,17 +729,20 @@ def attempt_registration(
     client_info = ClientRegistrationInfo.from_identity(identity)
 
     for retry in range(retries):
+        if retry > 0:
+            print(f"Retrying... (attempt {retry + 1} of {retries})")
+
         try:
             registration_info = register(client_info, config.url)
             break
         except RegistrationException as e:
             # This is unlikely to be resolved by the time we retry, so we fail
             # immediately.
-            print(str(e), file=sys.stderr)
+            logging.error(f"Registration failed: {e}")
             return 2
-        except Exception as e:
-            print(str(e), file=sys.stderr)
-            print(f"Retrying... (attempt {retry + 1} of {retries})")
+        except Exception:
+            # Retrying...
+            logging.exception("Registration failed")
     else:
         # We're finished retrying and haven't succeeded yet.
         return 2
@@ -812,13 +817,19 @@ def get_secure_id(config):
 
 def main(args, print=print):
     """Interact with the user and the server to set up client configuration."""
-
     config = LandscapeSetupConfiguration()
     try:
         config.load(args)
     except ImportOptionError as error:
         print_text(str(error), error=True)
         sys.exit(1)
+
+    init_app_logging(
+        config.log_dir,
+        config.log_level,
+        "landscape-config",
+        config.quiet
+    )
 
     if config.skip_registration and config.force_registration:
         sys.exit(

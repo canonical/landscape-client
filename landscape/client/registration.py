@@ -8,7 +8,6 @@ exchange state is consistent when using these functions.
 from dataclasses import asdict
 from dataclasses import dataclass
 import json
-import logging
 from typing import Any
 from typing import Dict
 from typing import List
@@ -88,7 +87,6 @@ def register(
     :raises RegistrationException: if the registration fails for any reason.
     """
     message = _create_message(client_info)
-    logging.debug(f"Sending registration message: {message}")
 
     try:
         response = exchange_messages(message, server_url)
