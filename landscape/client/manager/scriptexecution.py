@@ -18,7 +18,9 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.python.compat import unicode
 
 from landscape import VERSION
+from landscape.client import GROUP
 from landscape.client import IS_SNAP
+from landscape.client import USER
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
@@ -319,6 +321,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                     self.registry.config.data_path,
                     "broker.bpickle",
                 ),
+                user=USER,
+                group=GROUP,
             )
             persist = persist.root_at("registration")
             computer_id = persist.get("secure-id")

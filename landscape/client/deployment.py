@@ -13,6 +13,8 @@ from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
 from landscape.client import DEFAULT_CONFIG
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client import snap_http
 from landscape.client.snap_utils import get_snap_info
 from landscape.client.upgraders import UPGRADE_MANAGERS
@@ -239,7 +241,7 @@ def get_versioned_persist(service):
     Load a L{Persist} database for the given C{service} and upgrade or
     mark as current, as necessary.
     """
-    persist = Persist(filename=service.persist_filename)
+    persist = Persist(filename=service.persist_filename, user=USER, group=GROUP)
     upgrade_manager = UPGRADE_MANAGERS[service.service_name]
     if os.path.exists(service.persist_filename):
         upgrade_manager.apply(persist)

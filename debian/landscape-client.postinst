@@ -30,15 +30,15 @@ case "$1" in
         if [ ! -f $CONFIG_FILE ]; then
             # Create new configuration, with private mode
             TEMPFILE=$(mktemp -p /etc/landscape)
-            cat > $TEMPFILE <<END
+            cat > "$TEMPFILE" <<END
 [client]
 log_level = info
 url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
 data_path = /var/lib/landscape/client
 END
-            chown landscape $TEMPFILE
-            mv $TEMPFILE $CONFIG_FILE
+            chown landscape:landscape "$TEMPFILE"
+            mv "$TEMPFILE" "$CONFIG_FILE"
 
             # Get configuration values from debconf
             db_get $PACKAGE/computer_title
@@ -65,7 +65,7 @@ END
             TAGS="${RET}"
 
             # If we got the needed information, actually do the registration.
-            if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
+            if [ -n "$ACCOUNT_NAME" ] && [ -n "$COMPUTER_TITLE" ]; then
                 landscape-config --silent --ok-no-register \
                     --computer-title "$COMPUTER_TITLE" \
                     --account-name "$ACCOUNT_NAME" \
@@ -82,7 +82,7 @@ END
         else
             # Fix non-private permissions
             chmod 0600 $CONFIG_FILE
-            chown landscape $CONFIG_FILE
+            chown landscape:landscape $CONFIG_FILE
         fi
 
         # Remove statoverride for smart-update, if there's one
@@ -101,14 +101,14 @@ END
         # In response to bug 1508110 we need to trigger a complete update of
         # user information.  The flag file will be removed by the client when
         # the update completes.
-        DATA_PATH="`grep ^data_path /etc/landscape/client.conf | cut -d= -f2 | tr -d '[[:space:]]'`"
+        DATA_PATH="$(grep ^data_path /etc/landscape/client.conf | cut -d= -f2 | tr -d '[:space:]')"
         if [ -z "$DATA_PATH" ]; then
             DATA_PATH=/var/lib/landscape/client
         fi
-        install --owner=landscape --directory $DATA_PATH
+        install --owner=landscape --group=landscape --directory "$DATA_PATH"
         USER_UPDATE_FLAG_FILE="$DATA_PATH/user-update-flag"
-        install --owner=landscape /dev/null $USER_UPDATE_FLAG_FILE
-        echo "This file indicates that the Landscape client needs to send updated user information to the server." >> $USER_UPDATE_FLAG_FILE
+        install --owner=landscape --group=landscape /dev/null "$USER_UPDATE_FLAG_FILE"
+        echo "This file indicates that the Landscape client needs to send updated user information to the server." >> "$USER_UPDATE_FLAG_FILE"
 
         # To work around bug #1735100 we rewrite file-local landscape sources
         # with the trusted flag, as they have no release file, thus are
@@ -133,7 +133,7 @@ END
         # Migrate old sysvinit config to systemd
         DEFAULTS=/etc/default/landscape-client
         if [ -f $DEFAULTS ]; then
-            RUN=$(. $DEFAULTS; echo $RUN)
+            RUN=$(. "$DEFAULTS"; echo "$RUN")
             if [ "$RUN" = "1" ]; then
                 systemctl enable landscape-client.service
             fi

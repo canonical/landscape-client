@@ -1,6 +1,8 @@
 import logging
 import os
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.monitor.plugin import DataWatcher
 from landscape.lib.compat import _PY3
 from landscape.lib.compat import ConfigParser
@@ -32,7 +34,11 @@ class KeystoneToken(DataWatcher):
             self.registry.config.data_path,
             "keystone.bpickle",
         )
-        self._persist = Persist(filename=self._persist_filename)
+        self._persist = Persist(
+            filename=self._persist_filename,
+            user=USER,
+            group=GROUP,
+        )
         self.registry.reactor.call_every(
             self.registry.config.flush_interval,
             self.flush,
