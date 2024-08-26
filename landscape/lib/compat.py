@@ -1,36 +1,19 @@
 # flake8: noqa
 # TiCS: disabled
 
-_PY3 = str != bytes
+_PY3 = True
 
+import pickle as cPickle
+from configparser import ConfigParser, NoOptionError
 
-if _PY3:
-    import _pickle as cPickle
-    from configparser import ConfigParser, NoOptionError
+SafeConfigParser = ConfigParser
 
-    SafeConfigParser = ConfigParser
+import _thread as thread
 
-    import _thread as thread
+from io import StringIO
 
-    from io import StringIO
+stringio = cstringio = StringIO
+from builtins import input
 
-    stringio = cstringio = StringIO
-    from builtins import input
-
-    unicode = str
-    long = int
-
-else:
-    import cPickle
-    from ConfigParser import ConfigParser, NoOptionError, SafeConfigParser
-
-    import thread
-
-    from StringIO import StringIO
-
-    stringio = StringIO
-    from cStringIO import StringIO as cstringio
-
-    input = raw_input
-    long = long
-    unicode = unicode
+unicode = str
+long = int

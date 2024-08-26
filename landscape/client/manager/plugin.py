@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Optional
 
 from twisted.internet.defer import maybeDeferred
 
@@ -82,7 +83,7 @@ class DataWatcherManager(ManagerPlugin):
     a get_data method
     """
 
-    message_type = None
+    message_type: Optional[str] = None
 
     def __init__(self):
         super().__init__()

@@ -60,7 +60,11 @@ def get_assertions(assertion_type: str):
     # signature
 
     # extract the assertion headers + their signatures as separate assertions
+    if not isinstance(response.result, bytes):
+        return
+
     assertions = []
+
     result = response.result.decode()
     if result:
         sections = result.split("\n\n")
