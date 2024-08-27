@@ -1,8 +1,6 @@
 """Deployment code for the monitor."""
 import os
 
-from landscape.client import GROUP
-from landscape.client import USER
 from landscape.client.amp import ComponentPublisher
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.exchange import MessageExchange
