@@ -191,6 +191,12 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser = super().make_parser()
 
         parser.add_option(
+            "--manage-sources-list-d",
+            default=True,
+            help="Repository profiles manage the files in"
+            "’etc/apt/sources.list.d'.",
+        )
+        parser.add_option(
             "--import",
             dest="import_from",
             metavar="FILENAME_OR_URL",
