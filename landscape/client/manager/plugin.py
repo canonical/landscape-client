@@ -4,6 +4,8 @@ from typing import Optional
 
 from twisted.internet.defer import maybeDeferred
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.broker.client import BrokerClientPlugin
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
@@ -95,7 +97,11 @@ class DataWatcherManager(ManagerPlugin):
             self.registry.config.data_path,
             self.message_type + '.manager.bpkl',
         )
-        self._persist = Persist(filename=self._persist_filename)
+        self._persist = Persist(
+            filename=self._persist_filename,
+            user=USER,
+            group=GROUP
+        )
         self.call_on_accepted(self.message_type, self.send_message)
 
     def run(self):

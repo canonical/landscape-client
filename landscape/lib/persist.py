@@ -21,6 +21,7 @@
 import copy
 import os
 import re
+import shutil
 import sys
 
 from twisted.python.compat import StringType  # Py2: basestring, Py3: str
@@ -67,7 +68,7 @@ class Persist:
 
     """
 
-    def __init__(self, backend=None, filename=None):
+    def __init__(self, backend=None, filename=None, user=None, group=None):
         """
         @param backend: The backend to use. If none is specified,
             L{BPickleBackend} will be used.
@@ -85,6 +86,8 @@ class Persist:
         self._readonly = False
         self._modified = False
         self._config = self
+        self._user = user
+        self._group = group
         self.filename = filename
         if filename is not None and os.path.exists(filename):
             self.load(filename)
@@ -169,6 +172,17 @@ class Persist:
         if dirname and not os.path.isdir(dirname):
             os.makedirs(dirname)
         self._backend.save(filepath, self._hardmap)
+
+        if self._user is not None or self._group is not None:
+            try:
+                if dirname:
+                    shutil.chown(dirname, user=self._user, group=self._group)
+                shutil.chown(filepath, user=self._user, group=self._group)
+            except PermissionError:
+                # A perist directory has been selected that can't be owned by
+                # landscape:landscape. This often happens in /tmp for tests,
+                # but there could be other reasons. Just leave it be.
+                pass
 
     def _traverse(self, obj, path, default=NOTHING, setvalue=NOTHING):
         if setvalue is not NOTHING:
@@ -642,6 +656,3 @@ class BPickleBackend(Backend):
     def save(self, filepath, map):
         with open(filepath, "wb") as fd:
             fd.write(self._bpickle.dumps(map))
-
-
-# vim:ts=4:sw=4:et

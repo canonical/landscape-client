@@ -26,6 +26,7 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
 from landscape.client import IS_SNAP
+from landscape.client import GROUP
 from landscape.client import USER
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.amp import RemoteManagerConnector
@@ -651,26 +652,26 @@ class WatchDogService(Service):
 
 bootstrap_list = BootstrapList(
     [
-        BootstrapDirectory("$data_path", USER, "root", 0o755),
-        BootstrapDirectory("$data_path/package", USER, "root", 0o755),
-        BootstrapDirectory("$data_path/package/hash-id", USER, "root", 0o755),
-        BootstrapDirectory("$data_path/package/binaries", USER, "root", 0o755),
+        BootstrapDirectory("$data_path", USER, GROUP, 0o755),
+        BootstrapDirectory("$data_path/package", USER, GROUP, 0o755),
+        BootstrapDirectory("$data_path/package/hash-id", USER, GROUP, 0o755),
+        BootstrapDirectory("$data_path/package/binaries", USER, GROUP, 0o755),
         BootstrapDirectory(
             "$data_path/package/upgrade-tool",
             USER,
             "root",
             0o755,
         ),
-        BootstrapDirectory("$data_path/messages", USER, "root", 0o755),
-        BootstrapDirectory("$data_path/sockets", USER, "root", 0o750),
+        BootstrapDirectory("$data_path/messages", USER, GROUP, 0o755),
+        BootstrapDirectory("$data_path/sockets", USER, GROUP, 0o750),
         BootstrapDirectory(
             "$data_path/custom-graph-scripts",
             USER,
-            "root",
+            GROUP,
             0o755,
         ),
-        BootstrapDirectory("$log_dir", USER, "root", 0o755),
-        BootstrapFile("$data_path/package/database", USER, "root", 0o644),
+        BootstrapDirectory("$log_dir", USER, GROUP, 0o755),
+        BootstrapFile("$data_path/package/database", USER, GROUP, 0o644),
     ],
 )
 

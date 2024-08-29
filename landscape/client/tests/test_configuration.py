@@ -2349,6 +2349,8 @@ class SetSecureIdTest(LandscapeTest):
 
         Persist.assert_called_once_with(
             filename="/tmp/landscape/broker.bpickle",
+            user="landscape",
+            group="landscape",
         )
         Persist().save.assert_called_once_with()
         Identity.assert_called_once_with(config, Persist())
