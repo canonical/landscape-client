@@ -2,7 +2,7 @@ import io
 import os.path
 import sys
 import unittest
-from argparse import ArgumentParser
+from argparse import ArgumentParser, SUPPRESS
 from textwrap import dedent
 from unittest import mock
 
@@ -158,6 +158,59 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         # this is the highest precedence.
         self.config.config = explicit_filename
         self.assertEqual(self.config.get_config_filename(), explicit_filename)
+
+    # argparse CLI parsing
+
+    def test_default_positional_argument(self):
+        self.reset_config(cfg_class(foo_bar=None))
+        self.config_class.config = None
+        self.write_config_file()
+
+        self.config.load(["--foo-bar", "ooga"])
+        self.assertEqual(self.config.foo_bar, "ooga")
+        self.assertEqual(self.config.positional, SUPPRESS)
+
+    def test_single_positional_argument(self):
+        self.reset_config(cfg_class(foo_bar=None))
+        self.config_class.config = None
+        self.write_config_file()
+
+        self.config.load(["bar", "--foo-bar", "ooga"])
+        self.assertEqual(self.config.foo_bar, "ooga")
+        self.assertEqual(self.config.positional, ["bar"])
+
+    def test_intermixed_positional_arguments(self):
+        self.reset_config(cfg_class(foo_bar=None, extra_bar=None))
+        self.config_class.config = None
+        self.write_config_file()
+
+        self.config.load(
+            [
+                "bar",
+                "--foo-bar",
+                "ooga",
+                "b1",
+                "b2",
+                "--extra-bar",
+                "foo",
+                "b3",
+            ]
+        )
+        self.assertEqual(self.config.foo_bar, "ooga")
+        self.assertEqual(self.config.extra_bar, "foo")
+        self.assertEqual(self.config.positional, ["bar", "b1", "b2", "b3"])
+
+    def test_positional_arguments_unsaved(self):
+        self.reset_config(cfg_class())
+        self.config_class.config = None
+        self.write_config_file()
+
+        self.config.load(["foo", "bar"])
+        self.assertEqual(self.config.positional, ["foo", "bar"])
+        self.config.write()
+
+        self.config.load([])
+        self.assertEqual(self.config.positional, SUPPRESS)
 
     # ConfigObj
 

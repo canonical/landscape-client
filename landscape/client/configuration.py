@@ -195,8 +195,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--manage-sources-list-d",
             nargs="?",
             default=True,
-            help="Repository profiles manage the files in"
-            "’etc/apt/sources.list.d'.",
+            help="Repository profiles manage the files in "
+            "’etc/apt/sources.list.d'. (default: true)",
         )
         parser.add_argument(
             "--import",
