@@ -192,13 +192,6 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser = super().make_parser()
 
         parser.add_argument(
-            "--manage-sources-list-d",
-            nargs="?",
-            default=True,
-            help="Repository profiles manage the files in "
-            "’etc/apt/sources.list.d'. (default: true)",
-        )
-        parser.add_argument(
             "--import",
             dest="import_from",
             metavar="FILENAME_OR_URL",
@@ -220,6 +213,13 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             default="",
             help="A comma-separated list of manager plugins "
             "to enable in addition to the defaults.",
+        )
+        parser.add_argument(
+            "--manage-sources-list-d",
+            nargs="?",
+            default=True,
+            help="Repository profiles manage the files in "
+            "’etc/apt/sources.list.d'. (default: true)",
         )
         parser.add_argument(
             "-n",
