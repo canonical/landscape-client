@@ -217,7 +217,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_argument(
             "--manage-sources-list-d",
             nargs="?",
-            default=True,
+            default="true",
+            const="true",
             help="Repository profiles manage the files in "
             "’etc/apt/sources.list.d'. (default: true)",
         )

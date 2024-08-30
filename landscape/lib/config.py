@@ -112,7 +112,7 @@ class BaseConfiguration:
                     option = action
                     break
             if option is not None and option.type is not None:
-                if option.nargs is None or option.nargs == 1:
+                if option.nargs in [None, 1, "?"]:
                     return option.type(value)
                 else:
                     return tuple([option.type(v) for v in value])

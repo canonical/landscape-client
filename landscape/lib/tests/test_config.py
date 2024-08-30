@@ -25,6 +25,19 @@ class BabbleConfiguration(BaseConfiguration):
         return parser
 
 
+class OptionalArgConfiguration(BaseConfiguration):
+    config_section = "my-config"
+
+    def make_parser(self):
+        parser = super().make_parser()
+        parser.add_argument("--test")
+        parser.add_argument(
+            "--foo-bar", nargs="?", default="foofoo", const="foofoo"
+        )
+
+        return parser
+
+
 def cfg_class(section=None, **defaults):
     class MyConfiguration(BaseConfiguration):
         config_section = section or "my-config"
@@ -161,7 +174,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
     # argparse CLI parsing
 
-    def test_default_positional_argument(self):
+    def test_parse_default_positional_argument(self):
         self.reset_config(cfg_class(foo_bar=None))
         self.config_class.config = None
         self.write_config_file()
@@ -170,7 +183,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.foo_bar, "ooga")
         self.assertEqual(self.config.positional, SUPPRESS)
 
-    def test_single_positional_argument(self):
+    def test_parse_single_positional_argument(self):
         self.reset_config(cfg_class(foo_bar=None))
         self.config_class.config = None
         self.write_config_file()
@@ -179,7 +192,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.foo_bar, "ooga")
         self.assertEqual(self.config.positional, ["bar"])
 
-    def test_intermixed_positional_arguments(self):
+    def test_parse_intermixed_positional_arguments(self):
         self.reset_config(cfg_class(foo_bar=None, extra_bar=None))
         self.config_class.config = None
         self.write_config_file()
@@ -200,7 +213,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.extra_bar, "foo")
         self.assertEqual(self.config.positional, ["bar", "b1", "b2", "b3"])
 
-    def test_positional_arguments_unsaved(self):
+    def test_parse_positional_arguments_unsaved(self):
         self.reset_config(cfg_class())
         self.config_class.config = None
         self.write_config_file()
@@ -211,6 +224,65 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
         self.config.load([])
         self.assertEqual(self.config.positional, SUPPRESS)
+
+    def test_parse_without_option_and_optional_argument(self):
+        self.reset_config(OptionalArgConfiguration)
+        self.config_filename = self.makeFile("")
+        os.unlink(self.config_filename)
+        self.config.default_config_filenames[:] = [self.config_filename]
+        self.config_class.config = None
+        self.config.write()
+
+        self.config.load(["--test", "ooga"])
+        self.assertEqual(self.config.test, "ooga")
+        self.assertEqual(self.config.foo_bar, "foofoo")
+        self.config.write()
+
+        self.config.load([])
+        self.assertEqual(self.config.foo_bar, "foofoo")
+
+        data = read_text_file(self.config_filename)
+        self.assertConfigEqual(data, "[my-config]\ntest = ooga")
+
+    def test_parse_with_option_including_optional_argument(self):
+        self.reset_config(OptionalArgConfiguration)
+        self.config_filename = self.makeFile("")
+        os.unlink(self.config_filename)
+        self.config.default_config_filenames[:] = [self.config_filename]
+        self.config_class.config = None
+        self.config.write()
+
+        self.config.load(["--foo-bar", "barbar", "--test", "ooga"])
+        self.assertEqual(self.config.foo_bar, "barbar")
+        self.config.write()
+
+        self.config.load([])
+        self.assertEqual(self.config.foo_bar, "barbar")
+
+        data = read_text_file(self.config_filename)
+        self.assertConfigEqual(
+            data, "[my-config]\nfoo_bar = barbar\ntest = ooga"
+        )
+
+    def test_parse_with_option_excluding_optional_argument(self):
+        self.reset_config(OptionalArgConfiguration)
+        self.config_filename = self.makeFile("")
+        os.unlink(self.config_filename)
+        self.config.default_config_filenames[:] = [self.config_filename]
+        self.config_class.config = None
+        self.config.write()
+
+        self.config.load(["--foo-bar", "--test", "ooga"])
+        self.assertEqual(self.config.foo_bar, "foofoo")
+        self.config.write()
+
+        self.config.load([])
+        self.assertEqual(self.config.foo_bar, "foofoo")
+
+        data = read_text_file(self.config_filename)
+        self.assertConfigEqual(
+            data, "[my-config]\nfoo_bar = foofoo\ntest = ooga"
+        )
 
     # ConfigObj
 
