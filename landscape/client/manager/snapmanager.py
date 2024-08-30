@@ -5,7 +5,9 @@ from pathlib import Path
 
 from twisted.internet import task
 
+from landscape.client import GROUP
 from landscape.client import snap_http
+from landscape.client import USER
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
@@ -270,7 +272,11 @@ class SnapManager(BaseSnapManager):
             self.registry.config.data_path,
             "snaps.bpickle",
         )
-        self._persist = Persist(filename=self._persist_filename)
+        self._persist = Persist(
+            filename=self._persist_filename,
+            user=USER,
+            group=GROUP,
+        )
         self.call_on_accepted(self.message_type, self._send_snap_update)
 
         registry.register_message("install-snaps", self._handle_snap_task)

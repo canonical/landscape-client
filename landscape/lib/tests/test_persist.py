@@ -355,7 +355,7 @@ class SaveLoadPersistTest(testing.FSTestCase, BasePersistTest):
             self.format(result, self.set_result),
         )
 
-    def test_save_on_unexistent_dir(self):
+    def test_save_on_nonexistent_dir(self):
         dirname = self.makePersistFile()
         filename = os.path.join(dirname, "foobar")
 

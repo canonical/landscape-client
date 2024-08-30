@@ -671,6 +671,8 @@ def setup(config) -> Identity:
             config.data_path,
             f"{BrokerService.service_name}.bpickle",
         ),
+        user=USER,
+        group=GROUP,
     )
 
     return Identity(config, persist)
@@ -695,7 +697,7 @@ def restart_client(config):
 def bootstrap_tree(config):
     """Create the client directories tree."""
     bootstrap_list = [
-        BootstrapDirectory("$data_path", USER, "root", 0o755),
+        BootstrapDirectory("$data_path", USER, GROUP, 0o755),
         BootstrapDirectory("$annotations_path", USER, GROUP, 0o755),
     ]
     BootstrapList(bootstrap_list).bootstrap(
@@ -768,7 +770,7 @@ def is_registered(config):
         config.data_path,
         f"{BrokerService.service_name}.bpickle",
     )
-    persist = Persist(filename=persist_filename)
+    persist = Persist(filename=persist_filename, user=USER, group=GROUP)
     identity = Identity(config, persist)
     return bool(identity.secure_id)
 
@@ -806,6 +808,8 @@ def set_secure_id(config, new_id):
             config.data_path,
             f"{BrokerService.service_name}.bpickle",
         ),
+        user=USER,
+        group=GROUP,
     )
     identity = Identity(config, persist)
     identity.secure_id = new_id
@@ -818,6 +822,8 @@ def get_secure_id(config):
             config.data_path,
             f"{BrokerService.service_name}.bpickle",
         ),
+        user=USER,
+        group=GROUP,
     )
     identity = Identity(config, persist)
     return identity.secure_id
