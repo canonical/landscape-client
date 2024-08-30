@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from datetime import timezone
 from logging import debug
-from optparse import SUPPRESS_HELP
+from argparse import SUPPRESS
 from typing import Sequence
 
 from twisted.logger import globalLogBeginner
@@ -70,7 +70,7 @@ class BaseConfiguration(_BaseConfiguration):
     def make_parser(self):
         """Parser factory for supported options.
 
-        @return: An OptionParser preset with options that all
+        @return: An ArgumentParser preset with options that all
             programs commonly accept. These include
               - config
               - data_path
@@ -92,7 +92,7 @@ class Configuration(BaseConfiguration):
     def make_parser(self):
         """Parser factory for supported options.
 
-        @return: An L{OptionParser} preset for all options
+        @return: An L{ArgumentParser} preset for all options
             from L{BaseConfiguration.make_parser} plus:
               - C{quiet} (C{False})
               - C{log_dir} (C{"/var/log/landscape"})
@@ -105,57 +105,57 @@ class Configuration(BaseConfiguration):
         """
         parser = super().make_parser()
         logging.add_cli_options(parser, logdir="/var/log/landscape")
-        parser.add_option(
+        parser.add_argument(
             "-u",
             "--url",
             default=self.DEFAULT_URL,
             help="The server URL to connect to.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--ping-url",
             help="The URL to perform lightweight exchange initiation with.",
             default="http://landscape.canonical.com/ping",
         )
-        parser.add_option(
+        parser.add_argument(
             "-k",
             "--ssl-public-key",
             help="The public SSL key to verify the server. "
             "Only used if the given URL is https.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--ignore-sigint",
             action="store_true",
             default=False,
             help="Ignore interrupt signals.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--ignore-sigusr1",
             action="store_true",
             default=False,
             help="Ignore SIGUSR1 signal to " "rotate logs.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--package-monitor-interval",
             default=30 * 60,
-            type="int",
+            type=int,
             help="The interval between package monitor runs "
             "(default: 1800).",
         )
-        parser.add_option(
+        parser.add_argument(
             "--apt-update-interval",
             default=6 * 60 * 60,
-            type="int",
+            type=int,
             help="The interval between apt update runs (default: 21600).",
         )
-        parser.add_option(
+        parser.add_argument(
             "--flush-interval",
             default=5 * 60,
-            type="int",
+            type=int,
             metavar="INTERVAL",
             help="The number of seconds between flushes to disk "
             "for persistent data.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--stagger-launch",
             metavar="STAGGER_RATIO",
             dest="stagger_launch",
@@ -164,20 +164,20 @@ class Configuration(BaseConfiguration):
             help="Ratio, between 0 and 1, by which to stagger "
             "various tasks of landscape.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--snap-monitor-interval",
             default=30 * 60,
-            type="int",
+            type=int,
             help="The interval between snap monitor runs (default 1800).",
         )
 
         # Hidden options, used for load-testing to run in-process clones
-        parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)
-        parser.add_option(
+        parser.add_argument("--clones", default=0, type=int, help=SUPPRESS)
+        parser.add_argument(
             "--start-clones-over",
             default=25 * 60,
             type=int,
-            help=SUPPRESS_HELP,
+            help=SUPPRESS,
         )
 
         return parser

@@ -1,4 +1,5 @@
 """Deployment code for the sysinfo tool."""
+
 import os
 import sys
 from logging import Formatter
@@ -52,14 +53,14 @@ class SysInfoConfiguration(BaseConfiguration):
         """
         parser = super().make_parser()
 
-        parser.add_option(
+        parser.add_argument(
             "--sysinfo-plugins",
             metavar="PLUGIN_LIST",
             help="Comma-delimited list of sysinfo plugins to "
             "use. Default is to use all plugins.",
         )
 
-        parser.add_option(
+        parser.add_argument(
             "--exclude-sysinfo-plugins",
             metavar="PLUGIN_LIST",
             help="Comma-delimited list of sysinfo plugins to "
@@ -67,7 +68,7 @@ class SysInfoConfiguration(BaseConfiguration):
             "plugins to include.",
         )
 
-        parser.add_option(
+        parser.add_argument(
             "--width",
             type=int,
             default=80,

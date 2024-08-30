@@ -30,30 +30,30 @@ class ManagerConfiguration(Configuration):
         """
         parser = super().make_parser()
 
-        parser.add_option(
+        parser.add_argument(
             "--manager-plugins",
             metavar="PLUGIN_LIST",
             help="Comma-delimited list of manager plugins to "
             "use. ALL means use all plugins.",
             default="ALL",
         )
-        parser.add_option(
+        parser.add_argument(
             "--include-manager-plugins",
             metavar="PLUGIN_LIST",
             help="Comma-delimited list of manager plugins to "
             "enable, in addition to the defaults.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--script-users",
             metavar="USERS",
             help="Comma-delimited list of usernames that scripts"
             " may be run as. Default is to allow all "
             "users.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--script-output-limit",
             metavar="SCRIPT_OUTPUT_LIMIT",
-            type="int",
+            type=int,
             default=512,
             help="Maximum allowed output size that scripts"
             " can send. "

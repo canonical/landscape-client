@@ -11,7 +11,7 @@ class LoggingAttributeError(Exception):
 
 def add_cli_options(parser, level="info", logdir=None):
     """Add common logging-related CLI options to the given arg parser."""
-    parser.add_option(
+    parser.add_argument(
         "-q",
         "--quiet",
         default=False,
@@ -22,7 +22,7 @@ def add_cli_options(parser, level="info", logdir=None):
     logdirhelp = "The directory in which to write log files"
     if logdir:
         logdirhelp += f" (default: {logdir!r})."
-    parser.add_option(
+    parser.add_argument(
         "-l",
         "--log-dir",
         metavar="FILE",
@@ -30,7 +30,7 @@ def add_cli_options(parser, level="info", logdir=None):
         help=logdirhelp,
     )
 
-    parser.add_option(
+    parser.add_argument(
         "--log-level",
         default=level,
         help="One of debug, info, warning, error or critical.",

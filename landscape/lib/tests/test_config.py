@@ -2,7 +2,7 @@ import io
 import os.path
 import sys
 import unittest
-from optparse import OptionParser
+from argparse import ArgumentParser
 from textwrap import dedent
 from unittest import mock
 
@@ -21,7 +21,7 @@ class BabbleConfiguration(BaseConfiguration):
 
     def make_parser(self):
         parser = super().make_parser()
-        parser.add_option("--whatever", metavar="STUFF")
+        parser.add_argument("--whatever", metavar="STUFF")
         return parser
 
 
@@ -34,7 +34,7 @@ def cfg_class(section=None, **defaults):
             parser = super().make_parser()
             for name, value in defaults.items():
                 name = name.replace("_", "-")
-                parser.add_option("--" + name, default=value)
+                parser.add_argument("--" + name, default=value)
             return parser
 
     return MyConfiguration
@@ -189,9 +189,9 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
     def test_command_line_option_without_default(self):
         class MyConfiguration(BaseConfiguration):
             def make_parser(self):
-                parser = OptionParser()
+                parser = ArgumentParser()
                 # Keep the dash in the option name to ensure it works.
-                parser.add_option("--foo-bar")
+                parser.add_argument("--foo-bar")
                 return parser
 
         self.assertEqual(MyConfiguration().foo_bar, None)
@@ -225,19 +225,19 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
     # --config
 
     def test_config_option(self):
-        options = self.parser.parse_args(["--config", "hello.cfg"])[0]
+        options = self.parser.parse_args(["--config", "hello.cfg"])
         self.assertEqual(options.config, "hello.cfg")
 
     def test_config_file_default(self):
         """Ensure parse_args sets appropriate config file default."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertIs(options.config, None)
 
         parser = BaseConfiguration().make_parser(
             cfgfile="spam.conf",
             datadir="/tmp/spam/data",
         )
-        options = parser.parse_args([])[0]
+        options = parser.parse_args([])
         self.assertEqual(options.config, "spam.conf")
 
     def test_load_config_from_option(self):
@@ -264,19 +264,19 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         """Ensure options.data_path option can be read by parse_args."""
         options = self.parser.parse_args(
             ["--data-path", "/opt/hoojy/var/run"],
-        )[0]
+        )
         self.assertEqual(options.data_path, "/opt/hoojy/var/run")
 
     def test_data_directory_default(self):
         """Ensure parse_args sets appropriate data_path default."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertIs(options.data_path, None)
 
         parser = BaseConfiguration().make_parser(
             cfgfile="spam.conf",
             datadir="/tmp/spam/data",
         )
-        options = parser.parse_args([])[0]
+        options = parser.parse_args([])
         self.assertEqual(options.data_path, "/tmp/spam/data")
 
     # loading
@@ -301,7 +301,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         class MyConfiguration(self.config_class):
             def make_parser(self):
                 parser = super().make_parser()
-                parser.add_option("--year", default=1, type="int")
+                parser.add_argument("--year", default=1, type=int)
                 return parser
 
         filename = self.makeFile("[my-config]\nyear = 2008\n")
@@ -318,7 +318,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         class MyConfiguration(self.config_class):
             def make_parser(self):
                 parser = super().make_parser()
-                parser.add_option("--year", default=1, type="int")
+                parser.add_argument("--year", default=1, type=int)
                 return parser
 
         self.write_config_file()
