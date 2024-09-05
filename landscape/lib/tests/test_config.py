@@ -224,7 +224,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         )
         self.assertEqual(self.config.foo_bar, "ooga")
         self.assertEqual(self.config.extra_bar, "foo")
-        self.assertEqual(self.config.positional, ["bar", "b0", "b2", "b3"])
+        self.assertEqual(self.config.positional, ["bar", "b0", "b1", "b2"])
 
     def test_parse_positional_arguments_unsaved(self):
         """Ensure positional arguments are not saved to the config file."""
