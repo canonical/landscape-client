@@ -175,6 +175,11 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
     # argparse CLI parsing
 
     def test_parse_default_positional_argument(self):
+        """
+        Ensure the option for any positional arguments defaults to
+        argparse.SUPPRESS when config.load is called with no positional
+        arguments.
+        """
         self.reset_config(cfg_class(foo_bar=None))
         self.config_class.config = None
         self.write_config_file()
@@ -184,6 +189,10 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.positional, SUPPRESS)
 
     def test_parse_single_positional_argument(self):
+        """
+        Ensure a positional argument is correctly parsed when config.load is
+        called and collected into the positional option.
+        """
         self.reset_config(cfg_class(foo_bar=None))
         self.config_class.config = None
         self.write_config_file()
@@ -193,6 +202,10 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.positional, ["bar"])
 
     def test_parse_intermixed_positional_arguments(self):
+        """
+        Ensure positional arguments that are intermixed with optional arguments
+        are parsed and collected into the positional option.
+        """
         self.reset_config(cfg_class(foo_bar=None, extra_bar=None))
         self.config_class.config = None
         self.write_config_file()
@@ -202,18 +215,19 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
                 "bar",
                 "--foo-bar",
                 "ooga",
+                "b0",
                 "b1",
-                "b2",
                 "--extra-bar",
                 "foo",
-                "b3",
+                "b2",
             ]
         )
         self.assertEqual(self.config.foo_bar, "ooga")
         self.assertEqual(self.config.extra_bar, "foo")
-        self.assertEqual(self.config.positional, ["bar", "b1", "b2", "b3"])
+        self.assertEqual(self.config.positional, ["bar", "b0", "b2", "b3"])
 
     def test_parse_positional_arguments_unsaved(self):
+        """Ensure positional arguments are not saved to the config file."""
         self.reset_config(cfg_class())
         self.config_class.config = None
         self.write_config_file()
@@ -226,6 +240,10 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.positional, SUPPRESS)
 
     def test_parse_without_option_and_optional_argument(self):
+        """
+        For an option with an optional argument, ensure that calling
+        config.load without the option will not save this value.
+        """
         self.reset_config(OptionalArgConfiguration)
         self.config_filename = self.makeFile("")
         os.unlink(self.config_filename)
@@ -245,6 +263,11 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertConfigEqual(data, "[my-config]\ntest = ooga")
 
     def test_parse_with_option_including_optional_argument(self):
+        """
+        For an option with an optional argument, ensure that calling
+        config.load with the option and setting the argument will result in the
+        option having the set value.
+        """
         self.reset_config(OptionalArgConfiguration)
         self.config_filename = self.makeFile("")
         os.unlink(self.config_filename)
@@ -265,6 +288,11 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         )
 
     def test_parse_with_option_excluding_optional_argument(self):
+        """
+        For an option with an optional argument, ensure that calling
+        config.load with the option and without the argument will result in the
+        option having the default value
+        """
         self.reset_config(OptionalArgConfiguration)
         self.config_filename = self.makeFile("")
         os.unlink(self.config_filename)
