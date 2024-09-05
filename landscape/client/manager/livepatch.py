@@ -2,6 +2,7 @@ import json
 import logging
 import subprocess
 import traceback
+import yaml
 
 from landscape.client.manager.plugin import DataWatcherManager
 
@@ -27,13 +28,20 @@ class LivePatch(DataWatcherManager):
         )  # Prevent randomness for cache
 
 
-def _parse_humane(cmd_output):
-    entries = cmd_output.split("\n")
-    data = {}
+def _preparse_humane(output):
+    entries = output.split("\n")
+    data = []
 
     for e in entries:
-        key, value = e.split(":", 1)
-        data[key] = value.strip()
+        if ": " in e:
+            key, value = e.split(": ", 1)
+            key = key.strip()
+            value = value.strip()
+            data.append(f"{key}: {value}\n")
+        else:
+            data.append(e.strip() + "\n")
+
+    data = "".join(data)
 
     return data
 
@@ -74,23 +82,15 @@ def get_livepatch_status(format_type):
                     if "Uptime" in output:
                         del output["Uptime"]
                 else:
-                    output = _parse_humane(output)
+                    output = yaml.safe_load(_preparse_humane(output))
                     if "last check" in output:
                         del output["last check"]
             data["return_code"] = completed_process.returncode
-            data["error"] = err or completed_process.stderr
+            data["error"] = completed_process.stderr
             data["output"] = output
-        except json.decoder.JSONDecodeError as exc:
+        except (yaml.YAMLError, json.decoder.JSONDecodeError) as exc:
             data["return_code"] = completed_process.returncode
             data["error"] = str(exc)
             data["output"] = output
-
-            # "last check: 16 seconds ago\n
-            # kernel: 6.8.0-41.41-generic\n
-            # server check-in: failed: livepatch check failed: POST request to \"https://livepatch.canonical.com/v1/client/e93452b8cff04bb8a6320ad7dae797e5/updates\" failed\n
-            # kernel state: ✓ kernel series 6.8 is covered by Livepatch\n
-            # patch state: ✓ no livepatches available for kernel 6.8.0-41.41-generic\n
-            # tier: updates (Free usage; This machine beta tests new patches.)\n
-            # machine id: e93452b8cff04bb8a6320ad7dae797e5",
 
     return data
