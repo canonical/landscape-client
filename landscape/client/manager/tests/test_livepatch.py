@@ -109,8 +109,6 @@ class LivePatchTest(LandscapeTest):
         with default yaml. Ensure that outputs similar to "server check-in:
         failed: fail message" will be parsed without a parser error.
         """
-        plugin = LivePatch()
-
         fail_key = "fail message"
         fail_value = "may have: multiple: colons"
         fail_message_data = f"{fail_key}: {fail_value}"
