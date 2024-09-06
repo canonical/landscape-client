@@ -72,6 +72,8 @@ OPTIONS
                            enter: ALL.
   --include-manager-plugins=PLUGINS   A comma-separated list of manager
                            plugins to load explicitly.
+  --manage-sources-list-d [MANAGE_SOURCES_LIST_D]  Repository profiles manage 
+                           the files in ’etc/apt/sources.list.d'. (default: true) 
   -n, --no-start           Don't start the client automatically.
   --ok-no-register         Return exit code 0 instead of 2 if the client can't be
                            registered.

@@ -3,6 +3,7 @@
 This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
+
 import getpass
 import io
 import logging
@@ -190,7 +191,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         """
         parser = super().make_parser()
 
-        parser.add_option(
+        parser.add_argument(
             "--import",
             dest="import_from",
             metavar="FILENAME_OR_URL",
@@ -199,68 +200,76 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "passed in the command line, with precedence "
             "being given to real command line options.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--script-users",
             metavar="USERS",
             help="A comma-separated list of users to allow "
             "scripts to run. To allow scripts to be run "
             "by any user, enter: ALL",
         )
-        parser.add_option(
+        parser.add_argument(
             "--include-manager-plugins",
             metavar="PLUGINS",
             default="",
             help="A comma-separated list of manager plugins "
             "to enable in addition to the defaults.",
         )
-        parser.add_option(
+        parser.add_argument(
+            "--manage-sources-list-d",
+            nargs="?",
+            default="true",
+            const="true",
+            help="Repository profiles manage the files in "
+            "’etc/apt/sources.list.d'. (default: true)",
+        )
+        parser.add_argument(
             "-n",
             "--no-start",
             action="store_true",
             help="Don't start the client automatically.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--ok-no-register",
             action="store_true",
             help="Return exit code 0 instead of 2 if the client "
             "can't be registered.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--silent",
             action="store_true",
             default=False,
             help="Run without manual interaction.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--disable",
             action="store_true",
             default=False,
             help="Stop running clients and disable start at boot.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--init",
             action="store_true",
             default=False,
             help="Set up the client directories structure and exit.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--is-registered",
             action="store_true",
             help="Exit with code 0 (success) if client is "
             "registered else returns {}. Displays "
             "registration info.".format(EXIT_NOT_REGISTERED),
         )
-        parser.add_option(
+        parser.add_argument(
             "--skip-registration",
             action="store_true",
             help="Don't send a new registration request",
         )
-        parser.add_option(
+        parser.add_argument(
             "--force-registration",
             action="store_true",
             help="Force sending a new registration request",
         )
-        parser.add_option(
+        parser.add_argument(
             "--register-if-needed",
             action="store_true",
             help=(
@@ -831,10 +840,7 @@ def main(args, print=print):
         sys.exit(1)
 
     init_app_logging(
-        config.log_dir,
-        config.log_level,
-        "landscape-config",
-        config.quiet
+        config.log_dir, config.log_level, "landscape-config", config.quiet
     )
 
     if config.skip_registration and config.force_registration:

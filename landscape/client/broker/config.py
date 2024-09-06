@@ -1,4 +1,5 @@
 """Configuration class for the broker."""
+
 import os
 
 from landscape.client.deployment import Configuration
@@ -22,7 +23,7 @@ class BrokerConfiguration(Configuration):
     def make_parser(self):
         """Parser factory for broker-specific options.
 
-        @return: An L{OptionParser} preset for all the options
+        @return: An L{ArgumentParser} preset for all the options
             from L{Configuration.make_parser} plus:
               - C{account_name}
               - C{registration_key}
@@ -35,66 +36,66 @@ class BrokerConfiguration(Configuration):
         """
         parser = super().make_parser()
 
-        parser.add_option(
+        parser.add_argument(
             "-a",
             "--account-name",
             metavar="NAME",
             help="The account this computer belongs to.",
         )
-        parser.add_option(
+        parser.add_argument(
             "-p",
             "--registration-key",
             metavar="KEY",
             help="The account-wide key used for registering clients.",
         )
-        parser.add_option(
+        parser.add_argument(
             "-t",
             "--computer-title",
             metavar="TITLE",
             help="The title of this computer",
         )
-        parser.add_option(
+        parser.add_argument(
             "--exchange-interval",
             default=15 * 60,
-            type="int",
+            type=int,
             metavar="INTERVAL",
             help="The number of seconds between server exchanges.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--urgent-exchange-interval",
             default=1 * 60,
-            type="int",
+            type=int,
             metavar="INTERVAL",
             help="The number of seconds between urgent server exchanges.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--ping-interval",
             default=30,
-            type="int",
+            type=int,
             metavar="INTERVAL",
             help="The number of seconds between pings.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--http-proxy",
             metavar="URL",
             help="The URL of the HTTP proxy, if one is needed.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--https-proxy",
             metavar="URL",
             help="The URL of the HTTPS proxy, if one is needed.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--access-group",
             default="",
             help="Suggested access group for this computer.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--tags",
             help="Comma separated list of tag names to be sent "
             "to the server.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--hostagent-uid",
             help="Only set this value if this computer is a WSL instance "
             "managed by Landscape, in which case set it to be the uid that "

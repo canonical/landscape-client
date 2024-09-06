@@ -7,7 +7,7 @@ def add_cli_options(parser, cfgfile=None, datadir=None):
     datadirhelp = "The directory in which to store data files."
     if datadir:
         datadirhelp += f" (default: {datadir!r})"
-    parser.add_option(
+    parser.add_argument(
         "-d",
         "--data-path",
         metavar="PATH",
