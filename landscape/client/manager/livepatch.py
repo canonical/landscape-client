@@ -29,15 +29,15 @@ class LivePatch(DataWatcherManager):
 
 
 def _parse_humane(output):
-    entries = output.split("\n")
+    entries = output.splitlines()
     data = {}
 
-    for e in entries:
-        line = e.strip()
-        if len(line) == 0:
+    for entry in entries:
+        line = entry.strip()
+        if line == "":
             continue
-        elif ": " in line:
-            key, value = line.split(": ", 1)
+        elif ":" in line:
+            key, value = line.split(":", 1)
             key = key.strip().strip('"').strip("'")
             value = value.strip().strip('"').strip("'")
             data[key] = value
