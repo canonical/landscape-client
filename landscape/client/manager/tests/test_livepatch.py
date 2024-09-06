@@ -2,16 +2,16 @@ import json
 import yaml
 from unittest import mock
 
-from landscape.client.manager.livepatch import LivePatch
+from landscape.client.manager.livepatch import LivePatch, get_livepatch_status
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 def subprocess_livepatch_mock(*args, **kwargs):
     """Mocks a json and yaml (humane) output"""
-    data = {'Test': 'test', 'Last-Check': 1, 'Uptime': 1, 'last check': 1}
-    if 'json' in args[0]:
+    data = {"Test": "test", "Last-Check": 1, "Uptime": 1, "last check": 1}
+    if "json" in args[0]:
         output = json.dumps(data)
-    elif 'humane' in args[0]:
+    elif "humane" in args[0]:
         output = yaml.dump(data)
     return mock.Mock(stdout=output, stderr="", returncode=0)
 
@@ -62,7 +62,7 @@ class LivePatchTest(LandscapeTest):
         self.assertEqual(message["json"]["return_code"], -1)
         self.assertEqual(message["humane"]["return_code"], -1)
 
-    @mock.patch('landscape.client.manager.livepatch.logging.error')
+    @mock.patch("landscape.client.manager.livepatch.logging.error")
     def test_undefined_exception(self, logger_mock):
         """Tests calling livepatch when random exception occurs"""
         plugin = LivePatch()
@@ -103,6 +103,30 @@ class LivePatchTest(LandscapeTest):
         self.assertEqual(message["json"]["output"], invalid_data)
         self.assertEqual(message["humane"]["output"], invalid_data)
 
+    def test_yaml_parse_status_fail_message(self):
+        """
+        Livepatch status may return values that are not possible to be parsed
+        with default yaml. Ensure that outputs similar to "server check-in:
+        failed: fail message" will be parsed without a parser error.
+        """
+        plugin = LivePatch()
+
+        fail_key = "fail message"
+        fail_value = "may have: multiple: colons"
+        fail_message_data = f"{fail_key}: {fail_value}"
+
+        message = []
+        with mock.patch("subprocess.run") as run_mock:
+            run_mock.return_value = mock.Mock(stdout=fail_message_data)
+            run_mock.return_value.stderr = ""
+            run_mock.return_value.returncode = 0
+            message = get_livepatch_status(format_type="humane")
+
+        self.assertTrue(len(message) > 0)
+        self.assertEqual(message["output"][fail_key], fail_value)
+        self.assertEqual(message["return_code"], 0)
+        self.assertFalse(message["error"])
+
     def test_empty_string(self):
         """
         If livepatch is disabled, stdout is empty string
@@ -111,8 +135,9 @@ class LivePatchTest(LandscapeTest):
 
         invalid_data = ""
         with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(stdout=invalid_data,
-                                              stderr='Error')
+            run_mock.return_value = mock.Mock(
+                stdout=invalid_data, stderr="Error"
+            )
             run_mock.return_value.returncode = 1
             self.manager.add(plugin)
             plugin.run()

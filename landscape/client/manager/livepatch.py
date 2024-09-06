@@ -37,11 +37,11 @@ def _preparse_humane(output):
             key, value = e.split(": ", 1)
             key = key.strip()
             value = value.strip()
-            data.append(f"{key}: {value}\n")
+            data.append(f"'{key}': '{value}'")
         else:
-            data.append(e.strip() + "\n")
+            data.append(e.strip())
 
-    data = "".join(data)
+    data = "\n".join(data)
 
     return data
 
