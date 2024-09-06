@@ -28,20 +28,21 @@ class LivePatch(DataWatcherManager):
         )  # Prevent randomness for cache
 
 
-def _preparse_humane(output):
+def _parse_humane(output):
     entries = output.split("\n")
-    data = []
+    data = {}
 
     for e in entries:
-        if ": " in e:
-            key, value = e.split(": ", 1)
-            key = key.strip()
-            value = value.strip()
-            data.append(f"'{key}': '{value}'")
+        line = e.strip()
+        if len(line) == 0:
+            continue
+        elif ": " in line:
+            key, value = line.split(": ", 1)
+            key = key.strip().strip('"').strip("'")
+            value = value.strip().strip('"').strip("'")
+            data[key] = value
         else:
-            data.append(e.strip())
-
-    data = "\n".join(data)
+            raise yaml.YAMLError("Input is not a list of key/value pairs")
 
     return data
 
@@ -82,7 +83,7 @@ def get_livepatch_status(format_type):
                     if "Uptime" in output:
                         del output["Uptime"]
                 else:
-                    output = yaml.safe_load(_preparse_humane(output))
+                    output = _parse_humane(output)
                     if "last check" in output:
                         del output["last check"]
             data["return_code"] = completed_process.returncode
