@@ -4,6 +4,7 @@ The WatchDog must run as root, because it spawns the Landscape Manager.
 
 The main C{landscape-client} program uses this watchdog.
 """
+
 import errno
 import os
 import pwd
@@ -509,17 +510,17 @@ class WatchDog:
 class WatchDogConfiguration(Configuration):
     def make_parser(self):
         parser = super().make_parser()
-        parser.add_option(
+        parser.add_argument(
             "--daemon",
             action="store_true",
             help="Fork and run in the background.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--pid-file",
-            type="str",
+            type=str,
             help="The file to write the PID to.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--monitor-only",
             action="store_true",
             help="Don't enable management features. This is "

@@ -19,7 +19,7 @@ class BabbleConfiguration(BaseConfiguration):
 
     def make_parser(self):
         parser = super().make_parser()
-        parser.add_option("--whatever", metavar="STUFF")
+        parser.add_argument("--whatever", metavar="STUFF")
         return parser
 
 
@@ -130,7 +130,7 @@ class BaseConfigurationTest(LandscapeTest):
 
     def test_config_file_default(self):
         """Ensure parse_args sets appropriate config file default."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(options.config, "/etc/landscape/client.conf")
 
         # The default filename isn't actually used.
@@ -139,7 +139,7 @@ class BaseConfigurationTest(LandscapeTest):
 
     def test_data_directory_default(self):
         """Ensure parse_args sets appropriate data_path default."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(options.data_path, "/var/lib/landscape/client/")
 
 
@@ -159,27 +159,27 @@ class ConfigurationTest(LandscapeTest):
         """Ensure options.log_dir option can be read by parse_args."""
         options = self.parser.parse_args(
             ["--log-dir", "/var/log/my-awesome-log"],
-        )[0]
+        )
         self.assertEqual(options.log_dir, "/var/log/my-awesome-log")
 
     def test_log_level_default(self):
         """Ensure options.log_level default is set within parse_args."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(options.log_level, "info")
 
     def test_log_level_option(self):
         """Ensure options.log_level option can be read by parse_args."""
-        options = self.parser.parse_args(["--log-level", "debug"])[0]
+        options = self.parser.parse_args(["--log-level", "debug"])
         self.assertEqual(options.log_level, "debug")
 
     def test_quiet_option(self):
         """Ensure options.quiet option can be read by parse_args."""
-        options = self.parser.parse_args(["--quiet"])[0]
+        options = self.parser.parse_args(["--quiet"])
         self.assertEqual(options.quiet, True)
 
     def test_quiet_default(self):
         """Ensure options.quiet default is set within parse_args."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(options.quiet, False)
 
     # other options
@@ -188,24 +188,24 @@ class ConfigurationTest(LandscapeTest):
         """Ensure options.url option can be read by parse_args."""
         options = self.parser.parse_args(
             ["--url", "http://mylandscape/message-system"],
-        )[0]
+        )
         self.assertEqual(options.url, "http://mylandscape/message-system")
 
     def test_url_default(self):
         """Ensure parse_args sets appropriate url default."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(options.url, self.config.DEFAULT_URL)
 
     def test_ping_url_option(self):
         """Ensure options.ping_url option can be read by parse_args."""
         options = self.parser.parse_args(
             ["--ping-url", "http://mylandscape/ping"],
-        )[0]
+        )
         self.assertEqual(options.ping_url, "http://mylandscape/ping")
 
     def test_ping_url_default(self):
         """Ensure parse_args sets appropriate ping_url default."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(
             options.ping_url,
             "http://landscape.canonical.com/ping",
@@ -215,34 +215,34 @@ class ConfigurationTest(LandscapeTest):
         """Ensure options.ssl_public_key option can be read by parse_args."""
         options = self.parser.parse_args(
             ["--ssl-public-key", "/tmp/somekeyfile.ssl"],
-        )[0]
+        )
         self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
     def test_ssl_public_key_default(self):
         """Ensure parse_args sets appropriate ssl_public_key default."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(options.ssl_public_key, None)
 
     def test_ignore_sigint_option(self):
         """Ensure options.ignore_sigint option can be read by parse_args."""
-        options = self.parser.parse_args(["--ignore-sigint"])[0]
+        options = self.parser.parse_args(["--ignore-sigint"])
         self.assertEqual(options.ignore_sigint, True)
 
     def test_ignore_sigint_default(self):
         """Ensure options.ignore_sigint default is set within parse_args."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(options.ignore_sigint, False)
 
     # hidden options
 
     def test_clones_default(self):
         """By default, no clones are started."""
-        options = self.parser.parse_args([])[0]
+        options = self.parser.parse_args([])
         self.assertEqual(0, options.clones)
 
     def test_clones_option(self):
         """It's possible to specify additional clones to be started."""
-        options = self.parser.parse_args(["--clones", "3"])[0]
+        options = self.parser.parse_args(["--clones", "3"])
         self.assertEqual(3, options.clones)
 
     # properties

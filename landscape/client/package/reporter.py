@@ -53,18 +53,18 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
         reporter-specific options.
         """
         parser = super().make_parser()
-        parser.add_option(
+        parser.add_argument(
             "--force-apt-update",
             default=False,
             action="store_true",
             help="Force running apt-update.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--http-proxy",
             metavar="URL",
             help="The URL of the HTTP proxy, if one is needed.",
         )
-        parser.add_option(
+        parser.add_argument(
             "--https-proxy",
             metavar="URL",
             help="The URL of the HTTPS proxy, if one is needed.",

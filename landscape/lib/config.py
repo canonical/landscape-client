@@ -1,7 +1,7 @@
 import os.path
 import sys
 from logging import getLogger
-from optparse import OptionParser
+from argparse import ArgumentParser, SUPPRESS
 from typing import Optional
 from typing import Sequence
 
@@ -20,7 +20,7 @@ def add_cli_options(parser, filename=None):
     )
     if filename is not None:
         cfgfilehelp += f" (default: {filename!r})"
-    parser.add_option(
+    parser.add_argument(
         "-c",
         "--config",
         metavar="FILE",
@@ -29,15 +29,14 @@ def add_cli_options(parser, filename=None):
     )
 
 
-class ConfigSpecOptionParser(OptionParser):
-
+class ConfigSpecOptionParser(ArgumentParser):
     def __init__(self, unsaved_options=None):
-        OptionParser.__init__(self, unsaved_options)
+        ArgumentParser.__init__(self, unsaved_options)
 
-    def add_option(self, *args, **kwargs):
-        option = OptionParser.add_option(self, *args, **kwargs)
+    def add_argument(self, *args, **kwargs):
+        option = ArgumentParser.add_argument(self, *args, **kwargs)
         print(dir(option))
-        print(option.get_opt_string())
+        print(option.option_strings)
         return option
 
 
@@ -70,10 +69,13 @@ class BaseConfiguration:
         self._config_filename = None
         self._config_file_options = {}
         self._parser = self.make_parser()
-        self._command_line_defaults = self._parser.defaults.copy()
-        # We don't want them mixed with explicitly given options,
-        # otherwise we can't define the precedence properly.
-        self._parser.defaults.clear()
+
+        # We don't want config files to save any default values
+        defaults = {}
+        for action in self._parser._actions:
+            defaults[action.dest] = action.default
+            action.default = SUPPRESS
+        self._command_line_defaults = defaults
 
     def __getattr__(self, name):
         """Find and return the value of the given configuration parameter.
@@ -99,14 +101,21 @@ class BaseConfiguration:
                 value = options[name]
                 break
         else:
-            if self._parser.has_option("--" + name.replace("_", "-")):
+            if name in [action.dest for action in self._parser._actions]:
                 value = None
             else:
                 raise AttributeError(name)
         if isinstance(value, StringType):
-            option = self._parser.get_option("--" + name.replace("_", "-"))
-            if option is not None:
-                value = option.convert_value(None, value)
+            option = None
+            for action in self._parser._actions:
+                if name == action.dest:
+                    option = action
+                    break
+            if option is not None and option.type is not None:
+                if option.nargs in [None, 1, "?"]:
+                    return option.type(value)
+                else:
+                    return tuple([option.type(v) for v in value])
         return value
 
     def clone(self):
@@ -169,7 +178,6 @@ class BaseConfiguration:
                 config_filename,
                 os.R_OK,
             ):
-
                 self.load_configuration_file(config_filename)
                 break
 
@@ -203,7 +211,7 @@ class BaseConfiguration:
     def load_command_line(self, args):
         """Load configuration data from the given command line."""
         self._command_line_args = args
-        values = self._parser.parse_args(args)[0]
+        values = self._parser.parse_intermixed_args(args)
         self._command_line_options = vars(values)
 
     def load_configuration_file(self, filename):
@@ -284,8 +292,8 @@ class BaseConfiguration:
                     value == self._command_line_defaults.get(name)
                     and name not in self._config_file_options
                     and name not in self._command_line_options
+                    or name == "positional"
                 ):
-
                     # We don't want to write this value to the config file
                     # as it is default value and as not present in the
                     # config file
@@ -300,12 +308,20 @@ class BaseConfiguration:
     def make_parser(self, cfgfile=None, datadir=None):
         """Parser factory for supported options.
 
-        @return: An OptionParser preset with options that all
+        @return: An ArgumentParser preset with options that all
             programs commonly accept. These include
               - config
               - data_path
         """
-        parser = OptionParser(version=self.version)
+        parser = ArgumentParser()
+        # workaround to ignore extra arguments
+        # similar to OptionParser.parse_args([])
+        parser.add_argument(
+            "positional", nargs="*", default=SUPPRESS, help=SUPPRESS
+        )
+        version = self.version
+        if version:
+            parser.add_argument("--version", action="version", version=version)
         cli.add_cli_options(parser, cfgfile, datadir)
         return parser
 
