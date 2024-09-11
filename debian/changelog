@@ -1,4 +1,20 @@
-landscape-client (24.08-0landscape0) jammy; urgency=medium
+landscape-client (24.08+git6375-0ubuntu0) jammy; urgency=medium
+
+  * feat: add new --register-if-needed flag for landscape-config
+  * feat: add log-observe plug to snap
+  * fix: get ubuntu pro info on snaps
+  * fix: add date and hash fields to tests that create repositories
+  * fix: ensure preferences.d directory exists in created APT dirs
+  * fix: patch missing Trial addDuration method in py312
+  * fix: ensure landscape homedir and broker.bpickle are owned by landscape (LP: #2065879)
+  * fix: add manage-sources-list-d CLI option (LP:2077360)
+  * refactor: use synchronous message exchange for landscape-config
+  * refactor: optparse to argparse
+  * build: use dev-lxc to fully configure container
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Wed, 11 Sep 2024 14:20:58 -0700
+
+ landscape-client (24.08-0landscape0) jammy; urgency=medium
 
   * feat: added flag to skip sending a registration request
   * fix(snap): reduce computer title retry delay
