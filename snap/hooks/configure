@@ -29,6 +29,15 @@ config_entries = [
     ("monitor-plugins", "monitor_plugins", None),
     ("access-group", "access_group", None),
     ("registration-key", "registration_key", None),
+    ("ping-interval", "ping_interval", None),
+    ("urgent-exchange-interval", "urgent_exchange_interval", None),
+    ("snap-monitor-interval", "snap_monitor_interval", None),
+    ("package-monitor-interval", "package_monitor_interval", None),
+    ("flush-interval", "flush_interval", None),
+    ("exchange-interval", "exchange_interval", None),
+    ("apt-update-interval", "apt_update_interval", None),
+    ("exchange-interval", "exchange_interval", None),
+    ("cloud", "cloud", None),
 ]
 
 changed = set()
