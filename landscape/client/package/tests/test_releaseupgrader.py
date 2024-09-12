@@ -9,6 +9,8 @@ from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.manager import SUCCEEDED
 from landscape.client.package.releaseupgrader import main
@@ -658,8 +660,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.assertEqual(spawn_process_calls, [True])
 
         getuid_mock.assert_called_once_with()
-        getpwnam_mock.assert_called_once_with("landscape")
-        getgrnam_mock.assert_called_once_with("landscape")
+        getpwnam_mock.assert_called_once_with(USER)
+        getgrnam_mock.assert_called_once_with(GROUP)
 
     def test_finish_with_config_file(self):
         """

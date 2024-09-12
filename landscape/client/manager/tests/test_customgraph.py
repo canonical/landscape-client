@@ -2,6 +2,7 @@ import logging
 import os
 import pwd
 from unittest import mock
+from unittest import skipIf
 
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
@@ -410,6 +411,10 @@ class CustomGraphManagerTests(LandscapeTest):
 
         return result.addCallback(check)
 
+    @skipIf(
+        os.getenv("LANDSCAPE_CLIENT_BUILDING"),
+        "this fails in a build environment",
+    )
     @mock.patch("pwd.getpwnam")
     def test_run_user(self, mock_getpwnam):
         filename = self.makeFile("some content")

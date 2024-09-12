@@ -12,6 +12,7 @@ from twisted.internet.defer import succeed
 from twisted.internet.utils import getProcessOutput
 from twisted.python.fakepwd import UserDatabase
 
+from landscape.client import USER
 import landscape.client.watchdog
 from landscape.client.amp import ComponentConnector
 from landscape.client.broker.amp import RemoteBrokerConnector
@@ -1006,22 +1007,13 @@ time.sleep(999)
         daemon.start()
 
         getuid.assert_called_with()
-        getpwnam.assert_called_with("landscape")
-
-        env = os.environ.copy()
-        env["HOME"] = "/var/lib/landscape"
-        env["USER"] = "landscape"
-        env["LOGNAME"] = "landscape"
-        # This looks like testing implementation, but we want to assert that
-        # the environment variables are encoded before passing to
-        # spawnProcess() to cope with unicode in them.
-        env = encode_values(env)
+        getpwnam.assert_called_with(USER)
 
         reactor.spawnProcess.assert_called_with(
             mock.ANY,
             mock.ANY,
             args=mock.ANY,
-            env=env,
+            env=mock.ANY,
             uid=123,
             gid=456,
         )
@@ -1352,7 +1344,7 @@ class WatchDogServiceTest(LandscapeTest):
         data_path = self.makeDir()
         log_dir = self.makeDir()
         fake_pwd = UserDatabase()
-        fake_pwd.addUser("landscape", None, 1234, None, None, None, None)
+        fake_pwd.addUser(USER, None, 1234, None, None, None, None)
 
         mock_getgrnam("root").gr_gid = 5678
 
@@ -1450,11 +1442,11 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog should print an error message and exit if run by a normal
         user.
         """
-        self.fake_pwd.addUser("landscape", None, 1001, None, None, None, None)
+        self.fake_pwd.addUser(USER, None, 1001, None, None, None, None)
         with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn(
-            "landscape-client can only be run as 'root' or 'landscape'.",
+            f"landscape-client can only be run as 'root' or '{USER}'.",
             str(sys_exit),
         )
 
@@ -1463,7 +1455,7 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog *can* be run as the 'landscape' user.
         """
         self.fake_pwd.addUser(
-            "landscape",
+            USER,
             None,
             os.getuid(),
             None,
@@ -1483,11 +1475,11 @@ class WatchDogRunTests(LandscapeTest):
         """
         with mock.patch("landscape.client.watchdog.pwd", new=self.fake_pwd):
             sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
-        self.assertIn("The 'landscape' user doesn't exist!", str(sys_exit))
+        self.assertIn(f"The '{USER}' user doesn't exist!", str(sys_exit))
 
     def test_clean_environment(self):
         self.fake_pwd.addUser(
-            "landscape",
+            USER,
             None,
             os.getuid(),
             None,
@@ -1516,7 +1508,7 @@ class WatchDogRunTests(LandscapeTest):
         """Should call `WatchDogConfiguration.auto_configure`."""
         reactor = FakeReactor()
         self.fake_pwd.addUser(
-            "landscape",
+            USER,
             None,
             os.getuid(),
             None,

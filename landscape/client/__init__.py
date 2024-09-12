@@ -3,8 +3,12 @@ import os
 IS_SNAP = os.getenv("LANDSCAPE_CLIENT_SNAP")
 IS_CORE = os.getenv("SNAP_SAVE_DATA") is not None
 
-USER = "root" if IS_SNAP else "landscape"
-GROUP = "root" if IS_SNAP else "landscape"
+USER = os.getenv("LANDSCAPE_CLIENT_USER")
+if USER and os.getenv("LANDSCAPE_CLIENT_BUILDING"):
+    GROUP = USER
+else:
+    USER = "root" if IS_SNAP else "landscape"
+    GROUP = "root" if IS_SNAP else "landscape"
 
 DEFAULT_CONFIG = (
     "/etc/landscape-client.conf" if IS_SNAP else "/etc/landscape/client.conf"
