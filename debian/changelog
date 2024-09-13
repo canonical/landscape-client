@@ -1,3 +1,10 @@
+landscape-client (24.08+git6378-0landscape0) jammy; urgency=medium
+
+  * feat: add more snap configuration hooks
+  * fix: tests pass in a build environment
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Fri, 13 Sep 2024 08:56:14 -0700
+
 landscape-client (24.08+git6375-0ubuntu0) jammy; urgency=medium
 
   * feat: add new --register-if-needed flag for landscape-config
