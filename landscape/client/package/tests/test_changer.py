@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 from twisted.internet.defer import Deferred
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.manager.manager import FAILED
 from landscape.client.package.changer import ChangePackagesResult
 from landscape.client.package.changer import DEPENDENCY_ERROR_RESULT
@@ -877,9 +879,9 @@ class AptPackageChangerTest(LandscapeTest):
                 )
                 self.successResultOf(self.changer.run())
 
-        grnam_mock.assert_called_once_with("landscape")
+        grnam_mock.assert_called_once_with(GROUP)
         setgid_mock.assert_called_once_with(199)
-        pwnam_mock.assert_called_once_with("landscape")
+        pwnam_mock.assert_called_once_with(USER)
         setuid_mock.assert_called_once_with(199)
         system_mock.assert_called_once_with(
             "/fake/bin/landscape-package-reporter",

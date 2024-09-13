@@ -2,6 +2,7 @@ import socket
 import unittest
 from subprocess import PIPE
 from subprocess import Popen
+from unittest import skipIf
 from unittest.mock import ANY
 from unittest.mock import DEFAULT
 from unittest.mock import mock_open
@@ -28,6 +29,10 @@ class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
 
 
 class NetworkInfoTest(BaseTestCase):
+    @skipIf(
+        not get_active_device_info(extended=False),
+        "no active network devices",
+    )
     @patch("landscape.lib.network.get_network_interface_speed")
     def test_get_active_device_info(self, mock_get_network_interface_speed):
         """

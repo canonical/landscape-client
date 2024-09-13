@@ -5,6 +5,8 @@ from unittest import mock
 
 from twisted.internet.defer import succeed
 
+from landscape.client import GROUP
+from landscape.client import USER
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.client.configuration import bootstrap_tree
@@ -2349,8 +2351,8 @@ class SetSecureIdTest(LandscapeTest):
 
         Persist.assert_called_once_with(
             filename="/tmp/landscape/broker.bpickle",
-            user="landscape",
-            group="landscape",
+            user=USER,
+            group=GROUP,
         )
         Persist().save.assert_called_once_with()
         Identity.assert_called_once_with(config, Persist())

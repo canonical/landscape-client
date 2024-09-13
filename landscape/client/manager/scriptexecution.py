@@ -111,7 +111,6 @@ class ScriptRunnerMixin:
         script_file.close()
 
     def _run_script(self, filename, uid, gid, path, env, time_limit):
-
         if uid == os.getuid():
             uid = None
         if gid == os.getgid():
