@@ -42,7 +42,9 @@ def _parse_humane(output):
             value = value.strip().strip('"').strip("'")
             data[key] = value
         else:
-            raise yaml.YAMLError("Input is not a list of key/value pairs")
+            raise yaml.YAMLError(
+                "Input is not a list of key/value pairs: " + output
+            )
 
     return data
 
