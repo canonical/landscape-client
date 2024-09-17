@@ -29,6 +29,12 @@ plugs:
     read:
       - /var/lib/snapd/hostfs/var/lib/ubuntu-advantage/status.json
 
+slots:
+  annotations:
+    interface: content
+    write:
+      - $SNAP_DATA/var/lib/landscape/client/annotations.d
+
 apps:
   landscape-client:
     daemon: simple
