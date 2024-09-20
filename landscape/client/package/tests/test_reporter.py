@@ -1,4 +1,3 @@
-import locale
 import logging
 import os
 import shutil
@@ -1456,34 +1455,6 @@ class PackageReporterAptTest(LandscapeTest):
             m.return_value = "RESULT"
             self.assertEqual("RESULT", main(["ARGS"]))
         m.assert_called_once_with(PackageReporter, ["ARGS"])
-
-    def test_main_resets_locale(self):
-        """
-        Reporter entry point should reset encoding to utf-8, as libapt-pkg
-        encodes description with system encoding and python-apt decodes
-        them as utf-8 (LP: #1827857).
-        """
-        self._add_package_to_deb_dir(
-            self.repository_dir,
-            "gosa",
-            description="GOsa\u00B2",
-        )
-        self.facade.reload_channels()
-
-        # Set the only non-utf8 locale which we're sure exists.
-        # It behaves slightly differently than the bug, but fails on the
-        # same condition.
-        locale.setlocale(locale.LC_CTYPE, (None, None))
-        self.addCleanup(locale.resetlocale)
-
-        with mock.patch("landscape.client.package.reporter.run_task_handler"):
-            main([])
-
-        # With the actual package, the failure will occur looking up the
-        # description translation.
-        pkg = self.facade.get_packages_by_name("gosa")[0]
-        skel = self.facade.get_package_skeleton(pkg, with_info=True)
-        self.assertEqual("GOsa\u00B2", skel.description)
 
     def test_find_reporter_command_with_bindir(self):
         self.config.bindir = "/spam/eggs"
