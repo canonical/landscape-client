@@ -5,9 +5,9 @@ other machinery, i.e. the Broker, and therefore exist outside of the usual
 message exchange scheduling system. Callers are responsible for ensuring
 exchange state is consistent when using these functions.
 """
+import json
 from dataclasses import asdict
 from dataclasses import dataclass
-import json
 from typing import Any
 from typing import Dict
 from typing import List
@@ -19,7 +19,6 @@ from typing import Union
 from landscape.client.broker.registration import Identity
 from landscape.client.exchange import exchange_messages
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fetch import PyCurlError
 from landscape.lib.network import get_fqdn
@@ -79,7 +78,10 @@ class RegistrationInfo:
 
 
 def register(
-    client_info: ClientRegistrationInfo, server_url: str
+    client_info: ClientRegistrationInfo,
+    server_url: str,
+    *,
+    cainfo: Optional[str] = None,
 ) -> RegistrationInfo:
     """Sends a registration message to the server at `server_url`, returning
     registration info if successful.
@@ -89,7 +91,7 @@ def register(
     message = _create_message(client_info)
 
     try:
-        response = exchange_messages(message, server_url)
+        response = exchange_messages(message, server_url, cainfo=cainfo)
     except HTTPCodeError as e:
         if e.http_code == 404:
             # Most likely cause is that we are trying to speak to a server with
@@ -97,7 +99,7 @@ def register(
             raise RegistrationException(
                 "\nWe were unable to contact the server or it is "
                 "an incompatible server version.\n"
-                "Please check your server URL and version."
+                "Please check your server URL and version.",
             ) from e
 
         raise  # Other exceptions are unexpected and should propagate.
@@ -107,7 +109,7 @@ def register(
                 "\nThe server's SSL information is incorrect or fails "
                 "signature verification!\n"
                 "If the server is using a self-signed certificate, please "
-                "ensure you supply it with the --ssl-public-key parameter."
+                "ensure you supply it with the --ssl-public-key parameter.",
             ) from e
 
         raise  # Other exceptions are unexpected and should propagate.
@@ -125,7 +127,7 @@ def register(
             break
     else:
         raise RegistrationException(
-            "Did not receive ID information in registration response."
+            "Did not receive ID information in registration response.",
         )
 
     secure_id, insecure_id = client_ids
@@ -165,17 +167,18 @@ def _handle_message(message: Dict[str, Any]) -> Union[Tuple[str, int], None]:
 
         if info == "unknown-account":
             raise RegistrationException(
-                "Invalid account name or registration key."
+                "Invalid account name or registration key.",
             )
         elif info == "max-pending-computers":
             raise RegistrationException(
                 "Maximum number of computers pending approval reached. "
                 "Log in to your Landscape server account page to manage "
-                "pending computer approvals."
+                "pending computer approvals.",
             )
     elif (
         message_type == "set-id"
-        and "id" in message and "insecure-id" in message
+        and "id" in message
+        and "insecure-id" in message
     ):
         return message["id"], message["insecure-id"]
 

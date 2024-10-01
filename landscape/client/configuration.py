@@ -3,7 +3,6 @@
 This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
-
 import getpass
 import io
 import logging
@@ -744,7 +743,13 @@ def attempt_registration(
             print(f"Retrying... (attempt {retry + 1} of {retries})")
 
         try:
-            registration_info = register(client_info, config.url)
+            # We pass the cainfo in the case where a
+            # self-signed certificate is used.
+            registration_info = register(
+                client_info,
+                config.url,
+                cainfo=config.ssl_public_key,
+            )
             break
         except RegistrationException as e:
             # This is unlikely to be resolved by the time we retry, so we fail
@@ -840,7 +845,10 @@ def main(args, print=print):
         sys.exit(1)
 
     init_app_logging(
-        config.log_dir, config.log_level, "landscape-config", config.quiet
+        config.log_dir,
+        config.log_level,
+        "landscape-config",
+        config.quiet,
     )
 
     if config.skip_registration and config.force_registration:
