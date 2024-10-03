@@ -1,0 +1,26 @@
+#!/bin/sh -e
+
+# This hook migrates the client's data from $SNAP_DATA to $SNAP_COMMON.
+# It will be kept until all the existing
+#  clients are migrated to $SNAP_COMMON (using this hook).
+# Full bug report: https://bugs.launchpad.net/landscape-client/+bug/2082616
+
+OLD_DIR="$SNAP_DATA/var/lib/landscape/client"
+NEW_DIR="$SNAP_COMMON/var/lib/landscape/client"
+
+# Is a migration needed? We check if:
+#  1. $OLD_DIR exists
+#  2. And that we've not already done the migration
+if [ -d "$OLD_DIR" ] && [ ! -f "$NEW_DIR/.migrated" ]; then
+   # Copy files while preserving attributes, links, etc
+   cp -a "$OLD_DIR/." "$NEW_DIR/"
+
+   # Flush file system buffers, ensuring all pending writes are completed
+   sync
+
+   # Add migration completion marker
+   touch "$NEW_DIR/.migrated"
+
+   # Remove the old directory
+   rm -rf "$OLD_DIR"
+fi

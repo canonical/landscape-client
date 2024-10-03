@@ -66,7 +66,7 @@ class HTTPTransportTest(LandscapeTest):
             transport.exchange,
             payload,
             computer_id="34",
-            exchange_token="abcd-efgh",
+            exchange_token=b"abcd-efgh",
             message_api=b"X.Y",
         )
 
