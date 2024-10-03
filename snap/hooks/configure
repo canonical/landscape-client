@@ -36,7 +36,6 @@ config_entries = [
     ("flush-interval", "flush_interval", None),
     ("exchange-interval", "exchange_interval", None),
     ("apt-update-interval", "apt_update_interval", None),
-    ("exchange-interval", "exchange_interval", None),
     ("cloud", "cloud", None),
 ]
 
@@ -44,7 +43,7 @@ changed = set()
 for snapctl_key, landscape_key, mapping_fn in config_entries:
     value = _snapctl("get", snapctl_key).strip()
     if not value:
-        # empty, value not has not changed
+        # empty, value has not changed
         continue
 
     if mapping_fn:
