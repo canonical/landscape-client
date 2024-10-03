@@ -58,7 +58,9 @@ apps:
       - var-lib-ubuntu-advantage-status
   config:
     command: usr/bin/landscape-config
-    plugs: [network]
+    plugs:
+      - network
+      - hardware-observe
 layout:
   /etc/landscape-client.conf:
     bind-file: $SNAP_COMMON/etc/landscape-client.conf
