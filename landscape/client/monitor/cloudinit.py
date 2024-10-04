@@ -1,15 +1,14 @@
 import json
 import subprocess
-from typing import Any
 
-from landscape.client.manager.plugin import DataWatcherManager
+from landscape.client.monitor.plugin import DataWatcher
 
 
-class CloudInit(DataWatcherManager):
+class CloudInit(DataWatcher):
 
     message_type = "cloud-init"
     message_key = message_type
-    scope = "cloud-init"
+    scope = message_type
     persist_name = message_type
     run_immediately = True
     run_interval = 3600 * 24  # 24h
@@ -17,8 +16,12 @@ class CloudInit(DataWatcherManager):
     def get_data(self) -> str:
         return json.dumps(get_cloud_init(), sort_keys=True)
 
+    def register(self, monitor):
+        super().register(monitor)
+        self.call_on_accepted("cloud-init", self.send_message)
 
-def get_cloud_init() -> dict[str, Any]:
+
+def get_cloud_init():
     """
     cloud-init returns all the information the instance has been initialized
     with, in JSON format. This function takes the the output and parses it
@@ -26,8 +29,8 @@ def get_cloud_init() -> dict[str, Any]:
     return code information.
     """
 
-    data: dict[str, Any] = {}
-    output: dict[str, Any] = {}
+    data = {}
+    output = {}
 
     try:
         completed_process = subprocess.run(

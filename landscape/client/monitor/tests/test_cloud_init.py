@@ -1,9 +1,9 @@
 import json
 from unittest import mock
 
-from landscape.client.manager.cloudinit import CloudInit
+from landscape.client.monitor.cloudinit import CloudInit
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import MonitorHelper
 
 
 def subprocess_cloud_init_mock(*args, **kwargs):
@@ -16,11 +16,10 @@ def subprocess_cloud_init_mock(*args, **kwargs):
 class CloudInitTest(LandscapeTest):
     """Cloud init plugin tests."""
 
-    helpers = [ManagerHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         super(CloudInitTest, self).setUp()
-        self.mstore = self.broker_service.message_store
         self.mstore.set_accepted_types(["cloud-init"])
 
     def test_cloud_init(self):
@@ -29,7 +28,7 @@ class CloudInitTest(LandscapeTest):
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = subprocess_cloud_init_mock
-            self.manager.add(plugin)
+            self.monitor.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -45,7 +44,7 @@ class CloudInitTest(LandscapeTest):
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = FileNotFoundError("Not found!")
-            self.manager.add(plugin)
+            self.monitor.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -60,7 +59,7 @@ class CloudInitTest(LandscapeTest):
 
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = ValueError("Not found!")
-            self.manager.add(plugin)
+            self.monitor.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -78,7 +77,7 @@ class CloudInitTest(LandscapeTest):
         with mock.patch("subprocess.run") as run_mock:
             run_mock.return_value = mock.Mock(stdout="'")
             run_mock.return_value.returncode = 0
-            self.manager.add(plugin)
+            self.monitor.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -96,7 +95,7 @@ class CloudInitTest(LandscapeTest):
         with mock.patch("subprocess.run") as run_mock:
             run_mock.return_value = mock.Mock(stdout="", stderr="Error")
             run_mock.return_value.returncode = 1
-            self.manager.add(plugin)
+            self.monitor.add(plugin)
             plugin.run()
 
         messages = self.mstore.get_pending_messages()

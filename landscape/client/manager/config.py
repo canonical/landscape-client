@@ -17,7 +17,6 @@ ALL_PLUGINS = [
     "UbuntuProInfo",
     "LivePatch",
     "UbuntuProRebootRequired",
-    "CloudInit",
 ]
 
 
