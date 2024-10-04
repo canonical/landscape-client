@@ -52,6 +52,7 @@ class CloudInitTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue(message["error"])
         self.assertEqual(message["return_code"], -1)
+        self.assertEqual({}, message["output"])
 
     def test_undefined_exception(self):
         """Test calling cloud-init when a random exception occurs."""
@@ -67,6 +68,7 @@ class CloudInitTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue(message["error"])
         self.assertEqual(message["return_code"], -2)
+        self.assertEqual({}, message["output"])
 
     def test_json_parse_error(self):
         """

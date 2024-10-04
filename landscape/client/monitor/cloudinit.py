@@ -18,7 +18,7 @@ class CloudInit(DataWatcher):
 
     def register(self, monitor):
         super().register(monitor)
-        self.call_on_accepted("cloud-init", self.send_message)
+        self.call_on_accepted("cloud-init", self.exchange, True)
 
 
 def get_cloud_init():
@@ -42,11 +42,11 @@ def get_cloud_init():
     except FileNotFoundError as exc:
         data["return_code"] = -1
         data["error"] = str(exc)
-        data["output"] = ""
+        data["output"] = output
     except Exception as exc:
         data["return_code"] = -2
         data["error"] = str(exc)
-        data["output"] = ""
+        data["output"] = output
     else:
         string_output = completed_process.stdout.strip()
         try:
