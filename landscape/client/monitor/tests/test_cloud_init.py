@@ -29,7 +29,7 @@ class CloudInitTest(LandscapeTest):
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = subprocess_cloud_init_mock
             self.monitor.add(plugin)
-            plugin.run()
+            plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)
@@ -45,7 +45,7 @@ class CloudInitTest(LandscapeTest):
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = FileNotFoundError("Not found!")
             self.monitor.add(plugin)
-            plugin.run()
+            plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["cloud-init"])
@@ -60,7 +60,7 @@ class CloudInitTest(LandscapeTest):
         with mock.patch("subprocess.run") as run_mock:
             run_mock.side_effect = ValueError("Not found!")
             self.monitor.add(plugin)
-            plugin.run()
+            plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["cloud-init"])
@@ -78,7 +78,7 @@ class CloudInitTest(LandscapeTest):
             run_mock.return_value = mock.Mock(stdout="'")
             run_mock.return_value.returncode = 0
             self.monitor.add(plugin)
-            plugin.run()
+            plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["cloud-init"])
@@ -96,7 +96,7 @@ class CloudInitTest(LandscapeTest):
             run_mock.return_value = mock.Mock(stdout="", stderr="Error")
             run_mock.return_value.returncode = 1
             self.monitor.add(plugin)
-            plugin.run()
+            plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
         message = json.loads(messages[0]["cloud-init"])
