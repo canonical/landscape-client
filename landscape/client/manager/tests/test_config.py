@@ -24,7 +24,7 @@ class ManagerConfigurationTest(LandscapeTest):
                 "SnapServicesManager",
                 "UbuntuProInfo",
                 "LivePatch",
-                "UbuntuProRebootRequired"
+                "UbuntuProRebootRequired",
             ],
             ALL_PLUGINS,
         )

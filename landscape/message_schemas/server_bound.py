@@ -17,6 +17,7 @@ __all__ = [
     "ACTIVE_PROCESS_INFO",
     "COMPUTER_UPTIME",
     "CLIENT_UPTIME",
+    "CLOUD_INIT",
     "OPERATION_RESULT",
     "COMPUTER_INFO",
     "DISTRIBUTION_INFO",
@@ -768,6 +769,11 @@ UBUNTU_PRO_REBOOT_REQUIRED = Message(
     {"ubuntu-pro-reboot-required": Unicode()},
 )
 
+CLOUD_INIT = Message(
+    "cloud-init",
+    {"cloud-init": Unicode()},
+)
+
 SNAPS = Message(
     "snaps",
     {
@@ -849,6 +855,7 @@ message_schemas = (
     ACTIVE_PROCESS_INFO,
     COMPUTER_UPTIME,
     CLIENT_UPTIME,
+    CLOUD_INIT,
     OPERATION_RESULT,
     COMPUTER_INFO,
     DISTRIBUTION_INFO,
