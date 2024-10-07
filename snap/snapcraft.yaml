@@ -28,6 +28,10 @@ plugs:
     interface: system-files
     read:
       - /var/lib/snapd/hostfs/var/lib/ubuntu-advantage/status.json
+  writable:
+    interface: system-files
+    write:
+      - /writable
 
 slots:
   annotations:
@@ -56,6 +60,7 @@ apps:
       - network-manager
       - log-observe
       - var-lib-ubuntu-advantage-status
+      - writable
   config:
     command: usr/bin/landscape-config
     plugs:
