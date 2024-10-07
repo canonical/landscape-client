@@ -32,7 +32,7 @@ landscape-client (24.08+git6375-0ubuntu0) jammy; urgency=medium
 
  -- Bill Kronholm <bill.kronholm@canonical.com>  Wed, 11 Sep 2024 14:20:58 -0700
 
- landscape-client (24.08-0landscape0) jammy; urgency=medium
+landscape-client (24.08-0landscape0) jammy; urgency=medium
 
   * feat: added flag to skip sending a registration request
   * fix(snap): reduce computer title retry delay
