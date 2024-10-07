@@ -1,3 +1,14 @@
+landscape-client (24.08+git6391-0landscape0) jammy; urgency=medium
+
+  * feat: add annotations content interface to snapcraft
+  * feat: add cloud-init message
+  * fix: parse livepatch process status check
+  * fix: revert fix for (LP: #1827857)
+  * fix: landscape-config uses ssl_public_key if provided
+  * fix: registration with landscape-client.config on the snap
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Mon, 07 Oct 2024 13:44:59 -0700
+
 landscape-client (24.08+git6378-0landscape0) jammy; urgency=medium
 
   * feat: add more snap configuration hooks
