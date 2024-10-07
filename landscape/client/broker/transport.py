@@ -33,7 +33,7 @@ class HTTPTransport:
         self,
         payload: dict,
         computer_id: Optional[str] = None,
-        exchange_token: Optional[str] = None,
+        exchange_token: Optional[bytes] = None,
         message_api: bytes = SERVER_API,
     ) -> Union[dict, None]:
         """Exchange message data with the server.
@@ -59,7 +59,16 @@ class HTTPTransport:
         except Exception:
             return None
 
-        return asdict(response)
+        # Return `ServerResponse` as a dictionary
+        #  converting the field names back to kebab case
+        #  which (imo) is better than mixing snake_case & kebab-case
+        #  in landscape.client.broker.exchange.MessageExchange.
+        return asdict(
+            response,
+            dict_factory=lambda data: {
+                k.replace("_", "-"): v for k, v in data
+            },
+        )
 
 
 class FakeTransport:
