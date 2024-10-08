@@ -61,7 +61,7 @@ def exchange_messages(
         headers["X-Computer-ID"] = computer_id
 
     if exchange_token:
-        headers["X-Exchange-Token"] = exchange_token
+        headers["X-Exchange-Token"] = exchange_token.decode()
 
     curl = pycurl.Curl()
 

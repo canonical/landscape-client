@@ -10,7 +10,7 @@ description: |
   in a Landscape account. It provides the Landscape client and requires a
   Landscape account.
 
-grade: stable # must be 'stable' to release into candidate/stable channels
+grade: stable
 architectures:
   - build-on: [amd64]
   - build-on: [arm64]
@@ -33,7 +33,7 @@ slots:
   annotations:
     interface: content
     write:
-      - $SNAP_DATA/var/lib/landscape/client/annotations.d
+      - $SNAP_COMMON/var/lib/landscape/client/annotations.d
 
 apps:
   landscape-client:
@@ -61,11 +61,21 @@ apps:
     plugs:
       - network
       - hardware-observe
+
+# Previously, the client's data was stored in $SNAP_DATA
+#  which led to duplicate machine entries after reverting
+#  to a previous revision.
+# After the migration of /var/lib/landscape/client from
+#  $SNAP_DATA to $SNAP_COMMON, the snap's layout changed.
+# The new epoch 1* means the snap can read the previous
+#  & new epochs' data but can only write epoch 1 data.
+epoch: 1*
+
 layout:
   /etc/landscape-client.conf:
     bind-file: $SNAP_COMMON/etc/landscape-client.conf
   /var/lib/landscape/client:
-    bind: $SNAP_DATA/var/lib/landscape/client
+    bind: $SNAP_COMMON/var/lib/landscape/client
   /var/log/landscape:
     bind: $SNAP_DATA/var/log/landscape
 
