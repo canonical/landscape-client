@@ -29,7 +29,8 @@ class ExchangeMessagesTestCase(TestCase):
         payload = {"messages": [{"type": "my-message-type", "some-value": 5}]}
 
         mock_response = {
-            "server-uuid": "my-server-uuid",
+            "server-api": "3.2",
+            "server-uuid": b"my-server-uuid",
             "messages": [{"type": "my-server-message-type", "other-value": 6}]
         }
 
@@ -40,10 +41,11 @@ class ExchangeMessagesTestCase(TestCase):
             "https://my-server.local/message-system",
             cainfo="mycainfo",
             computer_id="my-secure-id",
-            exchange_token="my-exchange-token",
+            exchange_token=b"my-exchange-token",
         )
 
-        self.assertEqual(server_response.server_uuid, "my-server-uuid")
+        self.assertEqual(server_response.server_api, "3.2")
+        self.assertEqual(server_response.server_uuid, b"my-server-uuid")
         self.assertEqual(
             server_response.messages,
             [{"type": "my-server-message-type", "other-value": 6}]
