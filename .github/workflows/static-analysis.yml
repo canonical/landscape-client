@@ -1,34 +1,13 @@
-# Run static code analysis through Tiobe TiCS
-# Requires repository configuration:
-# - TICSAUTHTOKEN secret to upload the results
-
 name: TiCS static analysis
 
-# Temporary: reduce frequency to once-weekly to reduce infra load
+# Temp: run once weekly to reduce infra load
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 6 * * 0'  # Run at 6:00a (arbitrary) to avoid peak activity on runners
-
 jobs:
-  check-configuration:
-    runs-on: ubuntu-latest
-    outputs:
-      should-run: $${ steps.check-token.outputs.should-run }}
-    steps:
-      - id: check-token
-        run: |
-          if [ -n "${{ secrets.TICSAUTHTOKEN }}" ]; then
-            echo "should-run=true"
-          else
-            echo "::notice::Repository secret TICSAUTHTOKEN not set. Skipping."
-            exit 1
-          fi
-
   TICS:
     runs-on: ubuntu-latest
-    needs: check-configuration
-    if: needs.check-configuration.outputs.should-run == 'true'
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v4
