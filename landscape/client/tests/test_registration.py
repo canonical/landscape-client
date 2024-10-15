@@ -35,7 +35,8 @@ class RegisterTestCase(TestCase):
         )
 
         self.exchange_messages_mock.return_value = ServerResponse(
-            "thisisaserveruuid",
+            "3.2",
+            b"thisisaserveruuid",
             [{"type": "set-id", "id": "mysecureid", "insecure-id": 1}],
         )
         registration_info = register(
@@ -45,7 +46,7 @@ class RegisterTestCase(TestCase):
 
         self.assertEqual(registration_info.insecure_id, 1)
         self.assertEqual(registration_info.secure_id, "mysecureid")
-        self.assertEqual(registration_info.server_uuid, "thisisaserveruuid")
+        self.assertEqual(registration_info.server_uuid, b"thisisaserveruuid")
 
     def test_exchange_http_code_error_404(self):
         """If a 404 is raised during the message exchange, a
@@ -129,7 +130,8 @@ class RegisterTestCase(TestCase):
         )
 
         self.exchange_messages_mock.return_value = ServerResponse(
-            server_uuid="thisisaserveruuid",
+            "3.2",
+            server_uuid=b"thisisaserveruuid",
             messages=[],
         )
 
@@ -149,7 +151,8 @@ class RegisterTestCase(TestCase):
         )
 
         self.exchange_messages_mock.return_value = ServerResponse(
-            server_uuid="thisisaserveruuid",
+            "3.2",
+            server_uuid=b"thisisaserveruuid",
             messages=[{"type": "unknown-message-type"}],
         )
 

@@ -23,8 +23,12 @@ from landscape.lib.format import format_delta
 class ServerResponse:
     """The HTTP response from the server after a message exchange."""
 
-    server_uuid: str
+    server_api: str
+    server_uuid: bytes
     messages: List[Dict[str, Any]]
+    client_accepted_types_hash: Optional[bytes] = None
+    next_exchange_token: Optional[bytes] = None
+    next_expected_sequence: Optional[int] = None
 
 
 def exchange_messages(
@@ -33,7 +37,7 @@ def exchange_messages(
     *,
     cainfo: Optional[str] = None,
     computer_id: Optional[str] = None,
-    exchange_token: Optional[str] = None,
+    exchange_token: Optional[bytes] = None,
     server_api: str = SERVER_API.decode(),
 ) -> ServerResponse:
     """Sends `payload` via HTTP(S) to `server_url`, parsing and returning the
@@ -61,7 +65,7 @@ def exchange_messages(
         headers["X-Computer-ID"] = computer_id
 
     if exchange_token:
-        headers["X-Exchange-Token"] = exchange_token
+        headers["X-Exchange-Token"] = exchange_token.decode()
 
     curl = pycurl.Curl()
 
@@ -91,4 +95,11 @@ def exchange_messages(
 
     logging.debug(f"Received payload:\n{pformat(response)}")
 
-    return ServerResponse(response["server-uuid"], response["messages"])
+    return ServerResponse(
+        response["server-api"],
+        response["server-uuid"],
+        response["messages"],
+        response.get("client-accepted-types-hash"),
+        response.get("next-exchange-token"),
+        response.get("next-expected-sequence"),
+    )
