@@ -1,9 +1,10 @@
 name: TiCS static analysis
 
+# Temp: run once weekly to reduce infra load
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # Run at 6:00a (arbitrary) to avoid peak activity on runners
+    - cron: '0 6 * * 0'  # Run at 6:00a (arbitrary) to avoid peak activity on runners
 jobs:
   TICS:
     runs-on: ubuntu-latest
