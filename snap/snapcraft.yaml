@@ -1,5 +1,5 @@
 name: landscape-client
-base: core22
+base: core24
 version: '24.12'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
@@ -11,13 +11,19 @@ description: |
   Landscape account.
 
 grade: stable
-architectures:
-  - build-on: [amd64]
-  - build-on: [arm64]
-  - build-on: [armhf]
-  - build-on: [ppc64el]
-  - build-on: [s390x]
-  - build-on: [riscv64]
+platforms:
+  amd64:
+    build-on: [amd64, arm64]
+  arm64:
+    build-on: [amd64, arm64]
+  armhf:
+    build-on: [amd64, arm64]
+  ppc64el:
+    build-on: [amd64, arm64]
+  s390x:
+    build-on: [amd64, arm64]
+  riscv64:
+    build-on: [amd64, arm64]
 confinement: strict
 
 environment:
