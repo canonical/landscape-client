@@ -28,6 +28,9 @@ plugs:
     interface: system-files
     read:
       - /var/lib/snapd/hostfs/var/lib/ubuntu-advantage/status.json
+  snapd-control-managed:
+    interface: snapd-control
+    refresh-schedule: managed  
 
 slots:
   annotations:
@@ -48,6 +51,7 @@ apps:
       - network-observe
       - scsi-generic
       - shutdown
+      - snapd-control-managed
       - snapd-control
       - system-observe
       - account-control
