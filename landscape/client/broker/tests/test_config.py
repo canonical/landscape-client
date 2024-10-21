@@ -159,3 +159,32 @@ class ConfigurationTests(LandscapeTest):
         configuration.load(["--config", filename, "--url", "whatever"])
 
         self.assertIsNone(configuration.hostagent_uid)
+
+    def test_installation_request_id_handling(self):
+        """
+        The 'installation_request_id' value specified in the configuration
+        file is passed through.
+        """
+        filename = self.makeFile(
+            "[client]\ninstallation_request_id = installed-according-to-plan",
+        )
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertEqual(
+            configuration.installation_request_id,
+            "installed-according-to-plan",
+        )
+
+    def test_missing_ninstallation_request_id_is_none(self):
+        """
+        Test that if we don't explicitly pass a installation_request_id,
+        then this value is None.
+        """
+        filename = self.makeFile("[client]\n")
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertIsNone(configuration.installation_request_id)

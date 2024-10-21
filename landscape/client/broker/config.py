@@ -1,5 +1,4 @@
 """Configuration class for the broker."""
-
 import os
 
 from landscape.client.deployment import Configuration
@@ -100,6 +99,12 @@ class BrokerConfiguration(Configuration):
             help="Only set this value if this computer is a WSL instance "
             "managed by Landscape, in which case set it to be the uid that "
             "Landscape assigned to the host machine.",
+        )
+        parser.add_argument(
+            "--installation-request-id",
+            help="Only set this value if this computer is a child instance "
+            "managed by Landscape, in which case set it to be the request id "
+            "that Landscape assigned to the host machine.",
         )
 
         return parser
