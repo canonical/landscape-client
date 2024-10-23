@@ -36,6 +36,7 @@ class ClientRegistrationInfo:
 
     container_info: Optional[str] = None
     hostagent_uid: Optional[str] = None
+    installation_request_id: Optional[str] = None
     hostname: Optional[str] = None
     juju_info: None = None  # We don't send Juju info currently.
     registration_password: Optional[str] = None
@@ -54,6 +55,7 @@ class ClientRegistrationInfo:
             identity.computer_title,
             container_info=get_container_info(),
             hostagent_uid=identity.hostagent_uid,
+            installation_request_id=identity.installation_request_id,
             hostname=get_fqdn(),
             registration_password=identity.registration_key,
             tags=identity.tags,

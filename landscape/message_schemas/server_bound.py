@@ -362,6 +362,7 @@ REGISTER_3_3 = Message(
         "clone_secure_id": Any(Unicode(), Constant(None)),
         "ubuntu_pro_info": Unicode(),
         "hostagent_uid": Unicode(),
+        "installation_request_id": Unicode(),
     },
     api=b"3.3",
     optional=[
@@ -375,6 +376,7 @@ REGISTER_3_3 = Message(
         "clone_secure_id",
         "ubuntu_pro_info",
         "hostagent_uid",
+        "installation_request_id",
     ],
 )
 
