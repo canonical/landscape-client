@@ -177,7 +177,7 @@ class ConfigurationTests(LandscapeTest):
             "installed-according-to-plan",
         )
 
-    def test_missing_ninstallation_request_id_is_none(self):
+    def test_missing_installation_request_id_is_none(self):
         """
         Test that if we don't explicitly pass a installation_request_id,
         then this value is None.

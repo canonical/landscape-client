@@ -104,7 +104,8 @@ class BrokerConfiguration(Configuration):
             "--installation-request-id",
             help="Only set this value if this computer is a child instance "
             "managed by Landscape, in which case set it to be the request id "
-            "that Landscape assigned to the host machine.",
+            "that Landscape assigned to the installation activity for the "
+            "host machine.",
         )
 
         return parser
