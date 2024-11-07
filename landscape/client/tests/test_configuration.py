@@ -26,6 +26,7 @@ from landscape.client.configuration import set_secure_id
 from landscape.client.configuration import setup
 from landscape.client.configuration import show_help
 from landscape.client.configuration import store_public_key_data
+from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.compat import ConfigParser
@@ -1495,6 +1496,44 @@ registration_key = shared-secret
         mock_restart_client.assert_called_once()
         mock_register.assert_called_once()
         mock_input.assert_not_called()
+
+    @mock.patch(
+        "landscape.client.configuration.ClientRegistrationInfo.from_identity",
+    )
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch("landscape.client.configuration.input")
+    @mock.patch("landscape.client.configuration.set_secure_id")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_register_insecure_id(
+        self,
+        mock_setup,
+        mock_register,
+        mock_set_secure_id,
+        mock_input,
+        mock_restart_client,
+        mock_client_info,
+    ):
+        """
+        Tests that silent registration sets insecure id when provided
+        """
+
+        mock_register.return_value = RegistrationInfo(
+            10,
+            "fake-secure-id",
+            "fake-server-uuid",
+        )
+
+        self.assertRaises(
+            SystemExit,
+            main,
+            ["--silent", "-c", self.make_working_config()],
+            print=noop_print,
+        )
+
+        mock_setup.assert_called_once()
+        mock_input.assert_not_called()
+        mock_set_secure_id.assert_called_once_with(mock.ANY, mock.ANY, 10)
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.attempt_registration")
