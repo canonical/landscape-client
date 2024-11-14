@@ -4,7 +4,6 @@ The WatchDog must run as root, because it spawns the Landscape Manager.
 
 The main C{landscape-client} program uses this watchdog.
 """
-
 import errno
 import os
 import pwd
@@ -26,8 +25,8 @@ from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client import IS_SNAP
 from landscape.client import GROUP
+from landscape.client import IS_SNAP
 from landscape.client import USER
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.amp import RemoteManagerConnector
@@ -522,7 +521,10 @@ class WatchDogConfiguration(Configuration):
         )
         parser.add_argument(
             "--monitor-only",
-            action="store_true",
+            type=self.convert_arg_to_bool,
+            nargs="?",
+            const=True,
+            default=False,
             help="Don't enable management features. This is "
             "useful if you want to run the client as a non-root "
             "user.",
@@ -534,6 +536,22 @@ class WatchDogConfiguration(Configuration):
         if not self.monitor_only:
             daemons.append(Manager)
         return daemons
+
+    def convert_arg_to_bool(self, value: str) -> bool:
+        """
+        Converts an argument provided that is in string format
+        to be a boolean value.
+        """
+        if value.lower() in {"true", "yes", "1"}:
+            return True
+        elif value.lower() in {"false", "no", "0"}:
+            return False
+        else:
+            info(
+                "Error. Invalid boolean provided in config or parameters. ",
+                "Defaulting to False.",
+            )
+            return False
 
 
 def daemonize():

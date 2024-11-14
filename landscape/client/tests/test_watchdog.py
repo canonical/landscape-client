@@ -12,8 +12,8 @@ from twisted.internet.defer import succeed
 from twisted.internet.utils import getProcessOutput
 from twisted.python.fakepwd import UserDatabase
 
-from landscape.client import USER
 import landscape.client.watchdog
+from landscape.client import USER
 from landscape.client.amp import ComponentConnector
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.reactor import LandscapeReactor
@@ -1147,8 +1147,27 @@ class WatchDogOptionsTest(LandscapeTest):
         self.config.load(["--monitor-only"])
         self.assertEqual(self.config.get_enabled_daemons(), [Broker, Monitor])
 
+    def test_monitor_only_false(self):
+        self.config.load(["--monitor-only", "false"])
+        self.assertEqual(
+            self.config.get_enabled_daemons(),
+            [Broker, Monitor, Manager],
+        )
+
     def test_default_daemons(self):
         self.config.load([])
+        self.assertEqual(
+            self.config.get_enabled_daemons(),
+            [Broker, Monitor, Manager],
+        )
+
+    @mock.patch("landscape.client.watchdog.info")
+    def test_monitor_only_invalid_entry(self, logging):
+        self.config.load(["--monitor-only", "invalid-option"])
+        logging.assert_called_once_with(
+            "Error. Invalid boolean provided in config or parameters. ",
+            "Defaulting to False.",
+        )
         self.assertEqual(
             self.config.get_enabled_daemons(),
             [Broker, Monitor, Manager],
