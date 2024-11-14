@@ -1533,7 +1533,11 @@ registration_key = shared-secret
 
         mock_setup.assert_called_once()
         mock_input.assert_not_called()
-        mock_set_secure_id.assert_called_once_with(mock.ANY, mock.ANY, 10)
+        mock_set_secure_id.assert_called_once_with(
+            mock.ANY,
+            "fake-secure-id",
+            10,
+        )
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.attempt_registration")
