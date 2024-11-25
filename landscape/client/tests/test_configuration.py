@@ -2273,7 +2273,10 @@ class IsRegisteredTest(LandscapeTest):
         """
         If the client is actively registered with the server returns True
         """
-        self.persist.set("accepted-types", ["test", "temperature"])
+        self.persist.set(
+            "message-store.accepted-types",
+            ["test", "temperature"],
+        )
         self.persist.save()
         self.assertTrue(actively_registered(self.config))
 
@@ -2281,7 +2284,7 @@ class IsRegisteredTest(LandscapeTest):
         """
         If the client is not actively registered with the server returns False
         """
-        self.persist.set("accepted-types", ["test", "register"])
+        self.persist.set("message-store.accepted-types", ["test", "register"])
         self.persist.save()
         self.assertFalse(actively_registered(self.config))
 
@@ -2289,7 +2292,7 @@ class IsRegisteredTest(LandscapeTest):
         """
         If the client is not actively registered with the server returns False
         """
-        self.persist.set("accepted-types", ["test"])
+        self.persist.set("message-store.accepted-types", ["test"])
         self.persist.save()
         self.assertFalse(actively_registered(self.config))
 

@@ -792,7 +792,7 @@ def actively_registered(config):
         f"{BrokerService.service_name}.bpickle",
     )
     persist = Persist(filename=persist_filename, user=USER, group=GROUP)
-    accepted_types = persist.get("accepted-types")
+    accepted_types = persist.get("message-store.accepted-types")
     if accepted_types is not None:
         return len(accepted_types) > 1 and "register" not in accepted_types
     return False
@@ -885,7 +885,7 @@ def main(args, print=print):
             "and force registration together.",
         )
 
-    already_registered = is_registered(config)
+    already_registered = actively_registered(config)
 
     if config.is_registered:
 
