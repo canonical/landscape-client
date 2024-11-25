@@ -9,6 +9,7 @@ from landscape.client import GROUP
 from landscape.client import USER
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
+from landscape.client.configuration import actively_registered
 from landscape.client.configuration import bootstrap_tree
 from landscape.client.configuration import ConfigurationError
 from landscape.client.configuration import EXIT_NOT_REGISTERED
@@ -21,6 +22,7 @@ from landscape.client.configuration import main
 from landscape.client.configuration import print_text
 from landscape.client.configuration import prompt_yes_no
 from landscape.client.configuration import registration_info_text
+from landscape.client.configuration import registration_sent
 from landscape.client.configuration import restart_client
 from landscape.client.configuration import set_secure_id
 from landscape.client.configuration import setup
@@ -2252,6 +2254,44 @@ class IsRegisteredTest(LandscapeTest):
         self.persist.set("registration.secure-id", "super-secure")
         self.persist.save()
         self.assertTrue(is_registered(self.config))
+
+    def test_registration_sent_false(self):
+        """
+        If the client hasn't previously registered, is_registered returns False
+        """
+        self.assertFalse(registration_sent(self.config))
+
+    def test_registration_sent_true(self):
+        """
+        If the client has previously registered, is_registered returns True.
+        """
+        self.persist.set("registration.secure-id", "super-secure")
+        self.persist.save()
+        self.assertTrue(registration_sent(self.config))
+
+    def test_actively_registered_true(self):
+        """
+        If the client is actively registered with the server returns True
+        """
+        self.persist.set("accepted-types", ["test", "temperature"])
+        self.persist.save()
+        self.assertTrue(actively_registered(self.config))
+
+    def test_actively_registered_false(self):
+        """
+        If the client is not actively registered with the server returns False
+        """
+        self.persist.set("accepted-types", ["test", "register"])
+        self.persist.save()
+        self.assertFalse(actively_registered(self.config))
+
+    def test_actively_registered_false_only_test(self):
+        """
+        If the client is not actively registered with the server returns False
+        """
+        self.persist.set("accepted-types", ["test"])
+        self.persist.save()
+        self.assertFalse(actively_registered(self.config))
 
 
 class RegistrationInfoTest(LandscapeTest):

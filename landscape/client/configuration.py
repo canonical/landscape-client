@@ -770,6 +770,34 @@ def attempt_registration(
     return 0
 
 
+def registration_sent(config):
+    """
+    Return whether the client has sent a registration request to the server.
+    For now does same thing as is_registered as to make function name more
+    clear with what is performed.
+    """
+    persist_filename = os.path.join(
+        config.data_path,
+        f"{BrokerService.service_name}.bpickle",
+    )
+    persist = Persist(filename=persist_filename, user=USER, group=GROUP)
+    identity = Identity(config, persist)
+    return bool(identity.secure_id)
+
+
+def actively_registered(config):
+    """Return whether or not the client is currently registered with server"""
+    persist_filename = os.path.join(
+        config.data_path,
+        f"{BrokerService.service_name}.bpickle",
+    )
+    persist = Persist(filename=persist_filename, user=USER, group=GROUP)
+    accepted_types = persist.get("accepted-types")
+    if accepted_types is not None:
+        return len(accepted_types) > 1 and "register" not in accepted_types
+    return False
+
+
 def is_registered(config):
     """Return whether the client is already registered."""
     persist_filename = os.path.join(
