@@ -275,6 +275,20 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                 "Send a new registration request only if one has not been sent"
             ),
         )
+        parser.add_argument(
+            "--actively-registered",
+            action="store_true",
+            help="Exit with code 0 (success) if client is "
+            "registered else returns {}. Displays "
+            "registration info.".format(EXIT_NOT_REGISTERED),
+        )
+        parser.add_argument(
+            "--registration-sent",
+            action="store_true",
+            help="Exit with code 0 (success) if client is "
+            "registered else returns {}. Displays "
+            "registration info.".format(EXIT_NOT_REGISTERED),
+        )
         return parser
 
 
@@ -863,7 +877,7 @@ def get_secure_id(config):
     return identity.secure_id
 
 
-def main(args, print=print):
+def main(args, print=print):  # noqa: C901
     """Interact with the user and the server to set up client configuration."""
     config = LandscapeSetupConfiguration()
     try:
@@ -885,11 +899,23 @@ def main(args, print=print):
             "and force registration together.",
         )
 
-    already_registered = actively_registered(config)
+    already_registered = is_registered(config)
 
-    if config.is_registered:
+    if config.is_registered or config.registration_sent:
 
         registration_status = already_registered
+
+        info_text = registration_info_text(config, registration_status)
+        print(info_text)
+
+        if registration_status:
+            sys.exit(0)
+        else:
+            sys.exit(EXIT_NOT_REGISTERED)
+
+    currently_registered = actively_registered(config)
+    if config.actively_registered:
+        registration_status = currently_registered
 
         info_text = registration_info_text(config, registration_status)
         print(info_text)
