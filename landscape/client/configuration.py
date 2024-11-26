@@ -909,7 +909,7 @@ def main(args, print=print):  # noqa: C901
         info_text = registration_info_text(config, currently_registered)
         print(info_text)
 
-        if registration_status:
+        if currently_registered:
             sys.exit(0)
         else:
             sys.exit(EXIT_NOT_REGISTERED)
