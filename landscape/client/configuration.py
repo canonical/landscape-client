@@ -788,7 +788,8 @@ def registration_sent(config):
     """
     Return whether the client has sent a registration request to the server.
     For now does same thing as is_registered as to make function name more
-    clear with what is performed.
+    clear with what is performed. This is the legacy behaviour of
+    --is-registered and the name will be changed in a future release.
     """
     persist_filename = os.path.join(
         config.data_path,
@@ -810,17 +811,6 @@ def actively_registered(config):
     if accepted_types is not None:
         return len(accepted_types) > 1 and "register" not in accepted_types
     return False
-
-
-def is_registered(config):
-    """Return whether the client is already registered."""
-    persist_filename = os.path.join(
-        config.data_path,
-        f"{BrokerService.service_name}.bpickle",
-    )
-    persist = Persist(filename=persist_filename, user=USER, group=GROUP)
-    identity = Identity(config, persist)
-    return bool(identity.secure_id)
 
 
 def registration_info_text(config, registration_status):
@@ -899,7 +889,7 @@ def main(args, print=print):  # noqa: C901
             "and force registration together.",
         )
 
-    already_registered = is_registered(config)
+    already_registered = registration_sent(config)
 
     if config.is_registered or config.registration_sent:
 
@@ -913,11 +903,10 @@ def main(args, print=print):  # noqa: C901
         else:
             sys.exit(EXIT_NOT_REGISTERED)
 
-    currently_registered = actively_registered(config)
     if config.actively_registered:
-        registration_status = currently_registered
+        currently_registered = actively_registered(config)
 
-        info_text = registration_info_text(config, registration_status)
+        info_text = registration_info_text(config, currently_registered)
         print(info_text)
 
         if registration_status:

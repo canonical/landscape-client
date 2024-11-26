@@ -81,11 +81,15 @@ OPTIONS
   --disable                Stop running clients and disable start at boot.
   --init                   Set up the client directories structure and exit.
   --is-registered          Exit with code 0 (success) if client
-                           is registered else returns 5. Display
-                           registration info.
-  --registration-sent      Exit with code 0 (success) if client
-                           has sent registration request else returns 5.
+			   has sent registration request else returns 5.
 			   Display registration sent info.
+			   (NOTE: use --actively-registered to detect if
+			   registration has been accepted server-side)
+  --registration-sent      Exit with code 0 (success) if client
+			   has sent registration request else returns 5.
+			   Display registration sent info.
+			   (NOTE: use --actively-registered to detect if
+			   registration has been accepted server-side)
   --actively-registered    Exit with code 0 (success) if client
                            is registered else returns 5. Display
                            registration info.

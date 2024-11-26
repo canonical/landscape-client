@@ -15,7 +15,6 @@ from landscape.client.configuration import ConfigurationError
 from landscape.client.configuration import EXIT_NOT_REGISTERED
 from landscape.client.configuration import get_secure_id
 from landscape.client.configuration import ImportOptionError
-from landscape.client.configuration import is_registered
 from landscape.client.configuration import LandscapeSetupConfiguration
 from landscape.client.configuration import LandscapeSetupScript
 from landscape.client.configuration import main
@@ -1183,7 +1182,7 @@ registration_key = shared-secret
         mock_input.assert_not_called()
 
     @mock.patch(
-        "landscape.client.configuration.is_registered",
+        "landscape.client.configuration.registration_sent",
         return_value=True,
     )
     @mock.patch("landscape.client.configuration.restart_client")
@@ -2241,29 +2240,17 @@ class IsRegisteredTest(LandscapeTest):
         persist_file = os.path.join(self.config.data_path, "broker.bpickle")
         self.persist = Persist(filename=persist_file)
 
-    def test_is_registered_false(self):
-        """
-        If the client hasn't previously registered, is_registered returns False
-        """
-        self.assertFalse(is_registered(self.config))
-
-    def test_is_registered_true(self):
-        """
-        If the client has previously registered, is_registered returns True.
-        """
-        self.persist.set("registration.secure-id", "super-secure")
-        self.persist.save()
-        self.assertTrue(is_registered(self.config))
-
     def test_registration_sent_false(self):
         """
-        If the client hasn't previously registered, is_registered returns False
+        If the client hasn't previously sent a registration request,
+        registration_sent returns False
         """
         self.assertFalse(registration_sent(self.config))
 
     def test_registration_sent_true(self):
         """
-        If the client has previously registered, is_registered returns True.
+        If the client has previously sent a registration request,
+        registration_sent returns True.
         """
         self.persist.set("registration.secure-id", "super-secure")
         self.persist.save()
@@ -2290,7 +2277,12 @@ class IsRegisteredTest(LandscapeTest):
 
     def test_actively_registered_false_only_test(self):
         """
-        If the client is not actively registered with the server returns False
+        If the client is not actively registered with the server returns False.
+        Here we check add only test to the accepted types as it is always an
+        accepted type by the server. In the actively_registered function we
+        check to see if the len(accepted_types) > 1 to make sure there are more
+        accepted types than just the test. This test case makes sure that we
+        fail the test case of only test if provided in accepted types
         """
         self.persist.set("message-store.accepted-types", ["test"])
         self.persist.save()
