@@ -736,6 +736,7 @@ def attempt_registration(
 
     :returns: an exit code based on the registration result.
     """
+
     client_info = ClientRegistrationInfo.from_identity(identity)
 
     for retry in range(retries):
@@ -750,6 +751,7 @@ def attempt_registration(
                 config.url,
                 cainfo=config.ssl_public_key,
             )
+
             break
         except RegistrationException as e:
             # This is unlikely to be resolved by the time we retry, so we fail
@@ -763,7 +765,12 @@ def attempt_registration(
         # We're finished retrying and haven't succeeded yet.
         return 2
 
-    set_secure_id(config, registration_info.secure_id)
+    set_secure_id(
+        config,
+        registration_info.secure_id,
+        registration_info.insecure_id,
+    )
+
     print("Registration request sent successfully")
     restart_client(config)
 
@@ -805,7 +812,7 @@ def registration_info_text(config, registration_status):
     return text
 
 
-def set_secure_id(config, new_id):
+def set_secure_id(config, new_id, insecure_id=None):
     """Persists a secure id in the identity data file. This is used to indicate
     whether we are currently in the process of registering.
     """
@@ -819,6 +826,8 @@ def set_secure_id(config, new_id):
     )
     identity = Identity(config, persist)
     identity.secure_id = new_id
+    if insecure_id is not None:
+        identity.insecure_id = insecure_id
     persist.save()
 
 
@@ -910,6 +919,7 @@ def main(args, print=print):
         )
 
     exit_code = 0
+
     if should_register:
         exit_code = attempt_registration(identity, config)
         restart_client(config)

@@ -49,6 +49,7 @@ class ClientRegistrationInfo:
         cls: Type["ClientRegistrationInfo"],
         identity: Identity,
     ) -> "ClientRegistrationInfo":
+
         return cls(
             identity.access_group,
             identity.account_name,
