@@ -58,6 +58,8 @@ class Identity:
     @ivar secure_id: A server-provided ID for secure message exchange.
     @ivar insecure_id: Non-secure server-provided ID, mainly used with
         the ping server.
+    @ivar accepted_types: The types of messages the server will accept
+        from the client during exchange
     @ivar computer_title: See L{BrokerConfiguration}.
     @ivar account_name: See L{BrokerConfiguration}.
     @ivar registration_password: See L{BrokerConfiguration}.
