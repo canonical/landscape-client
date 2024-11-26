@@ -1,5 +1,5 @@
-DEBIAN_REVISION = "-0landscape0"
-UPSTREAM_VERSION = "24.08+git6391"
+DEBIAN_REVISION = ""
+UPSTREAM_VERSION = "24.11"
 VERSION = f"{UPSTREAM_VERSION}{DEBIAN_REVISION}"
 
 # The minimum server API version that all Landscape servers are known to speak
