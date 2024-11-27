@@ -609,14 +609,12 @@ class ArgConversionTest(LandscapeTest):
 
     def test_true_values(self):
         TRUTHY_VALUES = {"true", "yes", "y", "1", "on", "TRUE", "Yes"}
-        val = True
         for t in TRUTHY_VALUES:
             val = convert_arg_to_bool(t)
             self.assertTrue(val)
 
     def test_false_values(self):
         FALSY_VALUES = {"false", "no", "n", "0", "off", "FALSE", "No"}
-        val = False
         for f in FALSY_VALUES:
             val = convert_arg_to_bool(f)
             self.assertFalse(val)
@@ -624,7 +622,6 @@ class ArgConversionTest(LandscapeTest):
     @mock.patch("landscape.client.deployment.info")
     def test_invalid_values(self, logging):
         INVALID_VALUES = {"invalid", "truthy", "2", "exit"}
-        val = False
         for i in INVALID_VALUES:
             val = convert_arg_to_bool(i)
             logging.assert_called_with(
