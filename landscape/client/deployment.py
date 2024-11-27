@@ -3,10 +3,11 @@ import os.path
 import subprocess
 import sys
 import time
+from argparse import SUPPRESS
 from datetime import datetime
 from datetime import timezone
 from logging import debug
-from argparse import SUPPRESS
+from logging import info
 from typing import Sequence
 
 from twisted.logger import globalLogBeginner
@@ -14,8 +15,8 @@ from twisted.logger import globalLogBeginner
 from landscape import VERSION
 from landscape.client import DEFAULT_CONFIG
 from landscape.client import GROUP
-from landscape.client import USER
 from landscape.client import snap_http
+from landscape.client import USER
 from landscape.client.snap_utils import get_snap_info
 from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging
@@ -304,3 +305,23 @@ def generate_computer_title(auto_enroll_config):
         title = hostname
 
     return title
+
+
+def convert_arg_to_bool(value: str) -> bool:
+    """
+    Converts an argument provided that is in string format
+    to be a boolean value.
+    """
+    TRUTHY_VALUES = {"true", "yes", "y", "1", "on"}
+    FALSY_VALUES = {"false", "no", "n", "0", "off"}
+
+    if value.lower() in TRUTHY_VALUES:
+        return True
+    elif value.lower() in FALSY_VALUES:
+        return False
+    else:
+        info(
+            "Error. Invalid boolean provided in config or parameters. "
+            + "Defaulting to False.",
+        )
+        return False
