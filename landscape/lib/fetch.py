@@ -2,6 +2,7 @@ import io
 import os
 import sys
 from argparse import ArgumentParser
+from logging import warning
 
 from twisted.internet.defer import DeferredList
 from twisted.internet.threads import deferToThread
@@ -94,6 +95,13 @@ def fetch(
             curl.setopt(pycurl.READFUNCTION, output.read)
 
     if cainfo and url.startswith("https:"):
+        if not os.access(cainfo, os.R_OK):
+            warning(
+                "SSL certificate provided is not accessible by landscape "
+                + "client. Please place in directory that is readable such "
+                + "as '/etc/ssl/certs'",
+            )
+            # log error here
         curl.setopt(pycurl.CAINFO, networkString(cainfo))
 
     if headers:

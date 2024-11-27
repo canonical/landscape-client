@@ -1,6 +1,7 @@
 import os
 import unittest
 from threading import local
+from unittest import mock
 
 import pycurl
 from twisted.internet.defer import FirstError
@@ -190,6 +191,17 @@ class FetchTest(
         result = fetch("http://example.com", cainfo="cainfo", curl=curl)
         self.assertEqual(result, b"result")
         self.assertTrue(pycurl.CAINFO not in curl.options)
+
+    @mock.patch("landscape.lib.fetch.warning")
+    def test_cainfo_inaccessible_cert(self, logging):
+        curl = CurlStub(b"result")
+        result = fetch("https://example.com", cainfo="cainfo", curl=curl)
+        self.assertEqual(result, b"result")
+        logging.assert_called_once_with(
+            "SSL certificate provided is not accessible by landscape "
+            + "client. Please place in directory that is readable such "
+            + "as '/etc/ssl/certs'",
+        )
 
     def test_headers(self):
         curl = CurlStub(b"result")
