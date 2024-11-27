@@ -4,6 +4,7 @@ from unittest import TestCase
 
 from landscape.client.deployment import BaseConfiguration
 from landscape.client.deployment import Configuration
+from landscape.client.deployment import convert_arg_to_bool
 from landscape.client.deployment import generate_computer_title
 from landscape.client.deployment import get_versioned_persist
 from landscape.client.deployment import init_logging
@@ -468,7 +469,7 @@ class GenerateComputerTitleTest(TestCase):
         )
         self.assertIsNone(title)
         mock_debug.assert_called_once_with(
-            "No serial assertion in snap info {}, waiting..."
+            "No serial assertion in snap info {}, waiting...",
         )
 
     @mock.patch("landscape.client.deployment.debug")
@@ -601,3 +602,33 @@ class GenerateComputerTitleTest(TestCase):
             },
         )
         self.assertEqual(title, "2024-machine")
+
+
+class ArgConversionTest(LandscapeTest):
+    """Tests for `convert_arg_to_bool` function"""
+
+    def test_true_values(self):
+        TRUTHY_VALUES = {"true", "yes", "y", "1", "on", "TRUE", "Yes"}
+        val = True
+        for t in TRUTHY_VALUES:
+            val = convert_arg_to_bool(t)
+        self.assertTrue(val)
+
+    def test_false_values(self):
+        FALSY_VALUES = {"false", "no", "n", "0", "off", "FALSE", "No"}
+        val = False
+        for f in FALSY_VALUES:
+            val = convert_arg_to_bool(f)
+        self.assertFalse(val)
+
+    @mock.patch("landscape.client.deployment.info")
+    def test_invalid_values(self, logging):
+        INVALID_VALUES = {"invalid", "truthy", "2", "exit"}
+        val = False
+        for i in INVALID_VALUES:
+            val = convert_arg_to_bool(i)
+            logging.assert_called_with(
+                "Error. Invalid boolean provided in config or parameters. "
+                + "Defaulting to False.",
+            )
+        self.assertFalse(val)
