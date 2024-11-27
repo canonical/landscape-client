@@ -32,6 +32,7 @@ from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.amp import RemoteManagerConnector
 from landscape.client.broker.amp import RemoteMonitorConnector
 from landscape.client.deployment import Configuration
+from landscape.client.deployment import convert_arg_to_bool
 from landscape.client.deployment import init_logging
 from landscape.client.reactor import LandscapeReactor
 from landscape.lib.bootstrap import BootstrapDirectory
@@ -521,7 +522,7 @@ class WatchDogConfiguration(Configuration):
         )
         parser.add_argument(
             "--monitor-only",
-            type=self.convert_arg_to_bool,
+            type=convert_arg_to_bool,
             nargs="?",
             const=True,
             default=False,
@@ -536,22 +537,6 @@ class WatchDogConfiguration(Configuration):
         if not self.monitor_only:
             daemons.append(Manager)
         return daemons
-
-    def convert_arg_to_bool(self, value: str) -> bool:
-        """
-        Converts an argument provided that is in string format
-        to be a boolean value.
-        """
-        if value.lower() in {"true", "yes", "1"}:
-            return True
-        elif value.lower() in {"false", "no", "0"}:
-            return False
-        else:
-            info(
-                "Error. Invalid boolean provided in config or parameters. ",
-                "Defaulting to False.",
-            )
-            return False
 
 
 def daemonize():

@@ -1161,12 +1161,12 @@ class WatchDogOptionsTest(LandscapeTest):
             [Broker, Monitor, Manager],
         )
 
-    @mock.patch("landscape.client.watchdog.info")
+    @mock.patch("landscape.client.deployment.info")
     def test_monitor_only_invalid_entry(self, logging):
         self.config.load(["--monitor-only", "invalid-option"])
         logging.assert_called_once_with(
-            "Error. Invalid boolean provided in config or parameters. ",
-            "Defaulting to False.",
+            "Error. Invalid boolean provided in config or parameters. "
+            + "Defaulting to False.",
         )
         self.assertEqual(
             self.config.get_enabled_daemons(),
