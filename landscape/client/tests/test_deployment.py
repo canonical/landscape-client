@@ -612,14 +612,14 @@ class ArgConversionTest(LandscapeTest):
         val = True
         for t in TRUTHY_VALUES:
             val = convert_arg_to_bool(t)
-        self.assertTrue(val)
+            self.assertTrue(val)
 
     def test_false_values(self):
         FALSY_VALUES = {"false", "no", "n", "0", "off", "FALSE", "No"}
         val = False
         for f in FALSY_VALUES:
             val = convert_arg_to_bool(f)
-        self.assertFalse(val)
+            self.assertFalse(val)
 
     @mock.patch("landscape.client.deployment.info")
     def test_invalid_values(self, logging):
@@ -631,4 +631,4 @@ class ArgConversionTest(LandscapeTest):
                 "Error. Invalid boolean provided in config or parameters. "
                 + "Defaulting to False.",
             )
-        self.assertFalse(val)
+            self.assertFalse(val)
