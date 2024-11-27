@@ -685,7 +685,12 @@ class FakeReactor(EventHandlingReactorMixin):
             # because the call might cancel it!
             call._data = self.call_later(seconds, fake)._data
             try:
-                f(*args, **kwargs)
+                deferred = f(*args, **kwargs)
+
+                if hasattr(deferred, "result") and isinstance(deferred.result, Failure):
+                    # Required for some failures to get GC'd properly flushed.
+                    # Twisted did this in versions < 24.10, but now we have to.
+                    deferred.result.cleanFailure()
             except Exception:
                 if call.active:
                     self.cancel_call(call)
