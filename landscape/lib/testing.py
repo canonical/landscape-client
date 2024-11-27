@@ -687,7 +687,10 @@ class FakeReactor(EventHandlingReactorMixin):
             try:
                 deferred = f(*args, **kwargs)
 
-                if hasattr(deferred, "result") and isinstance(deferred.result, Failure):
+                if (
+                    hasattr(deferred, "result")
+                    and isinstance(deferred.result, Failure)
+                ):
                     # Required for some failures to get GC'd properly flushed.
                     # Twisted did this in versions < 24.10, but now we have to.
                     deferred.result.cleanFailure()
