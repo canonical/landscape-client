@@ -31,6 +31,10 @@ plugs:
   snapd-control-managed:
     interface: snapd-control
     refresh-schedule: managed  
+  writable:
+    interface: system-files
+    write:
+      - /writable
 
 slots:
   annotations:
@@ -60,6 +64,7 @@ apps:
       - network-manager
       - log-observe
       - var-lib-ubuntu-advantage-status
+      - writable
   config:
     command: usr/bin/landscape-config
     plugs:
