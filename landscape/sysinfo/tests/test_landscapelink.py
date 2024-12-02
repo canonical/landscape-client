@@ -20,7 +20,7 @@ class LandscapeLinkTest(TwistedTestCase, unittest.TestCase):
         self.assertEqual(
             self.sysinfo.get_footnotes(),
             [
-                "Graph this data and manage this system at:\n"
-                "    https://landscape.canonical.com/",
+                "Graph this data and manage this system with Landscape. \n"
+                "https://ubuntu.com/landscape",
             ],
         )

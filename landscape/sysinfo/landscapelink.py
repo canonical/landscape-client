@@ -7,7 +7,7 @@ class LandscapeLink:
 
     def run(self):
         self._sysinfo.add_footnote(
-            "Graph this data and manage this system at:\n"
-            "    https://landscape.canonical.com/",
+            "Graph this data and manage this system with Landscape. \n"
+            "https://ubuntu.com/landscape",
         )
         return succeed(None)
