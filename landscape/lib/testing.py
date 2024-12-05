@@ -691,8 +691,8 @@ class FakeReactor(EventHandlingReactorMixin):
                     hasattr(deferred, "result")
                     and isinstance(deferred.result, Failure)
                 ):
-                    # Required for some failures to get GC'd properly flushed.
-                    # Twisted did this in versions < 24.10, but now we have to.
+                    # Required for failures to get GC'd and properly flushed.
+                    # Twisted did this for us in versions < 24.10.
                     deferred.result.cleanFailure()
             except Exception:
                 if call.active:
