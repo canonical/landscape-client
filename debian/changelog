@@ -1,4 +1,4 @@
-landscape-client (24.12+git6408-0landscape0) jammy; urgency=medium
+landscape-client (24.12-0landscape0) jammy; urgency=medium
 
   * fix: get tests passing on plucky
   * fix: Updated motd
