@@ -1,6 +1,7 @@
 landscape-client (24.12-0landscape0) jammy; urgency=medium
 
   * fix: get tests passing on plucky
+  * refactor: update snapcraft.yaml
   * fix: Updated motd
   * fix: SSL Certificates properly surfaced
   * fix: monitor-only set properly when false/no passed in config 
@@ -8,6 +9,7 @@ landscape-client (24.12-0landscape0) jammy; urgency=medium
   * fix: insecure id not set during registration on self hosted 
   * fix: TiOBE TiCS workflow
   * feat: add optional installation_request_id parameter to registration 
+  * feat: update snapcraft.yaml
   * fix: prevent creation of clones after reverting to previous snap revision 
   * fix: add missing python3-yaml to runtime dependencies (LP: #2084586)
   * fix: process full server response 
