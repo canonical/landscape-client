@@ -1,3 +1,21 @@
+landscape-client (24.12-0landscape0) jammy; urgency=medium
+
+  * feat: add optional installation_request_id parameter to registration 
+  * feat: update snapcraft.yaml to use snapd-control-managed
+  * fix: get tests passing on plucky
+  * fix: Updated motd
+  * fix: SSL Certificates properly surfaced
+  * fix: monitor-only set properly when false/no passed in config 
+  * fix: flag --is-registered prints correct outputs
+  * fix: insecure id not set during registration on self hosted 
+  * fix: TiOBE TiCS workflow
+  * fix: prevent creation of clones after reverting to previous snap revision 
+  * fix: add missing python3-yaml to runtime dependencies (LP: #2084586)
+  * fix: process full server response 
+  * refactor: remove snapd-control annotation from snapcraft.yaml
+
+ -- Justin Kim <justin.kim@canonical.com>  Thu, 19 Dec 2024 17:22:40 +0000
+
 landscape-client (24.08+git6391-0landscape0) jammy; urgency=medium
 
   * feat: add annotations content interface to snapcraft
