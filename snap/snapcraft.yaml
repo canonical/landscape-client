@@ -51,7 +51,7 @@ apps:
       - network-observe
       - scsi-generic
       - shutdown
-      - snapd-control-managed
+      - snapd-control
       - system-observe
       - account-control
       - process-control
