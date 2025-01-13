@@ -1,4 +1,9 @@
-/var/log/landscape/watchdog.log /var/log/landscape/monitor.log /var/log/landscape/broker.log /var/log/landscape/manager.log {
+/var/log/landscape/watchdog.log
+/var/log/landscape/monitor.log
+/var/log/landscape/broker.log
+/var/log/landscape/manager.log
+/var/log/landscape/landscape-config.log
+{
     weekly
     rotate 4
     missingok
@@ -11,7 +16,11 @@
     endscript
 }
 
-/var/log/landscape/package-changer.log /var/log/landscape/package-reporter.log /var/log/landscape/sysinfo.log /var/log/landscape/release-upgrader.log {
+/var/log/landscape/package-changer.log
+/var/log/landscape/package-reporter.log
+/var/log/landscape/sysinfo.log
+/var/log/landscape/release-upgrader.log
+{
     weekly
     rotate 4
     missingok

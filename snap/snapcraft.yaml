@@ -30,7 +30,7 @@ plugs:
       - /var/lib/snapd/hostfs/var/lib/ubuntu-advantage/status.json
   snapd-control-managed:
     interface: snapd-control
-    refresh-schedule: managed  
+    refresh-schedule: managed
 
 slots:
   annotations:
@@ -64,6 +64,10 @@ apps:
     plugs:
       - network
       - hardware-observe
+  logrotate:
+    command: usr/sbin/logrotate -s /tmp/logrotate-status $SNAP/etc/logrotate.conf
+    daemon: simple
+    timer: sun,02:00~03:00
 
 # Previously, the client's data was stored in $SNAP_DATA
 #  which led to duplicate machine entries after reverting
@@ -129,3 +133,12 @@ parts:
       # Copy the scripts over
       mkdir -p ${SNAPCRAFT_PRIME}/usr/bin/
       cp -r ${SNAPCRAFT_PART_SRC}/scripts/. ${SNAPCRAFT_PRIME}/usr/bin/
+  logrotate:
+    plugin: nil
+    source: .
+    stage-packages:
+      - logrotate
+    override-prime: |
+      craftctl default
+      cp ${SNAPCRAFT_PART_SRC}/debian/landscape-client.logrotate ${SNAPCRAFT_PRIME}/etc/logrotate.conf
+      sed -i 's/systemctl kill --signal=USR1 --kill-who=main/snapctl restart/' ${SNAPCRAFT_PRIME}/etc/logrotate.conf
