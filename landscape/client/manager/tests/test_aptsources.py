@@ -260,8 +260,9 @@ class AptSourcesTests(LandscapeTest):
 
     def test_renames_sources_list_d(self):
         """
-        The sources files in sources.list.d are renamed to .save when a message
-        is received if config says to manage them, which is the default.
+        The sources files (.list, .sources) in sources.list.d
+        are renamed to .save when a message is received
+        if config says to manage them, which is the default.
         """
         with open(
             os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
@@ -274,6 +275,12 @@ class AptSourcesTests(LandscapeTest):
             "w",
         ) as sources2:
             sources2.write("ok\n")
+
+        with open(
+            os.path.join(self.sourceslist.SOURCES_LIST_D, "file3.sources"),
+            "w",
+        ) as sources3:
+            sources3.write("source content\n")
 
         self.manager.dispatch_message(
             {
@@ -308,10 +315,20 @@ class AptSourcesTests(LandscapeTest):
             ),
         )
 
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    self.sourceslist.SOURCES_LIST_D,
+                    "file3.sources.save",
+                ),
+            ),
+        )
+
     def test_does_not_rename_sources_list_d(self):
         """
-        The sources files in sources.list.d are not renamed to .save when a
-        message is received if config says not to manage them.
+        The sources files (.list, .sources) in sources.list.d
+        are renamed to .save when a message is received
+        if config says to manage them, which is the default.
         """
         with open(
             os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list"),
@@ -324,6 +341,20 @@ class AptSourcesTests(LandscapeTest):
             "w",
         ) as sources2:
             sources2.write("ok\n")
+
+        with open(
+            os.path.join(self.sourceslist.SOURCES_LIST_D, "file3.sources"),
+            "w",
+        ) as sources3:
+            sources3.write("ok\n")
+
+        with open(
+            os.path.join(
+                self.sourceslist.SOURCES_LIST_D, "file4.sources.save"
+            ),
+            "w",
+        ) as sources4:
+            sources4.write("ok\n")
 
         self.manager.config.manage_sources_list_d = False
         self.manager.dispatch_message(
@@ -341,6 +372,12 @@ class AptSourcesTests(LandscapeTest):
             ),
         )
 
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(self.sourceslist.SOURCES_LIST_D, "file3.sources"),
+            ),
+        )
+
         self.assertFalse(
             os.path.exists(
                 os.path.join(
@@ -350,11 +387,29 @@ class AptSourcesTests(LandscapeTest):
             ),
         )
 
+        self.assertFalse(
+            os.path.exists(
+                os.path.join(
+                    self.sourceslist.SOURCES_LIST_D,
+                    "file3.sources.save",
+                ),
+            ),
+        )
+
         self.assertTrue(
             os.path.exists(
                 os.path.join(
                     self.sourceslist.SOURCES_LIST_D,
                     "file2.list.save",
+                ),
+            ),
+        )
+
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    self.sourceslist.SOURCES_LIST_D,
+                    "file4.sources.save",
                 ),
             ),
         )
