@@ -140,10 +140,15 @@ class AptSources(ManagerPlugin):
             "manage_sources_list_d",
             True,
         )
+
         if manage_sources_list_d not in FALSE_VALUES:
-            filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list"))
-            for filename in filenames:
-                shutil.move(filename, f"{filename}.save")
+            patterns = ["*.list", "*.sources"]
+            for pattern in patterns:
+                filenames = glob.glob(os.path.join(
+                    self.SOURCES_LIST_D, pattern
+                ))
+                for filename in filenames:
+                    shutil.move(filename, f"{filename}.save")
 
         for source in sources:
             filename = os.path.join(
