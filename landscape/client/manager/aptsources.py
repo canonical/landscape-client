@@ -27,6 +27,11 @@ class AptSources(ManagerPlugin):
     SOURCES_LIST_D = "/etc/apt/sources.list.d"
     TRUSTED_GPG_D = "/etc/apt/trusted.gpg.d"
 
+    """
+    Valid file patterns for one-line and Deb822-style sources, respectively.
+    """
+    SOURCES_LIST_D_FILE_PATTERNS = ["*.list", "*.sources"]
+
     def register(self, registry):
         super().register(registry)
         registry.register_message(
@@ -142,11 +147,10 @@ class AptSources(ManagerPlugin):
         )
 
         if manage_sources_list_d not in FALSE_VALUES:
-            patterns = ["*.list", "*.sources"]
-            for pattern in patterns:
-                filenames = glob.glob(os.path.join(
-                    self.SOURCES_LIST_D, pattern
-                ))
+            for pattern in self.SOURCES_LIST_D_FILE_PATTERNS:
+                filenames = glob.glob(
+                    os.path.join(self.SOURCES_LIST_D, pattern)
+                )
                 for filename in filenames:
                     shutil.move(filename, f"{filename}.save")
 
