@@ -236,7 +236,7 @@ class BrokerClient:
         if handler is None:
             raise HandlerNotFoundError(typ)
         try:
-            return handler(message)
+            return maybeDeferred(handler, message)
         except Exception:
             exception(
                 f"Error running message handler for type {typ!r}: {handler!r}",
