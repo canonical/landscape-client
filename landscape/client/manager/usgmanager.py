@@ -205,7 +205,10 @@ class UsgManager(ManagerPlugin):
         :raises ProcessFailedError: If the usg process exits with an error.
         :raises HTTPException: If downloading `tailoring_file` fails.
         """
-        attachment = await self._save_attachment(tailoring_file)
+        if tailoring_file:
+            attachment = await get_attachment(attachment)
+        else:
+            attachment = None
 
         try:
             result = await self._spawn_usg(action, profile, opid, attachment)
