@@ -1,18 +1,22 @@
 import glob
 import os
-from pathlib import Path
 import shutil
-from typing import Any, Dict, Tuple
+from pathlib import Path
+from typing import Any
+from typing import Dict
+from typing import Tuple
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
 from landscape.client.attachments import save_attachments
-from landscape.client.manager.plugin import FAILED, ManagerPlugin, SUCCEEDED
+from landscape.client.manager.plugin import FAILED
+from landscape.client.manager.plugin import ManagerPlugin
+from landscape.client.manager.plugin import SUCCEEDED
 from landscape.client.manager.scriptexecution import (
     ProcessAccumulationProtocol,
-    ProcessFailedError,
 )
+from landscape.client.manager.scriptexecution import ProcessFailedError
 
 REBOOT_REQUIRED_FILE = "/var/run/reboot-required"
 REBOOT_REQUIRED_PKG_FILE = REBOOT_REQUIRED_FILE + ".pkgs"
@@ -115,7 +119,7 @@ class UsgManager(ManagerPlugin):
 
     async def _save_attachment(
         self,
-        attachment: Tuple[str, int] | None
+        attachment: Tuple[str, int] | None,
     ) -> str | None:
         """Downloads `attachment` from Landscape Server and saves it in a
         tempfile.
@@ -127,7 +131,10 @@ class UsgManager(ManagerPlugin):
         if not attachment:
             return None
 
-        attachment_dir = os.path.join(self.registry.config.data_path, TAILORING_FILE_DIR)
+        attachment_dir = os.path.join(
+            self.registry.config.data_path,
+            TAILORING_FILE_DIR,
+        )
         os.makedirs(attachment_dir, mode=0o700, exist_ok=True)
 
         attachment_path = os.path.join(attachment_dir, attachment[1])
@@ -150,15 +157,12 @@ class UsgManager(ManagerPlugin):
             return
 
         with open(last_result, "rb") as audit_results:
-            message = {
-                "type": "usg-audit",
-                "report": audit_results.read()
-            }
+            message = {"type": "usg-audit", "report": audit_results.read()}
 
         return await self.registry.broker.send_message(
             message,
             self._session_id,
-            True
+            True,
         )
 
     def _set_reboot_required(self) -> None:
@@ -214,7 +218,7 @@ class UsgManager(ManagerPlugin):
         self,
         action: str,
         profile: str,
-        tailoring_file: Tuple[str, int] | None
+        tailoring_file: Tuple[str, int] | None,
     ) -> str:
         """Runs usg, first downloading `tailoring_file` if it's provided.
         Cleans up the tailoring file as well.

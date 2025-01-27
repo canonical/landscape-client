@@ -3,9 +3,8 @@ import os
 from landscape import VERSION
 from landscape.client import GROUP
 from landscape.client import USER
-
-from landscape.lib.persist import Persist
 from landscape.lib.fetch import fetch_async
+from landscape.lib.persist import Persist
 
 
 async def save_attachments(
@@ -13,7 +12,7 @@ async def save_attachments(
     attachments,
     dest,
     uid=None,
-    gid=None
+    gid=None,
 ) -> None:
     """Downloads `attachments` from Landscape Server, writing them to `dest`.
 
