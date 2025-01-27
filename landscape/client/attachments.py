@@ -26,7 +26,7 @@ async def save_attachments(
 
     :raises HTTPCodeError: If Server responds with an error HTTP code.
     """
-    root_path = config.url.rsplit("/", 1)[0] + "/attachment"
+    root_path = config.url.rsplit("/", 1)[0] + "/attachment/"
     headers = {
         "User-Agent": "landscape-client/" + VERSION,
         "Content-Type": "application/octet-stream",
