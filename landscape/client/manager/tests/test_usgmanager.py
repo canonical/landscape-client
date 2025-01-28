@@ -9,6 +9,7 @@ from landscape.client.manager.plugin import SUCCEEDED
 from landscape.client.manager.scriptexecution import ProcessFailedError
 from landscape.client.manager.usgmanager import TAILORING_FILE_DIR
 from landscape.client.manager.usgmanager import USG_EXECUTABLE
+from landscape.client.manager.usgmanager import USG_EXECUTABLE_ABS
 from landscape.client.manager.usgmanager import USG_NOT_FOUND
 from landscape.client.manager.usgmanager import UsgManager
 from landscape.client.tests.helpers import LandscapeTest
@@ -72,10 +73,10 @@ class UsgManagerTests(LandscapeTest):
 
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
-                USG_EXECUTABLE,
+                USG_EXECUTABLE_ABS,
                 args=["audit", "cis_level1_workstation"],
             )
-            which.assert_called_once_with(USG_EXECUTABLE)
+            which.assert_called_once_with(USG_EXECUTABLE_ABS)
             self.assertEqual(
                 send_message.mock_calls,
                 [
@@ -127,7 +128,7 @@ class UsgManagerTests(LandscapeTest):
 
         def check(_):
             self.spawn_mock.assert_not_called()
-            which.assert_called_once_with(USG_EXECUTABLE)
+            which.assert_called_once_with(USG_EXECUTABLE_ABS)
             send_message.assert_has_calls(
                 [
                     mock.call(
@@ -177,10 +178,10 @@ class UsgManagerTests(LandscapeTest):
             path_touch.assert_called_once_with(exist_ok=True)
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
-                USG_EXECUTABLE,
+                USG_EXECUTABLE_ABS,
                 args=["fix", "cis_level1_workstation"],
             )
-            which.assert_called_once_with(USG_EXECUTABLE)
+            which.assert_called_once_with(USG_EXECUTABLE_ABS)
             send_message.assert_has_calls(
                 [
                     mock.call(
@@ -197,7 +198,7 @@ class UsgManagerTests(LandscapeTest):
             )
 
             with open(pkgs_file) as pfp:
-                self.assertEqual("usg\n", pfp.read())
+                self.assertEqual(f"\n{USG_EXECUTABLE}\n", pfp.read())
 
             os.unlink(pkgs_file)
 
@@ -238,7 +239,7 @@ class UsgManagerTests(LandscapeTest):
             )
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
-                USG_EXECUTABLE,
+                USG_EXECUTABLE_ABS,
                 args=[
                     "audit",
                     "cis_level1_workstation",
@@ -287,10 +288,10 @@ class UsgManagerTests(LandscapeTest):
         def check(_):
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
-                USG_EXECUTABLE,
+                USG_EXECUTABLE_ABS,
                 args=["audit", "cis_level1_workstation"],
             )
-            which.assert_called_once_with(USG_EXECUTABLE)
+            which.assert_called_once_with(USG_EXECUTABLE_ABS)
             self.assertEqual(
                 send_message.mock_calls,
                 [
@@ -337,10 +338,10 @@ class UsgManagerTests(LandscapeTest):
         def check(_):
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
-                USG_EXECUTABLE,
+                USG_EXECUTABLE_ABS,
                 args=["audit", "cis_level1_workstation"],
             )
-            which.assert_called_once_with(USG_EXECUTABLE)
+            which.assert_called_once_with(USG_EXECUTABLE_ABS)
             self.assertEqual(
                 send_message.mock_calls,
                 [

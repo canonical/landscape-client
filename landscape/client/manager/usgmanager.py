@@ -26,7 +26,8 @@ TAILORING_FILE_DIR = "usg-tailoring-files"
 # USG CLI param used to specify a customization XML file.
 TAILORING_FILE_PARAM = "--tailoring-file"
 USG_AUDIT_RESULTS_GLOB = "/var/lib/usg/usg-results-*.xml"
-USG_EXECUTABLE = "/usr/sbin/usg"
+USG_EXECUTABLE = "usg"
+USG_EXECUTABLE_ABS = "/usr/sbin/usg"
 USG_NOT_FOUND = (
     "USG is not installed on this client. See "
     "https://ubuntu.com/security/certifications/docs/disa-stig/installation"
@@ -101,8 +102,8 @@ class UsgManager(ManagerPlugin):
         return last_audit_results
 
     def _has_usg(self) -> bool:
-        """Returns `True` is the USG CLI is present and executable."""
-        return shutil.which(USG_EXECUTABLE) is not None
+        """Returns `True` if the USG CLI is present and executable."""
+        return shutil.which(USG_EXECUTABLE_ABS) is not None
 
     def _respond(
         self,
@@ -128,8 +129,8 @@ class UsgManager(ManagerPlugin):
         self,
         attachment: Union[Tuple[str, int], None],
     ) -> Union[str, None]:
-        """Downloads `attachment` from Landscape Server and saves it in a
-        tempfile.
+        """Downloads `attachment` from Landscape Server and saves it in the
+        data directory's `TAILORING_FILE_DIR`.
 
         :param attachment: A tuple of filename and attachment ID.
 
@@ -182,12 +183,12 @@ class UsgManager(ManagerPlugin):
 
         if os.path.exists(REBOOT_REQUIRED_PKGS_FILE):
             with open(REBOOT_REQUIRED_PKGS_FILE, "r") as reboot_required_pkg:
-                if "usg" in reboot_required_pkg.read():
-                    # it's already in there, no need to add it.
+                if any(line == USG_EXECUTABLE for line in reboot_required_pkg):
+                    # It's already in there, no need to add it.
                     return
 
         with open(REBOOT_REQUIRED_PKGS_FILE, "a") as reboot_required_pkg:
-            reboot_required_pkg.write("usg\n")
+            reboot_required_pkg.write(f"\n{USG_EXECUTABLE}\n")
 
     def _spawn_usg(
         self,
@@ -216,7 +217,7 @@ class UsgManager(ManagerPlugin):
         )
         reactor.spawnProcess(
             protocol,
-            USG_EXECUTABLE,
+            USG_EXECUTABLE_ABS,
             args=args,
         )
 
