@@ -60,6 +60,7 @@ __all__ = [
     "UBUNTU_PRO_INFO",
     "LIVEPATCH",
     "UBUNTU_PRO_REBOOT_REQUIRED",
+    "USG_AUDIT",
     "SNAPS",
     "SNAP_INFO",
 ]
@@ -853,6 +854,13 @@ SNAP_SERVICES = Message(
     },
 )
 
+USG_AUDIT = Message(
+    "usg-audit",
+    {
+        "report": Bytes(),
+    },
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     COMPUTER_UPTIME,
@@ -900,6 +908,7 @@ message_schemas = (
     UBUNTU_PRO_INFO,
     LIVEPATCH,
     UBUNTU_PRO_REBOOT_REQUIRED,
+    USG_AUDIT,
     SNAPS,
     SNAP_INFO,
     SNAP_SERVICES,
