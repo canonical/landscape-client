@@ -3,13 +3,13 @@ Functionality for running arbitrary shell scripts.
 
 @var ALL_USERS: A token indicating all users should be allowed.
 """
-
 import os.path
 import shutil
 import sys
 import tempfile
 
 from twisted.internet.defer import Deferred
+from twisted.internet.defer import ensureDeferred
 from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
@@ -197,7 +197,6 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             return d
         except Exception as e:
             self._respond(FAILED, self._format_exception(e), opid)
-            raise
 
     def _format_exception(self, e):
         return "{}: {}".format(e.__class__.__name__, e.args[0])
@@ -313,7 +312,15 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 computer_id = computer_id.decode("ascii")
             except AttributeError:
                 pass
-            d = self._save_attachments(attachments, uid, gid, computer_id, env)
+            d = ensureDeferred(
+                self._save_attachments(
+                    attachments,
+                    uid,
+                    gid,
+                    computer_id,
+                    env,
+                ),
+            )
         else:
             d = succeed(None)
 
