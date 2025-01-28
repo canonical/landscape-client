@@ -34,6 +34,9 @@ class SaveAttachmentsTest(TestCase):
             new=mock.AsyncMock(),
         ).start()
 
+        self.uid = os.getuid()
+        self.gid = os.getgid()
+
         self.addCleanup(mock.patch.stopall)
 
     def test_save_attachments(self):
@@ -50,8 +53,8 @@ class SaveAttachmentsTest(TestCase):
                 self.config,
                 (("attachment-1.txt", 1), ("attachment-2.txt", 2)),
                 self.dest,
-                uid=1000,
-                gid=1000,
+                uid=self.uid,
+                gid=self.gid,
             ),
         )
 
@@ -62,7 +65,6 @@ class SaveAttachmentsTest(TestCase):
         }
 
         def check(_):
-            print(self.fetch_async.mock_calls)
             self.assertEqual(
                 self.fetch_async.mock_calls,
                 [
@@ -84,10 +86,10 @@ class SaveAttachmentsTest(TestCase):
             a1_stat = os.stat(a1)
             a2_stat = os.stat(a2)
 
-            self.assertEqual(a1_stat.st_uid, 1000)
-            self.assertEqual(a1_stat.st_gid, 1000)
-            self.assertEqual(a2_stat.st_uid, 1000)
-            self.assertEqual(a2_stat.st_gid, 1000)
+            self.assertEqual(a1_stat.st_uid, self.uid)
+            self.assertEqual(a1_stat.st_gid, self.gid)
+            self.assertEqual(a2_stat.st_uid, self.uid)
+            self.assertEqual(a2_stat.st_gid, self.gid)
 
             with open(a1) as a1fp:
                 self.assertEqual("Contents of attachment 1\n", a1fp.read())
@@ -105,8 +107,8 @@ class SaveAttachmentsTest(TestCase):
                 self.config,
                 (("attachment-1.txt", "Contents of attachment 1\n"),),
                 self.dest,
-                uid=1000,
-                gid=1000,
+                uid=self.uid,
+                gid=self.gid,
             ),
         )
 
@@ -116,8 +118,8 @@ class SaveAttachmentsTest(TestCase):
             a1 = os.path.join(self.dest, "attachment-1.txt")
             a1_stat = os.stat(a1)
 
-            self.assertEqual(a1_stat.st_uid, 1000)
-            self.assertEqual(a1_stat.st_gid, 1000)
+            self.assertEqual(a1_stat.st_uid, self.uid)
+            self.assertEqual(a1_stat.st_gid, self.gid)
 
             with open(a1) as a1fp:
                 self.assertEqual("Contents of attachment 1\n", a1fp.read())
