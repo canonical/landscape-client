@@ -19,7 +19,7 @@ from landscape.client.manager.scriptexecution import (
 from landscape.client.manager.scriptexecution import ProcessFailedError
 
 REBOOT_REQUIRED_FILE = "/var/run/reboot-required"
-REBOOT_REQUIRED_PKG_FILE = REBOOT_REQUIRED_FILE + ".pkgs"
+REBOOT_REQUIRED_PKGS_FILE = REBOOT_REQUIRED_FILE + ".pkgs"
 TAILORING_FILE_DIR = "usg-tailoring-files"
 # USG CLI param used to specify a customization XML file.
 TAILORING_FILE_PARAM = "--tailoring-file"
@@ -126,7 +126,8 @@ class UsgManager(ManagerPlugin):
 
         :param attachment: A tuple of filename and attachment ID.
 
-        :returns: The tempfile's path or `None` if no attachment exists.
+        :returns: The downloaded attachment's path or `None` if no attachment
+            exists.
         """
         if not attachment:
             return None
@@ -172,13 +173,13 @@ class UsgManager(ManagerPlugin):
         path = Path(REBOOT_REQUIRED_FILE)
         path.touch(exist_ok=True)
 
-        if os.path.exists(REBOOT_REQUIRED_PKG_FILE):
-            with open(REBOOT_REQUIRED_PKG_FILE, "r") as reboot_required_pkg:
+        if os.path.exists(REBOOT_REQUIRED_PKGS_FILE):
+            with open(REBOOT_REQUIRED_PKGS_FILE, "r") as reboot_required_pkg:
                 if "usg" in reboot_required_pkg.read():
                     # it's already in there, no need to add it.
                     return
 
-        with open(REBOOT_REQUIRED_PKG_FILE, "a") as reboot_required_pkg:
+        with open(REBOOT_REQUIRED_PKGS_FILE, "a") as reboot_required_pkg:
             reboot_required_pkg.write("usg\n")
 
     def _spawn_usg(

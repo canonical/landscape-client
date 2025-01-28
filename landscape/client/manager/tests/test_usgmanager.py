@@ -157,8 +157,11 @@ class UsgManagerTests(LandscapeTest):
             "send_message",
             new=mock.AsyncMock(),
         ).start()
-        pkg_file = os.path.join(self.tempdir, "reboot-required.pkgs")
-        mock.patch(MODULE + ".REBOOT_REQUIRED_PKG_FILE", new=pkg_file).start()
+        pkgs_file = os.path.join(self.tempdir, "reboot-required.pkgs")
+        mock.patch(
+            MODULE + ".REBOOT_REQUIRED_PKGS_FILE",
+            new=pkgs_file,
+        ).start()
 
         deferred = ensureDeferred(
             self.plugin.handle_usg_message(
@@ -193,10 +196,10 @@ class UsgManagerTests(LandscapeTest):
                 ],
             )
 
-            with open(pkg_file) as pfp:
+            with open(pkgs_file) as pfp:
                 self.assertEqual("usg\n", pfp.read())
 
-            os.unlink(pkg_file)
+            os.unlink(pkgs_file)
 
         deferred.addBoth(check)
         return deferred
@@ -308,8 +311,8 @@ class UsgManagerTests(LandscapeTest):
         return deferred
 
     def test_other_exception(self):
-        """If any other exception is raise, the activity fails and the error is
-        reported.
+        """If any other exception is raised, the activity fails and the error
+        is reported.
         """
         which = mock.patch("shutil.which").start()
         send_message = mock.patch.object(

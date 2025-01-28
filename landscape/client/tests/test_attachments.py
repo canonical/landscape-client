@@ -78,11 +78,21 @@ class SaveAttachmentsTest(TestCase):
                 ],
             )
 
-            with open(os.path.join(self.dest, "attachment-1.txt")) as a1:
-                self.assertEqual("Contents of attachment 1\n", a1.read())
+            a1 = os.path.join(self.dest, "attachment-1.txt")
+            a2 = os.path.join(self.dest, "attachment-2.txt")
+            a1_stat = os.stat(a1)
+            a2_stat = os.stat(a2)
 
-            with open(os.path.join(self.dest, "attachment-2.txt")) as a2:
-                self.assertEqual("Contents of attachment 2\n", a2.read())
+            self.assertEqual(a1_stat.st_uid, 1000)
+            self.assertEqual(a1_stat.st_gid, 1000)
+            self.assertEqual(a2_stat.st_uid, 1000)
+            self.assertEqual(a2_stat.st_gid, 1000)
+
+            with open(a1) as a1fp:
+                self.assertEqual("Contents of attachment 1\n", a1fp.read())
+
+            with open(a2) as a2fp:
+                self.assertEqual("Contents of attachment 2\n", a2fp.read())
 
         deferred.addBoth(check)
         return deferred
