@@ -4,7 +4,9 @@ import shutil
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -86,7 +88,7 @@ class UsgManager(ManagerPlugin):
         except Exception as e:
             await self._respond(FAILED, str(e), opid)
 
-    def _get_last_audit_results(self) -> str | None:
+    def _get_last_audit_results(self) -> Union[str, None]:
         """Returns the file path of the most recently produced audit report. If
         no audit reports exist, returns `None`.
         """
@@ -102,7 +104,12 @@ class UsgManager(ManagerPlugin):
         """Returns `True` is the USG CLI is present and executable."""
         return shutil.which(USG_EXECUTABLE) is not None
 
-    def _respond(self, status: int, data: str | bytes, opid: int) -> None:
+    def _respond(
+        self,
+        status: int,
+        data: Union[str, bytes],
+        opid: int,
+    ) -> None:
         """Queues sending a result message for the activity to server."""
         message = {
             "type": "operation-result",
@@ -119,8 +126,8 @@ class UsgManager(ManagerPlugin):
 
     async def _save_attachment(
         self,
-        attachment: Tuple[str, int] | None,
-    ) -> str | None:
+        attachment: Union[Tuple[str, int], None],
+    ) -> Union[str, None]:
         """Downloads `attachment` from Landscape Server and saves it in a
         tempfile.
 
@@ -186,8 +193,8 @@ class UsgManager(ManagerPlugin):
         self,
         action: str,
         profile: str,
-        tailoring_file: str | None = None,
-    ) -> Deferred[bytes]:
+        tailoring_file: Optional[str] = None,
+    ) -> Deferred:
         """Execute the correct `usg` command for message in a non-blocking
         subprocess.
 
@@ -219,7 +226,7 @@ class UsgManager(ManagerPlugin):
         self,
         action: str,
         profile: str,
-        tailoring_file: Tuple[str, int] | None,
+        tailoring_file: Union[Tuple[str, int]],
     ) -> str:
         """Runs usg, first downloading `tailoring_file` if it's provided.
         Cleans up the tailoring file as well.
