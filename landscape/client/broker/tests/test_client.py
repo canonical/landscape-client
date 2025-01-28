@@ -238,7 +238,7 @@ class BrokerClientTest(LandscapeTest):
         handle_message = mock.Mock(return_value=123)
 
         def dispatch_message(result):
-            self.assertEqual(self.client.dispatch_message(message), 123)
+            self.assertEqual(self.client.dispatch_message(message).result, 123)
             handle_message.assert_called_once_with(message)
 
         result = self.client.register_message("foo", handle_message)
@@ -254,16 +254,18 @@ class BrokerClientTest(LandscapeTest):
 
         self.log_helper.ignore_errors("Error running message handler.*")
 
-        def dispatch_message(result):
-            self.assertIs(self.client.dispatch_message(message), None)
+        def check(_):
             self.assertTrue(
                 "Error running message handler for type 'foo'"
                 in self.logfile.getvalue(),
             )
             handle_message.assert_called_once_with(message)
 
-        result = self.client.register_message("foo", handle_message)
-        return result.addCallback(dispatch_message)
+        return (
+            self.client.register_message("foo", handle_message)
+            .addCallback(lambda _: self.client.dispatch_message(message))
+            .addCallback(check)
+        )
 
     def test_dispatch_message_with_no_handler(self):
         """

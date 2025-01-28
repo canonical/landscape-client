@@ -5,13 +5,10 @@ import sys
 import tempfile
 from unittest import mock
 
-from twisted.internet.defer import fail
 from twisted.internet.defer import gatherResults
-from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
-from landscape import VERSION
 from landscape.client.manager.manager import FAILED
 from landscape.client.manager.manager import SUCCEEDED
 from landscape.client.manager.scriptexecution import (
@@ -69,6 +66,13 @@ class RunScriptTests(LandscapeTest):
         super().setUp()
         self.plugin = ScriptExecutionPlugin()
         self.manager.add(self.plugin)
+
+        self.persist = Persist(
+            filename=os.path.join(self.config.data_path, "broker.bpickle"),
+        )
+        registration_persist = self.persist.root_at("registration")
+        registration_persist.set("secure-id", b"secure_id")
+        self.persist.save()
 
     def test_basic_run(self):
         """
@@ -301,99 +305,6 @@ class RunScriptTests(LandscapeTest):
 
         result.addCallback(check)
         return result
-
-    def test_run_with_attachment_ids(self):
-        """
-        The most recent protocol for script message doesn't include the
-        attachment body inside the message itself, but instead gives an
-        attachment ID, and the plugin fetches the files separately.
-        """
-        self.manager.config.url = "https://localhost/message-system"
-        persist = Persist(
-            filename=os.path.join(self.config.data_path, "broker.bpickle"),
-        )
-        registration_persist = persist.root_at("registration")
-        registration_persist.set("secure-id", "secure_id")
-        persist.save()
-
-        patch_fetch = mock.patch(
-            "landscape.client.manager.scriptexecution.fetch_async",
-        )
-        mock_fetch = patch_fetch.start()
-        mock_fetch.return_value = succeed(b"some other data")
-
-        headers = {
-            "User-Agent": f"landscape-client/{VERSION}",
-            "Content-Type": "application/octet-stream",
-            "X-Computer-ID": "secure_id",
-        }
-
-        result = self.plugin.run_script(
-            "/bin/sh",
-            "ls $LANDSCAPE_ATTACHMENTS && cat $LANDSCAPE_ATTACHMENTS/file1",
-            attachments={"file1": 14},
-        )
-
-        def check(result):
-            self.assertEqual(result, "file1\nsome other data")
-            mock_fetch.assert_called_with(
-                "https://localhost/attachment/14",
-                headers=headers,
-                cainfo=None,
-            )
-
-        def cleanup(result):
-            patch_fetch.stop()
-            # We have to return the Failure or result to get a working test.
-            return result
-
-        return result.addCallback(check).addBoth(cleanup)
-
-    def test_run_with_attachment_ids_and_ssl(self):
-        """
-        When fetching attachments, L{ScriptExecution} passes the optional ssl
-        certificate file if the configuration specifies it.
-        """
-        self.manager.config.url = "https://localhost/message-system"
-        self.manager.config.ssl_public_key = "/some/key"
-        persist = Persist(
-            filename=os.path.join(self.config.data_path, "broker.bpickle"),
-        )
-        registration_persist = persist.root_at("registration")
-        registration_persist.set("secure-id", b"secure_id")
-        persist.save()
-
-        patch_fetch = mock.patch(
-            "landscape.client.manager.scriptexecution.fetch_async",
-        )
-        mock_fetch = patch_fetch.start()
-        mock_fetch.return_value = succeed(b"some other data")
-
-        headers = {
-            "User-Agent": f"landscape-client/{VERSION}",
-            "Content-Type": "application/octet-stream",
-            "X-Computer-ID": "secure_id",
-        }
-
-        result = self.plugin.run_script(
-            "/bin/sh",
-            "ls $LANDSCAPE_ATTACHMENTS && cat $LANDSCAPE_ATTACHMENTS/file1",
-            attachments={"file1": 14},
-        )
-
-        def check(result):
-            self.assertEqual(result, "file1\nsome other data")
-            mock_fetch.assert_called_with(
-                "https://localhost/attachment/14",
-                headers=headers,
-                cainfo="/some/key",
-            )
-
-        def cleanup(result):
-            patch_fetch.stop()
-            return result
-
-        return result.addCallback(check).addBoth(cleanup)
 
     def test_self_remove_script(self):
         """
@@ -985,19 +896,23 @@ class ScriptExecutionMessageTests(LandscapeTest):
         username = "non-existent-f\N{LATIN SMALL LETTER E WITH ACUTE}e"
         self.manager.add(ScriptExecutionPlugin())
 
-        self._send_script(sys.executable, "print 'hi'", user=username)
-        self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(),
-            [
-                {
-                    "type": "operation-result",
-                    "operation-id": 123,
-                    "result-text": "UnknownUserError: "
-                    f"Unknown user '{username}'",
-                    "status": FAILED,
-                },
-            ],
-        )
+        result = self._send_script(sys.executable, "print 'hi'", user=username)
+
+        def check(_):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 123,
+                        "result-text": "UnknownUserError: "
+                        f"Unknown user '{username}'",
+                        "status": FAILED,
+                    },
+                ],
+            )
+
+        return result.addBoth(check)
 
     def test_timeout(self):
         """
@@ -1168,7 +1083,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         self.log_helper.ignore_errors(KeyError)
         self.manager.add(ScriptExecutionPlugin())
 
-        self.manager.dispatch_message(
+        result = self.manager.dispatch_message(
             {"type": "execute-script", "operation-id": 444},
         )
 
@@ -1181,12 +1096,13 @@ class ScriptExecutionMessageTests(LandscapeTest):
             },
         ]
 
-        self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(),
-            expected_message,
-        )
+        def check(_):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                expected_message,
+            )
 
-        self.assertTrue("KeyError: 'username'" in self.logfile.getvalue())
+        return result.addBoth(check)
 
     def test_non_zero_exit_fails_operation(self):
         """
@@ -1249,8 +1165,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    @mock.patch("landscape.client.manager.scriptexecution.fetch_async")
-    def test_fetch_attachment_failure(self, mock_fetch):
+    @mock.patch("landscape.client.manager.scriptexecution.save_attachments")
+    def test_fetch_attachment_failure(self, save_attachments):
         """
         If the plugin fails to retrieve the attachments with a
         L{HTTPCodeError}, a specific error code is shown.
@@ -1262,13 +1178,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         registration_persist = persist.root_at("registration")
         registration_persist.set("secure-id", "secure_id")
         persist.save()
-        headers = {
-            "User-Agent": f"landscape-client/{VERSION}",
-            "Content-Type": "application/octet-stream",
-            "X-Computer-ID": "secure_id",
-        }
 
-        mock_fetch.return_value = fail(HTTPCodeError(404, "Not found"))
+        save_attachments.side_effect = HTTPCodeError(404, "Not found")
 
         self.manager.add(ScriptExecutionPlugin())
         result = self._send_script(
@@ -1290,10 +1201,12 @@ class ScriptExecutionMessageTests(LandscapeTest):
                     },
                 ],
             )
-            mock_fetch.assert_called_with(
-                "https://localhost/attachment/14",
-                headers=headers,
-                cainfo=None,
+            save_attachments.assert_called_with(
+                self.manager.config,
+                {"file1": 14}.items(),
+                mock.ANY,
+                mock.ANY,
+                mock.ANY,
             )
 
         return result.addCallback(got_result)

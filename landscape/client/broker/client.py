@@ -235,12 +235,15 @@ class BrokerClient:
         handler = self._registered_messages.get(typ)
         if handler is None:
             raise HandlerNotFoundError(typ)
-        try:
-            return handler(message)
-        except Exception:
-            exception(
-                f"Error running message handler for type {typ!r}: {handler!r}",
-            )
+
+        d = maybeDeferred(handler, message)
+        d.addErrback(self._error_log, typ, handler)
+        return d
+
+    def _error_log(self, _, typ, handler):
+        exception(
+            f"Error running message handler for type {typ!r}: {handler!r}",
+        )
 
     @remote
     def message(self, message):
