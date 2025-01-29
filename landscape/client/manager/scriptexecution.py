@@ -9,23 +9,21 @@ import sys
 import tempfile
 
 from twisted.internet.defer import Deferred
+from twisted.internet.defer import ensureDeferred
 from twisted.internet.defer import fail
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import returnValue
 from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
 from twisted.internet.protocol import ProcessProtocol
 from twisted.python.compat import unicode
 
-from landscape import VERSION
 from landscape.client import GROUP
 from landscape.client import IS_SNAP
 from landscape.client import USER
+from landscape.client.attachments import save_attachments
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
 from landscape.constants import UBUNTU_PATH
-from landscape.lib.fetch import fetch_async
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.persist import Persist
 from landscape.lib.scriptcontent import build_script
@@ -199,7 +197,6 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             return d
         except Exception as e:
             self._respond(FAILED, self._format_exception(e), opid)
-            raise
 
     def _format_exception(self, e):
         return "{}: {}".format(e.__class__.__name__, e.args[0])
@@ -227,36 +224,22 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         else:
             return self._respond(FAILED, str(failure), opid)
 
-    @inlineCallbacks
-    def _save_attachments(self, attachments, uid, gid, computer_id, env):
-        root_path = self.registry.config.url.rsplit("/", 1)[0] + "/attachment/"
+    async def _save_attachments(self, attachments, uid, gid, computer_id, env):
         env["LANDSCAPE_ATTACHMENTS"] = attachment_dir = tempfile.mkdtemp()
-        headers = {
-            "User-Agent": f"landscape-client/{VERSION}",
-            "Content-Type": "application/octet-stream",
-            "X-Computer-ID": computer_id,
-        }
-        for filename, attachment_id in attachments.items():
-            if isinstance(attachment_id, str):
-                # Backward compatible behavior
-                data = attachment_id.encode("utf-8")
-                yield succeed(None)
-            else:
-                data = yield fetch_async(
-                    f"{root_path}{attachment_id:d}",
-                    cainfo=self.registry.config.ssl_public_key,
-                    headers=headers,
-                )
-            full_filename = os.path.join(attachment_dir, filename)
-            with open(full_filename, "wb") as attachment:
-                os.chmod(full_filename, 0o600)
-                if not self.IS_SNAP and uid is not None:
-                    os.chown(full_filename, uid, gid)
-                attachment.write(data)
         os.chmod(attachment_dir, 0o700)
+
+        await save_attachments(
+            self.registry.config,
+            attachments.items(),
+            attachment_dir,
+            uid,
+            gid,
+        )
+
         if not self.IS_SNAP and uid is not None:
             os.chown(attachment_dir, uid, gid)
-        returnValue(attachment_dir)
+
+        return attachment_dir
 
     def run_script(
         self,
@@ -329,7 +312,15 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 computer_id = computer_id.decode("ascii")
             except AttributeError:
                 pass
-            d = self._save_attachments(attachments, uid, gid, computer_id, env)
+            d = ensureDeferred(
+                self._save_attachments(
+                    attachments,
+                    uid,
+                    gid,
+                    computer_id,
+                    env,
+                ),
+            )
         else:
             d = succeed(None)
 
