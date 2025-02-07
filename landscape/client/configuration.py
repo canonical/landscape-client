@@ -28,7 +28,6 @@ from landscape.client.serviceconfig import ServiceConfigException
 from landscape.lib import base64
 from landscape.lib.bootstrap import BootstrapDirectory
 from landscape.lib.bootstrap import BootstrapList
-from landscape.lib.compat import input
 from landscape.lib.fetch import fetch
 from landscape.lib.fetch import FetchError
 from landscape.lib.fs import create_binary_file

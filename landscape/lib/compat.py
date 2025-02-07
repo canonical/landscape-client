@@ -10,7 +10,5 @@ SafeConfigParser = ConfigParser
 
 import _thread as thread
 
-from builtins import input
-
 unicode = str
 long = int
