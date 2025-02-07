@@ -7,6 +7,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from configparser import ConfigParser
 from io import StringIO
 from logging import ERROR
 from logging import Formatter
@@ -18,7 +19,6 @@ from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from landscape.lib.compat import _PY3
-from landscape.lib.compat import ConfigParser
 from landscape.lib.config import BaseConfiguration
 from landscape.lib.reactor import EventHandlingReactorMixin
 from landscape.lib.sysstats import LoginInfo

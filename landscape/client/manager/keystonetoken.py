@@ -1,12 +1,12 @@
 import logging
 import os
+from configparser import ConfigParser
+from configparser import NoOptionError
 
 from landscape.client import GROUP
 from landscape.client import USER
 from landscape.client.monitor.plugin import DataWatcher
 from landscape.lib.compat import _PY3
-from landscape.lib.compat import ConfigParser
-from landscape.lib.compat import NoOptionError
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
 
