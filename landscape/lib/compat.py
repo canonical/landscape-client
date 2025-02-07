@@ -3,7 +3,6 @@
 
 _PY3 = True
 
-import pickle as cPickle
 from configparser import ConfigParser, NoOptionError
 
 SafeConfigParser = ConfigParser
