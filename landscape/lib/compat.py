@@ -8,7 +8,5 @@ from configparser import ConfigParser, NoOptionError
 
 SafeConfigParser = ConfigParser
 
-import _thread as thread
-
 unicode = str
 long = int
