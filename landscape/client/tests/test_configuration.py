@@ -1,6 +1,7 @@
 import os
 import textwrap
 import unittest
+from configparser import ConfigParser
 from io import StringIO
 from unittest import mock
 
@@ -31,7 +32,6 @@ from landscape.client.configuration import store_public_key_data
 from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.compat import ConfigParser
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import read_binary_file
