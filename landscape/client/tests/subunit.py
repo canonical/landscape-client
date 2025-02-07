@@ -20,8 +20,7 @@ import os
 import subprocess
 import sys
 import unittest
-
-from landscape.lib.compat import StringIO
+from io import StringIO
 
 
 def test_suite():
