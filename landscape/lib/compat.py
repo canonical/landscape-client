@@ -10,9 +10,6 @@ SafeConfigParser = ConfigParser
 
 import _thread as thread
 
-from io import StringIO
-
-stringio = cstringio = StringIO
 from builtins import input
 
 unicode = str
