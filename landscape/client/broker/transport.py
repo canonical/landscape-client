@@ -1,12 +1,11 @@
 """Low-level server communication."""
-from dataclasses import asdict
 import uuid
+from dataclasses import asdict
 from typing import Optional
 from typing import Union
 
 from landscape import SERVER_API
 from landscape.client.exchange import exchange_messages
-from landscape.lib.compat import unicode
 
 
 class HTTPTransport:
@@ -117,7 +116,7 @@ class FakeTransport:
 
         result = {
             "next-expected-sequence": self.next_expected_sequence,
-            "next-exchange-token": unicode(uuid.uuid4()),
+            "next-exchange-token": str(uuid.uuid4()),
             "messages": response,
         }
         result.update(self.extra)
