@@ -1,7 +1,8 @@
 import os
 import re
 from datetime import datetime
-from unittest import TestCase, mock
+from unittest import mock
+from unittest import TestCase
 
 from landscape.lib import testing
 from landscape.lib.sysstats import BootTimes
@@ -165,7 +166,7 @@ class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
     @mock.patch("glob.glob")
     @mock.patch("os.path.isdir")
     def test_default_thermal_zone_path(self, isdir_mock, glob_mock):
-        isdir_mock.side_effect = (lambda dir: dir == "/proc/acpi/thermal_zone")
+        isdir_mock.side_effect = lambda dir: dir == "/proc/acpi/thermal_zone"
         thermal_zones = list(get_thermal_zones(None))
         self.assertEqual(thermal_zones, [])
         glob_mock.assert_called_with("/proc/acpi/thermal_zone/*/temperature")
@@ -232,7 +233,7 @@ class GetProcfsThermalZonesTest(ProcfsThermalZoneTest):
         self.assertEqual(thermal_zones[0].temperature_unit, None)
 
 
-class SysfsThermalZoneTest(BaseTestCase):
+class SysfsThermalZoneTest(testing.TwistedTestCase, testing.FSTestCase):
     def setUp(self):
         super().setUp()
         self.base_path = self.makeDir()
@@ -254,7 +255,7 @@ class GetSysfsThermalZonesTest(SysfsThermalZoneTest):
     @mock.patch("glob.glob")
     @mock.patch("os.path.isdir")
     def test_default_thermal_zone_path(self, isdir_mock, glob_mock):
-        isdir_mock.side_effect = (lambda dir: dir == "/sys/class/thermal")
+        isdir_mock.side_effect = lambda dir: dir == "/sys/class/thermal"
         thermal_zones = list(get_thermal_zones(None))
         self.assertEqual(thermal_zones, [])
         glob_mock.assert_called_with("/sys/class/thermal/*/temp")
@@ -347,7 +348,7 @@ class GetHwmonThermalZonesTest(HwmonThermalZoneTest):
     @mock.patch("glob.glob")
     @mock.patch("os.path.isdir")
     def test_default_thermal_zone_path(self, isdir_mock, glob_mock):
-        isdir_mock.side_effect = (lambda dir: dir == "/sys/class/hwmon")
+        isdir_mock.side_effect = lambda dir: dir == "/sys/class/hwmon"
         thermal_zones = list(get_thermal_zones(None))
         self.assertEqual(thermal_zones, [])
         glob_mock.assert_called_with("/sys/class/hwmon/*/temp*_input")
