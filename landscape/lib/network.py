@@ -11,7 +11,6 @@ import struct
 import netifaces
 
 from landscape.lib.compat import _PY3
-from landscape.lib.compat import long
 
 __all__ = ["get_active_device_info", "get_network_traffic"]
 
@@ -252,7 +251,7 @@ def get_network_traffic(source_file="/proc/net/dev"):
             continue
         device, data = line.split(":")
         device = device.strip()
-        devices[device] = dict(zip(columns, map(long, data.split())))
+        devices[device] = dict(zip(columns, map(int, data.split())))
     return devices
 
 

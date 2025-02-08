@@ -31,12 +31,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
-from typing import Dict
 from typing import Callable
+from typing import Dict
 
 from landscape.lib.compat import _PY3
-from landscape.lib.compat import long
-from landscape.lib.compat import unicode
 
 dumps_table: Dict[type, Callable] = {}
 loads_table: Dict[bytes, Callable] = {}
@@ -217,19 +215,9 @@ loads_table.update(
 )
 
 
-if bytes is str:
-    # Python 2.x: We need to map internal unicode strings to UTF-8
-    # encoded strings, and longs to ints.
-    dumps_table.update(
-        {
-            unicode: dumps_unicode,  # noqa
-            long: dumps_int,  # noqa
-        },
-    )
-else:
-    # Python 3.x: We need to map internal strings to UTF-8 encoded strings.
-    dumps_table.update(
-        {
-            str: dumps_unicode,
-        },
-    )
+# Python 3.x: We need to map internal strings to UTF-8 encoded strings.
+dumps_table.update(
+    {
+        str: dumps_unicode,
+    },
+)

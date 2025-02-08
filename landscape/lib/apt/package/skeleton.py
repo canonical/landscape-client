@@ -1,7 +1,6 @@
 import apt
 
 from landscape.lib.compat import _PY3
-from landscape.lib.compat import unicode
 from landscape.lib.hashlib import sha1
 
 
@@ -146,7 +145,7 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
     """
     name, version_string = version.package.name, version.version
     if with_unicode:
-        name, version_string = unicode(name), unicode(version_string)
+        name, version_string = str(name), str(version_string)
     skeleton = PackageSkeleton(DEB_PACKAGE, name, version_string)
     relations = set()
 
@@ -202,6 +201,6 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
             skeleton.summary = skeleton.summary.decode("utf-8")
             # Avoid double-decoding package descriptions in build_skeleton_apt,
             # which causes an error with newer python-apt (Xenial onwards)
-            if not isinstance(skeleton.description, unicode):
+            if not isinstance(skeleton.description, str):
                 skeleton.description = skeleton.description.decode("utf-8")
     return skeleton
