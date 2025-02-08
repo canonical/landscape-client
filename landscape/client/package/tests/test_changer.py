@@ -1,3 +1,4 @@
+import base64
 import os
 import sys
 import time
@@ -22,7 +23,6 @@ from landscape.client.package.changer import SUCCESS_RESULT
 from landscape.client.package.changer import UNKNOWN_PACKAGE_DATA_TIMEOUT
 from landscape.client.tests.helpers import BrokerServiceHelper
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib import base64
 from landscape.lib.apt.package.facade import DependencyError
 from landscape.lib.apt.package.facade import TransactionError
 from landscape.lib.apt.package.store import PackageStore

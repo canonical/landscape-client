@@ -1,9 +1,9 @@
+import _thread as thread
 import time
 import types
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.compat import thread
 from landscape.lib.reactor import EventHandlingReactor
 from landscape.lib.testing import FakeReactor
 
