@@ -2,8 +2,6 @@ import codecs
 import os
 import re
 
-from landscape.lib.compat import _PY3
-
 
 # List of filesystem types authorized when generating disk use statistics.
 STABLE_FILESYSTEMS = frozenset(
@@ -56,10 +54,7 @@ def get_mount_info(
     for line in open(mounts_file):
         try:
             device, mount_point, filesystem = line.split()[:3]
-            if _PY3:
-                mount_point = codecs.decode(mount_point, "unicode_escape")
-            else:
-                mount_point = codecs.decode(mount_point, "string_escape")
+            mount_point = codecs.decode(mount_point, "unicode_escape")
         except ValueError:
             continue
         if (

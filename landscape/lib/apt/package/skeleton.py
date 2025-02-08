@@ -1,6 +1,5 @@
 import apt
 
-from landscape.lib.compat import _PY3
 from landscape.lib.hashlib import sha1
 
 
@@ -196,11 +195,4 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         skeleton.size = version.size
         if version.installed_size > 0:
             skeleton.installed_size = version.installed_size
-        if with_unicode and not _PY3:
-            skeleton.section = skeleton.section.decode("utf-8")
-            skeleton.summary = skeleton.summary.decode("utf-8")
-            # Avoid double-decoding package descriptions in build_skeleton_apt,
-            # which causes an error with newer python-apt (Xenial onwards)
-            if not isinstance(skeleton.description, str):
-                skeleton.description = skeleton.description.decode("utf-8")
     return skeleton

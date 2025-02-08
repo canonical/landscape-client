@@ -18,16 +18,9 @@ from twisted.internet.error import ConnectError
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
-from landscape.lib.compat import _PY3
 from landscape.lib.config import BaseConfiguration
 from landscape.lib.reactor import EventHandlingReactorMixin
 from landscape.lib.sysstats import LoginInfo
-
-
-class CompatTestCase(unittest.TestCase):
-
-    if not _PY3:
-        assertCountEqual = TestCase.assertItemsEqual  # noqa: N815
 
 
 class HelperTestCase(unittest.TestCase):
@@ -393,8 +386,6 @@ class StandardIOHelper:
         test_case.old_stdin = sys.stdin
         test_case.stdout = sys.stdout = StringIO()
         test_case.stdin = sys.stdin = StringIO()
-        if not _PY3:
-            test_case.stdin.encoding = "UTF-8"
 
     def tear_down(self, test_case):
         sys.stdout = test_case.old_stdout

@@ -67,7 +67,7 @@ class LandscapeTest(
     testing.TwistedTestCase,
     testing.HelperTestCase,
     testing.ConfigTestCase,
-    testing.CompatTestCase,
+    unittest.TestCase,
 ):
     def setUp(self):
         testing.TwistedTestCase.setUp(self)

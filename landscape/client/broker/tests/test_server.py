@@ -137,28 +137,6 @@ class BrokerServerTest(LandscapeTest):
         self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertTrue(self.exchanger.is_urgent())
 
-    def test_send_message_from_py27_upgrader(self):
-        """
-        If we receive release-upgrade results from a py27 release upgrader,
-        it gets translated to a py3-compatible message.
-        """
-        legacy_message = {
-            b"type": b"change-packages-result",
-            b"operation-id": 99,
-            b"result-code": 123,
-        }
-        self.mstore.set_accepted_types(["change-packages-result"])
-        self.broker.send_message(legacy_message, True)
-        expected = [
-            {
-                "type": "change-packages-result",
-                "operation-id": 99,
-                "result-code": 123,
-            },
-        ]
-        self.assertMessages(self.mstore.get_pending_messages(), expected)
-        self.assertTrue(self.exchanger.is_urgent())
-
     def test_is_pending(self):
         """
         The L{BrokerServer.is_pending} method indicates if a message with
