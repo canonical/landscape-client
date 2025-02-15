@@ -5,7 +5,6 @@ import time
 from twisted.internet.defer import DeferredList
 from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
-from twisted.python.compat import iteritems
 
 from landscape.client.accumulate import Accumulator
 from landscape.client.manager.plugin import ManagerPlugin
@@ -179,7 +178,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         message = {"type": self.message_type, "data": self._data}
 
         new_data = {}
-        for graph_id, item in iteritems(self._data):
+        for graph_id, item in self._data.items():
             script_hash = item["script-hash"]
             new_data[graph_id] = {
                 "values": [],

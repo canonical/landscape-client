@@ -24,8 +24,6 @@ import re
 import shutil
 import sys
 
-from twisted.python.compat import StringType  # Py2: basestring, Py3: str
-
 
 __all__ = [
     "Persist",
@@ -231,7 +229,7 @@ class Persist:
         return newobj
 
     def _getvalue(self, path, soft=False, hard=False, weak=False):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         marker = NOTHING
         if soft:
@@ -277,7 +275,7 @@ class Persist:
 
     def set(self, path, value, soft=False, weak=False):
         assert path
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         if soft:
             map = self._softmap
@@ -291,7 +289,7 @@ class Persist:
 
     def add(self, path, value, unique=False, soft=False, weak=False):
         assert path
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         if soft:
             map = self._softmap
@@ -310,7 +308,7 @@ class Persist:
 
     def remove(self, path, value=NOTHING, soft=False, weak=False):
         assert path
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         if soft:
             map = self._softmap
@@ -349,9 +347,9 @@ class Persist:
     def move(self, oldpath, newpath, soft=False, weak=False):
         if not (soft or weak):
             self.assert_writable()
-        if isinstance(oldpath, StringType):
+        if isinstance(oldpath, str):
             oldpath = path_string_to_tuple(oldpath)
-        if isinstance(newpath, StringType):
+        if isinstance(newpath, str):
             newpath = path_string_to_tuple(newpath)
         result = False
         marker = NOTHING
@@ -389,7 +387,7 @@ class RootedPersist:
             will be used as root of this L{RootedPersist}.
         """
         self.parent = parent
-        if isinstance(root, StringType):
+        if isinstance(root, str):
             self.root = path_string_to_tuple(root)
         else:
             self.root = root
@@ -401,39 +399,39 @@ class RootedPersist:
         self.parent.assert_writable()
 
     def has(self, path, value=NOTHING, soft=False, hard=False, weak=False):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         return self.parent.has(self.root + path, value, soft, hard, weak)
 
     def keys(self, path, soft=False, hard=False, weak=False):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         return self.parent.keys(self.root + path, soft, hard, weak)
 
     def get(self, path, default=None, soft=False, hard=False, weak=False):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         return self.parent.get(self.root + path, default, soft, hard, weak)
 
     def set(self, path, value, soft=False, weak=False):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         return self.parent.set(self.root + path, value, soft, weak)
 
     def add(self, path, value, unique=False, soft=False, weak=False):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         return self.parent.add(self.root + path, value, unique, soft, weak)
 
     def remove(self, path, value=NOTHING, soft=False, weak=False):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         return self.parent.remove(self.root + path, value, soft, weak)
 
     def move(self, oldpath, newpath, soft=False, weak=False):
-        if isinstance(oldpath, StringType):
+        if isinstance(oldpath, str):
             oldpath = path_string_to_tuple(oldpath)
-        if isinstance(newpath, StringType):
+        if isinstance(newpath, str):
             newpath = path_string_to_tuple(newpath)
         return self.parent.move(
             self.root + oldpath,
@@ -443,7 +441,7 @@ class RootedPersist:
         )
 
     def root_at(self, path):
-        if isinstance(path, StringType):
+        if isinstance(path, str):
             path = path_string_to_tuple(path)
         return self.parent.root_at(self.root + path)
 

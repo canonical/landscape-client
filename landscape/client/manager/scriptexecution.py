@@ -14,7 +14,6 @@ from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
 from twisted.internet.protocol import ProcessProtocol
-from twisted.python.compat import unicode
 
 from landscape.client import GROUP
 from landscape.client import IS_SNAP
@@ -116,7 +115,7 @@ class ScriptRunnerMixin:
         env = {
             key: (
                 value.encode(sys.getfilesystemencoding(), errors="replace")
-                if isinstance(value, unicode)
+                if isinstance(value, str)
                 else value
             )
             for key, value in env.items()
@@ -153,7 +152,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         )
 
     def _respond(self, status, data, opid, result_code=None):
-        if not isinstance(data, unicode):
+        if not isinstance(data, str):
             # Let's decode result-text, replacing non-printable
             # characters
             data = data.decode("utf-8", "replace")

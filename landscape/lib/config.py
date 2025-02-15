@@ -1,13 +1,13 @@
 import os.path
 import sys
+from argparse import ArgumentParser
+from argparse import SUPPRESS
 from logging import getLogger
-from argparse import ArgumentParser, SUPPRESS
 from typing import Optional
 from typing import Sequence
 
 from configobj import ConfigObj
 from configobj import ConfigObjError
-from twisted.python.compat import StringType
 
 from landscape.lib import cli
 
@@ -105,7 +105,7 @@ class BaseConfiguration:
                 value = None
             else:
                 raise AttributeError(name)
-        if isinstance(value, StringType):
+        if isinstance(value, str):
             option = None
             for action in self._parser._actions:
                 if name == action.dest:
@@ -317,7 +317,10 @@ class BaseConfiguration:
         # workaround to ignore extra arguments
         # similar to OptionParser.parse_args([])
         parser.add_argument(
-            "positional", nargs="*", default=SUPPRESS, help=SUPPRESS
+            "positional",
+            nargs="*",
+            default=SUPPRESS,
+            help=SUPPRESS,
         )
         version = self.version
         if version:

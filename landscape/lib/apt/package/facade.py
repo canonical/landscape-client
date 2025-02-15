@@ -13,7 +13,6 @@ import apt_pkg
 from apt.progress.base import InstallProgress
 from apt.progress.text import AcquireProgress
 from aptsources.sourceslist import SourcesList
-from twisted.python.compat import itervalues
 
 from .skeleton import build_skeleton_apt
 from landscape.lib.compat import StringIO
@@ -179,7 +178,7 @@ class AptFacade:
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return itervalues(self._hash2pkg)
+        return self._hash2pkg.values()
 
     def get_locked_packages(self):
         """Get all packages in the channels that are locked.

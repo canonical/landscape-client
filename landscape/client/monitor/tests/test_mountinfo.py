@@ -2,9 +2,6 @@ import os
 import tempfile
 from unittest import mock
 
-from twisted.python.compat import long
-from twisted.python.compat import StringType
-
 from landscape.client.monitor.mountinfo import MountInfo
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
@@ -67,10 +64,10 @@ class MountInfoTest(LandscapeTest):
         keys = {"filesystem", "total-space", "device", "mount-point"}
         for now, mount_info in message["mount-info"]:
             self.assertEqual(set(mount_info.keys()), keys)
-            self.assertTrue(isinstance(mount_info["filesystem"], StringType))
-            self.assertTrue(isinstance(mount_info["device"], StringType))
-            self.assertTrue(isinstance(mount_info["total-space"], (int, long)))
-            self.assertTrue(isinstance(mount_info["mount-point"], StringType))
+            self.assertTrue(isinstance(mount_info["filesystem"], str))
+            self.assertTrue(isinstance(mount_info["device"], str))
+            self.assertTrue(isinstance(mount_info["total-space"], int))
+            self.assertTrue(isinstance(mount_info["mount-point"], str))
 
     def test_read_sample_data(self):
         """
@@ -500,7 +497,7 @@ addr=ennui 0 0
             [(step_size, "/", 409600)],
         )
         self.assertTrue(
-            isinstance(messages[1]["free-space"][0][2], (int, long)),
+            isinstance(messages[1]["free-space"][0][2], int),
         )
 
     def test_resynchronize(self):

@@ -1,8 +1,6 @@
 import os
 from unittest import mock
 
-from twisted.python.compat import unicode
-
 from landscape.client.monitor.aptpreferences import AptPreferences
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import MonitorHelper
@@ -152,7 +150,7 @@ class AptPreferencesTest(LandscapeTest):
             },
         )
         for filename in messages[0]["data"]:
-            self.assertTrue(isinstance(filename, unicode))
+            self.assertTrue(isinstance(filename, str))
 
         # Remove all APT preferences data from the system
         os.remove(main_preferences_filename)

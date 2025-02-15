@@ -13,7 +13,6 @@ import apt_pkg
 from apt.cache import LockFailedException
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
-from twisted.python.compat import unicode
 
 from landscape.lib import testing
 from landscape.lib.apt.package.facade import AptFacade
@@ -969,7 +968,7 @@ class AptFacadeTest(
         [pkg1] = self.facade.get_packages_by_name("name1")
         [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
-        self.assertTrue(isinstance(skeleton1.summary, unicode))
+        self.assertTrue(isinstance(skeleton1.summary, str))
         self.assertEqual("Summary1", skeleton1.summary)
         skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
         self.assertIs(None, skeleton2.summary)

@@ -1,6 +1,3 @@
-from twisted.python.compat import iteritems
-from twisted.python.compat import itervalues
-
 from landscape.client.diff import diff
 
 
@@ -81,9 +78,9 @@ class UserChanges:
         changes = {}
         creates, updates, deletes = diff(self._old_users, self._new_users)
         if creates:
-            changes["create-users"] = list(itervalues(creates))
+            changes["create-users"] = list(creates.values())
         if updates:
-            changes["update-users"] = list(itervalues(updates))
+            changes["update-users"] = list(updates.values())
         if deletes:
             changes["delete-users"] = list(deletes)
         return changes
@@ -101,7 +98,7 @@ class UserChanges:
         if creates:
             groups = []
             create_members = {}
-            for value in itervalues(creates):
+            for value in creates.values():
                 # Use a copy to avoid removing the 'members' element
                 # from stored data.
                 value = value.copy()
@@ -117,7 +114,7 @@ class UserChanges:
             remove_members = {}
             create_members = {}
             update_groups = []
-            for groupname, new_data in iteritems(updates):
+            for groupname, new_data in updates.items():
                 old_data = self._old_groups[groupname]
                 old_members = set(old_data["members"])
                 new_members = set(new_data["members"])

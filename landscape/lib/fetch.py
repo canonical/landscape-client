@@ -6,8 +6,6 @@ from logging import warning
 
 from twisted.internet.defer import DeferredList
 from twisted.internet.threads import deferToThread
-from twisted.python.compat import iteritems
-from twisted.python.compat import networkString
 
 
 class FetchError(Exception):
@@ -83,9 +81,7 @@ def fetch(
     if curl is None:
         curl = pycurl.Curl()
 
-    # The conversion with `str()` ensures the acceptance of unicode under
-    # Python 2 and `networkString()` will ensure bytes for Python 3.
-    curl.setopt(pycurl.URL, networkString(str(url)))
+    curl.setopt(pycurl.URL, url.encode("ascii"))
 
     if post:
         curl.setopt(pycurl.POST, True)
@@ -102,12 +98,12 @@ def fetch(
                 + "as '/etc/ssl/certs'",
             )
             # log error here
-        curl.setopt(pycurl.CAINFO, networkString(cainfo))
+        curl.setopt(pycurl.CAINFO, cainfo.encode("ascii"))
 
     if headers:
         curl.setopt(
             pycurl.HTTPHEADER,
-            [f"{key}: {value}" for (key, value) in sorted(iteritems(headers))],
+            [f"{key}: {value}" for (key, value) in sorted(headers.items())],
         )
 
     if insecure:
@@ -117,10 +113,10 @@ def fetch(
         curl.setopt(pycurl.FOLLOWLOCATION, 1)
 
     if user_agent is not None:
-        curl.setopt(pycurl.USERAGENT, networkString(user_agent))
+        curl.setopt(pycurl.USERAGENT, user_agent.encode("ascii"))
 
     if proxy is not None:
-        curl.setopt(pycurl.PROXY, networkString(proxy))
+        curl.setopt(pycurl.PROXY, proxy.encode("ascii"))
 
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)

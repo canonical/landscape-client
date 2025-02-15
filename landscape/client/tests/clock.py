@@ -30,7 +30,6 @@ import traceback
 
 from twisted.internet import error
 from twisted.python import reflect
-from twisted.python.compat import iteritems
 from twisted.python.runtime import seconds as runtimeseconds
 
 
@@ -258,7 +257,7 @@ class DelayedCall:
                     ", ".join(
                         [
                             "{}={}".format(k, reflect.safe_repr(v))
-                            for (k, v) in iteritems(self.kw)
+                            for (k, v) in self.kw.items()
                         ],
                     ),
                 )

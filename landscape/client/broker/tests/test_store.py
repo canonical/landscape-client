@@ -1,8 +1,6 @@
 import os
 from unittest import mock
 
-from twisted.python.compat import intToBytes
-
 from landscape.client.broker.store import MessageStore
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.bpickle import dumps
@@ -12,6 +10,10 @@ from landscape.lib.schema import Int
 from landscape.lib.schema import InvalidError
 from landscape.lib.schema import Unicode
 from landscape.message_schemas.message import Message
+
+
+def intToBytes(n):
+    return b"%d" % n
 
 
 class MessageStoreTest(LandscapeTest):
