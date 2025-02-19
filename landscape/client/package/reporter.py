@@ -698,6 +698,8 @@ class PackageReporter(PackageTaskHandler):
         backports_archive = "{}-backports".format(os_release_info["code-name"])
         security_archive = "{}-security".format(os_release_info["code-name"])
 
+        origins = package.origins
+
         for package in self._facade.get_packages():
             # Don't include package versions from the official backports
             # archive. The backports archive is enabled by default since
@@ -707,7 +709,7 @@ class PackageReporter(PackageTaskHandler):
             # upgraded to the backports version.
             backport_origins = [
                 origin
-                for origin in package.origins
+                for origin in origins
                 if origin.archive == backports_archive
             ]
             if backport_origins and (
