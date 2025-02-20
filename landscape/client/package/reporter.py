@@ -712,7 +712,7 @@ class PackageReporter(PackageTaskHandler):
                 if origin.archive == backports_archive
             ]
             if backport_origins and (
-                len(backport_origins) == len(package.origins)
+                len(backport_origins) == len(origins)
             ):
                 # Ignore the version if it's only in the official
                 # backports archive. If it's somewhere else as well,
@@ -738,7 +738,7 @@ class PackageReporter(PackageTaskHandler):
                 # Is this package present in the security pocket?
                 security_origins = any(
                     origin
-                    for origin in package.origins
+                    for origin in origins
                     if origin.archive == security_archive
                 )
                 if security_origins:
