@@ -962,6 +962,18 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
+    def test_detect_packages_changes_benchmark(self):
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        start = time.perf_counter()
+        self.reporter.detect_packages_changes()
+        end = time.perf_counter()
+        dur = end - start
+        self.fail(dur)
+
     def test_detect_packages_changes_with_available_and_unknown_hash(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])

@@ -698,7 +698,7 @@ class PackageReporter(PackageTaskHandler):
         backports_archive = "{}-backports".format(os_release_info["code-name"])
         security_archive = "{}-security".format(os_release_info["code-name"])
 
-        origins = package.origins
+
 
         for package in self._facade.get_packages():
             # Don't include package versions from the official backports
@@ -707,6 +707,7 @@ class PackageReporter(PackageTaskHandler):
             # support pinning, but we don't yet. In the mean time, we
             # ignore backports, so that packages don't get automatically
             # upgraded to the backports version.
+            origins = package.origins
             backport_origins = [
                 origin
                 for origin in origins
