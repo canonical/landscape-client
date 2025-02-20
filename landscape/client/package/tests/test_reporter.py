@@ -971,8 +971,8 @@ class PackageReporterAptTest(LandscapeTest):
         import base64
 
         NUM_ITERATIONS = 100
-        NUM_PACKAGES = 1000000
-        WARMUP_ITERATIONS = 20
+        NUM_PACKAGES = 10000000000
+        WARMUP_ITERATIONS = 2000
 
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
