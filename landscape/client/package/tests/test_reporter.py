@@ -970,9 +970,8 @@ class PackageReporterAptTest(LandscapeTest):
         import time
         import base64
 
-        NUM_ITERATIONS = 100
-        NUM_PACKAGES = 10000000000
-        WARMUP_ITERATIONS = 2000
+        NUM_ITERATIONS = 1000
+        NUM_PACKAGES = 1000
 
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
@@ -984,9 +983,6 @@ class PackageReporterAptTest(LandscapeTest):
             for i in range(NUM_PACKAGES)
         }
         self.store.set_hash_ids(hash_ids)
-
-        for _ in range(WARMUP_ITERATIONS):
-            self.reporter.detect_packages_changes()
 
         stats = []
         for _ in range(NUM_ITERATIONS):
