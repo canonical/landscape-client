@@ -698,8 +698,6 @@ class PackageReporter(PackageTaskHandler):
         backports_archive = "{}-backports".format(os_release_info["code-name"])
         security_archive = "{}-security".format(os_release_info["code-name"])
 
-
-
         for package in self._facade.get_packages():
             # Don't include package versions from the official backports
             # archive. The backports archive is enabled by default since

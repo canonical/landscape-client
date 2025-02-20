@@ -991,7 +991,7 @@ class PackageReporterAptTest(LandscapeTest):
             elapsed = time.perf_counter() - start
             stats.append(elapsed)
 
-        self.fail(f"\nAverage: {statistics.mean(stats)}ms\n")
+        self.fail(f"\n\nAverage: {statistics.mean(stats) * 1000} ms\n")
 
     def test_detect_packages_changes_with_available_and_unknown_hash(self):
         message_store = self.broker_service.message_store
