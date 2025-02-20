@@ -970,9 +970,9 @@ class PackageReporterAptTest(LandscapeTest):
         import time
         import base64
 
-        NUM_ITERATIONS = 10
-        NUM_PACKAGES = 1000
-        WARMUP_ITERATIONS = 2
+        NUM_ITERATIONS = 100
+        NUM_PACKAGES = 1000000
+        WARMUP_ITERATIONS = 20
 
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
@@ -995,9 +995,7 @@ class PackageReporterAptTest(LandscapeTest):
             elapsed = time.perf_counter() - start
             stats.append(elapsed)
 
-        self.fail(
-            f"\n\nSTATS\n-----\nSum:\t{sum(stats)}\nMedian:\t{statistics.median(stats)}\nMean:\t{statistics.mean(stats)}\n"
-        )
+        self.fail(f"\nAverage: {statistics.mean(stats)}ms\n")
 
     def test_detect_packages_changes_with_available_and_unknown_hash(self):
         message_store = self.broker_service.message_store
