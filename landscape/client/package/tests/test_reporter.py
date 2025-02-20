@@ -963,16 +963,41 @@ class PackageReporterAptTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_detect_packages_changes_benchmark(self):
+        """
+        Benchmark test for package change detection performance.
+        """
+        import statistics
+        import time
+        import base64
+
+        NUM_ITERATIONS = 10
+        NUM_PACKAGES = 1000
+        WARMUP_ITERATIONS = 2
+
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        hash_ids = {
+            base64.decodebytes(
+                base64.b64encode("/ezv4AefpJJ{i}DuYFSq4RiEHJYP4=".encode())
+            ): i
+            for i in range(NUM_PACKAGES)
+        }
+        self.store.set_hash_ids(hash_ids)
 
-        start = time.perf_counter()
-        self.reporter.detect_packages_changes()
-        end = time.perf_counter()
-        dur = end - start
-        self.fail(dur)
+        for _ in range(WARMUP_ITERATIONS):
+            self.reporter.detect_packages_changes()
+
+        stats = []
+        for _ in range(NUM_ITERATIONS):
+            start = time.perf_counter()
+            self.reporter.detect_packages_changes()
+            elapsed = time.perf_counter() - start
+            stats.append(elapsed)
+
+        self.fail(
+            f"\n\nSTATS\n-----\nSum:\t{sum(stats)}\nMedian:\t{statistics.median(stats)}\nMean:\t{statistics.mean(stats)}\n"
+        )
 
     def test_detect_packages_changes_with_available_and_unknown_hash(self):
         message_store = self.broker_service.message_store
