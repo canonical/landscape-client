@@ -984,15 +984,17 @@ class AptFacadeTest(
         """
         import time
 
-        NUM_PKGS = 100000
-
+        NUM_PKGS = 10000
+        self.facade.clear_channels()
         start = time.perf_counter()
+
         for i in range(NUM_PKGS):
             name = f"test-{i}"
             self._add_system_package(name)
             self._hash_packages_by_name(
                 package_name=name, store=self.store, facade=self.facade
             )
+
         self.facade.reload_channels()
         self.facade.get_packages()
 
