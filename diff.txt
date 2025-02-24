@@ -1,0 +1,61 @@
+diff --git a/landscape/client/package/reporter.py b/landscape/client/package/reporter.py
+index b784317b..36b697ab 100644
+--- a/landscape/client/package/reporter.py
++++ b/landscape/client/package/reporter.py
+@@ -654,6 +654,22 @@ class PackageReporter(PackageTaskHandler):
+         return False
+
+     def _compute_packages_changes(self):  # noqa: max-complexity: 13
++        import cProfile
++        import pstats
++
++        profile = cProfile.Profile()
++        profile.enable()
++        result = self.compute_packages_change_inner()
++        profile.disable()
++
++        output_path = "/tmp/lib/landscape/client/result.txt"
++        with open(output_path, "a") as fp:
++            stats = pstats.Stats(profile, stream=fp)
++            stats.strip_dirs().sort_stats("cumulative").print_stats()
++
++        return result
++
++    def compute_packages_change_inner(self):
+         """Analyse changes in the universe of known packages.
+
+         This method will verify if there are packages that:
+@@ -705,14 +721,11 @@ class PackageReporter(PackageTaskHandler):
+             # support pinning, but we don't yet. In the mean time, we
+             # ignore backports, so that packages don't get automatically
+             # upgraded to the backports version.
+-            backport_origins = [
+-                origin
+-                for origin in package.origins
+-                if origin.archive == backports_archive
+-            ]
+-            if backport_origins and (
+-                len(backport_origins) == len(package.origins)
+-            ):
++            archives = [a[0].archive for a in package._cand.file_list]
++            backports_origins = all(
++                archive == backports_archive for archive in archives
++            )
++            if backports_origins:
+                 # Ignore the version if it's only in the official
+                 # backports archive. If it's somewhere else as well,
+                 # e.g. a PPA, we assume it was added manually and the
+@@ -736,10 +749,11 @@ class PackageReporter(PackageTaskHandler):
+
+                 # Is this package present in the security pocket?
+                 security_origins = any(
+-                    origin
+-                    for origin in package.origins
+-                    if origin.archive == security_archive
++                    archive
++                    for archive in archives
++                    if archive == security_archive
+                 )
++
+                 if security_origins:
+                     current_security.add(id)

@@ -22,7 +22,6 @@ from landscape.lib.apt.package.facade import DependencyError
 from landscape.lib.apt.package.facade import LandscapeInstallProgress
 from landscape.lib.apt.package.facade import TransactionError
 from landscape.lib.apt.package.testing import AptFacadeHelper
-from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.apt.package.testing import create_deb
 from landscape.lib.apt.package.testing import create_simple_repository
 from landscape.lib.apt.package.testing import HASH1
@@ -138,7 +137,6 @@ class AptFacadeTest(
         super().setUp()
         self.facade.max_dpkg_retries = 0
         self.facade.dpkg_retry_sleep = 0
-        self.store = PackageStore(self.makeFile())
 
     def version_sortkey(self, version):
         """Return a key by which a Version object can be sorted."""
@@ -977,28 +975,6 @@ class AptFacadeTest(
         self.assertIs(None, skeleton2.summary)
         self.assertEqual(HASH1, skeleton1.get_hash())
         self.assertEqual(HASH2, skeleton2.get_hash())
-
-    def benchmark(self):
-        """
-        Benchmark test for performance.
-        """
-        import time
-
-        NUM_PKGS = 10000
-        self.facade.clear_channels()
-        start = time.perf_counter()
-
-        for i in range(NUM_PKGS):
-            name = f"test-{i}"
-            self._add_system_package(name)
-            self._hash_packages_by_name(
-                package_name=name, store=self.store, facade=self.facade
-            )
-
-        self.facade.reload_channels()
-        self.facade.get_packages()
-
-        self.fail(f"\nRuntime: {(time.perf_counter() - start)} s\n")
 
     def test_get_package_hash(self):
         """
