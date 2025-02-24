@@ -618,6 +618,20 @@ class PackageReporter(PackageTaskHandler):
         return deferred.addCallback(changes_detected)
 
     def detect_packages_changes(self):
+        import cProfile, pstats
+        from pstats import SortKey
+        pr = cProfile.Profile()
+        pr.enable()
+        result = self.detect_packages_changes_inner()
+        pr.disable()
+        sortby = SortKey.CUMULATIVE
+        with open("/tmp/lib/landscape/client/result.txt", "w") as fp:
+            ps = pstats.Stats(pr, stream=fp).sort_stats(sortby)
+            ps.print_stats()
+
+        return result
+
+    def detect_packages_changes_inner(self):
         """
         Check if any information regarding packages have changed, and if so
         compute the changes and send a signal.
@@ -654,6 +668,16 @@ class PackageReporter(PackageTaskHandler):
         return False
 
     def _compute_packages_changes(self):  # noqa: max-complexity: 13
+        import cProfile, pstats
+        profile = cProfile.Profile()
+        profile.enable()
+        result = self._compute_packages_changes_inner()
+        profile.disable()
+        with open('/home/ubuntu/result.txt', 'w') as fp:
+            pstats.Stats(profile, stream=fp)
+            pstats.print_stats()
+        return result
+    def compute_packages_change_inner(self):
         """Analyse changes in the universe of known packages.
 
         This method will verify if there are packages that:
@@ -705,15 +729,11 @@ class PackageReporter(PackageTaskHandler):
             # support pinning, but we don't yet. In the mean time, we
             # ignore backports, so that packages don't get automatically
             # upgraded to the backports version.
-            origins = package.origins
-            backport_origins = [
-                origin
-                for origin in origins
-                if origin.archive == backports_archive
-            ]
-            if backport_origins and (
-                len(backport_origins) == len(origins)
-            ):
+            archives = [a[0].archive for a in package.version._cand.file_list]
+            backports_origins = all(
+                archive == backports_archive for archive in archives
+            )
+            if backports_origins:
                 # Ignore the version if it's only in the official
                 # backports archive. If it's somewhere else as well,
                 # e.g. a PPA, we assume it was added manually and the
