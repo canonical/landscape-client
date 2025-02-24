@@ -663,7 +663,7 @@ class PackageReporter(PackageTaskHandler):
         profile.disable()
 
         output_path = "/tmp/lib/landscape/client/result.txt"
-        with open(output_path, "w") as fp:
+        with open(output_path, "a") as fp:
             stats = pstats.Stats(profile, stream=fp)
             stats.strip_dirs().sort_stats("cumulative").print_stats()
 

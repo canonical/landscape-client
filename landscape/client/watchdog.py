@@ -728,15 +728,9 @@ def run(args=sys.argv, reactor=None):
     if IS_SNAP:
         config.auto_configure(retry=True)
 
-    import debugpy
-
-    debugpy.listen(("0.0.0.0", 5678))
-
     application = Application("landscape-client")
     watchdog_service = WatchDogService(config)
     watchdog_service.setServiceParent(application)
-
-
 
     if reactor is None:
         from twisted.internet import reactor
