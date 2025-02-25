@@ -86,6 +86,8 @@ class PackageReporter(PackageTaskHandler):
     sources_list_directory = "/etc/apt/sources.list.d"
     _got_task = False
 
+    called = False
+
     def run(self):
         self._got_task = False
 
