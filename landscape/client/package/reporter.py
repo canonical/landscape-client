@@ -656,17 +656,39 @@ class PackageReporter(PackageTaskHandler):
     def _compute_packages_changes(self):  # noqa: max-complexity: 13
         import cProfile
         import pstats
+        from datetime import datetime
+        import psutil
+        import subprocess
 
         profile = cProfile.Profile()
+        process = psutil.Process()
+        start_time = time.perf_counter()
+        start_cpu_times = process.cpu_times()
         profile.enable()
+
         result = self.compute_packages_change_inner()
+
+        time.sleep(0.1)
+
+        end_time = time.perf_counter()
+        end_cpu_times = process.cpu_times()
+
         profile.disable()
+
+        elapsed_time = end_time - start_time
+
+        user_time = end_cpu_times.user - start_cpu_times.user
+        system_time = end_cpu_times.system - start_cpu_times.system
+        total_cpu_time = user_time + system_time
 
         output_path = "/tmp/lib/landscape/client/result.txt"
         with open(output_path, "a") as fp:
+            now = datetime.now()
+            fp.write(f"\n--------- Run on: {now.strftime('%Y-%m-%d %H:%M:%S')} ---------\n\n")
             stats = pstats.Stats(profile, stream=fp)
-            stats.strip_dirs().sort_stats("cumulative").print_stats()
-
+            stats.strip_dirs().sort_stats("cumulative").print_stats(10)
+            fp.write(f"CPU Time: {total_cpu_time}s\n")
+            fp.write(f"\n---------------------------------------------------------------\n")
         return result
 
     def compute_packages_change_inner(self):
@@ -695,6 +717,7 @@ class PackageReporter(PackageTaskHandler):
         @return: A deferred resulting in C{True} if package changes were
             detected with respect to the previous run, or C{False} otherwise.
         """
+
         self._facade.ensure_channels_reloaded()
 
         old_installed = set(self._store.get_installed())
@@ -713,6 +736,26 @@ class PackageReporter(PackageTaskHandler):
         os_release_info = parse_os_release()
         backports_archive = "{}-backports".format(os_release_info["code-name"])
         security_archive = "{}-security".format(os_release_info["code-name"])
+
+
+        # Profile CPU before doing work
+
+        import subprocess
+        from datetime import datetime
+
+        result = subprocess.run(
+            ["landscape-sysinfo"],
+            capture_output=True,
+            text=True
+        )
+
+        output_path = "/tmp/lib/landscape/client/sysinfo.txt"
+        with open(output_path, "a") as fp:
+            if len(result.stdout) > 1:
+                now = datetime.now()
+                fp.write(f"\n--------- Run on: {now.strftime('%Y-%m-%d %H:%M:%S')} ---------\n\n")
+                fp.write(f"\nlandscape-sysinfo BEFORE:\n {result.stdout}\n")
+
 
         for package in self._facade.get_packages():
             # Don't include package versions from the official backports
@@ -756,6 +799,17 @@ class PackageReporter(PackageTaskHandler):
 
                 if security_origins:
                     current_security.add(id)
+
+        result = subprocess.run(
+            ["landscape-sysinfo"],
+            capture_output=True,
+            text=True
+        )
+
+        output_path = "/tmp/lib/landscape/client/sysinfo.txt"
+        with open(output_path, "a") as fp:
+            if len(result.stdout) > 1:
+                fp.write(f"\nlandscape-sysinfo AFTER:\n {result.stdout}\n")
 
         for package in self._facade.get_locked_packages():
             hash = self._facade.get_package_hash(package)
