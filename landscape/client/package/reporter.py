@@ -86,8 +86,6 @@ class PackageReporter(PackageTaskHandler):
     sources_list_directory = "/etc/apt/sources.list.d"
     _got_task = False
 
-    called = False
-
     def run(self):
         self._got_task = False
 
@@ -656,44 +654,6 @@ class PackageReporter(PackageTaskHandler):
         return False
 
     def _compute_packages_changes(self):  # noqa: max-complexity: 13
-        import cProfile
-        import pstats
-        from datetime import datetime
-        import psutil
-        import subprocess
-
-        profile = cProfile.Profile()
-        process = psutil.Process()
-        start_time = time.perf_counter()
-        start_cpu_times = process.cpu_times()
-        profile.enable()
-
-        result = self.compute_packages_change_inner()
-
-        time.sleep(0.1)
-
-        end_time = time.perf_counter()
-        end_cpu_times = process.cpu_times()
-
-        profile.disable()
-
-        elapsed_time = end_time - start_time
-
-        user_time = end_cpu_times.user - start_cpu_times.user
-        system_time = end_cpu_times.system - start_cpu_times.system
-        total_cpu_time = user_time + system_time
-
-        output_path = "/tmp/lib/landscape/client/result.txt"
-        with open(output_path, "a") as fp:
-            now = datetime.now()
-            fp.write(f"\n--------- Run on: {now.strftime('%Y-%m-%d %H:%M:%S')} ---------\n\n")
-            stats = pstats.Stats(profile, stream=fp)
-            stats.strip_dirs().sort_stats("cumulative").print_stats(10)
-            fp.write(f"CPU Time: {total_cpu_time}s\n")
-            fp.write(f"\n---------------------------------------------------------------\n")
-        return result
-
-    def compute_packages_change_inner(self):
         """Analyse changes in the universe of known packages.
 
         This method will verify if there are packages that:
@@ -739,82 +699,48 @@ class PackageReporter(PackageTaskHandler):
         backports_archive = "{}-backports".format(os_release_info["code-name"])
         security_archive = "{}-security".format(os_release_info["code-name"])
 
+        for package_version in self._facade.get_packages():
+            # Construct origin archives from the list of PackageFiles
+            # for the given package Version rather than calling
+            # the builtin package.origins. No need to construct
+            # an entire Origins object as only we want to check the archives.
+            # See /usr/lib/python3/dist-packages/apt/package.py
+            archives = [a[0].archive for a in package_version._cand.file_list]
 
-        # Profile CPU before doing work
-
-        import subprocess
-        from datetime import datetime
-
-        result = subprocess.run(
-            ["landscape-sysinfo"],
-            capture_output=True,
-            text=True
-        )
-
-        output_path = "/tmp/lib/landscape/client/sysinfo.txt"
-        with open(output_path, "a") as fp:
-            if len(result.stdout) > 1:
-                now = datetime.now()
-                fp.write(f"\n--------- Run on: {now.strftime('%Y-%m-%d %H:%M:%S')} ---------\n\n")
-                fp.write(f"\nlandscape-sysinfo BEFORE:\n {result.stdout}\n")
-
-
-        for package in self._facade.get_packages():
             # Don't include package versions from the official backports
             # archive. The backports archive is enabled by default since
             # xenial with a pinning policy of 100. Ideally we would
             # support pinning, but we don't yet. In the mean time, we
             # ignore backports, so that packages don't get automatically
             # upgraded to the backports version.
-            archives = [a[0].archive for a in package._cand.file_list]
-            backports_origins = all(
-                archive == backports_archive for archive in archives
-            )
-            if backports_origins:
+            if all(archive == backports_archive for archive in archives):
                 # Ignore the version if it's only in the official
                 # backports archive. If it's somewhere else as well,
                 # e.g. a PPA, we assume it was added manually and the
                 # user wants to get updates from it.
                 continue
-            hash = self._facade.get_package_hash(package)
+            hash = self._facade.get_package_hash(package_version)
             id = self._store.get_hash_id(hash)
             if id is not None:
-                if self._facade.is_package_installed(package):
+                if self._facade.is_package_installed(package_version):
                     current_installed.add(id)
-                    if self._facade.is_package_available(package):
+                    if self._facade.is_package_available(package_version):
                         current_available.add(id)
-                    if self._facade.is_package_autoremovable(package):
+                    if self._facade.is_package_autoremovable(package_version):
                         current_autoremovable.add(id)
                 else:
                     current_available.add(id)
 
                 # Are there any packages that this package is an upgrade for?
-                if self._facade.is_package_upgrade(package):
+                if self._facade.is_package_upgrade(package_version):
                     current_upgrades.add(id)
 
                 # Is this package present in the security pocket?
-                security_origins = any(
-                    archive
-                    for archive in archives
-                    if archive == security_archive
-                )
-
-                if security_origins:
+                if security_archive in archives:
                     current_security.add(id)
 
-        result = subprocess.run(
-            ["landscape-sysinfo"],
-            capture_output=True,
-            text=True
-        )
-
-        output_path = "/tmp/lib/landscape/client/sysinfo.txt"
-        with open(output_path, "a") as fp:
-            if len(result.stdout) > 1:
-                fp.write(f"\nlandscape-sysinfo AFTER:\n {result.stdout}\n")
-
-        for package in self._facade.get_locked_packages():
-            hash = self._facade.get_package_hash(package)
+        for package_version in self._facade.get_locked_packages():
+            hash = self._facade.get_package_hash(package_version)
             id = self._store.get_hash_id(hash)
             if id is not None:
                 current_locked.add(id)
