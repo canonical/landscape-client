@@ -679,7 +679,6 @@ class PackageReporter(PackageTaskHandler):
         @return: A deferred resulting in C{True} if package changes were
             detected with respect to the previous run, or C{False} otherwise.
         """
-
         self._facade.ensure_channels_reloaded()
 
         old_installed = set(self._store.get_installed())
@@ -705,10 +704,9 @@ class PackageReporter(PackageTaskHandler):
             # the builtin package.origins. No need to construct
             # an entire Origins object as only we want to check the archives.
             # See /usr/lib/python3/dist-packages/apt/package.py
-            # Note that file_list[0] is a PackageFile object
             archives = [
-                file_list[0].archive
-                for file_list in package_version._cand.file_list
+                package_file.archive
+                for package_file, _ in package_version._cand.file_list
             ]
 
             # Don't include package versions from the official backports
