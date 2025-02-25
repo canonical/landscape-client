@@ -654,6 +654,43 @@ class PackageReporter(PackageTaskHandler):
         return False
 
     def _compute_packages_changes(self):  # noqa: max-complexity: 13
+        import cProfile
+        import pstats
+        from datetime import datetime
+        import psutil
+
+        profile = cProfile.Profile()
+        process = psutil.Process()
+        start_time = time.perf_counter()
+        start_cpu_times = process.cpu_times()
+        profile.enable()
+
+        result = self.compute_packages_change_inner()
+
+        time.sleep(0.1)
+
+        end_time = time.perf_counter()
+        end_cpu_times = process.cpu_times()
+
+        profile.disable()
+
+        elapsed_time = end_time - start_time
+
+        user_time = end_cpu_times.user - start_cpu_times.user
+        system_time = end_cpu_times.system - start_cpu_times.system
+        total_cpu_time = user_time + system_time
+
+        output_path = "/tmp/lib/landscape/client/result.txt"
+        with open(output_path, "a") as fp:
+            now = datetime.now()
+            fp.write(f"\n--------- Run on: {now.strftime('%Y-%m-%d %H:%M:%S')} ---------\n\n")
+            stats = pstats.Stats(profile, stream=fp)
+            stats.strip_dirs().sort_stats("cumulative").print_stats(10)
+            fp.write(f"CPU Time: {total_cpu_time}s\n")
+            fp.write(f"\n---------------------------------------------------------------\n")
+        return result
+
+    def compute_packages_change_inner(self):
         """Analyse changes in the universe of known packages.
 
         This method will verify if there are packages that:
