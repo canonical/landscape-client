@@ -699,13 +699,14 @@ class PackageReporter(PackageTaskHandler):
         security_archive = "{}-security".format(os_release_info["code-name"])
 
         for package_version in self._facade.get_packages():
-            # Construct origin archives from the list of PackageFiles
+            # Get archives from the list of PackageFiles
             # for the given package version rather than using
             # package_version.origins from the Python apt package.
-            # We only want to check the package file archives, and
-            # creating Origins using package_version.origins is expensive.
+            # We only want to check the archives, and creating
+            # Origins using package_version.origins is expensive.
             # See /usr/lib/python3/dist-packages/apt/package.py
             archives = [
+                # Ex. jammy-backports
                 package_file.archive
                 for package_file, _ in package_version._cand.file_list
             ]
