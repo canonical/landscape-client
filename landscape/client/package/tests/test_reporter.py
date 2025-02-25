@@ -1262,22 +1262,22 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_packages_changes_package_origins_not_called(self):
+    def test_compute_packages_changes_package_origins_not_called(self):
         """
         Archive info is extracted directly from the package versions
         and the apt.package.Version.origins property is not called
         """
         with mock.patch("apt.package.Version.origins") as version_origins_mock:
-            self.successResultOf(self.reporter.detect_packages_changes())
+            self.successResultOf(self.reporter._compute_packages_changes())
         version_origins_mock.assert_not_called()
 
-    def test_detect_packages_changes_origins_not_created(self):
+    def test_compute_packages_changes_origins_not_created(self):
         """
         Archive info is extracted directly from the package versions
         and no Origins are created (find_index is not called)
         """
         with mock.patch("apt.package.Origin.__init__") as origin_mock:
-            self.successResultOf(self.reporter.detect_packages_changes())
+            self.successResultOf(self.reporter._compute_packages_changes())
         origin_mock.assert_not_called()
 
     def test_detect_packages_changes_with_backports_others(self):
