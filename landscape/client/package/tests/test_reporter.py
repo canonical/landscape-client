@@ -1274,7 +1274,7 @@ class PackageReporterAptTest(LandscapeTest):
     def test_compute_packages_changes_origins_not_created(self):
         """
         Archive info is extracted directly from the package versions
-        and no Origins are created (find_index is not called)
+        and no Origins are created (expensive find_index() is not called)
         """
         with mock.patch("apt.package.Origin.__init__") as origin_mock:
             self.successResultOf(self.reporter._compute_packages_changes())
