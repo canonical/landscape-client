@@ -705,7 +705,8 @@ class PackageReporter(PackageTaskHandler):
             # the builtin package.origins. No need to construct
             # an entire Origins object as only we want to check the archives.
             # See /usr/lib/python3/dist-packages/apt/package.py
-            archives = [a[0].archive for a in package_version._cand.file_list]
+            # Note that file_list[0] is a PackageFile object
+            archives = [file_list[0].archive for file_list in package_version._cand.file_list]
 
             # Don't include package versions from the official backports
             # archive. The backports archive is enabled by default since
