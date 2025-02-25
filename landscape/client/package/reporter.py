@@ -699,11 +699,11 @@ class PackageReporter(PackageTaskHandler):
         security_archive = "{}-security".format(os_release_info["code-name"])
 
         for package_version in self._facade.get_packages():
-            # Construct origins archives from the list of PackageFiles
-            # for the given package Version rather than calling
-            # package.origins from the apt package. We only want to check the
-            # package file archives, and creating Origins
-            # using package.origins is expensive.
+            # Construct origin archives from the list of PackageFiles
+            # for the given package version rather than using
+            # package_version.origins from the Python apt package.
+            # We only want to check the package file archives, and
+            # creating Origins using package_version.origins is expensive.
             # See /usr/lib/python3/dist-packages/apt/package.py
             archives = [
                 package_file.archive
