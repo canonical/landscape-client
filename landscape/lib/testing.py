@@ -13,7 +13,6 @@ from logging import Handler
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
-from twisted.python.compat import StringType
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
@@ -334,7 +333,7 @@ class LogKeeperHelper:
             raise LoggedErrorsError(errors)
 
     def ignore_errors(self, type_or_regex):
-        if isinstance(type_or_regex, StringType):
+        if isinstance(type_or_regex, str):
             self.ignored_exception_regexes.append(re.compile(type_or_regex))
         else:
             self.ignored_exception_types.append(type_or_regex)
@@ -687,9 +686,9 @@ class FakeReactor(EventHandlingReactorMixin):
             try:
                 deferred = f(*args, **kwargs)
 
-                if (
-                    hasattr(deferred, "result")
-                    and isinstance(deferred.result, Failure)
+                if hasattr(deferred, "result") and isinstance(
+                    deferred.result,
+                    Failure,
                 ):
                     # Required for failures to get GC'd and properly flushed.
                     # Twisted did this for us in versions < 24.10.

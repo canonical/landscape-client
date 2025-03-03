@@ -2,8 +2,6 @@
 import os
 import time
 
-from twisted.python.compat import long
-
 
 def create_text_file(path, content):
     """Create a file with the given content.
@@ -112,7 +110,7 @@ def touch_file(path, offset_seconds=None):
     """
     open(path, "ab").close()
     if offset_seconds is not None:
-        offset_time = long(time.time()) + offset_seconds
+        offset_time = int(time.time()) + offset_seconds
         touch_time = (offset_time, offset_time)
     else:
         touch_time = None
