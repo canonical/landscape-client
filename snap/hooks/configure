@@ -22,7 +22,7 @@ config_entries = [
     ("account-name", "account_name", None),
     ("computer-title", "computer_title", None),
     ("landscape-url", "url", lambda url: f"{url}/message-system"),
-    ("landscape-url", "ping_url", lambda url: f"{url}/ping"),
+    ("landscape-ping-url", "ping_url", lambda url: f"{url}/ping"),
     ("log-level", "log_level", None),
     ("script-users", "script_users", None),
     ("manager-plugins", "manager_plugins", None),
