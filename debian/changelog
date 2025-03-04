@@ -1,3 +1,17 @@
+landscape-client (24.12+git6418-0landscape0) jammy; urgency=medium
+
+  * feat: add support for .sources when applying repository profiles
+  * feat: add USG plugin
+  * feat: enable riscv build of snap
+  * feat: add authenticated attach code to registration message
+  * fix: lint failure E226 missing arithmetic whitespace
+  * fix: remove snapd-control-managed from snapcraft.yaml apps stanza
+  * fix: allow log rotation in snap
+  * perf: improve package reporter cpu usage
+  * refactor: stop using twisted.python.compat
+
+ -- Justin Kim <justin.kim@canonical.com>  Tue, 04 Mar 2025 19:55:32 +0000
+
 landscape-client (24.12-0landscape0) jammy; urgency=medium
 
   * feat: add optional installation_request_id parameter to registration 
