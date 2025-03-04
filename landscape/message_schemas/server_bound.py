@@ -364,6 +364,7 @@ REGISTER_3_3 = Message(
         "ubuntu_pro_info": Unicode(),
         "hostagent_uid": Unicode(),
         "installation_request_id": Unicode(),
+        "authenticated_attach_code": Unicode(),
     },
     api=b"3.3",
     optional=[
@@ -378,6 +379,7 @@ REGISTER_3_3 = Message(
         "ubuntu_pro_info",
         "hostagent_uid",
         "installation_request_id",
+        "authenticated_attach_code",
     ],
 )
 
