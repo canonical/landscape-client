@@ -98,7 +98,7 @@ class RegistrationHandler:
     def __init__(
         self,
         config,
-        identity,
+        identity: Identity,
         reactor,
         exchange,
         pinger,
@@ -197,6 +197,7 @@ class RegistrationHandler:
         registration_key = identity.registration_key
         hostagent_uid = identity.hostagent_uid
         installation_request_id = identity.installation_request_id
+        authenticated_attach_code = identity.authenticated_attach_code
 
         self._message_store.delete_all_messages()
 
@@ -228,6 +229,8 @@ class RegistrationHandler:
             message["hostagent_uid"] = hostagent_uid
         if installation_request_id:
             message["installation_request_id"] = installation_request_id
+        if authenticated_attach_code:
+            message["authenticated_attach_code"] = authenticated_attach_code
 
         server_api = self._message_store.get_server_api()
         # If we have juju data to send and if the server is recent enough to

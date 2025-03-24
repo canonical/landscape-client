@@ -468,6 +468,47 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         messages = self.mstore.get_pending_messages()
         self.assertNotIn("installation_request_id", messages[0])
 
+    def test_queue_message_on_exchange_with_authenticated_attach_code(self):
+        """
+        If the admin has defined a authenticated_attach_code for this
+        computer, we send it to the server.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api(b"3.3")
+        self.config.account_name = "account_name"
+        self.config.authenticated_attach_code = "hushhushsupersecretcode"
+        self.config.tags = "server,london"
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(
+            "hushhushsupersecretcode",
+            messages[0]["authenticated_attach_code"],
+        )
+
+    def test_queue_message_on_exchange_empty_authenticated_attach_code(self):
+        """
+        If the authenticated_attach_code is "", then the outgoing message
+        does not define an "authenticated_attach_code" key.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api(b"3.3")
+        self.config.authenticated_attach_code = ""
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertNotIn("authenticated_attach_code", messages[0])
+
+    def test_queue_message_on_exchange_none_authenticated_attach_code(self):
+        """
+        If the authenticated_attach_code is None, then the outgoing message
+        does not define an "authenticated_attach_code" key.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.mstore.set_server_api(b"3.3")
+        self.config.authenticated_attach_code = None
+        self.reactor.fire("pre-exchange")
+        messages = self.mstore.get_pending_messages()
+        self.assertNotIn("authenticated_attach_code", messages[0])
+
     def test_queueing_registration_message_resets_message_store(self):
         """
         When a registration message is queued, the store is reset
