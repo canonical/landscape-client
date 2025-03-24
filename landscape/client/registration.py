@@ -34,6 +34,7 @@ class ClientRegistrationInfo:
     account_name: str
     computer_title: str
 
+    authenticated_attach_code: Optional[str] = None
     container_info: Optional[str] = None
     hostagent_uid: Optional[str] = None
     installation_request_id: Optional[str] = None
@@ -54,6 +55,7 @@ class ClientRegistrationInfo:
             identity.access_group,
             identity.account_name,
             identity.computer_title,
+            authenticated_attach_code=identity.authenticated_attach_code,
             container_info=get_container_info(),
             hostagent_uid=identity.hostagent_uid,
             installation_request_id=identity.installation_request_id,

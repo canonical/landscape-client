@@ -80,6 +80,7 @@ class Identity:
     access_group = config_property("access_group")
     hostagent_uid = config_property("hostagent_uid")
     installation_request_id = config_property("installation_request_id")
+    authenticated_attach_code = config_property("authenticated_attach_code")
 
     def __init__(self, config, persist):
         self._config = config
