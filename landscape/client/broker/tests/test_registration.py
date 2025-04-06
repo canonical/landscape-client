@@ -8,7 +8,6 @@ from landscape.client.broker.registration import RegistrationError
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.client.broker.tests.helpers import RegistrationHelper
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.compat import _PY3
 from landscape.lib.persist import Persist
 
 
@@ -328,14 +327,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(expected, messages[0]["tags"])
 
         logs = self.logfile.getvalue().strip()
-        # XXX This is not nice, as it has the origin in a non-consistent way of
-        # using logging. self.logfile is a cStringIO in Python 2 and
-        # io.StringIO in Python 3. This results in reading bytes in Python 2
-        # and unicode in Python 3, but a drop-in replacement of cStringIO with
-        # io.StringIO in Python 2 is not working. However, we compare bytes
-        # here, to circumvent that problem.
-        if _PY3:
-            logs = logs.encode("utf-8")
+        logs = logs.encode("utf-8")
+
         self.assertEqual(
             logs,
             b"INFO: Queueing message to register with account "

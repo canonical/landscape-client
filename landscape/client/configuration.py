@@ -3,6 +3,7 @@
 This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
+import base64
 import getpass
 import io
 import logging
@@ -25,10 +26,8 @@ from landscape.client.registration import register
 from landscape.client.registration import RegistrationException
 from landscape.client.serviceconfig import ServiceConfig
 from landscape.client.serviceconfig import ServiceConfigException
-from landscape.lib import base64
 from landscape.lib.bootstrap import BootstrapDirectory
 from landscape.lib.bootstrap import BootstrapList
-from landscape.lib.compat import input
 from landscape.lib.fetch import fetch
 from landscape.lib.fetch import FetchError
 from landscape.lib.fs import create_binary_file

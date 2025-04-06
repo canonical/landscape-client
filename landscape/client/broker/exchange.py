@@ -352,7 +352,6 @@ from landscape import CLIENT_API
 from landscape import DEFAULT_SERVER_API
 from landscape import SERVER_API
 from landscape.lib.backoff import ExponentialBackoff
-from landscape.lib.compat import _PY3
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fetch import PyCurlError
 from landscape.lib.format import format_delta
@@ -859,12 +858,6 @@ class MessageExchange:
         # be 3.2, because it's the one that didn't have this field.
         server_api = result.get("server-api", b"3.2")
 
-        if _PY3 and not isinstance(server_api, bytes):
-            # The "server-api" field in the bpickle payload sent by the server
-            # is a string, however in Python 3 we need to convert it to bytes,
-            # since that's what the rest of the code expects.
-            server_api = server_api.encode()
-
         if is_version_higher(server_api, message_store.get_server_api()):
             # The server can handle a message API that is higher than the one
             # we're currently using. If the highest server API is greater than
@@ -955,6 +948,6 @@ def get_accepted_types_diff(old_types, new_types):
 
 def maybe_bytes(thing):
     """Return a py3 ascii string from maybe py2 bytes."""
-    if _PY3 and isinstance(thing, bytes):
+    if isinstance(thing, bytes):
         return thing.decode("ascii")
     return thing
