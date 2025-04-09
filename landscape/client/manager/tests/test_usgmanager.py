@@ -1,5 +1,6 @@
 import os
 import tempfile
+import uuid
 from unittest import mock
 
 from twisted.internet.defer import ensureDeferred
@@ -58,12 +59,14 @@ class UsgManagerTests(LandscapeTest):
         with open(audit_result, "w") as arfp:
             arfp.write("<test>TEST</test>\n")
 
+        runid = str(uuid.uuid4())
         deferred = ensureDeferred(
             self.plugin.handle_usg_message(
                 {
                     "operation-id": 1,
                     "action": "audit",
                     "profile": "cis_level1_workstation",
+                    "run-id": runid,
                 },
             ),
         )
@@ -94,6 +97,8 @@ class UsgManagerTests(LandscapeTest):
                         {
                             "type": "usg-audit",
                             "report": b"<test>TEST</test>\n",
+                            "operation-id": 1,
+                            "run-id": runid,
                         },
                         self.plugin._session_id,
                         True,
@@ -122,6 +127,7 @@ class UsgManagerTests(LandscapeTest):
                     "operation-id": 1,
                     "action": "audit",
                     "profile": "cis_level1_workstation",
+                    "run-id": str(uuid.uuid4()),
                 },
             ),
         )
@@ -170,6 +176,7 @@ class UsgManagerTests(LandscapeTest):
                     "operation-id": 1,
                     "action": "fix",
                     "profile": "cis_level1_workstation",
+                    "run-id": str(uuid.uuid4()),
                 },
             ),
         )
@@ -227,6 +234,7 @@ class UsgManagerTests(LandscapeTest):
                     "action": "audit",
                     "profile": "cis_level1_workstation",
                     "tailoring-file": (83497, "test-tailoring.xml"),
+                    "run-id": str(uuid.uuid4()),
                 },
             ),
         )
@@ -281,6 +289,7 @@ class UsgManagerTests(LandscapeTest):
                     "operation-id": 1,
                     "action": "audit",
                     "profile": "cis_level1_workstation",
+                    "run-id": str(uuid.uuid4()),
                 },
             ),
         )
@@ -331,6 +340,7 @@ class UsgManagerTests(LandscapeTest):
                     "operation-id": 1,
                     "action": "audit",
                     "profile": "cis_level1_workstation",
+                    "run-id": str(uuid.uuid4()),
                 },
             ),
         )
