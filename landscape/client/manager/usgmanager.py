@@ -63,7 +63,7 @@ class UsgManager(ManagerPlugin):
         :message: A message of type "usg".
         """
         opid = message["operation-id"]
-        runid = message["runid"]
+        runid = message["run-id"]
 
         if not self._has_usg():
             await self._respond(FAILED, USG_NOT_FOUND, opid)
