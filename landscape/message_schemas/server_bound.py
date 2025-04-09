@@ -860,6 +860,8 @@ USG_AUDIT = Message(
     "usg-audit",
     {
         "report": Bytes(),
+        "operation-id": Int(),
+        "run-id": Unicode(),
     },
 )
 

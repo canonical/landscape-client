@@ -47,9 +47,9 @@ class UsgManager(ManagerPlugin):
 
     truncation_indicator = "\n**OUTPUT TRUNCATED**"
 
-    def register(self, registry):
-        super().register(registry)
-        registry.register_message(
+    def register(self, client):
+        super().register(client)
+        client.register_message(
             "usg",
             self.handle_usg_message,
         )
@@ -63,6 +63,7 @@ class UsgManager(ManagerPlugin):
         :message: A message of type "usg".
         """
         opid = message["operation-id"]
+        runid = message["runid"]
 
         if not self._has_usg():
             await self._respond(FAILED, USG_NOT_FOUND, opid)
@@ -81,7 +82,7 @@ class UsgManager(ManagerPlugin):
             await self._respond(SUCCEEDED, result, opid)
 
             if action == "audit":
-                await self._send_audit_report()
+                await self._send_audit_report(opid, runid)
             if action == "fix":
                 self._set_reboot_required()
         except ProcessFailedError as e:
@@ -110,7 +111,7 @@ class UsgManager(ManagerPlugin):
         status: int,
         data: Union[str, bytes],
         opid: int,
-    ) -> None:
+    ) -> Deferred:
         """Queues sending a result message for the activity to server."""
         message = {
             "type": "operation-result",
@@ -146,7 +147,7 @@ class UsgManager(ManagerPlugin):
         )
         os.makedirs(attachment_dir, mode=0o700, exist_ok=True)
 
-        attachment_path = os.path.join(attachment_dir, attachment[1])
+        attachment_path = os.path.join(attachment_dir, str(attachment[1]))
 
         await save_attachments(
             self.registry.config,
@@ -156,7 +157,7 @@ class UsgManager(ManagerPlugin):
 
         return attachment_path
 
-    async def _send_audit_report(self) -> None:
+    async def _send_audit_report(self, opid: int, runid: str) -> None:
         """Queues a `usg-audit` message to Landscape Server, containing the
         most recent audit report.
         """
@@ -166,7 +167,12 @@ class UsgManager(ManagerPlugin):
             return
 
         with open(last_result, "rb") as audit_results:
-            message = {"type": "usg-audit", "report": audit_results.read()}
+            message = {
+                "type": "usg-audit",
+                "report": audit_results.read(),
+                "operation-id": opid,
+                "run-id": runid,
+            }
 
         return await self.registry.broker.send_message(
             message,
@@ -227,7 +233,7 @@ class UsgManager(ManagerPlugin):
         self,
         action: str,
         profile: str,
-        tailoring_file: Union[Tuple[str, int]],
+        tailoring_file: Union[Tuple[str, int], None],
     ) -> str:
         """Runs usg, first downloading `tailoring_file` if it's provided.
         Cleans up the tailoring file as well.
