@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from io import StringIO
 from operator import attrgetter
 
 import apt
@@ -15,7 +16,6 @@ from apt.progress.text import AcquireProgress
 from aptsources.sourceslist import SourcesList
 
 from .skeleton import build_skeleton_apt
-from landscape.lib.compat import StringIO
 from landscape.lib.fs import append_text_file
 from landscape.lib.fs import create_text_file
 from landscape.lib.fs import read_binary_file
