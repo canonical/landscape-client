@@ -1,3 +1,10 @@
+landscape-client (25.04~rc1-0landscape0) jammy; urgency=medium
+
+  * feat: add optional --authenticated-attach-code to configuration parameters
+  * fix: add run-id and operation-id fields to usg-audit message
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Thu, 17 Apr 2025 11:16:37 -0700
+
 landscape-client (24.12+git6420-0landscape0) jammy; urgency=medium
 
   * feat: add snap configuration options for ping URL and CA certificate
