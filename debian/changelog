@@ -1,8 +1,6 @@
 landscape-client (25.04~rc1-0landscape0) jammy; urgency=medium
 
   * feat: add optional --authenticated-attach-code to configuration parameters
-  * fix: remove deprecated use of `unittest.makeSuite`
-  * fix: make config tests insensitive to http(s) proxy settings
   * fix: add run-id and operation-id fields to usg-audit message
 
  -- Bill Kronholm <bill.kronholm@canonical.com>  Thu, 17 Apr 2025 11:16:37 -0700
