@@ -1,8 +1,8 @@
 import logging
 import os
+from configparser import ConfigParser
 
 from landscape.client.monitor.plugin import MonitorPlugin
-from landscape.lib.compat import SafeConfigParser
 
 
 class UpdateManager(MonitorPlugin):
@@ -39,7 +39,7 @@ class UpdateManager(MonitorPlugin):
             # There is no config, so we just act as if it's set to 'normal'
             return "normal"
         config_file = open(self.update_manager_filename)
-        parser = SafeConfigParser()
+        parser = ConfigParser()
         parser.read_file(config_file)
         prompt = parser.get("DEFAULT", "Prompt")
         valid_prompts = ["lts", "never", "normal"]

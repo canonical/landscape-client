@@ -48,7 +48,6 @@ from twisted.internet.defer import Deferred
 
 from landscape.client.amp import remote
 from landscape.client.manager.manager import FAILED
-from landscape.lib.compat import _PY3
 from landscape.lib.twisted_util import gather_results
 
 
@@ -202,14 +201,6 @@ class BrokerServer:
             during the next regularly scheduled exchange.
         @return: The message identifier created when queuing C{message}.
         """
-        if b"type" in message and _PY3:
-            # XXX We are getting called by a python2 process.
-            # This occurs in the the specific case of a landscape-driven
-            # release upgrade to bionic, where the upgrading process is still
-            # running under python2.7. Therefore we do backward-compatible
-            # translation of byte keys in the sent message
-            message = {k.decode("ascii"): v for k, v in message.items()}
-            message["type"] = message["type"].decode("ascii")
         if isinstance(session_id, bool) and message["type"] in (
             "operation-result",
             "change-packages-result",

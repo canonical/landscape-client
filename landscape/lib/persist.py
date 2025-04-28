@@ -622,9 +622,9 @@ class Backend:
 
 class PickleBackend(Backend):
     def __init__(self):
-        from landscape.lib.compat import cPickle
+        import pickle
 
-        self._pickle = cPickle
+        self._pickle = pickle
 
     def new(self):
         return {}
