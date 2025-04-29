@@ -188,3 +188,32 @@ class ConfigurationTests(LandscapeTest):
         configuration.load(["--config", filename, "--url", "whatever"])
 
         self.assertIsNone(configuration.installation_request_id)
+
+    def test_authenticated_attach_code_handling(self):
+        """
+        The 'authenticated_attach_code' value specified in the configuration
+        file is passed through.
+        """
+        filename = self.makeFile(
+            "[client]\nauthenticated_attach_code = asdfqwerty1234supersecret",
+        )
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertEqual(
+            configuration.authenticated_attach_code,
+            "asdfqwerty1234supersecret",
+        )
+
+    def test_missing_authenticated_attach_code_is_none(self):
+        """
+        Test that if we don't explicitly pass a authenticated_attach_code,
+        then this value is None.
+        """
+        filename = self.makeFile("[client]\n")
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename, "--url", "whatever"])
+
+        self.assertIsNone(configuration.authenticated_attach_code)

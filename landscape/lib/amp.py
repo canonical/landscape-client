@@ -58,7 +58,6 @@ from twisted.protocols.amp import CommandLocator
 from twisted.protocols.amp import Integer
 from twisted.protocols.amp import MAX_VALUE_LENGTH
 from twisted.protocols.amp import String
-from twisted.python.compat import xrange
 from twisted.python.failure import Failure
 
 from landscape.lib import bpickle
@@ -282,7 +281,7 @@ class MethodCallSender:
         # Split the given arguments in one or more chunks
         chunks = [
             arguments[i : i + self._chunk_size]
-            for i in xrange(0, len(arguments), self._chunk_size)
+            for i in range(0, len(arguments), self._chunk_size)
         ]
 
         result = Deferred()

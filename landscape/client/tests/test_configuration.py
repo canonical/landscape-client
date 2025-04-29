@@ -756,6 +756,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup(self, mock_serviceconfig):
         """
         Only command-line options are used in silent mode.
@@ -775,6 +776,7 @@ url = https://landscape.canonical.com/message-system
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup_no_register(self, mock_serviceconfig):
         """
         Called with command line options to write a config file but no
@@ -846,6 +848,7 @@ url = https://landscape.canonical.com/message-system
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup_unicode_computer_title(self, mock_serviceconfig):
         """
         Setup accepts a non-ascii computer title and registration is
@@ -880,6 +883,7 @@ url = https://landscape.canonical.com/message-system
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_script_users_imply_script_execution_plugin(
         self,
         mock_serviceconfig,
@@ -951,6 +955,7 @@ bus = session
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup_with_ping_url(self, mock_serviceconfig):
         mock_serviceconfig.restart_landscape.return_value = True
         filename = self.makeFile(
@@ -1814,6 +1819,7 @@ registration_key = shared-secret
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_import_from_file_may_reset_old_options(self, mock_serviceconfig):
         """
         This test ensures that setting an empty option in an imported

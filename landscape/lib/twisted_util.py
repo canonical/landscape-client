@@ -6,8 +6,6 @@ from twisted.internet.defer import DeferredList
 from twisted.internet.process import Process
 from twisted.internet.process import ProcessReader
 from twisted.internet.protocol import ProcessProtocol
-from twisted.python.compat import itervalues
-from twisted.python.compat import networkString
 from twisted.python.failure import Failure
 
 from landscape.lib.encoding import encode_values
@@ -42,7 +40,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
 
     def connectionMade(self):  # noqa: N802
         if self.stdin is not None:
-            self.transport.write(networkString(self.stdin))
+            self.transport.write(self.stdin.encode("ascii"))
             self.transport.closeStdin()
 
     def outReceived(self, data):  # noqa: N802
@@ -138,7 +136,7 @@ def spawn_process(
                 be used in place of this workaround.
             """
             if process.pipes and not process.pid:
-                for pipe in itervalues(process.pipes):
+                for pipe in process.pipes.values():
                     if isinstance(pipe, ProcessReader):
                         # Read whatever is left
                         pipe.doRead()

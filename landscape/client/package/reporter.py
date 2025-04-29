@@ -698,53 +698,53 @@ class PackageReporter(PackageTaskHandler):
         backports_archive = "{}-backports".format(os_release_info["code-name"])
         security_archive = "{}-security".format(os_release_info["code-name"])
 
-        for package in self._facade.get_packages():
+        for package_version in self._facade.get_packages():
+            # Get archives from the list of PackageFiles
+            # for the given package version rather than using
+            # package_version.origins from the Python apt package.
+            # We only want to check the archives, and creating
+            # Origins using package_version.origins is expensive.
+            # See /usr/lib/python3/dist-packages/apt/package.py
+            archives = [
+                # Ex. jammy-backports
+                package_file.archive
+                for package_file, _ in package_version._cand.file_list
+            ]
+
             # Don't include package versions from the official backports
             # archive. The backports archive is enabled by default since
             # xenial with a pinning policy of 100. Ideally we would
             # support pinning, but we don't yet. In the mean time, we
             # ignore backports, so that packages don't get automatically
             # upgraded to the backports version.
-            backport_origins = [
-                origin
-                for origin in package.origins
-                if origin.archive == backports_archive
-            ]
-            if backport_origins and (
-                len(backport_origins) == len(package.origins)
-            ):
+            if all(archive == backports_archive for archive in archives):
                 # Ignore the version if it's only in the official
                 # backports archive. If it's somewhere else as well,
                 # e.g. a PPA, we assume it was added manually and the
                 # user wants to get updates from it.
                 continue
-            hash = self._facade.get_package_hash(package)
+            hash = self._facade.get_package_hash(package_version)
             id = self._store.get_hash_id(hash)
             if id is not None:
-                if self._facade.is_package_installed(package):
+                if self._facade.is_package_installed(package_version):
                     current_installed.add(id)
-                    if self._facade.is_package_available(package):
+                    if self._facade.is_package_available(package_version):
                         current_available.add(id)
-                    if self._facade.is_package_autoremovable(package):
+                    if self._facade.is_package_autoremovable(package_version):
                         current_autoremovable.add(id)
                 else:
                     current_available.add(id)
 
                 # Are there any packages that this package is an upgrade for?
-                if self._facade.is_package_upgrade(package):
+                if self._facade.is_package_upgrade(package_version):
                     current_upgrades.add(id)
 
                 # Is this package present in the security pocket?
-                security_origins = any(
-                    origin
-                    for origin in package.origins
-                    if origin.archive == security_archive
-                )
-                if security_origins:
+                if security_archive in archives:
                     current_security.add(id)
 
-        for package in self._facade.get_locked_packages():
-            hash = self._facade.get_package_hash(package)
+        for package_version in self._facade.get_locked_packages():
+            hash = self._facade.get_package_hash(package_version)
             id = self._store.get_hash_id(hash)
             if id is not None:
                 current_locked.add(id)

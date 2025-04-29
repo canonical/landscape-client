@@ -98,8 +98,6 @@ import shutil
 import traceback
 import uuid
 
-from twisted.python.compat import iteritems
-
 from landscape import DEFAULT_SERVER_API
 from landscape.lib import bpickle
 from landscape.lib.fs import create_binary_file
@@ -578,7 +576,7 @@ class MessageStore:
             information, limited by scope.
         """
         session_ids = self._persist.get("session-ids", {})
-        for session_id, stored_scope in iteritems(session_ids):
+        for session_id, stored_scope in session_ids.items():
             # This loop should be relatively short as it's intent is to limit
             # session-ids to one per scope.  The or condition here is not
             # strictly necessary, but we *should* do "is" comparisons when we
@@ -602,7 +600,7 @@ class MessageStore:
         new_session_ids = {}
         if scopes:
             session_ids = self._persist.get("session-ids", {})
-            for session_id, session_scope in iteritems(session_ids):
+            for session_id, session_scope in session_ids.items():
                 if session_scope not in scopes:
                     new_session_ids[session_id] = session_scope
         self._persist.set("session-ids", new_session_ids)
