@@ -7,7 +7,7 @@ on:
     - cron: '0 6 * * 0'  # Run at 6:00a (arbitrary) to avoid peak activity on runners
 jobs:
   TICS:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, amd64, tiobe, jammy]
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v4
