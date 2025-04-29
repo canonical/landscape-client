@@ -114,6 +114,20 @@ class AptSources(ManagerPlugin):
 
         saved_sources = f"{self.SOURCES_LIST}.save"
 
+        manage_sources_list_d = getattr(
+            self.registry.config,
+            "manage_sources_list_d",
+            True,
+        )
+
+        if manage_sources_list_d not in FALSE_VALUES:
+            for pattern in self.SOURCES_LIST_D_FILE_PATTERNS:
+                filenames = glob.glob(
+                    os.path.join(self.SOURCES_LIST_D, pattern)
+                )
+                for filename in filenames:
+                    shutil.move(filename, f"{filename}.save")
+
         if sources:
             fd, path = tempfile.mkstemp()
             os.close(fd)
@@ -135,24 +149,20 @@ class AptSources(ManagerPlugin):
                 original_stat.st_uid,
                 original_stat.st_gid,
             )
+
         else:
             # Re-instate original sources
             if os.path.isfile(saved_sources):
                 shutil.move(saved_sources, self.SOURCES_LIST)
 
-        manage_sources_list_d = getattr(
-            self.registry.config,
-            "manage_sources_list_d",
-            True,
-        )
-
-        if manage_sources_list_d not in FALSE_VALUES:
-            for pattern in self.SOURCES_LIST_D_FILE_PATTERNS:
-                filenames = glob.glob(
-                    os.path.join(self.SOURCES_LIST_D, pattern)
-                )
-                for filename in filenames:
-                    shutil.move(filename, f"{filename}.save")
+            if manage_sources_list_d not in FALSE_VALUES:
+                for pattern in self.SOURCES_LIST_D_FILE_PATTERNS:
+                    filenames = glob.glob(
+                        os.path.join(self.SOURCES_LIST_D, f"{pattern}.save")
+                    )
+                    for filename in filenames:
+                        restored_filename = filename.removesuffix(".save")
+                        shutil.move(filename, restored_filename)
 
         for source in sources:
             filename = os.path.join(
