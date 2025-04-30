@@ -69,7 +69,7 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
             help="The URL of the HTTPS proxy, if one is needed.",
         )
         parser.add_argument(
-            "--package-changes-blacklist",
+            "--package-changes-blocklist",
             metavar="LIST_OF_PACKAGE_NAMES",
             help="Do not compute changes for these packages.",
             default=None,
@@ -706,12 +706,12 @@ class PackageReporter(PackageTaskHandler):
         security_archive = "{}-security".format(os_release_info["code-name"])
 
         for package_version in self._facade.get_packages():
-            if self._config.package_changes_blacklist is not None:
+            if self._config.package_changes_blocklist is not None:
                 pkg_name = package_version._cand.parent_pkg.name
 
-                if pkg_name in self._config.package_changes_blacklist:
+                if pkg_name in self._config.package_changes_blocklist:
                     # Don't compute changes for
-                    # user-specified (blacklisted) packages
+                    # user-specified (blocklisted) packages
                     continue
 
             # Get archives from the list of PackageFiles

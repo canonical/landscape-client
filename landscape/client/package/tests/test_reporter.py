@@ -1263,14 +1263,14 @@ class PackageReporterAptTest(LandscapeTest):
         return result.addCallback(got_result)
 
     @inlineCallbacks
-    def test_detect_packages_changes_skips_blacklisted(self):
+    def test_detect_packages_changes_skips_blocklisted(self):
         """
         Changes are not computed for versions of packages
-        that have been blacklisted.
+        that have been blocklisted.
         """
-        blacklisted_package_name = "neofetch"
+        blocklisted_package_name = "neofetch"
 
-        self.config.package_changes_blacklist = [blacklisted_package_name]
+        self.config.package_changes_blocklist = [blocklisted_package_name]
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -1285,17 +1285,17 @@ class PackageReporterAptTest(LandscapeTest):
         self.facade.reload_channels()
         self._add_package_to_deb_dir(
             self.repository_dir,
-            blacklisted_package_name,
+            blocklisted_package_name,
             version="afadfafa",
         )
         self.facade.reload_channels()
-        [blacklisted_pkg] = self.facade.get_packages_by_name(
-            blacklisted_package_name
+        [blocklisted_pkg] = self.facade.get_packages_by_name(
+            blocklisted_package_name
         )
-        blacklisted_hash = self.facade.get_package_hash(blacklisted_pkg)
+        blocklisted_hash = self.facade.get_package_hash(blocklisted_pkg)
 
         self.store.set_hash_ids(
-            {HASH1: 1, HASH2: 2, HASH3: 3, foo_hash: 4, blacklisted_hash: 5}
+            {HASH1: 1, HASH2: 2, HASH3: 3, foo_hash: 4, blocklisted_hash: 5}
         )
         self.store.add_available([1, 2, 3, 4, 5])
 
