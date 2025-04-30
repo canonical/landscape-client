@@ -4,8 +4,6 @@ import time
 import unittest
 from unittest.mock import patch
 
-from twisted.python.compat import long
-
 from landscape.lib import testing
 from landscape.lib.fs import append_binary_file
 from landscape.lib.fs import append_text_file
@@ -134,7 +132,7 @@ class TouchFileTest(BaseTestCase):
         will be reflected in the access and modification times of the file.
         """
         path = self.makeFile()
-        current_time = long(time.time())
+        current_time = int(time.time())
         expected_time = current_time - 1
 
         with patch.object(

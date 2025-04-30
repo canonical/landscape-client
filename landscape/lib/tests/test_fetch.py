@@ -5,7 +5,6 @@ from unittest import mock
 
 import pycurl
 from twisted.internet.defer import FirstError
-from twisted.python.compat import unicode
 
 from landscape.lib import testing
 from landscape.lib.fetch import fetch
@@ -33,7 +32,7 @@ class CurlStub:
         raise RuntimeError(f"Stub doesn't know about {what:d} info")
 
     def setopt(self, option, value):
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             raise AssertionError("setopt() doesn't accept unicode values")
         if self.performed:
             raise AssertionError("setopt() can't be called after perform()")

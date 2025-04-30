@@ -1,11 +1,8 @@
-from twisted.python.compat import unicode
-
-
 def encode_if_needed(value):
     """
     A small helper to decode unicode to utf-8 if needed.
     """
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         value = value.encode("utf-8")
     return value
 
@@ -16,6 +13,6 @@ def encode_values(dictionary):
     """
     _dict = dictionary.copy()
     for key, val in _dict.items():
-        if isinstance(val, unicode):
+        if isinstance(val, str):
             _dict[key] = val.encode("utf-8", "surrogateescape")
     return _dict

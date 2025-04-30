@@ -297,11 +297,21 @@ class RemoveFromRangesTest(unittest.TestCase):
 def test_suite():
     return unittest.TestSuite(
         (
-            unittest.makeSuite(SequenceToRangesTest),
-            unittest.makeSuite(RangesToSequenceTest),
-            unittest.makeSuite(SequenceRangesTest),
-            unittest.makeSuite(FindRangesIndexTest),
-            unittest.makeSuite(AddToRangesTest),
-            unittest.makeSuite(RemoveFromRangesTest),
+            unittest.defaultTestLoader.loadTestsFromTestCase(
+                SequenceToRangesTest,
+            ),
+            unittest.defaultTestLoader.loadTestsFromTestCase(
+                RangesToSequenceTest,
+            ),
+            unittest.defaultTestLoader.loadTestsFromTestCase(
+                SequenceRangesTest,
+            ),
+            unittest.defaultTestLoader.loadTestsFromTestCase(
+                FindRangesIndexTest,
+            ),
+            unittest.defaultTestLoader.loadTestsFromTestCase(AddToRangesTest),
+            unittest.defaultTestLoader.loadTestsFromTestCase(
+                RemoveFromRangesTest,
+            ),
         ),
     )

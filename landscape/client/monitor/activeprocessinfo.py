@@ -1,7 +1,5 @@
 import subprocess
 
-from twisted.python.compat import itervalues
-
 from landscape.client.diff import diff
 from landscape.client.monitor.plugin import DataWatcher
 from landscape.lib.jiffies import detect_jiffies
@@ -77,9 +75,9 @@ class ActiveProcessInfo(DataWatcher):
         processes = self._get_processes()
         creates, updates, deletes = diff(self._persist_processes, processes)
         if creates:
-            changes["add-processes"] = list(itervalues(creates))
+            changes["add-processes"] = list(creates.values())
         if updates:
-            changes["update-processes"] = list(itervalues(updates))
+            changes["update-processes"] = list(updates.values())
         if deletes:
             changes["kill-processes"] = list(deletes)
 

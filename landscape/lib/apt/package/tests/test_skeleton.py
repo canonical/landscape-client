@@ -1,7 +1,5 @@
 import unittest
 
-from twisted.python.compat import unicode
-
 from landscape.lib import testing
 from landscape.lib.apt.package.skeleton import build_skeleton_apt
 from landscape.lib.apt.package.skeleton import DEB_CONFLICTS
@@ -149,8 +147,8 @@ class SkeletonAptTest(BaseTestCase):
         """
         pkg1 = self.get_package("name1")
         skeleton = build_skeleton_apt(pkg1, with_unicode=True)
-        self.assertTrue(isinstance(skeleton.name, unicode))
-        self.assertTrue(isinstance(skeleton.version, unicode))
+        self.assertTrue(isinstance(skeleton.name, str))
+        self.assertTrue(isinstance(skeleton.version, str))
         self.assertEqual(HASH1, skeleton.get_hash())
 
     def test_build_skeleton_with_broken_description(self):
@@ -182,11 +180,11 @@ class SkeletonAptTest(BaseTestCase):
         """
         pkg1 = self.get_package("name1")
         skeleton = build_skeleton_apt(pkg1, with_unicode=True, with_info=True)
-        self.assertTrue(isinstance(skeleton.name, unicode))
-        self.assertTrue(isinstance(skeleton.version, unicode))
-        self.assertTrue(isinstance(skeleton.section, unicode))
-        self.assertTrue(isinstance(skeleton.summary, unicode))
-        self.assertTrue(isinstance(skeleton.description, unicode))
+        self.assertTrue(isinstance(skeleton.name, str))
+        self.assertTrue(isinstance(skeleton.version, str))
+        self.assertTrue(isinstance(skeleton.section, str))
+        self.assertTrue(isinstance(skeleton.summary, str))
+        self.assertTrue(isinstance(skeleton.description, str))
         self.assertEqual(HASH1, skeleton.get_hash())
 
     def test_build_skeleton_with_unicode_and_non_ascii(self):

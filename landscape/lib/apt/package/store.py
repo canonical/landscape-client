@@ -6,8 +6,6 @@ try:
 except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
-from twisted.python.compat import iteritems, long
-
 from landscape.lib import bpickle
 from landscape.lib.store import with_cursor
 
@@ -43,7 +41,7 @@ class HashIdStore:
 
         @param hash_ids: a C{dict} of hash=>id mappings.
         """
-        for hash, id in iteritems(hash_ids):
+        for hash, id in hash_ids.items():
             cursor.execute(
                 "REPLACE INTO hash VALUES (?, ?)",
                 (id, sqlite3.Binary(hash)),
@@ -73,7 +71,7 @@ class HashIdStore:
     @with_cursor
     def get_id_hash(self, cursor, id):
         """Return the hash associated to C{id}, or C{None} if not available."""
-        assert isinstance(id, (int, long))
+        assert isinstance(id, int)
         cursor.execute("SELECT hash FROM hash WHERE id=?", (id,))
         value = cursor.fetchone()
         if value:

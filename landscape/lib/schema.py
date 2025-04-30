@@ -1,7 +1,4 @@
 """A schema system. Yes. Another one!"""
-from twisted.python.compat import iteritems
-from twisted.python.compat import long
-from twisted.python.compat import unicode
 
 
 class InvalidError(Exception):
@@ -62,19 +59,19 @@ class Bool:
 
 
 class Int:
-    """Something that must be an C{int} or C{long}."""
+    """Something that must be an C{int}."""
 
     def coerce(self, value):
-        if not isinstance(value, (int, long)):
-            raise InvalidError(f"{value!r} isn't an int or long")
+        if not isinstance(value, int):
+            raise InvalidError(f"{value!r} isn't an int")
         return value
 
 
 class Float:
-    """Something that must be an C{int}, C{long}, or C{float}."""
+    """Something that must be an C{int} or C{float}."""
 
     def coerce(self, value):
-        if not isinstance(value, (int, long, float)):
+        if not isinstance(value, (int, float)):
             raise InvalidError(f"{value!r} isn't a float")
         return value
 
@@ -115,7 +112,7 @@ class Unicode:
                 raise InvalidError(
                     "{!r} can't be decoded: {}".format(value, str(e)),
                 )
-        if not isinstance(value, unicode):
+        if not isinstance(value, str):
             raise InvalidError(f"{value!r} isn't a unicode")
         return value
 
@@ -189,7 +186,7 @@ class KeyDict:
         if not isinstance(value, dict):
             raise InvalidError(f"{value!r} is not a dict.")
 
-        for k, v in iteritems(value):
+        for k, v in value.items():
             unknown_key = k not in self.schema
 
             if unknown_key and self._strict:
