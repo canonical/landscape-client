@@ -41,7 +41,6 @@ LOCK_RETRY_DELAYS = [0, 20, 40]
 PYTHON_BIN = "/usr/bin/python3"
 RELEASE_UPGRADER_PATTERN = "/tmp/ubuntu-release-upgrader-"
 UID_ROOT = "0"
-NO_HASH_LIST = ["neofetch"]
 
 
 class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
@@ -68,6 +67,13 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
             "--https-proxy",
             metavar="URL",
             help="The URL of the HTTPS proxy, if one is needed.",
+        )
+        parser.add_argument(
+            "--package-changes-blacklist",
+            metavar="LIST_OF_PACKAGE_NAMES",
+            help="Do not compute changes for these packages.",
+            default=None,
+            nargs="*"
         )
         return parser
 
@@ -700,6 +706,14 @@ class PackageReporter(PackageTaskHandler):
         security_archive = "{}-security".format(os_release_info["code-name"])
 
         for package_version in self._facade.get_packages():
+            if self._config.package_changes_blacklist is not None:
+                pkg_name = package_version._cand.parent_pkg.name
+
+                if pkg_name in self._config.package_changes_blacklist:
+                    # Don't compute changes for
+                    # user-specified (blacklisted) packages
+                    continue
+
             # Get archives from the list of PackageFiles
             # for the given package version rather than using
             # package_version.origins from the Python apt package.
@@ -712,8 +726,6 @@ class PackageReporter(PackageTaskHandler):
                 for package_file, _ in package_version._cand.file_list
             ]
 
-            pkg_name = str(package_version.package)
-
             # Don't include package versions from the official backports
             # archive. The backports archive is enabled by default since
             # xenial with a pinning policy of 100. Ideally we would
@@ -722,7 +734,6 @@ class PackageReporter(PackageTaskHandler):
             # upgraded to the backports version.
             if (
                 all(archive == backports_archive for archive in archives)
-                or pkg_name in NO_HASH_LIST
             ):
                 # Ignore the version if it's only in the official
                 # backports archive. If it's somewhere else as well,
