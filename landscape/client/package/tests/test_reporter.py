@@ -14,7 +14,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.defer import succeed
 
 from landscape.client.package import reporter
-from landscape.client.package.reporter import FakeGlobalReporter
+from landscape.client.package.reporter import NO_HASH_LIST, FakeGlobalReporter
 from landscape.client.package.reporter import FakeReporter
 from landscape.client.package.reporter import find_reporter_command
 from landscape.client.package.reporter import HASH_ID_REQUEST_TIMEOUT
@@ -1258,6 +1258,44 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(), [])
 
             self.assertEqual(sorted(self.store.get_available()), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+    
+    def test_detect_packages_changes_skips_blacklisted(self):
+        """
+        Package versions coming from blacklisted packages
+        aren't considered to be available.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        blacklisted_package_name = NO_HASH_LIST[0]
+
+        self._add_package_to_deb_dir(
+            self.repository_dir,
+            "foo",
+            version="version2",
+        )
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo_hash = self.facade.get_package_hash(foo)
+        self.facade.reload_channels()
+        self._add_package_to_deb_dir(
+            self.repository_dir,
+            blacklisted_package_name,
+            version="afadfafa",
+        )
+        self.facade.reload_channels()
+        [blacklisted] = self.facade.get_packages_by_name(blacklisted_package_name)
+        blacklisted_hash = self.facade.get_package_hash(blacklisted)
+        self.facade.reload_channels()
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3, foo_hash: 4, blacklisted_hash: 5})
+        self.store.add_available([1, 2, 3, 4, 5])
+
+        def got_result(result):
+            self.assertEqual(sorted(self.store.get_available()), [1, 2, 3, 4])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)

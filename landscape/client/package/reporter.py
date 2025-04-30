@@ -41,6 +41,7 @@ LOCK_RETRY_DELAYS = [0, 20, 40]
 PYTHON_BIN = "/usr/bin/python3"
 RELEASE_UPGRADER_PATTERN = "/tmp/ubuntu-release-upgrader-"
 UID_ROOT = "0"
+NO_HASH_LIST = ["neofetch"]
 
 
 class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
@@ -711,13 +712,18 @@ class PackageReporter(PackageTaskHandler):
                 for package_file, _ in package_version._cand.file_list
             ]
 
+            pkg_name = str(package_version.package)
+
             # Don't include package versions from the official backports
             # archive. The backports archive is enabled by default since
             # xenial with a pinning policy of 100. Ideally we would
             # support pinning, but we don't yet. In the mean time, we
             # ignore backports, so that packages don't get automatically
             # upgraded to the backports version.
-            if all(archive == backports_archive for archive in archives):
+            if (
+                all(archive == backports_archive for archive in archives)
+                or pkg_name in NO_HASH_LIST
+            ):
                 # Ignore the version if it's only in the official
                 # backports archive. If it's somewhere else as well,
                 # e.g. a PPA, we assume it was added manually and the
