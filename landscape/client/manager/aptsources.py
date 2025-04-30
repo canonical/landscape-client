@@ -1,5 +1,6 @@
 import glob
 import grp
+import logging
 import os
 import pwd
 import shutil
@@ -162,6 +163,12 @@ class AptSources(ManagerPlugin):
                     for filename in filenames:
                         restored_filename = filename.removesuffix(".save")
                         shutil.move(filename, restored_filename)
+
+            # Delete old profile source files prefixed with `landscape-`
+            landscape_profile_filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, "landscape-*.list"))
+
+            for profile_filename in landscape_profile_filenames:
+                os.remove(profile_filename)
 
         for source in sources:
             filename = os.path.join(

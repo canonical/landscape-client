@@ -235,6 +235,39 @@ class AptSourcesTests(LandscapeTest):
             os.path.exists(f"{FILE_2_SOURCES}.save"),
         )
 
+    def test_restore_sources_list_d_removes_old_profile_files(self):
+        """
+        When getting a repository message without sources, old
+        profile source files in `/etc/apt/sources.list.d` prefixed with
+        `landscape-` will be removed.
+        """
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": "bla", "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
+
+        saved_sources_path = os.path.join(
+            self.sourceslist.SOURCES_LIST_D,
+            "landscape-bla.list",
+        )
+
+        self.assertTrue(os.path.exists(saved_sources_path))
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [],
+                "gpg-keys": [],
+                "operation-id": 2,
+            },
+        )
+
+        self.assertFalse(os.path.exists(saved_sources_path))
+
     def test_sources_list_permissions(self):
         """
         When getting a repository message, L{AptSources} keeps sources.list
@@ -356,10 +389,14 @@ class AptSourcesTests(LandscapeTest):
         self.manager.dispatch_message(
             {
                 "type": "apt-sources-replace",
-                "sources": [],
+                "sources": [{"name": "bla", "content": b""}],
                 "gpg-keys": [],
                 "operation-id": 1,
             },
+        )
+
+        self.assertTrue(
+            os.path.exists(self.sourceslist.SOURCES_LIST),
         )
 
         self.assertFalse(
