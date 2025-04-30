@@ -73,8 +73,9 @@ class UsgManager(ManagerPlugin):
             return
 
         action = message["action"]
-        profile = message["profile"]
+        profile = message.get("profile")
         tailoring_file = message.get("tailoring-file")
+        assert profile is not None or tailoring_file is not None
 
         try:
             result = await self._usg_operation(
@@ -202,7 +203,7 @@ class UsgManager(ManagerPlugin):
     def _spawn_usg(
         self,
         action: str,
-        profile: str,
+        profile: str | None,
         tailoring_file: Optional[str] = None,
     ) -> Deferred:
         """Execute the correct `usg` command for message in a non-blocking
@@ -214,8 +215,10 @@ class UsgManager(ManagerPlugin):
 
         :returns: the deferred result of the usg process
         """
-        args = [USG_EXECUTABLE_ABS, action, profile]
+        args = [USG_EXECUTABLE_ABS, action]
 
+        if profile is not None:
+            args.append(profile)
         if tailoring_file is not None:
             args.extend([TAILORING_FILE_PARAM, tailoring_file])
 
@@ -235,7 +238,7 @@ class UsgManager(ManagerPlugin):
     async def _usg_operation(
         self,
         action: str,
-        profile: str,
+        profile: str | None,
         tailoring_file: Union[Tuple[str, int], None],
     ) -> str:
         """Runs usg, first downloading `tailoring_file` if it's provided.
