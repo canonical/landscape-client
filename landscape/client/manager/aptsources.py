@@ -120,14 +120,6 @@ class AptSources(ManagerPlugin):
             True,
         )
 
-        if manage_sources_list_d not in FALSE_VALUES:
-            for pattern in self.SOURCES_LIST_D_FILE_PATTERNS:
-                filenames = glob.glob(
-                    os.path.join(self.SOURCES_LIST_D, pattern)
-                )
-                for filename in filenames:
-                    shutil.move(filename, f"{filename}.save")
-
         if sources:
             fd, path = tempfile.mkstemp()
             os.close(fd)
@@ -150,6 +142,13 @@ class AptSources(ManagerPlugin):
                 original_stat.st_gid,
             )
 
+            if manage_sources_list_d not in FALSE_VALUES:
+                for pattern in self.SOURCES_LIST_D_FILE_PATTERNS:
+                    filenames = glob.glob(
+                        os.path.join(self.SOURCES_LIST_D, pattern)
+                    )
+                    for filename in filenames:
+                        shutil.move(filename, f"{filename}.save")
         else:
             # Re-instate original sources
             if os.path.isfile(saved_sources):

@@ -189,7 +189,6 @@ class AptSourcesTests(LandscapeTest):
         ) as source2:
             source2.write("ok\n")
 
-
         self.manager.dispatch_message(
             {
                 "type": "apt-sources-replace",
