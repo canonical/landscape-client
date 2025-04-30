@@ -1,4 +1,5 @@
 import glob
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -65,6 +66,7 @@ class UsgManager(ManagerPlugin):
 
         :message: A message of type "usg".
         """
+        logging.info(str(message))
         opid = message["operation-id"]
         runid = message["run-id"]
 
@@ -76,6 +78,7 @@ class UsgManager(ManagerPlugin):
         profile = message.get("profile")
         tailoring_file = message.get("tailoring-file")
         assert profile is not None or tailoring_file is not None
+        logging.info("message")
 
         try:
             result = await self._usg_operation(
@@ -83,6 +86,7 @@ class UsgManager(ManagerPlugin):
                 profile,
                 tailoring_file,
             )
+            logging.info("usg results ")
             await self._respond(SUCCEEDED, result, opid)
 
             if action == "audit":
@@ -151,7 +155,7 @@ class UsgManager(ManagerPlugin):
         )
         os.makedirs(attachment_dir, mode=0o700, exist_ok=True)
 
-        attachment_path = os.path.join(attachment_dir, str(attachment[1]))
+        attachment_path = os.path.join(attachment_dir, str(attachment[0]))
 
         await save_attachments(
             self.registry.config,
