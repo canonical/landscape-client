@@ -9,7 +9,7 @@ from typing import Tuple
 from typing import Union
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, ensureDeferred
 
 from landscape.client.attachments import save_attachments
 from landscape.client.manager.plugin import FAILED
@@ -51,8 +51,11 @@ class UsgManager(ManagerPlugin):
         super().register(client)
         client.register_message(
             "usg",
-            self.handle_usg_message,
+            self._handle_usg_message,
         )
+
+    def _handle_usg_message(self, message):
+        return ensureDeferred(self.handle_usg_message(message))
 
     async def handle_usg_message(self, message: Dict[str, Any]) -> None:
         """Executes usg if we can, then responds to `message`.
@@ -211,7 +214,7 @@ class UsgManager(ManagerPlugin):
 
         :returns: the deferred result of the usg process
         """
-        args = [action, profile]
+        args = [USG_EXECUTABLE_ABS, action, profile]
 
         if tailoring_file is not None:
             args.extend([TAILORING_FILE_PARAM, tailoring_file])
