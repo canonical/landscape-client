@@ -238,7 +238,7 @@ class AptSourcesTests(LandscapeTest):
     def test_restore_sources_list_d_removes_old_profile_files(self):
         """
         When getting a repository message without sources, old
-        profile source files in `/etc/apt/sources.list.d` prefixed with
+        source files in `/etc/apt/sources.list.d` prefixed with
         `landscape-` will be removed.
         """
         first_source_name = "ginger"
@@ -288,13 +288,9 @@ class AptSourcesTests(LandscapeTest):
             },
         )
 
-        self.assertFalse(
-            os.path.exists(first_sources_path)
-        )
+        self.assertFalse(os.path.exists(first_sources_path))
 
-        self.assertFalse(
-            os.path.exists(second_sources_path)
-        )
+        self.assertFalse(os.path.exists(second_sources_path))
 
     def test_sources_list_permissions(self):
         """

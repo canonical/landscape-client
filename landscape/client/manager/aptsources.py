@@ -163,13 +163,13 @@ class AptSources(ManagerPlugin):
                         restored_filename = filename.removesuffix(".save")
                         shutil.move(filename, restored_filename)
 
-            # Delete old profile source files prefixed with `landscape-`
-            landscape_profile_filenames = glob.glob(
+            # Delete Landscape source files prefixed with `landscape-`
+            landscape_source_filenames = glob.glob(
                 os.path.join(self.SOURCES_LIST_D, "landscape-*.list")
             )
 
-            for profile_filename in landscape_profile_filenames:
-                os.remove(profile_filename)
+            for source_filename in landscape_source_filenames:
+                os.remove(source_filename)
 
         for source in sources:
             filename = os.path.join(
