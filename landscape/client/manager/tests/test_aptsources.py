@@ -241,32 +241,60 @@ class AptSourcesTests(LandscapeTest):
         profile source files in `/etc/apt/sources.list.d` prefixed with
         `landscape-` will be removed.
         """
+        first_source_name = "ginger"
+
         self.manager.dispatch_message(
             {
                 "type": "apt-sources-replace",
-                "sources": [{"name": "bla", "content": b""}],
+                "sources": [{"name": first_source_name, "content": b""}],
                 "gpg-keys": [],
                 "operation-id": 1,
             },
         )
 
-        saved_sources_path = os.path.join(
+        first_sources_path = os.path.join(
             self.sourceslist.SOURCES_LIST_D,
-            "landscape-bla.list",
+            f"landscape-{first_source_name}.list",
         )
 
-        self.assertTrue(os.path.exists(saved_sources_path))
+        self.assertTrue(os.path.exists(first_sources_path))
+
+        second_source_name = "ace rothstein"
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": second_source_name, "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 2,
+            },
+        )
+
+        second_sources_path = os.path.join(
+            self.sourceslist.SOURCES_LIST_D,
+            f"landscape-{second_source_name}.list",
+        )
+
+        self.assertTrue(os.path.exists(f"{first_sources_path}.save"))
+
+        self.assertTrue(os.path.exists(second_sources_path))
 
         self.manager.dispatch_message(
             {
                 "type": "apt-sources-replace",
                 "sources": [],
                 "gpg-keys": [],
-                "operation-id": 2,
+                "operation-id": 3,
             },
         )
 
-        self.assertFalse(os.path.exists(saved_sources_path))
+        self.assertFalse(
+            os.path.exists(first_sources_path)
+        )
+
+        self.assertFalse(
+            os.path.exists(second_sources_path)
+        )
 
     def test_sources_list_permissions(self):
         """
