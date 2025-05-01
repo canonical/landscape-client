@@ -232,8 +232,7 @@ class UsgManagerTests(LandscapeTest):
                 {
                     "operation-id": 1,
                     "action": "audit",
-                    "profile": "cis_level1_workstation",
-                    "tailoring-file": (83497, "test-tailoring.xml"),
+                    "tailoring-file": ("test-tailoring.xml", 83497),
                     "run-id": str(uuid.uuid4()),
                 },
             ),
@@ -251,7 +250,6 @@ class UsgManagerTests(LandscapeTest):
                 args=[
                     USG_EXECUTABLE_ABS,
                     "audit",
-                    "cis_level1_workstation",
                     "--tailoring-file",
                     tailoring_file_path,
                 ],
@@ -259,7 +257,7 @@ class UsgManagerTests(LandscapeTest):
 
             save_attachments.assert_called_once_with(
                 self.plugin.registry.config,
-                ((83497, "test-tailoring.xml"),),
+                (("test-tailoring.xml", 83497),),
                 mock.ANY,
             )
 
