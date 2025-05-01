@@ -70,6 +70,20 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config.load(["--force-apt-update"])
         self.assertTrue(config.force_apt_update)
 
+    def test_ignore_sources_option(self):
+        """
+        `PackageReporterConfiguration` supports a '--ignore-sources' command
+        line option.
+        """
+        config = PackageReporterConfiguration()
+        config.default_config_filenames = self.makeFile("")
+        self.assertEqual(config.ignore_sources, [])
+        config.load(["--ignore-sources", "https://esm.ubuntu.com/apps/ubuntu"])
+        self.assertEqual(
+            config.ignore_sources,
+            ["https://esm.ubuntu.com/apps/ubuntu"],
+        )
+
 
 class PackageReporterAptTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
@@ -1188,7 +1202,7 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 f"Suite: {os_release_info['code-name']}-security\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1249,7 +1263,7 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 f"Suite: {os_release_info['code-name']}-backports\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1293,7 +1307,7 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 "Suite: my-personal-backports"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1333,14 +1347,14 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 f"Suite: {os_release_info['code-name']}-backports\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
         unofficial_release_path = os.path.join(other_backport_dir, "Release")
         with open(unofficial_release_path, "w") as release:
             release.write(
                 "Suite: my-personal-backports\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
