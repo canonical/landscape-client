@@ -3,7 +3,7 @@ landscape-client (25.04~rc1-0landscape1) jammy; urgency=medium
   * fix: ensure usgmanager runs in deferred
   * fix: usgmanager accepts either (exclusive) of the profile or a file
   * fix: .list and .sources files are restored when a repo profile is
-  disassociated from a noble (or newer) instance
+    disassociated from a noble (or newer) instance
 
  -- Ardavan Behnia <ardavan.behnia@canonical.com>  Fri, 02 May 2025 16:12:36 -0700
 
