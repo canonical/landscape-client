@@ -165,6 +165,133 @@ class AptSourcesTests(LandscapeTest):
         with open(self.sourceslist.SOURCES_LIST) as sources:
             self.assertEqual("original content\n", sources.read())
 
+    def test_restore_sources_list_d(self):
+        """
+        When getting a repository message without sources, AptSources
+        restores the previous files in sources.list.d.
+        """
+        FILE_1_LIST = os.path.join(
+            self.sourceslist.SOURCES_LIST_D, "file1.list"
+        )
+
+        FILE_2_SOURCES = os.path.join(
+            self.sourceslist.SOURCES_LIST_D, "file2.sources"
+        )
+        with open(
+            FILE_1_LIST,
+            "w",
+        ) as source1:
+            source1.write("ok\n")
+
+        with open(
+            FILE_2_SOURCES,
+            "w",
+        ) as source2:
+            source2.write("ok\n")
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": "bla", "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
+
+        self.assertFalse(
+            os.path.exists(FILE_1_LIST),
+        )
+
+        self.assertFalse(os.path.exists(FILE_2_SOURCES))
+
+        self.assertTrue(
+            os.path.exists(f"{FILE_1_LIST}.save"),
+        )
+
+        self.assertTrue(
+            os.path.exists(f"{FILE_2_SOURCES}.save"),
+        )
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [],
+                "gpg-keys": [],
+                "operation-id": 2,
+            },
+        )
+
+        self.assertTrue(
+            os.path.exists(FILE_1_LIST),
+        )
+
+        self.assertTrue(os.path.exists(FILE_2_SOURCES))
+
+        self.assertFalse(
+            os.path.exists(f"{FILE_1_LIST}.save"),
+        )
+
+        self.assertFalse(
+            os.path.exists(f"{FILE_2_SOURCES}.save"),
+        )
+
+    def test_restore_sources_list_d_removes_old_profile_files(self):
+        """
+        When getting a repository message without sources, old
+        source files in `/etc/apt/sources.list.d` prefixed with
+        `landscape-` will be removed.
+        """
+        first_source_name = "ginger"
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": first_source_name, "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 1,
+            },
+        )
+
+        first_sources_path = os.path.join(
+            self.sourceslist.SOURCES_LIST_D,
+            f"landscape-{first_source_name}.list",
+        )
+
+        self.assertTrue(os.path.exists(first_sources_path))
+
+        second_source_name = "ace rothstein"
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [{"name": second_source_name, "content": b""}],
+                "gpg-keys": [],
+                "operation-id": 2,
+            },
+        )
+
+        second_sources_path = os.path.join(
+            self.sourceslist.SOURCES_LIST_D,
+            f"landscape-{second_source_name}.list",
+        )
+
+        self.assertTrue(os.path.exists(f"{first_sources_path}.save"))
+
+        self.assertTrue(os.path.exists(second_sources_path))
+
+        self.manager.dispatch_message(
+            {
+                "type": "apt-sources-replace",
+                "sources": [],
+                "gpg-keys": [],
+                "operation-id": 3,
+            },
+        )
+
+        self.assertFalse(os.path.exists(first_sources_path))
+
+        self.assertFalse(os.path.exists(second_sources_path))
+
     def test_sources_list_permissions(self):
         """
         When getting a repository message, L{AptSources} keeps sources.list
@@ -286,10 +413,14 @@ class AptSourcesTests(LandscapeTest):
         self.manager.dispatch_message(
             {
                 "type": "apt-sources-replace",
-                "sources": [],
+                "sources": [{"name": "bla", "content": b""}],
                 "gpg-keys": [],
                 "operation-id": 1,
             },
+        )
+
+        self.assertTrue(
+            os.path.exists(self.sourceslist.SOURCES_LIST),
         )
 
         self.assertFalse(

@@ -9,7 +9,7 @@ from typing import Tuple
 from typing import Union
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, ensureDeferred
 
 from landscape.client.attachments import save_attachments
 from landscape.client.manager.plugin import FAILED
@@ -51,8 +51,11 @@ class UsgManager(ManagerPlugin):
         super().register(client)
         client.register_message(
             "usg",
-            self.handle_usg_message,
+            self._handle_usg_message,
         )
+
+    def _handle_usg_message(self, message):
+        return ensureDeferred(self.handle_usg_message(message))
 
     async def handle_usg_message(self, message: Dict[str, Any]) -> None:
         """Executes usg if we can, then responds to `message`.
@@ -70,7 +73,7 @@ class UsgManager(ManagerPlugin):
             return
 
         action = message["action"]
-        profile = message["profile"]
+        profile = message.get("profile")
         tailoring_file = message.get("tailoring-file")
 
         try:
@@ -147,7 +150,7 @@ class UsgManager(ManagerPlugin):
         )
         os.makedirs(attachment_dir, mode=0o700, exist_ok=True)
 
-        attachment_path = os.path.join(attachment_dir, str(attachment[1]))
+        attachment_path = os.path.join(attachment_dir, str(attachment[0]))
 
         await save_attachments(
             self.registry.config,
@@ -199,7 +202,7 @@ class UsgManager(ManagerPlugin):
     def _spawn_usg(
         self,
         action: str,
-        profile: str,
+        profile: str | None,
         tailoring_file: Optional[str] = None,
     ) -> Deferred:
         """Execute the correct `usg` command for message in a non-blocking
@@ -211,8 +214,10 @@ class UsgManager(ManagerPlugin):
 
         :returns: the deferred result of the usg process
         """
-        args = [action, profile]
+        args = [USG_EXECUTABLE_ABS, action]
 
+        if profile is not None:
+            args.append(profile)
         if tailoring_file is not None:
             args.extend([TAILORING_FILE_PARAM, tailoring_file])
 
@@ -232,7 +237,7 @@ class UsgManager(ManagerPlugin):
     async def _usg_operation(
         self,
         action: str,
-        profile: str,
+        profile: str | None,
         tailoring_file: Union[Tuple[str, int], None],
     ) -> str:
         """Runs usg, first downloading `tailoring_file` if it's provided.

@@ -77,7 +77,7 @@ class UsgManagerTests(LandscapeTest):
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
                 USG_EXECUTABLE_ABS,
-                args=["audit", "cis_level1_workstation"],
+                args=[USG_EXECUTABLE_ABS, "audit", "cis_level1_workstation"],
             )
             which.assert_called_once_with(USG_EXECUTABLE_ABS)
             self.assertEqual(
@@ -186,7 +186,7 @@ class UsgManagerTests(LandscapeTest):
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
                 USG_EXECUTABLE_ABS,
-                args=["fix", "cis_level1_workstation"],
+                args=[USG_EXECUTABLE_ABS, "fix", "cis_level1_workstation"],
             )
             which.assert_called_once_with(USG_EXECUTABLE_ABS)
             send_message.assert_has_calls(
@@ -232,8 +232,7 @@ class UsgManagerTests(LandscapeTest):
                 {
                     "operation-id": 1,
                     "action": "audit",
-                    "profile": "cis_level1_workstation",
-                    "tailoring-file": (83497, "test-tailoring.xml"),
+                    "tailoring-file": ("test-tailoring.xml", 83497),
                     "run-id": str(uuid.uuid4()),
                 },
             ),
@@ -249,8 +248,8 @@ class UsgManagerTests(LandscapeTest):
                 mock.ANY,
                 USG_EXECUTABLE_ABS,
                 args=[
+                    USG_EXECUTABLE_ABS,
                     "audit",
-                    "cis_level1_workstation",
                     "--tailoring-file",
                     tailoring_file_path,
                 ],
@@ -258,7 +257,7 @@ class UsgManagerTests(LandscapeTest):
 
             save_attachments.assert_called_once_with(
                 self.plugin.registry.config,
-                ((83497, "test-tailoring.xml"),),
+                (("test-tailoring.xml", 83497),),
                 mock.ANY,
             )
 
@@ -298,7 +297,7 @@ class UsgManagerTests(LandscapeTest):
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
                 USG_EXECUTABLE_ABS,
-                args=["audit", "cis_level1_workstation"],
+                args=[USG_EXECUTABLE_ABS, "audit", "cis_level1_workstation"],
             )
             which.assert_called_once_with(USG_EXECUTABLE_ABS)
             self.assertEqual(
@@ -349,7 +348,7 @@ class UsgManagerTests(LandscapeTest):
             self.spawn_mock.assert_called_once_with(
                 mock.ANY,
                 USG_EXECUTABLE_ABS,
-                args=["audit", "cis_level1_workstation"],
+                args=[USG_EXECUTABLE_ABS, "audit", "cis_level1_workstation"],
             )
             which.assert_called_once_with(USG_EXECUTABLE_ABS)
             self.assertEqual(
