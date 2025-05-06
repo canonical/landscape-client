@@ -1,5 +1,8 @@
+import contextlib
+import io
 import os
 import unittest
+from argparse import ArgumentTypeError
 from logging import getLogger
 from logging.handlers import RotatingFileHandler
 from unittest import mock
@@ -13,13 +16,51 @@ from landscape.lib.testing import StandardIOHelper
 from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.deployment import ALL_PLUGINS
 from landscape.sysinfo.deployment import get_landscape_log_directory
+from landscape.sysinfo.deployment import plugin_list
 from landscape.sysinfo.deployment import run
 from landscape.sysinfo.deployment import setup_logging
 from landscape.sysinfo.deployment import SysInfoConfiguration
-from landscape.sysinfo.landscapelink import LandscapeLink
 from landscape.sysinfo.load import Load
 from landscape.sysinfo.network import Network
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
+
+
+class PluginListTest(unittest.TestCase):
+    def test_valid_plugins(self):
+        all_plugins_string = ",".join(ALL_PLUGINS)
+
+        parsed_plugins = plugin_list(all_plugins_string)
+
+        self.assertEqual(ALL_PLUGINS, parsed_plugins)
+
+    def test_some_valid_plugins(self):
+        load_plugin = "Load"
+        network_plugin = "Network"
+        self.assertIn(load_plugin, ALL_PLUGINS)
+        self.assertIn(network_plugin, ALL_PLUGINS)
+        plugins = [load_plugin, network_plugin]
+
+        plugin_string = ",".join(plugins)
+        parsed_plugins = plugin_list(plugin_string)
+
+        self.assertEqual(plugins, parsed_plugins)
+
+    def test_invalid_plugin_raises(self):
+        fake_plugin = "FakePlugin"
+        another_fake_plugin = "AnotherFakePlugin"
+        load_plugin = "Load"
+        self.assertNotIn(fake_plugin, ALL_PLUGINS)
+        self.assertNotIn(another_fake_plugin, ALL_PLUGINS)
+        self.assertIn(load_plugin, ALL_PLUGINS)
+        plugins = [fake_plugin, load_plugin, another_fake_plugin]
+        invalid_plugins = [fake_plugin, another_fake_plugin]
+
+        plugin_string = ",".join(plugins)
+
+        with self.assertRaises(ArgumentTypeError) as ctx:
+            plugin_list(plugin_string)
+
+        self.assertEqual(invalid_plugins, ctx.exception.args[0])
 
 
 class DeploymentTest(ConfigTestCase, unittest.TestCase):
@@ -45,12 +86,6 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), len(ALL_PLUGINS))
 
-    def test_landscape_link_not_default(self):
-        self.configuration.load(["-d", self.makeFile()])
-        plugins = self.configuration.get_plugins()
-        for plugin in plugins:
-            self.assertFalse(isinstance(plugin, LandscapeLink))
-
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
         self.configuration.load(
@@ -67,6 +102,49 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
         plugins = self.configuration.get_plugins()
         self.assertEqual(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], Load))
+
+    def test_loading_unknown_plugin_exits_cleanly(self):
+        fake_plugin = "FakePlugin"
+        self.assertNotIn(fake_plugin, ALL_PLUGINS)
+
+        fake_stderr = io.StringIO()
+
+        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
+            fake_stderr,
+        ):
+            self.configuration.load(
+                ["--sysinfo-plugins", fake_plugin, "-d", self.makeDir()],
+            )
+        self.assertEqual(2, ctx.exception.code)
+        error_message = fake_stderr.getvalue()
+        self.assertIn(
+            f"error: argument --sysinfo-plugins: {[fake_plugin]}",
+            error_message,
+        )
+
+    def test_excluding_unknown_plugin_exits_cleanly(self):
+        fake_plugin = "FakePlugin"
+        self.assertNotIn(fake_plugin, ALL_PLUGINS)
+
+        fake_stderr = io.StringIO()
+
+        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
+            fake_stderr,
+        ):
+            self.configuration.load(
+                [
+                    "--exclude-sysinfo-plugins",
+                    fake_plugin,
+                    "-d",
+                    self.makeDir(),
+                ],
+            )
+        self.assertEqual(2, ctx.exception.code)
+        error_message = fake_stderr.getvalue()
+        self.assertIn(
+            f"error: argument --exclude-sysinfo-plugins: {[fake_plugin]}",
+            error_message,
+        )
 
 
 class FakeReactor:
@@ -164,7 +242,6 @@ class RunTest(
 
         def check_result(result):
             self.assertIn("System load", self.stdout.getvalue())
-            self.assertNotIn("Test note", self.stdout.getvalue())
 
         return result.addCallback(check_result)
 
