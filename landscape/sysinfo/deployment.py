@@ -1,7 +1,7 @@
 """Deployment code for the sysinfo tool."""
-
 import os
 import sys
+from argparse import ArgumentTypeError
 from logging import Formatter
 from logging import getLogger
 from logging.handlers import RotatingFileHandler
@@ -25,6 +25,25 @@ ALL_PLUGINS = [
     "LoggedInUsers",
     "Network",
 ]
+
+
+def plugin_list(string: str) -> list[str]:
+    """
+    Parser for converting a comma separated string of plugin names
+    to a list of those plugin names.
+    """
+    plugins = [plugin.strip() for plugin in string.split(",")]
+    valid_plugins = []
+    invalid_plugins = []
+    for plugin in plugins:
+        if plugin in ALL_PLUGINS:
+            valid_plugins.append(plugin)
+        else:
+            invalid_plugins.append(plugin)
+
+    if invalid_plugins:
+        raise ArgumentTypeError(invalid_plugins)
+    return valid_plugins
 
 
 class SysInfoConfiguration(BaseConfiguration):
@@ -58,6 +77,7 @@ class SysInfoConfiguration(BaseConfiguration):
             metavar="PLUGIN_LIST",
             help="Comma-delimited list of sysinfo plugins to "
             "use. Default is to use all plugins.",
+            type=plugin_list,
         )
 
         parser.add_argument(
@@ -66,6 +86,7 @@ class SysInfoConfiguration(BaseConfiguration):
             help="Comma-delimited list of sysinfo plugins to "
             "NOT use. This always take precedence over "
             "plugins to include.",
+            type=plugin_list,
         )
 
         parser.add_argument(
@@ -78,18 +99,15 @@ class SysInfoConfiguration(BaseConfiguration):
         parser.epilog = "Default plugins: {}".format(", ".join(ALL_PLUGINS))
         return parser
 
-    def get_plugin_names(self, plugin_spec):
-        return [x.strip() for x in plugin_spec.split(",")]
-
     def get_plugins(self):
         if self.sysinfo_plugins is None:
             include = ALL_PLUGINS
         else:
-            include = self.get_plugin_names(self.sysinfo_plugins)
+            include = self.sysinfo_plugins
         if self.exclude_sysinfo_plugins is None:
             exclude = []
         else:
-            exclude = self.get_plugin_names(self.exclude_sysinfo_plugins)
+            exclude = self.exclude_sysinfo_plugins
         plugins = [x for x in include if x not in exclude]
         return [
             namedClass(
