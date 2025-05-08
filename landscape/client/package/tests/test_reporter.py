@@ -77,19 +77,18 @@ class PackageReporterConfigurationTest(LandscapeTest):
         """
         config = PackageReporterConfiguration()
         config.default_config_filenames = self.makeFile("")
-        self.assertIsNone(config.ignore_sources)
+        self.assertIsNone(config.ignore_package_sources)
         config.load(
             [
-                "--ignore-sources",
-                "https://esm.ubuntu.com/apps/ubuntu,"
-                "https://esm2.ubuntu.com/apps/ubuntu",
+                "--ignore-package-sources",
+                "my-random-source.list," "my-fancy-source.sources",
             ],
         )
         self.assertEqual(
-            config.ignore_sources,
+            config.ignore_package_sources,
             {
-                "https://esm.ubuntu.com/apps/ubuntu",
-                "https://esm2.ubuntu.com/apps/ubuntu",
+                "my-random-source.list",
+                "my-fancy-source.sources",
             },
         )
 
@@ -1696,8 +1695,10 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("error", err)
             self.assertEqual(2, code)
             warning_mock.assert_called_once_with(
-                f"'{self.reporter.apt_update_filename}' "
-                "exited with status 2 (error)",
+                "'%s' exited with status %d (%s)",
+                self.reporter.apt_update_filename,
+                2,
+                "error",
             )
 
         result.addCallback(callback)
@@ -1740,9 +1741,10 @@ class PackageReporterAptTest(LandscapeTest):
             mock.call(message.format(20)),
             mock.call(message.format(40)),
             mock.call(
-                "'{}' exited with status 100 ()".format(
-                    self.reporter.apt_update_filename,
-                ),
+                "'%s' exited with status %d (%s)",
+                self.reporter.apt_update_filename,
+                100,
+                "",
             ),
         ]
         logging_mock.assert_has_calls(calls)
