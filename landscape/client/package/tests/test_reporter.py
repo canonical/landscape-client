@@ -77,11 +77,20 @@ class PackageReporterConfigurationTest(LandscapeTest):
         """
         config = PackageReporterConfiguration()
         config.default_config_filenames = self.makeFile("")
-        self.assertEqual(config.ignore_sources, [])
-        config.load(["--ignore-sources", "https://esm.ubuntu.com/apps/ubuntu"])
+        self.assertIsNone(config.ignore_sources)
+        config.load(
+            [
+                "--ignore-sources",
+                "https://esm.ubuntu.com/apps/ubuntu,"
+                "https://esm2.ubuntu.com/apps/ubuntu",
+            ],
+        )
         self.assertEqual(
             config.ignore_sources,
-            ["https://esm.ubuntu.com/apps/ubuntu"],
+            {
+                "https://esm.ubuntu.com/apps/ubuntu",
+                "https://esm2.ubuntu.com/apps/ubuntu",
+            },
         )
 
 

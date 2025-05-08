@@ -308,7 +308,13 @@ def run_task_handler(cls, args, reactor=None):
     # import Apt unless we need to.
     from landscape.lib.apt.package.facade import AptFacade
 
-    package_facade = AptFacade()
+    package_facade = AptFacade(
+        ignore_sources=config.ignore_package_sources,
+        alt_sourceparts=os.path.join(
+            config.data_path,
+            "landscape-sources.list.d",
+        ),
+    )
 
     def finish():
         connector.disconnect()
