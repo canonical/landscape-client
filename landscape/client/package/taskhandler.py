@@ -309,7 +309,7 @@ def run_task_handler(cls, args, reactor=None):
     from landscape.lib.apt.package.facade import AptFacade
 
     package_facade = AptFacade(
-        ignore_sources=config.ignore_package_sources,
+        ignore_sources=getattr(config, "ignore_package_sources", None),
         alt_sourceparts=os.path.join(
             config.data_path,
             "landscape-sources.list.d",
