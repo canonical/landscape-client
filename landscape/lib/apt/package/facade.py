@@ -182,8 +182,6 @@ class AptFacade:
 
         os.makedirs(alt_sourceparts, exist_ok=True)
 
-        # Set config to use landscape-sources.list.d instead of sources.list.d
-        # Copy non-ignored sources to landscape-sources.list.d.
         sourceparts = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
 
         for sourcepart in os.scandir(sourceparts):
