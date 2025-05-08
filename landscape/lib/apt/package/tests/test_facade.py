@@ -3609,6 +3609,13 @@ class AptFacadeTest(
         `ignore_sources`. The facade then uses `alt_sourceparts` for cache
         operations.
         """
+        self.addCleanup(apt_pkg.config.set, "Dir", apt_pkg.config.get("Dir"))
+        self.addCleanup(
+            apt_pkg.config.set,
+            "Dir::Etc::sourceparts",
+            apt_pkg.config.get("Dir::Etc::sourceparts"),
+        )
+
         root = self.makeDir()
         apt_pkg.config.set("Dir", root)
         etc = apt_pkg.config.find_dir("Dir::Etc")
