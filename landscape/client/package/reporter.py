@@ -3,6 +3,7 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+from argparse import ArgumentTypeError
 import logging
 import time
 import os
@@ -43,6 +44,29 @@ RELEASE_UPGRADER_PATTERN = "/tmp/ubuntu-release-upgrader-"
 UID_ROOT = "0"
 
 
+def sources_list(string: str) -> set[str]:
+    """
+    Parser for converting a comma-seperated string of URLs into a list of
+    validated URLs.
+    """
+    urls = [url.strip() for url in string.split(",")]
+    valid_urls = []
+    invalid_urls = []
+
+    for url in urls:
+        try:
+            urlparse.urlparse(url)
+        except Exception:
+            invalid_urls.append(url)
+        else:
+            valid_urls.append(url)
+
+    if invalid_urls:
+        raise ArgumentTypeError(invalid_urls)
+
+    return set(valid_urls)
+
+
 class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
     """Specialized configuration for the Landscape package-reporter."""
 
@@ -67,6 +91,15 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
             "--https-proxy",
             metavar="URL",
             help="The URL of the HTTPS proxy, if one is needed.",
+        )
+        parser.add_argument(
+            "--ignore-package-sources",
+            type=sources_list,
+            metavar="SOURCE1.list,SOURCE2.sources",
+            help=(
+                "Comma-delimited list of package source files to be ignored "
+                "when reporting packages."
+            ),
         )
         return parser
 
@@ -276,7 +309,8 @@ class PackageReporter(PackageTaskHandler):
                 and uid == UID_ROOT
             ):
                 logging.info(
-                    f"Found ubuntu-release-upgrader running (pid: {pid})",
+                    "Found ubuntu-release-upgrader running (pid: %d)",
+                    pid,
                 )
                 return True
         return False
@@ -330,8 +364,10 @@ class PackageReporter(PackageTaskHandler):
                             continue
 
                     logging.warning(
-                        f"'{self.apt_update_filename}' exited with "
-                        f"status {code:d} ({err})",
+                        "'%s' exited with status %d (%s)",
+                        self.apt_update_filename,
+                        code,
+                        err,
                     )
 
                     # Errors caused by missing cache files are acceptable,
