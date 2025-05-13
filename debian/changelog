@@ -1,3 +1,20 @@
+landscape-client (25.04+git6435-0landscape0) jammy; urgency=medium
+
+  * feat: add optional --authenticated-attach-code to configuration parameters
+  * feat: add usgmanager plugin to example.conf
+  * feat: configurably exclude package sources
+  * fix: remove deprecated use of unittest.makeSuite to get tests passing on
+    >=py312
+  * fix: make config tests insensitive to http(s) proxy settings
+  * fix: add run-id and operation-id fields to usg-audit message
+  * fix: ensure usgmanager plugin runs in deferred
+  * fix: usgmanager should accept only the profile or the tailoring file
+  * fix: .list and .sources files are restored when a repository profile is
+    disassociated from a noble (or later) instance (LP: #2087852)
+  * fix: invalid plugins do not crash landscape-sysinfo (LP: #1754002)
+
+ -- Mitch Burton <mitch.burton@canonical.com>  Tue, 13 May 2025 17:44:24 +0200
+
 landscape-client (24.12+git6420-0landscape0) jammy; urgency=medium
 
   * feat: add snap configuration options for ping URL and CA certificate
