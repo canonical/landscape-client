@@ -9,23 +9,25 @@ from landscape.client import GROUP
 from landscape.client import USER
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
+from landscape.client.configuration import actively_registered
 from landscape.client.configuration import bootstrap_tree
 from landscape.client.configuration import ConfigurationError
 from landscape.client.configuration import EXIT_NOT_REGISTERED
 from landscape.client.configuration import get_secure_id
 from landscape.client.configuration import ImportOptionError
-from landscape.client.configuration import is_registered
 from landscape.client.configuration import LandscapeSetupConfiguration
 from landscape.client.configuration import LandscapeSetupScript
 from landscape.client.configuration import main
 from landscape.client.configuration import print_text
 from landscape.client.configuration import prompt_yes_no
 from landscape.client.configuration import registration_info_text
+from landscape.client.configuration import registration_sent
 from landscape.client.configuration import restart_client
 from landscape.client.configuration import set_secure_id
 from landscape.client.configuration import setup
 from landscape.client.configuration import show_help
 from landscape.client.configuration import store_public_key_data
+from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.compat import ConfigParser
@@ -754,6 +756,7 @@ class ConfigurationFunctionsTest(LandscapeConfigurationTest):
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup(self, mock_serviceconfig):
         """
         Only command-line options are used in silent mode.
@@ -773,6 +776,7 @@ url = https://landscape.canonical.com/message-system
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup_no_register(self, mock_serviceconfig):
         """
         Called with command line options to write a config file but no
@@ -844,6 +848,7 @@ url = https://landscape.canonical.com/message-system
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup_unicode_computer_title(self, mock_serviceconfig):
         """
         Setup accepts a non-ascii computer title and registration is
@@ -878,6 +883,7 @@ url = https://landscape.canonical.com/message-system
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_script_users_imply_script_execution_plugin(
         self,
         mock_serviceconfig,
@@ -949,6 +955,7 @@ bus = session
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_silent_setup_with_ping_url(self, mock_serviceconfig):
         mock_serviceconfig.restart_landscape.return_value = True
         filename = self.makeFile(
@@ -1181,7 +1188,7 @@ registration_key = shared-secret
         mock_input.assert_not_called()
 
     @mock.patch(
-        "landscape.client.configuration.is_registered",
+        "landscape.client.configuration.registration_sent",
         return_value=True,
     )
     @mock.patch("landscape.client.configuration.restart_client")
@@ -1496,6 +1503,48 @@ registration_key = shared-secret
         mock_register.assert_called_once()
         mock_input.assert_not_called()
 
+    @mock.patch(
+        "landscape.client.configuration.ClientRegistrationInfo.from_identity",
+    )
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch("landscape.client.configuration.input")
+    @mock.patch("landscape.client.configuration.set_secure_id")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_register_insecure_id(
+        self,
+        mock_setup,
+        mock_register,
+        mock_set_secure_id,
+        mock_input,
+        mock_restart_client,
+        mock_client_info,
+    ):
+        """
+        Tests that silent registration sets insecure id when provided
+        """
+
+        mock_register.return_value = RegistrationInfo(
+            10,
+            "fake-secure-id",
+            "fake-server-uuid",
+        )
+
+        self.assertRaises(
+            SystemExit,
+            main,
+            ["--silent", "-c", self.make_working_config()],
+            print=noop_print,
+        )
+
+        mock_setup.assert_called_once()
+        mock_input.assert_not_called()
+        mock_set_secure_id.assert_called_once_with(
+            mock.ANY,
+            "fake-secure-id",
+            10,
+        )
+
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.attempt_registration")
     @mock.patch(
@@ -1770,6 +1819,7 @@ registration_key = shared-secret
         )
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
+    @mock.patch("os.environ", new={})
     def test_import_from_file_may_reset_old_options(self, mock_serviceconfig):
         """
         This test ensures that setting an empty option in an imported
@@ -2239,19 +2289,53 @@ class IsRegisteredTest(LandscapeTest):
         persist_file = os.path.join(self.config.data_path, "broker.bpickle")
         self.persist = Persist(filename=persist_file)
 
-    def test_is_registered_false(self):
+    def test_registration_sent_false(self):
         """
-        If the client hasn't previously registered, is_registered returns False
+        If the client hasn't previously sent a registration request,
+        registration_sent returns False
         """
-        self.assertFalse(is_registered(self.config))
+        self.assertFalse(registration_sent(self.config))
 
-    def test_is_registered_true(self):
+    def test_registration_sent_true(self):
         """
-        If the client has previously registered, is_registered returns True.
+        If the client has previously sent a registration request,
+        registration_sent returns True.
         """
         self.persist.set("registration.secure-id", "super-secure")
         self.persist.save()
-        self.assertTrue(is_registered(self.config))
+        self.assertTrue(registration_sent(self.config))
+
+    def test_actively_registered_true(self):
+        """
+        If the client is actively registered with the server returns True
+        """
+        self.persist.set(
+            "message-store.accepted-types",
+            ["test", "temperature"],
+        )
+        self.persist.save()
+        self.assertTrue(actively_registered(self.config))
+
+    def test_actively_registered_false(self):
+        """
+        If the client is not actively registered with the server returns False
+        """
+        self.persist.set("message-store.accepted-types", ["test", "register"])
+        self.persist.save()
+        self.assertFalse(actively_registered(self.config))
+
+    def test_actively_registered_false_only_test(self):
+        """
+        If the client is not actively registered with the server returns False.
+        Here we check add only test to the accepted types as it is always an
+        accepted type by the server. In the actively_registered function we
+        check to see if the len(accepted_types) > 1 to make sure there are more
+        accepted types than just the test. This test case makes sure that we
+        fail the test case of only test if provided in accepted types
+        """
+        self.persist.set("message-store.accepted-types", ["test"])
+        self.persist.save()
+        self.assertFalse(actively_registered(self.config))
 
 
 class RegistrationInfoTest(LandscapeTest):

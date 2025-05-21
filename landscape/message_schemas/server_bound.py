@@ -60,6 +60,7 @@ __all__ = [
     "UBUNTU_PRO_INFO",
     "LIVEPATCH",
     "UBUNTU_PRO_REBOOT_REQUIRED",
+    "USG_AUDIT",
     "SNAPS",
     "SNAP_INFO",
 ]
@@ -363,6 +364,7 @@ REGISTER_3_3 = Message(
         "ubuntu_pro_info": Unicode(),
         "hostagent_uid": Unicode(),
         "installation_request_id": Unicode(),
+        "authenticated_attach_code": Unicode(),
     },
     api=b"3.3",
     optional=[
@@ -377,6 +379,7 @@ REGISTER_3_3 = Message(
         "ubuntu_pro_info",
         "hostagent_uid",
         "installation_request_id",
+        "authenticated_attach_code",
     ],
 )
 
@@ -853,6 +856,15 @@ SNAP_SERVICES = Message(
     },
 )
 
+USG_AUDIT = Message(
+    "usg-audit",
+    {
+        "report": Bytes(),
+        "operation-id": Int(),
+        "run-id": Unicode(),
+    },
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     COMPUTER_UPTIME,
@@ -900,6 +912,7 @@ message_schemas = (
     UBUNTU_PRO_INFO,
     LIVEPATCH,
     UBUNTU_PRO_REBOOT_REQUIRED,
+    USG_AUDIT,
     SNAPS,
     SNAP_INFO,
     SNAP_SERVICES,

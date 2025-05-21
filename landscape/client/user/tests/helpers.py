@@ -1,6 +1,3 @@
-from twisted.python.compat import iteritems
-from twisted.python.compat import itervalues
-
 from landscape.client.user.management import UserManagementError
 from landscape.client.user.provider import UserProviderBase
 
@@ -37,7 +34,7 @@ class FakeUserManagement:
         try:
             uid = 1000
             if self._users:
-                uid = max([x["uid"] for x in itervalues(self._users)]) + 1
+                uid = max([x["uid"] for x in self._users.values()]) + 1
             if self._groups:
                 primary_gid = self.get_gid(primary_group_name)
             else:
@@ -149,7 +146,7 @@ class FakeUserManagement:
     def add_group(self, name):
         gid = 1000
         if self._groups:
-            gid = max([x["gid"] for x in itervalues(self._groups)]) + 1
+            gid = max([x["gid"] for x in self._groups.values()]) + 1
         self._groups[name] = {"name": name, "gid": gid, "members": []}
         self.update_provider_from_groups()
         return "add_group succeeded"
@@ -185,7 +182,7 @@ class FakeUserManagement:
 
     def update_provider_from_groups(self):
         provider_list = []
-        for k, v in iteritems(self._groups):
+        for k, v in self._groups.items():
             provider_list.append((k, "x", v["gid"], v["members"]))
         self.provider.groups = provider_list
 

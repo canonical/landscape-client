@@ -1,6 +1,3 @@
-from twisted.python.compat import xrange
-
-
 class SequenceError(Exception):
     """Raised when the sequence isn't proper for translation to ranges."""
 
@@ -101,7 +98,7 @@ def ranges_to_sequence(ranges):
             start, end = item
             if start > end:
                 raise ValueError("Range error %d > %d", start, end)
-            for item in xrange(start, end + 1):
+            for item in range(start, end + 1):
                 yield item
         else:
             yield item

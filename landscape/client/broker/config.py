@@ -107,6 +107,10 @@ class BrokerConfiguration(Configuration):
             "that Landscape assigned to the installation activity for the "
             "host machine.",
         )
+        parser.add_argument(
+            "--authenticated-attach-code",
+            help="A one-time-use, Landscape server-generated code.",
+        )
 
         return parser
 

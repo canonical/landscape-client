@@ -1,6 +1,6 @@
 name: landscape-client
 base: core22
-version: '24.08'
+version: '24.12'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
 summary: Client for the Canonical systems management product Landscape
@@ -17,6 +17,7 @@ architectures:
   - build-on: [armhf]
   - build-on: [ppc64el]
   - build-on: [s390x]
+  - build-on: [riscv64]
 confinement: strict
 
 environment:
@@ -55,7 +56,6 @@ apps:
       - network-observe
       - scsi-generic
       - shutdown
-      - snapd-control-managed
       - snapd-control
       - system-observe
       - account-control
@@ -70,6 +70,10 @@ apps:
     plugs:
       - network
       - hardware-observe
+  logrotate:
+    command: usr/sbin/logrotate -s /tmp/logrotate-status $SNAP/etc/logrotate.conf
+    daemon: simple
+    timer: sun,02:00~03:00
 
 # Previously, the client's data was stored in $SNAP_DATA
 #  which led to duplicate machine entries after reverting
@@ -135,3 +139,12 @@ parts:
       # Copy the scripts over
       mkdir -p ${SNAPCRAFT_PRIME}/usr/bin/
       cp -r ${SNAPCRAFT_PART_SRC}/scripts/. ${SNAPCRAFT_PRIME}/usr/bin/
+  logrotate:
+    plugin: nil
+    source: .
+    stage-packages:
+      - logrotate
+    override-prime: |
+      craftctl default
+      cp ${SNAPCRAFT_PART_SRC}/debian/landscape-client.logrotate ${SNAPCRAFT_PRIME}/etc/logrotate.conf
+      sed -i 's/systemctl kill --signal=USR1 --kill-who=main/snapctl restart/' ${SNAPCRAFT_PRIME}/etc/logrotate.conf

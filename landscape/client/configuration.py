@@ -275,6 +275,20 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                 "Send a new registration request only if one has not been sent"
             ),
         )
+        parser.add_argument(
+            "--actively-registered",
+            action="store_true",
+            help="Exit with code 0 (success) if client is "
+            "registered else returns {}. Displays "
+            "registration info.".format(EXIT_NOT_REGISTERED),
+        )
+        parser.add_argument(
+            "--registration-sent",
+            action="store_true",
+            help="Exit with code 0 (success) if client is "
+            "registered else returns {}. Displays "
+            "registration info.".format(EXIT_NOT_REGISTERED),
+        )
         return parser
 
 
@@ -736,6 +750,7 @@ def attempt_registration(
 
     :returns: an exit code based on the registration result.
     """
+
     client_info = ClientRegistrationInfo.from_identity(identity)
 
     for retry in range(retries):
@@ -750,6 +765,7 @@ def attempt_registration(
                 config.url,
                 cainfo=config.ssl_public_key,
             )
+
             break
         except RegistrationException as e:
             # This is unlikely to be resolved by the time we retry, so we fail
@@ -763,15 +779,25 @@ def attempt_registration(
         # We're finished retrying and haven't succeeded yet.
         return 2
 
-    set_secure_id(config, registration_info.secure_id)
+    set_secure_id(
+        config,
+        registration_info.secure_id,
+        registration_info.insecure_id,
+    )
+
     print("Registration request sent successfully")
     restart_client(config)
 
     return 0
 
 
-def is_registered(config):
-    """Return whether the client is already registered."""
+def registration_sent(config):
+    """
+    Return whether the client has sent a registration request to the server.
+    For now does same thing as is_registered as to make function name more
+    clear with what is performed. This is the legacy behaviour of
+    --is-registered and the name will be changed in a future release.
+    """
     persist_filename = os.path.join(
         config.data_path,
         f"{BrokerService.service_name}.bpickle",
@@ -779,6 +805,19 @@ def is_registered(config):
     persist = Persist(filename=persist_filename, user=USER, group=GROUP)
     identity = Identity(config, persist)
     return bool(identity.secure_id)
+
+
+def actively_registered(config):
+    """Return whether or not the client is currently registered with server"""
+    persist_filename = os.path.join(
+        config.data_path,
+        f"{BrokerService.service_name}.bpickle",
+    )
+    persist = Persist(filename=persist_filename, user=USER, group=GROUP)
+    accepted_types = persist.get("message-store.accepted-types")
+    if accepted_types is not None:
+        return len(accepted_types) > 1 and "register" not in accepted_types
+    return False
 
 
 def registration_info_text(config, registration_status):
@@ -805,7 +844,7 @@ def registration_info_text(config, registration_status):
     return text
 
 
-def set_secure_id(config, new_id):
+def set_secure_id(config, new_id, insecure_id=None):
     """Persists a secure id in the identity data file. This is used to indicate
     whether we are currently in the process of registering.
     """
@@ -819,6 +858,8 @@ def set_secure_id(config, new_id):
     )
     identity = Identity(config, persist)
     identity.secure_id = new_id
+    if insecure_id is not None:
+        identity.insecure_id = insecure_id
     persist.save()
 
 
@@ -835,7 +876,7 @@ def get_secure_id(config):
     return identity.secure_id
 
 
-def main(args, print=print):
+def main(args, print=print):  # noqa: C901
     """Interact with the user and the server to set up client configuration."""
     config = LandscapeSetupConfiguration()
     try:
@@ -857,9 +898,9 @@ def main(args, print=print):
             "and force registration together.",
         )
 
-    already_registered = is_registered(config)
+    already_registered = registration_sent(config)
 
-    if config.is_registered:
+    if config.is_registered or config.registration_sent:
 
         registration_status = already_registered
 
@@ -867,6 +908,17 @@ def main(args, print=print):
         print(info_text)
 
         if registration_status:
+            sys.exit(0)
+        else:
+            sys.exit(EXIT_NOT_REGISTERED)
+
+    if config.actively_registered:
+        currently_registered = actively_registered(config)
+
+        info_text = registration_info_text(config, currently_registered)
+        print(info_text)
+
+        if currently_registered:
             sys.exit(0)
         else:
             sys.exit(EXIT_NOT_REGISTERED)
@@ -910,6 +962,7 @@ def main(args, print=print):
         )
 
     exit_code = 0
+
     if should_register:
         exit_code = attempt_registration(identity, config)
         restart_client(config)

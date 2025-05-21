@@ -1,3 +1,58 @@
+landscape-client (25.04+git6435-0landscape0) jammy; urgency=medium
+
+  * feat: add optional --authenticated-attach-code to configuration parameters
+  * feat: add usgmanager plugin to example.conf
+  * feat: configurably exclude package sources
+  * fix: remove deprecated use of unittest.makeSuite to get tests passing on
+    >=py312
+  * fix: make config tests insensitive to http(s) proxy settings
+  * fix: add run-id and operation-id fields to usg-audit message
+  * fix: ensure usgmanager plugin runs in deferred
+  * fix: usgmanager should accept only the profile or the tailoring file
+  * fix: .list and .sources files are restored when a repository profile is
+    disassociated from an instance (LP: #2087852)
+  * fix: invalid plugins do not crash landscape-sysinfo (LP: #1754002)
+
+ -- Mitch Burton <mitch.burton@canonical.com>  Tue, 13 May 2025 17:44:24 +0200
+
+landscape-client (24.12+git6420-0landscape0) jammy; urgency=medium
+
+  * feat: add snap configuration options for ping URL and CA certificate
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Tue, 18 Mar 2025 10:15:33 -0700
+
+landscape-client (24.12+git6418-0landscape0) jammy; urgency=medium
+
+  * feat: add support for .sources when applying repository profiles
+  * feat: add USG plugin
+  * feat: enable riscv build of snap
+  * feat: add authenticated attach code to registration message
+  * fix: lint failure E226 missing arithmetic whitespace
+  * fix: remove snapd-control-managed from snapcraft.yaml apps stanza
+  * fix: allow log rotation in snap
+  * perf: improve package reporter cpu usage
+  * refactor: stop using twisted.python.compat
+
+ -- Justin Kim <justin.kim@canonical.com>  Tue, 04 Mar 2025 19:55:32 +0000
+
+landscape-client (24.12-0landscape0) jammy; urgency=medium
+
+  * feat: add optional installation_request_id parameter to registration
+  * feat: update snapcraft.yaml to use snapd-control-managed
+  * fix: get tests passing on plucky
+  * fix: Updated motd
+  * fix: SSL Certificates properly surfaced
+  * fix: monitor-only set properly when false/no passed in config
+  * fix: flag --is-registered prints correct outputs
+  * fix: insecure id not set during registration on self hosted
+  * fix: TiOBE TiCS workflow
+  * fix: prevent creation of clones after reverting to previous snap revision
+  * fix: add missing python3-yaml to runtime dependencies (LP: #2084586)
+  * fix: process full server response
+  * refactor: remove snapd-control annotation from snapcraft.yaml
+
+ -- Justin Kim <justin.kim@canonical.com>  Thu, 19 Dec 2024 17:22:40 +0000
+
 landscape-client (24.08+git6391-0landscape0) jammy; urgency=medium
 
   * feat: add annotations content interface to snapcraft

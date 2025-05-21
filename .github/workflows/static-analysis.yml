@@ -7,7 +7,7 @@ on:
     - cron: '0 6 * * 0'  # Run at 6:00a (arbitrary) to avoid peak activity on runners
 jobs:
   TICS:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, amd64, tiobe, jammy]
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v4
@@ -20,6 +20,7 @@ jobs:
         with:
           mode: qserver
           project: landscape-client
+          branchdir: ${{ github.workspace }}
           viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
           ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
           installTics: true

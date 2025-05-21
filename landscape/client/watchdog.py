@@ -4,7 +4,6 @@ The WatchDog must run as root, because it spawns the Landscape Manager.
 
 The main C{landscape-client} program uses this watchdog.
 """
-
 import errno
 import os
 import pwd
@@ -26,13 +25,14 @@ from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client import IS_SNAP
 from landscape.client import GROUP
+from landscape.client import IS_SNAP
 from landscape.client import USER
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.amp import RemoteManagerConnector
 from landscape.client.broker.amp import RemoteMonitorConnector
 from landscape.client.deployment import Configuration
+from landscape.client.deployment import convert_arg_to_bool
 from landscape.client.deployment import init_logging
 from landscape.client.reactor import LandscapeReactor
 from landscape.lib.bootstrap import BootstrapDirectory
@@ -522,7 +522,10 @@ class WatchDogConfiguration(Configuration):
         )
         parser.add_argument(
             "--monitor-only",
-            action="store_true",
+            type=convert_arg_to_bool,
+            nargs="?",
+            const=True,
+            default=False,
             help="Don't enable management features. This is "
             "useful if you want to run the client as a non-root "
             "user.",

@@ -1,10 +1,10 @@
 import os
 import unittest
 from threading import local
+from unittest import mock
 
 import pycurl
 from twisted.internet.defer import FirstError
-from twisted.python.compat import unicode
 
 from landscape.lib import testing
 from landscape.lib.fetch import fetch
@@ -32,7 +32,7 @@ class CurlStub:
         raise RuntimeError(f"Stub doesn't know about {what:d} info")
 
     def setopt(self, option, value):
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             raise AssertionError("setopt() doesn't accept unicode values")
         if self.performed:
             raise AssertionError("setopt() can't be called after perform()")
@@ -190,6 +190,17 @@ class FetchTest(
         result = fetch("http://example.com", cainfo="cainfo", curl=curl)
         self.assertEqual(result, b"result")
         self.assertTrue(pycurl.CAINFO not in curl.options)
+
+    @mock.patch("landscape.lib.fetch.warning")
+    def test_cainfo_inaccessible_cert(self, logging):
+        curl = CurlStub(b"result")
+        result = fetch("https://example.com", cainfo="cainfo", curl=curl)
+        self.assertEqual(result, b"result")
+        logging.assert_called_once_with(
+            "SSL certificate provided is not accessible by landscape "
+            + "client. Please place in directory that is readable such "
+            + "as '/etc/ssl/certs'",
+        )
 
     def test_headers(self):
         curl = CurlStub(b"result")

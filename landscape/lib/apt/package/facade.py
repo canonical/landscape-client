@@ -1,10 +1,12 @@
 import hashlib
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Container
 from operator import attrgetter
 
 import apt
@@ -13,7 +15,6 @@ import apt_pkg
 from apt.progress.base import InstallProgress
 from apt.progress.text import AcquireProgress
 from aptsources.sourceslist import SourcesList
-from twisted.python.compat import itervalues
 
 from .skeleton import build_skeleton_apt
 from landscape.lib.compat import StringIO
@@ -121,8 +122,10 @@ class AptFacade:
     This object wraps Apt features, in a way that makes using and testing
     these features slightly more comfortable.
 
-    @param root: The root dir of the Apt configuration files.
-    @ivar refetch_package_index: Whether to refetch the package indexes
+    :param root: The root dir of the Apt configuration files.
+    :param ignore_sources: Sources with URIs in this container are reloaded and
+        their packages are not considered during reporting.
+    :ivar refetch_package_index: Whether to refetch the package indexes
         when reloading the channels, or reuse the existing local
         database.
     """
@@ -131,7 +134,12 @@ class AptFacade:
     dpkg_retry_sleep = 5
     _dpkg_status = "/var/lib/dpkg/status"
 
-    def __init__(self, root=None):
+    def __init__(
+        self,
+        root: str | None = None,
+        ignore_sources: Container = {},
+        alt_sourceparts: str = "",
+    ) -> None:
         self._root = root
         self._dpkg_args = []
         if self._root is not None:
@@ -150,6 +158,43 @@ class AptFacade:
         self._version_hold_creations = []
         self._version_hold_removals = []
         self.refetch_package_index = False
+
+        if ignore_sources and alt_sourceparts:
+            self._configure_apt_cache(ignore_sources, alt_sourceparts)
+
+    def _configure_apt_cache(
+        self,
+        ignore_sources: Container,
+        alt_sourceparts,
+    ) -> None:
+        """Configures the cache to only use sources not in `ignore_sources`.
+
+        This is done by configuring apt to use a different directory for the
+        "sourceparts" config rather than the usual "/etc/apt/sources.list.d".
+
+        See apt.cache.Cache.update for an example of how this works.
+        """
+        if os.path.exists(alt_sourceparts):
+            try:
+                shutil.rmtree(alt_sourceparts)
+            except NotADirectoryError:
+                os.remove(alt_sourceparts)
+
+        os.makedirs(alt_sourceparts, exist_ok=True)
+
+        sourceparts = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
+
+        for sourcepart in os.scandir(sourceparts):
+            name = sourcepart.name
+            if name not in ignore_sources:
+                logging.debug("Copying source %s to %s", name, alt_sourceparts)
+                shutil.copy(sourcepart, alt_sourceparts)
+            else:
+                logging.debug("Ignoring source %s", name)
+
+        apt_pkg.config.set("Dir::Etc::sourceparts", alt_sourceparts)
+
+        self._cache = apt.cache.Cache(rootdir=self._root)
 
     def _ensure_dir_structure(self):
         apt_dir = self._ensure_sub_dir("etc/apt")
@@ -179,7 +224,7 @@ class AptFacade:
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return itervalues(self._hash2pkg)
+        return self._hash2pkg.values()
 
     def get_locked_packages(self):
         """Get all packages in the channels that are locked.
@@ -255,9 +300,9 @@ class AptFacade:
                 except TypeError:
                     self._cache.update()
             except apt.cache.FetchFailedException:
-                raise ChannelError(
-                    f"Apt failed to reload channels ({self.get_channels()!r})",
-                )
+                channels = self.get_channels()
+                msg = f"Apt failed to reload channels ({channels!r})"
+                raise ChannelError(msg)
             self._cache.open(None)
 
         self._pkg2hash.clear()

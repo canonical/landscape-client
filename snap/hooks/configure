@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import subprocess
 
 from landscape.client.deployment import Configuration
@@ -13,6 +14,16 @@ def _snapctl(action, setting):
     )
     return snapctl.stdout
 
+def update_ssl_cert(cert: str) -> str | None:
+    cert_path = os.path.join(os.getenv("SNAP_COMMON"), "etc/ssl/certs")
+    if not os.path.isdir(cert_path):
+        os.makedirs(cert_path)
+
+    cert_path = os.path.join(cert_path, "ssl-public-key.crt")
+    with open(cert_path, 'w') as f:
+        f.write(cert)
+
+    return str(cert_path)
 
 config = Configuration()
 config.load([])
@@ -22,7 +33,8 @@ config_entries = [
     ("account-name", "account_name", None),
     ("computer-title", "computer_title", None),
     ("landscape-url", "url", lambda url: f"{url}/message-system"),
-    ("landscape-url", "ping_url", lambda url: f"{url}/ping"),
+    ("landscape-ping-url", "ping_url", lambda url: f"{url}/ping"),
+    ("ssl-public-key", "ssl_public_key", update_ssl_cert),
     ("log-level", "log_level", None),
     ("script-users", "script_users", None),
     ("manager-plugins", "manager_plugins", None),

@@ -58,6 +58,8 @@ class Identity:
     @ivar secure_id: A server-provided ID for secure message exchange.
     @ivar insecure_id: Non-secure server-provided ID, mainly used with
         the ping server.
+    @ivar accepted_types: The types of messages the server will accept
+        from the client during exchange
     @ivar computer_title: See L{BrokerConfiguration}.
     @ivar account_name: See L{BrokerConfiguration}.
     @ivar registration_password: See L{BrokerConfiguration}.
@@ -78,6 +80,7 @@ class Identity:
     access_group = config_property("access_group")
     hostagent_uid = config_property("hostagent_uid")
     installation_request_id = config_property("installation_request_id")
+    authenticated_attach_code = config_property("authenticated_attach_code")
 
     def __init__(self, config, persist):
         self._config = config
@@ -95,7 +98,7 @@ class RegistrationHandler:
     def __init__(
         self,
         config,
-        identity,
+        identity: Identity,
         reactor,
         exchange,
         pinger,
@@ -194,6 +197,7 @@ class RegistrationHandler:
         registration_key = identity.registration_key
         hostagent_uid = identity.hostagent_uid
         installation_request_id = identity.installation_request_id
+        authenticated_attach_code = identity.authenticated_attach_code
 
         self._message_store.delete_all_messages()
 
@@ -225,6 +229,8 @@ class RegistrationHandler:
             message["hostagent_uid"] = hostagent_uid
         if installation_request_id:
             message["installation_request_id"] = installation_request_id
+        if authenticated_attach_code:
+            message["authenticated_attach_code"] = authenticated_attach_code
 
         server_api = self._message_store.get_server_api()
         # If we have juju data to send and if the server is recent enough to

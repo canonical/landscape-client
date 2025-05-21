@@ -3,7 +3,6 @@ import os
 import time
 
 from twisted.internet import threads
-from twisted.python.compat import unicode
 
 from landscape.client.accumulate import Accumulator
 from landscape.client.monitor.plugin import MonitorPlugin
@@ -150,7 +149,7 @@ class CephUsage(MonitorPlugin):
 
             cluster_stats = cluster.get_cluster_stats()
             if self._ceph_ring_id is None:
-                fsid = unicode(cluster.get_fsid(), "utf-8")
+                fsid = str(cluster.get_fsid(), "utf-8")
                 self._ceph_ring_id = fsid
 
         return cluster_stats

@@ -13,7 +13,6 @@ import apt_pkg
 from apt.cache import LockFailedException
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
-from twisted.python.compat import unicode
 
 from landscape.lib import testing
 from landscape.lib.apt.package.facade import AptFacade
@@ -969,7 +968,7 @@ class AptFacadeTest(
         [pkg1] = self.facade.get_packages_by_name("name1")
         [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
-        self.assertTrue(isinstance(skeleton1.summary, unicode))
+        self.assertTrue(isinstance(skeleton1.summary, str))
         self.assertEqual("Summary1", skeleton1.summary)
         skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
         self.assertIs(None, skeleton2.summary)
@@ -3602,6 +3601,55 @@ class AptFacadeTest(
         """
         keyring_path = os.path.join(self.facade._root, "etc/apt/trusted.gpg")
         self.assertTrue(os.path.exists(keyring_path))
+
+    def test_ignore_sources(self):
+        """
+        If `ignore_sources` and `alt_sourceparts` are provided, then
+        sourceparts are copied to `alt_sourceparts`, except for those in
+        `ignore_sources`. The facade then uses `alt_sourceparts` for cache
+        operations.
+        """
+        self.addCleanup(apt_pkg.config.set, "Dir", apt_pkg.config.get("Dir"))
+        self.addCleanup(
+            apt_pkg.config.set,
+            "Dir::Etc::sourceparts",
+            apt_pkg.config.get("Dir::Etc::sourceparts"),
+        )
+
+        root = self.makeDir()
+        apt_pkg.config.set("Dir", root)
+        etc = apt_pkg.config.find_dir("Dir::Etc")
+        sourceparts = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
+        alt_sourceparts = os.path.join(etc, "non-ignored-sources.list.d")
+
+        os.makedirs(sourceparts)
+
+        with open(
+            os.path.join(sourceparts, "non-ignored-source.list"),
+            "w",
+        ) as fp:
+            fp.write("# There's no sources here, actually.\n")
+
+        with open(
+            os.path.join(sourceparts, "my-ignored-source.list"),
+            "w",
+        ) as fp:
+            fp.write("# There's no sources here, actually.\n")
+
+        _ = AptFacade(
+            root=root,
+            ignore_sources={"my-ignored-source.list"},
+            alt_sourceparts=alt_sourceparts,
+        )
+
+        source_fragments = os.listdir(alt_sourceparts)
+        self.assertIn("non-ignored-source.list", source_fragments)
+        self.assertNotIn("my-ignored-source.list", source_fragments)
+
+        self.assertEqual(
+            alt_sourceparts,
+            apt_pkg.config.find("Dir::Etc::sourceparts"),
+        )
 
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support

@@ -70,6 +70,28 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config.load(["--force-apt-update"])
         self.assertTrue(config.force_apt_update)
 
+    def test_ignore_sources_option(self):
+        """
+        `PackageReporterConfiguration` supports a '--ignore-sources' command
+        line option.
+        """
+        config = PackageReporterConfiguration()
+        config.default_config_filenames = self.makeFile("")
+        self.assertIsNone(config.ignore_package_sources)
+        config.load(
+            [
+                "--ignore-package-sources",
+                "my-random-source.list," "my-fancy-source.sources",
+            ],
+        )
+        self.assertEqual(
+            config.ignore_package_sources,
+            {
+                "my-random-source.list",
+                "my-fancy-source.sources",
+            },
+        )
+
 
 class PackageReporterAptTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
@@ -1188,7 +1210,7 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 f"Suite: {os_release_info['code-name']}-security\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1249,7 +1271,7 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 f"Suite: {os_release_info['code-name']}-backports\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1261,6 +1283,24 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
+
+    def test_compute_packages_changes_package_origins_not_called(self):
+        """
+        Archive info is extracted directly from the package versions
+        and the apt.package.Version.origins property is not called
+        """
+        with mock.patch("apt.package.Version.origins") as version_origins_mock:
+            self.successResultOf(self.reporter._compute_packages_changes())
+        version_origins_mock.assert_not_called()
+
+    def test_compute_packages_changes_origins_not_created(self):
+        """
+        Archive info is extracted directly from the package versions
+        and no Origins are created (expensive find_index() is not called)
+        """
+        with mock.patch("apt.package.Origin.__init__") as origin_mock:
+            self.successResultOf(self.reporter._compute_packages_changes())
+        origin_mock.assert_not_called()
 
     def test_detect_packages_changes_with_backports_others(self):
         """
@@ -1275,7 +1315,7 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 "Suite: my-personal-backports"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1315,14 +1355,14 @@ class PackageReporterAptTest(LandscapeTest):
             release.write(
                 f"Suite: {os_release_info['code-name']}-backports\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
         unofficial_release_path = os.path.join(other_backport_dir, "Release")
         with open(unofficial_release_path, "w") as release:
             release.write(
                 "Suite: my-personal-backports\n"
                 "Date: Sat, 02 Jul 2016 05:20:50 +0000\n"
-                "MD5Sum: deadbeef"
+                "MD5Sum: deadbeef",
             )
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
@@ -1655,8 +1695,10 @@ class PackageReporterAptTest(LandscapeTest):
             self.assertEqual("error", err)
             self.assertEqual(2, code)
             warning_mock.assert_called_once_with(
-                f"'{self.reporter.apt_update_filename}' "
-                "exited with status 2 (error)",
+                "'%s' exited with status %d (%s)",
+                self.reporter.apt_update_filename,
+                2,
+                "error",
             )
 
         result.addCallback(callback)
@@ -1699,9 +1741,10 @@ class PackageReporterAptTest(LandscapeTest):
             mock.call(message.format(20)),
             mock.call(message.format(40)),
             mock.call(
-                "'{}' exited with status 100 ()".format(
-                    self.reporter.apt_update_filename,
-                ),
+                "'%s' exited with status %d (%s)",
+                self.reporter.apt_update_filename,
+                100,
+                "",
             ),
         ]
         logging_mock.assert_has_calls(calls)
