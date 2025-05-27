@@ -342,6 +342,7 @@ Diagram::
   14. Schedule exchange
 
 """
+
 import logging
 import time
 
@@ -891,7 +892,10 @@ class MessageExchange:
 
         if message_store.get_pending_messages(1):
             count = message_store.count_pending_messages()
-            logging.info("Pending messages remaining after the last exchange: %d", count)
+            logging.info(
+                "Pending messages remaining after the last exchange: %d",
+                count,
+            )
             # Either the server asked us for old messages, or we
             # otherwise have more messages even after transferring
             # what we could.
