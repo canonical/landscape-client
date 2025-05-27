@@ -142,8 +142,12 @@ class UserProvider(UserProviderBase):
         user_data = []
         # We have to explicitly indicate the encoding as we cannot rely on
         # the system default encoding.
-        open_params = dict(encoding="utf-8", errors="replace")
-        with open(self._passwd_file, "r", **open_params) as passwd_file:
+        with open(
+            self._passwd_file,
+            "r",
+            encoding="utf-8",
+            errors="replace",
+        ) as passwd_file:
             reader = csv.DictReader(
                 passwd_file,
                 fieldnames=self.passwd_fields,
