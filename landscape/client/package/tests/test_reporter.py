@@ -1,3 +1,5 @@
+import contextlib
+import io
 import logging
 import os
 import shutil
@@ -14,11 +16,15 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.defer import succeed
 
 from landscape.client.package import reporter
+from landscape.client.package.reporter import (
+    DEFAULT_UNKNOWN_HASHES_PER_REQUEST,
+)
 from landscape.client.package.reporter import FakeGlobalReporter
 from landscape.client.package.reporter import FakeReporter
 from landscape.client.package.reporter import find_reporter_command
 from landscape.client.package.reporter import HASH_ID_REQUEST_TIMEOUT
 from landscape.client.package.reporter import main
+from landscape.client.package.reporter import MAX_UNKNOWN_HASHES_PER_REQUEST
 from landscape.client.package.reporter import PackageReporter
 from landscape.client.package.reporter import PackageReporterConfiguration
 from landscape.client.tests.helpers import BrokerServiceHelper
@@ -72,8 +78,8 @@ class PackageReporterConfigurationTest(LandscapeTest):
 
     def test_ignore_sources_option(self):
         """
-        `PackageReporterConfiguration` supports a '--ignore-sources' command
-        line option.
+        `PackageReporterConfiguration` supports a '--ignore-package-sources'
+        command line option.
         """
         config = PackageReporterConfiguration()
         config.default_config_filenames = self.makeFile("")
@@ -81,7 +87,7 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config.load(
             [
                 "--ignore-package-sources",
-                "my-random-source.list," "my-fancy-source.sources",
+                "my-random-source.list,my-fancy-source.sources",
             ],
         )
         self.assertEqual(
@@ -90,6 +96,143 @@ class PackageReporterConfigurationTest(LandscapeTest):
                 "my-random-source.list",
                 "my-fancy-source.sources",
             },
+        )
+
+    def test_max_unknown_hashes_per_request_default(self):
+        config = PackageReporterConfiguration()
+        config.default_config_filenames = self.makeFile("")
+
+        self.assertEqual(
+            DEFAULT_UNKNOWN_HASHES_PER_REQUEST,
+            config.max_unknown_hashes_per_request,
+        )
+
+    def test_max_unknown_hashes_per_request_file_config(self):
+        config = PackageReporterConfiguration()
+        filename = self.makeFile(
+            "[client]\nmax_unknown_hashes_per_request = 5",
+        )
+        config.load(["--config", filename])
+
+        self.assertEqual(
+            5,
+            config.max_unknown_hashes_per_request,
+        )
+
+    def test_max_unknown_hashes_per_request_parameter(self):
+        config = PackageReporterConfiguration()
+        config.default_config_filenames = self.makeFile("")
+
+        config.load(
+            [
+                "--max-unknown-hashes-per-request",
+                "100",
+            ],
+        )
+
+        self.assertEqual(100, config.max_unknown_hashes_per_request)
+
+    def test_max_unknown_hashes_per_request_parameter_overrides_file(self):
+        config = PackageReporterConfiguration()
+        filename = self.makeFile(
+            "[client]\nmax_unknown_hashes_per_request = 5",
+        )
+        config.load(
+            [
+                "--config",
+                filename,
+                "--max-unknown-hashes-per-request",
+                "100",
+            ],
+        )
+
+        self.assertEqual(100, config.max_unknown_hashes_per_request)
+
+    def test_max_unknown_hashes_per_request_parameter_maximum(self):
+        config = PackageReporterConfiguration()
+        config.load(
+            [
+                "--max-unknown-hashes-per-request",
+                str(MAX_UNKNOWN_HASHES_PER_REQUEST + 1),
+            ],
+        )
+
+        self.assertEqual(
+            MAX_UNKNOWN_HASHES_PER_REQUEST,
+            config.max_unknown_hashes_per_request,
+        )
+
+    def test_max_unknown_hashes_per_request_file_maximum(self):
+        config = PackageReporterConfiguration()
+        filename = self.makeFile(
+            "[client]\nmax_unknown_hashes_per_request = "
+            f"{MAX_UNKNOWN_HASHES_PER_REQUEST + 1}",
+        )
+        config.load(["--config", filename])
+
+        self.assertEqual(
+            MAX_UNKNOWN_HASHES_PER_REQUEST,
+            config.max_unknown_hashes_per_request,
+        )
+
+    def test_negative_max_unknown_hashes_per_request_raises(self):
+        config = PackageReporterConfiguration()
+
+        fake_stderr = io.StringIO()
+        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
+            fake_stderr,
+        ):
+            config.load(
+                [
+                    "--max-unknown-hashes-per-request",
+                    "-1",
+                ],
+            )
+        self.assertEqual(2, ctx.exception.code)
+        error_message = fake_stderr.getvalue()
+        self.assertIn(
+            "error: argument --max-unknown-hashes-per-request",
+            error_message,
+        )
+
+    def test_zero_max_unknown_hashes_per_request_raises(self):
+        config = PackageReporterConfiguration()
+
+        fake_stderr = io.StringIO()
+        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
+            fake_stderr,
+        ):
+            config.load(
+                [
+                    "--max-unknown-hashes-per-request",
+                    "0",
+                ],
+            )
+        self.assertEqual(2, ctx.exception.code)
+        error_message = fake_stderr.getvalue()
+        self.assertIn(
+            "error: argument --max-unknown-hashes-per-request",
+            error_message,
+        )
+
+    def test_non_integer_max_unknown_hashes_per_request_raises(self):
+        config = PackageReporterConfiguration()
+
+        fake_stderr = io.StringIO()
+        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
+            fake_stderr,
+        ):
+            config.load(
+                [
+                    "--max-unknown-hashes-per-request",
+                    "0.5",
+                ],
+            )
+        self.assertEqual(2, ctx.exception.code)
+        error_message = fake_stderr.getvalue()
+        self.assertIn(
+            "error: argument --max-unknown-hashes-per-request",
+            error_message,
         )
 
 
@@ -841,14 +984,12 @@ class PackageReporterAptTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["unknown-package-hashes"])
 
-        self.addCleanup(
-            setattr,
-            reporter,
-            "MAX_UNKNOWN_HASHES_PER_REQUEST",
-            reporter.MAX_UNKNOWN_HASHES_PER_REQUEST,
+        self.config.load(
+            [
+                "--max-unknown-hashes-per-request",
+                "2",
+            ],
         )
-
-        reporter.MAX_UNKNOWN_HASHES_PER_REQUEST = 2
 
         def got_result1(result):
             # The first message sent should send any 2 of the 3 hashes.

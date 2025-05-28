@@ -37,7 +37,8 @@ from landscape.client.package.taskhandler import (
 
 
 HASH_ID_REQUEST_TIMEOUT = 7200
-MAX_UNKNOWN_HASHES_PER_REQUEST = 500
+DEFAULT_UNKNOWN_HASHES_PER_REQUEST = 500
+MAX_UNKNOWN_HASHES_PER_REQUEST = 2000
 LOCK_RETRY_DELAYS = [0, 20, 40]
 PYTHON_BIN = "/usr/bin/python3"
 RELEASE_UPGRADER_PATTERN = "/tmp/ubuntu-release-upgrader-"
@@ -46,7 +47,7 @@ UID_ROOT = "0"
 
 def sources_list(string: str) -> set[str]:
     """
-    Parser for converting a comma-seperated string of URLs into a list of
+    Parser for converting a comma-separated string of URLs into a list of
     validated URLs.
     """
     urls = [url.strip() for url in string.split(",")]
@@ -65,6 +66,26 @@ def sources_list(string: str) -> set[str]:
         raise ArgumentTypeError(invalid_urls)
 
     return set(valid_urls)
+
+
+def unknown_hash_limit(limit: str) -> int:
+    """
+    Parser for max unknown hash limit parameter. If the configured value
+    is greater than MAX_UNKNOWN_HASHES_PER_REQUEST then we use that value
+    instead.
+    """
+    limit = int(limit)
+    if limit <= 0:
+        raise ArgumentTypeError(f"Invalid value {limit}")
+
+    if limit > MAX_UNKNOWN_HASHES_PER_REQUEST:
+        logging.warning(
+            "Parsed value is larger than the maximum allowed. "
+            "Using the maximum instead: %d",
+            MAX_UNKNOWN_HASHES_PER_REQUEST,
+        )
+        return MAX_UNKNOWN_HASHES_PER_REQUEST
+    return limit
 
 
 class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
@@ -99,6 +120,21 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
             help=(
                 "Comma-delimited list of package source files to be ignored "
                 "when reporting packages."
+            ),
+        )
+        parser.add_argument(
+            "--max-unknown-hashes-per-request",
+            default=DEFAULT_UNKNOWN_HASHES_PER_REQUEST,
+            type=unknown_hash_limit,
+            metavar="MAX_UNKNOWN_HASHES",
+            help=(
+                "The maximum number of packages with unknown hashes to send "
+                "to Landscape Server in each message exchange. The default "
+                f"is {DEFAULT_UNKNOWN_HASHES_PER_REQUEST} and the maximum "
+                f"is {MAX_UNKNOWN_HASHES_PER_REQUEST}. Note that with higher "
+                "values, Landscape Server will receive the initial package "
+                "data more quickly, but at the cost of high CPU usage by "
+                "Landscape Client."
             ),
         )
         return parser
@@ -272,7 +308,7 @@ class PackageReporter(PackageTaskHandler):
         """Detect whether ubuntu-release-upgrader is running.
 
         This is done by iterating the /proc tree (to avoid external
-        dependencies) and checkign the cmdline and the uid of the process.
+        dependencies) and checking the cmdline and the uid of the process.
         The assumption is that ubuntu-release-upgrader is something that:
             * is run by a python interpreter
             * its first argument starts with '/tmp/ubuntu-release-upgrader-'
@@ -602,8 +638,11 @@ class PackageReporter(PackageTaskHandler):
         if not unknown_hashes:
             result = succeed(None)
         else:
+            max_unknown_hashes_per_request = (
+                self._config.max_unknown_hashes_per_request
+            )
             unknown_hashes = sorted(unknown_hashes)
-            unknown_hashes = unknown_hashes[:MAX_UNKNOWN_HASHES_PER_REQUEST]
+            unknown_hashes = unknown_hashes[:max_unknown_hashes_per_request]
 
             logging.info(
                 "Queuing request for package hash => id "
