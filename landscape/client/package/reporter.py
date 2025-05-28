@@ -71,7 +71,7 @@ def sources_list(string: str) -> set[str]:
 def unknown_hash_limit(limit: str) -> int:
     limit = int(limit)
     if limit <= 0:
-        raise ArgumentTypeError("")
+        raise ArgumentTypeError(f"Invalid value {limit}")
 
     if limit > MAX_UNKNOWN_HASHES_PER_REQUEST:
         logging.warning(
