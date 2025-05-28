@@ -78,8 +78,8 @@ class PackageReporterConfigurationTest(LandscapeTest):
 
     def test_ignore_sources_option(self):
         """
-        `PackageReporterConfiguration` supports a '--ignore-sources' command
-        line option.
+        `PackageReporterConfiguration` supports a '--ignore-package-sources'
+        command line option.
         """
         config = PackageReporterConfiguration()
         config.default_config_filenames = self.makeFile("")
@@ -87,7 +87,7 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config.load(
             [
                 "--ignore-package-sources",
-                "my-random-source.list," "my-fancy-source.sources",
+                "my-random-source.list,my-fancy-source.sources",
             ],
         )
         self.assertEqual(

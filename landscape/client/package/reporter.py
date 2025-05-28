@@ -69,6 +69,11 @@ def sources_list(string: str) -> set[str]:
 
 
 def unknown_hash_limit(limit: str) -> int:
+    """
+    Parser for max unknown hash limit parameter. If the configured value
+    is greater than MAX_UNKNOWN_HASHES_PER_REQUEST then we use that value
+    instead.
+    """
     limit = int(limit)
     if limit <= 0:
         raise ArgumentTypeError(f"Invalid value {limit}")
@@ -121,10 +126,12 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
             "--max-unknown-hashes-per-request",
             default=DEFAULT_UNKNOWN_HASHES_PER_REQUEST,
             type=unknown_hash_limit,
+            metavar="MAX_UNKNOWN_HASHES",
             help=(
                 "The maximum number of packages with unknown hashes to send "
                 "to Landscape Server in each message exchange. The default "
-                "is 500 and the maximum is 2000. Note that with higher "
+                f"is {DEFAULT_UNKNOWN_HASHES_PER_REQUEST} and the maximum "
+                f"is {MAX_UNKNOWN_HASHES_PER_REQUEST}. Note that with higher "
                 "values, Landscape Server will receive the initial package "
                 "data more quickly, but at the cost of high CPU usage by "
                 "Landscape Client."
