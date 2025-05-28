@@ -10,9 +10,6 @@ import struct
 
 import netifaces
 
-from landscape.lib.compat import _PY3
-from landscape.lib.compat import long
-
 __all__ = ["get_active_device_info", "get_network_traffic"]
 
 
@@ -252,7 +249,7 @@ def get_network_traffic(source_file="/proc/net/dev"):
             continue
         device, data = line.split(":")
         device = device.strip()
-        devices[device] = dict(zip(columns, map(long, data.split())))
+        devices[device] = dict(zip(columns, map(int, data.split())))
     return devices
 
 
@@ -300,10 +297,7 @@ def get_network_interface_speed(sock, interface_name):
     speed = -1
     try:
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
-        if _PY3:
-            res = status_cmd.tobytes()
-        else:
-            res = status_cmd.tostring()
+        res = status_cmd.tobytes()
         speed, duplex = struct.unpack("12xHB28x", res)
     except (IOError, OSError) as e:
         if e.errno == errno.EPERM:

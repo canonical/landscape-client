@@ -1,3 +1,4 @@
+import base64
 import grp
 import logging
 import os
@@ -27,7 +28,6 @@ from landscape.constants import POLICY_ALLOW_INSTALLS
 from landscape.constants import POLICY_STRICT
 from landscape.constants import SUCCESS_RESULT
 from landscape.constants import UNKNOWN_PACKAGE_DATA_TIMEOUT
-from landscape.lib import base64
 from landscape.lib.config import get_bindir
 from landscape.lib.fs import create_binary_file
 

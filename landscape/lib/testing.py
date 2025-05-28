@@ -7,6 +7,8 @@ import struct
 import sys
 import tempfile
 import unittest
+from configparser import ConfigParser
+from io import StringIO
 from logging import ERROR
 from logging import Formatter
 from logging import Handler
@@ -16,19 +18,9 @@ from twisted.internet.error import ConnectError
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
-from landscape.lib.compat import _PY3
-from landscape.lib.compat import ConfigParser
-from landscape.lib.compat import cstringio
-from landscape.lib.compat import stringio
 from landscape.lib.config import BaseConfiguration
 from landscape.lib.reactor import EventHandlingReactorMixin
 from landscape.lib.sysstats import LoginInfo
-
-
-class CompatTestCase(unittest.TestCase):
-
-    if not _PY3:
-        assertCountEqual = TestCase.assertItemsEqual  # noqa: N815
 
 
 class HelperTestCase(unittest.TestCase):
@@ -175,11 +167,11 @@ class ConfigTestCase(FSTestCase):
         and comments may be different but the actual parameters and sections
         must be the same.
         """
-        first_fp = cstringio(first)
+        first_fp = StringIO(first)
         first_parser = ConfigParser()
         first_parser.read_file(first_fp)
 
-        second_fp = cstringio(second)
+        second_fp = StringIO(second)
         second_parser = ConfigParser()
         second_parser.read_file(second_fp)
 
@@ -301,7 +293,7 @@ class LogKeeperHelper:
         self.error_handler = ErrorHandler()
         test_case.log_helper = self
         test_case.logger = logger = logging.getLogger()
-        test_case.logfile = cstringio()
+        test_case.logfile = StringIO()
         handler = logging.StreamHandler(test_case.logfile)
         format = "%(levelname)8s: %(message)s"
         handler.setFormatter(logging.Formatter(format))
@@ -362,7 +354,7 @@ class MockPopen:
     def __init__(self, output, return_codes=None, err_out=""):
         self.output = output
         self.err_out = err_out
-        self.stdout = cstringio(output)
+        self.stdout = StringIO(output)
         self.popen_inputs = []
         self.return_codes = return_codes
         self.received_input = None
@@ -392,10 +384,8 @@ class StandardIOHelper:
     def set_up(self, test_case):
         test_case.old_stdout = sys.stdout
         test_case.old_stdin = sys.stdin
-        test_case.stdout = sys.stdout = stringio()
-        test_case.stdin = sys.stdin = stringio()
-        if not _PY3:
-            test_case.stdin.encoding = "UTF-8"
+        test_case.stdout = sys.stdout = StringIO()
+        test_case.stdin = sys.stdin = StringIO()
 
     def tear_down(self, test_case):
         sys.stdout = test_case.old_stdout

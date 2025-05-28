@@ -4,8 +4,6 @@ import subprocess
 from grp import struct_group
 from pwd import struct_passwd
 
-from landscape.lib.compat import _PY3
-
 
 class UserManagementError(Exception):
     """Catch all error for problems with User Management."""
@@ -142,16 +140,14 @@ class UserProvider(UserProviderBase):
         directory, path to the user's shell)
         """
         user_data = []
-        # The DictReader takes bytes in Python 2 and unicode in Python 3 so we
-        # have to pass Python 3 specific parameters to open() and do the
-        # decoding for Python 2 later after we have parsed the rows. We have to
-        # explicitly indicate the encoding as we cannot rely on the system
-        # default encoding.
-        if _PY3:
-            open_params = dict(encoding="utf-8", errors="replace")
-        else:
-            open_params = dict()
-        with open(self._passwd_file, "r", **open_params) as passwd_file:
+        # We have to explicitly indicate the encoding as we cannot rely on
+        # the system default encoding.
+        with open(
+            self._passwd_file,
+            "r",
+            encoding="utf-8",
+            errors="replace",
+        ) as passwd_file:
             reader = csv.DictReader(
                 passwd_file,
                 fieldnames=self.passwd_fields,
@@ -167,8 +163,7 @@ class UserProvider(UserProviderBase):
                 ].startswith("-"):
                     continue
                 gecos = row["gecos"]
-                if not _PY3 and gecos is not None:
-                    gecos = gecos.decode("utf-8", "replace")
+
                 try:
                     user_data.append(
                         (

@@ -1,5 +1,6 @@
 import os
 import unittest
+from io import StringIO
 from logging import getLogger
 from logging import StreamHandler
 from unittest import mock
@@ -8,7 +9,6 @@ from twisted.internet.defer import Deferred
 from twisted.internet.defer import fail
 from twisted.internet.defer import succeed
 
-from landscape.lib.compat import StringIO
 from landscape.lib.plugin import PluginRegistry
 from landscape.lib.testing import HelperTestCase
 from landscape.sysinfo.sysinfo import format_sysinfo
