@@ -124,7 +124,7 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
             help=(
                 "The maximum number of packages with unknown hashes to send "
                 "to Landscape Server in each message exchange. The default "
-                " is 500 and the maximum is 2000. Note that with higher "
+                "is 500 and the maximum is 2000. Note that with higher "
                 "values, Landscape Server will receive the initial package "
                 "data more quickly, but at the cost of high CPU usage by "
                 "Landscape Client."
