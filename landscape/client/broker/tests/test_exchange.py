@@ -625,6 +625,33 @@ class MessageExchangeTest(LandscapeTest):
             ],
         )
 
+    def test_count_pending_messages(self):
+        """
+        The number of pending messages is logged.
+        """
+        self.mstore.set_accepted_types(["empty", "resynchronize"])
+
+        def resynchronized(scopes=None):
+            self.mstore.add({"type": "empty"})
+
+        self.reactor.call_on("resynchronize-clients", resynchronized)
+
+        self.transport.responses.append(
+            [{"type": "resynchronize", "operation-id": 123}],
+        )
+        self.exchanger.exchange()
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [
+                {"type": "resynchronize", "operation-id": 123},
+                {"type": "empty"},
+            ],
+        )
+        self.assertIn(
+            "INFO: Pending messages remaining after the last exchange: 2",
+            self.logfile.getvalue(),
+        )
+
     def test_scopes_are_copied_from_incoming_resynchronize_messages(self):
         """
         If an incoming message of type 'reysnchronize' contains a 'scopes' key,
