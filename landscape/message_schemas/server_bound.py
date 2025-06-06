@@ -707,21 +707,6 @@ APT_PREFERENCES = Message(
     {"data": Any(Dict(Unicode(), Unicode()), Constant(None))},
 )
 
-EUCALYPTUS_INFO = Message(
-    "eucalyptus-info",
-    {
-        "basic_info": Dict(Bytes(), Any(Bytes(), Constant(None))),
-        "walrus_info": Bytes(),
-        "cluster_controller_info": Bytes(),
-        "storage_controller_info": Bytes(),
-        "node_controller_info": Bytes(),
-        "capacity_info": Bytes(),
-    },
-    optional=["capacity_info"],
-)
-
-EUCALYPTUS_INFO_ERROR = Message("eucalyptus-info-error", {"error": Bytes()})
-
 # The network-device message is split in two top level keys because we don't
 # support adding sub-keys in a backwards-compatible way (only top-level keys).
 # New servers will see an optional device-speeds key, and old servers will
@@ -747,7 +732,6 @@ NETWORK_DEVICE = Message(
     },
     optional=["device-speeds"],
 )
-
 
 NETWORK_ACTIVITY = Message(
     "network-activity",
