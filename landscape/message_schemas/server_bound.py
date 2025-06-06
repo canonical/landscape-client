@@ -15,7 +15,6 @@ from landscape.lib.schema import Unicode
 
 __all__ = [
     "ACTIVE_PROCESS_INFO",
-    "CLIENT_UPTIME",
     "CLOUD_INIT",
     "OPERATION_RESULT",
     "COMPUTER_INFO",
@@ -106,12 +105,6 @@ ACTIVE_PROCESS_INFO = Message(
         "kill-all-processes",
     ],
 )
-
-CLIENT_UPTIME = Message(
-    "client-uptime",
-    {"period": Tuple(Float(), Float()), "components": List(Int())},
-    optional=["components"],
-)  # just for backwards compatibility
 
 OPERATION_RESULT = Message(
     "operation-result",
@@ -843,7 +836,6 @@ USG_AUDIT = Message(
 
 message_schemas = (
     ACTIVE_PROCESS_INFO,
-    CLIENT_UPTIME,
     CLOUD_INIT,
     OPERATION_RESULT,
     COMPUTER_INFO,
