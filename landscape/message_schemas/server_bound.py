@@ -19,7 +19,6 @@ __all__ = [
     "OPERATION_RESULT",
     "COMPUTER_INFO",
     "DISTRIBUTION_INFO",
-    "HARDWARE_INVENTORY",
     "HARDWARE_INFO",
     "LOAD_AVERAGE",
     "MEMORY_INFO",
@@ -159,32 +158,6 @@ SNAP_INFO = Message(
         "serial": Unicode(),
     },
 )
-
-
-hal_data = Dict(
-    Unicode(),
-    Any(Unicode(), List(Unicode()), Bool(), Int(), Float()),
-)
-
-HARDWARE_INVENTORY = Message(
-    "hardware-inventory",
-    {
-        "devices": List(
-            Any(
-                Tuple(Constant("create"), hal_data),
-                Tuple(
-                    Constant("update"),
-                    Unicode(),  # udi,
-                    hal_data,  # creates,
-                    hal_data,  # updates,
-                    hal_data,  # deletes
-                ),
-                Tuple(Constant("delete"), Unicode()),
-            ),
-        ),
-    },
-)
-
 
 HARDWARE_INFO = Message("hardware-info", {"data": Unicode()})
 
@@ -840,7 +813,6 @@ message_schemas = (
     OPERATION_RESULT,
     COMPUTER_INFO,
     DISTRIBUTION_INFO,
-    HARDWARE_INVENTORY,
     HARDWARE_INFO,
     LOAD_AVERAGE,
     MEMORY_INFO,
