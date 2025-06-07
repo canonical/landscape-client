@@ -341,44 +341,6 @@ REGISTER_3_3 = Message(
     ],
 )
 
-
-# XXX The register-provisioned-machine message is obsolete, it's kept around
-# just to not break older LDS releases that import it (the last LDS release
-# to have it is 14.07). Eventually it shall be dropped.
-REGISTER_PROVISIONED_MACHINE = Message(
-    "register-provisioned-machine",
-    {"otp": Bytes()},
-)
-
-
-# XXX The register-cloud-vm message is obsolete, it's kept around just to not
-# break older LDS releases that import it (the last LDS release to have it
-# is 14.07). Eventually it shall be dropped.
-REGISTER_CLOUD_VM = Message(
-    "register-cloud-vm",
-    {
-        "hostname": Unicode(),
-        "otp": Any(Bytes(), Constant(None)),
-        "instance_key": Unicode(),
-        "account_name": Any(Unicode(), Constant(None)),
-        "registration_password": Any(Unicode(), Constant(None)),
-        "reservation_key": Unicode(),
-        "public_hostname": Unicode(),
-        "local_hostname": Unicode(),
-        "kernel_key": Any(Unicode(), Constant(None)),
-        "ramdisk_key": Any(Unicode(), Constant(None)),
-        "launch_index": Int(),
-        "image_key": Unicode(),
-        "tags": Any(Unicode(), Constant(None)),
-        "vm-info": Bytes(),
-        "public_ipv4": Unicode(),
-        "local_ipv4": Unicode(),
-        "access_group": Unicode(),
-    },
-    optional=["tags", "vm-info", "public_ipv4", "local_ipv4", "access_group"],
-)
-
-
 TEMPERATURE = Message(
     "temperature",
     {
