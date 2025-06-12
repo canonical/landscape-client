@@ -60,7 +60,7 @@ class RebootRequired(MonitorPlugin):
         if message:
             message["type"] = "reboot-required-info"
             logging.info(
-                "Queueing message with updated " "reboot-required status.",
+                "Queueing message with updated reboot-required status.",
             )
             self.registry.broker.send_message(
                 message,

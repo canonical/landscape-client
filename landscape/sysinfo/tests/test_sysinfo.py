@@ -282,7 +282,7 @@ class FormatTest(unittest.TestCase):
             [("Header1", "Value1"), ("Header2", "Value2")],
             width=1,
         )
-        self.assertEqual(output, "Header1: Value1\n" "Header2: Value2")
+        self.assertEqual(output, "Header1: Value1\nHeader2: Value2")
 
     def test_indent_headers_in_parallel_with_just_enough_space(self):
         output = format_sysinfo(
@@ -298,7 +298,7 @@ class FormatTest(unittest.TestCase):
             indent=">>",
             width=35,
         )
-        self.assertEqual(output, ">>Header1: Value1\n" ">>Header2: Value2")
+        self.assertEqual(output, ">>Header1: Value1\n>>Header2: Value2")
 
     def test_parallel_and_stacked_headers(self):
         headers = [(f"Header{i:d}", f"Value{i:d}") for i in range(1, 6)]
@@ -362,7 +362,7 @@ class FormatTest(unittest.TestCase):
     def test_header_and_note(self):
         self.assertEqual(
             format_sysinfo(headers=[("Header", "Value")], notes=["Note"]),
-            "Header: Value\n" "\n" "=> Note",
+            "Header: Value\n\n=> Note",
         )
 
     def test_one_footnote(self):
