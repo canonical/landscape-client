@@ -72,7 +72,7 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
             def check_failure(failure):
                 self.assertEqual(
                     str(failure.value),
-                    f"{gpg} failed (out='out\n', err='err\n', " "code='1')",
+                    f"{gpg} failed (out='out\n', err='err\n', code='1')",
                 )
                 self.assertFalse(os.path.exists(gpg_home))
 

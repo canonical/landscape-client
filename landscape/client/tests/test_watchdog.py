@@ -873,7 +873,7 @@ time.sleep(999)
         stop = []
         stopped = []
         self.log_helper.ignore_errors(
-            "Can't keep landscape-broker running. " "Exiting.",
+            "Can't keep landscape-broker running. Exiting.",
         )
 
         output_filename = self.makeFile("NOT RUN")

@@ -734,7 +734,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         # Check fetch_async is called with the default url
         hash_id_db_url = (
-            "http://fake.url/path/hash-id-databases/" "uuid_codename_arch"
+            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
         )
         result = self.reporter.fetch_hash_id_db()
 
@@ -850,7 +850,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         # Check fetch_async is called with the default url
         hash_id_db_url = (
-            "http://fake.url/path/hash-id-databases/" "uuid_codename_arch"
+            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
         )
 
         # Now go!

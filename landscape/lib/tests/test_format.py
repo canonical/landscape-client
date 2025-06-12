@@ -23,7 +23,7 @@ class FormatObjectTest(unittest.TestCase):
     def test_format_method(self):
         self.assertEqual(
             format_object(self.method),
-            ("landscape.lib.tests.test_format" ".FormatObjectTest.method()"),
+            ("landscape.lib.tests.test_format.FormatObjectTest.method()"),
         )
 
     def test_format_function(self):

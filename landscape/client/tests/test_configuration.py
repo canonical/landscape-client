@@ -1003,7 +1003,7 @@ random_key = random_value
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
-        filename = self.makeFile("[client]\n" "url = http://url\n")
+        filename = self.makeFile("[client]\nurl = http://url\n")
 
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
@@ -1834,7 +1834,7 @@ registration_key = shared-secret
             "url = http://old.url\n"
         )
 
-        new_configuration = "[client]\n" "registration_key =\n"
+        new_configuration = "[client]\nregistration_key =\n"
 
         config_filename = self.makeFile(
             old_configuration,

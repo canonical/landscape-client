@@ -263,7 +263,7 @@ class PackageStoreTest(BaseTestCase):
         self.store1.add_available_upgrades(range(20000))
         self.assertTrue(
             time.time() - started < 5,
-            "Adding 20k available upgrades ids took " "more than 5 seconds.",
+            "Adding 20k available upgrades ids took more than 5 seconds.",
         )
 
     def test_remove_available_upgrades(self):
@@ -277,7 +277,7 @@ class PackageStoreTest(BaseTestCase):
         self.store1.remove_available_upgrades(range(20000))
         self.assertTrue(
             time.time() - started < 5,
-            "Removing 20k available upgrades ids took " "more than 5 seconds.",
+            "Removing 20k available upgrades ids took more than 5 seconds.",
         )
 
     def test_clear_available_upgrades(self):
@@ -348,11 +348,11 @@ class PackageStoreTest(BaseTestCase):
         filename = self.makeFile()
         database = sqlite3.connect(filename)
         cursor = database.cursor()
-        cursor.execute("CREATE TABLE available" " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE available (id INTEGER PRIMARY KEY)")
         cursor.execute(
-            "CREATE TABLE available_upgrade" " (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE available_upgrade (id INTEGER PRIMARY KEY)",
         )
-        cursor.execute("CREATE TABLE installed" " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE installed (id INTEGER PRIMARY KEY)")
         cursor.execute(
             "CREATE TABLE hash_id_request"
             " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"

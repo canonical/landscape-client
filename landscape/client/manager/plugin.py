@@ -45,7 +45,7 @@ class ManagerPlugin(BrokerClientPlugin):
         def failure(failure):
             text = f"{failure.type.__name__}: {failure.value}"
             msg = (
-                "Error occured running message handler %s with " "args %r %r.",
+                "Error occurred running message handler %s with args %r %r.",
                 format_object(callable),
                 args,
                 kwargs,
@@ -95,12 +95,12 @@ class DataWatcherManager(ManagerPlugin):
         super().register(registry)
         self._persist_filename = Path(
             self.registry.config.data_path,
-            self.message_type + '.manager.bpkl',
+            self.message_type + ".manager.bpkl",
         )
         self._persist = Persist(
             filename=self._persist_filename,
             user=USER,
-            group=GROUP
+            group=GROUP,
         )
         self.call_on_accepted(self.message_type, self.send_message)
 
@@ -115,8 +115,9 @@ class DataWatcherManager(ManagerPlugin):
         call"""
         result = self.get_new_data()
         if not result:
-            logging.debug("{} unchanged so not sending".format(
-                          self.message_type))
+            logging.debug(
+                "{} unchanged so not sending".format(self.message_type),
+            )
             return
         logging.debug("Sending new {} data!".format(self.message_type))
         message = {"type": self.message_type, self.message_type: result}

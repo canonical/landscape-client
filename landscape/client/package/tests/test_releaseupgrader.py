@@ -292,7 +292,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         self.upgrader.logs_directory = self.makeDir()
         text = self.upgrader.make_operation_result_text("stdout", "")
-        self.assertEqual(text, "=== Standard output ===\n\n" "stdout\n\n")
+        self.assertEqual(text, "=== Standard output ===\n\nstdout\n\n")
 
     def test_make_operation_result_text_only_considers_log_files(self):
         """
@@ -466,7 +466,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
-        fd.write("#!/bin/sh\n" "echo out\n" "echo err >&2\n" "exit 3")
+        fd.write("#!/bin/sh\necho out\necho err >&2\nexit 3")
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
 
@@ -590,7 +590,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.write_script(
             self.config,
             "landscape-package-reporter",
-            "#!/bin/sh\n" "echo $@\n" "echo $(pwd)\n",
+            "#!/bin/sh\necho $@\necho $(pwd)\n",
         )
 
         deferred = Deferred()

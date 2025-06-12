@@ -300,7 +300,7 @@ class PackageStore(HashIdStore):
     def add_hash_id_request(self, cursor, hashes):
         hashes = list(hashes)
         cursor.execute(
-            "INSERT INTO hash_id_request (hashes, timestamp)" " VALUES (?,?)",
+            "INSERT INTO hash_id_request (hashes, timestamp) VALUES (?,?)",
             (sqlite3.Binary(bpickle.dumps(hashes)), time.time()),
         )
         return HashIDRequest(self._db, cursor.lastrowid)
@@ -470,7 +470,7 @@ def ensure_hash_id_schema(db):
     cursor = db.cursor()
     try:
         cursor.execute(
-            "CREATE TABLE hash" " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
+            "CREATE TABLE hash (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
         )
     except (sqlite3.OperationalError, sqlite3.DatabaseError):
         cursor.close()
@@ -491,16 +491,16 @@ def ensure_package_schema(db):
     #       try block.
     cursor = db.cursor()
     try:
-        cursor.execute("CREATE TABLE security" " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE security (id INTEGER PRIMARY KEY)")
         cursor.execute(
-            "CREATE TABLE autoremovable" " (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE autoremovable (id INTEGER PRIMARY KEY)",
         )
-        cursor.execute("CREATE TABLE locked" " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE available" " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE locked (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE available (id INTEGER PRIMARY KEY)")
         cursor.execute(
-            "CREATE TABLE available_upgrade" " (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE available_upgrade (id INTEGER PRIMARY KEY)",
         )
-        cursor.execute("CREATE TABLE installed" " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE installed (id INTEGER PRIMARY KEY)")
         cursor.execute(
             "CREATE TABLE hash_id_request"
             " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
@@ -523,7 +523,7 @@ def ensure_fake_package_schema(db):
     cursor = db.cursor()
     try:
         cursor.execute(
-            "CREATE TABLE message" " (id INTEGER PRIMARY KEY, data BLOB)",
+            "CREATE TABLE message (id INTEGER PRIMARY KEY, data BLOB)",
         )
     except (sqlite3.OperationalError, sqlite3.DatabaseError):
         cursor.close()
