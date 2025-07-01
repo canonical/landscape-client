@@ -688,7 +688,7 @@ def clean_environment():
     postinst script.  Some environment variables may be set which would affect
     *other* maintainer scripts which landscape-client invokes.
     """
-    for key in os.environ.keys():
+    for key in os.environ:
         if key.startswith(("DEBIAN_", "DEBCONF_")) or key in [
             "LANDSCAPE_ATTACHMENTS",
             "MAIL",
