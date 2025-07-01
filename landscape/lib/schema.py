@@ -129,7 +129,7 @@ class List:
     def coerce(self, value):
         if not isinstance(value, list):
             raise InvalidError(f"{value!r} is not a list")
-        new_list = list(value)
+        new_list = value.copy()
         for i, subvalue in enumerate(value):
             try:
                 new_list[i] = self.schema.coerce(subvalue)

@@ -60,7 +60,7 @@ class TemperatureTestWithSampleData(SysfsThermalZoneTest, LandscapeTest):
         self.write_thermal_zone("ZONE2", "56000")
         self.reactor.advance(step_size)
 
-        messages = list(plugin.create_messages())
+        messages = plugin.create_messages()
         self.assertEqual(len(messages), 2)
 
         self.assertEqual(messages[0]["thermal-zone"], "ZONE1")
