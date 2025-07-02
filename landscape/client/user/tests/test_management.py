@@ -646,7 +646,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
             users=users,
             shadow_file=self.shadow_file,
             groups=groups,
-            popen=MockPopen("Removing user jdoe " "from group bizdev"),
+            popen=MockPopen("Removing user jdoe from group bizdev"),
         )
         management = UserManagement(provider=provider)
 
@@ -727,7 +727,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
             users=users,
             shadow_file=self.shadow_file,
             groups=groups,
-            popen=MockPopen("Removing user jdoe " "from group bizdev"),
+            popen=MockPopen("Removing user jdoe from group bizdev"),
         )
         management = UserManagement(provider=provider)
         output = management.remove_group_member("jdoe", "bizdev")

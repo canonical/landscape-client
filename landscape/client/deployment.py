@@ -135,7 +135,7 @@ class Configuration(BaseConfiguration):
             "--ignore-sigusr1",
             action="store_true",
             default=False,
-            help="Ignore SIGUSR1 signal to " "rotate logs.",
+            help="Ignore SIGUSR1 signal to rotate logs.",
         )
         parser.add_argument(
             "--package-monitor-interval",

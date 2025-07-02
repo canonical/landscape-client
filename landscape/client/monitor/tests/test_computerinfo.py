@@ -511,7 +511,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_ec2_meta_data()
         self.assertIn(
-            "INFO: No cloud meta-data available. " "Error 60: pycurl error\n",
+            "INFO: No cloud meta-data available. Error 60: pycurl error\n",
             self.logfile.getvalue(),
         )
         self.assertEqual(None, result)
