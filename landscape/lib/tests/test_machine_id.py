@@ -24,7 +24,7 @@ class NameSpacedMachineIdTest(testing.FSTestCase, unittest.TestCase):
         self.addCleanup(mock.patch.stopall)
 
     def test_get_namespaced_machine_id(self):
-        expected = uuid.uuid5(LANDSCAPE_CLIENT_APP_UUID, self.machine_id)
+        expected = str(uuid.uuid5(LANDSCAPE_CLIENT_APP_UUID, self.machine_id))
         self.assertEqual(expected, get_namespaced_machine_id())
 
     def test_empty_file(self):
@@ -61,5 +61,5 @@ class NameSpacedMachineIdTest(testing.FSTestCase, unittest.TestCase):
         ):
             found = get_namespaced_machine_id()
 
-        expected = uuid.uuid5(LANDSCAPE_CLIENT_APP_UUID, self.machine_id)
+        expected = str(uuid.uuid5(LANDSCAPE_CLIENT_APP_UUID, self.machine_id))
         self.assertEqual(expected, found)

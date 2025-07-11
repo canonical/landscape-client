@@ -183,7 +183,7 @@ class ComputerInfo(MonitorPlugin):
 
     def _get_machine_id(self) -> str:
         """Gets a UUID string from the machine id"""
-        return str(get_namespaced_machine_id())
+        return get_namespaced_machine_id()
 
     def _get_distribution_info(self):
         """Get details about the distribution."""

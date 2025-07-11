@@ -9,9 +9,9 @@ __all__ = [
     "MACHINE_ID_SIZE",
 ]
 
-# Used to hash machine ids for client instances.
+# Used to build a namespaced-uuid from the machine ids of client instances.
 # It was generated using `uuidgen -r`
-# This value should never change.
+# This value should never change. Ever.
 LANDSCAPE_CLIENT_APP_UUID = uuid.UUID("534a0cda-35a7-4f8a-a5cb-d8d9bb24a790")
 
 # https://manpages.ubuntu.com/manpages/bionic/man5/machine-id.5.html
@@ -27,12 +27,12 @@ def _get_machine_id() -> str:
     return machine_id
 
 
-def get_namespaced_machine_id() -> uuid.UUID | None:
+def get_namespaced_machine_id() -> str | None:
     try:
         machine_id = _get_machine_id()
     except Exception as e:
         logging.warning(str(e))
-        return None
+        return
     if not machine_id:
         return
-    return uuid.uuid5(LANDSCAPE_CLIENT_APP_UUID, machine_id)
+    return str(uuid.uuid5(LANDSCAPE_CLIENT_APP_UUID, machine_id))
