@@ -9,6 +9,7 @@ from landscape.client.snap_utils import get_snap_info
 from landscape.lib.cloud import fetch_ec2_meta_data
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_text_file
+from landscape.lib.machine_id import get_namespaced_machine_id
 from landscape.lib.network import get_fqdn
 from landscape.lib.os_release import get_os_filename
 from landscape.lib.os_release import parse_os_release
@@ -142,6 +143,7 @@ class ComputerInfo(MonitorPlugin):
         total_memory, total_swap = self._get_memory_info()
         self._add_if_new(message, "total-memory", total_memory)
         self._add_if_new(message, "total-swap", total_swap)
+        self._add_if_new(message, "machine-id", self._get_machine_id())
         annotations = {}
         if os.path.exists(self._annotations_path):
             for key in os.listdir(self._annotations_path):
@@ -178,6 +180,10 @@ class ComputerInfo(MonitorPlugin):
                     message[key] = value
         file.close()
         return (message["MemTotal"] // 1024, message["SwapTotal"] // 1024)
+
+    def _get_machine_id(self) -> str:
+        """Gets a UUID string from the machine id"""
+        return str(get_namespaced_machine_id())
 
     def _get_distribution_info(self):
         """Get details about the distribution."""

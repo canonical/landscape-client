@@ -12,7 +12,7 @@ from landscape.lib.machine_id import MACHINE_ID_SIZE
 class NameSpacedMachineIdTest(testing.FSTestCase, unittest.TestCase):
     def setUp(self):
         super().setUp()
-        self.machine_id = "61f88a7a-d8aa-4a4a-9046-975e5884"
+        self.machine_id = "61f88a7a7d8aa74a4a790467975e5884"
         self.assertEqual(MACHINE_ID_SIZE, len(self.machine_id))
         self.machine_id_file = self.makeFile(content=self.machine_id)
 
