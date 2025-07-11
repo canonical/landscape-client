@@ -21,6 +21,7 @@ from landscape.client.exchange import exchange_messages
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fetch import PyCurlError
+from landscape.lib.machine_id import get_namespaced_machine_id
 from landscape.lib.network import get_fqdn
 from landscape.lib.vm_info import get_container_info
 from landscape.lib.vm_info import get_vm_info
@@ -44,6 +45,7 @@ class ClientRegistrationInfo:
     tags: Optional[str] = None
     ubuntu_pro_info: Optional[str] = None
     vm_info: Optional[bytes] = None
+    machine_id: Optional[str] = None
 
     @classmethod
     def from_identity(
@@ -64,6 +66,7 @@ class ClientRegistrationInfo:
             tags=identity.tags,
             ubuntu_pro_info=json.dumps(get_ubuntu_pro_info()),
             vm_info=get_vm_info(),
+            machine_id=get_namespaced_machine_id(),
         )
 
 

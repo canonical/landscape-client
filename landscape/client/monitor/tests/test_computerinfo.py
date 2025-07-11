@@ -13,6 +13,8 @@ from landscape.client.tests.helpers import MonitorHelper
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import create_text_file
+from landscape.lib.machine_id import get_namespaced_machine_id
+from landscape.lib.machine_id import MACHINE_ID_SIZE
 
 SAMPLE_OS_RELEASE = """PRETTY_NAME="Ubuntu 22.04.3 LTS"
 NAME="Ubuntu"
@@ -78,6 +80,17 @@ VmallocChunk:   107432 kB
         self.add_query_result("instance-id", b"i00001")
         self.add_query_result("ami-id", b"ami-00002")
         self.add_query_result("instance-type", b"hs1.8xlarge")
+
+        self.machine_id = "61f88a7a7d8aa74a4a790467975e5884"
+        self.assertEqual(MACHINE_ID_SIZE, len(self.machine_id))
+        self.machine_id_file = self.makeFile(content=self.machine_id)
+
+        mock.patch(
+            "landscape.lib.machine_id.MACHINE_ID_FILE",
+            self.machine_id_file,
+        ).start()
+
+        self.addCleanup(mock.patch.stopall)
 
     def add_query_result(self, name, value):
         """
@@ -313,6 +326,39 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual(message["release"], "22.04")
         self.assertEqual(message["code-name"], "codename")
 
+    def test_machine_id(self):
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+
+        expected_machine_id = str(get_namespaced_machine_id())
+
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEqual(expected_machine_id, message["machine-id"])
+
+        plugin.exchange()
+        self.assertEqual(1, len(self.mstore.get_pending_messages()))
+
+    def test_machine_id_changed(self):
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(fetch_async=self.fetch_func)
+        self.monitor.add(plugin)
+        expected_machine_id = str(get_namespaced_machine_id())
+
+        plugin.exchange()
+
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEqual(expected_machine_id, message["machine-id"])
+
+        plugin._get_machine_id = lambda: "icanhazhackedyou"
+        plugin.exchange()
+
+        message = self.mstore.get_pending_messages()[1]
+        self.assertEqual("icanhazhackedyou", message["machine-id"])
+
     def test_resynchronize(self):
         """
         If a reactor event "resynchronize" is received, messages for
@@ -337,6 +383,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
             "timestamp": 0,
             "total-memory": 1510,
             "total-swap": 1584,
+            "machine-id": str(get_namespaced_machine_id()),
         }
 
         dist_info = {
