@@ -123,10 +123,17 @@ COMPUTER_INFO = Message(
         "total-memory": Int(),
         "total-swap": Int(),
         "annotations": Dict(Unicode(), Unicode()),
+        "machine-id": Unicode(),
     },
     # Not sure why these are all optional, but it's explicitly tested
     # in the server
-    optional=["hostname", "total-memory", "total-swap", "annotations"],
+    optional=[
+        "hostname",
+        "total-memory",
+        "total-swap",
+        "annotations",
+        "machine-id",
+    ],
 )
 
 DISTRIBUTION_INFO = Message(
@@ -323,6 +330,7 @@ REGISTER_3_3 = Message(
         "hostagent_uid": Unicode(),
         "installation_request_id": Unicode(),
         "authenticated_attach_code": Unicode(),
+        "machine-id": Unicode(),
     },
     api=b"3.3",
     optional=[
@@ -338,6 +346,7 @@ REGISTER_3_3 = Message(
         "hostagent_uid",
         "installation_request_id",
         "authenticated_attach_code",
+        "machine-id",
     ],
 )
 
