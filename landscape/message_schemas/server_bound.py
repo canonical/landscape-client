@@ -330,7 +330,7 @@ REGISTER_3_3 = Message(
         "hostagent_uid": Unicode(),
         "installation_request_id": Unicode(),
         "authenticated_attach_code": Unicode(),
-        "machine-id": Unicode(),
+        "machine_id": Unicode(),
     },
     api=b"3.3",
     optional=[
@@ -346,7 +346,7 @@ REGISTER_3_3 = Message(
         "hostagent_uid",
         "installation_request_id",
         "authenticated_attach_code",
-        "machine-id",
+        "machine_id",
     ],
 )
 
