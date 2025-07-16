@@ -1,3 +1,12 @@
+landscape-client (25.04+git6541-0landscape0) jammy; urgency=medium
+
+  * feat: log pending message count
+  * feat: unknown hashes per request is configurable
+  * refactor: delete unused message schemas
+  * feat: add machine id fields to registration and computer info messages
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Wed, 16 Jul 2025 15:56:00 -0700
+
 landscape-client (25.04+git6435-0landscape0) jammy; urgency=medium
 
   * feat: add optional --authenticated-attach-code to configuration parameters
