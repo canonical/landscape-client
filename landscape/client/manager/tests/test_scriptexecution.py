@@ -284,7 +284,7 @@ class RunScriptTests(LandscapeTest):
             self.assertIsInstance(error.value, OSError)
             self.assertEqual("Fail!", str(error.value))
             mock_umask.assert_has_calls([mock.call(0o022)])
-            mock_mkdtemp.assert_called_with()
+            mock_mkdtemp.assert_called()
 
         def cleanup(result):
             patch_umask.stop()
@@ -628,7 +628,7 @@ class RunScriptTests(LandscapeTest):
         mock_chown.side_effect = lambda *_: called_mocks.append(mock_chown)
         mock_chmod.side_effect = lambda *_: called_mocks.append(mock_chmod)
 
-        def mock_mkstemp_side_effect(*_):
+        def mock_mkstemp_side_effect(*_, dir):
             called_mocks.append(mock_mkstemp)
             return (99, "tempo!")
 
@@ -710,6 +710,56 @@ class RunScriptTests(LandscapeTest):
             )
 
         return d.addCallback(cb).addErrback(eb)
+
+    def test_custom_script_tempdir(self):
+        """
+        If the user provides a script execution tempdir, it is used.
+        """
+
+        tempdir = tempfile.TemporaryDirectory()
+        self.plugin.client.config.script_tempdir = tempdir
+
+        original_cleanup = self.plugin._cleanup
+
+        def check_cleanup(result, filename, env, old_umask):
+            """
+            During cleanup, but before we delete the created file, check that
+            the created file is in fact within the tempdir.
+            """
+            self.assertIn(tempdir, filename)
+            return original_cleanup(result, filename, env, old_umask)
+
+        self.plugin._cleanup = check_cleanup
+
+        d = self.plugin.run_script("/bin/sh", "true")
+        d.addBoth(lambda deferredResult: tempdir.cleanup())
+
+        return d
+
+    def test_custom_script_attachment_tempdir(self):
+        """
+        If the user provides a custom script attachment tempdir, it is used.
+        """
+        tempdir = tempfile.TemporaryDirectory()
+        self.plugin.client.config.script_attachment_tempdir = tempdir
+
+        original_cleanup = self.plugin._cleanup
+
+        def check_cleanup(result, filename, env, old_umask):
+            """
+            During cleanup, but before we delete the attachment dir, ensure
+            that it is in fact our tempdir.
+            """
+            self.assertIsNotNone(os.getenv("LANDSCAPE_ATTACHMENTS"))
+            self.assertEqual(tempdir, os.getenv("LANDSCAPE_ATTACHMENTS"))
+            return original_cleanup(result, filename, env, old_umask)
+
+        self.plugin._cleanup = check_cleanup
+
+        d = self.plugin.run_script("/bin/sh", "true")
+        d.addBoth(lambda deferredResult: tempdir.cleanup())
+
+        return d
 
 
 class ScriptExecutionMessageTests(LandscapeTest):

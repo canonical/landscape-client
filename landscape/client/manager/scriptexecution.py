@@ -144,6 +144,17 @@ class ScriptRunnerMixin:
 class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """A plugin which allows execution of arbitrary shell scripts."""
 
+    def __init__(
+        self,
+        process_factory=None,
+        script_tempdir: str | None = None,
+        script_attachment_tempdir: str | None = None,
+    ):
+        ScriptRunnerMixin.__init__(self, process_factory=process_factory)
+        ManagerPlugin.__init__(self)
+        self.script_tempdir = script_tempdir
+        self.script_attachment_tempdir = script_attachment_tempdir
+
     def register(self, registry):
         super().register(registry)
         registry.register_message(
@@ -223,8 +234,16 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         else:
             return self._respond(FAILED, str(failure), opid)
 
-    async def _save_attachments(self, attachments, uid, gid, computer_id, env):
-        env["LANDSCAPE_ATTACHMENTS"] = attachment_dir = tempfile.mkdtemp()
+    async def _save_attachments(
+        self,
+        attachments,
+        uid,
+        gid,
+        computer_id,
+        env,
+    ):
+        attachment_dir = tempfile.mkdtemp(dir=self.script_attachment_tempdir)
+        env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
         os.chmod(attachment_dir, 0o700)
 
         await save_attachments(
@@ -274,7 +293,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         uid, gid, path = get_user_info(user)
 
-        fd, filename = tempfile.mkstemp()
+        fd, filename = tempfile.mkstemp(dir=self.script_tempdir)
         script_file = os.fdopen(fd, "wb")
         self.write_script_file(script_file, filename, shell, code, uid, gid)
 
@@ -436,7 +455,11 @@ class ScriptExecution(ManagerPlugin):
     def __init__(self):
         from landscape.client.manager.customgraph import CustomGraphPlugin
 
-        self._script_execution = ScriptExecutionPlugin()
+        super().__init__()
+        self._script_execution = ScriptExecutionPlugin(
+            script_tempdir=self.manager.config.script_tempdir,
+            script_attachment_tempdir=self.manager.config.script_attachment_tempdir,  # noqa: E501
+        )
         self._custom_graph = CustomGraphPlugin()
 
     def register(self, registry):

@@ -173,6 +173,19 @@ class Configuration(BaseConfiguration):
             type=int,
             help="The interval between snap monitor runs (default 1800).",
         )
+        parser.add_argument(
+            "--script-tempdir",
+            default=None,
+            type=str,
+            help="The working directory to use for script executions.",
+        )
+        parser.add_argument(
+            "--script-attachment-tempdir",
+            default=None,
+            type=str,
+            help="The working directory to use for script execution "
+            "attachments.",
+        )
 
         # Hidden options, used for load-testing to run in-process clones
         parser.add_argument("--clones", default=0, type=int, help=SUPPRESS)
