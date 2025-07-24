@@ -7,6 +7,7 @@ import os.path
 import shutil
 import sys
 import tempfile
+from typing import TYPE_CHECKING
 
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import ensureDeferred
@@ -24,6 +25,10 @@ from landscape.constants import UBUNTU_PATH
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.user import get_user_info
+
+
+if TYPE_CHECKING:
+    from landscape.client.broker.client import BrokerClient
 
 
 ALL_USERS = object()
@@ -434,20 +439,18 @@ class ScriptExecution(ManagerPlugin):
     Meta-plugin wrapping ScriptExecutionPlugin and CustomGraphPlugin.
     """
 
-    def __init__(self):
+    def register(self, client: "BrokerClient"):
         from landscape.client.manager.customgraph import CustomGraphPlugin
 
-        super().__init__()
+        super().register(client)
         self._script_execution = ScriptExecutionPlugin(
             script_tempdir=self.manager.config.script_tempdir,
             script_attachment_tempdir=self.manager.config.script_attachment_tempdir,  # noqa: E501
         )
         self._custom_graph = CustomGraphPlugin()
 
-    def register(self, registry):
-        super().register(registry)
-        self._script_execution.register(registry)
-        self._custom_graph.register(registry)
+        self._script_execution.register(client)
+        self._custom_graph.register(client)
 
     def exchange(self, urgent=False):
         self._custom_graph.exchange(urgent)
