@@ -15,16 +15,13 @@ from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
 from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client import GROUP
 from landscape.client import IS_SNAP
-from landscape.client import USER
 from landscape.client.attachments import save_attachments
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.persist import Persist
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.user import get_user_info
 
@@ -241,14 +238,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         else:
             return self._respond(FAILED, str(failure), opid)
 
-    async def _save_attachments(
-        self,
-        attachments,
-        uid,
-        gid,
-        computer_id,
-        env,
-    ):
+    async def _save_attachments(self, attachments, uid, gid, env):
         attachment_dir = tempfile.mkdtemp(dir=self.script_attachment_tempdir)
         env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
         os.chmod(attachment_dir, 0o700)
@@ -323,26 +313,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         old_umask = os.umask(0o022)
 
         if attachments:
-            persist = Persist(
-                filename=os.path.join(
-                    self.registry.config.data_path,
-                    "broker.bpickle",
-                ),
-                user=USER,
-                group=GROUP,
-            )
-            persist = persist.root_at("registration")
-            computer_id = persist.get("secure-id")
-            try:
-                computer_id = computer_id.decode("ascii")
-            except AttributeError:
-                pass
             d = ensureDeferred(
                 self._save_attachments(
                     attachments,
                     uid,
                     gid,
-                    computer_id,
                     env,
                 ),
             )
