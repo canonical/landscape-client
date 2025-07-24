@@ -45,9 +45,6 @@ class ManagerService(LandscapeService):
                     "See `example.conf` for a full list of monitor plugins.",
                 )
             except Exception as exc:
-                import traceback
-
-                logging.warning(traceback.format_exception(exc))
                 logging.warning(
                     f"Unable to load manager plugin '{plugin_name}': {exc}",
                 )
