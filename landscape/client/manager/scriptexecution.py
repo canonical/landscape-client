@@ -107,12 +107,11 @@ class ScriptRunnerMixin:
         script_file.write(script)
         script_file.close()
 
-    def _run_script(self, filename, uid, gid, path, env, time_limit):
-        if uid == os.getuid():
-            uid = None
-        if gid == os.getgid():
-            gid = None
-        env = {
+    def _sanitize_env(self, env: dict) -> dict:
+        """
+        Guard against unrecognized characters in the environment.
+        """
+        return {
             key: (
                 value.encode(sys.getfilesystemencoding(), errors="replace")
                 if isinstance(value, str)
@@ -120,6 +119,14 @@ class ScriptRunnerMixin:
             )
             for key, value in env.items()
         }
+
+    def _run_script(self, filename, uid, gid, path, env, time_limit):
+        if uid == os.getuid():
+            uid = None
+        if gid == os.getgid():
+            gid = None
+
+        env = self._sanitize_env(env)
 
         pp = ProcessAccumulationProtocol(
             self.registry.reactor,
