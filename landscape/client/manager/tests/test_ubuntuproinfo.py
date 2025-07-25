@@ -20,37 +20,84 @@ class UbuntuProInfoTest(LandscapeTest):
         self.mstore = self.broker_service.message_store
         self.mstore.set_accepted_types(["ubuntu-pro-info"])
 
+        self.mock_status_value = {
+            "attached": True,
+            "contract": {
+                "id": "fake_contract_id"
+            },
+            "expires": "fake_expiration_date",
+            "services": [
+                {
+                    "available": "yes",
+                    "entitled": "yes",
+                    "name": "anbox-cloud",
+                    "status": "disabled"
+                },
+                {
+                    "available": "yes",
+                    "entitled": "yes",
+                    "name": "landscape",
+                    "status": "disabled"
+                }
+            ]
+        }
+
+        self.mock_status_value_no_pro = {
+            "attached": False,
+            "contract": {
+                "id": "fake_contract_id"
+            },
+            "expires": "fake_expiration_date",
+            "services": [
+                {
+                    "available": "yes",
+                    "name": "anbox-cloud",
+                    "status": "disabled"
+                },
+                {
+                    "available": "yes",
+                    "name": "landscape",
+                    "status": "disabled"
+                }
+            ]
+        }
+
+
     def test_ubuntu_pro_info(self):
         """Tests calling `ua status`."""
         plugin = UbuntuProInfo()
+        self.manager.add(plugin)
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout='"This is a test"',
-            )
-            self.manager.add(plugin)
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        run_mock.assert_called()
+        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(messages[0]["ubuntu-pro-info"], '"This is a test"')
+        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
+
+        result = json.loads(messages[0]["ubuntu-pro-info"])
+        self.assertTrue(result["attached"])
 
     def test_ubuntu_pro_info_no_pro(self):
         """Tests calling `pro status` when it is not installed."""
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.side_effect = FileNotFoundError()
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = self.mock_status_value_no_pro
             plugin.run()
 
+        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
-        run_mock.assert_called_once()
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertIn("errors", messages[0]["ubuntu-pro-info"])
+        self.assertEqual(json.dumps(self.mock_status_value_no_pro, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
+        
+        result = json.loads(messages[0]["ubuntu-pro-info"])
+        self.assertFalse(result["attached"])
 
     def test_get_ubuntu_pro_info_core(self):
         """In Ubuntu Core, there is no pro info, so mock the minimum necessary
@@ -80,27 +127,22 @@ class UbuntuProInfoTest(LandscapeTest):
         """If data hasn't changed, a new message is not sent"""
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
-        data = '"Initial data!"'
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout=data,
-            )
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = self.mock_status_value
             plugin.run()
 
+        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
-        run_mock.assert_called_once()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(messages[0]["ubuntu-pro-info"], data)
+        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout=data,
-            )
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        run_mock.assert_called_once()
+        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
 
@@ -109,61 +151,54 @@ class UbuntuProInfoTest(LandscapeTest):
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout='"Initial data!"',
-            )
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = self.mock_status_value
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
-        run_mock.assert_called_once()
+        mock_status.assert_called_once()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(messages[0]["ubuntu-pro-info"], '"Initial data!"')
+        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout='"New data!"',
-            )
+        new_mock_status_value = self.mock_status_value
+        new_mock_status_value["warnings"] = "fake_warning"
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = new_mock_status_value
             plugin.run()
 
-        run_mock.assert_called_once()
+        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
-        self.assertEqual(messages[1]["ubuntu-pro-info"], '"New data!"')
+        self.assertEqual(json.dumps(new_mock_status_value, separators=(",", ":")), messages[1]["ubuntu-pro-info"])
 
     def test_persistence_reset(self):
         """Resetting the plugin will allow a message with identical data to
         be sent"""
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
-        data = '"Initial data!"'
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout=data,
-            )
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = self.mock_status_value
             plugin.run()
 
+        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
-        run_mock.assert_called_once()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(messages[0]["ubuntu-pro-info"], data)
+        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
 
         plugin._reset()
 
-        with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout=data,
-            )
+        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+            mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        run_mock.assert_called_once()
+        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[1])
-        self.assertEqual(messages[1]["ubuntu-pro-info"], data)
+        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[1]["ubuntu-pro-info"])
 
     @mock.patch.multiple(
         "landscape.client.manager.ubuntuproinfo",

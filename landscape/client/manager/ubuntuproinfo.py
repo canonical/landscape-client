@@ -1,5 +1,4 @@
 import json
-import subprocess
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -8,6 +7,9 @@ from landscape.client import IS_CORE
 from landscape.client import IS_SNAP
 from landscape.client.manager.plugin import DataWatcherManager
 from landscape.client import UA_DATA_DIR
+
+from uaclient.status import status
+from uaclient.config import UAConfig
 
 
 class UbuntuProInfo(DataWatcherManager):
@@ -36,6 +38,30 @@ def get_ubuntu_pro_info() -> dict:
     If we are running on Ubuntu Core, Pro does not exist.  Include a mocked
     message to allow us to register under an Ubuntu Pro license on Server.
     """
+    keys_to_keep = [
+        "_doc",
+        "_schema_version",
+        "account",
+        "attached",
+        "config",
+        "config_path",
+        "contract",
+        "effective",
+        "environment_vars",
+        "errors",
+        "execution_details",
+        "execution_status",
+        "expires",
+        "features",
+        "machine_id",
+        "notices",
+        "result",
+        "services",
+        "simulated",
+        "version",
+        "warnings",
+    ]
+
     if IS_CORE:
         effective_datetime = datetime.now(tz=timezone.utc)
 
@@ -46,6 +72,8 @@ def get_ubuntu_pro_info() -> dict:
             effective_datetime,
             expiration_datetime,
         )
+
+    pro_info = {}
 
     if IS_SNAP:
         # By default, Ubuntu Advantage / Pro stores the status information
@@ -65,44 +93,11 @@ def get_ubuntu_pro_info() -> dict:
             return {}
 
         # The status file has more information than `pro status`
-        keys_to_keep = [
-            "_doc",
-            "_schema_version",
-            "account",
-            "attached",
-            "config",
-            "config_path",
-            "contract",
-            "effective",
-            "environment_vars",
-            "errors",
-            "execution_details",
-            "execution_status",
-            "expires",
-            "features",
-            "machine_id",
-            "notices",
-            "result",
-            "services",
-            "simulated",
-            "version",
-            "warnings",
-        ]
-        return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
-
-    try:
-        completed_process = subprocess.run(
-            ["pro", "status", "--format", "json"],
-            encoding="utf8",
-            stdout=subprocess.PIPE,
-        )
-    except FileNotFoundError:
-        return _ubuntu_pro_error_message(
-            "ubuntu pro tools not found.",
-            "tools-error",
-        )
     else:
-        return json.loads(completed_process.stdout)
+        config = UAConfig()
+        pro_info = status(config)
+
+    return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
 
 def _ubuntu_pro_error_message(message: str, code: str) -> dict:
