@@ -177,7 +177,8 @@ class Configuration(BaseConfiguration):
             "--script-tempdir",
             default=None,
             type=str,
-            help="The working directory to use for script executions.",
+            help="The working directory to use for script executions. "
+            "Must have read, write, and exec privileges for any script users.",
         )
 
         # Hidden options, used for load-testing to run in-process clones
