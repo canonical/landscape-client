@@ -62,13 +62,14 @@ class UbuntuProInfoTest(LandscapeTest):
             ]
         }
 
-
     def test_ubuntu_pro_info(self):
         """Tests calling `ua status`."""
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+                "landscape.client.manager.ubuntuproinfo.status"
+        ) as mock_status:
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
@@ -76,7 +77,10 @@ class UbuntuProInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
+        self.assertEqual(
+            json.dumps(self.mock_status_value, separators=(",", ":")),
+            messages[0]["ubuntu-pro-info"]
+        )
 
         result = json.loads(messages[0]["ubuntu-pro-info"])
         self.assertTrue(result["attached"])
@@ -86,7 +90,9 @@ class UbuntuProInfoTest(LandscapeTest):
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.status"
+        ) as mock_status:
             mock_status.return_value = self.mock_status_value_no_pro
             plugin.run()
 
@@ -94,8 +100,11 @@ class UbuntuProInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(json.dumps(self.mock_status_value_no_pro, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
-        
+        self.assertEqual(
+            json.dumps(self.mock_status_value_no_pro, separators=(",", ":")),
+            messages[0]["ubuntu-pro-info"]
+        )
+
         result = json.loads(messages[0]["ubuntu-pro-info"])
         self.assertFalse(result["attached"])
 
@@ -128,7 +137,9 @@ class UbuntuProInfoTest(LandscapeTest):
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.status"
+        ) as mock_status:
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
@@ -136,9 +147,14 @@ class UbuntuProInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
+        self.assertEqual(
+            json.dumps(self.mock_status_value, separators=(",", ":")),
+            messages[0]["ubuntu-pro-info"]
+        )
 
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.status"
+        ) as mock_status:
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
@@ -151,7 +167,9 @@ class UbuntuProInfoTest(LandscapeTest):
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.status"
+        ) as mock_status:
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
@@ -159,18 +177,26 @@ class UbuntuProInfoTest(LandscapeTest):
         mock_status.assert_called_once()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
+        self.assertEqual(
+            json.dumps(self.mock_status_value, separators=(",", ":")),
+            messages[0]["ubuntu-pro-info"]
+        )
 
         new_mock_status_value = self.mock_status_value
         new_mock_status_value["warnings"] = "fake_warning"
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.status"
+        )as mock_status:
             mock_status.return_value = new_mock_status_value
             plugin.run()
 
         mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
-        self.assertEqual(json.dumps(new_mock_status_value, separators=(",", ":")), messages[1]["ubuntu-pro-info"])
+        self.assertEqual(
+            json.dumps(new_mock_status_value, separators=(",", ":")),
+            messages[1]["ubuntu-pro-info"]
+        )
 
     def test_persistence_reset(self):
         """Resetting the plugin will allow a message with identical data to
@@ -178,7 +204,9 @@ class UbuntuProInfoTest(LandscapeTest):
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.status"
+        ) as mock_status:
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
@@ -186,11 +214,16 @@ class UbuntuProInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
-        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[0]["ubuntu-pro-info"])
+        self.assertEqual(
+            json.dumps(self.mock_status_value, separators=(",", ":")),
+            messages[0]["ubuntu-pro-info"]
+        )
 
         plugin._reset()
 
-        with mock.patch("landscape.client.manager.ubuntuproinfo.status") as mock_status:
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.status"
+        ) as mock_status:
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
@@ -198,7 +231,10 @@ class UbuntuProInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[1])
-        self.assertEqual(json.dumps(self.mock_status_value, separators=(",", ":")), messages[1]["ubuntu-pro-info"])
+        self.assertEqual(
+            json.dumps(self.mock_status_value, separators=(",", ":")),
+            messages[1]["ubuntu-pro-info"]
+        )
 
     @mock.patch.multiple(
         "landscape.client.manager.ubuntuproinfo",
