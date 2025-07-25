@@ -713,7 +713,8 @@ class RunScriptTests(LandscapeTest):
 
     def test_custom_script_tempdir(self):
         """
-        If the user provides a script execution tempdir, it is used.
+        If the user provides a script execution tempdir, it is used for the
+        script file.
         """
 
         tempdir = tempfile.TemporaryDirectory()
@@ -738,7 +739,8 @@ class RunScriptTests(LandscapeTest):
 
     def test_custom_script_attachment_tempdir(self):
         """
-        If the user provides a custom script attachment tempdir, it is used.
+        If the user provides a custom script tempdir, it is used for the
+        script attachments.
         """
         tempdir = tempfile.TemporaryDirectory()
         self.plugin.client.config.script_attachment_tempdir = tempdir

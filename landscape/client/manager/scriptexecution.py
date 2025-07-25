@@ -157,12 +157,10 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         self,
         process_factory=None,
         script_tempdir: str | None = None,
-        script_attachment_tempdir: str | None = None,
     ):
         ScriptRunnerMixin.__init__(self, process_factory=process_factory)
         ManagerPlugin.__init__(self)
         self.script_tempdir = script_tempdir
-        self.script_attachment_tempdir = script_attachment_tempdir
 
     def register(self, registry):
         super().register(registry)
@@ -244,7 +242,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             return self._respond(FAILED, str(failure), opid)
 
     async def _save_attachments(self, attachments, uid, gid, env):
-        attachment_dir = tempfile.mkdtemp(dir=self.script_attachment_tempdir)
+        attachment_dir = tempfile.mkdtemp(dir=self.script_tempdir)
         env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
         os.chmod(attachment_dir, 0o700)
 
@@ -445,7 +443,6 @@ class ScriptExecution(ManagerPlugin):
         super().register(client)
         self._script_execution = ScriptExecutionPlugin(
             script_tempdir=self.manager.config.script_tempdir,
-            script_attachment_tempdir=self.manager.config.script_attachment_tempdir,  # noqa: E501
         )
         self._custom_graph = CustomGraphPlugin()
 
