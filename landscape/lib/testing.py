@@ -337,7 +337,7 @@ class EnvironSnapshot:
 
     def restore(self):
         os.environ.update(self._snapshot)
-        for key in list(os.environ):
+        for key in os.environ.copy():
             if key not in self._snapshot:
                 del os.environ[key]
 

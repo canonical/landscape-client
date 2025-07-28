@@ -46,7 +46,7 @@ class NetworkActivity(MonitorPlugin):
     def create_message(self):
         network_activity = {}
         items = 0
-        for interface, data in list(self._network_activity.items()):
+        for interface, data in self._network_activity.items():
             if data:
                 # The message schema requires the interface to be bytes, so we
                 # encode it here right before the message is created as it is
