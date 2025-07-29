@@ -62,13 +62,15 @@ class UbuntuProInfoTest(LandscapeTest):
             ]
         }
 
+        self.addCleanup(mock.patch.stopall)
+
     def test_ubuntu_pro_info(self):
         """Tests calling `ua status`."""
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
         with mock.patch(
-                "landscape.client.manager.ubuntuproinfo.status"
+            "landscape.client.manager.ubuntuproinfo.status"
         ) as mock_status:
             mock_status.return_value = self.mock_status_value
             plugin.run()
