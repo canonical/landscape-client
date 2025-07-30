@@ -75,7 +75,6 @@ class UbuntuProInfoTest(LandscapeTest):
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
@@ -98,7 +97,6 @@ class UbuntuProInfoTest(LandscapeTest):
             mock_status.return_value = self.mock_status_value_no_pro
             plugin.run()
 
-        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
@@ -145,7 +143,6 @@ class UbuntuProInfoTest(LandscapeTest):
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
@@ -160,7 +157,6 @@ class UbuntuProInfoTest(LandscapeTest):
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
 
@@ -176,7 +172,6 @@ class UbuntuProInfoTest(LandscapeTest):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
-        mock_status.assert_called_once()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
@@ -192,7 +187,6 @@ class UbuntuProInfoTest(LandscapeTest):
             mock_status.return_value = new_mock_status_value
             plugin.run()
 
-        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
         self.assertEqual(
@@ -212,7 +206,6 @@ class UbuntuProInfoTest(LandscapeTest):
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
@@ -229,7 +222,6 @@ class UbuntuProInfoTest(LandscapeTest):
             mock_status.return_value = self.mock_status_value
             plugin.run()
 
-        mock_status.assert_called_once()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[1])

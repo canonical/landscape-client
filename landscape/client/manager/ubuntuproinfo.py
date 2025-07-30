@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from multiprocessing import Process, Queue
 
 from landscape.client import IS_CORE
 from landscape.client import IS_SNAP
@@ -30,6 +31,15 @@ class UbuntuProInfo(DataWatcherManager):
         ubuntu_pro_info = get_ubuntu_pro_info()
         return json.dumps(ubuntu_pro_info, separators=(",", ":"),
                           sort_keys=True)
+
+
+q = Queue()
+
+
+def uastatus():
+    config = UAConfig()
+    pro_info = status(config)
+    q.put(pro_info)
 
 
 def get_ubuntu_pro_info() -> dict:
@@ -94,8 +104,11 @@ def get_ubuntu_pro_info() -> dict:
 
         # The status file has more information than `pro status`
     else:
-        config = UAConfig()
-        pro_info = status(config)
+        p = Process(target=uastatus)
+        p.start()
+        p.join()
+
+        pro_info = q.get()
 
     return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
