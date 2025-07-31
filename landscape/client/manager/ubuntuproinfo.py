@@ -33,10 +33,7 @@ class UbuntuProInfo(DataWatcherManager):
                           sort_keys=True)
 
 
-q = Queue()
-
-
-def uastatus():
+def uastatus(q):
     config = UAConfig()
     pro_info = status(config)
     q.put(pro_info)
@@ -104,7 +101,8 @@ def get_ubuntu_pro_info() -> dict:
 
         # The status file has more information than `pro status`
     else:
-        p = Process(target=uastatus)
+        q = Queue()
+        p = Process(target=uastatus, args=(q,))
         p.start()
         p.join()
 
