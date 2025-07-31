@@ -1,5 +1,5 @@
 """Helpers for dealing with software versioning."""
-from distutils.version import StrictVersion
+from packaging.version import Version
 
 
 def is_version_higher(version1, version2):
@@ -19,7 +19,7 @@ def is_version_higher(version1, version2):
     """
     version1 = version1.decode("ascii")
     version2 = version2.decode("ascii")
-    return StrictVersion(version1) >= StrictVersion(version2)
+    return Version(version1) >= Version(version2)
 
 
 def sort_versions(versions):
@@ -28,7 +28,7 @@ def sort_versions(versions):
     @param version: a C{list} of C{bytes} describing a version.
     """
     strict_versions = sorted(
-        [StrictVersion(version.decode("ascii")) for version in versions],
+        [Version(version.decode("ascii")) for version in versions],
         reverse=True,
     )
     return [
