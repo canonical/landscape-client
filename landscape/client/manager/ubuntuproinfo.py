@@ -106,7 +106,10 @@ def get_ubuntu_pro_info() -> dict:
         p.start()
         p.join()
 
-        pro_info = q.get()
+        try:
+            pro_info = q.get(timeout=30)
+        except Exception as e:
+            pro_info = {}
 
     return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
