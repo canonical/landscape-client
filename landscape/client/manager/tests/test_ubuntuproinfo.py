@@ -80,7 +80,7 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(self.mock_status_value, separators=(",", ":")),
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
             messages[0]["ubuntu-pro-info"]
         )
 
@@ -102,7 +102,7 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(self.mock_status_value_no_pro, separators=(",", ":")),
+            json.dumps(self.mock_status_value_no_pro, separators=(",", ":"), default=str),
             messages[0]["ubuntu-pro-info"]
         )
 
@@ -148,7 +148,7 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(self.mock_status_value, separators=(",", ":")),
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
             messages[0]["ubuntu-pro-info"]
         )
 
@@ -176,7 +176,7 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(self.mock_status_value, separators=(",", ":")),
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
             messages[0]["ubuntu-pro-info"]
         )
 
@@ -191,7 +191,7 @@ class UbuntuProInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
         self.assertEqual(
-            json.dumps(new_mock_status_value, separators=(",", ":")),
+            json.dumps(new_mock_status_value, separators=(",", ":"), default=str),
             messages[1]["ubuntu-pro-info"]
         )
 
@@ -211,7 +211,7 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(self.mock_status_value, separators=(",", ":")),
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
             messages[0]["ubuntu-pro-info"]
         )
 
@@ -227,7 +227,7 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(2, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[1])
         self.assertEqual(
-            json.dumps(self.mock_status_value, separators=(",", ":")),
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
             messages[1]["ubuntu-pro-info"]
         )
 
