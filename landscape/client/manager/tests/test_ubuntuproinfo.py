@@ -20,6 +20,7 @@ class UbuntuProInfoTest(LandscapeTest):
         self.mstore = self.broker_service.message_store
         self.mstore.set_accepted_types(["ubuntu-pro-info"])
 
+        """Mock value that `ua.status` will return"""
         self.mock_status_value = {
             "attached": True,
             "contract": {
