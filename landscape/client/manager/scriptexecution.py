@@ -7,6 +7,7 @@ import os.path
 import shutil
 import sys
 import tempfile
+from typing import TYPE_CHECKING
 
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import ensureDeferred
@@ -15,18 +16,19 @@ from twisted.internet.defer import succeed
 from twisted.internet.error import ProcessDone
 from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client import GROUP
 from landscape.client import IS_SNAP
-from landscape.client import USER
 from landscape.client.attachments import save_attachments
 from landscape.client.manager.plugin import FAILED
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.manager.plugin import SUCCEEDED
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.persist import Persist
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.user import get_user_info
+
+
+if TYPE_CHECKING:
+    from landscape.client.broker.client import BrokerClient
 
 
 ALL_USERS = object()
@@ -107,12 +109,11 @@ class ScriptRunnerMixin:
         script_file.write(script)
         script_file.close()
 
-    def _run_script(self, filename, uid, gid, path, env, time_limit):
-        if uid == os.getuid():
-            uid = None
-        if gid == os.getgid():
-            gid = None
-        env = {
+    def _sanitize_env(self, env: dict) -> dict:
+        """
+        Guard against unrecognized characters in the environment.
+        """
+        return {
             key: (
                 value.encode(sys.getfilesystemencoding(), errors="replace")
                 if isinstance(value, str)
@@ -120,6 +121,14 @@ class ScriptRunnerMixin:
             )
             for key, value in env.items()
         }
+
+    def _run_script(self, filename, uid, gid, path, env, time_limit):
+        if uid == os.getuid():
+            uid = None
+        if gid == os.getgid():
+            gid = None
+
+        env = self._sanitize_env(env)
 
         pp = ProcessAccumulationProtocol(
             self.registry.reactor,
@@ -143,6 +152,15 @@ class ScriptRunnerMixin:
 
 class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """A plugin which allows execution of arbitrary shell scripts."""
+
+    def __init__(
+        self,
+        process_factory=None,
+        script_tempdir: str | None = None,
+    ):
+        ScriptRunnerMixin.__init__(self, process_factory=process_factory)
+        ManagerPlugin.__init__(self)
+        self.script_tempdir = script_tempdir
 
     def register(self, registry):
         super().register(registry)
@@ -223,8 +241,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         else:
             return self._respond(FAILED, str(failure), opid)
 
-    async def _save_attachments(self, attachments, uid, gid, computer_id, env):
-        env["LANDSCAPE_ATTACHMENTS"] = attachment_dir = tempfile.mkdtemp()
+    async def _save_attachments(self, attachments, uid, gid, env):
+        attachment_dir = tempfile.mkdtemp(dir=self.script_tempdir)
+        env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
         os.chmod(attachment_dir, 0o700)
 
         await save_attachments(
@@ -274,7 +293,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         uid, gid, path = get_user_info(user)
 
-        fd, filename = tempfile.mkstemp()
+        fd, filename = tempfile.mkstemp(dir=self.script_tempdir)
         script_file = os.fdopen(fd, "wb")
         self.write_script_file(script_file, filename, shell, code, uid, gid)
 
@@ -297,26 +316,11 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         old_umask = os.umask(0o022)
 
         if attachments:
-            persist = Persist(
-                filename=os.path.join(
-                    self.registry.config.data_path,
-                    "broker.bpickle",
-                ),
-                user=USER,
-                group=GROUP,
-            )
-            persist = persist.root_at("registration")
-            computer_id = persist.get("secure-id")
-            try:
-                computer_id = computer_id.decode("ascii")
-            except AttributeError:
-                pass
             d = ensureDeferred(
                 self._save_attachments(
                     attachments,
                     uid,
                     gid,
-                    computer_id,
                     env,
                 ),
             )
@@ -433,16 +437,17 @@ class ScriptExecution(ManagerPlugin):
     Meta-plugin wrapping ScriptExecutionPlugin and CustomGraphPlugin.
     """
 
-    def __init__(self):
+    def register(self, client: "BrokerClient"):
         from landscape.client.manager.customgraph import CustomGraphPlugin
 
-        self._script_execution = ScriptExecutionPlugin()
+        super().register(client)
+        self._script_execution = ScriptExecutionPlugin(
+            script_tempdir=self.manager.config.script_tempdir,
+        )
         self._custom_graph = CustomGraphPlugin()
 
-    def register(self, registry):
-        super().register(registry)
-        self._script_execution.register(registry)
-        self._custom_graph.register(registry)
+        self._script_execution.register(client)
+        self._custom_graph.register(client)
 
     def exchange(self, urgent=False):
         self._custom_graph.exchange(urgent)

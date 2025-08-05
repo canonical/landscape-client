@@ -12,4 +12,6 @@ jobs:
       - run: make depends-ci
       - run: make coverage TRIAL=/usr/bin/trial3
       - name: upload
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -5,6 +5,7 @@ from logging import debug
 from logging import error
 from logging import exception
 from logging import info
+from typing import TYPE_CHECKING
 
 from twisted.internet.defer import maybeDeferred
 from twisted.internet.defer import succeed
@@ -12,6 +13,9 @@ from twisted.internet.defer import succeed
 from landscape.client.amp import remote
 from landscape.lib.format import format_object
 from landscape.lib.twisted_util import gather_results
+
+if TYPE_CHECKING:
+    from landscape.client.broker.config import BrokerConfiguration
 
 
 class HandlerNotFoundError(Exception):
@@ -44,7 +48,7 @@ class BrokerClientPlugin:
     _session_id = None
     _loop = None
 
-    def register(self, client):
+    def register(self, client: "BrokerClient"):
         self.client = client
         self.client.reactor.call_on("resynchronize", self._resynchronize)
         deferred = self.client.broker.get_session_id(scope=self.scope)
@@ -171,7 +175,7 @@ class BrokerClient:
 
     name = "client"
 
-    def __init__(self, reactor, config):
+    def __init__(self, reactor, config: "BrokerConfiguration"):
         super().__init__()
         self.reactor = reactor
         self.broker = None

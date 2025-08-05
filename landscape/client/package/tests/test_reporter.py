@@ -2560,11 +2560,9 @@ class GlobalPackageReporterAptTest(LandscapeTest):
                     message_store.get_pending_messages(),
                     [message],
                 )
-                stored = list(
-                    self.store._db.execute(
-                        "SELECT id, data FROM message",
-                    ).fetchall(),
-                )
+                stored = self.store._db.execute(
+                    "SELECT id, data FROM message",
+                ).fetchall()
                 self.assertEqual(1, len(stored))
                 self.assertEqual(1, stored[0][0])
                 self.assertEqual(message, bpickle.loads(bytes(stored[0][1])))
@@ -2614,9 +2612,9 @@ class FakePackageReporterTest(LandscapeTest):
         def check(ignore):
             messages = message_store.get_pending_messages()
             self.assertMessages(messages, [message])
-            stored = list(
-                self.store._db.execute("SELECT id FROM message").fetchall(),
-            )
+            stored = self.store._db.execute(
+                "SELECT id FROM message",
+            ).fetchall()
             self.assertEqual(1, len(stored))
             self.assertEqual(1, stored[0][0])
 
@@ -2648,9 +2646,9 @@ class FakePackageReporterTest(LandscapeTest):
                 message_store.get_pending_messages(),
                 [message1],
             )
-            stored = list(
-                self.store._db.execute("SELECT id FROM message").fetchall(),
-            )
+            stored = self.store._db.execute(
+                "SELECT id FROM message",
+            ).fetchall()
             self.assertEqual(1, stored[0][0])
             return self.reporter.run().addCallback(check2)
 
@@ -2659,9 +2657,9 @@ class FakePackageReporterTest(LandscapeTest):
                 message_store.get_pending_messages(),
                 [message1, message2],
             )
-            stored = list(
-                self.store._db.execute("SELECT id FROM message").fetchall(),
-            )
+            stored = self.store._db.execute(
+                "SELECT id FROM message",
+            ).fetchall()
             self.assertEqual(2, len(stored))
             self.assertEqual(1, stored[0][0])
             self.assertEqual(2, stored[1][0])

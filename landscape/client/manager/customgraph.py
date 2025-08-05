@@ -164,7 +164,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         if not self.do_send:
             return
         self.do_send = False
-        graphs = list(self.registry.store.get_graphs())
+        graphs = self.registry.store.get_graphs()
         for graph_id, filename, user in graphs:
             if graph_id not in self._data:
                 if os.path.isfile(filename):
@@ -239,7 +239,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         handle the output.
         """
         self.do_send = True
-        graphs = list(self.registry.store.get_graphs())
+        graphs = self.registry.store.get_graphs()
 
         if not graphs:
             # Shortcut to prevent useless call to call_if_accepted
