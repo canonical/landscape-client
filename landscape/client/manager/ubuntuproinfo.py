@@ -9,8 +9,9 @@ from landscape.client import IS_SNAP
 from landscape.client.manager.plugin import DataWatcherManager
 from landscape.client import UA_DATA_DIR
 
-from uaclient.status import status
-from uaclient.config import UAConfig
+if not IS_SNAP and not IS_CORE:
+    from uaclient.status import status
+    from uaclient.config import UAConfig
 
 
 class UbuntuProInfo(DataWatcherManager):
