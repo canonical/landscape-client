@@ -1,9 +1,33 @@
 #!/usr/bin/python
-from distutils.core import setup
-from DistUtilsExtra.auto import clean_build_tree
-from DistUtilsExtra.command import build_extra
+import os
+import shutil
+import glob
+from setuptools import setup, Command
 
 from landscape import UPSTREAM_VERSION
+
+# Custom clean command to replace the one from DistUtilsExtra
+class CleanCommand(Command):
+    user_options = []
+
+    def run(self):
+
+        for pattern in ['build', 'dist', '.eggs', '*.egg-info']:
+            for path in glob.glob(pattern):
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+
+        # Recursively remove __pycache__ and compiled files
+        for root, dirs, files in os.walk('.'):
+            if '__pycache__' in dirs:
+                path = os.path.join(root, '__pycache__')
+                shutil.rmtree(path)
+                dirs.remove('__pycache__')  
+
+            for file in files:
+                if file.endswith(('.pyc', '.pyo')):
+                    path = os.path.join(root, file)
+                    os.remove(path)
 
 
 SETUP = dict(
@@ -16,7 +40,7 @@ SETUP = dict(
     author="Landscape Team",
     author_email="landscape-team@canonical.com",
     url="http://landscape.canonical.com",
-    cmdclass={"build": build_extra.build_extra, "clean": clean_build_tree},
+    cmdclass={"clean": CleanCommand},
 )
 
 
@@ -28,6 +52,7 @@ def setup_landscape(
     scripts=None,
     **kwargs,
 ):
+    
     assert name and description and packages
     kwargs = dict(
         SETUP,
@@ -38,6 +63,7 @@ def setup_landscape(
         scripts=scripts,
         **kwargs,
     )
+
     kwargs = {k: v for k, v in kwargs.items() if k is not None}
     setup(**kwargs)
 
