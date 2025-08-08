@@ -22,7 +22,7 @@ confinement: strict
 
 environment:
   LANDSCAPE_CLIENT_SNAP: 1
-  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10/site-packages:$PYTHONPATH
+  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
 
 plugs:
   var-lib-ubuntu-advantage-status:
@@ -100,7 +100,7 @@ parts:
       - python3-apt
       - python3-configobj
       - python3-dev
-      - python3-distutils-extra
+      - python3-setuptools
       - python3-twisted
       - python3-pycurl
       - python3-netifaces
@@ -110,7 +110,7 @@ parts:
       - python3-dbus
     override-build: |
       make build
-      python3 setup.py install --prefix ${SNAPCRAFT_PRIME}/usr
+      craftctl default
     stage-packages:
       - adduser
       - bc
@@ -127,6 +127,7 @@ parts:
       - python3-netifaces
       - python3-pycurl
       - python3-twisted
+      - python3-setuptools
       - python3-dbus
       - ubuntu-advantage-tools
     override-stage: |
