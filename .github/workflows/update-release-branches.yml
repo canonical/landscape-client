@@ -1,0 +1,44 @@
+name: Update release branches
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update-release-branches:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - branch: core-24
+            base: core24
+          - branch: core-22
+            base: core22
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          pip install --user jinja2-cli
+
+      - name: Update ${{ matrix.branch }} branch
+        run: |
+          # necessary otherwise git will crash & despair when we attempt to commit
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+          git fetch origin ${{ matrix.branch }}
+          git checkout ${{ matrix.branch }}
+          git merge -X theirs main
+
+          jinja2 snap/snapcraft.yaml.j2 -D base=${{ matrix.base }} > snap/snapcraft.yaml
+
+          git add --force snap/snapcraft.yaml
+          git commit -m "Update snapcraft.yaml" || true
+
+          git push origin ${{ matrix.branch }}

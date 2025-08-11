@@ -6,6 +6,7 @@
 Add our beta PPA to get the latest updates to the landscape-client package
 
 #### Add repo to an Ubuntu series
+
 ```
 sudo add-apt-repository ppa:landscape/self-hosted-beta
 ```
@@ -101,14 +102,21 @@ python3 -m twisted.trial landscape.client.broker.tests.test_client.BrokerClientT
 ### Building the Landscape Client snap
 
 First, you need to ensure that you have the appropriate tools installed:
+
 ```
 $ sudo snap install snapcraft --classic
 $ lxd init --auto
 ```
 
 There are various make targets defined to assist in the lifecycle of
-building and testing the snap.  To simply build the snap with the minimum
-of debug information displayed:
+building and testing the snap. Generate the snap's `snapcraft.yaml` file:
+
+```console
+$ make snap-yaml
+``
+
+To simply build the snap with the minimum of debug information displayed:
+
 ```
 $ make snap
 ```
@@ -116,6 +124,7 @@ $ make snap
 If you would prefer to see more information displayed showing the progress
 of the build, and would like to get dropped into a debug shell within the
 snap container in the event of an error:
+
 ```
 $ make snap-debug
 ```
@@ -128,22 +137,26 @@ $ snap install yq
 ```
 
 To install the resulting snap:
+
 ```
 $ make snap-install
 ```
 
 To remove a previously installed snap:
+
 ```
 $ make snap-remove
 ```
 
 To clean the intermediate files as well as the snap itself from the local
 build environment:
+
 ```
 $ make snap-clean
 ```
 
 To enter into a shell environment within the snap container:
+
 ```
 $ make snap-shell
 ```
@@ -156,6 +169,7 @@ https://snapcraft.io/docs/creating-your-developer-account
 
 After obtaining and confirming your store credentials, you then need to
 log in using the snapcraft tool:
+
 ```
 $ snapcraft login
 ```
@@ -164,15 +178,18 @@ Since snapcraft version 7.x and higher, the credentials are stored in the
 gnome keyring on your local workstation.  If you are building in an
 environment without a GUI (e.g. in a multipass or lxc container), you
 will need to install the gnome keyring tools:
+
 ```
 $ sudo apt install gnome-keyring
 ```
 
 You will then need to initialze the default keyring as follows:
+
 ```
 $ dbus-run-session -- bash
 $ gnome-keyring-daemon --unlock
 ```
+
 The gnome-keyring-daemon will prompt you (without a prompt) to type in
 the initial unlock password (typically the same password for the account
 you are using - if you are using the default multipass or lxc "ubuntu"
@@ -183,16 +200,20 @@ Type the login password and hit <ENTER> followed by <CTRL>+D to end
 the input.
 
 At this point, you should be able to log into snapcraft:
+
 ```
 $ snapcraft login
 ```
+
 You will be prompted for your UbuntuOne email address, password and,
 if set up this way, your second factor for authentication.  If you
 are successful, you should be able to query your login credentials
 with:
+
 ```
 $ snapcraft whoami
 ```
+
 A common mistake that first-time users of this process might make
 is that after running the gnome-keyring-daemon command, they will
 exit the dbus session shell.  Do NOT do that.  Do all subsequent
@@ -208,6 +229,11 @@ logged into the store.
 
 ### Automatic Builds and Releases
 
-The latest version of landscape-client snap will be built from the most recent commit and
-published to the `latest/edge` channel via [a recipe on launchpad](https://launchpad.net/~landscape/landscape-client/+snap/core-dev).
-Other channels are promoted and released manually.
+The landscape-client snap is automatically built from the most recent commit on the release branches and published to the `<base>/edge` channel of the respective core base:
+
+| Core Base | Edge Channel | Build Recipe                                                               |
+|-----------|--------------|----------------------------------------------------------------------------|
+| 24        | `24/edge`    | [core-24](https://launchpad.net/~landscape/landscape-client/+snap/core-24) |
+| 22        | `22/edge`    | [core-22](https://launchpad.net/~landscape/landscape-client/+snap/core-22) |
+
+Other channels (`<base>/beta`, `<base>/candidate`, `<base>/stable`) are promoted and released manually.

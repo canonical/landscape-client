@@ -23,7 +23,7 @@ depends:
 
 .PHONY: depends-dev
 depends-dev: depends
-	pip install pre-commit
+	pip install pre-commit jinja2-cli
 	$(PRE_COMMIT) install
 
 # -common seems a catch-22, but this is just a shortcut to
@@ -116,36 +116,40 @@ tags:
 etags:
 	-etags --languages=python -R .
 
+.PHONY: snap-yaml
+snap-yaml:
+	jinja2 snap/snapcraft.yaml.j2 -D base=core24 > snap/snapcraft.yaml
+
+.PHONY: snap-install
 snap-install:
 	$(eval VERSION=$(shell yq ".version" snap/snapcraft.yaml))
 	sudo snap install --devmode landscape-client_$(VERSION)_amd64.snap
-.PHONY: snap-install
 
-snap-remote-build:
-	snapcraft remote-build
 .PHONY: snap-remote-build
+snap-remote-build: snap-yaml
+	snapcraft remote-build
 
+.PHONY: snap-remove
 snap-remove:
 	sudo snap remove --purge landscape-client
-.PHONY: snap-remove
 
+.PHONY: snap-shell
 snap-shell: snap-install
 	sudo snap run --shell landscape-client.landscape-client
-.PHONY: snap-shell
 
-snap-debug:
-	$(SNAPCRAFT) -v --debug
 .PHONY: snap-debug
+snap-debug: snap-yaml
+	$(SNAPCRAFT) -v --debug
 
+.PHONY: snap-clean
 snap-clean: snap-remove
 	$(eval VERSION=$(shell yq ".version" snap/snapcraft.yaml))
 	$(SNAPCRAFT) clean
 	-rm landscape-client_$(VERSION)_amd64.snap
-.PHONY: snap-clean
 
-snap:
-	$(SNAPCRAFT)
 .PHONY: snap
+snap: snap-yaml
+	$(SNAPCRAFT)
 
 # TICS expects coverage info to be in ./coverage/.coverage
 .PHONY: prepare-tics-analysis
