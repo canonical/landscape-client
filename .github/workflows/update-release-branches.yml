@@ -39,6 +39,6 @@ jobs:
           jinja2 snap/snapcraft.yaml.j2 -D base=${{ matrix.base }} > snap/snapcraft.yaml
 
           git add --force snap/snapcraft.yaml
-          git commit -m "Update snapcraft.yaml" || true
+          git commit -m "chore: update snapcraft.yaml" || true
 
           git push origin ${{ matrix.branch }}
