@@ -1,0 +1,146 @@
+name: landscape-client
+base: core22
+version: '24.12'
+icon: snap/gui/landscape-logo-256.png
+website: https://ubuntu.com/landscape
+summary: Client for the Canonical systems management product Landscape
+description: |
+  Landcape is a web-based tool for managing Ubuntu systems. This snap, or the
+  equivalent debian package is necessary if you want your machine to be managed
+  in a Landscape account. It provides the Landscape client and requires a
+  Landscape account.
+
+grade: stable
+architectures:
+  - build-on: [amd64]
+  - build-on: [arm64]
+  - build-on: [armhf]
+  - build-on: [ppc64el]
+  - build-on: [s390x]
+  - build-on: [riscv64]
+confinement: strict
+
+environment:
+  LANDSCAPE_CLIENT_SNAP: 1
+  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+
+plugs:
+  var-lib-ubuntu-advantage-status:
+    interface: system-files
+    read:
+      - /var/lib/snapd/hostfs/var/lib/ubuntu-advantage/status.json
+  snapd-control-managed:
+    interface: snapd-control
+    refresh-schedule: managed
+
+slots:
+  annotations:
+    interface: content
+    write:
+      - $SNAP_COMMON/var/lib/landscape/client/annotations.d
+
+apps:
+  landscape-client:
+    daemon: simple
+    install-mode: disable
+    command: usr/bin/landscape-client
+    plugs:
+      - hardware-observe
+      - mount-observe
+      - network
+      - network-bind
+      - network-observe
+      - scsi-generic
+      - shutdown
+      - snapd-control
+      - system-observe
+      - account-control
+      - process-control
+      - network-control
+      - network-manager
+      - log-observe
+      - var-lib-ubuntu-advantage-status
+  config:
+    command: usr/bin/landscape-config
+    plugs:
+      - network
+      - hardware-observe
+  logrotate:
+    command: usr/sbin/logrotate -s /tmp/logrotate-status $SNAP/etc/logrotate.conf
+    daemon: simple
+    timer: sun,02:00~03:00
+
+# Previously, the client's data was stored in $SNAP_DATA
+#  which led to duplicate machine entries after reverting
+#  to a previous revision.
+# After the migration of /var/lib/landscape/client from
+#  $SNAP_DATA to $SNAP_COMMON, the snap's layout changed.
+# The new epoch 1* means the snap can read the previous
+#  & new epochs' data but can only write epoch 1 data.
+epoch: 1*
+
+layout:
+  /etc/landscape-client.conf:
+    bind-file: $SNAP_COMMON/etc/landscape-client.conf
+  /var/lib/landscape/client:
+    bind: $SNAP_COMMON/var/lib/landscape/client
+  /var/log/landscape:
+    bind: $SNAP_DATA/var/log/landscape
+
+parts:
+  landscape-client:
+    plugin: python
+    source: .
+    build-packages:
+      - gawk
+      - libdistro-info-perl
+      - lsb-release
+      - net-tools
+      - po-debconf
+      - python3-apt
+      - python3-configobj
+      - python3-dev
+      - python3-setuptools
+      - python3-twisted
+      - python3-pycurl
+      - python3-netifaces
+      - python3-yaml
+      - ubuntu-advantage-tools
+      - locales-all
+      - python3-dbus
+    override-build: |
+      make build
+      craftctl default
+    stage-packages:
+      - adduser
+      - bc
+      - ca-certificates
+      - debconf
+      - libpam-modules
+      - lsb-base
+      - lsb-release
+      - lshw
+      - python3
+      - python3-apt
+      - python3-configobj
+      - python3-gdbm
+      - python3-netifaces
+      - python3-pycurl
+      - python3-twisted
+      - python3-setuptools
+      - python3-dbus
+      - ubuntu-advantage-tools
+    override-stage: |
+      craftctl default
+      # Copy the scripts over
+      mkdir -p ${SNAPCRAFT_PRIME}/usr/bin/
+      cp -r ${SNAPCRAFT_PART_SRC}/scripts/. ${SNAPCRAFT_PRIME}/usr/bin/
+  logrotate:
+    plugin: nil
+    source: .
+    stage-packages:
+      - logrotate
+    override-prime: |
+      craftctl default
+      cp ${SNAPCRAFT_PART_SRC}/debian/landscape-client.logrotate ${SNAPCRAFT_PRIME}/etc/logrotate.conf
+      sed -i 's/systemctl kill --signal=USR1 --kill-who=main/snapctl restart/' ${SNAPCRAFT_PRIME}/etc/logrotate.conf
