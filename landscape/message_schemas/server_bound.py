@@ -61,6 +61,7 @@ __all__ = [
     "SNAPS",
     "SNAP_INFO",
     "UNLICENSED_MESSAGE_SCHEMAS",
+    "message_schemas",
 ]
 
 
