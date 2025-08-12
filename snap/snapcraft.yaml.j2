@@ -1,5 +1,7 @@
+{%- set python_version = "3.12" if base == "core24" else "3.10" -%}
+
 name: landscape-client
-base: core22
+base: {{ base }}
 version: '24.12'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
@@ -11,6 +13,16 @@ description: |
   Landscape account.
 
 grade: stable
+
+{%- if base == "core24" %}
+platforms:
+  amd64:
+  arm64:
+  armhf:
+  ppc64el:
+  s390x:
+  riscv64:
+{% else %}
 architectures:
   - build-on: [amd64]
   - build-on: [arm64]
@@ -18,11 +30,13 @@ architectures:
   - build-on: [ppc64el]
   - build-on: [s390x]
   - build-on: [riscv64]
+{% endif -%}
+
 confinement: strict
 
 environment:
   LANDSCAPE_CLIENT_SNAP: 1
-  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+  PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python{{ python_version }}/site-packages:$PYTHONPATH
 
 plugs:
   var-lib-ubuntu-advantage-status:

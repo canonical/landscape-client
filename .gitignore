@@ -36,3 +36,6 @@ landscape_client.egg-info
 .pybuild
 venv
 .venv
+
+# templated, generate with `make snap-yaml`
+snap/snapcraft.yaml
