@@ -7,13 +7,13 @@ Add our beta PPA to get the latest updates to the landscape-client package
 
 #### Add repo to an Ubuntu series
 
-```
+```shell
 sudo add-apt-repository ppa:landscape/self-hosted-beta
 ```
 
 #### Add repo to a Debian based series that is not Ubuntu (experimental)
 
-```
+```shell
 # 1. Install our signing key
 gpg --keyserver keyserver.ubuntu.com --recv-keys 6e85a86e4652b4e6
 gpg --export 6e85a86e4652b4e6 | sudo tee -a /usr/share/keyrings/landscape-client-keyring.gpg > /dev/null
@@ -23,7 +23,8 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/lands
 ```
 
 #### Install the package
-```
+
+```shell
 sudo apt update && sudo apt install landscape-client
 ```
 
@@ -45,6 +46,7 @@ DAEMON_USER=landscape
 ```
 
 Edit `/etc/landscape/client.conf` and add the following line:
+
 ```
 monitor_only = true
 ```
@@ -67,15 +69,15 @@ git submodule update --init
 
 To run the full test suite, run the following command:
 
-```
+```shell
 make check
 ```
 
 When you want to test the landscape client manually without management
 features, you can simply run:
 
-```
-$ ./scripts/landscape-client
+```shell
+./scripts/landscape-client
 ```
 
 This defaults to the `landscape-client.conf` configuration file.
@@ -84,18 +86,20 @@ When you want to test management features manually, you'll need to run as root.
 There's a configuration file `root-client.conf` which specifies use of the
 system bus.
 
-```
-$ sudo ./scripts/landscape-client -c root-client.conf
+```shell
+sudo ./scripts/landscape-client -c root-client.conf
 ```
 
 Before opening a PR, make sure to run the full test suite and lint:
-```
+
+```shell
 make check
 make lint
 ```
 
 You can run a specific test by running the following (for example):
-```
+
+```shell
 python3 -m twisted.trial landscape.client.broker.tests.test_client.BrokerClientTest.test_ping
 ```
 
@@ -103,62 +107,62 @@ python3 -m twisted.trial landscape.client.broker.tests.test_client.BrokerClientT
 
 First, you need to ensure that you have the appropriate tools installed:
 
-```
-$ sudo snap install snapcraft --classic
-$ lxd init --auto
+```shell
+sudo snap install snapcraft --classic
+lxd init --auto
 ```
 
 There are various make targets defined to assist in the lifecycle of
-building and testing the snap. Generate the snap's `snapcraft.yaml` file:
+building and testing the snap. To generate the snap's `snapcraft.yaml` file:
 
-```console
-$ make snap-yaml
-``
+```shell
+make snap-yaml
+```
 
 To simply build the snap with the minimum of debug information displayed:
 
-```
-$ make snap
+```shell
+make snap
 ```
 
 If you would prefer to see more information displayed showing the progress
 of the build, and would like to get dropped into a debug shell within the
 snap container in the event of an error:
 
-```
-$ make snap-debug
+```shell
+make snap-debug
 ```
 
 To use the make targets below, make sure you have [yq](https://github.com/mikefarah/yq) installed. You can install it using [Homebrew](https://brew.sh/) or as a snap:
 
-```console
-$ brew install yq
-$ snap install yq
+```shell
+brew install yq
+snap install yq
 ```
 
 To install the resulting snap:
 
-```
-$ make snap-install
+```shell
+make snap-install
 ```
 
 To remove a previously installed snap:
 
-```
-$ make snap-remove
+```shell
+make snap-remove
 ```
 
 To clean the intermediate files as well as the snap itself from the local
 build environment:
 
-```
-$ make snap-clean
+```shell
+make snap-clean
 ```
 
 To enter into a shell environment within the snap container:
 
-```
-$ make snap-shell
+```shell
+make snap-shell
 ```
 
 If you wish to upload the snap to the store, you will first need to get
@@ -170,8 +174,8 @@ https://snapcraft.io/docs/creating-your-developer-account
 After obtaining and confirming your store credentials, you then need to
 log in using the snapcraft tool:
 
-```
-$ snapcraft login
+```shell
+snapcraft login
 ```
 
 Since snapcraft version 7.x and higher, the credentials are stored in the
@@ -179,15 +183,15 @@ gnome keyring on your local workstation.  If you are building in an
 environment without a GUI (e.g. in a multipass or lxc container), you
 will need to install the gnome keyring tools:
 
-```
-$ sudo apt install gnome-keyring
+```shell
+sudo apt install gnome-keyring
 ```
 
 You will then need to initialze the default keyring as follows:
 
-```
-$ dbus-run-session -- bash
-$ gnome-keyring-daemon --unlock
+```shell
+dbus-run-session -- bash
+gnome-keyring-daemon --unlock
 ```
 
 The gnome-keyring-daemon will prompt you (without a prompt) to type in
@@ -201,8 +205,8 @@ the input.
 
 At this point, you should be able to log into snapcraft:
 
-```
-$ snapcraft login
+```shell
+snapcraft login
 ```
 
 You will be prompted for your UbuntuOne email address, password and,
@@ -210,8 +214,8 @@ if set up this way, your second factor for authentication.  If you
 are successful, you should be able to query your login credentials
 with:
 
-```
-$ snapcraft whoami
+```shell
+snapcraft whoami
 ```
 
 A common mistake that first-time users of this process might make
