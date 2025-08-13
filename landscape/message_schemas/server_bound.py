@@ -60,6 +60,7 @@ __all__ = [
     "USG_AUDIT",
     "SNAPS",
     "SNAP_INFO",
+    "UNLICENSED_MESSAGE_SCHEMAS",
 ]
 
 
@@ -743,4 +744,14 @@ message_schemas = (
     SNAPS,
     SNAP_INFO,
     SNAP_SERVICES,
+)
+
+# Message schemas that Server will still accept when we are in the unlicensed
+# state.
+UNLICENSED_MESSAGE_SCHEMAS = (
+    OPERATION_RESULT,
+    RESYNCHRONIZE,
+    REGISTER,
+    REGISTER_3_3,
+    UBUNTU_PRO_INFO,
 )
