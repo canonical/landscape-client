@@ -1,3 +1,10 @@
+landscape-client (25.08.1-0landscape0) jammy; urgency=medium
+
+  * build: added setuptools to build-depends
+  * fix: setup.py clean command
+
+ -- David McLain <david.mclain@canonical.com>  Thu, 14 Aug 2025 17:13:13 -0500
+
 landscape-client (25.08-0landscape0) jammy; urgency=medium
 
   * feat: add --script-tempdir configuration
