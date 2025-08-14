@@ -29,6 +29,12 @@ class CleanCommand(Command):
                     path = os.path.join(root, file)
                     os.remove(path)
 
+    def initialize_options(self):
+        self.all = True
+
+    def finalize_options(self):
+        pass
+
 
 SETUP = dict(
     name=None,
@@ -94,3 +100,4 @@ if __name__ == "__main__":
         modules=MODULES,
         scripts=SCRIPTS,
     )
+
