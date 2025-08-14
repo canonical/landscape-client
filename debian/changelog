@@ -1,3 +1,9 @@
+landscape-client (25.08-0landscape0) jammy; urgency=medium
+
+  * feat: add --script-tempdir configuration
+
+ -- David McLain <david.mclain@canonical.com>  Thu, 14 Aug 2025 15:39:02 +0000
+
 landscape-client (25.04+git6541-0landscape0) jammy; urgency=medium
 
   * feat: log pending message count
