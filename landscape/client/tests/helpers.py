@@ -62,6 +62,10 @@ class MessageTestCase(unittest.TestCase):
             )
 
 
+def fake_pro_info_func(q):
+    q.put({})
+
+
 class LandscapeTest(
     MessageTestCase,
     testing.TwistedTestCase,
@@ -77,6 +81,12 @@ class LandscapeTest(
         BaseConfiguration.default_config_filenames = (
             testing.BaseConfiguration.default_config_filenames
         )
+
+        unittest.mock.patch(
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=fake_pro_info_func,
+        ).start()
+        self.addCleanup(unittest.mock.patch.stopall)
 
         return result
 
