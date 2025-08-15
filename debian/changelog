@@ -1,3 +1,9 @@
+landscape-client (25.08.2-0landscape0) jammy; urgency=medium
+
+  * build: added packaging to build-depends
+
+ -- David McLain <david.mclain@canonical.com>  Thu, 14 Aug 2025 23:44:58 +0000
+
 landscape-client (25.08.1-0landscape0) jammy; urgency=medium
 
   * build: added setuptools to build-depends

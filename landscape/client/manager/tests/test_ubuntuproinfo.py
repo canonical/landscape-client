@@ -10,6 +10,12 @@ from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
 
 
+def uastatus_mock_maker(ret_val):
+    def uastatus_mock(q):
+        q.put(ret_val)
+    return uastatus_mock
+
+
 class UbuntuProInfoTest(LandscapeTest):
     """Ubuntu Pro info plugin tests."""
 
@@ -71,9 +77,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.manager.add(plugin)
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        ) as mock_status:
-            mock_status.return_value = self.mock_status_value
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -97,9 +103,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.manager.add(plugin)
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        ) as mock_status:
-            mock_status.return_value = self.mock_status_value_no_pro
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value_no_pro),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -147,9 +153,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.manager.add(plugin)
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        ) as mock_status:
-            mock_status.return_value = self.mock_status_value
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -165,9 +171,9 @@ class UbuntuProInfoTest(LandscapeTest):
         )
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        ) as mock_status:
-            mock_status.return_value = self.mock_status_value
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -179,9 +185,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.manager.add(plugin)
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        ) as mock_status:
-            mock_status.return_value = self.mock_status_value
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -199,9 +205,9 @@ class UbuntuProInfoTest(LandscapeTest):
         new_mock_status_value = self.mock_status_value
         new_mock_status_value["warnings"] = "fake_warning"
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        )as mock_status:
-            mock_status.return_value = new_mock_status_value
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -222,9 +228,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.manager.add(plugin)
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        ) as mock_status:
-            mock_status.return_value = self.mock_status_value
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -242,9 +248,9 @@ class UbuntuProInfoTest(LandscapeTest):
         plugin._reset()
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.status"
-        ) as mock_status:
-            mock_status.return_value = self.mock_status_value
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(self.mock_status_value),
+        ):
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
