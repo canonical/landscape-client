@@ -8,10 +8,7 @@ from landscape.client import IS_CORE
 from landscape.client import IS_SNAP
 from landscape.client.manager.plugin import DataWatcherManager
 from landscape.client import UA_DATA_DIR
-
-if not IS_SNAP and not IS_CORE:
-    from uaclient.status import status
-    from uaclient.config import UAConfig
+from landscape.lib.uaclient import get_pro_status
 
 
 class UbuntuProInfo(DataWatcherManager):
@@ -35,8 +32,7 @@ class UbuntuProInfo(DataWatcherManager):
 
 
 def uastatus(q):
-    config = UAConfig()
-    pro_info = status(config)
+    pro_info = get_pro_status()
     q.put(pro_info)
 
 
