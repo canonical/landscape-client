@@ -5,6 +5,7 @@ if not IS_SNAP and not IS_CORE:
     from uaclient.status import status
     from uaclient.config import UAConfig
 
+
 def get_pro_status():
     """Calls uaclient.status to get pro information."""
     config = UAConfig()
@@ -14,9 +15,9 @@ def get_pro_status():
 
 def attach_pro(token):
     """Attaches a pro token to current machine."""
-    ### TODO when creating activity for attaching pro
+    # TODO when creating activity for attaching pro
 
 
 def detach_pro():
     """Detaches pro from current machine."""
-    ### TODO when creating activity for detaching pro
+    # TODO when creating activity for detaching pro
