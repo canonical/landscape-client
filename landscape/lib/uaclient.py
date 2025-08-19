@@ -28,4 +28,4 @@ def get_pro_status():
 
 def attach_pro(token):
     """Attaches a pro token to current machine."""
-    ### TODO when creating activity for attaching pro
+    # TODO when creating activity for attaching pro
