@@ -16,8 +16,10 @@ def get_pro_status():
 def attach_pro(token):
     """Attaches a pro token to current machine."""
     # TODO when creating activity for attaching pro
+    pass
 
 
 def detach_pro():
     """Detaches pro from current machine."""
     # TODO when creating activity for detaching pro
+    pass
