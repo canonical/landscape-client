@@ -8,9 +8,12 @@ if not IS_SNAP and not IS_CORE:
 
 def get_pro_status():
     """Calls uaclient.status to get pro information."""
-    config = UAConfig()
-    pro_info = status(config)
-    return pro_info
+    try:
+        config = UAConfig()
+        pro_info = status(config)
+        return pro_info
+    except NameError:
+        return {}
 
 
 def attach_pro(token):

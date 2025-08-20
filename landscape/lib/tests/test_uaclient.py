@@ -38,9 +38,15 @@ class TestUAClientWrapper(TestCase):
         self.assertEqual(self.mock_status_value, pro_status)
 
     def test_attach_pro(self):
-        self.assertTrue(True)
+        """
+        Attaching pro token using uaclient library
+        """
+        # TODO write test cases for function when implemented
         attach_pro("fake-token")
 
     def test_detach_pro(self):
-        self.assertTrue(True)
+        """
+        Detaching pro token using uaclient library
+        """
+        # TODO write test cases for function when implemented
         detach_pro()
