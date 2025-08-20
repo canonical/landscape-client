@@ -1,3 +1,5 @@
+import logging
+
 from landscape.client import IS_CORE
 from landscape.client import IS_SNAP
 
@@ -13,6 +15,7 @@ def get_pro_status():
         pro_info = status(config)
         return pro_info
     except NameError:
+        logging.warning("Tried to get pro status in SNAP or CORE environment.")
         return {}
 
 
