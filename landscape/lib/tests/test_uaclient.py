@@ -1,6 +1,6 @@
 from unittest import TestCase, mock
 
-from landscape.lib.uaclient import get_pro_status
+from landscape.lib.uaclient import get_pro_status, attach_pro, detach_pro
 
 
 class TestUAClientWrapper(TestCase):
@@ -39,6 +39,8 @@ class TestUAClientWrapper(TestCase):
 
     def test_attach_pro(self):
         self.assertTrue(True)
+        attach_pro("fake-token")
 
     def test_detach_pro(self):
         self.assertTrue(True)
+        detach_pro()
