@@ -77,6 +77,7 @@ class UbuntuProInfoTest(LandscapeTest):
 
     def test_uastatus(self):
         mock.patch.stopall()
+        self.assertFalse(isinstance(uastatus, mock.Mock))
         with mock.patch(
             "landscape.client.manager.ubuntuproinfo.get_pro_status"
         ) as mock_status:
@@ -85,10 +86,7 @@ class UbuntuProInfoTest(LandscapeTest):
             p = Process(target=uastatus, args=(q,))
             p.start()
             p.join()
-            try:
-                pro_info = q.get(timeout=30)
-            except Exception:
-                pro_info = {}
+            pro_info = q.get(timeout=30)
 
             self.assertEqual(self.mock_status_value, pro_info)
 
