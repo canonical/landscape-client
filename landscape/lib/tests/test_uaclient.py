@@ -37,6 +37,18 @@ class TestUAClientWrapper(TestCase):
 
         self.assertEqual(self.mock_status_value, pro_status)
 
+    @mock.patch("landscape.lib.uaclient.UAConfig")
+    def test_get_pro_status_name_error(self, mock_uaconfig):
+        mock_uaconfig.side_effect = NameError
+        with self.assertLogs() as log:
+            get_pro_status()
+
+        self.assertEqual(1, len(log.output))
+        self.assertIn(
+            "Tried to use uaclient in SNAP or CORE environment, skipping call",
+            log.output[0],
+        )
+
     def test_attach_pro(self):
         """
         Attaching pro token using uaclient library

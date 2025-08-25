@@ -2,10 +2,14 @@ import json
 import os
 import tempfile
 from datetime import datetime
+from multiprocessing import Queue, Process
 from unittest import mock
 
-from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-from landscape.client.manager.ubuntuproinfo import UbuntuProInfo
+from landscape.client.manager.ubuntuproinfo import (
+    get_ubuntu_pro_info,
+    uastatus,
+    UbuntuProInfo,
+)
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
 
@@ -70,6 +74,23 @@ class UbuntuProInfoTest(LandscapeTest):
         }
 
         self.addCleanup(mock.patch.stopall)
+
+    def test_uastatus(self):
+        mock.patch.stopall()
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.get_pro_status"
+        ) as mock_status:
+            mock_status.return_value = self.mock_status_value
+            q = Queue()
+            p = Process(target=uastatus, args=(q,))
+            p.start()
+            p.join()
+            try:
+                pro_info = q.get(timeout=30)
+            except Exception:
+                pro_info = {}
+
+            self.assertEqual(self.mock_status_value, pro_info)
 
     def test_ubuntu_pro_info(self):
         """Tests calling `ua status`."""
