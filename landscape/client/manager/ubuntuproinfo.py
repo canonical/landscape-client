@@ -116,7 +116,9 @@ def get_ubuntu_pro_info() -> dict:
             ):
                 pro_info["expires"] = pro_info["expires"].isoformat()
         except Exception:
-            pro_info = {}
+            return _ubuntu_pro_error_message(
+                "Issue processing pro info.", "tools-error"
+            )
 
     return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
