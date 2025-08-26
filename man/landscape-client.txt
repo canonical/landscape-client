@@ -27,9 +27,11 @@ OPTIONS
   -u URL, --url=URL          The server URL to connect to.
   --ping-url=PING_URL        The URL to perform lightweight exchange initiation
                              with.
-  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY    The public SSL key to
-                             verify the server. Only used if the given server
-                             URL is https.
+  -k SSL_CA, --ssl-ca=SSL_CA  The CA Certificate to verify the server. Accepts a 
+                              file path or the certificate contents (base64)
+                              Only used if the given server URL is https.
+  --ssl-public-key=SSL_PUBLIC_KEY (Deprecated) Same as --ssl-ca. Use --ssl-ca instead.
+                                  This option will be removed in the 26.10 release.
   --ignore-sigint            Ignore interrupt signals.
   --ignore-sigusr1           Ignore SIGUSR1 signal to rotate logs.
   --daemon                   Fork and run in the background.

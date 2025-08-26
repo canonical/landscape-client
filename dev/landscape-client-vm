@@ -108,6 +108,7 @@ registration_key = ${PASSWORD}
 EOF
 
 if ! [ "$WITH_SSL" = "" ]; then
+    echo ssl_ca = $SSL_KEY >> config
     echo ssl_public_key = $SSL_KEY >> config
 fi
 

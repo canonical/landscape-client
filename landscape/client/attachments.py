@@ -1,3 +1,4 @@
+import logging
 import os
 
 from landscape import VERSION
@@ -37,9 +38,12 @@ async def save_attachments(
             # Backward-compatibility with inline attachments.
             data = attachment_id.encode()
         else:
+            cainfo = getattr(config, "ssl_ca", None) or getattr(config, "ssl_public_key", None)
+            if not getattr(config, "ssl_ca", None) and getattr(config, "ssl_public_key", None):
+                logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
             data = await fetch_async(
                 root_path + str(attachment_id),
-                cainfo=config.ssl_public_key,
+                cainfo=cainfo,
                 headers=headers,
             )
 

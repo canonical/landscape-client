@@ -39,6 +39,7 @@ except ImportError:
     from urllib import urlencode
 
 from logging import info
+import logging
 
 from twisted.python.failure import Failure
 from twisted.internet import defer
@@ -139,9 +140,12 @@ class Pinger:
 
     def start(self):
         """Start pinging."""
+        cainfo = getattr(self._config, "ssl_ca", None) or getattr(self._config, "ssl_public_key", None)
+        if not getattr(self._config, "ssl_ca", None) and getattr(self._config, "ssl_public_key", None):
+            logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
         self._ping_client = self.ping_client_factory(
             self._reactor,
-            cainfo=self._config.ssl_public_key,
+            cainfo=cainfo,
         )
         self._schedule()
 

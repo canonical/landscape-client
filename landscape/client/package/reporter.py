@@ -234,10 +234,12 @@ class PackageReporter(PackageTaskHandler):
                 proxy = self._config.get("https_proxy")
             else:
                 proxy = self._config.get("http_proxy")
-
+            cainfo = getattr(self._config, "ssl_ca", None) or getattr(self._config, "ssl_public_key", None)
+            if not getattr(self._config, "ssl_ca", None) and getattr(self._config, "ssl_public_key", None):
+                logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
             result = fetch_async(
                 url,
-                cainfo=self._config.get("ssl_public_key"),
+                cainfo=cainfo,
                 proxy=proxy,
             )
             result.addCallback(fetch_ok)
