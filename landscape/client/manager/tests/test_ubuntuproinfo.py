@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
-from multiprocessing import Queue, Process
+from multiprocessing import Queue
 from unittest import mock
 
 from landscape.client.manager.ubuntuproinfo import (
@@ -81,9 +81,7 @@ class UbuntuProInfoTest(LandscapeTest):
         ) as mock_status:
             mock_status.return_value = self.mock_status_value
             q = Queue()
-            p = Process(target=uastatus, args=(q,))
-            p.start()
-            p.join()
+            uastatus(q)
             pro_info = q.get(timeout=30)
 
             self.assertEqual(self.mock_status_value, pro_info)
