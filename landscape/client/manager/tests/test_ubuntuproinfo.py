@@ -1,7 +1,7 @@
 import json
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from multiprocessing import Queue, Process
 from unittest import mock
 
@@ -36,7 +36,6 @@ class UbuntuProInfoTest(LandscapeTest):
             "contract": {
                 "id": "fake_contract_id"
             },
-            "expires": "fake_expiration_date",
             "services": [
                 {
                     "available": "yes",
@@ -58,7 +57,6 @@ class UbuntuProInfoTest(LandscapeTest):
             "contract": {
                 "id": "fake_contract_id"
             },
-            "expires": "fake_expiration_date",
             "services": [
                 {
                     "available": "yes",
@@ -115,6 +113,71 @@ class UbuntuProInfoTest(LandscapeTest):
 
         result = json.loads(messages[0]["ubuntu-pro-info"])
         self.assertTrue(result["attached"])
+
+    def test_serializable(self):
+        """Tests calling `pro status` when it is not installed."""
+        plugin = UbuntuProInfo()
+        self.manager.add(plugin)
+
+        fake_val = {
+            "effective": datetime.now(timezone.utc) - timedelta(days=30),
+            "expires": datetime.now(timezone.utc) + timedelta(days=30),
+        }
+
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(fake_val),
+        ):
+            plugin.run()
+
+        expected = fake_val
+        expected["expires"] = expected["expires"].isoformat()
+        expected["effective"] = expected["effective"].isoformat()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertTrue(len(messages) > 0)
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertEqual(
+            json.dumps(
+                expected,
+                separators=(",", ":"),
+                default=str
+            ),
+            messages[0]["ubuntu-pro-info"]
+        )
+
+    def test_serializable_already(self):
+        """Tests calling `pro status` when it is not installed."""
+        plugin = UbuntuProInfo()
+        self.manager.add(plugin)
+
+        effective = datetime.now(timezone.utc) - timedelta(days=30)
+        expires = datetime.now(timezone.utc) + timedelta(days=30)
+        effective = effective.isoformat()
+        expires = expires.isoformat()
+
+        fake_val = {
+            "effective": effective,
+            "expires": expires,
+        }
+
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(fake_val),
+        ):
+            plugin.run()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertTrue(len(messages) > 0)
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertEqual(
+            json.dumps(
+                fake_val,
+                separators=(",", ":"),
+                default=str
+            ),
+            messages[0]["ubuntu-pro-info"]
+        )
 
     def test_ubuntu_pro_info_no_pro(self):
         """Tests calling `pro status` when it is not installed."""

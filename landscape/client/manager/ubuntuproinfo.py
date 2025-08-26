@@ -105,6 +105,16 @@ def get_ubuntu_pro_info() -> dict:
 
         try:
             pro_info = q.get(timeout=30)
+            if (
+                "effective" in pro_info
+                and isinstance(pro_info["effective"], datetime)
+            ):
+                pro_info["effective"] = pro_info["effective"].isoformat()
+            if (
+                "expires" in pro_info
+                and isinstance(pro_info["expires"], datetime)
+            ):
+                pro_info["expires"] = pro_info["expires"].isoformat()
         except Exception:
             pro_info = {}
 
