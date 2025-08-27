@@ -103,6 +103,7 @@ class Configuration(BaseConfiguration):
               - C{url} (C{"http://landscape.canonical.com/message-system"})
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
               - C{ssl_ca}
+              - C{ssl_public_key}
               - C{ignore_sigint} (C{False})
               - C{stagger_launch} (C{0.1})
         """
@@ -120,9 +121,14 @@ class Configuration(BaseConfiguration):
             default="http://landscape.canonical.com/ping",
         )
         parser.add_argument(
-            "-k",
             "--ssl-ca",
             dest="ssl_ca",
+            help="The CA certificate verifies the server.",
+        )
+        parser.add_argument(
+            "-k",
+            "--ssl-public-key",
+            dest="ssl_public_key",
             help="The CA certificate verifies the server.",
         )
         parser.add_argument(

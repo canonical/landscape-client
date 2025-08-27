@@ -38,9 +38,9 @@ async def save_attachments(
             # Backward-compatibility with inline attachments.
             data = attachment_id.encode()
         else:
-            if hasattr(config, "ssl_ca"):
+            if config.ssl_ca is not None:
                 cainfo = config.ssl_ca
-            elif hasattr(config, "ssl_public_key"):
+            elif config.ssl_public_key is not None:
                 cainfo = config.ssl_public_key
                 logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
             else:

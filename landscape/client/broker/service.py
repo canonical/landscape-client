@@ -53,9 +53,9 @@ class BrokerService(LandscapeService):
             f"{self.service_name}.bpickle",
         )
         super().__init__(config)
-        if hasattr(config, "ssl_ca"):
+        if config.ssl_ca is not None:
             cainfo = config.ssl_ca
-        elif hasattr(config, "ssl_public_key"):
+        elif config.ssl_public_key is not None:
             cainfo = config.ssl_public_key
             logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
         else:

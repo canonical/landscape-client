@@ -235,9 +235,9 @@ class PackageReporter(PackageTaskHandler):
             else:
                 proxy = self._config.get("http_proxy")
 
-            if hasattr(self._config, "ssl_ca"):
+            if self._config.ssl_ca is not None:
                 cainfo = self._config.ssl_ca
-            elif hasattr(self._config, "ssl_public_key"):
+            elif self._config.ssl_public_key is not None:
                 cainfo = self._config.ssl_public_key
                 logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
             else:
