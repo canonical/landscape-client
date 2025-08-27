@@ -1,5 +1,4 @@
 from twisted.internet.defer import fail
-from unittest import mock
 
 from landscape.client.broker.ping import PingClient
 from landscape.client.broker.ping import Pinger

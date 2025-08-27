@@ -126,3 +126,29 @@ class SaveAttachmentsTest(TestCase):
 
         deferred.addBoth(check)
         return deferred
+
+    def test_attachments_with_ssl_ca(self):
+        """If the CA is ssl_ca"""
+        self.config.ssl_ca = "/some/key"
+        ensureDeferred(
+            save_attachments(
+                self.config,
+                (("attachment-1.txt", "Contents of attachment 1\n"),),
+                self.dest,
+                uid=self.uid,
+                gid=self.gid,
+            ),
+        )
+
+    def test_attachments_with_ssl_public_key(self):
+        """If the CA is ssl_public_key"""
+        self.config.ssl_public_key = "/some/key"
+        ensureDeferred(
+            save_attachments(
+                self.config,
+                (("attachment-1.txt", "Contents of attachment 1\n"),),
+                self.dest,
+                uid=self.uid,
+                gid=self.gid,
+            ),
+        )
