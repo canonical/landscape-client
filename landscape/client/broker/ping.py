@@ -140,9 +140,13 @@ class Pinger:
 
     def start(self):
         """Start pinging."""
-        cainfo = getattr(self._config, "ssl_ca", None) or getattr(self._config, "ssl_public_key", None)
-        if not getattr(self._config, "ssl_ca", None) and getattr(self._config, "ssl_public_key", None):
+        if hasattr(self._config, "ssl_ca"):
+            cainfo = self._config.ssl_ca
+        elif hasattr(self._config, "ssl_public_key"):
+            cainfo = self._config.ssl_public_key
             logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
+        else:
+            cainfo = None
         self._ping_client = self.ping_client_factory(
             self._reactor,
             cainfo=cainfo,

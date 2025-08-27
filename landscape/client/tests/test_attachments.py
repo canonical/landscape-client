@@ -11,6 +11,8 @@ from landscape.lib.persist import Persist
 
 MODULE = "landscape.client.attachments"
 
+class _Config:
+    pass
 
 class SaveAttachmentsTest(TestCase):
     """Tests for the `save_attachments` function."""
@@ -19,10 +21,9 @@ class SaveAttachmentsTest(TestCase):
         super().setUp()
 
         self.dest = tempfile.mkdtemp()
-        self.config = mock.Mock(
-            url="https://example.com/",
-            data_path=self.dest,
-        )
+        self.config = _Config
+        self.config.url = "https://example.com"
+        self.config.data_path = self.dest
 
         self.persist = Persist(
             filename=os.path.join(self.dest, "broker.bpickle"),
@@ -38,6 +39,37 @@ class SaveAttachmentsTest(TestCase):
         self.gid = os.getgid()
 
         self.addCleanup(mock.patch.stopall)
+
+        def config_without_ssl():
+            """Helper method. Removed 'ssl_ca' and 'ssl_public_key' from self.config.
+            Use when you want no SSL"""
+            for attr in ("ssl_ca", "ssl_public_key"):
+                if hasattr(self.config, attr):
+                    delattr(self.config, attr)
+
+        def config_with_ca(path="/tmp/ca.pem"):
+            """Helper method. Uses'ssl_ca' and removes'ssl_public_key' from self.config.
+            Preferred configuration."""
+            config_without_ssl()
+            setattr(self.config, "ssl_ca", path)
+
+        def config_with_public_key(path="/tmp/old.pem"):
+            """Helper method. Uses'ssl_public_key' and removes'ssl_ca' from self.config.
+            Deprecated configuration."""
+            config_without_ssl()
+            setattr(self.config, "ssl_public_key", path)
+
+        def config_with_both(ca="/tmp/ca.pem", pk="/tmp/old.pem"):
+            """Helper method. Configures both 'ssl_ca' and 'ssl_public_key' from self.config.
+            Use when you want both SSL"""
+            config_without_ssl()
+            setattr(self.config, "ssl_ca", ca)
+            setattr(self.config, "ssl_public_key", pk)
+
+        self.config_without_ssl = config_without_ssl
+        self.config_with_ca = config_with_ca
+        self.config_with_public_key = config_with_public_key
+        self.config_with_both = config_with_both
 
     def test_save_attachments(self):
         """attachments are downloaded and saved to the given destination, using
@@ -126,3 +158,4 @@ class SaveAttachmentsTest(TestCase):
 
         deferred.addBoth(check)
         return deferred
+

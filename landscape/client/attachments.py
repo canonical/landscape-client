@@ -38,9 +38,13 @@ async def save_attachments(
             # Backward-compatibility with inline attachments.
             data = attachment_id.encode()
         else:
-            cainfo = getattr(config, "ssl_ca", None) or getattr(config, "ssl_public_key", None)
-            if not getattr(config, "ssl_ca", None) and getattr(config, "ssl_public_key", None):
+            if hasattr(config, "ssl_ca"):
+                cainfo = config.ssl_ca
+            elif hasattr(config, "ssl_public_key"):
+                cainfo = config.ssl_public_key
                 logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
+            else:
+                cainfo = None
             data = await fetch_async(
                 root_path + str(attachment_id),
                 cainfo=cainfo,
