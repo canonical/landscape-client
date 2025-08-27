@@ -863,6 +863,40 @@ class PackageReporterAptTest(LandscapeTest):
 
         return result
 
+    @mock.patch(
+        "landscape.client.package.reporter.fetch_async",
+        return_value=succeed(b"hash-ids"),
+    )
+    def test_fetch_hash_id_db_with_ssl_ca(self, mock_fetch_async):
+        """
+        The L{PackageReporter.fetch_hash_id_db} method takes into account the
+        possible custom SSL certificate specified in the client configuration.
+        """
+
+        self.config.url = "http://fake.url/path/message-system/"
+        self.config.ssl_ca = "/some/key"
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
+        self.facade.set_arch("arch")
+
+        # Check fetch_async is called with the default url
+        hash_id_db_url = (
+            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
+        )
+
+        # Now go!
+        result = self.reporter.fetch_hash_id_db()
+        mock_fetch_async.assert_called_once_with(
+            hash_id_db_url,
+            cainfo=self.config.ssl_ca,
+            proxy=None,
+        )
+
+        return result
+
     def test_wb_apt_sources_have_changed(self):
         """
         The L{PackageReporter._apt_sources_have_changed} method returns a bool
