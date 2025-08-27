@@ -1,4 +1,5 @@
 from twisted.internet.defer import fail
+from unittest import mock
 
 from landscape.client.broker.ping import PingClient
 from landscape.client.broker.ping import Pinger
@@ -320,3 +321,13 @@ class PingerTest(LandscapeTest):
         self.pinger.stop()
         self.reactor.advance(10)
         self.assertEqual([], self.page_getter.fetches)
+
+    def test_ping_with_ssl_ca(self):
+        """If the CA is ssl_ca"""
+        self.config.ssl_ca = "/some/key"
+        self.pinger.start()
+
+    def test_ping_with_ssl_public_key(self):
+        """If the CA is ssl_public_key"""
+        self.config.ssl_public_key = "/some/key"
+        self.pinger.start()
