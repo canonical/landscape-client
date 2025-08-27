@@ -102,7 +102,7 @@ class Configuration(BaseConfiguration):
               - C{log_level} (C{"info"})
               - C{url} (C{"http://landscape.canonical.com/message-system"})
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
-              - C{ssl_ca} (alias: deprecated C{ssl_public_key})
+              - C{ssl_ca}
               - C{ignore_sigint} (C{False})
               - C{stagger_launch} (C{0.1})
         """
@@ -122,10 +122,8 @@ class Configuration(BaseConfiguration):
         parser.add_argument(
             "-k",
             "--ssl-ca",
-            "--ssl-public-key",
             dest="ssl_ca",
-            help="The CA certificate verifies the server. "
-            "Only used if the given URL is https. --ssl-public-key is deprecated; use --ssl-ca instead.",
+            help="The CA certificate verifies the server.",
         )
         parser.add_argument(
             "--ignore-sigint",
