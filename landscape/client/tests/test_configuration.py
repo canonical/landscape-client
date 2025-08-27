@@ -2092,7 +2092,7 @@ registration_key = shared-secret
                 "account",
                 "-t",
                 "title",
-                "--ssl-public-key",
+                "--ssl-ca",
                 "base64:SGkgdGhlcmUh",
             ],
         )
@@ -2129,7 +2129,7 @@ registration_key = shared-secret
                 "account",
                 "-t",
                 "title",
-                "--ssl-public-key",
+                "--ssl-ca",
                 "/some/filename",
             ],
         )

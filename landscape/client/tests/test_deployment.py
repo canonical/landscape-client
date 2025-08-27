@@ -215,7 +215,7 @@ class ConfigurationTest(LandscapeTest):
     def test_ssl_public_key_option(self):
         """Ensure options.ssl_public_key option can be read by parse_args."""
         options = self.parser.parse_args(
-            ["--ssl-public-key", "/tmp/somekeyfile.ssl"],
+            ["--ssl-ca", "/tmp/somekeyfile.ssl"],
         )
         self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
