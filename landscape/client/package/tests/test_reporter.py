@@ -876,18 +876,15 @@ class PackageReporterAptTest(LandscapeTest):
         self.config.url = "http://fake.url/path/message-system/"
         self.config.ssl_ca = "/some/key"
 
-        # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
         self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
-        # Check fetch_async is called with the default url
         hash_id_db_url = (
             "http://fake.url/path/hash-id-databases/uuid_codename_arch"
         )
 
-        # Now go!
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
             hash_id_db_url,
