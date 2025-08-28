@@ -36,6 +36,16 @@ def uastatus(q):
     q.put(pro_info)
 
 
+def serialize_datetimes(obj):
+    if isinstance(obj, dict):
+        return {k: serialize_datetimes(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_datetimes(v) for v in obj]
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
+
+
 def get_ubuntu_pro_info() -> dict:
     """Query ua tools for Ubuntu Pro status as JSON, parsing it to a dict.
 
@@ -104,17 +114,8 @@ def get_ubuntu_pro_info() -> dict:
         p.join()
 
         try:
-            pro_info = q.get(timeout=30)
-            if (
-                "effective" in pro_info
-                and isinstance(pro_info["effective"], datetime)
-            ):
-                pro_info["effective"] = pro_info["effective"].isoformat()
-            if (
-                "expires" in pro_info
-                and isinstance(pro_info["expires"], datetime)
-            ):
-                pro_info["expires"] = pro_info["expires"].isoformat()
+            pro_info = q.get(timeout=5)
+            pro_info = serialize_datetimes(pro_info)
         except Exception:
             return _ubuntu_pro_error_message(
                 "Issue processing pro info.", "tools-error"
