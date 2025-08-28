@@ -93,18 +93,19 @@ class BrokerServiceTest(LandscapeTest):
         super().setUp()
         self.config.ssl_public_key = None
         self.config.ssl_ca = "/some/key"
+
         class FakeBrokerService(BrokerService):
             reactor_factory = FakeReactor
 
         self.service = FakeBrokerService(self.config)
         self.assertIsNotNone(self.config.ssl_ca)
 
-
     def test_service_with_ssl_public_key(self):
         """If the CA is ssl_public_key"""
         super().setUp()
         self.config.ssl_ca = None
         self.config.ssl_public_key = "/some/key"
+
         class FakeBrokerService(BrokerService):
             reactor_factory = FakeReactor
 
