@@ -90,14 +90,14 @@ class BrokerServiceTest(LandscapeTest):
 
     def test_service_with_ssl_ca(self):
         """If the CA is ssl_ca"""
-        self.setUp()
         self.config.ssl_public_key = None
         self.config.ssl_ca = "/some/key"
-        self.assertIsNotNone(self.config.ssl_ca)
+        self.service = self.service.__class__(self.config)
+        self.assertIsNotNone(self.service.config.ssl_ca)
 
     def test_service_with_ssl_public_key(self):
         """If the CA is ssl_public_key"""
-        self.setUp()
         self.config.ssl_ca = None
         self.config.ssl_public_key = "/some/key"
-        self.assertIsNotNone(self.config.ssl_public_key)
+        self.service = self.service.__class__(self.config)
+        self.assertIsNotNone(self.service.config.ssl_public_key)
