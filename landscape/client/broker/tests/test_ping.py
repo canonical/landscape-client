@@ -325,8 +325,12 @@ class PingerTest(LandscapeTest):
         """If the CA is ssl_ca"""
         self.config.ssl_ca = "/some/key"
         self.pinger.start()
+        self.assertIsNotNone(self.config.ssl_ca)
+        self.assertIsNone(self.config.ssl_public_key)
 
     def test_ping_with_ssl_public_key(self):
         """If the CA is ssl_public_key"""
         self.config.ssl_public_key = "/some/key"
         self.pinger.start()
+        self.assertIsNotNone(self.config.ssl_public_key)
+        self.assertIsNone(self.config.ssl_ca)

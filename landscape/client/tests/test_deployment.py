@@ -217,7 +217,7 @@ class ConfigurationTest(LandscapeTest):
         options = self.parser.parse_args(
             ["--ssl-ca", "/tmp/somekeyfile.ssl"],
         )
-        self.assertEqual(options.ssl_ca, "/tmp/somekeyfile.ssl")
+        self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
     def test_ssl_public_key_default(self):
         """Ensure parse_args sets appropriate ssl_ca default."""
