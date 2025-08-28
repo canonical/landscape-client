@@ -334,3 +334,9 @@ class PingerTest(LandscapeTest):
         self.pinger.start()
         self.assertIsNotNone(self.config.ssl_public_key)
         self.assertIsNone(self.config.ssl_ca)
+
+    def test_ping_without_ssl(self):
+        """If there is no ssl_ca or ssl_public_key"""
+        self.pinger.start()
+        self.assertIsNone(self.config.ssl_public_key)
+        self.assertIsNone(self.config.ssl_ca)

@@ -130,7 +130,6 @@ class SaveAttachmentsTest(TestCase):
     def test_attachments_with_ssl_ca(self):
         """If the CA is ssl_ca"""
         self.config.ssl_public_key = None
-        self.assertIsNotNone
         self.config.ssl_ca = "/some/key"
         self.assertIsNotNone(self.config.ssl_ca)
         self.fetch_async.side_effect = [
