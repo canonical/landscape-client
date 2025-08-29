@@ -1,6 +1,6 @@
 from unittest import TestCase, mock
 
-from landscape.lib.uaclient import get_pro_status, attach_pro, detach_pro
+from landscape.lib.uaclient import get_pro_status
 
 
 class TestUAClientWrapper(TestCase):

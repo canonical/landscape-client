@@ -24,8 +24,3 @@ def get_pro_status():
             "Could not get pro information for computer"
         )
         return {}
-
-
-def attach_pro(token):
-    """Attaches a pro token to current machine."""
-    # TODO when creating activity for attaching pro
