@@ -40,13 +40,16 @@ class ProManagement(ManagerPlugin):
         try:
             token = message["token"]
             d = ensureDeferred(
-                attach_pro(token)
+                self._attach_pro(token)
             )
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
         except Exception as e:
             self._respond(FAILED, self._format_exception(e), opid)
+
+    async def _attach_pro(self, token):
+        attach_pro(token)
 
     def _format_exception(self, e):
         return "{}: {}".format(e.__class__.__name__, e.args[0])
