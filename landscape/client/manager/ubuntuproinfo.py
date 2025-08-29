@@ -8,10 +8,7 @@ from landscape.client import IS_CORE
 from landscape.client import IS_SNAP
 from landscape.client.manager.plugin import DataWatcherManager
 from landscape.client import UA_DATA_DIR
-
-if not IS_SNAP and not IS_CORE:
-    from uaclient.status import status
-    from uaclient.config import UAConfig
+from landscape.lib.uaclient import get_pro_status
 
 
 class UbuntuProInfo(DataWatcherManager):
@@ -35,9 +32,18 @@ class UbuntuProInfo(DataWatcherManager):
 
 
 def uastatus(q):
-    config = UAConfig()
-    pro_info = status(config)
+    pro_info = get_pro_status()
     q.put(pro_info)
+
+
+def serialize_datetimes(obj):
+    if isinstance(obj, dict):
+        return {k: serialize_datetimes(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_datetimes(v) for v in obj]
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
 
 
 def get_ubuntu_pro_info() -> dict:
@@ -108,9 +114,12 @@ def get_ubuntu_pro_info() -> dict:
         p.join()
 
         try:
-            pro_info = q.get(timeout=30)
+            pro_info = q.get(timeout=5)
+            pro_info = serialize_datetimes(pro_info)
         except Exception:
-            pro_info = {}
+            return _ubuntu_pro_error_message(
+                "Issue processing pro info.", "tools-error"
+            )
 
     return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
