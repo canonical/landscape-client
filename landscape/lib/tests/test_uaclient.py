@@ -1,6 +1,6 @@
 from unittest import TestCase, mock
 
-from landscape.lib.uaclient import get_pro_status, attach_pro, detach_pro
+from landscape.lib.uaclient import get_pro_status
 
 
 class TestUAClientWrapper(TestCase):
@@ -40,25 +40,11 @@ class TestUAClientWrapper(TestCase):
     @mock.patch("landscape.lib.uaclient.UAConfig")
     def test_get_pro_status_name_error(self, mock_uaconfig):
         mock_uaconfig.side_effect = NameError
-        with self.assertLogs() as log:
-            get_pro_status()
+        result = get_pro_status()
+        self.assertEqual({}, result)
 
-        self.assertEqual(1, len(log.output))
-        self.assertIn(
-            "Tried to use uaclient in SNAP or CORE environment, skipping call",
-            log.output[0],
-        )
-
-    def test_attach_pro(self):
-        """
-        Attaching pro token using uaclient library
-        """
-        # TODO write test cases for function when implemented
-        attach_pro("fake-token")
-
-    def test_detach_pro(self):
-        """
-        Detaching pro token using uaclient library
-        """
-        # TODO write test cases for function when implemented
-        detach_pro()
+    @mock.patch("landscape.lib.uaclient.UAConfig")
+    def test_get_pro_status_general_exception(self, mock_uaconfig):
+        mock_uaconfig.side_effect = Exception
+        result = get_pro_status()
+        self.assertEqual({}, result)

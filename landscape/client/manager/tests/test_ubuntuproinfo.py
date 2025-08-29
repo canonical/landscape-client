@@ -113,7 +113,10 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(result["attached"])
 
     def test_serializable(self):
-        """Tests calling `pro status` when it is not installed."""
+        """
+        Tests calling `pro status` when datetimes are not serialized
+        and verifies it gets serialized.
+        """
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
@@ -145,7 +148,10 @@ class UbuntuProInfoTest(LandscapeTest):
         )
 
     def test_serializable_already(self):
-        """Tests calling `pro status` when it is not installed."""
+        """
+        Tests calling `pro status` with serialized data and verifies
+        data does not change.
+        """
         plugin = UbuntuProInfo()
         self.manager.add(plugin)
 
