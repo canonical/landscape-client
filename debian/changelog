@@ -1,3 +1,9 @@
+landscape-client (25.10~beta.1-0landscape0) jammy; urgency=medium
+
+  * feat: rename ssl-public-key parameter to ssl-ca. Allow both.
+
+ -- Spencer Runde <spencer.runde@canonical.com>  Fri, 29 Aug 2025 15:23:40 -0500
+
 landscape-client (25.08.2-0landscape0) jammy; urgency=medium
 
   * build: added packaging to build-depends
