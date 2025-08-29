@@ -1,11 +1,15 @@
 import json
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from multiprocessing import Queue
 from unittest import mock
 
-from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-from landscape.client.manager.ubuntuproinfo import UbuntuProInfo
+from landscape.client.manager.ubuntuproinfo import (
+    get_ubuntu_pro_info,
+    uastatus,
+    UbuntuProInfo,
+)
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.client.tests.helpers import ManagerHelper
 
@@ -32,7 +36,6 @@ class UbuntuProInfoTest(LandscapeTest):
             "contract": {
                 "id": "fake_contract_id"
             },
-            "expires": "fake_expiration_date",
             "services": [
                 {
                     "available": "yes",
@@ -54,7 +57,6 @@ class UbuntuProInfoTest(LandscapeTest):
             "contract": {
                 "id": "fake_contract_id"
             },
-            "expires": "fake_expiration_date",
             "services": [
                 {
                     "available": "yes",
@@ -70,6 +72,19 @@ class UbuntuProInfoTest(LandscapeTest):
         }
 
         self.addCleanup(mock.patch.stopall)
+
+    def test_uastatus(self):
+        mock.patch.stopall()
+        self.assertFalse(isinstance(uastatus, mock.Mock))
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.get_pro_status"
+        ) as mock_status:
+            mock_status.return_value = self.mock_status_value
+            q = Queue()
+            uastatus(q)
+            pro_info = q.get(timeout=30)
+
+            self.assertEqual(self.mock_status_value, pro_info)
 
     def test_ubuntu_pro_info(self):
         """Tests calling `ua status`."""
@@ -97,6 +112,77 @@ class UbuntuProInfoTest(LandscapeTest):
         result = json.loads(messages[0]["ubuntu-pro-info"])
         self.assertTrue(result["attached"])
 
+    def test_serializable(self):
+        """
+        Tests calling `pro status` when datetimes are not serialized
+        and verifies it gets serialized.
+        """
+        plugin = UbuntuProInfo()
+        self.manager.add(plugin)
+
+        fake_val = {
+            "effective": datetime.now(timezone.utc) - timedelta(days=30),
+            "expires": datetime.now(timezone.utc) + timedelta(days=30),
+        }
+
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(fake_val),
+        ):
+            plugin.run()
+
+        expected = fake_val
+        expected["expires"] = expected["expires"].isoformat()
+        expected["effective"] = expected["effective"].isoformat()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertTrue(len(messages) > 0)
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertEqual(
+            json.dumps(
+                expected,
+                separators=(",", ":"),
+                default=str
+            ),
+            messages[0]["ubuntu-pro-info"]
+        )
+
+    def test_serializable_already(self):
+        """
+        Tests calling `pro status` with serialized data and verifies
+        data does not change.
+        """
+        plugin = UbuntuProInfo()
+        self.manager.add(plugin)
+
+        effective = datetime.now(timezone.utc) - timedelta(days=30)
+        expires = datetime.now(timezone.utc) + timedelta(days=30)
+        effective = effective.isoformat()
+        expires = expires.isoformat()
+
+        fake_val = {
+            "effective": effective,
+            "expires": expires,
+        }
+
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=uastatus_mock_maker(fake_val),
+        ):
+            plugin.run()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertTrue(len(messages) > 0)
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertEqual(
+            json.dumps(
+                fake_val,
+                separators=(",", ":"),
+                default=str
+            ),
+            messages[0]["ubuntu-pro-info"]
+        )
+
     def test_ubuntu_pro_info_no_pro(self):
         """Tests calling `pro status` when it is not installed."""
         plugin = UbuntuProInfo()
@@ -122,6 +208,22 @@ class UbuntuProInfoTest(LandscapeTest):
 
         result = json.loads(messages[0]["ubuntu-pro-info"])
         self.assertFalse(result["attached"])
+
+    def test_error_getting_pro(self):
+        """Tests calling `pro status` when it is not installed."""
+        plugin = UbuntuProInfo()
+        self.manager.add(plugin)
+
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.Queue",
+        ) as mock_queue:
+            mock_queue.return_value.get.side_effect = Exception
+            plugin.run()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertTrue(len(messages) > 0)
+        self.assertTrue("ubuntu-pro-info" in messages[0])
+        self.assertIn("errors", messages[0]["ubuntu-pro-info"])
 
     def test_get_ubuntu_pro_info_core(self):
         """In Ubuntu Core, there is no pro info, so mock the minimum necessary
