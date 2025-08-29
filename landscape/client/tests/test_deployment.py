@@ -219,10 +219,22 @@ class ConfigurationTest(LandscapeTest):
         )
         self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
+    def test_ssl_ca_option(self):
+        """Ensure options.ssl_ca option can be read by parse_args."""
+        options = self.parser.parse_args(
+            ["--ssl-ca", "/tmp/somekeyfile.ssl"],
+        )
+        self.assertEqual(options.ssl_ca, "/tmp/somekeyfile.ssl")
+
     def test_ssl_public_key_default(self):
         """Ensure parse_args sets appropriate ssl_public_key default."""
         options = self.parser.parse_args([])
         self.assertEqual(options.ssl_public_key, None)
+
+    def test_ssl_ca_default(self):
+        """Ensure parse_args sets appropriate ssl_ca default."""
+        options = self.parser.parse_args([])
+        self.assertEqual(options.ssl_ca, None)
 
     def test_ignore_sigint_option(self):
         """Ensure options.ignore_sigint option can be read by parse_args."""
