@@ -14,7 +14,7 @@ if not IS_SNAP and not IS_CORE:
 
 
 class AttachProError(Exception):
-    """Could not attach pro"""
+    """Could not attach pro."""
 
 
 def get_pro_status():
@@ -25,12 +25,12 @@ def get_pro_status():
         return pro_info
     except NameError:
         logging.warning(
-            "Tried to use uaclient in SNAP or CORE environment, skipping call"
+            "Tried to use uaclient in SNAP or CORE environment, skipping call."
         )
         return {}
     except Exception:
         logging.warning(
-            "Could not get pro information for computer"
+            "Could not get pro information for computer."
         )
         return {}
 
@@ -45,8 +45,9 @@ def attach_pro(token):
         full_token_attach(options)
     except NameError:
         logging.warning(
-            "Tried to use uaclient in SNAP or CORE environment, skipping call"
+            "Tried to use uaclient in SNAP or CORE environment, skipping call."
         )
+        raise AttachProError
     except UbuntuProError:
         logging.warning(
             "Could not attach pro."
