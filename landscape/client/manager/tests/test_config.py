@@ -25,6 +25,7 @@ class ManagerConfigurationTest(LandscapeTest):
                 "UbuntuProInfo",
                 "LivePatch",
                 "UbuntuProRebootRequired",
+                "ProManagement",
             ],
             ALL_PLUGINS,
         )
