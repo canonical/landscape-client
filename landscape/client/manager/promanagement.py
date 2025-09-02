@@ -1,4 +1,5 @@
 from twisted.internet.defer import ensureDeferred
+from twisted.internet.defer import succeed
 
 from landscape.client.manager.plugin import (
     FAILED,
@@ -17,11 +18,7 @@ ATTACH_PRO_FAILURE = 2
 class ProManagement(ManagerPlugin):
     """A plugin which allows for users to attach pro tokens."""
 
-    def __init__(
-        self,
-        process_factory=None,
-        script_tempdir: str | None = None,
-    ):
+    def __init__(self,):
         ManagerPlugin.__init__(self)
 
     def register(self, registry):
@@ -40,19 +37,16 @@ class ProManagement(ManagerPlugin):
         try:
             token = message["token"]
             d = ensureDeferred(
-                self._attach_pro(token)
+                self.attach_pro_token(token)
             )
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
         except Exception as e:
-            self._respond(FAILED, self._format_exception(e), opid)
+            self._respond(FAILED, "Error attaching pro.", opid)
 
-    async def _attach_pro(self, token):
-        attach_pro(token)
-
-    def _format_exception(self, e):
-        return "{}: {}".format(e.__class__.__name__, e.args[0])
+    async def attach_pro_token(self, token):
+        await attach_pro(token)
 
     def _respond_success(self, data, opid):
         return self._respond(
@@ -63,10 +57,13 @@ class ProManagement(ManagerPlugin):
 
     def _respond_failure(self, failure, opid):
         code = None
-        if failure.check(AttachProError):
+        try:
+            failure.raiseException()
+        except AttachProError as e:
             code = ATTACH_PRO_FAILURE
-
-        return self._respond(FAILED, str(failure), opid, code)
+            return self._respond(FAILED, e.message, opid, code)
+        except Exception:
+            return self._respond(FAILED, str(failure), opid, code)
 
     def _respond(self, status, data, opid, result_code=None):
         if not isinstance(data, str):
@@ -79,6 +76,7 @@ class ProManagement(ManagerPlugin):
         }
         if result_code:
             message["result-code"] = result_code
+
         return self.registry.broker.send_message(
             message,
             self._session_id,

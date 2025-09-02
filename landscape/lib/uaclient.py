@@ -9,12 +9,29 @@ if not IS_SNAP and not IS_CORE:
         FullTokenAttachOptions,
     )
     from uaclient.config import UAConfig
-    from uaclient.exceptions import UbuntuProError
+    from uaclient.exceptions import (
+        ConnectivityError,
+        ContractAPIError,
+        LockHeldError,
+        UbuntuProError,
+    )
     from uaclient.status import status
 
 
 class AttachProError(Exception):
-    """Could not attach pro."""
+    message = "Could not attach pro."
+
+
+class ConnectivityException(AttachProError):
+    message = "Not possible to connect to contracts service."
+
+
+class ContractAPIException(AttachProError):
+    message = "Unexpected error in the contracts service interaction."
+
+
+class LockHeldException(AttachProError):
+    message = "Another client process is holding the lock on the machine."
 
 
 def get_pro_status():
@@ -35,7 +52,7 @@ def get_pro_status():
         return {}
 
 
-def attach_pro(token):
+async def attach_pro(token):
     """Attaches a pro token to current machine."""
     try:
         options = FullTokenAttachOptions(
@@ -48,8 +65,11 @@ def attach_pro(token):
             "Tried to use uaclient in SNAP or CORE environment, skipping call."
         )
         raise AttachProError
+    except ConnectivityError:
+        raise ConnectivityException
+    except ContractAPIError:
+        raise ContractAPIException
+    except LockHeldError:
+        raise LockHeldException
     except UbuntuProError:
-        logging.warning(
-            "Could not attach pro."
-        )
         raise AttachProError
