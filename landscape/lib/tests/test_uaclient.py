@@ -1,6 +1,13 @@
 from unittest import TestCase, mock
 
-from landscape.lib.uaclient import AttachProError, attach_pro, get_pro_status
+from landscape.lib.uaclient import (
+    AttachProError,
+    ConnectivityException,
+    ContractAPIException,
+    LockHeldException,
+    attach_pro,
+    get_pro_status,
+)
 
 from landscape.client import IS_CORE
 from landscape.client import IS_SNAP
@@ -65,7 +72,7 @@ class TestUAClientWrapper(TestCase):
     async def test_attach_pro_normal(self, mock_attach, mock_options):
         mock_options.return_value = None
         mock_attach.return_value = None
-        
+
         await self.assertIsNone(attach_pro("fake-token"))
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
@@ -86,14 +93,14 @@ class TestUAClientWrapper(TestCase):
     async def test_attach_pro_connectivity_error(self, mock_options):
         mock_options.side_effect = ConnectivityError
 
-        with self.assertRaises(AttachProError):
+        with self.assertRaises(ConnectivityException):
             await attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     async def test_attach_pro_contract_api_error(self, mock_options):
         mock_options.side_effect = ContractAPIError
 
-        with self.assertRaises(AttachProError):
+        with self.assertRaises(ContractAPIException):
             await attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")

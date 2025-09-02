@@ -1,9 +1,6 @@
 import os
 from unittest import mock
 
-from twisted.internet.defer import gatherResults
-from twisted.internet.error import ProcessDone
-
 from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.manager.promanagement import ProManagement
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
@@ -50,7 +47,9 @@ class RunScriptTests(LandscapeTest):
             [],
         )
 
-        with mock.patch("landscape.client.manager.promanagement.attach_pro") as mock_attach:
+        with mock.patch(
+            "landscape.client.manager.promanagement.attach_pro"
+        ) as mock_attach:
             mock_attach.return_value = None
             result = self._send_attach()
             mock_attach.assert_called_once_with("fake-token")
@@ -77,7 +76,9 @@ class RunScriptTests(LandscapeTest):
             [],
         )
 
-        with mock.patch("landscape.client.manager.promanagement.attach_pro") as mock_attach:
+        with mock.patch(
+            "landscape.client.manager.promanagement.attach_pro"
+        ) as mock_attach:
             mock_attach.side_effect = AttachProError
             result = self._send_attach()
 
@@ -104,7 +105,9 @@ class RunScriptTests(LandscapeTest):
             [],
         )
 
-        with mock.patch("landscape.client.manager.promanagement.attach_pro") as mock_attach:
+        with mock.patch(
+            "landscape.client.manager.promanagement.attach_pro"
+        ) as mock_attach:
             mock_attach.side_effect = ConnectivityException
             result = self._send_attach()
 
@@ -131,7 +134,9 @@ class RunScriptTests(LandscapeTest):
             [],
         )
 
-        with mock.patch("landscape.client.manager.promanagement.attach_pro") as mock_attach:
+        with mock.patch(
+            "landscape.client.manager.promanagement.attach_pro"
+        ) as mock_attach:
             mock_attach.side_effect = ContractAPIException
             result = self._send_attach()
 
@@ -158,7 +163,9 @@ class RunScriptTests(LandscapeTest):
             [],
         )
 
-        with mock.patch("landscape.client.manager.promanagement.attach_pro") as mock_attach:
+        with mock.patch(
+            "landscape.client.manager.promanagement.attach_pro"
+        ) as mock_attach:
             mock_attach.side_effect = LockHeldException
             result = self._send_attach()
 
@@ -185,12 +192,15 @@ class RunScriptTests(LandscapeTest):
             [],
         )
 
-        with mock.patch("landscape.client.manager.promanagement.attach_pro") as mock_attach:
+        with mock.patch(
+            "landscape.client.manager.promanagement.attach_pro"
+        ) as mock_attach:
             mock_attach.side_effect = Exception
             result = self._send_attach()
 
         def got_result(r):
-            message = self.broker_service.message_store.get_pending_messages()[0]
+            message = self.broker_service.message_store.get_pending_messages()
+            message = message[0]
             self.assertEqual("operation-result", message["type"])
             self.assertEqual(123, message["operation-id"])
             self.assertEqual(FAILED, message["status"])

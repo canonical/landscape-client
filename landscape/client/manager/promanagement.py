@@ -1,5 +1,4 @@
 from twisted.internet.defer import ensureDeferred
-from twisted.internet.defer import succeed
 
 from landscape.client.manager.plugin import (
     FAILED,
@@ -42,7 +41,7 @@ class ProManagement(ManagerPlugin):
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
-        except Exception as e:
+        except Exception:
             self._respond(FAILED, "Error attaching pro.", opid)
 
     async def attach_pro_token(self, token):
