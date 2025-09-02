@@ -301,6 +301,10 @@ class SnapManager(BaseSnapManager):
 
         for i in range(len(snaps)):
             snap_name = snaps[i]["name"]
+            # devmode snaps have no ID so we need to add one for server
+            # indexing.
+            if snaps[i]["id"] == "":
+                snaps[i]["id"] = str(i)
             try:
                 config = snap_http.get_conf(snap_name).result
             except SnapdHttpException as e:
