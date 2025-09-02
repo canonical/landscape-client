@@ -65,8 +65,6 @@ class ProManagement(ManagerPlugin):
             return self._respond(FAILED, str(failure), opid, code)
 
     def _respond(self, status, data, opid, result_code=None):
-        if not isinstance(data, str):
-            data = data.decode("utf-8", "replace")
         message = {
             "type": "operation-result",
             "status": status,
