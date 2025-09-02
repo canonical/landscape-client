@@ -36,7 +36,7 @@ class ProManagement(ManagerPlugin):
         try:
             token = message["token"]
             d = ensureDeferred(
-                self.attach_pro_token(token)
+                self._attach_pro(token)
             )
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
@@ -44,8 +44,8 @@ class ProManagement(ManagerPlugin):
         except Exception:
             self._respond(FAILED, "Error attaching pro.", opid)
 
-    async def attach_pro_token(self, token):
-        await attach_pro(token)
+    async def _attach_pro(self, token):
+        attach_pro(token)
 
     def _respond_success(self, data, opid):
         return self._respond(

@@ -69,43 +69,51 @@ class TestUAClientWrapper(TestCase):
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     @mock.patch("landscape.lib.uaclient.full_token_attach")
-    async def test_attach_pro_normal(self, mock_attach, mock_options):
+    def test_attach_pro_normal(self, mock_attach, mock_options):
         mock_options.return_value = None
         mock_attach.return_value = None
 
-        await self.assertIsNone(attach_pro("fake-token"))
+        self.assertIsNone(attach_pro("fake-token"))
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
-    async def test_attach_pro_name_error(self, mock_options):
+    def test_attach_pro_name_error(self, mock_options):
         mock_options.side_effect = NameError
 
         with self.assertRaises(AttachProError):
-            await attach_pro("fake-token")
+            attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
-    async def test_attach_pro_ubuntu_pro_error(self, mock_options):
+    def test_attach_pro_ubuntu_pro_error(self, mock_options):
         mock_options.side_effect = UbuntuProError
 
         with self.assertRaises(AttachProError):
-            await attach_pro("fake-token")
+            attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
-    async def test_attach_pro_connectivity_error(self, mock_options):
-        mock_options.side_effect = ConnectivityError
+    def test_attach_pro_connectivity_error(self, mock_options):
+        mock_options.side_effect = ConnectivityError(cause="cause", url="url")
 
         with self.assertRaises(ConnectivityException):
-            await attach_pro("fake-token")
+            attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
-    async def test_attach_pro_contract_api_error(self, mock_options):
-        mock_options.side_effect = ContractAPIError
+    def test_attach_pro_contract_api_error(self, mock_options):
+        mock_options.side_effect = ContractAPIError(
+            url="url",
+            code="code",
+            body="body"
+        )
 
         with self.assertRaises(ContractAPIException):
-            await attach_pro("fake-token")
+            attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
-    async def test_attach_pro_lock_held_error(self, mock_options):
-        mock_options.side_effect = LockHeldError
+    def test_attach_pro_lock_held_error(self, mock_options):
+        mock_options.side_effect = LockHeldError(
+            lock_request="request",
+            lock_holder=None,
+            pid=1
+        )
 
         with self.assertRaises(LockHeldException):
-            await attach_pro("fake-token")
+            attach_pro("fake-token")

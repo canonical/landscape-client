@@ -52,7 +52,7 @@ def get_pro_status():
         return {}
 
 
-async def attach_pro(token):
+def attach_pro(token):
     """Attaches a pro token to current machine."""
     try:
         options = FullTokenAttachOptions(
