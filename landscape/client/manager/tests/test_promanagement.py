@@ -1,10 +1,8 @@
-import os
 from unittest import mock
 
 from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.manager.promanagement import ProManagement
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.lib.persist import Persist
 
 from landscape.lib.uaclient import (
     AttachProError,
@@ -23,12 +21,6 @@ class RunScriptTests(LandscapeTest):
         self.plugin = ProManagement()
         self.manager.add(self.plugin)
 
-        self.persist = Persist(
-            filename=os.path.join(self.config.data_path, "broker.bpickle"),
-        )
-        registration_persist = self.persist.root_at("registration")
-        registration_persist.set("secure-id", b"secure_id")
-        self.persist.save()
         self.broker_service.message_store.set_accepted_types(
             ["operation-result"],
         )
