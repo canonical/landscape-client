@@ -1,3 +1,9 @@
+landscape-client (25.08.2+git6468-0landscape0) noble; urgency=medium
+
+  * feat: rename ssl-public-key to ssl-ca. Accept either.
+
+ -- Spencer Runde <spencer.runde@canonical.com>  Fri, 29 Aug 2025 15:56:49 -0500
+
 landscape-client (25.08.2-0landscape0) jammy; urgency=medium
 
   * build: added packaging to build-depends
