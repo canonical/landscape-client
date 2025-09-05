@@ -795,7 +795,7 @@ def registration_sent(config):
     Return whether the client has sent a registration request to the server.
     For now does same thing as is_registered as to make function name more
     clear with what is performed. This is the legacy behaviour of
-    --is-registered and the name will be changed in a future release.
+    --is-registered and the name will be removed in the 26.04 release.
     """
     persist_filename = os.path.join(
         config.data_path,
