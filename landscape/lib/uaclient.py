@@ -8,7 +8,6 @@ if not IS_SNAP and not IS_CORE:
         full_token_attach,
         FullTokenAttachOptions,
     )
-    from uaclient.api.u.pro.status.is_attached.v1 import is_attached
     from uaclient.config import UAConfig
     from uaclient.exceptions import (
         AttachInvalidTokenError,
