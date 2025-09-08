@@ -55,14 +55,13 @@ class ProManagement(ManagerPlugin):
         )
 
     def _respond_failure(self, failure, opid):
-        code = None
         try:
             failure.raiseException()
         except AttachProError as e:
             code = ATTACH_PRO_FAILURE
             return self._respond(FAILED, e.message, opid, code)
         except Exception:
-            return self._respond(FAILED, str(failure), opid, code)
+            return self._respond(FAILED, str(failure), opid)
 
     def _respond(self, status, data, opid, result_code=None):
         message = {

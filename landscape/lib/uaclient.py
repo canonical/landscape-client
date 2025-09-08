@@ -8,8 +8,10 @@ if not IS_SNAP and not IS_CORE:
         full_token_attach,
         FullTokenAttachOptions,
     )
+    from uaclient.api.u.pro.status.is_attached.v1 import is_attached
     from uaclient.config import UAConfig
     from uaclient.exceptions import (
+        AttachInvalidTokenError,
         ConnectivityError,
         ContractAPIError,
         LockHeldError,
@@ -32,6 +34,10 @@ class ContractAPIException(AttachProError):
 
 class LockHeldException(AttachProError):
     message = "Another client process is holding the lock on the machine."
+
+
+class InvalidTokenException(AttachProError):
+    message = "Invalid pro token provided."
 
 
 def get_pro_status():
@@ -65,6 +71,8 @@ def attach_pro(token):
             "Tried to use uaclient in SNAP or CORE environment, skipping call."
         )
         raise AttachProError
+    except AttachInvalidTokenError:
+        raise InvalidTokenException
     except ConnectivityError:
         raise ConnectivityException
     except ContractAPIError:

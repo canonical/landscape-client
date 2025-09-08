@@ -4,6 +4,7 @@ from landscape.lib.uaclient import (
     AttachProError,
     ConnectivityException,
     ContractAPIException,
+    InvalidTokenException,
     LockHeldException,
     attach_pro,
     get_pro_status,
@@ -14,6 +15,7 @@ from landscape.client import IS_SNAP
 
 if not IS_SNAP and not IS_CORE:
     from uaclient.exceptions import (
+        AttachInvalidTokenError,
         ConnectivityError,
         ContractAPIError,
         LockHeldError,
@@ -116,4 +118,11 @@ class TestUAClientWrapper(TestCase):
         )
 
         with self.assertRaises(LockHeldException):
+            attach_pro("fake-token")
+
+    @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
+    def test_attach_invalid_token_error(self, mock_options):
+        mock_options.side_effect = AttachInvalidTokenError
+
+        with self.assertRaises(InvalidTokenException):
             attach_pro("fake-token")
