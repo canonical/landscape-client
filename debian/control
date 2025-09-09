@@ -27,7 +27,7 @@ Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw,
          libpam-modules,
          python3-setuptools,
-	 ubuntu-pro-client (>= 31.2.3)
+	 ubuntu-pro-client (>= 27.11.2)
 Description: Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
