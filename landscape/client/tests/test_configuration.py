@@ -2450,7 +2450,8 @@ class ConfigurationDumpTest(LandscapeTest):
 
     def test_show_default_option(self):
         """
-        If no configuration file override is set the dump should show the default
+        If no configuration file override is set the dump should show
+        the default
         """
         self.config.load([])
         log_level_default = self.config._command_line_defaults["log_level"]
@@ -2503,7 +2504,7 @@ class ConfigurationDumpTest(LandscapeTest):
 
     def test_unsaved_options_not_displayed(self):
         """
-        Do not display configuration values for unsaved options, 
+        Do not display configuration values for unsaved options,
         which are only meant to be accessed through the command line
         """
         self.config.load([])
@@ -2514,7 +2515,7 @@ class ConfigurationDumpTest(LandscapeTest):
 
     def test_config_options_without_default_displayed(self):
         """
-        Configuration options specified in the configuration file 
+        Configuration options specified in the configuration file
         that do not have command line defaults should still be included
         """
         config_filename = self.config.default_config_filenames[0]
