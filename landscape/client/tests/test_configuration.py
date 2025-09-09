@@ -2527,6 +2527,18 @@ class ConfigurationDumpTest(LandscapeTest):
             config_dump
         )
 
+    @mock.patch("landscape.client.configuration.configuration_dump_text")
+    def test_registered_exit_code(self, fake_config_dump):
+        """Exits with code 0 after config dump"""
+        exception = self.assertRaises(
+            SystemExit,
+            main,
+            ["--show"],
+            print=noop_print,
+        )
+        fake_config_dump.assert_called_once()
+        self.assertEqual(0, exception.code)
+
 
 class SetSecureIdTest(LandscapeTest):
     """Tests for the `set_secure_id` function."""
