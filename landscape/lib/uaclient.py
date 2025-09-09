@@ -1,9 +1,6 @@
 import logging
 
-from landscape.client import IS_CORE
-from landscape.client import IS_SNAP
-
-if not IS_SNAP and not IS_CORE:
+try:
     from uaclient.api.u.pro.attach.token.full_token_attach.v1 import (
         full_token_attach,
         FullTokenAttachOptions,
@@ -17,6 +14,8 @@ if not IS_SNAP and not IS_CORE:
         UbuntuProError,
     )
     from uaclient.status import status
+except ImportError:
+    pass
 
 
 class AttachProError(Exception):
