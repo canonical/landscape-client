@@ -2528,7 +2528,7 @@ class ConfigurationDumpTest(LandscapeTest):
         )
 
     @mock.patch("landscape.client.configuration.configuration_dump_text")
-    def test_registered_exit_code(self, fake_config_dump):
+    def test_show_argument(self, fake_config_dump):
         """Exits with code 0 after config dump"""
         exception = self.assertRaises(
             SystemExit,
