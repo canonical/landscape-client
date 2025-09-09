@@ -74,6 +74,9 @@ OPTIONS
   --script-users=USERS     A comma-separated list of users to allow scripts to
                            run. To allow scripts to be run by any user,
                            enter: ALL.
+  --script-tempdir=SCRIPT_TEMPDIR  The working directory to use for script executions.
+                           Must have read, write, and exec privileges for
+                           any script users
   --include-manager-plugins=PLUGINS   A comma-separated list of manager
                            plugins to load explicitly.
   --manage-sources-list-d [MANAGE_SOURCES_LIST_D]  Repository profiles manage
@@ -97,6 +100,7 @@ OPTIONS
   --actively-registered    Exit with code 0 (success) if client
                            is registered else returns 5. Display
                            registration info.
+  --show                   Outputs all configuration data as JSON and exit.
 
 CLOUD
 

@@ -6,6 +6,7 @@ for the C{landscape-config} script.
 import base64
 import getpass
 import io
+import json
 import logging
 import os
 import pwd
@@ -13,6 +14,7 @@ import re
 import shlex
 import sys
 import textwrap
+from argparse import SUPPRESS
 from urllib.parse import urlparse
 
 from landscape.client import GROUP
@@ -105,14 +107,24 @@ def get_invalid_users(users):
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
     unsaved_options = (
+        "clones",
+        "start_clones_over",
+        "hostagent_uid",
+        "installation_request_id",
+        "authenticated_attach_code",
         "no_start",
         "disable",
+        "init",
         "silent",
         "ok_no_register",
         "import_from",
         "skip_registration",
         "force_registration",
         "register_if_needed",
+        "is_registered",
+        "actively_registered",
+        "registration_sent",
+        "show",
     )
 
     encoding = "utf-8"
@@ -287,6 +299,11 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             help="Exit with code 0 (success) if client is "
             "registered else returns {}. Displays "
             "registration info.".format(EXIT_NOT_REGISTERED),
+        )
+        parser.add_argument(
+            "--show",
+            action="store_true",
+            help="Outputs all configuration data as JSON.",
         )
         return parser
 
@@ -843,6 +860,33 @@ def registration_info_text(config, registration_status):
     return text
 
 
+def configuration_dump_text(config):
+    """
+    Return a mapping of all available configuration options
+    and their current values in JSON
+    """
+    conf_msg = f"Using {config._config_filename} as configuration file...\n\n"
+    conf_dump = {}
+
+    for conf_option in config._command_line_defaults:
+        conf_value = config.get(conf_option)
+        if (
+            conf_value != SUPPRESS
+            and conf_option != "config"
+            and conf_option not in LandscapeSetupConfiguration.unsaved_options
+        ):
+            conf_dump[conf_option] = conf_value
+
+    # Add config file options without a command line default
+    for conf_option in config._config_file_options:
+        if conf_option not in conf_dump:
+            conf_value = config.get(conf_option)
+            conf_dump[conf_option] = conf_value
+
+    json_str = json.dumps(conf_dump)
+    return conf_msg + json_str
+
+
 def set_secure_id(config, new_id, insecure_id=None):
     """Persists a secure id in the identity data file. This is used to indicate
     whether we are currently in the process of registering.
@@ -896,6 +940,11 @@ def main(args, print=print):  # noqa: C901
             "Do not set both skip registration "
             "and force registration together.",
         )
+
+    if config.show:
+        conf_dump = configuration_dump_text(config)
+        print(conf_dump)
+        sys.exit(0)
 
     already_registered = registration_sent(config)
 

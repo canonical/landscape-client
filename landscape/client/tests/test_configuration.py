@@ -12,6 +12,7 @@ from landscape.client import USER
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.client.configuration import actively_registered
+from landscape.client.configuration import configuration_dump_text
 from landscape.client.configuration import bootstrap_tree
 from landscape.client.configuration import ConfigurationError
 from landscape.client.configuration import EXIT_NOT_REGISTERED
@@ -2421,6 +2422,109 @@ class RegistrationInfoTest(LandscapeTest):
             print=noop_print,
         )
         self.assertEqual(EXIT_NOT_REGISTERED, exception.code)
+
+
+class ConfigurationDumpTest(LandscapeTest):
+
+    helpers = [BrokerConfigurationHelper]
+
+    def setUp(self):
+        super().setUp()
+
+        self.config = LandscapeSetupConfiguration()
+        self.log_level = "critical"
+
+        self.config_text = textwrap.dedent(
+            """
+            [client]
+            log_level = {}
+            custom_option = custom_value
+        """.format(
+                self.log_level,
+            ),
+        )
+
+        mock.patch("landscape.client.configuration.init_app_logging").start()
+
+        self.addCleanup(mock.patch.stopall)
+
+    def test_show_default_option(self):
+        """
+        If no configuration file override is set the dump should show the default
+        """
+        self.config.load([])
+        log_level_default = self.config._command_line_defaults["log_level"]
+        config_dump = configuration_dump_text(self.config)
+        self.assertIn(
+            f"\"log_level\": \"{log_level_default}\"",
+            config_dump
+        )
+
+    def test_config_file_overrides(self):
+        """
+        If a configuration file override is set the dump should show
+        the value from the configuration file
+        """
+        config_filename = self.config.default_config_filenames[0]
+        self.makeFile(self.config_text, path=config_filename)
+        self.config.load([])
+        config_dump = configuration_dump_text(self.config)
+        self.assertIn(
+            f"\"log_level\": \"{self.log_level}\"",
+            config_dump
+        )
+
+    def test_command_line_overrides(self):
+        """
+        Options passed to the command line along --show should
+        overwrite both the configuration file and the defualt
+        """
+        config_filename = self.config.default_config_filenames[0]
+        self.makeFile(self.config_text, path=config_filename)
+        self.config.load(["--log-level", "debug"])
+        config_dump = configuration_dump_text(self.config)
+        self.assertIn(
+            "\"log_level\": \"debug\"",
+            config_dump
+        )
+
+    def test_custom_config_path(self):
+        """
+        The message should display the path to the configuration
+        file being used, which can be set in the command line
+        """
+        custom_path = self.makeFile(self.config_text)
+        self.config.load(["-c", custom_path])
+        config_dump = configuration_dump_text(self.config)
+        self.assertIn(
+            f"Using {custom_path} as configuration file...",
+            config_dump
+        )
+
+    def test_unsaved_options_not_displayed(self):
+        """
+        Do not display configuration values for unsaved options, 
+        which are only meant to be accessed through the command line
+        """
+        self.config.load([])
+        config_dump = configuration_dump_text(self.config)
+
+        for option in LandscapeSetupConfiguration.unsaved_options:
+            self.assertNotIn(option, config_dump)
+
+    def test_config_options_without_default_displayed(self):
+        """
+        Configuration options specified in the configuration file 
+        that do not have command line defaults should still be included
+        """
+        config_filename = self.config.default_config_filenames[0]
+        self.makeFile(self.config_text, path=config_filename)
+        self.config.load([])
+        config_dump = configuration_dump_text(self.config)
+        self.assertIn(
+            "\"custom_option\": \"custom_value\"",
+            config_dump
+        )
 
 
 class SetSecureIdTest(LandscapeTest):
