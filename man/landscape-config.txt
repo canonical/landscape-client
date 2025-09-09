@@ -87,7 +87,9 @@ OPTIONS
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
   --init                   Set up the client directories structure and exit.
-  --is-registered          Exit with code 0 (success) if client
+  --is-registered          (Deprecated) Same as --registration-sent. Use 
+         --registration-sent instead. This option will be removed in the 26.04 release.
+         Exit with code 0 (success) if client
 			   has sent registration request else returns 5.
 			   Display registration sent info.
 			   (NOTE: use --actively-registered to detect if
