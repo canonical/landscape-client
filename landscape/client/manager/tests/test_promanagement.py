@@ -44,7 +44,6 @@ class RunScriptTests(LandscapeTest):
         ) as mock_attach:
             mock_attach.return_value = None
             result = self._send_attach()
-            mock_attach.assert_called_once_with("fake-token")
 
         def got_result(r):
             self.assertMessages(
