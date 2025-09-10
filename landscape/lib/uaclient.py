@@ -49,7 +49,7 @@ def get_pro_status():
     """Calls uaclient.status to get pro information."""
     if uaclient is None:
         logging.warning(
-            "Tried to use uaclient in SNAP or CORE environment, skipping call."
+            "The ubuntu advantage library is not available or not up to date."
         )
         return {}
     try:
@@ -67,7 +67,7 @@ def attach_pro(token):
     """Attaches a pro token to current machine."""
     if uaclient is None:
         logging.warning(
-            "Tried to use uaclient in SNAP or CORE environment, skipping call."
+            "The ubuntu advantage library is not available or not up to date."
         )
         raise AttachProError
 
