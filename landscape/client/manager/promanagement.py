@@ -33,16 +33,13 @@ class ProManagement(ManagerPlugin):
         attaching a pro token.
         """
         opid = message["operation-id"]
-        try:
-            token = message["token"]
-            d = ensureDeferred(
-                self._attach_pro(token)
-            )
-            d.addCallback(self._respond_success, opid)
-            d.addErrback(self._respond_failure, opid)
-            return d
-        except Exception:
-            self._respond(FAILED, "Error attaching pro.", opid)
+        token = message["token"]
+        d = ensureDeferred(
+            self._attach_pro(token)
+        )
+        d.addCallback(self._respond_success, opid)
+        d.addErrback(self._respond_failure, opid)
+        return d
 
     async def _attach_pro(self, token):
         attach_pro(token)

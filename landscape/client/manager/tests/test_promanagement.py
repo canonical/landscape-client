@@ -62,34 +62,6 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
-    def test_failure_creating_deferred(self):
-        self.assertMessages(
-            self.broker_service.message_store.get_pending_messages(),
-            [],
-        )
-
-        with mock.patch(
-            "landscape.client.manager.promanagement.ensureDeferred"
-        ) as mock_deferred:
-            mock_deferred.side_effect = Exception
-            result = self._send_attach()
-
-        def got_result(r):
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [
-                    {
-                        "type": "operation-result",
-                        "operation-id": 123,
-                        "status": FAILED,
-                        "result-text": "Error attaching pro.",
-                    },
-                ],
-            )
-
-        result.addCallback(got_result)
-        return result
-
     def test_failure_attach_pro_error(self):
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
