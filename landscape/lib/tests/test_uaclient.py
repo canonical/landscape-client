@@ -57,11 +57,9 @@ class TestUAClientWrapper(TestCase):
 
         self.assertEqual(self.mock_status_value, pro_status)
 
-    @mock.patch("landscape.lib.uaclient.UAConfig")
-    def test_get_pro_status_name_error(self, mock_uaconfig):
-        mock_uaconfig.side_effect = NameError
-        result = get_pro_status()
-        self.assertEqual({}, result)
+    def test_get_pro_status_no_uaclient(self):
+        with mock.patch("landscape.lib.uaclient.uaclient", None):
+            get_pro_status()
 
     @mock.patch("landscape.lib.uaclient.UAConfig")
     def test_get_pro_status_general_exception(self, mock_uaconfig):
@@ -78,18 +76,16 @@ class TestUAClientWrapper(TestCase):
         self.assertIsNone(attach_pro("fake-token"))
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
-    def test_attach_pro_name_error(self, mock_options):
-        mock_options.side_effect = NameError
-
-        with self.assertRaises(AttachProError):
-            attach_pro("fake-token")
-
-    @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     def test_attach_pro_ubuntu_pro_error(self, mock_options):
         mock_options.side_effect = UbuntuProError
 
         with self.assertRaises(AttachProError):
             attach_pro("fake-token")
+
+    def test_attach_pro_no_uaclient(self):
+        with mock.patch("landscape.lib.uaclient.uaclient", None):
+            with self.assertRaises(AttachProError):
+                attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     def test_attach_pro_connectivity_error(self, mock_options):

@@ -1,6 +1,7 @@
 import logging
 
 try:
+    uaclient = 1
     from uaclient.api.u.pro.attach.token.full_token_attach.v1 import (
         full_token_attach,
         FullTokenAttachOptions,
@@ -14,8 +15,8 @@ try:
         UbuntuProError,
     )
     from uaclient.status import status
-except ImportError:
-    pass
+except ImportError:  # pragma: no cover
+    uaclient = None
 
 
 class AttachProError(Exception):
@@ -40,15 +41,15 @@ class InvalidTokenException(AttachProError):
 
 def get_pro_status():
     """Calls uaclient.status to get pro information."""
-    try:
-        config = UAConfig()
-        pro_info = status(config)
-        return pro_info
-    except NameError:
+    if uaclient is None:
         logging.warning(
             "Tried to use uaclient in SNAP or CORE environment, skipping call."
         )
         return {}
+    try:
+        config = UAConfig()
+        pro_info = status(config)
+        return pro_info
     except Exception:
         logging.warning(
             "Could not get pro information for computer."
@@ -58,17 +59,18 @@ def get_pro_status():
 
 def attach_pro(token):
     """Attaches a pro token to current machine."""
+    if uaclient is None:
+        logging.warning(
+            "Tried to use uaclient in SNAP or CORE environment, skipping call."
+        )
+        raise AttachProError
+
     try:
         options = FullTokenAttachOptions(
             token=token,
             auto_enable_services=False
         )
         full_token_attach(options)
-    except NameError:
-        logging.warning(
-            "Tried to use uaclient in SNAP or CORE environment, skipping call."
-        )
-        raise AttachProError
     except AttachInvalidTokenError:
         raise InvalidTokenException
     except ConnectivityError:
