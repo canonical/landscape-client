@@ -1,3 +1,9 @@
+"""
+The purpose of this library is to act as a wrapper over the uaclient library
+for landscape. Given the uaclient library is not available in snap/core
+environments this allows for us to use our wrapper methods that will have
+safety checks to ensure we are allowed to use the uaclient methods.
+"""
 import logging
 
 try:
