@@ -1,4 +1,5 @@
 from twisted.internet.defer import ensureDeferred
+from twisted.internet.threads import deferToThread
 
 from landscape.client.manager.plugin import (
     FAILED,
@@ -42,7 +43,9 @@ class ProManagement(ManagerPlugin):
         return d
 
     async def _attach_pro(self, token):
-        attach_pro(token)
+        return await deferToThread(
+            attach_pro, token
+        )
 
     def _respond_success(self, data, opid):
         return self._respond(
@@ -52,11 +55,12 @@ class ProManagement(ManagerPlugin):
         )
 
     def _respond_failure(self, failure, opid):
+        code = None
         try:
             failure.raiseException()
         except AttachProError as e:
             code = ATTACH_PRO_FAILURE
-            return self._respond(FAILED, e.message, opid, code)
+            return self._respond(FAILED, str(e), opid, code)
         except Exception:
             return self._respond(FAILED, str(failure), opid)
 

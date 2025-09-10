@@ -28,6 +28,9 @@ except ImportError:  # pragma: no cover
 class AttachProError(Exception):
     message = "Could not attach pro."
 
+    def __str__(self):
+        return self.message
+
 
 class ConnectivityException(AttachProError):
     message = "Not possible to connect to contracts service."
