@@ -35,15 +35,13 @@ class ProManagement(ManagerPlugin):
         """
         opid = message["operation-id"]
         token = message["token"]
-        d = ensureDeferred(
-            self._attach_pro(token)
-        )
+        d = self._attach_pro(token)
         d.addCallback(self._respond_success, opid)
         d.addErrback(self._respond_failure, opid)
         return d
 
-    async def _attach_pro(self, token):
-        return await deferToThread(
+    def _attach_pro(self, token):
+        return deferToThread(
             attach_pro, token
         )
 
