@@ -1,4 +1,3 @@
-from twisted.internet.defer import ensureDeferred
 from twisted.internet.threads import deferToThread
 
 from landscape.client.manager.plugin import (
