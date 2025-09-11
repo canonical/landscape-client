@@ -4,9 +4,11 @@ from landscape.lib.uaclient import (
     AttachProError,
     ConnectivityException,
     ContractAPIException,
+    DetachProError,
     InvalidTokenException,
     LockHeldException,
     attach_pro,
+    detach_pro,
     get_pro_status,
 )
 
@@ -122,3 +124,21 @@ class TestUAClientWrapper(TestCase):
 
         with self.assertRaises(InvalidTokenException):
             attach_pro("fake-token")
+
+    @mock.patch("landscape.lib.uaclient.detach")
+    def test_detach_token(self, mock_detach):
+        mock_detach.return_value = None
+
+        self.assertIsNone(detach_pro())
+
+    @mock.patch("landscape.lib.uaclient.detach")
+    def test_detach_token_ubuntu_pro_error(self, mock_detach):
+        mock_detach.side_effect = UbuntuProError
+
+        with self.assertRaises(DetachProError):
+            detach_pro()
+
+    def test_detach_pro_no_uaclient(self):
+        with mock.patch("landscape.lib.uaclient.uaclient", None):
+            with self.assertRaises(DetachProError):
+                detach_pro()

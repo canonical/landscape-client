@@ -12,6 +12,7 @@ try:
         full_token_attach,
         FullTokenAttachOptions,
     )
+    from uaclient.api.u.pro.detach.v1 import detach
     from uaclient.config import UAConfig
     from uaclient.exceptions import (
         AttachInvalidTokenError,
@@ -46,6 +47,13 @@ class LockHeldException(AttachProError):
 
 class InvalidTokenException(AttachProError):
     message = "Invalid pro token provided."
+
+
+class DetachProError(Exception):
+    message = "Could not detach pro."
+
+    def __str__(self):
+        return self.message
 
 
 def get_pro_status():
@@ -90,3 +98,16 @@ def attach_pro(token):
         raise LockHeldException
     except UbuntuProError:
         raise AttachProError
+
+
+def detach_pro():
+    if uaclient is None:
+        logging.warning(
+            "The ubuntu advantage library is not available or not up to date."
+        )
+        raise DetachProError
+
+    try:
+        detach()
+    except UbuntuProError:
+        raise DetachProError

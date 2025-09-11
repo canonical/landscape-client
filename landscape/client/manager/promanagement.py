@@ -6,12 +6,18 @@ from landscape.client.manager.plugin import (
     SUCCEEDED,
 )
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-from landscape.lib.uaclient import AttachProError, attach_pro
+from landscape.lib.uaclient import (
+    AttachProError,
+    DetachProError,
+    attach_pro,
+    detach_pro,
+)
 
 import json
 
 
 ATTACH_PRO_FAILURE = 2
+DETACH_PRO_FAILURE = 3
 
 
 class ProManagement(ManagerPlugin):
@@ -23,6 +29,10 @@ class ProManagement(ManagerPlugin):
             "attach-pro",
             self._handle_attach_pro,
         )
+        registry.register_message(
+            "detach-pro",
+            self._handle_detach_pro,
+        )
 
     def _handle_attach_pro(self, message: dict):
         """
@@ -32,14 +42,32 @@ class ProManagement(ManagerPlugin):
         opid = message["operation-id"]
         token = message["token"]
         d = deferToThread(attach_pro, token)
-        d.addCallback(self._respond_success, opid)
+        d.addCallback(self._respond_success_attach, opid)
         d.addErrback(self._respond_failure, opid)
         return d
 
-    def _respond_success(self, data, opid):
+    def _handle_detach_pro(self, message: dict):
+        """
+        Extract data from message and create deferred for
+        detaching a pro token.
+        """
+        opid = message["operation-id"]
+        d = deferToThread(detach_pro)
+        d.addCallback(self._respond_success_detach, opid)
+        d.addErrback(self._respond_failure, opid)
+        return d
+
+    def _respond_success_attach(self, data, opid):
         return self._respond(
             SUCCEEDED,
             json.dumps(get_ubuntu_pro_info()),
+            opid
+        )
+
+    def _respond_success_detach(self, data, opid):
+        return self._respond(
+            SUCCEEDED,
+            "Succeeded in detaching pro token.",
             opid
         )
 
@@ -48,6 +76,9 @@ class ProManagement(ManagerPlugin):
             failure.raiseException()
         except AttachProError as e:
             code = ATTACH_PRO_FAILURE
+            return self._respond(FAILED, str(e), opid, code)
+        except DetachProError as e:
+            code = DETACH_PRO_FAILURE
             return self._respond(FAILED, str(e), opid, code)
         except Exception:
             return self._respond(FAILED, str(failure), opid)

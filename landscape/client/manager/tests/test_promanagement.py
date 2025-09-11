@@ -8,11 +8,12 @@ from landscape.lib.uaclient import (
     AttachProError,
     ConnectivityException,
     ContractAPIException,
+    DetachProError,
     LockHeldException,
 )
 
 
-class RunScriptTests(LandscapeTest):
+class ProManagementTests(LandscapeTest):
 
     helpers = [ManagerHelper]
 
@@ -33,7 +34,14 @@ class RunScriptTests(LandscapeTest):
         }
         return self.manager.dispatch_message(message)
 
-    def test_success(self):
+    def _send_detach(self):
+        message = {
+            "type": "detach-pro",
+            "operation-id": 123,
+        }
+        return self.manager.dispatch_message(message)
+
+    def test_success_attach(self):
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
             [],
@@ -54,6 +62,63 @@ class RunScriptTests(LandscapeTest):
                         "operation-id": 123,
                         "status": SUCCEEDED,
                         "result-text": "{}",
+                    },
+                ],
+            )
+
+        result.addCallback(got_result)
+        return result
+
+    def test_success_detach(self):
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [],
+        )
+
+        with mock.patch(
+            "landscape.client.manager.promanagement.detach_pro"
+        ) as mock_attach:
+            mock_attach.return_value = None
+            result = self._send_detach()
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 123,
+                        "status": SUCCEEDED,
+                        "result-text": "Succeeded in detaching pro token.",
+                    },
+                ],
+            )
+
+        result.addCallback(got_result)
+        return result
+
+    def test_failure_detach_pro_error(self):
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [],
+        )
+
+        with mock.patch(
+            "landscape.client.manager.promanagement.detach_pro"
+        ) as mock_attach:
+            mock_attach.side_effect = DetachProError
+            result = self._send_detach()
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 123,
+                        "status": FAILED,
+                        "result-text": DetachProError.message,
+                        "result-code": 3,
                     },
                 ],
             )
