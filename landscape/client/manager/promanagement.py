@@ -17,9 +17,6 @@ ATTACH_PRO_FAILURE = 2
 class ProManagement(ManagerPlugin):
     """A plugin which allows for users to attach pro tokens."""
 
-    def __init__(self,):
-        ManagerPlugin.__init__(self)
-
     def register(self, registry):
         super().register(registry)
         registry.register_message(
@@ -34,15 +31,12 @@ class ProManagement(ManagerPlugin):
         """
         opid = message["operation-id"]
         token = message["token"]
-        d = self._attach_pro(token)
+        d = deferToThread(
+            attach_pro, token,
+        )
         d.addCallback(self._respond_success, opid)
         d.addErrback(self._respond_failure, opid)
         return d
-
-    def _attach_pro(self, token):
-        return deferToThread(
-            attach_pro, token
-        )
 
     def _respond_success(self, data, opid):
         return self._respond(
