@@ -31,9 +31,7 @@ class ProManagement(ManagerPlugin):
         """
         opid = message["operation-id"]
         token = message["token"]
-        d = deferToThread(
-            attach_pro, token,
-        )
+        d = deferToThread(attach_pro, token)
         d.addCallback(self._respond_success, opid)
         d.addErrback(self._respond_failure, opid)
         return d
@@ -46,7 +44,6 @@ class ProManagement(ManagerPlugin):
         )
 
     def _respond_failure(self, failure, opid):
-        code = None
         try:
             failure.raiseException()
         except AttachProError as e:
