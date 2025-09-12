@@ -13,6 +13,7 @@ try:
         FullTokenAttachOptions,
     )
     from uaclient.api.u.pro.detach.v1 import detach
+    from uaclient.api.u.pro.status.is_attached.v1 import is_attached
     from uaclient.config import UAConfig
     from uaclient.exceptions import (
         AttachInvalidTokenError,
@@ -54,6 +55,10 @@ class DetachProError(Exception):
 
     def __str__(self):
         return self.message
+
+
+class ProNotAttachedError(DetachProError):
+    message = "Pro is not attached on this machine."
 
 
 def get_pro_status():
@@ -108,6 +113,10 @@ def detach_pro():
         raise DetachProError
 
     try:
+        result = is_attached()
+        if not result.is_attached:
+            raise ProNotAttachedError
+
         detach()
     except UbuntuProError:
         raise DetachProError

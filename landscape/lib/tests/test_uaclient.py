@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from unittest import TestCase, mock
 
 from landscape.lib.uaclient import (
@@ -7,6 +8,7 @@ from landscape.lib.uaclient import (
     DetachProError,
     InvalidTokenException,
     LockHeldException,
+    ProNotAttachedError,
     attach_pro,
     detach_pro,
     get_pro_status,
@@ -23,6 +25,11 @@ if not IS_SNAP and not IS_CORE:
         LockHeldError,
         UbuntuProError,
     )
+
+
+@dataclass
+class FakeIsAttached:
+    is_attached: bool
 
 
 class TestUAClientWrapper(TestCase):
@@ -141,4 +148,12 @@ class TestUAClientWrapper(TestCase):
     def test_detach_pro_no_uaclient(self):
         with mock.patch("landscape.lib.uaclient.uaclient", None):
             with self.assertRaises(DetachProError):
+                detach_pro()
+
+    def test_detach_not_attached(self):
+        with mock.patch(
+            "landscape.lib.uaclient.is_attached"
+        ) as mock_is_attached:
+            mock_is_attached.return_value = FakeIsAttached(is_attached=False)
+            with self.assertRaises(ProNotAttachedError):
                 detach_pro()
