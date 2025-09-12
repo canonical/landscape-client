@@ -133,13 +133,19 @@ class TestUAClientWrapper(TestCase):
             attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.detach")
-    def test_detach_token(self, mock_detach):
+    @mock.patch("landscape.lib.uaclient.is_attached")
+    def test_detach_token(self, mock_is_attached, mock_detach):
+        mock_is_attached.return_value = FakeIsAttached(is_attached=True)
         mock_detach.return_value = None
 
         self.assertIsNone(detach_pro())
 
     @mock.patch("landscape.lib.uaclient.detach")
-    def test_detach_token_ubuntu_pro_error(self, mock_detach):
+    @mock.patch("landscape.lib.uaclient.is_attached")
+    def test_detach_token_ubuntu_pro_error(
+        self, mock_is_attached, mock_detach
+    ):
+        mock_is_attached.return_value = FakeIsAttached(is_attached=True)
         mock_detach.side_effect = UbuntuProError
 
         with self.assertRaises(DetachProError):
