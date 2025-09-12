@@ -1,12 +1,15 @@
+from dataclasses import dataclass
 from unittest import TestCase, mock
 
 from landscape.lib.uaclient import (
-    AttachProError,
     ConnectivityException,
     ContractAPIException,
     InvalidTokenException,
     LockHeldException,
+    ProManagementError,
+    ProNotAttachedError,
     attach_pro,
+    detach_pro,
     get_pro_status,
 )
 
@@ -21,6 +24,11 @@ if not IS_SNAP and not IS_CORE:
         LockHeldError,
         UbuntuProError,
     )
+
+
+@dataclass
+class FakeIsAttached:
+    is_attached: bool
 
 
 class TestUAClientWrapper(TestCase):
@@ -79,12 +87,12 @@ class TestUAClientWrapper(TestCase):
     def test_attach_pro_ubuntu_pro_error(self, mock_options):
         mock_options.side_effect = UbuntuProError
 
-        with self.assertRaises(AttachProError):
+        with self.assertRaises(ProManagementError):
             attach_pro("fake-token")
 
     def test_attach_pro_no_uaclient(self):
         with mock.patch("landscape.lib.uaclient.uaclient", None):
-            with self.assertRaises(AttachProError):
+            with self.assertRaises(ProManagementError):
                 attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
@@ -122,3 +130,35 @@ class TestUAClientWrapper(TestCase):
 
         with self.assertRaises(InvalidTokenException):
             attach_pro("fake-token")
+
+    @mock.patch("landscape.lib.uaclient.detach")
+    @mock.patch("landscape.lib.uaclient.is_attached")
+    def test_detach_token(self, mock_is_attached, mock_detach):
+        mock_is_attached.return_value = FakeIsAttached(is_attached=True)
+        mock_detach.return_value = None
+
+        self.assertIsNone(detach_pro())
+
+    @mock.patch("landscape.lib.uaclient.detach")
+    @mock.patch("landscape.lib.uaclient.is_attached")
+    def test_detach_token_ubuntu_pro_error(
+        self, mock_is_attached, mock_detach
+    ):
+        mock_is_attached.return_value = FakeIsAttached(is_attached=True)
+        mock_detach.side_effect = UbuntuProError
+
+        with self.assertRaises(ProManagementError):
+            detach_pro()
+
+    def test_detach_pro_no_uaclient(self):
+        with mock.patch("landscape.lib.uaclient.uaclient", None):
+            with self.assertRaises(ProManagementError):
+                detach_pro()
+
+    def test_detach_not_attached(self):
+        with mock.patch(
+            "landscape.lib.uaclient.is_attached"
+        ) as mock_is_attached:
+            mock_is_attached.return_value = FakeIsAttached(is_attached=False)
+            with self.assertRaises(ProNotAttachedError):
+                detach_pro()

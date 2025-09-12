@@ -5,14 +5,14 @@ from landscape.client.manager.promanagement import ProManagement
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 from landscape.lib.uaclient import (
-    AttachProError,
     ConnectivityException,
     ContractAPIException,
     LockHeldException,
+    ProManagementError,
 )
 
 
-class RunScriptTests(LandscapeTest):
+class ProManagementTests(LandscapeTest):
 
     helpers = [ManagerHelper]
 
@@ -33,7 +33,14 @@ class RunScriptTests(LandscapeTest):
         }
         return self.manager.dispatch_message(message)
 
-    def test_success(self):
+    def _send_detach(self):
+        message = {
+            "type": "detach-pro",
+            "operation-id": 123,
+        }
+        return self.manager.dispatch_message(message)
+
+    def test_success_attach(self):
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
             [],
@@ -61,6 +68,62 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(got_result)
         return result
 
+    def test_success_detach(self):
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [],
+        )
+
+        with mock.patch(
+            "landscape.client.manager.promanagement.detach_pro"
+        ) as mock_attach:
+            mock_attach.return_value = None
+            result = self._send_detach()
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 123,
+                        "status": SUCCEEDED,
+                        "result-text": "Succeeded in detaching pro token.",
+                    },
+                ],
+            )
+
+        result.addCallback(got_result)
+        return result
+
+    def test_failure_detach_pro_error(self):
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [],
+        )
+
+        with mock.patch(
+            "landscape.client.manager.promanagement.detach_pro"
+        ) as mock_attach:
+            mock_attach.side_effect = ProManagementError
+            result = self._send_detach()
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [
+                    {
+                        "type": "operation-result",
+                        "operation-id": 123,
+                        "status": FAILED,
+                        "result-text": ProManagementError.message,
+                    },
+                ],
+            )
+
+        result.addCallback(got_result)
+        return result
+
     def test_failure_attach_pro_error(self):
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
@@ -70,7 +133,7 @@ class RunScriptTests(LandscapeTest):
         with mock.patch(
             "landscape.client.manager.promanagement.attach_pro"
         ) as mock_attach:
-            mock_attach.side_effect = AttachProError
+            mock_attach.side_effect = ProManagementError
             result = self._send_attach()
 
         def got_result(r):
@@ -81,8 +144,7 @@ class RunScriptTests(LandscapeTest):
                         "type": "operation-result",
                         "operation-id": 123,
                         "status": FAILED,
-                        "result-text": AttachProError.message,
-                        "result-code": 2,
+                        "result-text": ProManagementError.message,
                     },
                 ],
             )
@@ -111,7 +173,6 @@ class RunScriptTests(LandscapeTest):
                         "operation-id": 123,
                         "status": FAILED,
                         "result-text": ConnectivityException.message,
-                        "result-code": 2,
                     },
                 ],
             )
@@ -140,7 +201,6 @@ class RunScriptTests(LandscapeTest):
                         "operation-id": 123,
                         "status": FAILED,
                         "result-text": ContractAPIException.message,
-                        "result-code": 2,
                     },
                 ],
             )
@@ -169,7 +229,6 @@ class RunScriptTests(LandscapeTest):
                         "operation-id": 123,
                         "status": FAILED,
                         "result-text": LockHeldException.message,
-                        "result-code": 2,
                     },
                 ],
             )
