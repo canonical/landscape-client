@@ -5,11 +5,10 @@ from landscape.client.manager.promanagement import ProManagement
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 from landscape.lib.uaclient import (
-    AttachProError,
     ConnectivityException,
     ContractAPIException,
-    DetachProError,
     LockHeldException,
+    ProManagementError,
 )
 
 
@@ -106,7 +105,7 @@ class ProManagementTests(LandscapeTest):
         with mock.patch(
             "landscape.client.manager.promanagement.detach_pro"
         ) as mock_attach:
-            mock_attach.side_effect = DetachProError
+            mock_attach.side_effect = ProManagementError
             result = self._send_detach()
 
         def got_result(r):
@@ -117,8 +116,7 @@ class ProManagementTests(LandscapeTest):
                         "type": "operation-result",
                         "operation-id": 123,
                         "status": FAILED,
-                        "result-text": DetachProError.message,
-                        "result-code": 3,
+                        "result-text": ProManagementError.message,
                     },
                 ],
             )
@@ -135,7 +133,7 @@ class ProManagementTests(LandscapeTest):
         with mock.patch(
             "landscape.client.manager.promanagement.attach_pro"
         ) as mock_attach:
-            mock_attach.side_effect = AttachProError
+            mock_attach.side_effect = ProManagementError
             result = self._send_attach()
 
         def got_result(r):
@@ -146,8 +144,7 @@ class ProManagementTests(LandscapeTest):
                         "type": "operation-result",
                         "operation-id": 123,
                         "status": FAILED,
-                        "result-text": AttachProError.message,
-                        "result-code": 2,
+                        "result-text": ProManagementError.message,
                     },
                 ],
             )
@@ -176,7 +173,6 @@ class ProManagementTests(LandscapeTest):
                         "operation-id": 123,
                         "status": FAILED,
                         "result-text": ConnectivityException.message,
-                        "result-code": 2,
                     },
                 ],
             )
@@ -205,7 +201,6 @@ class ProManagementTests(LandscapeTest):
                         "operation-id": 123,
                         "status": FAILED,
                         "result-text": ContractAPIException.message,
-                        "result-code": 2,
                     },
                 ],
             )
@@ -234,7 +229,6 @@ class ProManagementTests(LandscapeTest):
                         "operation-id": 123,
                         "status": FAILED,
                         "result-text": LockHeldException.message,
-                        "result-code": 2,
                     },
                 ],
             )

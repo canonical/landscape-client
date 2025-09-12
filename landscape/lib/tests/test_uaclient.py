@@ -2,12 +2,11 @@ from dataclasses import dataclass
 from unittest import TestCase, mock
 
 from landscape.lib.uaclient import (
-    AttachProError,
     ConnectivityException,
     ContractAPIException,
-    DetachProError,
     InvalidTokenException,
     LockHeldException,
+    ProManagementError,
     ProNotAttachedError,
     attach_pro,
     detach_pro,
@@ -88,12 +87,12 @@ class TestUAClientWrapper(TestCase):
     def test_attach_pro_ubuntu_pro_error(self, mock_options):
         mock_options.side_effect = UbuntuProError
 
-        with self.assertRaises(AttachProError):
+        with self.assertRaises(ProManagementError):
             attach_pro("fake-token")
 
     def test_attach_pro_no_uaclient(self):
         with mock.patch("landscape.lib.uaclient.uaclient", None):
-            with self.assertRaises(AttachProError):
+            with self.assertRaises(ProManagementError):
                 attach_pro("fake-token")
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
@@ -148,12 +147,12 @@ class TestUAClientWrapper(TestCase):
         mock_is_attached.return_value = FakeIsAttached(is_attached=True)
         mock_detach.side_effect = UbuntuProError
 
-        with self.assertRaises(DetachProError):
+        with self.assertRaises(ProManagementError):
             detach_pro()
 
     def test_detach_pro_no_uaclient(self):
         with mock.patch("landscape.lib.uaclient.uaclient", None):
-            with self.assertRaises(DetachProError):
+            with self.assertRaises(ProManagementError):
                 detach_pro()
 
     def test_detach_not_attached(self):

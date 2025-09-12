@@ -27,46 +27,44 @@ except ImportError:  # pragma: no cover
     uaclient = None
 
 
-class AttachProError(Exception):
-    message = "Could not attach pro."
+class ProManagementError(Exception):
+    message = "Error managing pro."
+
+    def __init__(self, message: str | None = None):
+        if message:
+            self.message = message
 
     def __str__(self):
         return self.message
 
 
-class ConnectivityException(AttachProError):
+class ConnectivityException(ProManagementError):
     message = "Not possible to connect to contracts service."
 
 
-class ContractAPIException(AttachProError):
+class ContractAPIException(ProManagementError):
     message = "Unexpected error in the contracts service interaction."
 
 
-class LockHeldException(AttachProError):
+class LockHeldException(ProManagementError):
     message = "Another client process is holding the lock on the machine."
 
 
-class InvalidTokenException(AttachProError):
+class InvalidTokenException(ProManagementError):
     message = "Invalid pro token provided."
 
 
-class DetachProError(Exception):
-    message = "Could not detach pro."
-
-    def __str__(self):
-        return self.message
-
-
-class ProNotAttachedError(DetachProError):
+class ProNotAttachedError(ProManagementError):
     message = "Pro is not attached on this machine."
+
+
+UACLIENT_ERROR_MESSAGE = "The ubuntu advantage library is not available or not up to date."  # noqa
 
 
 def get_pro_status():
     """Calls uaclient.status to get pro information."""
     if uaclient is None:
-        logging.warning(
-            "The ubuntu advantage library is not available or not up to date."
-        )
+        logging.warning(UACLIENT_ERROR_MESSAGE)
         return {}
     try:
         config = UAConfig()
@@ -82,10 +80,8 @@ def get_pro_status():
 def attach_pro(token):
     """Attaches a pro token to current machine."""
     if uaclient is None:
-        logging.warning(
-            "The ubuntu advantage library is not available or not up to date."
-        )
-        raise AttachProError
+        logging.warning(UACLIENT_ERROR_MESSAGE)
+        raise ProManagementError(UACLIENT_ERROR_MESSAGE)
 
     try:
         options = FullTokenAttachOptions(
@@ -102,15 +98,13 @@ def attach_pro(token):
     except LockHeldError:
         raise LockHeldException
     except UbuntuProError:
-        raise AttachProError
+        raise ProManagementError
 
 
 def detach_pro():
     if uaclient is None:
-        logging.warning(
-            "The ubuntu advantage library is not available or not up to date."
-        )
-        raise DetachProError
+        logging.warning(UACLIENT_ERROR_MESSAGE)
+        raise ProManagementError(UACLIENT_ERROR_MESSAGE)
 
     try:
         result = is_attached()
@@ -119,4 +113,4 @@ def detach_pro():
 
         detach()
     except UbuntuProError:
-        raise DetachProError
+        raise ProManagementError

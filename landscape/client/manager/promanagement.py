@@ -7,17 +7,12 @@ from landscape.client.manager.plugin import (
 )
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
 from landscape.lib.uaclient import (
-    AttachProError,
-    DetachProError,
+    ProManagementError,
     attach_pro,
     detach_pro,
 )
 
 import json
-
-
-ATTACH_PRO_FAILURE = 2
-DETACH_PRO_FAILURE = 3
 
 
 class ProManagement(ManagerPlugin):
@@ -74,12 +69,8 @@ class ProManagement(ManagerPlugin):
     def _respond_failure(self, failure, opid):
         try:
             failure.raiseException()
-        except AttachProError as e:
-            code = ATTACH_PRO_FAILURE
-            return self._respond(FAILED, str(e), opid, code)
-        except DetachProError as e:
-            code = DETACH_PRO_FAILURE
-            return self._respond(FAILED, str(e), opid, code)
+        except ProManagementError as e:
+            return self._respond(FAILED, str(e), opid)
         except Exception:
             return self._respond(FAILED, str(failure), opid)
 
