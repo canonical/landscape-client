@@ -303,6 +303,11 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_argument(
             "--show",
             action="store_true",
+            help="Outputs all configuration data as plain text.",
+        )
+        parser.add_argument(
+            "--show-json",
+            action="store_true",
             help="Outputs all configuration data as JSON.",
         )
         return parser
@@ -860,31 +865,52 @@ def registration_info_text(config, registration_status):
     return text
 
 
+# def configuration_dump_text(config):
+#     """
+#     Return a mapping of all available configuration options
+#     and their current values in JSON
+#     """
+#     conf_msg = f"Using {config._config_filename} as configuration file...\n\n"
+#     conf_dump = {}
+
+#     for conf_option in config._command_line_defaults:
+#         conf_value = config.get(conf_option)
+#         if (
+#             conf_value != SUPPRESS
+#             and conf_option != "config"
+#             and conf_option not in LandscapeSetupConfiguration.unsaved_options
+#         ):
+#             conf_dump[conf_option] = conf_value
+
+#     # Add config file options without a command line default
+#     for conf_option in config._config_file_options:
+#         if conf_option not in conf_dump:
+#             conf_value = config.get(conf_option)
+#             conf_dump[conf_option] = conf_value
+
+#     json_str = json.dumps(conf_dump)
+#     return conf_msg + json_str
+
+def get_configuration_dump(config):
+    """
+    Return a dict mapping all configuration options to their current value
+    """
+    return {}
+
 def configuration_dump_text(config):
     """
     Return a mapping of all available configuration options
-    and their current values in JSON
+    and their current values organized alphabetically in plain text
     """
-    conf_msg = f"Using {config._config_filename} as configuration file...\n\n"
-    conf_dump = {}
+    return ""
 
-    for conf_option in config._command_line_defaults:
-        conf_value = config.get(conf_option)
-        if (
-            conf_value != SUPPRESS
-            and conf_option != "config"
-            and conf_option not in LandscapeSetupConfiguration.unsaved_options
-        ):
-            conf_dump[conf_option] = conf_value
 
-    # Add config file options without a command line default
-    for conf_option in config._config_file_options:
-        if conf_option not in conf_dump:
-            conf_value = config.get(conf_option)
-            conf_dump[conf_option] = conf_value
-
-    json_str = json.dumps(conf_dump)
-    return conf_msg + json_str
+def configuration_dump_JSON(config):
+    """
+    Return a mapping of all available configuration options
+    and their current values organized alphabetically in JSON
+    """
+    return ""
 
 
 def set_secure_id(config, new_id, insecure_id=None):
