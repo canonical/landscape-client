@@ -102,8 +102,8 @@ OPTIONS
   --actively-registered    Exit with code 0 (success) if client
                            is registered else returns 5. Display
                            registration info.
-  --show                   Outputs all configuration data as plain text and exit.
-  --show-json              Outputs all configuration data as JSON and exit
+  --show                   Output all configuration data as plain text and exit.
+  --show-json              Output all configuration data as JSON and exit.
 
 CLOUD
 
