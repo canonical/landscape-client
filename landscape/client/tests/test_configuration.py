@@ -3,6 +3,7 @@ import textwrap
 import unittest
 from configparser import ConfigParser
 from io import StringIO
+import json
 from unittest import mock
 
 from twisted.internet.defer import succeed
@@ -13,6 +14,8 @@ from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.client.configuration import actively_registered
 from landscape.client.configuration import bootstrap_tree
+from landscape.client.configuration import configuration_dump_json
+from landscape.client.configuration import configuration_dump_text
 from landscape.client.configuration import ConfigurationError
 from landscape.client.configuration import EXIT_NOT_REGISTERED
 from landscape.client.configuration import get_configuration_dump
@@ -2512,8 +2515,22 @@ class ConfigurationDumpTest(LandscapeTest):
         config_dump = get_configuration_dump(self.config)
         self.assertEquals(config_dump["custom_option"], "custom_value")
 
+    def test_text_alphabetical_ordering(self):
+        self.config.load([])
+        config_text = configuration_dump_text(self.config)
+        config_text_lines = config_text.split("\n")
+        self.assertEquals(config_text_lines, sorted(config_text_lines))
+
+    def test_pure_json(self):
+        self.config.load([])
+        config_json = configuration_dump_json(self.config)
+        try:
+            json.loads(config_json)
+        except json.decoder.JSONDecodeError:
+            self.fail("Actual string is not valid JSON")
+
     @mock.patch("landscape.client.configuration.configuration_dump_text")
-    def test_show_json_argument(self, fake_config_dump):
+    def test_show_argument(self, fake_config_dump):
         """Exits with code 0 after config dump"""
         exception = self.assertRaises(
             SystemExit,

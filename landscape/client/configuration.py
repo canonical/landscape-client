@@ -125,6 +125,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "actively_registered",
         "registration_sent",
         "show",
+        "show-json",
     )
 
     encoding = "utf-8"
@@ -865,52 +866,52 @@ def registration_info_text(config, registration_status):
     return text
 
 
-# def configuration_dump_text(config):
-#     """
-#     Return a mapping of all available configuration options
-#     and their current values in JSON
-#     """
-#     conf_msg = f"Using {config._config_filename} as configuration file...\n\n"
-#     conf_dump = {}
-
-#     for conf_option in config._command_line_defaults:
-#         conf_value = config.get(conf_option)
-#         if (
-#             conf_value != SUPPRESS
-#             and conf_option != "config"
-#             and conf_option not in LandscapeSetupConfiguration.unsaved_options
-#         ):
-#             conf_dump[conf_option] = conf_value
-
-#     # Add config file options without a command line default
-#     for conf_option in config._config_file_options:
-#         if conf_option not in conf_dump:
-#             conf_value = config.get(conf_option)
-#             conf_dump[conf_option] = conf_value
-
-#     json_str = json.dumps(conf_dump)
-#     return conf_msg + json_str
-
 def get_configuration_dump(config):
     """
     Return a dict mapping all configuration options to their current value
     """
-    return {}
+    conf_dump = {}
+
+    # Add option for config file separately
+    conf_dump["CONFIG_FILE"] = config._config_filename
+
+    for conf_option in config._command_line_defaults:
+        conf_value = config.get(conf_option)
+        if (
+            conf_value != SUPPRESS
+            and conf_option != "config"
+            and conf_option not in LandscapeSetupConfiguration.unsaved_options
+        ):
+            conf_dump[conf_option] = conf_value
+
+    # Add config file options without a command line default
+    for conf_option in config._config_file_options:
+        if conf_option not in conf_dump:
+            conf_value = config.get(conf_option)
+            conf_dump[conf_option] = conf_value
+    
+    return conf_dump
 
 def configuration_dump_text(config):
     """
     Return a mapping of all available configuration options
     and their current values organized alphabetically in plain text
     """
-    return ""
+    text = ""
+    conf_dump = get_configuration_dump(config)
+    conf_sorted = sorted(conf_dump.items())
+    for key, value in conf_sorted:
+        text += f"\n{key}: {value}"
+    return text
 
 
-def configuration_dump_JSON(config):
+def configuration_dump_json(config):
     """
     Return a mapping of all available configuration options
     and their current values organized alphabetically in JSON
     """
-    return ""
+    conf_dump = get_configuration_dump(config)
+    return json.dumps(conf_dump)
 
 
 def set_secure_id(config, new_id, insecure_id=None):
@@ -969,6 +970,11 @@ def main(args, print=print):  # noqa: C901
 
     if config.show:
         conf_dump = configuration_dump_text(config)
+        print(conf_dump)
+        sys.exit(0)
+
+    if config.show_json:
+        conf_dump = configuration_dump_json(config)
         print(conf_dump)
         sys.exit(0)
 
