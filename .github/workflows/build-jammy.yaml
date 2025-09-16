@@ -52,12 +52,16 @@ jobs:
           rm -r sdist/
 
           debuild --no-lintian -S -sa --no-sign
-          cp ../landscape-client_* ../source-build
+          cp ../landscape-client_* ../source-build/
 
           # If we use this to automatically make releases or upload to the PPA, we should enable checks.
           DEB_BUILD_OPTIONS=nocheck debuild -b --no-sign
-          cp ../landscape-client_*.orig.tar.gz ../deb-build
-          cp ../landscape-*.*deb ../deb-build
+          cp ../landscape-client_*.orig.tar.gz ../deb-build/
+          cp ../landscape-*.*deb ../deb-build/
+
+          # Artifact upload steps do not allow relative paths
+          mv ../source-build/ ./
+          mv ../deb-build/ ./
 
       - name: Upload source build
         uses: actions/upload-artifact@v4
