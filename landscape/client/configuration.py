@@ -889,8 +889,9 @@ def get_configuration_dump(config):
         if conf_option not in conf_dump:
             conf_value = config.get(conf_option)
             conf_dump[conf_option] = conf_value
-    
+
     return conf_dump
+
 
 def configuration_dump_text(config):
     """

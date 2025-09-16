@@ -2523,11 +2523,9 @@ class ConfigurationDumpTest(LandscapeTest):
 
     def test_pure_json(self):
         self.config.load([])
+        config_dump = get_configuration_dump(self.config)
         config_json = configuration_dump_json(self.config)
-        try:
-            json.loads(config_json)
-        except json.decoder.JSONDecodeError:
-            self.fail("Actual string is not valid JSON")
+        self.assertEquals(json.loads(config_json), config_dump)
 
     @mock.patch("landscape.client.configuration.configuration_dump_text")
     def test_show_argument(self, fake_config_dump):
