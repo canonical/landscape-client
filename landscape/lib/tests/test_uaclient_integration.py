@@ -1,3 +1,9 @@
+"""
+Integration tests for uaclient (Ubuntu Pro) interaction.
+
+These are not run when unit tests are run. They are ignored by the unit
+testrunner, twisted.trial, because they are pytest tests.
+"""
 import pytest
 
 from .. import uaclient
