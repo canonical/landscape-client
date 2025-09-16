@@ -18,7 +18,7 @@ from landscape.lib.amp import MethodCallError
 from landscape.lib.testing import FakeReactor
 
 
-class TestComponent:
+class MockComponent:
 
     name = "test"
 
@@ -30,9 +30,9 @@ class TestComponent:
         return False
 
 
-class TestComponentConnector(ComponentConnector):
+class MockComponentConnector(ComponentConnector):
 
-    component = TestComponent
+    component = MockComponent
 
 
 class FakeAMP:
@@ -47,11 +47,11 @@ class ComponentPublisherTest(LandscapeTest):
         config = Configuration()
         config.data_path = self.makeDir()
         self.makeDir(path=config.sockets_path)
-        self.component = TestComponent()
+        self.component = MockComponent()
         self.publisher = ComponentPublisher(self.component, reactor, config)
         self.publisher.start()
 
-        self.connector = TestComponentConnector(reactor, config)
+        self.connector = MockComponentConnector(reactor, config)
         connected = self.connector.connect()
         connected.addCallback(lambda remote: setattr(self, "remote", remote))
         return connected
@@ -83,7 +83,7 @@ class ComponentConnectorTest(LandscapeTest):
         self.config = Configuration()
         self.config.data_path = self.makeDir()
         self.makeDir(path=self.config.sockets_path)
-        self.connector = TestComponentConnector(self.reactor, self.config)
+        self.connector = MockComponentConnector(self.reactor, self.config)
 
     def test_connect_with_max_retries(self):
         """
@@ -127,7 +127,7 @@ class ComponentConnectorTest(LandscapeTest):
         reconnects = []
         self.reactor.call_on("test-reconnect", lambda: reconnects.append(True))
 
-        component = TestComponent()
+        component = MockComponent()
         publisher = ComponentPublisher(component, self.reactor, self.config)
         publisher.start()
         deferred = self.connector.connect()
@@ -142,7 +142,7 @@ class ComponentConnectorTest(LandscapeTest):
         If C{factor} is passed to the L{ComponentConnector.connect} method,
         then the associated protocol factory will be set to that value.
         """
-        component = TestComponent()
+        component = MockComponent()
         publisher = ComponentPublisher(component, self.reactor, self.config)
         publisher.start()
         deferred = self.connector.connect(factor=1.0)
@@ -154,7 +154,7 @@ class ComponentConnectorTest(LandscapeTest):
         It is possible to call L{ComponentConnector.disconnect} multiple times,
         even if the connection has been already closed.
         """
-        component = TestComponent()
+        component = MockComponent()
         publisher = ComponentPublisher(component, self.reactor, self.config)
         publisher.start()
         self.connector.connect()
@@ -178,7 +178,7 @@ class ComponentConnectorTest(LandscapeTest):
         # fake a PID which does not exist
         os.symlink("-1", lock_path)
 
-        component = TestComponent()
+        component = MockComponent()
         # Test the actual Unix reactor implementation. Fakes won't do.
         reactor = LandscapeReactor()
         publisher = ComponentPublisher(component, reactor, self.config)
@@ -204,7 +204,7 @@ class ComponentConnectorTest(LandscapeTest):
         # fake a PID recycled by a known process which isn't landscape (init)
         os.symlink("1", lock_path)
 
-        component = TestComponent()
+        component = MockComponent()
         # Test the actual Unix reactor implementation. Fakes won't do.
         reactor = LandscapeReactor()
         publisher = ComponentPublisher(component, reactor, self.config)
@@ -241,7 +241,7 @@ class ComponentConnectorTest(LandscapeTest):
         self.addCleanup(call.terminate)
         os.symlink(str(call.pid), lock_path)
 
-        component = TestComponent()
+        component = MockComponent()
         # Test the actual Unix reactor implementation. Fakes won't do.
         reactor = LandscapeReactor()
         publisher = ComponentPublisher(component, reactor, self.config)
