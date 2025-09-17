@@ -1,5 +1,5 @@
 import pprint
-import unittest
+import unittest.mock
 
 from landscape.client.broker.amp import FakeRemoteBroker
 from landscape.client.broker.amp import RemoteBrokerConnector
