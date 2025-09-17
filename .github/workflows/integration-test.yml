@@ -21,7 +21,6 @@ jobs:
         with:
           submodules: true
 
-
       # In 22.04, the pytest executable was called py.test-3.
       # We attempt to symlink it to pytest, not worrying if the linking fails.
       - name: install python dependencies
@@ -30,4 +29,4 @@ jobs:
           sudo ln -s /usr/bin/py.test-3 /usr/bin/pytest || true
 
       - name: run pytest integration tests
-        run: sudo pytest -m integration
+        run: sudo -E pytest -m integration
