@@ -6,23 +6,28 @@ safety checks to ensure we are allowed to use the uaclient methods.
 """
 import logging
 
+from landscape.client import IS_CORE, IS_SNAP
+
 try:
-    uaclient = 1
-    from uaclient.api.u.pro.attach.token.full_token_attach.v1 import (
-        full_token_attach,
-        FullTokenAttachOptions,
-    )
-    from uaclient.api.u.pro.detach.v1 import detach
-    from uaclient.api.u.pro.status.is_attached.v1 import is_attached
-    from uaclient.config import UAConfig
-    from uaclient.exceptions import (
-        AttachInvalidTokenError,
-        ConnectivityError,
-        ContractAPIError,
-        LockHeldError,
-        UbuntuProError,
-    )
-    from uaclient.status import status
+    if IS_CORE or IS_SNAP:  # pragma: no cover
+        uaclient = None
+    else:
+        from uaclient.api.u.pro.attach.token.full_token_attach.v1 import (
+            full_token_attach,
+            FullTokenAttachOptions,
+        )
+        from uaclient.api.u.pro.detach.v1 import detach
+        from uaclient.api.u.pro.status.is_attached.v1 import is_attached
+        from uaclient.config import UAConfig
+        from uaclient.exceptions import (
+            AttachInvalidTokenError,
+            ConnectivityError,
+            ContractAPIError,
+            LockHeldError,
+            UbuntuProError,
+        )
+        from uaclient.status import status
+        uaclient = 1
 except ImportError:  # pragma: no cover
     uaclient = None
 
