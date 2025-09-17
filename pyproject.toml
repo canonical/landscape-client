@@ -11,3 +11,8 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: integration tests against external dependencies",
+]
