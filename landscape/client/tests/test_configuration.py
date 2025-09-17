@@ -3,6 +3,7 @@ import textwrap
 import unittest
 from configparser import ConfigParser
 from io import StringIO
+import json
 from unittest import mock
 
 from twisted.internet.defer import succeed
@@ -12,10 +13,12 @@ from landscape.client import USER
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.client.configuration import actively_registered
-from landscape.client.configuration import configuration_dump_text
 from landscape.client.configuration import bootstrap_tree
+from landscape.client.configuration import configuration_dump_json
+from landscape.client.configuration import configuration_dump_text
 from landscape.client.configuration import ConfigurationError
 from landscape.client.configuration import EXIT_NOT_REGISTERED
+from landscape.client.configuration import get_configuration_dump
 from landscape.client.configuration import get_secure_id
 from landscape.client.configuration import ImportOptionError
 from landscape.client.configuration import LandscapeSetupConfiguration
@@ -2455,11 +2458,8 @@ class ConfigurationDumpTest(LandscapeTest):
         """
         self.config.load([])
         log_level_default = self.config._command_line_defaults["log_level"]
-        config_dump = configuration_dump_text(self.config)
-        self.assertIn(
-            f"\"log_level\": \"{log_level_default}\"",
-            config_dump
-        )
+        config_dump = get_configuration_dump(self.config)
+        self.assertEquals(config_dump["log_level"] , log_level_default)
 
     def test_config_file_overrides(self):
         """
@@ -2469,11 +2469,8 @@ class ConfigurationDumpTest(LandscapeTest):
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(self.config_text, path=config_filename)
         self.config.load([])
-        config_dump = configuration_dump_text(self.config)
-        self.assertIn(
-            f"\"log_level\": \"{self.log_level}\"",
-            config_dump
-        )
+        config_dump = get_configuration_dump(self.config)
+        self.assertEquals(config_dump["log_level"] , self.log_level)
 
     def test_command_line_overrides(self):
         """
@@ -2483,11 +2480,8 @@ class ConfigurationDumpTest(LandscapeTest):
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(self.config_text, path=config_filename)
         self.config.load(["--log-level", "debug"])
-        config_dump = configuration_dump_text(self.config)
-        self.assertIn(
-            "\"log_level\": \"debug\"",
-            config_dump
-        )
+        config_dump = get_configuration_dump(self.config)
+        self.assertEquals(config_dump["log_level"] , "debug")
 
     def test_custom_config_path(self):
         """
@@ -2496,11 +2490,8 @@ class ConfigurationDumpTest(LandscapeTest):
         """
         custom_path = self.makeFile(self.config_text)
         self.config.load(["-c", custom_path])
-        config_dump = configuration_dump_text(self.config)
-        self.assertIn(
-            f"Using {custom_path} as configuration file...",
-            config_dump
-        )
+        config_dump = get_configuration_dump(self.config)
+        self.assertEquals(config_dump["CONFIG_FILE"] , custom_path)
 
     def test_unsaved_options_not_displayed(self):
         """
@@ -2508,7 +2499,7 @@ class ConfigurationDumpTest(LandscapeTest):
         which are only meant to be accessed through the command line
         """
         self.config.load([])
-        config_dump = configuration_dump_text(self.config)
+        config_dump = get_configuration_dump(self.config)
 
         for option in LandscapeSetupConfiguration.unsaved_options:
             self.assertNotIn(option, config_dump)
@@ -2521,11 +2512,20 @@ class ConfigurationDumpTest(LandscapeTest):
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(self.config_text, path=config_filename)
         self.config.load([])
-        config_dump = configuration_dump_text(self.config)
-        self.assertIn(
-            "\"custom_option\": \"custom_value\"",
-            config_dump
-        )
+        config_dump = get_configuration_dump(self.config)
+        self.assertEquals(config_dump["custom_option"], "custom_value")
+
+    def test_text_alphabetical_ordering(self):
+        self.config.load([])
+        config_text = configuration_dump_text(self.config)
+        config_text_lines = config_text.split("\n")
+        self.assertEquals(config_text_lines, sorted(config_text_lines))
+
+    def test_pure_json(self):
+        self.config.load([])
+        config_dump = get_configuration_dump(self.config)
+        config_json = configuration_dump_json(self.config)
+        self.assertEquals(json.loads(config_json), config_dump)
 
     @mock.patch("landscape.client.configuration.configuration_dump_text")
     def test_show_argument(self, fake_config_dump):
@@ -2534,6 +2534,18 @@ class ConfigurationDumpTest(LandscapeTest):
             SystemExit,
             main,
             ["--show"],
+            print=noop_print,
+        )
+        fake_config_dump.assert_called_once()
+        self.assertEqual(0, exception.code)
+
+    @mock.patch("landscape.client.configuration.configuration_dump_json")
+    def test_show_json_argument(self, fake_config_dump):
+        """Exits with code 0 after config dump"""
+        exception = self.assertRaises(
+            SystemExit,
+            main,
+            ["--show-json"],
             print=noop_print,
         )
         fake_config_dump.assert_called_once()
