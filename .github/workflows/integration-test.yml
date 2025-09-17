@@ -18,6 +18,9 @@ jobs:
     steps:
       # Many of the tests require root privileges, so the tests run using sudo.
       - uses: actions/checkout@v5
+        with:
+          submodules: true
+
 
       # In 22.04, the pytest executable was called py.test-3.
       # We attempt to symlink it to pytest, not worrying if the linking fails.
