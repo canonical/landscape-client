@@ -16,3 +16,8 @@ exclude = '''
 markers = [
     "integration: integration tests against external dependencies",
 ]
+
+[tool.coverage.run]
+omit = [
+    "landscape/lib/tests/test_uaclient_integration.py"
+]
