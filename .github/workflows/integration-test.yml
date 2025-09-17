@@ -4,6 +4,7 @@ on:
   schedule:
     # Weekly on Mondays at noon UTC.
     - cron: '0 12 * * 1'
+  workflow_dispatch:
 
 env:
   TEST_PRO_TOKEN: ${{ secrets.TEST_PRO_TOKEN }}
