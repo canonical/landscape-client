@@ -53,9 +53,9 @@ Architecture: any
 Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
   ${shlibs:Depends},
   landscape-common (= ${binary:Version}),
-  python3-pycurl,
   python3-dbus,
   python3-packaging,
+  python3-pycurl,
   python3-yaml
 Description: Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
