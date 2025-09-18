@@ -36,6 +36,7 @@ Depends: ${python3:Depends}, ${misc:Depends}, ${extra:Depends},
   python3-configobj,
   python3-gdbm,
   python3-netifaces,
+  python3-packaging,
   python3-twisted,
   python3-setuptools,
   ubuntu-pro-client (>= 27.14~)
