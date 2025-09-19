@@ -10,12 +10,12 @@ from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.testing import FakeReactor
 
 
-class TestComponent:
+class MockComponent:
     name = "monitor"
 
 
-class TestService(LandscapeService):
-    service_name = TestComponent.name
+class MockService(LandscapeService):
+    service_name = MockComponent.name
 
 
 class LandscapeServiceTest(LandscapeTest):
@@ -37,7 +37,7 @@ class LandscapeServiceTest(LandscapeTest):
         filename will be created.
         """
 
-        class PersistService(TestService):
+        class PersistService(MockService):
             persist_filename = self.makePersistFile(content="")
 
         service = PersistService(self.config)
@@ -48,7 +48,7 @@ class LandscapeServiceTest(LandscapeTest):
         If no {persist_filename} attribute is defined, no C{persist} attribute
         will be available.
         """
-        service = TestService(self.config)
+        service = MockService(self.config)
         self.assertFalse(hasattr(service, "persist"))
 
     def test_usr1_rotates_logs(self):
@@ -64,7 +64,7 @@ class LandscapeServiceTest(LandscapeTest):
         ]
 
         # Instantiating LandscapeService should register the handler
-        TestService(self.config)
+        MockService(self.config)
         # We'll call it directly
         handler = signal.getsignal(signal.SIGUSR1)
         self.assertTrue(handler)
@@ -91,7 +91,7 @@ class LandscapeServiceTest(LandscapeTest):
         # Instantiating LandscapeService should not register the
         # handler if we request to ignore it.
         self.config.ignore_sigusr1 = True
-        TestService(self.config)
+        MockService(self.config)
 
         handler = signal.getsignal(signal.SIGUSR1)
         self.assertFalse(handler)

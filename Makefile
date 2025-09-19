@@ -30,7 +30,7 @@ depends-dev: depends
 # initialize user and dirs, some used through tests.
 .PHONY: depends-ci
 depends-ci: depends
-	sudo apt-get -y install landscape-common
+	sudo apt-get -y install landscape-common python3-pytest
 
 all: build
 
