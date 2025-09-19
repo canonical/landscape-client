@@ -107,7 +107,7 @@ class FakeFetchItem:
         self.description = description
 
 
-class TestCache(apt.cache.Cache):
+class MockCache(apt.cache.Cache):
     """An apt cache wrapper which we can tell has been updated.
 
     When updating the client to work with Xenial, apt.cache.Cache behaviour
@@ -715,7 +715,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self._touch_packages_file(deb_dir)
         new_facade.refetch_package_index = False
-        new_facade._cache = TestCache(rootdir=new_facade._root)
+        new_facade._cache = MockCache(rootdir=new_facade._root)
         new_facade.reload_channels()
         self.assertFalse(new_facade._cache._update_called)
 
@@ -736,7 +736,7 @@ class AptFacadeTest(
         self._add_package_to_deb_dir(deb_dir, "bar")
         self._touch_packages_file(deb_dir)
         self.facade.refetch_package_index = False
-        self.facade._cache = TestCache(rootdir=self.facade._root)
+        self.facade._cache = MockCache(rootdir=self.facade._root)
         self.facade.reload_channels(force_reload_binaries=True)
         self.assertTrue(self.facade._cache._update_called)
 
