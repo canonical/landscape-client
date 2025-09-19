@@ -1,0 +1,32 @@
+name: Integration Tests
+
+on:
+  schedule:
+    # Weekly on Mondays at noon UTC.
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+env:
+  TEST_PRO_TOKEN: ${{ secrets.TEST_PRO_TOKEN }}
+
+jobs:
+  pytest_integration_tests:
+    strategy:
+      matrix:
+        runner: ["ubuntu-24.04", "ubuntu-22.04"]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      # Many of the tests require root privileges, so the tests run using sudo.
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      # In 22.04, the pytest executable was called py.test-3.
+      # We attempt to symlink it to pytest, not worrying if the linking fails.
+      - name: install python dependencies
+        run: |
+          make depends-ci
+          sudo ln -s /usr/bin/py.test-3 /usr/bin/pytest || true
+
+      - name: run pytest integration tests
+        run: sudo -E pytest -m integration
