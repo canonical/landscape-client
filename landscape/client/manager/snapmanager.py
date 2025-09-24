@@ -292,6 +292,28 @@ class SnapManager(BaseSnapManager):
             self._send_snap_update,
         )
 
+
+    def _get_serial():
+        """
+        Returns devices serial number by parsing the serial assertion.
+        """
+        serial = None
+
+        try:
+            serial_assert = snap_http.get_assertions("serial").result
+        except SnapdHttpException as e:
+            logging.error(f"Unable to get serial assertion: {e}")
+            return
+
+        for line in serial_assert.splitlines():
+            if line.startswith("serial:"):
+                serial = line.split("serial: ", 1)[1].strip()
+            break
+        if serial is None:
+            raise ValueError("Serial field not found in assertion")
+
+        return serial
+    
     def get_data(self):
         try:
             snaps = snap_http.list().result
@@ -301,6 +323,10 @@ class SnapManager(BaseSnapManager):
 
         for i in range(len(snaps)):
             snap_name = snaps[i]["name"]
+            # devmode snaps have no ID so we need to add one for server
+            # indexing.
+            if snaps[i]["id"] == "":
+                snaps[i]["id"] = self.get_serial() + "-" + snap_name
             try:
                 config = snap_http.get_conf(snap_name).result
             except SnapdHttpException as e:
