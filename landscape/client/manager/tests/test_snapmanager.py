@@ -401,6 +401,80 @@ class SnapManagerTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertIn("installed", messages[0]["snaps"])
 
+    def test_get_data_no_id(self):
+        """Tests getting installed snap data."""
+        self.snap_http.list.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            [
+                {
+                    "name": "test-snap",
+                    "revision": "1",
+                    "confinement": "strict",
+                    "version": "v1.0",
+                    "id": "",
+                },
+            ],
+        )
+        self.snap_http.get_assertions.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            (
+                b"type: serial\n"
+                b"authority-id: generic\n"
+                b"brand-id: generic\n"
+                b"model: generic-classic\n"
+                b"serial: abcd1234-efgh5678\n"
+            ),
+        )
+        self.snap_http.get_conf.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            {},
+        )
+
+        self.plugin.run()
+        messages = self.mstore.get_pending_messages()
+
+        self.assertTrue(len(messages) > 0)
+        self.assertIn("abcd1234-efgh5678-test-snap",
+                      messages[0]["snaps"]["installed"][0]["id"])
+
+    def test_get_serial(self):
+        """Tests getting snapd serial."""
+        self.snap_http.get_assertions.return_value = SnapdResponse(
+            "sync",
+            200,
+            "OK",
+            (
+                b"type: serial\n"
+                b"authority-id: generic\n"
+                b"brand-id: generic\n"
+                b"model: generic-classic\n"
+                b"serial: abcd1234-efgh5678\n"
+            ),
+        )
+
+        serial = self.plugin._get_serial()
+
+        self.assertTrue(serial == "abcd1234-efgh5678")
+
+    def test_get_serial_snapd_http_exception(self):
+        """
+        Tests that we return no data if there is an error getting it.
+        """
+        with self.assertLogs(level="ERROR") as cm:
+            self.snap_http.get_assertions.side_effect = SnapdHttpException
+            self.plugin._get_serial()
+
+        self.assertEqual(
+            cm.output,
+            ["ERROR:root:Unable to get serial assertion: "],
+        )
+
     def test_get_data_snapd_http_exception(self):
         """
         Tests that we return no data if there is an error getting it.
