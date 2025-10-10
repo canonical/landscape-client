@@ -1,3 +1,15 @@
+landscape-client (25.08.2+git6481-0landscape0) jammy; urgency=medium
+
+  * fix: add deprecation warning for --is-registered option for landscape-config
+  * feat: add --show and --show-json options for landscape-config
+  * feat: add activity for attaching a pro token
+  * feat: add activity for detaching a pro token
+  * fix: bug in uaclient wrapper on core devices
+  * fix: add explicit dependency for python3-packaging
+  * fix: add id for devmode snaps for server indexing (LP: #2121798)
+
+ -- Bill Kronholm <bill.kronholm@canonical.com>  Fri, 10 Oct 2025 13:33:22 -0700
+
 landscape-client (25.08.2+git6468-0landscape0) noble; urgency=medium
 
   * feat: rename ssl-public-key to ssl-ca. Accept either.
