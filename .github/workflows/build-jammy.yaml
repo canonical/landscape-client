@@ -48,7 +48,7 @@ jobs:
           mkdir -p ../source-build
           mkdir -p ../deb-build
 
-          make releasetarball origtarball
+          make tarball
           rm -r sdist/
 
           debuild --no-lintian -S -sa --no-sign
