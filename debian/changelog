@@ -1,3 +1,16 @@
+landscape-client (25.10~rc1-0landscape0) jammy; urgency=medium
+
+  * feat: add activity to detach pro
+  * feat: add activity for attaching pro
+  * feat: add --show argument to landscape-config
+  * fix: example.conf pro management plugin
+  * fix: add id to devmode snaps for server indexing
+  * fix: add python3-packaging dependency to landscape-client
+  * fix: uaclient wrapper with snap and core devices
+  * fix: make improvements to landscape-config --show
+
+ -- Ardavan Behnia <ardavan.behnia@canonical.com>  Thu, 16 Oct 2025 12:32:27 -0700
+
 landscape-client (25.08.2+git6481-0landscape0) jammy; urgency=medium
 
   * fix: add deprecation warning for --is-registered option for landscape-config
