@@ -1,3 +1,9 @@
+landscape-client (25.10~rc2-0landscape0) jammy; urgency=medium
+
+  * fix: add python version variable for setup.py
+
+ -- Ardavan Behnia <ardavan.behnia@canonical.com>  Fri, 17 Oct 2025 13:02:59 -0700
+
 landscape-client (25.10~rc1-0landscape0) jammy; urgency=medium
 
   * feat: add activity to detach pro
