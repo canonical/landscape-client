@@ -1,10 +1,13 @@
 #!/usr/bin/python
+import glob
 import os
 import shutil
-import glob
-from setuptools import setup, Command
 
-from landscape import UPSTREAM_VERSION
+from setuptools import Command
+from setuptools import setup
+
+from landscape import PYTHON_VERSION
+
 
 # Custom clean command to replace the one from DistUtilsExtra
 class CleanCommand(Command):
@@ -12,20 +15,20 @@ class CleanCommand(Command):
 
     def run(self):
 
-        for pattern in ['build', 'dist', '.eggs', '*.egg-info']:
+        for pattern in ["build", "dist", ".eggs", "*.egg-info"]:
             for path in glob.glob(pattern):
                 if os.path.isdir(path):
                     shutil.rmtree(path)
 
         # Recursively remove __pycache__ and compiled files
-        for root, dirs, files in os.walk('.'):
-            if '__pycache__' in dirs:
-                path = os.path.join(root, '__pycache__')
+        for root, dirs, files in os.walk("."):
+            if "__pycache__" in dirs:
+                path = os.path.join(root, "__pycache__")
                 shutil.rmtree(path)
-                dirs.remove('__pycache__')  
+                dirs.remove("__pycache__")
 
             for file in files:
-                if file.endswith(('.pyc', '.pyo')):
+                if file.endswith((".pyc", ".pyo")):
                     path = os.path.join(root, file)
                     os.remove(path)
 
@@ -42,7 +45,7 @@ SETUP = dict(
     packages=None,
     py_modules=None,
     scripts=None,
-    version=UPSTREAM_VERSION,
+    version=PYTHON_VERSION,
     author="Landscape Team",
     author_email="landscape-team@canonical.com",
     url="http://landscape.canonical.com",
@@ -58,7 +61,7 @@ def setup_landscape(
     scripts=None,
     **kwargs,
 ):
-    
+
     assert name and description and packages
     kwargs = dict(
         SETUP,
@@ -100,4 +103,3 @@ if __name__ == "__main__":
         modules=MODULES,
         scripts=SCRIPTS,
     )
-
