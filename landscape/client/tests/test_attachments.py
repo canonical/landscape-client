@@ -129,7 +129,7 @@ class SaveAttachmentsTest(TestCase):
 
     def test_attachments_with_ssl_ca(self):
         """If the CA is ssl_ca"""
-        self.config.ssl_public_key = None
+        self.config.ssl_ca = None
         self.config.ssl_ca = "/some/key"
         self.assertIsNotNone(self.config.ssl_ca)
         self.fetch_async.side_effect = [
@@ -147,11 +147,11 @@ class SaveAttachmentsTest(TestCase):
         )
         return deferred
 
-    def test_attachments_with_ssl_public_key(self):
-        """If the CA is ssl_public_key"""
+    def test_attachments_with_ssl_ca(self):
+        """If the CA is ssl_ca"""
         self.config.ssl_ca = None
-        self.config.ssl_public_key = "/some/key"
-        self.assertIsNotNone(self.config.ssl_public_key)
+        self.config.ssl_ca = "/some/key"
+        self.assertIsNotNone(self.config.ssl_ca)
         self.fetch_async.side_effect = [
             b"Contents of attachment 1\n",
             b"Contents of attachment 2\n",
@@ -168,9 +168,9 @@ class SaveAttachmentsTest(TestCase):
         return deferred
 
     def test_attachments_with_none(self):
-        """If the CA is ssl_public_key"""
+        """If the CA is ssl_ca"""
         self.config.ssl_ca = None
-        self.config.ssl_public_key = None
+        self.config.ssl_ca = None
         self.assertIsNone(self.config.ssl_ca)
         self.assertIsNone(self.config.ssl_ca)
         self.fetch_async.side_effect = [
