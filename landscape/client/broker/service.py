@@ -1,5 +1,4 @@
 """Deployment code for the monitor."""
-import logging
 import os
 
 from landscape.client.amp import ComponentPublisher

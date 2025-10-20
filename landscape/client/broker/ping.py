@@ -39,7 +39,6 @@ except ImportError:
     from urllib import urlencode
 
 from logging import info
-import logging
 
 from twisted.python.failure import Failure
 from twisted.internet import defer
