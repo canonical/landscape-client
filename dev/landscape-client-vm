@@ -108,7 +108,7 @@ registration_key = ${PASSWORD}
 EOF
 
 if ! [ "$WITH_SSL" = "" ]; then
-    echo ssl_public_key = $SSL_KEY >> config
+    echo ssl_ca = $SSL_KEY >> config
 fi
 
 cat > script-wrapper <<EOF
@@ -148,7 +148,7 @@ config /etc/landscape/client.conf
 EOF
 
 if [ "$WITH_SSL" = "yes" ]; then
-    echo /etc/landscape/certs/sample_ca.crt /etc/landscape/client.conf.ssl_public_key >> manifest
+    echo /etc/landscape/certs/sample_ca.crt /etc/landscape/client.conf.ssl_ca >> manifest
 fi
 
 cat > ssh <<EOF
