@@ -237,10 +237,6 @@ class PackageReporter(PackageTaskHandler):
 
             if self._config.ssl_ca is not None:
                 cainfo = self._config.ssl_ca
-            elif self._config.ssl_public_key is not None:
-                cainfo = self._config.ssl_public_key
-                logging.warning("`ssl_public_key` is deprecated; "
-                                "use `ssl_ca` instead.")
             else:
                 cainfo = None
 
