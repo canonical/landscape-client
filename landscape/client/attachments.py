@@ -40,10 +40,6 @@ async def save_attachments(
         else:
             if config.ssl_ca is not None:
                 cainfo = config.ssl_ca
-            elif config.ssl_public_key is not None:
-                cainfo = config.ssl_public_key
-                logging.warning("`ssl_public_key` is deprecated; "
-                                "use `ssl_ca` instead.")
             else:
                 cainfo = None
             data = await fetch_async(
