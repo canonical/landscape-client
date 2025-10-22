@@ -667,11 +667,11 @@ def decode_base64_ssl_public_certificate(config):
     """
     # WARNING: ssl_public_certificate is misnamed, it's not the key of the
     # certificate, but the actual certificate itself.
-    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
+    if config.ssl_ca and config.ssl_ca.startswith("base64:"):
         decoded_cert = base64.decodebytes(
-            config.ssl_public_key[7:].encode("ascii"),
+            config.ssl_ca[7:].encode("ascii"),
         )
-        config.ssl_public_key = store_public_key_data(config, decoded_cert)
+        config.ssl_ca = store_public_key_data(config, decoded_cert)
 
 
 def setup(config) -> Identity:
@@ -751,11 +751,11 @@ def store_public_key_data(config, certificate_data):
     @param certificate_data: a string of data that represents the contents of
     the file to be written.
     @return the L{BrokerConfiguration} object that was passed in, updated to
-    reflect the path of the ssl_public_key file.
+    reflect the path of the ssl_ca file.
     """
     key_filename = os.path.join(
         config.data_path,
-        os.path.basename(config.get_config_filename() + ".ssl_public_key"),
+        os.path.basename(config.get_config_filename() + ".ssl_ca"),
     )
     print_text(f"Writing SSL CA certificate to {key_filename}...")
     create_binary_file(key_filename, certificate_data)
@@ -785,7 +785,7 @@ def attempt_registration(
             registration_info = register(
                 client_info,
                 config.url,
-                cainfo=config.ssl_public_key,
+                cainfo=config.ssl_ca,
             )
 
             break

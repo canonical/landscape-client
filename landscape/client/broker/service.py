@@ -1,5 +1,4 @@
 """Deployment code for the monitor."""
-import logging
 import os
 
 from landscape.client.amp import ComponentPublisher
@@ -55,10 +54,6 @@ class BrokerService(LandscapeService):
         super().__init__(config)
         if config.ssl_ca is not None:
             cainfo = config.ssl_ca
-        elif config.ssl_public_key is not None:
-            cainfo = config.ssl_public_key
-            logging.warning("`ssl_public_key` is deprecated; "
-                            "use `ssl_ca` instead.")
         else:
             cainfo = None
         self.transport = self.transport_factory(
