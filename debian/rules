@@ -22,7 +22,6 @@ override_dh_auto_install:
 	install -D -m 755 debian/landscape-sysinfo.wrapper $(CURDIR)/$(root_dir)$(SHAREDIR)/landscape-sysinfo.wrapper
 	install -D -m 755 apt-update/apt-update $(CURDIR)/$(root_dir)$(LIBDIR)/apt-update
 
-
 override_dh_installsystemd:
 	dh_installsystemd
 
