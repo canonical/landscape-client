@@ -1,3 +1,9 @@
+landscape-client (25.10~rc3-0landscape0) jammy; urgency=medium
+
+  * fix: don't explicitly make root owner of the executables
+
+ -- Ardavan Behnia <ardavan.behnia@canonical.com>  Thu, 23 Oct 2025 15:29:06 -0700
+
 landscape-client (25.10~rc2-0landscape0) jammy; urgency=medium
 
   * fix: add python version variable for setup.py
