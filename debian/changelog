@@ -1,3 +1,10 @@
+landscape-client (25.10-0landscape0) jammy; urgency=medium
+
+  * build: update snap-http module
+  * build: release 25.10
+
+ -- Spencer Runde <spencer.runde@canonical.com>  Wed, 29 Oct 2025 12:59:24 -0500
+
 landscape-client (25.10~rc3-0landscape0) jammy; urgency=medium
 
   * fix: don't explicitly make root owner of the executables
