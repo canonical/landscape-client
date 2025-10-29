@@ -1,4 +1,4 @@
-landscape-client (25.100landscape0) jammy; urgency=medium
+landscape-client (25.10-0landscape0) jammy; urgency=medium
 
   * build: update snap-http module
   * build: release 25.10
