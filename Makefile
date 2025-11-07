@@ -5,10 +5,6 @@ SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
 TRIAL ?= -m landscape.lib.run_tests
 TRIAL_ARGS ?=
 
-# PEP8 rules ignored:
-# W503 https://www.flake8rules.com/rules/W503.html
-# E203 Whitespace before ':' (enforced by Black)
-PEP8_IGNORED = W503,E203
 
 .PHONY: help
 help:  ## Print help about available targets
@@ -63,10 +59,6 @@ ruff-check:
 
 .PHONY: lint 
 lint: ruff-fix
-
-.PHONY: pyflakes
-pyflakes:
-	-pyflakes `find landscape -name \*.py`
 
 .PHONY: clean
 clean:
