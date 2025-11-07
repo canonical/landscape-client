@@ -3,11 +3,9 @@ from unittest import mock
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
-from landscape.client.broker.client import BrokerClientPlugin
-from landscape.client.broker.client import HandlerNotFoundError
+from landscape.client.broker.client import BrokerClientPlugin, HandlerNotFoundError
 from landscape.client.broker.tests.helpers import BrokerClientHelper
-from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES, LandscapeTest
 from landscape.lib.twisted_util import gather_results
 
 
@@ -165,7 +163,7 @@ class BrokerClientTest(LandscapeTest):
 
         # At this point the plugin has already run once and has scheduled as
         # second run in plugin.run_interval seconds.
-        self.assertEquals(runs, [True])
+        self.assertEqual(runs, [True])
 
         # Mock out get_session_id so that it doesn't complete synchronously
         deferred = Deferred()
@@ -175,11 +173,11 @@ class BrokerClientTest(LandscapeTest):
         # The scheduled run has been cancelled, and even if plugin.run_interval
         # seconds elapse the plugin won't run again.
         self.client_reactor.advance(plugin.run_interval)
-        self.assertEquals(runs, [True])
+        self.assertEqual(runs, [True])
 
         # Finally get_session_id completes and the plugin runs again.
         deferred.callback(123)
-        self.assertEquals(runs, [True, True])
+        self.assertEqual(runs, [True, True])
 
     @mock.patch("random.random")
     def test_run_interval_staggered(self, mock_random):

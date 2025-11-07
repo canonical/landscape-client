@@ -24,7 +24,6 @@ import re
 import shutil
 import sys
 
-
 __all__ = [
     "Persist",
     "PickleBackend",
@@ -118,10 +117,7 @@ class Persist:
 
         def load_old():
             filepathold = filepath + ".old"
-            if (
-                os.path.isfile(filepathold)
-                and os.path.getsize(filepathold) > 0
-            ):
+            if os.path.isfile(filepathold) and os.path.getsize(filepathold) > 0:
                 # warning(f"Broken configuration file at {filepath}")
                 # warning(f"Trying backup at {filepathold}")
                 try:
@@ -217,8 +213,7 @@ class Persist:
                     newobj = self._backend.set(obj, elem, newvalue)
                     if newobj is NotImplemented:
                         raise PersistError(
-                            f"Can't traverse {type(obj)!r} "
-                            f"with {type(elem)!r}",
+                            f"Can't traverse {type(obj)!r} with {type(elem)!r}",
                         )
                     if not queue:
                         break
@@ -331,7 +326,7 @@ class Persist:
                 result = self._backend.remove(obj, elem, isvalue)
                 if result is NotImplemented:
                     raise PersistError(
-                        "Can't remove {!r} from {!r}".format(elem, type(obj)),
+                        f"Can't remove {elem!r} from {type(obj)!r}",
                     )
             if self._backend.empty(obj):
                 if value is not marker:

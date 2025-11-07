@@ -1,11 +1,8 @@
-from unittest.mock import ANY
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 from landscape.client.monitor.processorinfo import ProcessorInfo
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.plugin import PluginConfigError
-
 
 # The extra blank line at the bottom of some sample data definitions
 # is intentional.

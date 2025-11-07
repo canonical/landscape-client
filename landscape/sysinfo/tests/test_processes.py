@@ -2,9 +2,7 @@ import unittest
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.testing import FSTestCase
-from landscape.lib.testing import ProcessDataBuilder
-from landscape.lib.testing import TwistedTestCase
+from landscape.lib.testing import FSTestCase, ProcessDataBuilder, TwistedTestCase
 from landscape.sysinfo.processes import Processes
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 

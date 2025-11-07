@@ -1,7 +1,5 @@
-from landscape.client.monitor.cpuusage import CPUUsage
-from landscape.client.monitor.cpuusage import LAST_MESURE_KEY
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.monitor.cpuusage import LAST_MESURE_KEY, CPUUsage
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class CPUUsagePluginTest(LandscapeTest):

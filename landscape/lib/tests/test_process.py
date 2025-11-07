@@ -4,8 +4,7 @@ from unittest import mock
 
 from landscape.lib import testing
 from landscape.lib.fs import create_text_file
-from landscape.lib.process import calculate_pcpu
-from landscape.lib.process import ProcessInformation
+from landscape.lib.process import ProcessInformation, calculate_pcpu
 
 
 class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):

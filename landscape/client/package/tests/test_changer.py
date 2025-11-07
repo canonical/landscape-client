@@ -2,42 +2,38 @@ import base64
 import os
 import sys
 import time
-from unittest.mock import call
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 from twisted.internet.defer import Deferred
 
-from landscape.client import GROUP
-from landscape.client import USER
+from landscape.client import GROUP, USER
 from landscape.client.manager.manager import FAILED
-from landscape.client.package.changer import ChangePackagesResult
-from landscape.client.package.changer import DEPENDENCY_ERROR_RESULT
-from landscape.client.package.changer import ERROR_RESULT
-from landscape.client.package.changer import main
-from landscape.client.package.changer import PackageChanger
-from landscape.client.package.changer import PackageChangerConfiguration
-from landscape.client.package.changer import POLICY_ALLOW_ALL_CHANGES
-from landscape.client.package.changer import POLICY_ALLOW_INSTALLS
-from landscape.client.package.changer import SUCCESS_RESULT
-from landscape.client.package.changer import UNKNOWN_PACKAGE_DATA_TIMEOUT
-from landscape.client.tests.helpers import BrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.apt.package.facade import DependencyError
-from landscape.lib.apt.package.facade import TransactionError
+from landscape.client.package.changer import (
+    DEPENDENCY_ERROR_RESULT,
+    ERROR_RESULT,
+    POLICY_ALLOW_ALL_CHANGES,
+    POLICY_ALLOW_INSTALLS,
+    SUCCESS_RESULT,
+    UNKNOWN_PACKAGE_DATA_TIMEOUT,
+    ChangePackagesResult,
+    PackageChanger,
+    PackageChangerConfiguration,
+    main,
+)
+from landscape.client.tests.helpers import BrokerServiceHelper, LandscapeTest
+from landscape.lib.apt.package.facade import DependencyError, TransactionError
 from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.apt.package.testing import AptFacadeHelper
-from landscape.lib.apt.package.testing import HASH1
-from landscape.lib.apt.package.testing import HASH2
-from landscape.lib.apt.package.testing import HASH3
-from landscape.lib.apt.package.testing import PKGDEB1
-from landscape.lib.apt.package.testing import PKGDEB2
-from landscape.lib.apt.package.testing import SimpleRepositoryHelper
-from landscape.lib.fs import create_text_file
-from landscape.lib.fs import read_text_file
-from landscape.lib.fs import touch_file
-from landscape.lib.testing import FakeReactor
-from landscape.lib.testing import StubProcessFactory
+from landscape.lib.apt.package.testing import (
+    HASH1,
+    HASH2,
+    HASH3,
+    PKGDEB1,
+    PKGDEB2,
+    AptFacadeHelper,
+    SimpleRepositoryHelper,
+)
+from landscape.lib.fs import create_text_file, read_text_file, touch_file
+from landscape.lib.testing import FakeReactor, StubProcessFactory
 
 
 class AptPackageChangerTest(LandscapeTest):
@@ -294,8 +290,7 @@ class AptPackageChangerTest(LandscapeTest):
                 "type": "change-packages-result",
                 "operation-id": 123,
                 "result-code": 100,
-                "result-text": "Package data has changed. "
-                "Please retry the operation.",
+                "result-text": "Package data has changed. Please retry the operation.",
             }
             self.assertMessages(self.get_pending_messages(), [message])
             self.assertEqual(self.store.get_next_task("changer"), None)
@@ -676,8 +671,7 @@ class AptPackageChangerTest(LandscapeTest):
                     {
                         "operation-id": 123,
                         "result-code": 1,
-                        "result-text": "Yeah, I did whatever you've "
-                        "asked for!",
+                        "result-text": "Yeah, I did whatever you've asked for!",
                         "type": "change-packages-result",
                     },
                 ],
@@ -716,8 +710,7 @@ class AptPackageChangerTest(LandscapeTest):
                     {
                         "operation-id": 123,
                         "result-code": 1,
-                        "result-text": "Yeah, I did whatever you've "
-                        "asked for!",
+                        "result-text": "Yeah, I did whatever you've asked for!",
                         "type": "change-packages-result",
                     },
                 ],
@@ -1128,8 +1121,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.facade.reload_channels()
             self.assertEqual(["foo"], self.facade.get_package_holds())
             self.assertIn(
-                "Queuing response with change package results "
-                "to exchange urgently.",
+                "Queuing response with change package results to exchange urgently.",
                 self.logfile.getvalue(),
             )
             self.assertMessages(
@@ -1234,8 +1226,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.facade.reload_channels()
             self.assertEqual(["foo"], self.facade.get_package_holds())
             self.assertIn(
-                "Queuing response with change package results "
-                "to exchange urgently.",
+                "Queuing response with change package results to exchange urgently.",
                 self.logfile.getvalue(),
             )
             self.assertMessages(
@@ -1287,8 +1278,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
             self.assertIn(
-                "Queuing response with change package results "
-                "to exchange urgently.",
+                "Queuing response with change package results to exchange urgently.",
                 self.logfile.getvalue(),
             )
             self.assertMessages(
@@ -1339,8 +1329,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
             self.assertIn(
-                "Queuing response with change package results "
-                "to exchange urgently.",
+                "Queuing response with change package results to exchange urgently.",
                 self.logfile.getvalue(),
             )
             self.assertMessages(
@@ -1351,8 +1340,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "operation-id": 123,
                         "result-text": "Cannot perform the changes, since the "
                         "following packages are not installed: "
-                        "%s, %s"
-                        % tuple(sorted([bar.package.name, baz.package.name])),
+                        "%s, %s" % tuple(sorted([bar.package.name, baz.package.name])),
                         "result-code": 100,
                     },
                 ],
@@ -1389,8 +1377,7 @@ class AptPackageChangerTest(LandscapeTest):
                 "type": "change-packages-result",
                 "operation-id": 123,
                 "result-code": 100,
-                "result-text": "Package data has changed. "
-                "Please retry the operation.",
+                "result-text": "Package data has changed. Please retry the operation.",
             }
             self.assertMessages(self.get_pending_messages(), [message])
             self.assertEqual(self.store.get_next_task("changer"), None)
@@ -1421,8 +1408,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
             self.assertIn(
-                "Queuing response with change package results "
-                "to exchange urgently.",
+                "Queuing response with change package results to exchange urgently.",
                 self.logfile.getvalue(),
             )
             self.assertMessages(
@@ -1474,8 +1460,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.facade.reload_channels()
             self.assertEqual(["foo"], self.facade.get_package_holds())
             self.assertIn(
-                "Queuing response with change package results "
-                "to exchange urgently.",
+                "Queuing response with change package results to exchange urgently.",
                 self.logfile.getvalue(),
             )
             self.assertMessages(
@@ -1517,8 +1502,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
             self.assertIn(
-                "Queuing response with change package results "
-                "to exchange urgently.",
+                "Queuing response with change package results to exchange urgently.",
                 self.logfile.getvalue(),
             )
             self.assertMessages(
@@ -1560,9 +1544,7 @@ class AptPackageChangerTest(LandscapeTest):
                         "type": "operation-result",
                         "operation-id": 123,
                         "status": FAILED,
-                        "result-text": (
-                            "This client doesn't support package locks."
-                        ),
+                        "result-text": ("This client doesn't support package locks."),
                         "result-code": 1,
                     },
                 ],
@@ -1600,8 +1582,7 @@ class AptPackageChangerTest(LandscapeTest):
                     {
                         "operation-id": 123,
                         "result-code": 1,
-                        "result-text": "Yeah, I did whatever you've "
-                        "asked for!",
+                        "result-text": "Yeah, I did whatever you've asked for!",
                         "type": "change-packages-result",
                     },
                 ],

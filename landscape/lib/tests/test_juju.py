@@ -5,7 +5,6 @@ from collections import namedtuple
 from landscape.lib import testing
 from landscape.lib.juju import get_juju_info
 
-
 SAMPLE_JUJU_INFO = json.dumps(
     {
         "environment-uuid": "DEAD-BEEF",

@@ -4,14 +4,11 @@ import os.path
 from twisted.internet.defer import maybeDeferred
 
 from landscape.client import IS_CORE
-from landscape.client.amp import ComponentConnector
-from landscape.client.amp import ComponentPublisher
-from landscape.client.amp import remote
+from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
 from landscape.client.monitor.plugin import MonitorPlugin
 from landscape.client.user.changes import UserChanges
 from landscape.client.user.provider import UserProvider
 from landscape.lib.log import log_failure
-
 
 # Part of bug 1048576 remediation:
 USER_UPDATE_FLAG_FILE = "user-update-flag"

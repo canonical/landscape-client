@@ -1,5 +1,5 @@
-import logging
 import json
+import logging
 import traceback
 
 from landscape.client.manager.plugin import DataWatcherManager

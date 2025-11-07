@@ -5,16 +5,16 @@ from unittest import mock
 
 from twisted.internet.defer import ensureDeferred
 
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.plugin import FAILED, SUCCEEDED
 from landscape.client.manager.scriptexecution import ProcessFailedError
-from landscape.client.manager.usgmanager import TAILORING_FILE_DIR
-from landscape.client.manager.usgmanager import USG_EXECUTABLE
-from landscape.client.manager.usgmanager import USG_EXECUTABLE_ABS
-from landscape.client.manager.usgmanager import USG_NOT_FOUND
-from landscape.client.manager.usgmanager import UsgManager
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.manager.usgmanager import (
+    TAILORING_FILE_DIR,
+    USG_EXECUTABLE,
+    USG_EXECUTABLE_ABS,
+    USG_NOT_FOUND,
+    UsgManager,
+)
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 MODULE = "landscape.client.manager.usgmanager"
 

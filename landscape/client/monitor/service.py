@@ -9,8 +9,7 @@ from landscape.client.amp import ComponentPublisher
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.monitor.config import MonitorConfiguration
 from landscape.client.monitor.monitor import Monitor
-from landscape.client.service import LandscapeService
-from landscape.client.service import run_landscape_service
+from landscape.client.service import LandscapeService, run_landscape_service
 
 
 class MonitorService(LandscapeService):
@@ -46,8 +45,7 @@ class MonitorService(LandscapeService):
         for plugin_name in self.config.plugin_factories:
             try:
                 plugin = namedClass(
-                    "landscape.client.monitor."
-                    f"{plugin_name.lower()}.{plugin_name}",
+                    f"landscape.client.monitor.{plugin_name.lower()}.{plugin_name}",
                 )
                 plugins.append(plugin())
             except ModuleNotFoundError:

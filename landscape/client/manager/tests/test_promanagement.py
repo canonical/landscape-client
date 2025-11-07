@@ -3,7 +3,6 @@ from unittest import mock
 from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.manager.promanagement import ProManagement
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
-
 from landscape.lib.uaclient import (
     ConnectivityException,
     ContractAPIException,

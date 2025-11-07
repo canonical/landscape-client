@@ -3,8 +3,7 @@ import glob
 import os
 import shutil
 
-from setuptools import Command
-from setuptools import setup
+from setuptools import Command, setup
 
 from landscape import PYTHON_VERSION
 
@@ -76,9 +75,9 @@ def setup_landscape(
 
 
 # Import these afterward to avoid circular imports.
+import setup_client  # noqa: E402
 import setup_lib  # noqa: E402
 import setup_sysinfo  # noqa: E402
-import setup_client  # noqa: E402
 
 PACKAGES = []
 MODULES = []

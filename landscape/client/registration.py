@@ -7,25 +7,16 @@ exchange state is consistent when using these functions.
 """
 
 import json
-from dataclasses import asdict
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import Union
 
 from landscape.client.broker.registration import Identity
 from landscape.client.exchange import exchange_messages
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.machine_id import get_namespaced_machine_id
 from landscape.lib.network import get_fqdn
-from landscape.lib.vm_info import get_container_info
-from landscape.lib.vm_info import get_vm_info
+from landscape.lib.vm_info import get_container_info, get_vm_info
 
 
 @dataclass
@@ -36,21 +27,21 @@ class ClientRegistrationInfo:
     account_name: str
     computer_title: str
 
-    authenticated_attach_code: Optional[str] = None
-    container_info: Optional[str] = None
-    hostagent_uid: Optional[str] = None
-    installation_request_id: Optional[str] = None
-    hostname: Optional[str] = None
+    authenticated_attach_code: str | None = None
+    container_info: str | None = None
+    hostagent_uid: str | None = None
+    installation_request_id: str | None = None
+    hostname: str | None = None
     juju_info: None = None  # We don't send Juju info currently.
-    registration_password: Optional[str] = None
-    tags: Optional[str] = None
-    ubuntu_pro_info: Optional[str] = None
-    vm_info: Optional[bytes] = None
-    machine_id: Optional[str] = None
+    registration_password: str | None = None
+    tags: str | None = None
+    ubuntu_pro_info: str | None = None
+    vm_info: bytes | None = None
+    machine_id: str | None = None
 
     @classmethod
     def from_identity(
-        cls: Type["ClientRegistrationInfo"],
+        cls: type["ClientRegistrationInfo"],
         identity: Identity,
     ) -> "ClientRegistrationInfo":
         return cls(
@@ -89,7 +80,7 @@ def register(
     client_info: ClientRegistrationInfo,
     server_url: str,
     *,
-    cainfo: Optional[str] = None,
+    cainfo: str | None = None,
 ) -> RegistrationInfo:
     """Sends a registration message to the server at `server_url`, returning
     registration info if successful.
@@ -149,7 +140,7 @@ def register(
 
 def _create_message(
     client_info: ClientRegistrationInfo,
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> dict[str, list[dict[str, Any]]]:
     """Serializes `client_info` into a registration message suitable for
     message exchange. Values that are `None` are stripped.
     """
@@ -159,7 +150,7 @@ def _create_message(
     return {"messages": [message]}
 
 
-def _handle_message(message: Dict[str, Any]) -> Union[Tuple[str, int], None]:
+def _handle_message(message: dict[str, Any]) -> tuple[str, int] | None:
     """Parses a single message in the server's response to the registration
     message.
 
@@ -183,11 +174,7 @@ def _handle_message(message: Dict[str, Any]) -> Union[Tuple[str, int], None]:
                 "Log in to your Landscape server account page to manage "
                 "pending computer approvals.",
             )
-    elif (
-        message_type == "set-id"
-        and "id" in message
-        and "insecure-id" in message
-    ):
+    elif message_type == "set-id" and "id" in message and "insecure-id" in message:
         return message["id"], message["insecure-id"]
 
     return None

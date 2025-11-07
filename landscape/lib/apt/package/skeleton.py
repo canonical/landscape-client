@@ -2,7 +2,6 @@ import apt
 
 from landscape.lib.hashlib import sha1
 
-
 PACKAGE = 1 << 0
 PROVIDES = 1 << 1
 REQUIRES = 1 << 2

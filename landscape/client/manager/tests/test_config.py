@@ -1,5 +1,4 @@
-from landscape.client.manager.config import ALL_PLUGINS
-from landscape.client.manager.config import ManagerConfiguration
+from landscape.client.manager.config import ALL_PLUGINS, ManagerConfiguration
 from landscape.client.manager.scriptexecution import ALL_USERS
 from landscape.client.tests.helpers import LandscapeTest
 

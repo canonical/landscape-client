@@ -1,13 +1,10 @@
 """Tests for the `landscape.client.exchange` utility functions."""
 
-from unittest import TestCase
-from unittest import mock
+from unittest import TestCase, mock
 
-from landscape import SERVER_API
-from landscape import VERSION
-from landscape.lib import bpickle
-
+from landscape import SERVER_API, VERSION
 from landscape.client.exchange import exchange_messages
+from landscape.lib import bpickle
 
 
 class ExchangeMessagesTestCase(TestCase):
@@ -17,9 +14,7 @@ class ExchangeMessagesTestCase(TestCase):
         super().setUp()
 
         self.fetch_mock = mock.patch("landscape.client.exchange.fetch").start()
-        self.logging_mock = mock.patch(
-            "landscape.client.exchange.logging"
-        ).start()
+        self.logging_mock = mock.patch("landscape.client.exchange.logging").start()
 
         self.addCleanup(mock.patch.stopall)
 
@@ -76,16 +71,13 @@ class ExchangeMessagesTestCase(TestCase):
         self.fetch_mock.side_effect = Exception("OOPS")
 
         with self.assertRaises(Exception) as exc_context:
-            exchange_messages(
-                payload, "https://my-server.local/message-system"
-            )
+            exchange_messages(payload, "https://my-server.local/message-system")
 
         self.assertIn("OOPS", str(exc_context.exception))
         self.fetch_mock.assert_called_once()
         self.logging_mock.debug.assert_called_once()
         self.logging_mock.exception.assert_called_once_with(
-            "Error contacting the server at https://my-server.local/message"
-            "-system."
+            "Error contacting the server at https://my-server.local/message-system."
         )
 
     def test_bpickle_exception(self):

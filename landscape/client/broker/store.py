@@ -101,11 +101,8 @@ import uuid
 
 from landscape import DEFAULT_SERVER_API
 from landscape.lib import bpickle
-from landscape.lib.fs import create_binary_file
-from landscape.lib.fs import read_binary_file
-from landscape.lib.versioning import is_version_higher
-from landscape.lib.versioning import sort_versions
-
+from landscape.lib.fs import create_binary_file, read_binary_file
+from landscape.lib.versioning import is_version_higher, sort_versions
 
 HELD = "h"
 BROKEN = "b"
@@ -508,9 +505,7 @@ class MessageStore:
 
     def _get_sorted_filenames(self, dir=""):
         message_files = [
-            x
-            for x in os.listdir(self._message_dir(dir))
-            if not x.endswith(".tmp")
+            x for x in os.listdir(self._message_dir(dir)) if not x.endswith(".tmp")
         ]
         message_files.sort(key=lambda x: int(x.split("_")[0]))
         return message_files

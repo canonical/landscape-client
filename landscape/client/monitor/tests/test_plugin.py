@@ -1,11 +1,7 @@
-from unittest.mock import ANY
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import ANY, Mock, patch
 
-from landscape.client.monitor.plugin import DataWatcher
-from landscape.client.monitor.plugin import MonitorPlugin
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.monitor.plugin import DataWatcher, MonitorPlugin
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.schema import Int
 from landscape.lib.testing import LogKeeperHelper
 from landscape.message_schemas.message import Message

@@ -3,19 +3,15 @@
 import os
 import sys
 from argparse import ArgumentTypeError
-from logging import Formatter
-from logging import getLogger
+from logging import Formatter, getLogger
 from logging.handlers import RotatingFileHandler
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.python.reflect import namedClass
 
 from landscape import VERSION
 from landscape.lib.config import BaseConfiguration
-from landscape.sysinfo.sysinfo import format_sysinfo
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
-
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 ALL_PLUGINS = [
     "Load",
@@ -54,9 +50,7 @@ class SysInfoConfiguration(BaseConfiguration):
 
     default_config_filenames = ("/etc/landscape/client.conf",)
     if os.getuid() != 0:
-        default_config_filenames += (
-            os.path.expanduser("~/.landscape/sysinfo.conf"),
-        )
+        default_config_filenames += (os.path.expanduser("~/.landscape/sysinfo.conf"),)
     default_data_dir = "/var/lib/landscape/client/"
 
     config_section = "sysinfo"

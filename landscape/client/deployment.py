@@ -4,26 +4,20 @@ import subprocess
 import sys
 import time
 from argparse import SUPPRESS
-from datetime import datetime
-from datetime import timezone
-from logging import debug
-from logging import info
-from typing import Sequence
+from collections.abc import Sequence
+from datetime import datetime, timezone
+from logging import debug, info
 
 from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
-from landscape.client import DEFAULT_CONFIG
-from landscape.client import GROUP
-from landscape.client import snap_http
-from landscape.client import USER
+from landscape.client import DEFAULT_CONFIG, GROUP, USER, snap_http
 from landscape.client.snap_utils import get_snap_info
 from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging
 from landscape.lib.config import BaseConfiguration as _BaseConfiguration
 from landscape.lib.format import expandvars
-from landscape.lib.network import get_active_device_info
-from landscape.lib.network import get_fqdn
+from landscape.lib.network import get_active_device_info, get_fqdn
 from landscape.lib.persist import Persist
 
 
@@ -159,8 +153,7 @@ class Configuration(BaseConfiguration):
             default=5 * 60,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between flushes to disk "
-            "for persistent data.",
+            help="The number of seconds between flushes to disk for persistent data.",
         )
         parser.add_argument(
             "--stagger-launch",

@@ -6,9 +6,7 @@ import time
 from unittest import mock
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, fail, succeed
 from twisted.internet.utils import getProcessOutput
 from twisted.python.fakepwd import UserDatabase
 
@@ -18,20 +16,21 @@ from landscape.client.amp import ComponentConnector
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.reactor import LandscapeReactor
 from landscape.client.tests.clock import Clock
-from landscape.client.tests.helpers import FakeBrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.watchdog import bootstrap_list
-from landscape.client.watchdog import Broker
-from landscape.client.watchdog import Daemon
-from landscape.client.watchdog import ExecutableNotFoundError
-from landscape.client.watchdog import Manager
-from landscape.client.watchdog import MAXIMUM_CONSECUTIVE_RESTARTS
-from landscape.client.watchdog import Monitor
-from landscape.client.watchdog import RESTART_BURST_DELAY
-from landscape.client.watchdog import run
-from landscape.client.watchdog import WatchDog
-from landscape.client.watchdog import WatchDogConfiguration
-from landscape.client.watchdog import WatchDogService
+from landscape.client.tests.helpers import FakeBrokerServiceHelper, LandscapeTest
+from landscape.client.watchdog import (
+    MAXIMUM_CONSECUTIVE_RESTARTS,
+    RESTART_BURST_DELAY,
+    Broker,
+    Daemon,
+    ExecutableNotFoundError,
+    Manager,
+    Monitor,
+    WatchDog,
+    WatchDogConfiguration,
+    WatchDogService,
+    bootstrap_list,
+    run,
+)
 from landscape.lib.encoding import encode_values
 from landscape.lib.fs import read_text_file
 from landscape.lib.testing import EnvironSaverHelper
@@ -530,8 +529,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         down.
         """
         self.log_helper.ignore_errors(
-            "Couldn't request that broker gracefully shut down; "
-            "killing forcefully.",
+            "Couldn't request that broker gracefully shut down; killing forcefully.",
         )
         clock = Clock()
         dog = WatchDog(
@@ -884,8 +882,7 @@ time.sleep(999)
             )
 
             self.assertTrue(
-                "Can't keep landscape-broker running."
-                in self.logfile.getvalue(),
+                "Can't keep landscape-broker running." in self.logfile.getvalue(),
             )
             self.assertCountEqual([True], stopped)
             reactor.stop = stop[0]
@@ -932,8 +929,7 @@ time.sleep(999)
             )
 
             self.assertTrue(
-                "Can't keep landscape-broker running."
-                in self.logfile.getvalue(),
+                "Can't keep landscape-broker running." in self.logfile.getvalue(),
             )
             self.assertCountEqual([True], stopped)
             reactor.stop = stop[0]
@@ -1380,9 +1376,7 @@ class WatchDogServiceTest(LandscapeTest):
             log_dir,
             "package/database",
         ]
-        calls = [
-            mock.call(path(path_comps), 1234, 5678) for path_comps in paths
-        ]
+        calls = [mock.call(path(path_comps), 1234, 5678) for path_comps in paths]
         mock_chown.assert_has_calls([mock.call(path(), 1234, 5678)] + calls)
         self.assertTrue(os.path.isdir(path()))
         self.assertTrue(os.path.isdir(path("package")))

@@ -1,7 +1,6 @@
 from twisted.internet.defer import fail
 
-from landscape.client.broker.ping import PingClient
-from landscape.client.broker.ping import Pinger
+from landscape.client.broker.ping import PingClient, Pinger
 from landscape.client.broker.tests.helpers import ExchangeHelper
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib import bpickle

@@ -1,13 +1,14 @@
 import os
 import unittest
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from landscape.lib import testing
-from landscape.lib.bootstrap import BootstrapDirectory
-from landscape.lib.bootstrap import BootstrapFile
-from landscape.lib.bootstrap import BootstrapList
-from landscape.lib.bootstrap import BootstrapPath
+from landscape.lib.bootstrap import (
+    BootstrapDirectory,
+    BootstrapFile,
+    BootstrapList,
+    BootstrapPath,
+)
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):

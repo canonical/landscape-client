@@ -5,10 +5,12 @@ import unittest
 from unittest import mock
 
 from landscape.lib import testing
-from landscape.lib.apt.package.store import HashIdStore
-from landscape.lib.apt.package.store import InvalidHashIdDb
-from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.apt.package.store import UnknownHashIDRequest
+from landscape.lib.apt.package.store import (
+    HashIdStore,
+    InvalidHashIdDb,
+    PackageStore,
+    UnknownHashIDRequest,
+)
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -168,8 +170,7 @@ class PackageStoreTest(BaseTestCase):
             db = sqlite3.connect(filename)
             cursor = db.cursor()
             cursor.execute(
-                "CREATE TABLE hash"
-                " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
+                "CREATE TABLE hash (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
             )
             cursor.close()
             db.commit()

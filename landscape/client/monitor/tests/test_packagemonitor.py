@@ -4,8 +4,7 @@ from unittest import mock
 from twisted.internet.defer import Deferred
 
 from landscape.client.monitor.packagemonitor import PackageMonitor
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.testing import EnvironSaverHelper
 
@@ -99,19 +98,21 @@ class PackageMonitorTest(LandscapeTest):
             run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        with mock.patch.object(
-            self.package_monitor, "spawn_reporter"
-        ) as mock_spawn_reporter:
-            with mock.patch.object(
+        with (
+            mock.patch.object(
+                self.package_monitor, "spawn_reporter"
+            ) as mock_spawn_reporter,
+            mock.patch.object(
                 self.package_monitor,
                 "run",
                 side_effect=run_has_run,
-            ):
-                (self.broker_service.message_store).set_accepted_types(
-                    ["packages"],
-                )
-                self.monitor.add(self.package_monitor)
-                self.successResultOf(deferred)
+            ),
+        ):
+            (self.broker_service.message_store).set_accepted_types(
+                ["packages"],
+            )
+            self.monitor.add(self.package_monitor)
+            self.successResultOf(deferred)
 
         mock_spawn_reporter.assert_called_once_with()
 

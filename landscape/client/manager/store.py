@@ -37,8 +37,7 @@ class ManagerStore:
             )
         else:
             cursor.execute(
-                "INSERT INTO graph (graph_id, filename, user) "
-                "VALUES (?, ?, ?)",
+                "INSERT INTO graph (graph_id, filename, user) VALUES (?, ?, ?)",
                 (graph_id, filename, user),
             )
 

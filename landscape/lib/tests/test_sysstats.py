@@ -1,19 +1,19 @@
 import os
 import re
 from datetime import datetime
-from unittest import mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
 from landscape.lib import testing
-from landscape.lib.sysstats import BootTimes
-from landscape.lib.sysstats import CommandError
-from landscape.lib.sysstats import get_logged_in_users
-from landscape.lib.sysstats import get_thermal_zones
-from landscape.lib.sysstats import get_uptime
-from landscape.lib.sysstats import LoginInfoReader
-from landscape.lib.sysstats import MemoryStats
+from landscape.lib.sysstats import (
+    BootTimes,
+    CommandError,
+    LoginInfoReader,
+    MemoryStats,
+    get_logged_in_users,
+    get_thermal_zones,
+    get_uptime,
+)
 from landscape.lib.testing import append_login_data
-
 
 SAMPLE_MEMORY_INFO = """
 MemTotal:      1546436 kB

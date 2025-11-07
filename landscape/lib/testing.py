@@ -9,9 +9,7 @@ import tempfile
 import unittest
 from configparser import ConfigParser
 from io import StringIO
-from logging import ERROR
-from logging import Formatter
-from logging import Handler
+from logging import ERROR, Formatter, Handler
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
@@ -196,8 +194,7 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if not result:
             self.fail(
-                f"Success result expected on {deferred!r}, "
-                "found no result instead",
+                f"Success result expected on {deferred!r}, found no result instead",
             )
         elif isinstance(result[0], Failure):
             self.fail(
@@ -217,8 +214,7 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if not result:
             self.fail(
-                f"Failure result expected on {deferred!r}, "
-                "found no result instead",
+                f"Failure result expected on {deferred!r}, found no result instead",
             )
         elif not isinstance(result[0], Failure):
             self.fail(
@@ -238,8 +234,7 @@ class TwistedTestCase(TestCase):
         deferred.addBoth(result.append)
         if result:
             self.fail(
-                f"No result expected on {deferred!r}, "
-                f"found {result[0]!r} instead",
+                f"No result expected on {deferred!r}, found {result[0]!r} instead",
             )
 
     def assertDeferredSucceeded(self, deferred):  # noqa: N802
@@ -589,11 +584,9 @@ CapEff: 0000000000000000
             file.close()
 
         if generate_cmd_line:
-            sample_data = """\
+            sample_data = f"""\
 /usr/sbin/{process_name}\0--pid-file\0/var/run/{process_name}.pid\0
-""".format(
-                process_name=process_name,
-            )
+"""
         else:
             sample_data = ""
         filename = os.path.join(process_dir, "cmdline")
@@ -760,9 +753,7 @@ class FakeReactor(EventHandlingReactorMixin):
         advancing time and triggering the relevant scheduled calls (see
         also C{call_later} and C{call_every}).
         """
-        while (
-            self._calls and self._calls[0][0] <= self._current_time + seconds
-        ):
+        while self._calls and self._calls[0][0] <= self._current_time + seconds:
             call = self._calls.pop(0)
             # If we find a call within the time we're advancing,
             # before calling it, let's advance the time *just* to

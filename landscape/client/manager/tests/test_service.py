@@ -1,11 +1,9 @@
 from unittest import mock
 
-from landscape.client.manager.config import ALL_PLUGINS
-from landscape.client.manager.config import ManagerConfiguration
+from landscape.client.manager.config import ALL_PLUGINS, ManagerConfiguration
 from landscape.client.manager.processkiller import ProcessKiller
 from landscape.client.manager.service import ManagerService
-from landscape.client.tests.helpers import FakeBrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import FakeBrokerServiceHelper, LandscapeTest
 from landscape.lib.testing import FakeReactor
 
 
@@ -64,12 +62,14 @@ class ManagerServiceTest(LandscapeTest):
         """
         self.service.config.load(["--manager-plugins", "ProcessKiller"])
 
-        with self.assertLogs(level="WARN") as cm:
-            with mock.patch(
+        with (
+            self.assertLogs(level="WARN") as cm,
+            mock.patch(
                 "landscape.client.manager.service.namedClass",
-            ) as namedClass:
-                namedClass.side_effect = Exception("Is there life on Mars?")
-                plugins = self.service.get_plugins()
+            ) as namedClass,
+        ):
+            namedClass.side_effect = Exception("Is there life on Mars?")
+            plugins = self.service.get_plugins()
 
         self.assertEqual(len(plugins), 0)
         self.assertIn("Unable to load", cm.output[0])

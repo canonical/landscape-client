@@ -3,10 +3,11 @@ import logging
 import socket
 from unittest import mock
 
-from landscape.client.broker.registration import Identity
-from landscape.client.broker.registration import RegistrationError
-from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
-from landscape.client.broker.tests.helpers import RegistrationHelper
+from landscape.client.broker.registration import Identity, RegistrationError
+from landscape.client.broker.tests.helpers import (
+    BrokerConfigurationHelper,
+    RegistrationHelper,
+)
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.persist import Persist
 

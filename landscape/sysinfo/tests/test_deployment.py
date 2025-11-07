@@ -10,16 +10,20 @@ from unittest import mock
 from twisted.internet.defer import Deferred
 
 from landscape.lib.fs import create_text_file
-from landscape.lib.testing import ConfigTestCase
-from landscape.lib.testing import HelperTestCase
-from landscape.lib.testing import StandardIOHelper
-from landscape.lib.testing import TwistedTestCase
-from landscape.sysinfo.deployment import ALL_PLUGINS
-from landscape.sysinfo.deployment import get_landscape_log_directory
-from landscape.sysinfo.deployment import plugin_list
-from landscape.sysinfo.deployment import run
-from landscape.sysinfo.deployment import setup_logging
-from landscape.sysinfo.deployment import SysInfoConfiguration
+from landscape.lib.testing import (
+    ConfigTestCase,
+    HelperTestCase,
+    StandardIOHelper,
+    TwistedTestCase,
+)
+from landscape.sysinfo.deployment import (
+    ALL_PLUGINS,
+    SysInfoConfiguration,
+    get_landscape_log_directory,
+    plugin_list,
+    run,
+    setup_logging,
+)
 from landscape.sysinfo.load import Load
 from landscape.sysinfo.network import Network
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
@@ -402,7 +406,7 @@ class RunTest(
         setup_logging_mock.assert_called_once_with()
 
     def test_run_setup_logging_exits_gracefully(self):
-        io_error = IOError("Read-only filesystem.")
+        io_error = OSError("Read-only filesystem.")
         with mock.patch(
             "landscape.sysinfo.deployment.setup_logging",
             side_effect=io_error,

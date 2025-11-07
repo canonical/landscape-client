@@ -8,23 +8,19 @@ import tarfile
 
 from twisted.internet.defer import succeed
 
-from landscape.client import GROUP
-from landscape.client import USER
-from landscape.client.manager.manager import FAILED
-from landscape.client.manager.manager import SUCCEEDED
+from landscape.client import GROUP, USER
+from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.package.reporter import find_reporter_command
-from landscape.client.package.taskhandler import PackageTaskHandler
 from landscape.client.package.taskhandler import (
+    PackageTaskHandler,
     PackageTaskHandlerConfiguration,
+    run_task_handler,
 )
-from landscape.client.package.taskhandler import run_task_handler
 from landscape.lib.config import get_bindir
-from landscape.lib.fetch import fetch_to_files
-from landscape.lib.fetch import url_to_filename
+from landscape.lib.fetch import fetch_to_files, url_to_filename
 from landscape.lib.fs import read_text_file
 from landscape.lib.gpg import gpg_verify
-from landscape.lib.os_release import get_os_filename
-from landscape.lib.os_release import parse_os_release
+from landscape.lib.os_release import get_os_filename, parse_os_release
 from landscape.lib.twisted_util import spawn_process
 
 
@@ -94,8 +90,7 @@ class ReleaseUpgrader(PackageTaskHandler):
                 1,
             )
             logging.info(
-                "Queuing message with release upgrade failure to "
-                "exchange urgently.",
+                "Queuing message with release upgrade failure to exchange urgently.",
             )
             return self._send_message(message)
 
@@ -167,8 +162,7 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         def log_failure(failure):
             logging.warning(
-                "Invalid signature for upgrade-tool "
-                f"tarball: {str(failure.value)}",
+                f"Invalid signature for upgrade-tool tarball: {str(failure.value)}",
             )
             return failure
 
@@ -278,8 +272,7 @@ class ReleaseUpgrader(PackageTaskHandler):
                 code,
             )
             logging.info(
-                "Queuing message with release upgrade results to "
-                "exchange urgently.",
+                "Queuing message with release upgrade results to exchange urgently.",
             )
             return self._send_message(message)
 
@@ -325,8 +318,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         )
 
         logging.info(
-            "Queuing message with release upgrade failure to "
-            "exchange urgently.",
+            "Queuing message with release upgrade failure to exchange urgently.",
         )
 
         return self._send_message(message)

@@ -2,9 +2,11 @@ import grp
 import pwd
 
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.user.provider import GroupNotFoundError
-from landscape.client.user.provider import UserNotFoundError
-from landscape.client.user.provider import UserProvider
+from landscape.client.user.provider import (
+    GroupNotFoundError,
+    UserNotFoundError,
+    UserProvider,
+)
 from landscape.client.user.tests.helpers import FakeUserProvider
 
 
@@ -225,14 +227,10 @@ kevin:x:1000:
         gecos = f"{name},{location},{number},{number},"
         # We explicitly want to encode this file with utf-8 so we can write in
         # binary mode and do not rely on the default encoding.
-        utf8_content = """\
-jdoe:x:1000:1000:{}:/home/jdoe:/bin/zsh
+        utf8_content = f"""\
+jdoe:x:1000:1000:{gecos}:/home/jdoe:/bin/zsh
 root:x:0:0:root:/root:/bin/bash
-""".format(
-            gecos,
-        ).encode(
-            "utf-8",
-        )
+""".encode()
         passwd_file = self.makeFile(utf8_content, mode="wb")
         provider = UserProvider(
             passwd_file=passwd_file,
@@ -678,20 +676,11 @@ broken2
                 "primary-gid": 65534,
             },
         )
-        log1 = (
-            f"WARNING: passwd file {passwd_file} is incorrectly "
-            "formatted: line 2."
-        )
+        log1 = f"WARNING: passwd file {passwd_file} is incorrectly formatted: line 2."
         self.assertIn(log1, self.logfile.getvalue())
-        log2 = (
-            f"WARNING: passwd file {passwd_file} is incorrectly "
-            "formatted: line 3."
-        )
+        log2 = f"WARNING: passwd file {passwd_file} is incorrectly formatted: line 3."
         self.assertIn(log2, self.logfile.getvalue())
-        log3 = (
-            f"WARNING: passwd file {passwd_file} is incorrectly "
-            "formatted: line 6."
-        )
+        log3 = f"WARNING: passwd file {passwd_file} is incorrectly formatted: line 6."
         self.assertIn(log3, self.logfile.getvalue())
 
     def test_get_users_nis_line(self):
@@ -770,10 +759,7 @@ kevin:x:kevin:
             groups[1],
             {"name": "cdrom", "gid": 24, "members": []},
         )
-        log = (
-            f"WARNING: group file {group_file} is incorrectly "
-            "formatted: line 3."
-        )
+        log = f"WARNING: group file {group_file} is incorrectly formatted: line 3."
         self.assertIn(log, self.logfile.getvalue())
 
     def test_get_groups_nis_line(self):

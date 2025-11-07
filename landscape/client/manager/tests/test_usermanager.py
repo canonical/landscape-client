@@ -1,18 +1,16 @@
 import os
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.manager.usermanager import RemoteUserManagerConnector
-from landscape.client.manager.usermanager import UserManager
+from landscape.client.manager.plugin import FAILED, SUCCEEDED
+from landscape.client.manager.usermanager import RemoteUserManagerConnector, UserManager
 from landscape.client.monitor.usermonitor import UserMonitor
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.client.user.provider import UserManagementError
-from landscape.client.user.tests.helpers import FakeSnapdUserManagement
-from landscape.client.user.tests.helpers import FakeUserManagement
-from landscape.client.user.tests.helpers import FakeUserProvider
+from landscape.client.user.tests.helpers import (
+    FakeSnapdUserManagement,
+    FakeUserManagement,
+    FakeUserProvider,
+)
 from landscape.lib.persist import Persist
 from landscape.lib.twisted_util import gather_results
 

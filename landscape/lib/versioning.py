@@ -32,7 +32,4 @@ def sort_versions(versions):
         [Version(version.decode("ascii")) for version in versions],
         reverse=True,
     )
-    return [
-        str(strict_version).encode("ascii")
-        for strict_version in strict_versions
-    ]
+    return [str(strict_version).encode("ascii") for strict_version in strict_versions]

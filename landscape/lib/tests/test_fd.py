@@ -2,8 +2,7 @@
 
 import resource
 import unittest
-from unittest.mock import call
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from landscape.lib.fd import clean_fds
 

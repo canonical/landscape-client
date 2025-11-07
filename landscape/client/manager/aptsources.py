@@ -8,8 +8,7 @@ import uuid
 
 from twisted.internet.defer import succeed
 
-from landscape.client import GROUP
-from landscape.client import USER
+from landscape.client import GROUP, USER
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.package.reporter import find_reporter_command
 from landscape.constants import FALSE_VALUES
@@ -144,9 +143,7 @@ class AptSources(ManagerPlugin):
 
             if manage_sources_list_d not in FALSE_VALUES:
                 for pattern in self.SOURCES_LIST_D_FILE_PATTERNS:
-                    filenames = glob.glob(
-                        os.path.join(self.SOURCES_LIST_D, pattern)
-                    )
+                    filenames = glob.glob(os.path.join(self.SOURCES_LIST_D, pattern))
                     for filename in filenames:
                         shutil.move(filename, f"{filename}.save")
         else:
@@ -178,7 +175,7 @@ class AptSources(ManagerPlugin):
             )
             # Servers send unicode, but an upgrade from python2 can get bytes
             # from stored messages, so we need to handle both.
-            is_unicode = isinstance(source["content"], type(""))
+            is_unicode = isinstance(source["content"], str)
             with open(filename, ("w" if is_unicode else "wb")) as sources_file:
                 sources_file.write(source["content"])
             os.chmod(filename, 0o644)

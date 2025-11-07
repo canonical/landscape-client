@@ -5,8 +5,7 @@ import textwrap
 import unittest
 import weakref
 from collections import namedtuple
-from unittest import mock
-from unittest import skipIf
+from unittest import mock, skipIf
 
 import apt
 import apt_pkg
@@ -15,25 +14,28 @@ from apt.package import Package
 from aptsources.sourceslist import SourcesList
 
 from landscape.lib import testing
-from landscape.lib.apt.package.facade import AptFacade
-from landscape.lib.apt.package.facade import ChannelError
-from landscape.lib.apt.package.facade import DependencyError
-from landscape.lib.apt.package.facade import LandscapeInstallProgress
-from landscape.lib.apt.package.facade import TransactionError
-from landscape.lib.apt.package.testing import AptFacadeHelper
-from landscape.lib.apt.package.testing import create_deb
-from landscape.lib.apt.package.testing import create_simple_repository
-from landscape.lib.apt.package.testing import HASH1
-from landscape.lib.apt.package.testing import HASH2
-from landscape.lib.apt.package.testing import HASH3
-from landscape.lib.apt.package.testing import PKGDEB1
-from landscape.lib.apt.package.testing import PKGDEB_MINIMAL
-from landscape.lib.apt.package.testing import PKGNAME1
-from landscape.lib.apt.package.testing import PKGNAME2
-from landscape.lib.apt.package.testing import PKGNAME3
-from landscape.lib.apt.package.testing import PKGNAME_MINIMAL
-from landscape.lib.fs import create_text_file
-from landscape.lib.fs import read_text_file
+from landscape.lib.apt.package.facade import (
+    AptFacade,
+    ChannelError,
+    DependencyError,
+    LandscapeInstallProgress,
+    TransactionError,
+)
+from landscape.lib.apt.package.testing import (
+    HASH1,
+    HASH2,
+    HASH3,
+    PKGDEB1,
+    PKGDEB_MINIMAL,
+    PKGNAME1,
+    PKGNAME2,
+    PKGNAME3,
+    PKGNAME_MINIMAL,
+    AptFacadeHelper,
+    create_deb,
+    create_simple_repository,
+)
+from landscape.lib.fs import create_text_file, read_text_file
 
 
 def _normalize_field(f):
@@ -216,9 +218,7 @@ class AptFacadeTest(
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
 
     def test_get_packages_multiple_version(self):
@@ -274,8 +274,7 @@ class AptFacadeTest(
         """
         self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
         list_filename = (
-            self.apt_root
-            + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
+            self.apt_root + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
         )
         sources_contents = read_text_file(list_filename)
         self.assertEqual(
@@ -292,8 +291,7 @@ class AptFacadeTest(
         self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
         self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
         list_filename = (
-            self.apt_root
-            + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
+            self.apt_root + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
         )
         sources_contents = read_text_file(list_filename)
         self.assertEqual(
@@ -314,8 +312,7 @@ class AptFacadeTest(
             ["main", "restricted"],
         )
         list_filename = (
-            self.apt_root
-            + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
+            self.apt_root + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
         )
         sources_contents = read_text_file(list_filename)
         self.assertEqual(
@@ -357,8 +354,7 @@ class AptFacadeTest(
         self.facade.add_channel_apt_deb("file://opt/spam", "default", ["main"])
 
         list_filename = (
-            self.apt_root
-            + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
+            self.apt_root + "/etc/apt/sources.list.d/_landscape-internal-facade.list"
         )
         sources_contents = read_text_file(list_filename)
         self.assertEqual(
@@ -466,9 +462,7 @@ class AptFacadeTest(
         packages_file = os.path.join(deb_dir, "Packages")
         with open(packages_file, "wb") as packages:
             self.facade.write_package_stanza(deb_file, packages)
-        sha256 = (
-            "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26"
-        )
+        sha256 = "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26"
         expected = textwrap.dedent(
             f"""\
             Package: name1
@@ -529,9 +523,7 @@ class AptFacadeTest(
         self.facade.reload_channels()
         self.assertEqual(
             ["name1", "name2", "name3"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
 
     def test_get_channels_with_no_channels(self):
@@ -665,9 +657,7 @@ class AptFacadeTest(
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
 
     def test_reload_channels_refetch_package_index(self):
@@ -691,9 +681,7 @@ class AptFacadeTest(
         new_facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
-            sorted(
-                version.package.name for version in new_facade.get_packages()
-            ),
+            sorted(version.package.name for version in new_facade.get_packages()),
         )
 
     def test_reload_channels_not_refetch_package_index(self):
@@ -863,17 +851,13 @@ class AptFacadeTest(
         self.facade.ensure_channels_reloaded()
         self.assertEqual(
             ["foo"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
         self._add_system_package("bar")
         self.facade.ensure_channels_reloaded()
         self.assertEqual(
             ["foo"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
 
     def test_ensure_channels_reloaded_reload_channels(self):
@@ -885,17 +869,13 @@ class AptFacadeTest(
         self.facade.reload_channels()
         self.assertEqual(
             ["foo"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
         self._add_system_package("bar")
         self.facade.ensure_channels_reloaded()
         self.assertEqual(
             ["foo"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
 
     def test_reload_channels_with_channel_error(self):
@@ -938,17 +918,13 @@ class AptFacadeTest(
         self.facade.reload_channels()
         self.assertEqual(
             ["i386-package"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
         self.facade.set_arch("amd64")
         self.facade.reload_channels()
         self.assertEqual(
             ["amd64-package"],
-            sorted(
-                version.package.name for version in self.facade.get_packages()
-            ),
+            sorted(version.package.name for version in self.facade.get_packages()),
         )
 
     def test_get_package_skeleton(self):
@@ -1051,10 +1027,7 @@ class AptFacadeTest(
         # not to re-create objects anymore.
         self.assertEqual(
             sorted(
-                [
-                    version.package.name
-                    for version in self.facade.get_packages()
-                ],
+                [version.package.name for version in self.facade.get_packages()],
             ),
             ["name2", "name3"],
         )
@@ -1452,9 +1425,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError) as cm:
             self.facade.perform_changes()
         output = [
-            line.rstrip()
-            for line in cm.exception.args[0].splitlines()
-            if line.strip()
+            line.rstrip() for line in cm.exception.args[0].splitlines() if line.strip()
         ]
         self.assertEqual(
             [
@@ -1573,10 +1544,8 @@ class AptFacadeTest(
         hook_calls = []
 
         progress = LandscapeInstallProgress()
-        progress.old_excepthook = (
-            lambda exc_type, exc_value, exc_tb: hook_calls.append(
-                (exc_type, exc_value, exc_tb),
-            )
+        progress.old_excepthook = lambda exc_type, exc_value, exc_tb: hook_calls.append(
+            (exc_type, exc_value, exc_tb),
         )
         progress._prevent_dpkg_apport_error(
             SystemError,
@@ -1608,10 +1577,8 @@ class AptFacadeTest(
         hook_calls = []
 
         progress = LandscapeInstallProgress()
-        progress.old_excepthook = (
-            lambda exc_type, exc_value, exc_tb: hook_calls.append(
-                (exc_type, exc_value, exc_tb),
-            )
+        progress.old_excepthook = lambda exc_type, exc_value, exc_tb: hook_calls.append(
+            (exc_type, exc_value, exc_tb),
         )
         error = object()
         traceback = object()
@@ -1642,9 +1609,7 @@ class AptFacadeTest(
         with self.assertRaises(TransactionError) as cm:
             self.facade.perform_changes()
         output = [
-            line.rstrip()
-            for line in cm.exception.args[0].splitlines()
-            if line.strip()
+            line.rstrip() for line in cm.exception.args[0].splitlines() if line.strip()
         ]
         self.assertEqual(
             [
@@ -3655,9 +3620,7 @@ class AptFacadeTest(
         # was added to python-apt. So if it's not there, it means that
         # multi-arch support isn't available.
         skip_message = "multi-arch not supported"
-        test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
-            skip_message
-        )
+        test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = skip_message
         test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
     if apt_pkg.VERSION.startswith("0.7.25"):

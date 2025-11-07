@@ -14,8 +14,8 @@ try:
         uaclient = None
     else:
         from uaclient.api.u.pro.attach.token.full_token_attach.v1 import (
-            full_token_attach,
             FullTokenAttachOptions,
+            full_token_attach,
         )
         from uaclient.api.u.pro.detach.v1 import detach
         from uaclient.api.u.pro.status.is_attached.v1 import is_attached
@@ -91,9 +91,7 @@ def attach_pro(token):
         raise ProManagementError(UACLIENT_ERROR_MESSAGE)
 
     try:
-        options = FullTokenAttachOptions(
-            token=token, auto_enable_services=False
-        )
+        options = FullTokenAttachOptions(token=token, auto_enable_services=False)
         full_token_attach(options)
     except AttachInvalidTokenError:
         raise InvalidTokenException

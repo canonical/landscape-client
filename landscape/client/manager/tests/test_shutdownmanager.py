@@ -3,8 +3,7 @@ from unittest.mock import Mock
 import twisted.internet.defer
 
 from landscape.client.manager.shutdownmanager import ShutdownManager
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class ShutdownManagerTest(LandscapeTest):

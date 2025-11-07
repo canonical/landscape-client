@@ -2,15 +2,12 @@ import random
 from unittest.mock import Mock
 
 from configobj import ConfigObj
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import fail, succeed
 
-from landscape.client.broker.tests.helpers import BrokerServerHelper
-from landscape.client.broker.tests.helpers import RemoteClientHelper
+from landscape.client.broker.tests.helpers import BrokerServerHelper, RemoteClientHelper
 from landscape.client.broker.tests.test_ping import FakePageGetter
 from landscape.client.manager.manager import FAILED
-from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES, LandscapeTest
 
 
 class FakeClient:

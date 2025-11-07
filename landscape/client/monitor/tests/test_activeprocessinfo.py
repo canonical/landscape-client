@@ -3,15 +3,12 @@ import os
 import shutil
 import subprocess
 import tempfile
-from unittest.mock import ANY
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import ANY, Mock, patch
 
 from twisted.internet.defer import fail
 
 from landscape.client.monitor.activeprocessinfo import ActiveProcessInfo
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.testing import ProcessDataBuilder
 
 

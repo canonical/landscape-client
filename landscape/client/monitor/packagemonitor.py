@@ -93,8 +93,7 @@ class PackageMonitor(MonitorPlugin):
             package_facade = FakeFacade()
             package_config = PackageReporterConfiguration()
             package_config.load(
-                args
-                + ["-d", self.config.data_path, "-l", self.config.log_dir],
+                args + ["-d", self.config.data_path, "-l", self.config.log_dir],
             )
             package_store = FakePackageStore(package_config.store_filename)
             self._fake_reporter = FakeReporter(

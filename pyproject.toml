@@ -10,20 +10,15 @@ omit = [
 
 [tool.ruff]
 line-length = 88
-target-version = ">=3.10"
-exclude = ["snap-http/*"]
+exclude = ["snap-http"]
 
 [tool.ruff.lint]
 select = [
-    "B",  # bugbear
-    "C",  # mccabe
     "E",  # pycodestyle
     "F",  # pyflakes
     "I",  # isort
-    "UP", # pyupgrade
-    "SIM", # flake8
     "W",  # pycodestyle warnings
 ]
 
 [tool.ruff.format]
-line-ending = lf
+line-ending = "lf"

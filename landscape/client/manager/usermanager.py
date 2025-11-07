@@ -1,13 +1,10 @@
 import logging
 
 from landscape.client import IS_CORE
-from landscape.client.amp import ComponentConnector
-from landscape.client.amp import ComponentPublisher
-from landscape.client.amp import remote
+from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector
-from landscape.client.user.management import SnapdUserManagement
-from landscape.client.user.management import UserManagement
+from landscape.client.user.management import SnapdUserManagement, UserManagement
 
 
 class UserManager(ManagerPlugin):
@@ -70,7 +67,7 @@ class UserManager(ManagerPlugin):
         locked_users = []
         if self._shadow_file:
             try:
-                shadow_file = open(self._shadow_file, "r")
+                shadow_file = open(self._shadow_file)
                 for line in shadow_file:
                     parts = line.split(":")
                     if len(parts) > 1:

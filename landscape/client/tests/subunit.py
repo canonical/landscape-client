@@ -177,8 +177,7 @@ class TestProtocolServer:
             self.client.adderror(
                 self._current_test,
                 RemoteError(
-                    "lost connection during test "
-                    f"'{self.current_test_description}'",
+                    f"lost connection during test '{self.current_test_description}'",
                 ),
             )
             self.client.stopTest(self._current_test)

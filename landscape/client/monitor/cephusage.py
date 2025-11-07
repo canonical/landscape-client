@@ -8,7 +8,6 @@ from landscape.client.accumulate import Accumulator
 from landscape.client.monitor.plugin import MonitorPlugin
 from landscape.lib.monitor import CoverageMonitor
 
-
 try:
     from rados import Rados
 

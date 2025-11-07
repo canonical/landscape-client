@@ -1,6 +1,5 @@
 from landscape.client.monitor.computertags import ComputerTags
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class ComputerTagsTest(LandscapeTest):

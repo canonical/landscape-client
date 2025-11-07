@@ -374,10 +374,7 @@ class FakePackageStore(PackageStore):
 
     @with_cursor
     def get_message_ids(self, cursor):
-        return [
-            row[0]
-            for row in cursor.execute("SELECT id FROM message").fetchall()
-        ]
+        return [row[0] for row in cursor.execute("SELECT id FROM message").fetchall()]
 
     @with_cursor
     def save_message_ids(self, cursor, message_ids):

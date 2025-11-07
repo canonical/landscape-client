@@ -1,10 +1,12 @@
 from twisted.internet.defer import Deferred
 
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin, DataWatcherManager
-from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.manager.plugin import (
+    FAILED,
+    SUCCEEDED,
+    DataWatcherManager,
+    ManagerPlugin,
+)
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class BrokerPluginTest(LandscapeTest):

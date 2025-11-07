@@ -9,8 +9,7 @@ import subprocess
 from landscape.client import snap_http
 from landscape.client.snap_http import SnapdHttpException
 from landscape.client.snap_utils import parse_assertion
-from landscape.client.user.provider import UserManagementError
-from landscape.client.user.provider import UserProvider
+from landscape.client.user.provider import UserManagementError, UserProvider
 
 
 class UserManagement:
@@ -63,15 +62,14 @@ class UserManagement:
             result, new_output = self.call_popen(["passwd", username, "-e"])
             if result != 0:
                 raise UserManagementError(
-                    "Error resetting password for user "
-                    f"{username}.\n{new_output}",
+                    f"Error resetting password for user {username}.\n{new_output}",
                 )
             else:
                 output += new_output
         return output
 
     def _set_password(self, username, password):
-        chpasswd_input = f"{username}:{password}".encode("utf-8")
+        chpasswd_input = f"{username}:{password}".encode()
         chpasswd = self._provider.popen(
             ["chpasswd"],
             stdin=subprocess.PIPE,
@@ -83,11 +81,7 @@ class UserManagement:
         if result != 0:
             username = username.encode("utf-8")
             raise UserManagementError(
-                "Error setting password for user {}.\n{} {}".format(
-                    username,
-                    output,
-                    stderr,
-                ),
+                f"Error setting password for user {username}.\n{output} {stderr}",
             )
         return output
 
@@ -179,8 +173,7 @@ class UserManagement:
             command.append("--remove-home")
         else:
             logging.info(
-                "Removing user %s (UID %d) without deleting their "
-                "home directory.",
+                "Removing user %s (UID %d) without deleting their home directory.",
                 username,
                 uid,
             )

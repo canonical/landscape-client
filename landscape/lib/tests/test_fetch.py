@@ -7,13 +7,15 @@ import pycurl
 from twisted.internet.defer import FirstError
 
 from landscape.lib import testing
-from landscape.lib.fetch import fetch
-from landscape.lib.fetch import fetch_async
-from landscape.lib.fetch import fetch_many_async
-from landscape.lib.fetch import fetch_to_files
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
-from landscape.lib.fetch import url_to_filename
+from landscape.lib.fetch import (
+    HTTPCodeError,
+    PyCurlError,
+    fetch,
+    fetch_async,
+    fetch_many_async,
+    fetch_to_files,
+    url_to_filename,
+)
 
 
 class CurlStub:

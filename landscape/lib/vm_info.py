@@ -4,9 +4,7 @@ Network introspection utilities using ioctl and the /proc filesystem.
 
 import os
 
-from landscape.lib.fs import read_binary_file
-from landscape.lib.fs import read_text_file
-
+from landscape.lib.fs import read_binary_file, read_text_file
 
 DMI_FILES = ("sys_vendor", "chassis_vendor", "bios_vendor", "product_name")
 

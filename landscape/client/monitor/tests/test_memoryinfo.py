@@ -1,8 +1,7 @@
 from unittest import mock
 
 from landscape.client.monitor.memoryinfo import MemoryInfo
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class MemoryInfoTest(LandscapeTest):
