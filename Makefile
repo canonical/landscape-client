@@ -18,7 +18,7 @@ depends:
 
 .PHONY: depends-dev
 depends-dev: depends
-	pip install jinja2-cli ruff
+	pip install jinja2-cli ruff coverage[toml]
 
 # -common seems a catch-22, but this is just a shortcut to
 # initialize user and dirs, some used through tests.
