@@ -12,7 +12,6 @@ from landscape.lib.persist import Persist
 
 
 class IdentityTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
@@ -82,7 +81,6 @@ class IdentityTest(LandscapeTest):
 
 
 class RegistrationHandlerTestBase(LandscapeTest):
-
     helpers = [RegistrationHelper]
 
     def setUp(self):
@@ -770,7 +768,6 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
 
 class JujuRegistrationHandlerTest(RegistrationHandlerTestBase):
-
     juju_contents = json.dumps(
         {
             "environment-uuid": "DEAD-BEEF",

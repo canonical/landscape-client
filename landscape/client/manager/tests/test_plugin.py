@@ -8,7 +8,6 @@ from landscape.client.tests.helpers import ManagerHelper
 
 
 class BrokerPluginTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def test_call_with_operation_result_success(self):
@@ -129,7 +128,6 @@ class BrokerPluginTest(LandscapeTest):
 
 
 class StubDataWatchingPlugin(DataWatcherManager):
-
     message_type = "wubble"
 
     def __init__(self, data=None):
@@ -140,7 +138,6 @@ class StubDataWatchingPlugin(DataWatcherManager):
 
 
 class DataWatcherManagerTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):

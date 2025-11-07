@@ -4,6 +4,7 @@ The WatchDog must run as root, because it spawns the Landscape Manager.
 
 The main C{landscape-client} program uses this watchdog.
 """
+
 import errno
 import os
 import pwd
@@ -575,7 +576,6 @@ class WatchDogService(Service):
             log_dir=self._config.log_dir,
         )
         if self._config.clones > 0:
-
             # Let clones open an appropriate number of fds
             setrlimit(
                 RLIMIT_NOFILE,

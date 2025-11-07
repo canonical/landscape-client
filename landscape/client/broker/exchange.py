@@ -711,8 +711,9 @@ class MessageExchange:
             backoff_delay = self._backoff_counter.get_random_delay()
             if backoff_delay:
                 logging.warning(
-                    "Server is busy. Backing off client for {} "
-                    "seconds".format(backoff_delay),
+                    "Server is busy. Backing off client for {} seconds".format(
+                        backoff_delay
+                    ),
                 )
                 interval += backoff_delay
 

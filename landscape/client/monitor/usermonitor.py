@@ -191,5 +191,4 @@ class UserMonitor(MonitorPlugin):
 
 
 class RemoteUserMonitorConnector(ComponentConnector):
-
     component = UserMonitor

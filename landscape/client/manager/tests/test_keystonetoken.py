@@ -7,7 +7,6 @@ from landscape.client.tests.helpers import ManagerHelper
 
 
 class KeystoneTokenTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):

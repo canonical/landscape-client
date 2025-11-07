@@ -8,7 +8,6 @@ from landscape.lib.amp import MethodCallError
 
 
 class RemoteBrokerTest(LandscapeTest):
-
     helpers = [RemoteBrokerHelper]
 
     def test_ping(self):
@@ -216,7 +215,6 @@ class RemoteBrokerTest(LandscapeTest):
 
 
 class RemoteClientTest(LandscapeTest):
-
     helpers = [RemoteClientHelper]
 
     def test_ping(self):

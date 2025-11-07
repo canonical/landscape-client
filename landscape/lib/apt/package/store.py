@@ -1,4 +1,5 @@
 """Provide access to the persistent data used by L{PackageTaskHandler}s."""
+
 import time
 
 try:
@@ -389,8 +390,7 @@ class FakePackageStore(PackageStore):
     def get_messages_by_ids(self, cursor, message_ids):
         params = ", ".join(["?"] * len(message_ids))
         result = cursor.execute(
-            f"SELECT id, data FROM message WHERE id IN ({params}) "
-            "ORDER BY id",
+            f"SELECT id, data FROM message WHERE id IN ({params}) ORDER BY id",
             tuple(message_ids),
         ).fetchall()
         return [(row[0], bytes(row[1])) for row in result]

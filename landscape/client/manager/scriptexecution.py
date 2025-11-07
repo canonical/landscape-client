@@ -3,6 +3,7 @@ Functionality for running arbitrary shell scripts.
 
 @var ALL_USERS: A token indicating all users should be allowed.
 """
+
 import os.path
 import shutil
 import sys
@@ -328,7 +329,6 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             d = succeed(None)
 
         def prepare_script(attachment_dir):
-
             return self._run_script(filename, uid, gid, path, env, time_limit)
 
         d.addCallback(prepare_script)

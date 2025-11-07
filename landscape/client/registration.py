@@ -5,6 +5,7 @@ other machinery, i.e. the Broker, and therefore exist outside of the usual
 message exchange scheduling system. Callers are responsible for ensuring
 exchange state is consistent when using these functions.
 """
+
 import json
 from dataclasses import asdict
 from dataclasses import dataclass
@@ -52,7 +53,6 @@ class ClientRegistrationInfo:
         cls: Type["ClientRegistrationInfo"],
         identity: Identity,
     ) -> "ClientRegistrationInfo":
-
         return cls(
             identity.access_group,
             identity.account_name,

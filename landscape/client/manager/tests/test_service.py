@@ -10,7 +10,6 @@ from landscape.lib.testing import FakeReactor
 
 
 class ManagerServiceTest(LandscapeTest):
-
     helpers = [FakeBrokerServiceHelper]
 
     class FakeManagerService(ManagerService):

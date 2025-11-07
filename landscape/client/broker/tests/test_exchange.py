@@ -21,7 +21,6 @@ from landscape.message_schemas.message import Message
 
 
 class MessageExchangeTest(LandscapeTest):
-
     helpers = [ExchangeHelper]
 
     def setUp(self):
@@ -1408,7 +1407,6 @@ class MessageExchangeTest(LandscapeTest):
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
-
     helpers = [ExchangeHelper]
 
     def setUp(self):
@@ -1455,9 +1453,9 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-B")
         types = sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES)
         accepted_types_digest = md5(";".join(types).encode("ascii")).digest()
-        self.transport.extra[
-            "client-accepted-types-hash"
-        ] = accepted_types_digest
+        self.transport.extra["client-accepted-types-hash"] = (
+            accepted_types_digest
+        )
         self.exchanger.exchange()
         self.exchanger.exchange()
         self.assertNotIn("client-accepted-types", self.transport.payloads[1])

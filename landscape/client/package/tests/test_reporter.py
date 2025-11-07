@@ -179,8 +179,11 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config = PackageReporterConfiguration()
 
         fake_stderr = io.StringIO()
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             config.load(
                 [
@@ -199,8 +202,11 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config = PackageReporterConfiguration()
 
         fake_stderr = io.StringIO()
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             config.load(
                 [
@@ -219,8 +225,11 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config = PackageReporterConfiguration()
 
         fake_stderr = io.StringIO()
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             config.load(
                 [
@@ -295,10 +304,7 @@ class PackageReporterAptTest(LandscapeTest):
     def _make_fake_apt_update(self, out="output", err="error", code=0):
         """Create a fake apt-update executable"""
         self.reporter.apt_update_filename = self.makeFile(
-            "#!/bin/sh\n"
-            f"echo -n '{out}'\n"
-            f"echo -n '{err}' >&2\n"
-            f"exit {code:d}",
+            f"#!/bin/sh\necho -n '{out}'\necho -n '{err}' >&2\nexit {code:d}",
         )
         os.chmod(self.reporter.apt_update_filename, 0o755)
 

@@ -2,6 +2,7 @@
 A monitor that collects data on network activity, and sends messages
 with the inbound/outbound traffic per interface per step interval.
 """
+
 import time
 
 from landscape.client.accumulate import Accumulator

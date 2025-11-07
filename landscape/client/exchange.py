@@ -1,6 +1,7 @@
 """Utility functions for exchanging messages synchronously with a Landscape
 Server instance.
 """
+
 from dataclasses import dataclass
 import logging
 from pprint import pformat

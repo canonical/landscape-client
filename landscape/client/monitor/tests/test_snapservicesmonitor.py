@@ -8,7 +8,6 @@ from landscape.client.tests.helpers import MonitorHelper
 
 
 class SnapServicesMonitorTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

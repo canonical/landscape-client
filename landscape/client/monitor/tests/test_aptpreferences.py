@@ -7,7 +7,6 @@ from landscape.client.tests.helpers import MonitorHelper
 
 
 class AptPreferencesTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

@@ -27,8 +27,9 @@ class UbuntuProInfo(DataWatcherManager):
 
     def get_data(self):
         ubuntu_pro_info = get_ubuntu_pro_info()
-        return json.dumps(ubuntu_pro_info, separators=(",", ":"),
-                          sort_keys=True)
+        return json.dumps(
+            ubuntu_pro_info, separators=(",", ":"), sort_keys=True
+        )
 
 
 def uastatus(q):

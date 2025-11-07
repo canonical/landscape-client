@@ -91,6 +91,7 @@ See L{MessageStore} for details about how messages are stored on the file
 system and L{landscape.lib.message.got_next_expected} to check how the
 strategy for updating the pending offset and the sequence is implemented.
 """
+
 import itertools
 import logging
 import os

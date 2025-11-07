@@ -7,7 +7,6 @@ from landscape.lib.testing import LogKeeperHelper
 
 
 class RebootRequiredTest(LandscapeTest):
-
     helpers = [MonitorHelper, LogKeeperHelper]
 
     def setUp(self):

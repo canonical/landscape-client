@@ -11,7 +11,6 @@ from landscape.client.user.management import UserManagement
 
 
 class UserManager(ManagerPlugin):
-
     name = "usermanager"
 
     def __init__(self, management=None, shadow_file=None):
@@ -173,5 +172,4 @@ class UserManager(ManagerPlugin):
 
 
 class RemoteUserManagerConnector(ComponentConnector):
-
     component = UserManager

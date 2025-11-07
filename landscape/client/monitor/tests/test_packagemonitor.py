@@ -99,8 +99,8 @@ class PackageMonitorTest(LandscapeTest):
             run_result_deferred = real_run()
             return run_result_deferred.chainDeferred(deferred)
 
-        with (
-            mock.patch.object(self.package_monitor, "spawn_reporter")
+        with mock.patch.object(
+            self.package_monitor, "spawn_reporter"
         ) as mock_spawn_reporter:
             with mock.patch.object(
                 self.package_monitor,

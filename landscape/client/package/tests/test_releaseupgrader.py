@@ -344,11 +344,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
         fd.write(
-            "#!/bin/sh\n"
-            "echo $@\n"
-            "echo FOO=$FOO\n"
-            "echo PWD=$PWD\n"
-            "echo out\n",
+            "#!/bin/sh\necho $@\necho FOO=$FOO\necho PWD=$PWD\necho out\n",
         )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
@@ -684,7 +680,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                 out, err, code = args
                 self.assertEqual(
                     out,
-                    b"--force-apt-update " b"--config=/some/config\n",
+                    b"--force-apt-update --config=/some/config\n",
                 )
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
@@ -809,8 +805,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                         "type": "operation-result",
                         "operation-id": 100,
                         "status": FAILED,
-                        "result-text": "The system is already "
-                        "running karmic.",
+                        "result-text": "The system is already running karmic.",
                         "result-code": 1,
                     },
                 ],

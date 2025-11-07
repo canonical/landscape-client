@@ -913,7 +913,6 @@ class ActiveProcessInfoTest(LandscapeTest):
 
 
 class PluginManagerIntegrationTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

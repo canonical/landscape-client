@@ -146,7 +146,6 @@ class CephUsage(MonitorPlugin):
             conffile=self._ceph_config,
             rados_id="landscape-client",
         ) as cluster:
-
             cluster_stats = cluster.get_cluster_stats()
             if self._ceph_ring_id is None:
                 fsid = str(cluster.get_fsid(), "utf-8")

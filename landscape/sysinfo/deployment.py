@@ -1,4 +1,5 @@
 """Deployment code for the sysinfo tool."""
+
 import os
 import sys
 from argparse import ArgumentTypeError

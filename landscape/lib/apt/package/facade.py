@@ -69,7 +69,6 @@ class LandscapeAcquireProgress(AcquireProgress):
 
 
 class LandscapeInstallProgress(InstallProgress):
-
     dpkg_exited = None
     old_excepthook = None
 
@@ -288,7 +287,6 @@ class AptFacade:
         if self.refetch_package_index or (
             force_reload_binaries and os.path.exists(internal_sources_list)
         ):
-
             # Try to update only the internal repos, if the python-apt
             # version is new enough to accept a sources_list parameter.
             new_apt_args = {}
@@ -685,7 +683,6 @@ class AptFacade:
                     package.current_state == apt_pkg.CURSTATE_INSTALLED
                     or depcache.marked_install(package)
                 ) and not depcache.marked_delete(package):
-
                     return is_positive
         return not is_positive
 

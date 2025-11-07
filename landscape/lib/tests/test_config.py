@@ -54,7 +54,6 @@ def cfg_class(section=None, **defaults):
 
 
 class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
-
     helpers = [LogKeeperHelper]
 
     def setUp(self):
@@ -843,7 +842,6 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
 
 class GetBindirTest(unittest.TestCase):
-
     BIN_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 
     def test_config_has_valid_bindir(self):

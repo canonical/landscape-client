@@ -4,7 +4,6 @@ from landscape.client.tests.helpers import MonitorHelper
 
 
 class ComputerTagsTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

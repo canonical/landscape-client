@@ -135,7 +135,7 @@ class UserManagement:
             result, output = self.call_popen(command + [username])
             if result != 0:
                 raise UserManagementError(
-                    "Error setting details for user " f"{username}.\n{output}",
+                    f"Error setting details for user {username}.\n{output}",
                 )
             return output
 
@@ -172,8 +172,7 @@ class UserManagement:
         command = ["deluser", username]
         if delete_home:
             logging.info(
-                "Removing user %s (UID %d) and deleting their home "
-                "directory.",
+                "Removing user %s (UID %d) and deleting their home directory.",
                 username,
                 uid,
             )

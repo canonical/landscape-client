@@ -4,7 +4,6 @@ from landscape.client.tests.helpers import ManagerHelper
 
 
 class ManagerTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def test_reactor(self):

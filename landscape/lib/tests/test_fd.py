@@ -1,4 +1,5 @@
 """Tests for L{landscape.lib.fd}"""
+
 import resource
 import unittest
 from unittest.mock import call

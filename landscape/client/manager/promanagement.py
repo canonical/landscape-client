@@ -54,16 +54,12 @@ class ProManagement(ManagerPlugin):
 
     def _respond_success_attach(self, data, opid):
         return self._respond(
-            SUCCEEDED,
-            json.dumps(get_ubuntu_pro_info()),
-            opid
+            SUCCEEDED, json.dumps(get_ubuntu_pro_info()), opid
         )
 
     def _respond_success_detach(self, data, opid):
         return self._respond(
-            SUCCEEDED,
-            "Succeeded in detaching pro token.",
-            opid
+            SUCCEEDED, "Succeeded in detaching pro token.", opid
         )
 
     def _respond_failure(self, failure, opid):

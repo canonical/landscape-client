@@ -13,7 +13,6 @@ from landscape.lib.persist import RootedPersist
 
 
 class PersistHelpersTest(unittest.TestCase):
-
     paths = [
         ("ab", ("ab",)),
         ("ab.cd", ("ab", "cd")),
@@ -38,7 +37,6 @@ class PersistHelpersTest(unittest.TestCase):
 
 
 class BasePersistTest(unittest.TestCase):
-
     set_items = [
         ("ab", 1),
         ("ab", 2),

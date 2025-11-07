@@ -1,4 +1,5 @@
 """Low-level server communication."""
+
 import uuid
 from dataclasses import asdict
 from typing import Optional

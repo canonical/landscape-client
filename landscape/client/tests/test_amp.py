@@ -19,7 +19,6 @@ from landscape.lib.testing import FakeReactor
 
 
 class MockComponent:
-
     name = "test"
 
     @remote
@@ -31,7 +30,6 @@ class MockComponent:
 
 
 class MockComponentConnector(ComponentConnector):
-
     component = MockComponent
 
 

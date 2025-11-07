@@ -3,6 +3,7 @@
 This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
+
 import base64
 import getpass
 import io
@@ -105,7 +106,6 @@ def get_invalid_users(users):
 
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
-
     unsaved_options = (
         "clones",
         "start_clones_over",
@@ -555,7 +555,6 @@ class LandscapeSetupScript:
                 self.config.account_name = ""
 
     def show_summary(self):
-
         tx = f"""A summary of the provided information:
             Computer's Title: {self.config.computer_title}
             Account Name: {self.config.account_name}
@@ -982,7 +981,6 @@ def main(args, print=print):  # noqa: C901
     already_registered = registration_sent(config)
 
     if config.is_registered or config.registration_sent:
-
         registration_status = already_registered
 
         info_text = registration_info_text(config, registration_status)

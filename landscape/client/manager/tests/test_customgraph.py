@@ -16,7 +16,6 @@ from landscape.lib.testing import StubProcessFactory
 
 
 class CustomGraphManagerTests(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):

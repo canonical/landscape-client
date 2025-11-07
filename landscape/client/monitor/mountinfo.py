@@ -10,7 +10,6 @@ from landscape.lib.monitor import CoverageMonitor
 
 
 class MountInfo(MonitorPlugin):
-
     persist_name = "mount-info"
     scope = "disk"
 
@@ -143,7 +142,6 @@ class MountInfo(MonitorPlugin):
                 and not self.is_device_removable(device)
                 and mount_point not in bound_mount_points
             ):
-
                 yield info
 
     def _get_bound_mount_points(self):

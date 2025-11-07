@@ -109,7 +109,6 @@ class UserProviderBase:
 
 
 class UserProvider(UserProviderBase):
-
     popen = subprocess.Popen
 
     passwd_fields = [

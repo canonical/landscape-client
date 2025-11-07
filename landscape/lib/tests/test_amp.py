@@ -97,7 +97,6 @@ class FakeConnector:
 
 
 class DummyObject:
-
     method = None
 
 

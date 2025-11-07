@@ -220,9 +220,9 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 )
             self._data[graph_id]["error"] = failure_value
         elif failure.check(ProcessTimeLimitReachedError):
-            self._data[graph_id][
-                "error"
-            ] = f"Process exceeded the {self.time_limit:d} seconds limit"
+            self._data[graph_id]["error"] = (
+                f"Process exceeded the {self.time_limit:d} seconds limit"
+            )
         else:
             self._data[graph_id]["error"] = self._format_exception(
                 failure.value,

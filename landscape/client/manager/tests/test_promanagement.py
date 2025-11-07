@@ -13,7 +13,6 @@ from landscape.lib.uaclient import (
 
 
 class ProManagementTests(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -29,7 +28,7 @@ class ProManagementTests(LandscapeTest):
         message = {
             "type": "attach-pro",
             "operation-id": 123,
-            "token": "fake-token"
+            "token": "fake-token",
         }
         return self.manager.dispatch_message(message)
 

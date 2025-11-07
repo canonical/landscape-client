@@ -42,6 +42,7 @@ Diagram::
                                                       : exchange
 
 """
+
 import logging
 
 from twisted.internet.defer import Deferred
@@ -383,7 +384,6 @@ class BrokerServer:
             and opid is not None
             and message["type"] != "resynchronize"
         ):
-
             mtype = message["type"]
             logging.error(f"Nobody handled the {mtype} message.")
 

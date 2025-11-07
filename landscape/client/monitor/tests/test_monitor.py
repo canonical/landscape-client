@@ -8,7 +8,6 @@ from landscape.lib.persist import Persist
 
 
 class MonitorTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def test_persist(self):

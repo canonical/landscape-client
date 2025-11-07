@@ -24,7 +24,6 @@ from landscape.lib.sysstats import LoginInfo
 
 
 class HelperTestCase(unittest.TestCase):
-
     helpers = []
 
     def setUp(self):
@@ -525,7 +524,6 @@ class ProcessDataBuilder:
         stat_data=None,
         vmsize=11676,
     ):
-
         """Creates sample data for a process.
 
         @param started_after_boot: The amount of time, in jiffies,

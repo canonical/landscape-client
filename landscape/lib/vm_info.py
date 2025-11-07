@@ -1,6 +1,7 @@
 """
 Network introspection utilities using ioctl and the /proc filesystem.
 """
+
 import os
 
 from landscape.lib.fs import read_binary_file

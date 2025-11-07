@@ -11,7 +11,9 @@ def get_reboot_info():
     can be caught and also so it can be mocked
     """
     from uaclient.api.u.pro.security.status.reboot_required.v1 import (
-        reboot_required,)
+        reboot_required,
+    )
+
     return reboot_required().to_dict()
 
 

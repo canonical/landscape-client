@@ -15,7 +15,6 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 
 class BootstrapPathTest(BaseTestCase):
-
     bootstrap_class = BootstrapPath
 
     def setUp(self):
@@ -99,7 +98,6 @@ class BootstrapPathTest(BaseTestCase):
 
 
 class BootstrapCreationTest(BootstrapPathTest):
-
     bootstrap_class = BootstrapFile
 
     def exists(self, path):
@@ -121,7 +119,6 @@ class BootstrapFileTest(BootstrapCreationTest):
 
 
 class BootstrapDirectoryTest(BootstrapCreationTest):
-
     bootstrap_class = BootstrapDirectory
 
     def exists(self, path):

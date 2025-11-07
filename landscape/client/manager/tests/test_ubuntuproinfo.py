@@ -17,6 +17,7 @@ from landscape.client.tests.helpers import ManagerHelper
 def uastatus_mock_maker(ret_val):
     def uastatus_mock(q):
         q.put(ret_val)
+
     return uastatus_mock
 
 
@@ -33,42 +34,38 @@ class UbuntuProInfoTest(LandscapeTest):
         """Mock value that `ua.status` will return"""
         self.mock_status_value = {
             "attached": True,
-            "contract": {
-                "id": "fake_contract_id"
-            },
+            "contract": {"id": "fake_contract_id"},
             "services": [
                 {
                     "available": "yes",
                     "entitled": "yes",
                     "name": "anbox-cloud",
-                    "status": "disabled"
+                    "status": "disabled",
                 },
                 {
                     "available": "yes",
                     "entitled": "yes",
                     "name": "landscape",
-                    "status": "disabled"
-                }
-            ]
+                    "status": "disabled",
+                },
+            ],
         }
 
         self.mock_status_value_no_pro = {
             "attached": False,
-            "contract": {
-                "id": "fake_contract_id"
-            },
+            "contract": {"id": "fake_contract_id"},
             "services": [
                 {
                     "available": "yes",
                     "name": "anbox-cloud",
-                    "status": "disabled"
+                    "status": "disabled",
                 },
                 {
                     "available": "yes",
                     "name": "landscape",
-                    "status": "disabled"
-                }
-            ]
+                    "status": "disabled",
+                },
+            ],
         }
 
         self.addCleanup(mock.patch.stopall)
@@ -102,11 +99,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
             json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
+                self.mock_status_value, separators=(",", ":"), default=str
             ),
-            messages[0]["ubuntu-pro-info"]
+            messages[0]["ubuntu-pro-info"],
         )
 
         result = json.loads(messages[0]["ubuntu-pro-info"])
@@ -139,12 +134,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                expected,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(expected, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
     def test_serializable_already(self):
@@ -175,12 +166,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                fake_val,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(fake_val, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
     def test_ubuntu_pro_info_no_pro(self):
@@ -201,9 +188,9 @@ class UbuntuProInfoTest(LandscapeTest):
             json.dumps(
                 self.mock_status_value_no_pro,
                 separators=(",", ":"),
-                default=str
+                default=str,
             ),
-            messages[0]["ubuntu-pro-info"]
+            messages[0]["ubuntu-pro-info"],
         )
 
         result = json.loads(messages[0]["ubuntu-pro-info"])
@@ -265,11 +252,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
             json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
+                self.mock_status_value, separators=(",", ":"), default=str
             ),
-            messages[0]["ubuntu-pro-info"]
+            messages[0]["ubuntu-pro-info"],
         )
 
         with mock.patch(
@@ -297,11 +282,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
             json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
+                self.mock_status_value, separators=(",", ":"), default=str
             ),
-            messages[0]["ubuntu-pro-info"]
+            messages[0]["ubuntu-pro-info"],
         )
 
         new_mock_status_value = self.mock_status_value
@@ -316,11 +299,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(2, len(messages))
         self.assertEqual(
             json.dumps(
-                new_mock_status_value,
-                separators=(",", ":"),
-                default=str
+                new_mock_status_value, separators=(",", ":"), default=str
             ),
-            messages[1]["ubuntu-pro-info"]
+            messages[1]["ubuntu-pro-info"],
         )
 
     def test_persistence_reset(self):
@@ -340,11 +321,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
             json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
+                self.mock_status_value, separators=(",", ":"), default=str
             ),
-            messages[0]["ubuntu-pro-info"]
+            messages[0]["ubuntu-pro-info"],
         )
 
         plugin._reset()
@@ -360,11 +339,9 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue("ubuntu-pro-info" in messages[1])
         self.assertEqual(
             json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
+                self.mock_status_value, separators=(",", ":"), default=str
             ),
-            messages[1]["ubuntu-pro-info"]
+            messages[1]["ubuntu-pro-info"],
         )
 
     @mock.patch.multiple(
@@ -384,7 +361,7 @@ class UbuntuProInfoTest(LandscapeTest):
                     "id": "zYxWvU_sRqPoNmLkJiHgFeDcBa9876543210ZyXwVuTsRqPon",
                     "name": "jane.doe@example.com",
                 },
-                "foo": "bar"
+                "foo": "bar",
             }
             json.dump(mocked_info, fp)
 

@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
+
 from typing import Callable
 from typing import Dict
 

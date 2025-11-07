@@ -440,8 +440,10 @@ class SnapManagerTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
 
         self.assertTrue(len(messages) > 0)
-        self.assertIn("abcd1234-efgh5678-test-snap",
-                      messages[0]["snaps"]["installed"][0]["id"])
+        self.assertIn(
+            "abcd1234-efgh5678-test-snap",
+            messages[0]["snaps"]["installed"][0]["id"],
+        )
 
     def test_get_serial(self):
         """Tests getting snapd serial."""

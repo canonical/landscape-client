@@ -109,8 +109,11 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
 
         fake_stderr = io.StringIO()
 
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             self.configuration.load(
                 ["--sysinfo-plugins", fake_plugin, "-d", self.makeDir()],
@@ -128,8 +131,11 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
 
         fake_stderr = io.StringIO()
 
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             self.configuration.load(
                 [
@@ -176,7 +182,6 @@ class RunTest(
     TwistedTestCase,
     unittest.TestCase,
 ):
-
     helpers = [StandardIOHelper]
 
     def setUp(self):
@@ -344,21 +349,26 @@ class RunTest(
         self.assertFalse(logger.propagate)
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
-        with mock.patch.object(
-            os,
-            "getuid",
-            return_value=0,
-        ) as mock_getuid, mock.patch.object(
-            os.path,
-            "isdir",
-            return_value=False,
-        ) as mock_isdir, mock.patch.object(
-            os,
-            "mkdir",
-        ) as mock_mkdir, mock.patch(
-            "logging.open",
-            create=True,
-        ) as mock_open:
+        with (
+            mock.patch.object(
+                os,
+                "getuid",
+                return_value=0,
+            ) as mock_getuid,
+            mock.patch.object(
+                os.path,
+                "isdir",
+                return_value=False,
+            ) as mock_isdir,
+            mock.patch.object(
+                os,
+                "mkdir",
+            ) as mock_mkdir,
+            mock.patch(
+                "logging.open",
+                create=True,
+            ) as mock_open,
+        ):
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
 

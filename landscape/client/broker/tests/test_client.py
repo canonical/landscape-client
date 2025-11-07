@@ -12,7 +12,6 @@ from landscape.lib.twisted_util import gather_results
 
 
 class BrokerClientTest(LandscapeTest):
-
     helpers = [BrokerClientHelper]
 
     def test_ping(self):

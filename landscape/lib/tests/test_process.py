@@ -134,7 +134,6 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
 
 
 class CalculatePCPUTest(unittest.TestCase):
-
     """
     calculate_pcpu is lifted directly from procps/ps/output.c (it's called
     "pcpu" in there).

@@ -8,7 +8,6 @@ from landscape.client.tests.helpers import ManagerHelper
 
 
 class ShutdownManagerTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):

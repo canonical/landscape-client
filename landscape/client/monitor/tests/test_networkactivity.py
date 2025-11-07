@@ -6,7 +6,6 @@ from landscape.client.tests.helpers import MonitorHelper
 
 
 class NetworkActivityTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     stats_template = """\

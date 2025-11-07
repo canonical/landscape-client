@@ -25,7 +25,6 @@ BADPUBKEY = sibpath("badpublic.ssl")
 
 
 class DataCollectingResource(resource.Resource):
-
     request = content = None
 
     def getChild(self, request, name):  # noqa: N802
@@ -38,7 +37,6 @@ class DataCollectingResource(resource.Resource):
 
 
 class HTTPTransportTest(LandscapeTest):
-
     helpers = [LogKeeperHelper]
 
     def setUp(self):

@@ -9,47 +9,21 @@ omit = [
 ]
 
 [tool.ruff]
-line-length = 79
-target-version = "py310"
-line-length = 79
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.tox
-  | \.venv
-  | _build
-  | build
-  | dist
-)/
-'''
+line-length = 88
+target-version = ">=3.10"
+exclude = ["snap-http/*"]
 
 [tool.ruff.lint]
-# Select error/warning codes matching flake8 config:
 select = [
     "B",  # bugbear
     "C",  # mccabe
     "E",  # pycodestyle
     "F",  # pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+    "SIM", # flake8
     "W",  # pycodestyle warnings
-    "T4", flake8-debugger
-    "B9", flake8-bugbear
-]
-ignore = [
-    "E203", # whitespace before ':'
-    "W503", line break before binary operator
-]
-
-# Exclude patterns
-exclude = [
-    ".git",
-    "*.csv",
-    "__pycache__",
-    "*.log",
 ]
 
 [tool.ruff.format]
-# Black compatibility, equivalent to black's arguments
-line-length = 79
-# Apply formatting only to .py and .pyi files
-# include = "\\.pyi?$"
+line-ending = lf

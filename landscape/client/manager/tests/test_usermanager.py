@@ -18,7 +18,6 @@ from landscape.lib.twisted_util import gather_results
 
 
 class UserGroupTestBase(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -2068,14 +2067,12 @@ class UserManagerTest(LandscapeTest):
         self.assertFalse(os.path.exists(self.shadow_file))
         self.assertEqual(self.user_manager.get_locked_usernames(), [])
         self.assertIn(
-            "Error reading shadow file. [Errno 2] No such file or "
-            "directory",
+            "Error reading shadow file. [Errno 2] No such file or directory",
             self.logfile.getvalue(),
         )
 
 
 class RemoteUserManagerTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):

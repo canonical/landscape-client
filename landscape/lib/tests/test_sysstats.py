@@ -83,7 +83,6 @@ class MemoryStatsTest(BaseTestCase):
 
 
 class FakeWhoQTest(testing.HelperTestCase, BaseTestCase):
-
     helpers = [testing.EnvironSaverHelper]
 
     def fake_who(self, users):

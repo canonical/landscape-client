@@ -1,4 +1,5 @@
 """Tests for the `landscape.client.exchange` utility functions."""
+
 from unittest import TestCase
 from unittest import mock
 
@@ -31,7 +32,7 @@ class ExchangeMessagesTestCase(TestCase):
         mock_response = {
             "server-api": "3.2",
             "server-uuid": b"my-server-uuid",
-            "messages": [{"type": "my-server-message-type", "other-value": 6}]
+            "messages": [{"type": "my-server-message-type", "other-value": 6}],
         }
 
         self.fetch_mock.return_value = bpickle.dumps(mock_response)
@@ -48,7 +49,7 @@ class ExchangeMessagesTestCase(TestCase):
         self.assertEqual(server_response.server_uuid, b"my-server-uuid")
         self.assertEqual(
             server_response.messages,
-            [{"type": "my-server-message-type", "other-value": 6}]
+            [{"type": "my-server-message-type", "other-value": 6}],
         )
         self.fetch_mock.assert_called_once_with(
             "https://my-server.local/message-system",
@@ -76,8 +77,7 @@ class ExchangeMessagesTestCase(TestCase):
 
         with self.assertRaises(Exception) as exc_context:
             exchange_messages(
-                payload,
-                "https://my-server.local/message-system"
+                payload, "https://my-server.local/message-system"
             )
 
         self.assertIn("OOPS", str(exc_context.exception))

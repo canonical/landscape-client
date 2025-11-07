@@ -14,7 +14,6 @@ class CleanCommand(Command):
     user_options = []
 
     def run(self):
-
         for pattern in ["build", "dist", ".eggs", "*.egg-info"]:
             for path in glob.glob(pattern):
                 if os.path.isdir(path):
@@ -61,7 +60,6 @@ def setup_landscape(
     scripts=None,
     **kwargs,
 ):
-
     assert name and description and packages
     kwargs = dict(
         SETUP,

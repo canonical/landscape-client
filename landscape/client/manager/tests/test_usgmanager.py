@@ -20,7 +20,6 @@ MODULE = "landscape.client.manager.usgmanager"
 
 
 class UsgManagerTests(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):

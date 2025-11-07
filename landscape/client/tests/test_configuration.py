@@ -595,7 +595,6 @@ def noop_print(*args, **kws):
 
 
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
-
     helpers = [EnvironSaverHelper]
 
     def setUp(self):
@@ -2243,7 +2242,6 @@ class FauxConnection:
 
 
 class FauxConnector:
-
     was_disconnected = False
 
     def __init__(self, reactor=None, config=None):
@@ -2285,7 +2283,6 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
 
 
 class IsRegisteredTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
@@ -2343,7 +2340,6 @@ class IsRegisteredTest(LandscapeTest):
 
 
 class RegistrationInfoTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
@@ -2428,7 +2424,6 @@ class RegistrationInfoTest(LandscapeTest):
 
 
 class ConfigurationDumpTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
@@ -2459,7 +2454,7 @@ class ConfigurationDumpTest(LandscapeTest):
         self.config.load([])
         log_level_default = self.config._command_line_defaults["log_level"]
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["log_level"] , log_level_default)
+        self.assertEquals(config_dump["log_level"], log_level_default)
 
     def test_config_file_overrides(self):
         """
@@ -2470,7 +2465,7 @@ class ConfigurationDumpTest(LandscapeTest):
         self.makeFile(self.config_text, path=config_filename)
         self.config.load([])
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["log_level"] , self.log_level)
+        self.assertEquals(config_dump["log_level"], self.log_level)
 
     def test_command_line_overrides(self):
         """
@@ -2481,7 +2476,7 @@ class ConfigurationDumpTest(LandscapeTest):
         self.makeFile(self.config_text, path=config_filename)
         self.config.load(["--log-level", "debug"])
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["log_level"] , "debug")
+        self.assertEquals(config_dump["log_level"], "debug")
 
     def test_custom_config_path(self):
         """
@@ -2491,7 +2486,7 @@ class ConfigurationDumpTest(LandscapeTest):
         custom_path = self.makeFile(self.config_text)
         self.config.load(["-c", custom_path])
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["CONFIG_FILE"] , custom_path)
+        self.assertEquals(config_dump["CONFIG_FILE"], custom_path)
 
     def test_unsaved_options_not_displayed(self):
         """

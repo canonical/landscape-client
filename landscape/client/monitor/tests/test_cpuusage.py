@@ -5,7 +5,6 @@ from landscape.client.tests.helpers import MonitorHelper
 
 
 class CPUUsagePluginTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def _write_stat_file(self, contents):

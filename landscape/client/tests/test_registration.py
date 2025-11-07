@@ -1,4 +1,5 @@
 """Unit tests for registration utility functions."""
+
 from unittest import mock, TestCase
 
 from landscape.lib.fetch import HTTPCodeError
@@ -59,16 +60,14 @@ class RegisterTestCase(TestCase):
         )
 
         self.exchange_messages_mock.side_effect = HTTPCodeError(
-            http_code=404,
-            body=""
+            http_code=404, body=""
         )
 
         with self.assertRaises(RegistrationException):
             register(client_info, "https://my-server.local/message-system")
 
     def test_exchange_http_code_error_non_404(self):
-        """If a non-404 is raised during the message exchange, it is re-raised.
-        """
+        """If a non-404 is raised during the message exchange, it is re-raised."""
         client_info = ClientRegistrationInfo(
             access_group="",
             account_name="testy",
@@ -76,8 +75,7 @@ class RegisterTestCase(TestCase):
         )
 
         self.exchange_messages_mock.side_effect = HTTPCodeError(
-            http_code=400,
-            body=""
+            http_code=400, body=""
         )
 
         with self.assertRaises(HTTPCodeError):
@@ -94,8 +92,7 @@ class RegisterTestCase(TestCase):
         )
 
         self.exchange_messages_mock.side_effect = PyCurlError(
-            error_code=60,
-            message=""
+            error_code=60, message=""
         )
 
         with self.assertRaises(RegistrationException):
@@ -112,8 +109,7 @@ class RegisterTestCase(TestCase):
         )
 
         self.exchange_messages_mock.side_effect = PyCurlError(
-            error_code=61,
-            message=""
+            error_code=61, message=""
         )
 
         with self.assertRaises(PyCurlError):

@@ -32,27 +32,24 @@ class FakeIsAttached:
 
 
 class TestUAClientWrapper(TestCase):
-
     mock_status_value = {
         "attached": True,
-        "contract": {
-            "id": "fake_contract_id"
-        },
+        "contract": {"id": "fake_contract_id"},
         "expires": "fake_expiration_date",
         "services": [
             {
                 "available": "yes",
                 "entitled": "yes",
                 "name": "anbox-cloud",
-                "status": "disabled"
+                "status": "disabled",
             },
             {
                 "available": "yes",
                 "entitled": "yes",
                 "name": "landscape",
-                "status": "disabled"
-            }
-        ]
+                "status": "disabled",
+            },
+        ],
     }
 
     @mock.patch("landscape.lib.uaclient.status")
@@ -105,9 +102,7 @@ class TestUAClientWrapper(TestCase):
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     def test_attach_pro_contract_api_error(self, mock_options):
         mock_options.side_effect = ContractAPIError(
-            url="url",
-            code="code",
-            body="body"
+            url="url", code="code", body="body"
         )
 
         with self.assertRaises(ContractAPIException):
@@ -116,9 +111,7 @@ class TestUAClientWrapper(TestCase):
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     def test_attach_pro_lock_held_error(self, mock_options):
         mock_options.side_effect = LockHeldError(
-            lock_request="request",
-            lock_holder=None,
-            pid=1
+            lock_request="request", lock_holder=None, pid=1
         )
 
         with self.assertRaises(LockHeldException):

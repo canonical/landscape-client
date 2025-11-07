@@ -50,7 +50,6 @@ def _is_script(filename=sys.argv[0], _scriptdir=os.path.abspath("scripts")):
 
 
 class BaseConfiguration(_BaseConfiguration):
-
     version = VERSION
 
     default_config_filename = DEFAULT_CONFIG
@@ -147,8 +146,7 @@ class Configuration(BaseConfiguration):
             "--package-monitor-interval",
             default=30 * 60,
             type=int,
-            help="The interval between package monitor runs "
-            "(default: 1800).",
+            help="The interval between package monitor runs (default: 1800).",
         )
         parser.add_argument(
             "--apt-update-interval",

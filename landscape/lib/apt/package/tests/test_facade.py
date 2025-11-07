@@ -129,7 +129,6 @@ class AptFacadeTest(
     testing.FSTestCase,
     unittest.TestCase,
 ):
-
     helpers = [AptFacadeHelper, testing.EnvironSaverHelper]
 
     def setUp(self):

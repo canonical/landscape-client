@@ -26,7 +26,6 @@ SAMPLE_JUJU_INFO_2 = json.dumps(
 
 
 class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
-
     Config = namedtuple("Config", ["juju_filename"])
 
     def setUp(self):

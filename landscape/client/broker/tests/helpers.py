@@ -5,6 +5,7 @@ dependencies. The lowest-level component is a L{BrokerConfiguration} instance,
 the highest-level ones are a full L{BrokerServer} exposed over AMP and
 connected to remote test L{BrokerClient}.
 """
+
 import os
 
 from landscape.client.amp import ComponentPublisher

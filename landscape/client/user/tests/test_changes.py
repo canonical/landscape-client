@@ -7,7 +7,6 @@ from landscape.lib.persist import Persist
 
 
 class UserChangesTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

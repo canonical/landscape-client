@@ -48,7 +48,6 @@ class ProcessorInfoTest(LandscapeTest):
 
 
 class ResynchTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def test_resynchronize(self):

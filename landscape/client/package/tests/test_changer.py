@@ -41,7 +41,6 @@ from landscape.lib.testing import StubProcessFactory
 
 
 class AptPackageChangerTest(LandscapeTest):
-
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
@@ -763,7 +762,6 @@ class AptPackageChangerTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_global_upgrade_with_nothing_to_do(self):
-
         self.store.add_task(
             "changer",
             {

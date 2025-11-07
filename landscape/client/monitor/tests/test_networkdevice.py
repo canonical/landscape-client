@@ -12,7 +12,6 @@ def test_get_active_device_info():
 
 
 class NetworkDeviceTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

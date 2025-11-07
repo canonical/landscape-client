@@ -53,9 +53,13 @@ coverage:
 	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) -m coverage run $(TRIAL) --unclean-warnings landscape
 	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) -m coverage xml
 
-.PHONY: lint
-lint:
-	$(PYTHON) -m flake8 --ignore $(PEP8_IGNORED) `find landscape -name \*.py`
+.PHONY: ruff
+ruff:
+	ruff check --fix
+	ruff format
+
+.PHONY: lint 
+lint: ruff
 
 .PHONY: pyflakes
 pyflakes:

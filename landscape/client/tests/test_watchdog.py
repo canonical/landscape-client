@@ -561,17 +561,14 @@ class NonMockerWatchDogTests(LandscapeTest):
 
 
 class StubBroker:
-
     name = "broker"
 
 
 class RemoteStubBrokerConnector(ComponentConnector):
-
     component = StubBroker
 
 
 class DaemonTestBase(LandscapeTest):
-
     connector_factory = RemoteStubBrokerConnector
 
     EXEC_NAME = "landscape-broker"
@@ -1107,7 +1104,6 @@ time.sleep(999)
 
 
 class DaemonBrokerTest(DaemonTestBase):
-
     helpers = [FakeBrokerServiceHelper]
 
     @property
@@ -1448,7 +1444,6 @@ class FakeReactor(Clock):
 
 
 class WatchDogRunTests(LandscapeTest):
-
     helpers = [EnvironSaverHelper]
 
     def setUp(self):

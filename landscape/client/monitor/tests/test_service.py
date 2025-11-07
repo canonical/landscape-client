@@ -12,7 +12,6 @@ from landscape.lib.testing import FakeReactor
 
 
 class MonitorServiceTest(LandscapeTest):
-
     helpers = [FakeBrokerServiceHelper]
 
     def setUp(self):

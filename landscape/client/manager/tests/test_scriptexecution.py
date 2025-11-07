@@ -59,7 +59,6 @@ def encoded_default_environment():
 
 
 class RunScriptTests(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -333,7 +332,6 @@ class RunScriptTests(LandscapeTest):
         return result
 
     def _run_script(self, username, uid, gid, path, from_snap=None):
-
         if from_snap:
             expected_gid = None
             expected_uid = None

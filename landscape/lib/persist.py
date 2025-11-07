@@ -49,7 +49,6 @@ class PersistReadOnlyError(PersistError):
 
 
 class Persist:
-
     """Persist a hierarchical database of key=>value pairs.
 
     There are three different kinds of option maps, regarding the
@@ -123,7 +122,6 @@ class Persist:
                 os.path.isfile(filepathold)
                 and os.path.getsize(filepathold) > 0
             ):
-
                 # warning(f"Broken configuration file at {filepath}")
                 # warning(f"Trying backup at {filepathold}")
                 try:

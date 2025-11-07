@@ -354,9 +354,7 @@ class FormatTest(unittest.TestCase):
                 notes=["Something's wrong", "You should look at it", "Really"],
                 indent=">>",
             ),
-            ">>=> Something's wrong\n"
-            ">>=> You should look at it\n"
-            ">>=> Really",
+            ">>=> Something's wrong\n>>=> You should look at it\n>>=> Really",
         )
 
     def test_header_and_note(self):

@@ -8,6 +8,7 @@ the machinery in this module will notice that we have no identification
 credentials yet and that the server accepts registration messages, so it
 will craft an appropriate one and send it out.
 """
+
 import json
 import logging
 

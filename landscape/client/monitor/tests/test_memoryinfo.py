@@ -6,7 +6,6 @@ from landscape.client.tests.helpers import MonitorHelper
 
 
 class MemoryInfoTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     SAMPLE_DATA = """

@@ -21,9 +21,7 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
         os.mknod(f"{aptdir}/trusted.gpg")
         gpg_options = self.makeFile()
         gpg = self.makeFile(
-            "#!/bin/sh\n"
-            "touch $3/trustdb.gpg\n"
-            f"echo -n $@ > {gpg_options}\n",
+            f"#!/bin/sh\ntouch $3/trustdb.gpg\necho -n $@ > {gpg_options}\n",
         )
         os.chmod(gpg, 0o755)
         gpg_home = self.makeDir()

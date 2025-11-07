@@ -114,7 +114,6 @@ class PingClientTest(LandscapeTest):
 
 
 class PingerTest(LandscapeTest):
-
     helpers = [ExchangeHelper]
 
     # Tell the Plugin helper to not add a MessageExchange plugin, to interfere

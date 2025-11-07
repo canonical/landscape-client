@@ -107,7 +107,6 @@ def get_thermal_zones(thermal_zone_path=None):
 
 
 class ThermalZone:
-
     temperature = None
     temperature_value = None
     temperature_unit = None

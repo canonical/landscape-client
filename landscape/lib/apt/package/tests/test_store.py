@@ -114,13 +114,11 @@ class HashIdStoreTest(BaseTestCase):
         self.assertEqual(self.store1.get_id_hash(456), b"hash1")
 
     def test_check_sanity(self):
-
         store_filename = self.makeFile()
         db = sqlite3.connect(store_filename)
         cursor = db.cursor()
         cursor.execute(
-            "CREATE TABLE hash"
-            " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
+            "CREATE TABLE hash (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)",
         )
         cursor.close()
         db.commit()
@@ -138,7 +136,6 @@ class PackageStoreTest(BaseTestCase):
         self.store2 = PackageStore(self.filename)
 
     def test_has_hash_id_db(self):
-
         self.assertFalse(self.store1.has_hash_id_db())
 
         hash_id_db_filename = self.makeFile()

@@ -586,10 +586,7 @@ class FetchTest(
             error = str(failure.value.subFailure.value)
             self.assertEqual(
                 error,
-                (
-                    "[Errno 2] No such file or directory: "
-                    "'i/dont/exist/right'"
-                ),
+                ("[Errno 2] No such file or directory: 'i/dont/exist/right'"),
             )
             self.assertFalse(os.path.exists(os.path.join(directory, "right")))
 
