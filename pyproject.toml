@@ -1,4 +1,16 @@
-[tool.black]
+[tool.pytest.ini_options]
+markers = [
+    "integration: integration tests against external dependencies",
+]
+
+[tool.coverage.run]
+omit = [
+    "integration_tests/test_uaclient_integration.py"
+]
+
+[tool.ruff]
+line-length = 79
+target-version = "py310"
 line-length = 79
 include = '\.pyi?$'
 exclude = '''
@@ -12,12 +24,32 @@ exclude = '''
 )/
 '''
 
-[tool.pytest.ini_options]
-markers = [
-    "integration: integration tests against external dependencies",
+[tool.ruff.lint]
+# Select error/warning codes matching flake8 config:
+select = [
+    "B",  # bugbear
+    "C",  # mccabe
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "W",  # pycodestyle warnings
+    "T4", flake8-debugger
+    "B9", flake8-bugbear
+]
+ignore = [
+    "E203", # whitespace before ':'
+    "W503", line break before binary operator
 ]
 
-[tool.coverage.run]
-omit = [
-    "landscape/lib/tests/test_uaclient_integration.py"
+# Exclude patterns
+exclude = [
+    ".git",
+    "*.csv",
+    "__pycache__",
+    "*.log",
 ]
+
+[tool.ruff.format]
+# Black compatibility, equivalent to black's arguments
+line-length = 79
+# Apply formatting only to .py and .pyi files
+# include = "\\.pyi?$"
