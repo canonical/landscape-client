@@ -87,8 +87,8 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
             process_info = ProcessInformation("/proc")
             processes = list(process_info.get_all_process_info())
             calls = [
-                mock.call("/proc/12345/cmdline", "r"),
-                mock.call("/proc/12345/status", "r"),
+                mock.call("/proc/12345/cmdline"),
+                mock.call("/proc/12345/status"),
             ]
             open_mock.assert_has_calls(calls)
         self.assertEqual(processes, [])

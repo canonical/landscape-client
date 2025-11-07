@@ -344,7 +344,7 @@ class NetworkInfoTest(BaseTestCase):
         m().readlines = test_proc_net_dev_output.splitlines
         with patch("landscape.lib.network.open", m, create=True):
             traffic = get_network_traffic()
-        m.assert_called_with("/proc/net/dev", "r")
+        m.assert_called_with("/proc/net/dev")
         self.assertEqual(traffic, test_proc_net_dev_parsed)
 
     @patch("landscape.lib.network.get_network_interface_speed")

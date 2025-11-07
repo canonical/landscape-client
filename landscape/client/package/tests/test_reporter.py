@@ -2069,17 +2069,15 @@ class PackageReporterAptTest(LandscapeTest):
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
-                error = f"There are no APT sources configured in \
-                    {self.reporter.sources_list_filename} or \
-                        {self.reporter.sources_list_directory}."
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [
                         {
+                            "err": "There are no APT sources configured in \
+                                /etc/apt/sources.list or /etc/apt/sources.list.d.",
                             "type": "package-reporter-result",
                             "report-timestamp": 0.0,
                             "code": 1,
-                            "err": error,
                         },
                     ],
                 )
