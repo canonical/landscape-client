@@ -2073,8 +2073,11 @@ class PackageReporterAptTest(LandscapeTest):
                     message_store.get_pending_messages(),
                     [
                         {
-                            "err": "There are no APT sources configured in \
-                                /etc/apt/sources.list or /etc/apt/sources.list.d.",
+                            "err": (
+                                "There are no APT sources configured in "
+                                "/etc/apt/sources.list "
+                                "or /etc/apt/sources.list.d."
+                            ),
                             "type": "package-reporter-result",
                             "report-timestamp": 0.0,
                             "code": 1,
