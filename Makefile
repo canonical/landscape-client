@@ -41,7 +41,7 @@ build:
 # TODO: Respect $TRIAL_ARGS once trial3 is fixed.
 .PHONY: check
 check: TRIAL_ARGS=
-check: ruff-check build 
+check: build 
 	@if ! echo "$$DEB_BUILD_OPTIONS" | grep -qw nocheck; then \
 		PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) $(TRIAL) --unclean-warnings $(TRIAL_ARGS) landscape; \
 	fi

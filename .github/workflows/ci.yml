@@ -20,4 +20,4 @@ jobs:
         with:
           submodules: true
       - run: make depends
-      - run: make lint
+      - run: make ruff-check
