@@ -12,12 +12,17 @@ jobs:
           submodules: true
       - run: make depends-ci
       - run: make check TRIAL=/usr/bin/trial3
-  lint:
+      
+  run-ruff:
+    if: '!github.event.pull_request.draft'
+    name: ruff
+    # NOTE: Ruff is a self-contained binary, no matrix needed
     runs-on: ubuntu-latest
+  
     steps:
-      - uses: astral-sh/ruff-action@v3
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - run: make depends
+  
+      - uses: astral-sh/ruff-action@v3
       - run: make ruff-check
