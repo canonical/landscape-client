@@ -16,7 +16,6 @@ jobs:
   run-ruff:
     if: '!github.event.pull_request.draft'
     name: ruff
-    # NOTE: Ruff is a self-contained binary, no matrix needed
     runs-on: ubuntu-latest
   
     steps:
