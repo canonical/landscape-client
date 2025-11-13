@@ -1,13 +1,10 @@
 import sys
 from unittest import mock
 
-from landscape.client.manager.manager import FAILED
-from landscape.client.manager.manager import SUCCEEDED
+from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.manager.snapservicesmanager import SnapServicesManager
-from landscape.client.snap_http import SnapdHttpException
-from landscape.client.snap_http import SnapdResponse
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.snap_http import SnapdHttpException, SnapdResponse
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class SnapServicesManagerTest(LandscapeTest):

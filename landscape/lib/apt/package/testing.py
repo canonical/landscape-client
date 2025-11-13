@@ -6,8 +6,7 @@ import apt_inst
 import apt_pkg
 
 from landscape.lib.apt.package.facade import AptFacade
-from landscape.lib.fs import append_binary_file
-from landscape.lib.fs import create_binary_file
+from landscape.lib.fs import append_binary_file, create_binary_file
 
 
 class AptFacadeHelper:
@@ -69,7 +68,7 @@ class AptFacadeHelper:
 
         new_package = "\n".join(
             [
-                "{}: {}".format(key, package_stanza[key])
+                f"{key}: {package_stanza[key]}"
                 for key in apt_pkg.REWRITE_PACKAGE_ORDER
                 if key in package_stanza
             ],
@@ -377,18 +376,14 @@ HASH1 = base64.decodebytes(b"/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
 HASH2 = base64.decodebytes(b"glP4DwWOfMULm0AkRXYsH/exehc=")
 HASH3 = base64.decodebytes(b"NJM05mj86veaSInYxxqL1wahods=")
 HASH_MINIMAL = b"6\xce\x8f\x1bM\x82MWZ\x1a\xffjAc(\xdb(\xa1\x0eG"
-HASH_SIMPLE_RELATIONS = (
-    b"'#\xab&k\xe6\xf5E\xcfB\x9b\xceO7\xe6\xec\xa9\xddY\xaa"
-)
+HASH_SIMPLE_RELATIONS = b"'#\xab&k\xe6\xf5E\xcfB\x9b\xceO7\xe6\xec\xa9\xddY\xaa"
 HASH_VERSION_RELATIONS = (
     b"\x84\xc9\xb4\xb3\r\x95\x16\x03\x95\x98\xc0\x14u\x06\xf7eA\xe65\xd1"
 )
 HASH_MULTIPLE_RELATIONS = (
     b"\xec\xcdi\xdc\xde-\r\xc3\xd3\xc9s\x84\xe4\xc3\xd6\xc4\x12T\xa6\x0e"
 )
-HASH_OR_RELATIONS = (
-    b"\xa1q\xf4*\x1c\xd4L\xa1\xca\xf1\xfa?\xc3\xc7\x9f\x88\xd53B\xc9"
-)
+HASH_OR_RELATIONS = b"\xa1q\xf4*\x1c\xd4L\xa1\xca\xf1\xfa?\xc3\xc7\x9f\x88\xd53B\xc9"
 HASH_BROKEN_DESCRIPTION = (
     b"\x16\xbd\xb8+\xed\xc0\x07\x84f!\xe6d\xea\xe7\xaf\xc6\xe4\t\xad\xd7"
 )

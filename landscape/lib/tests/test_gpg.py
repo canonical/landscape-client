@@ -4,8 +4,7 @@ import unittest
 from unittest import mock
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from landscape.lib import testing
 from landscape.lib.gpg import gpg_verify
@@ -21,9 +20,7 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
         os.mknod(f"{aptdir}/trusted.gpg")
         gpg_options = self.makeFile()
         gpg = self.makeFile(
-            "#!/bin/sh\n"
-            "touch $3/trustdb.gpg\n"
-            f"echo -n $@ > {gpg_options}\n",
+            f"#!/bin/sh\ntouch $3/trustdb.gpg\necho -n $@ > {gpg_options}\n",
         )
         os.chmod(gpg, 0o755)
         gpg_home = self.makeDir()
@@ -116,12 +113,12 @@ class GPGTest(testing.FSTestCase, testing.TwistedTestCase, unittest.TestCase):
             )
 
         expected = (
-            "--no-options --homedir {gpg_home} --no-default-keyring "
+            f"--no-options --homedir {gpg_home} --no-default-keyring "
             "--ignore-time-conflict "
-            "--keyring {apt_dir}/trusted.gpg.d/baz.gpg "
-            "--keyring {apt_dir}/trusted.gpg.d/foo.gpg "
+            f"--keyring {apt_dir}/trusted.gpg.d/baz.gpg "
+            f"--keyring {apt_dir}/trusted.gpg.d/foo.gpg "
             "--verify /some/signature /some/file"
-        ).format(gpg_home=gpg_home, apt_dir=apt_dir)
+        )
         with open(gpg_call) as call:
             self.assertEqual(expected, call.read())
             self.assertFalse(os.path.exists(gpg_home))

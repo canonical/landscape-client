@@ -1,18 +1,14 @@
 import os
 import unittest
 from io import StringIO
-from logging import getLogger
-from logging import StreamHandler
+from logging import StreamHandler, getLogger
 from unittest import mock
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, fail, succeed
 
 from landscape.lib.plugin import PluginRegistry
 from landscape.lib.testing import HelperTestCase
-from landscape.sysinfo.sysinfo import format_sysinfo
-from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 
 class SysInfoPluginRegistryTest(HelperTestCase):
@@ -354,9 +350,7 @@ class FormatTest(unittest.TestCase):
                 notes=["Something's wrong", "You should look at it", "Really"],
                 indent=">>",
             ),
-            ">>=> Something's wrong\n"
-            ">>=> You should look at it\n"
-            ">>=> Really",
+            ">>=> Something's wrong\n>>=> You should look at it\n>>=> Really",
         )
 
     def test_header_and_note(self):

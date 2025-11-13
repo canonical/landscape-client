@@ -1,12 +1,9 @@
 import logging
 
 import dbus
-from twisted.internet import reactor
-from twisted.internet import task
+from twisted.internet import reactor, task
 
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin
-from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
 
 
 class ShutdownManager(ManagerPlugin):

@@ -4,6 +4,7 @@ for landscape. Given the uaclient library is not available in snap/core
 environments this allows for us to use our wrapper methods that will have
 safety checks to ensure we are allowed to use the uaclient methods.
 """
+
 import logging
 
 from landscape.client import IS_CORE, IS_SNAP
@@ -13,8 +14,8 @@ try:
         uaclient = None
     else:
         from uaclient.api.u.pro.attach.token.full_token_attach.v1 import (
-            full_token_attach,
             FullTokenAttachOptions,
+            full_token_attach,
         )
         from uaclient.api.u.pro.detach.v1 import detach
         from uaclient.api.u.pro.status.is_attached.v1 import is_attached
@@ -27,6 +28,7 @@ try:
             UbuntuProError,
         )
         from uaclient.status import status
+
         uaclient = 1
 except ImportError:  # pragma: no cover
     uaclient = None
@@ -63,7 +65,9 @@ class ProNotAttachedError(ProManagementError):
     message = "Pro is not attached on this machine."
 
 
-UACLIENT_ERROR_MESSAGE = "The ubuntu advantage library is not available or not up to date."  # noqa
+UACLIENT_ERROR_MESSAGE = (
+    "The ubuntu advantage library is not available or not up to date."  # noqa
+)
 
 
 def get_pro_status():
@@ -76,9 +80,7 @@ def get_pro_status():
         pro_info = status(config)
         return pro_info
     except Exception:
-        logging.warning(
-            "Could not get pro information for computer."
-        )
+        logging.warning("Could not get pro information for computer.")
         return {}
 
 
@@ -89,10 +91,7 @@ def attach_pro(token):
         raise ProManagementError(UACLIENT_ERROR_MESSAGE)
 
     try:
-        options = FullTokenAttachOptions(
-            token=token,
-            auto_enable_services=False
-        )
+        options = FullTokenAttachOptions(token=token, auto_enable_services=False)
         full_token_attach(options)
     except AttachInvalidTokenError:
         raise InvalidTokenException

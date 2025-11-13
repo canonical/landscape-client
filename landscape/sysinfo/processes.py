@@ -21,12 +21,12 @@ class Processes:
             try:
                 with open(status_path, "rb") as fd:
                     data = fd.read()
-            except IOError:
+            except OSError:
                 continue
 
             num_processes += 1
 
-            if b"Z" == data.split(b" ", 3)[2]:
+            if data.split(b" ", 3)[2] == b"Z":
                 num_zombies += 1
 
         if num_zombies:

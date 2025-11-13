@@ -4,9 +4,11 @@ import uuid
 from unittest import mock
 
 from landscape.lib import testing
-from landscape.lib.machine_id import get_namespaced_machine_id
-from landscape.lib.machine_id import LANDSCAPE_CLIENT_APP_UUID
-from landscape.lib.machine_id import MACHINE_ID_SIZE
+from landscape.lib.machine_id import (
+    LANDSCAPE_CLIENT_APP_UUID,
+    MACHINE_ID_SIZE,
+    get_namespaced_machine_id,
+)
 
 
 class NameSpacedMachineIdTest(testing.FSTestCase, unittest.TestCase):

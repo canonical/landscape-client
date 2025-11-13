@@ -1,7 +1,6 @@
 import logging
 import os
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from landscape.lib import sysstats
 from landscape.lib.jiffies import detect_jiffies
@@ -57,7 +56,7 @@ class ProcessInformation:
         process_info = {"pid": process_id}
 
         try:
-            file = open(os.path.join(process_dir, "cmdline"), "r")
+            file = open(os.path.join(process_dir, "cmdline"))
             try:
                 # cmdline is a \0 separated list of strings
                 # We take the first, and then strip off the path, leaving
@@ -67,14 +66,12 @@ class ProcessInformation:
             finally:
                 file.close()
 
-            file = open(os.path.join(process_dir, "status"), "r")
+            file = open(os.path.join(process_dir, "status"))
             try:
                 for line in file:
                     parts = line.split(":", 1)
                     if parts[0] == "Name":
-                        process_info["name"] = (
-                            cmd_line_name.strip() or parts[1].strip()
-                        )
+                        process_info["name"] = cmd_line_name.strip() or parts[1].strip()
                     elif parts[0] == "State":
                         state = parts[1].strip()
                         # In Lucid, capital T is used for both tracing stop
@@ -96,7 +93,7 @@ class ProcessInformation:
             finally:
                 file.close()
 
-            file = open(os.path.join(process_dir, "stat"), "r")
+            file = open(os.path.join(process_dir, "stat"))
             try:
                 # These variable names are lifted directly from proc(5)
                 # utime: The number of jiffies that this process has been

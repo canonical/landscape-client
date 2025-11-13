@@ -6,7 +6,6 @@ from landscape.client.snap_http import SnapdHttpException
 
 
 class SnapServicesMonitor(DataWatcher):
-
     message_type = "snap-services"
     message_key = "services"
     persist_name = message_type

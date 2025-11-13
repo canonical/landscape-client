@@ -1,13 +1,10 @@
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.client.user.changes import UserChanges
-from landscape.client.user.tests.helpers import FakeUserInfo
-from landscape.client.user.tests.helpers import FakeUserProvider
+from landscape.client.user.tests.helpers import FakeUserInfo, FakeUserProvider
 from landscape.lib.persist import Persist
 
 
 class UserChangesTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):
