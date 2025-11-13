@@ -2,21 +2,15 @@ import logging
 import os
 import re
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import maybeDeferred
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, maybeDeferred, succeed
 
 from landscape.client.broker.amp import RemoteBrokerConnector
-from landscape.client.deployment import Configuration
-from landscape.client.deployment import init_logging
+from landscape.client.deployment import Configuration, init_logging
 from landscape.client.reactor import LandscapeReactor
-from landscape.lib.apt.package.store import InvalidHashIdDb
-from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.lock import lock_path
-from landscape.lib.lock import LockError
+from landscape.lib.apt.package.store import InvalidHashIdDb, PackageStore
+from landscape.lib.lock import LockError, lock_path
 from landscape.lib.log import log_failure
-from landscape.lib.os_release import get_os_filename
-from landscape.lib.os_release import parse_os_release
+from landscape.lib.os_release import get_os_filename, parse_os_release
 
 
 class PackageTaskError(Exception):
@@ -230,8 +224,7 @@ class PackageTaskHandler:
                 codename = os_release_info["code-name"]
             except KeyError:
                 logging.warning(
-                    warning
-                    % f"missing code-name key in {self.os_release_filename}",
+                    warning % f"missing code-name key in {self.os_release_filename}",
                 )
                 return None
 

@@ -10,44 +10,40 @@ from unittest import mock
 
 import apt_pkg
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import fail
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, fail, inlineCallbacks, succeed
 
 from landscape.client.package import reporter
 from landscape.client.package.reporter import (
     DEFAULT_UNKNOWN_HASHES_PER_REQUEST,
+    HASH_ID_REQUEST_TIMEOUT,
+    MAX_UNKNOWN_HASHES_PER_REQUEST,
+    FakeGlobalReporter,
+    FakeReporter,
+    PackageReporter,
+    PackageReporterConfiguration,
+    find_reporter_command,
+    main,
 )
-from landscape.client.package.reporter import FakeGlobalReporter
-from landscape.client.package.reporter import FakeReporter
-from landscape.client.package.reporter import find_reporter_command
-from landscape.client.package.reporter import HASH_ID_REQUEST_TIMEOUT
-from landscape.client.package.reporter import main
-from landscape.client.package.reporter import MAX_UNKNOWN_HASHES_PER_REQUEST
-from landscape.client.package.reporter import PackageReporter
-from landscape.client.package.reporter import PackageReporterConfiguration
-from landscape.client.tests.helpers import BrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import BrokerServiceHelper, LandscapeTest
 from landscape.lib import bpickle
 from landscape.lib.apt.package.facade import AptFacade
-from landscape.lib.apt.package.store import FakePackageStore
-from landscape.lib.apt.package.store import PackageStore
-from landscape.lib.apt.package.store import UnknownHashIDRequest
-from landscape.lib.apt.package.testing import AptFacadeHelper
-from landscape.lib.apt.package.testing import HASH1
-from landscape.lib.apt.package.testing import HASH2
-from landscape.lib.apt.package.testing import HASH3
-from landscape.lib.apt.package.testing import PKGNAME1
-from landscape.lib.apt.package.testing import SimpleRepositoryHelper
+from landscape.lib.apt.package.store import (
+    FakePackageStore,
+    PackageStore,
+    UnknownHashIDRequest,
+)
+from landscape.lib.apt.package.testing import (
+    HASH1,
+    HASH2,
+    HASH3,
+    PKGNAME1,
+    AptFacadeHelper,
+    SimpleRepositoryHelper,
+)
 from landscape.lib.fetch import FetchError
-from landscape.lib.fs import create_text_file
-from landscape.lib.fs import touch_file
-from landscape.lib.os_release import get_os_filename
-from landscape.lib.os_release import parse_os_release
-from landscape.lib.testing import EnvironSaverHelper
-from landscape.lib.testing import FakeReactor
-
+from landscape.lib.fs import create_text_file, touch_file
+from landscape.lib.os_release import get_os_filename, parse_os_release
+from landscape.lib.testing import EnvironSaverHelper, FakeReactor
 
 SAMPLE_OS_RELEASE = """PRETTY_NAME="Ubuntu 22.04.3 LTS"
 NAME="Ubuntu"
@@ -179,8 +175,11 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config = PackageReporterConfiguration()
 
         fake_stderr = io.StringIO()
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             config.load(
                 [
@@ -199,8 +198,11 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config = PackageReporterConfiguration()
 
         fake_stderr = io.StringIO()
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             config.load(
                 [
@@ -219,8 +221,11 @@ class PackageReporterConfigurationTest(LandscapeTest):
         config = PackageReporterConfiguration()
 
         fake_stderr = io.StringIO()
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             config.load(
                 [
@@ -295,10 +300,7 @@ class PackageReporterAptTest(LandscapeTest):
     def _make_fake_apt_update(self, out="output", err="error", code=0):
         """Create a fake apt-update executable"""
         self.reporter.apt_update_filename = self.makeFile(
-            "#!/bin/sh\n"
-            f"echo -n '{out}'\n"
-            f"echo -n '{err}' >&2\n"
-            f"exit {code:d}",
+            f"#!/bin/sh\necho -n '{out}'\necho -n '{err}' >&2\nexit {code:d}",
         )
         os.chmod(self.reporter.apt_update_filename, 0o755)
 
@@ -733,9 +735,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
-        hash_id_db_url = (
-            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
-        )
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/uuid_codename_arch"
         result = self.reporter.fetch_hash_id_db()
 
         # Check the database
@@ -849,9 +849,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
-        hash_id_db_url = (
-            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
-        )
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/uuid_codename_arch"
 
         # Now go!
         result = self.reporter.fetch_hash_id_db()
@@ -881,9 +879,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
-        hash_id_db_url = (
-            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
-        )
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/uuid_codename_arch"
 
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
@@ -912,9 +908,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
-        hash_id_db_url = (
-            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
-        )
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/uuid_codename_arch"
 
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
@@ -2075,20 +2069,18 @@ class PackageReporterAptTest(LandscapeTest):
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
-                error = (
-                    "There are no APT sources configured in {} or {}.".format(
-                        self.reporter.sources_list_filename,
-                        self.reporter.sources_list_directory,
-                    )
-                )
                 self.assertMessages(
                     message_store.get_pending_messages(),
                     [
                         {
+                            "err": (
+                                "There are no APT sources configured in "
+                                "/etc/apt/sources.list "
+                                "or /etc/apt/sources.list.d."
+                            ),
                             "type": "package-reporter-result",
                             "report-timestamp": 0.0,
                             "code": 1,
-                            "err": error,
                         },
                     ],
                 )

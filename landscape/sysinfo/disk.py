@@ -2,8 +2,7 @@ import os
 
 from twisted.internet.defer import succeed
 
-from landscape.lib.disk import get_filesystem_for_path
-from landscape.lib.disk import get_mount_info
+from landscape.lib.disk import get_filesystem_for_path, get_mount_info
 
 
 def format_megabytes(megabytes):
@@ -18,10 +17,7 @@ def format_megabytes(megabytes):
 def usage(info):
     total = info["total-space"]
     used = total - info["free-space"]
-    return "{:0.1f}% of {}".format(
-        (used / total) * 100,
-        format_megabytes(total),
-    )
+    return f"{(used / total) * 100:0.1f}% of {format_megabytes(total)}"
 
 
 class Disk:

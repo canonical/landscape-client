@@ -4,8 +4,7 @@ import unittest
 from twisted.internet.defer import Deferred
 
 from landscape.lib.testing import FSTestCase
-from landscape.sysinfo.disk import Disk
-from landscape.sysinfo.disk import format_megabytes
+from landscape.sysinfo.disk import Disk, format_megabytes
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 
 

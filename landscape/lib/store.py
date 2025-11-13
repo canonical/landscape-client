@@ -1,4 +1,5 @@
 """Functions used by all sqlite-backed stores."""
+
 from functools import wraps
 
 try:

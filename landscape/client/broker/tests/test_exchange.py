@@ -2,18 +2,15 @@ from unittest import mock
 
 from landscape import CLIENT_API
 from landscape.client.broker.config import BrokerConfiguration
-from landscape.client.broker.exchange import get_accepted_types_diff
-from landscape.client.broker.exchange import MessageExchange
+from landscape.client.broker.exchange import MessageExchange, get_accepted_types_diff
 from landscape.client.broker.ping import Pinger
 from landscape.client.broker.registration import RegistrationHandler
 from landscape.client.broker.server import BrokerServer
 from landscape.client.broker.store import MessageStore
 from landscape.client.broker.tests.helpers import ExchangeHelper
 from landscape.client.broker.transport import FakeTransport
-from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES, LandscapeTest
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.hashlib import md5
 from landscape.lib.persist import Persist
 from landscape.lib.schema import Int
@@ -21,7 +18,6 @@ from landscape.message_schemas.message import Message
 
 
 class MessageExchangeTest(LandscapeTest):
-
     helpers = [ExchangeHelper]
 
     def setUp(self):
@@ -1408,7 +1404,6 @@ class MessageExchangeTest(LandscapeTest):
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
-
     helpers = [ExchangeHelper]
 
     def setUp(self):
@@ -1455,9 +1450,7 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-B")
         types = sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES)
         accepted_types_digest = md5(";".join(types).encode("ascii")).digest()
-        self.transport.extra[
-            "client-accepted-types-hash"
-        ] = accepted_types_digest
+        self.transport.extra["client-accepted-types-hash"] = accepted_types_digest
         self.exchanger.exchange()
         self.exchanger.exchange()
         self.assertNotIn("client-accepted-types", self.transport.payloads[1])

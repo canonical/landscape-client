@@ -1,21 +1,21 @@
 import unittest
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.error import ConnectError
-from twisted.internet.error import ConnectionDone
+from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.error import ConnectError, ConnectionDone
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 
 from landscape.lib import testing
-from landscape.lib.amp import MethodCallClientFactory
-from landscape.lib.amp import MethodCallClientProtocol
-from landscape.lib.amp import MethodCallError
-from landscape.lib.amp import MethodCallSender
-from landscape.lib.amp import MethodCallServerFactory
-from landscape.lib.amp import MethodCallServerProtocol
-from landscape.lib.amp import RemoteObject
+from landscape.lib.amp import (
+    MethodCallClientFactory,
+    MethodCallClientProtocol,
+    MethodCallError,
+    MethodCallSender,
+    MethodCallServerFactory,
+    MethodCallServerProtocol,
+    RemoteObject,
+)
 
 
 class FakeTransport:
@@ -97,7 +97,6 @@ class FakeConnector:
 
 
 class DummyObject:
-
     method = None
 
 
@@ -259,7 +258,7 @@ class MethodCallTest(BaseTestCase):
         )
         self.connection.flush()
         # str under python2, bytes under python3
-        self.assertEqual(type(b"").__name__, self.successResultOf(deferred))
+        self.assertEqual(bytes.__name__, self.successResultOf(deferred))
 
     def test_with_non_serializable_return_value(self):
         """

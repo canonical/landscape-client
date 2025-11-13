@@ -1,12 +1,10 @@
 import socket
 
 from landscape.client.monitor.networkactivity import NetworkActivity
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class NetworkActivityTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     stats_template = """\

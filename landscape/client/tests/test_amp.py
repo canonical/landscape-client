@@ -4,13 +4,10 @@ import subprocess
 import textwrap
 from unittest import mock
 
-from twisted.internet.error import CannotListenError
-from twisted.internet.error import ConnectError
+from twisted.internet.error import CannotListenError, ConnectError
 from twisted.internet.task import Clock
 
-from landscape.client.amp import ComponentConnector
-from landscape.client.amp import ComponentPublisher
-from landscape.client.amp import remote
+from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
 from landscape.client.deployment import Configuration
 from landscape.client.reactor import LandscapeReactor
 from landscape.client.tests.helpers import LandscapeTest
@@ -19,7 +16,6 @@ from landscape.lib.testing import FakeReactor
 
 
 class MockComponent:
-
     name = "test"
 
     @remote
@@ -31,7 +27,6 @@ class MockComponent:
 
 
 class MockComponentConnector(ComponentConnector):
-
     component = MockComponent
 
 

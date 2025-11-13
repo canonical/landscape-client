@@ -204,9 +204,7 @@ def format_sysinfo(
                 # Account for the spacing between each column.
                 total_length += len(column_separator)
 
-            total_length += (
-                widest_header_len + widest_value_len + len(value_separator)
-            )
+            total_length += widest_header_len + widest_value_len + len(value_separator)
 
             # Keep track of these lengths for building the output later.
             header_lengths.append((widest_header_len, widest_value_len))

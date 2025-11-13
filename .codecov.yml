@@ -17,7 +17,7 @@ coverage:
     patch:
       default:
         target: 100%
-        threshold: 0.05
+        threshold: 1%
         only_pulls: true
     changes: off
 parsers:

@@ -9,26 +9,20 @@ from twisted.internet.defer import gatherResults
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
-from landscape.client.manager.manager import FAILED
-from landscape.client.manager.manager import SUCCEEDED
+from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.manager.scriptexecution import (
     FETCH_ATTACHMENTS_FAILED_RESULT,
-)
-from landscape.client.manager.scriptexecution import PROCESS_FAILED_RESULT
-from landscape.client.manager.scriptexecution import (
+    PROCESS_FAILED_RESULT,
+    UBUNTU_PATH,
     ProcessTimeLimitReachedError,
+    ScriptExecutionPlugin,
+    UnknownInterpreterError,
 )
-from landscape.client.manager.scriptexecution import ScriptExecutionPlugin
-from landscape.client.manager.scriptexecution import UBUNTU_PATH
-from landscape.client.manager.scriptexecution import UnknownInterpreterError
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.persist import Persist
-from landscape.lib.testing import DummyProcess
-from landscape.lib.testing import StubProcessFactory
-from landscape.lib.user import get_user_info
-from landscape.lib.user import UnknownUserError
+from landscape.lib.testing import DummyProcess, StubProcessFactory
+from landscape.lib.user import UnknownUserError, get_user_info
 
 
 def get_default_environment():
@@ -59,7 +53,6 @@ def encoded_default_environment():
 
 
 class RunScriptTests(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -333,7 +326,6 @@ class RunScriptTests(LandscapeTest):
         return result
 
     def _run_script(self, username, uid, gid, path, from_snap=None):
-
         if from_snap:
             expected_gid = None
             expected_uid = None
@@ -779,7 +771,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         Given spawnProcess arguments, check to make sure that the temporary
         script has the correct content.
         """
-        data = open(executable, "r").read()
+        data = open(executable).read()
         self.assertEqual(data, f"#!{interp}\n{code}")
 
     def _send_script(
@@ -957,8 +949,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                     {
                         "type": "operation-result",
                         "operation-id": 123,
-                        "result-text": "UnknownUserError: "
-                        f"Unknown user '{username}'",
+                        "result-text": f"UnknownUserError: Unknown user '{username}'",
                         "status": FAILED,
                     },
                 ],
@@ -1017,9 +1008,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                         "type": "operation-result",
                         "operation-id": 123,
                         "status": FAILED,
-                        "result-text": (
-                            "Scripts cannot be run as user whatever."
-                        ),
+                        "result-text": ("Scripts cannot be run as user whatever."),
                     },
                 ],
             )
