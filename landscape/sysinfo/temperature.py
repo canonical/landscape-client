@@ -17,7 +17,6 @@ class Temperature:
             if zone.temperature_value is not None and (
                 max_value is None or zone.temperature_value > max_value
             ):
-
                 temperature = zone.temperature
                 max_value = zone.temperature_value
         if temperature is not None:

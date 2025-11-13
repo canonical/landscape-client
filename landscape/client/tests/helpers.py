@@ -1,8 +1,7 @@
 import pprint
 import unittest.mock
 
-from landscape.client.broker.amp import FakeRemoteBroker
-from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.service import BrokerService
 from landscape.client.broker.transport import FakeTransport
@@ -16,7 +15,6 @@ from landscape.client.watchdog import bootstrap_list
 from landscape.lib import testing
 from landscape.lib.persist import Persist
 from landscape.lib.testing import FakeReactor
-
 
 DEFAULT_ACCEPTED_TYPES = [
     "accepted-types",
@@ -52,8 +50,7 @@ class MessageTestCase(unittest.TestCase):
         if obtained_len < expected_len:
             extra = pprint.pformat(expected[-diff:])
             raise self.failureException(
-                f"Expected the following {diff:d} additional "
-                f"messages:\n{extra}",
+                f"Expected the following {diff:d} additional messages:\n{extra}",
             )
         elif expected_len < obtained_len:
             extra = pprint.pformat(obtained[-diff:])

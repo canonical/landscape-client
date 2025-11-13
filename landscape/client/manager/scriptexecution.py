@@ -3,29 +3,24 @@ Functionality for running arbitrary shell scripts.
 
 @var ALL_USERS: A token indicating all users should be allowed.
 """
+
 import os.path
 import shutil
 import sys
 import tempfile
 from typing import TYPE_CHECKING
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import ensureDeferred
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, ensureDeferred, fail, succeed
 from twisted.internet.error import ProcessDone
 from twisted.internet.protocol import ProcessProtocol
 
 from landscape.client import IS_SNAP
 from landscape.client.attachments import save_attachments
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin
-from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.user import get_user_info
-
 
 if TYPE_CHECKING:
     from landscape.client.broker.client import BrokerClient
@@ -216,7 +211,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             self._respond(FAILED, self._format_exception(e), opid)
 
     def _format_exception(self, e):
-        return "{}: {}".format(e.__class__.__name__, e.args[0])
+        return f"{e.__class__.__name__}: {e.args[0]}"
 
     def _respond_success(self, data, opid):
         return self._respond(SUCCEEDED, data, opid)
@@ -328,7 +323,6 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             d = succeed(None)
 
         def prepare_script(attachment_dir):
-
             return self._run_script(filename, uid, gid, path, env, time_limit)
 
         d.addCallback(prepare_script)

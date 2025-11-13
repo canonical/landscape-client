@@ -2,13 +2,11 @@ from unittest.mock import Mock
 
 from landscape.client.broker.client import BrokerClientPlugin
 from landscape.client.monitor.monitor import Monitor
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.persist import Persist
 
 
 class MonitorTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def test_persist(self):

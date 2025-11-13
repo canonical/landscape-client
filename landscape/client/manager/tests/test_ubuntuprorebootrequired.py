@@ -17,7 +17,7 @@ class UbuntuProRebootRequiredTest(LandscapeTest):
         self.mstore = self.broker_service.message_store
         self.mstore.set_accepted_types(["ubuntu-pro-reboot-required"])
 
-    @patch('landscape.client.manager.ubuntuprorebootrequired.get_reboot_info')
+    @patch("landscape.client.manager.ubuntuprorebootrequired.get_reboot_info")
     def test_ubuntu_pro_reboot_required(self, mock_reboot_info):
         """Basic test"""
 
@@ -34,8 +34,8 @@ class UbuntuProRebootRequiredTest(LandscapeTest):
         self.assertEqual("reboot_required", info["output"])
         self.assertFalse(info["error"])
 
-    @patch('landscape.client.manager.ubuntuprorebootrequired.get_reboot_info')
-    @patch('landscape.client.manager.ubuntuprorebootrequired.logging.error')
+    @patch("landscape.client.manager.ubuntuprorebootrequired.get_reboot_info")
+    @patch("landscape.client.manager.ubuntuprorebootrequired.logging.error")
     def test_generic_error(self, mock_logger, mock_reboot_info):
         """
         Test we get a response and an error is logged when exception triggers

@@ -1,36 +1,40 @@
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.apt.package.skeleton import build_skeleton_apt
-from landscape.lib.apt.package.skeleton import DEB_CONFLICTS
-from landscape.lib.apt.package.skeleton import DEB_NAME_PROVIDES
-from landscape.lib.apt.package.skeleton import DEB_OR_REQUIRES
-from landscape.lib.apt.package.skeleton import DEB_PACKAGE
-from landscape.lib.apt.package.skeleton import DEB_PROVIDES
-from landscape.lib.apt.package.skeleton import DEB_REQUIRES
-from landscape.lib.apt.package.skeleton import DEB_UPGRADES
-from landscape.lib.apt.package.skeleton import PackageSkeleton
-from landscape.lib.apt.package.testing import AptFacadeHelper
-from landscape.lib.apt.package.testing import create_deb
-from landscape.lib.apt.package.testing import create_simple_repository
-from landscape.lib.apt.package.testing import HASH1
-from landscape.lib.apt.package.testing import HASH_MINIMAL
-from landscape.lib.apt.package.testing import HASH_MULTIPLE_RELATIONS
-from landscape.lib.apt.package.testing import HASH_OR_RELATIONS
-from landscape.lib.apt.package.testing import HASH_SIMPLE_RELATIONS
-from landscape.lib.apt.package.testing import HASH_VERSION_RELATIONS
-from landscape.lib.apt.package.testing import PKGDEB_BROKEN_DESCRIPTION
-from landscape.lib.apt.package.testing import PKGDEB_MINIMAL
-from landscape.lib.apt.package.testing import PKGDEB_MULTIPLE_RELATIONS
-from landscape.lib.apt.package.testing import PKGDEB_OR_RELATIONS
-from landscape.lib.apt.package.testing import PKGDEB_SIMPLE_RELATIONS
-from landscape.lib.apt.package.testing import PKGDEB_VERSION_RELATIONS
-from landscape.lib.apt.package.testing import PKGNAME_BROKEN_DESCRIPTION
-from landscape.lib.apt.package.testing import PKGNAME_MINIMAL
-from landscape.lib.apt.package.testing import PKGNAME_MULTIPLE_RELATIONS
-from landscape.lib.apt.package.testing import PKGNAME_OR_RELATIONS
-from landscape.lib.apt.package.testing import PKGNAME_SIMPLE_RELATIONS
-from landscape.lib.apt.package.testing import PKGNAME_VERSION_RELATIONS
+from landscape.lib.apt.package.skeleton import (
+    DEB_CONFLICTS,
+    DEB_NAME_PROVIDES,
+    DEB_OR_REQUIRES,
+    DEB_PACKAGE,
+    DEB_PROVIDES,
+    DEB_REQUIRES,
+    DEB_UPGRADES,
+    PackageSkeleton,
+    build_skeleton_apt,
+)
+from landscape.lib.apt.package.testing import (
+    HASH1,
+    HASH_MINIMAL,
+    HASH_MULTIPLE_RELATIONS,
+    HASH_OR_RELATIONS,
+    HASH_SIMPLE_RELATIONS,
+    HASH_VERSION_RELATIONS,
+    PKGDEB_BROKEN_DESCRIPTION,
+    PKGDEB_MINIMAL,
+    PKGDEB_MULTIPLE_RELATIONS,
+    PKGDEB_OR_RELATIONS,
+    PKGDEB_SIMPLE_RELATIONS,
+    PKGDEB_VERSION_RELATIONS,
+    PKGNAME_BROKEN_DESCRIPTION,
+    PKGNAME_MINIMAL,
+    PKGNAME_MULTIPLE_RELATIONS,
+    PKGNAME_OR_RELATIONS,
+    PKGNAME_SIMPLE_RELATIONS,
+    PKGNAME_VERSION_RELATIONS,
+    AptFacadeHelper,
+    create_deb,
+    create_simple_repository,
+)
 
 
 class SkeletonTestHelper:

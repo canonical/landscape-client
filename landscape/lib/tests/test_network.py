@@ -1,27 +1,22 @@
 import socket
 import unittest
-from subprocess import PIPE
-from subprocess import Popen
+from subprocess import PIPE, Popen
 from unittest import skipIf
-from unittest.mock import ANY
-from unittest.mock import DEFAULT
-from unittest.mock import mock_open
-from unittest.mock import patch
+from unittest.mock import ANY, DEFAULT, mock_open, patch
 
-from netifaces import AF_INET
-from netifaces import AF_INET6
-from netifaces import AF_LINK
-from netifaces import AF_UNIX
+from netifaces import AF_INET, AF_INET6, AF_LINK, AF_UNIX
 from netifaces import ifaddresses as _ifaddresses
 from netifaces import interfaces as _interfaces
 
 from landscape.lib import testing
-from landscape.lib.network import get_active_device_info
-from landscape.lib.network import get_filtered_if_info
-from landscape.lib.network import get_fqdn
-from landscape.lib.network import get_network_interface_speed
-from landscape.lib.network import get_network_traffic
-from landscape.lib.network import is_up
+from landscape.lib.network import (
+    get_active_device_info,
+    get_filtered_if_info,
+    get_fqdn,
+    get_network_interface_speed,
+    get_network_traffic,
+    is_up,
+)
 
 
 class BaseTestCase(testing.HelperTestCase, unittest.TestCase):
@@ -349,7 +344,7 @@ class NetworkInfoTest(BaseTestCase):
         m().readlines = test_proc_net_dev_output.splitlines
         with patch("landscape.lib.network.open", m, create=True):
             traffic = get_network_traffic()
-        m.assert_called_with("/proc/net/dev", "r")
+        m.assert_called_with("/proc/net/dev")
         self.assertEqual(traffic, test_proc_net_dev_parsed)
 
     @patch("landscape.lib.network.get_network_interface_speed")
@@ -573,7 +568,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
             socket.SOCK_DGRAM,
             socket.IPPROTO_IP,
         )
-        theerror = IOError()
+        theerror = OSError()
         theerror.errno = 95
         theerror.message = "Operation not supported"
 
@@ -599,7 +594,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
             socket.SOCK_DGRAM,
             socket.IPPROTO_IP,
         )
-        theerror = IOError()
+        theerror = OSError()
         theerror.errno = 1
         theerror.message = "Operation not permitted"
 
@@ -624,7 +619,7 @@ class NetworkInterfaceSpeedTest(BaseTestCase):
             socket.SOCK_DGRAM,
             socket.IPPROTO_IP,
         )
-        theerror = IOError()
+        theerror = OSError()
         theerror.errno = 999
         theerror.message = "Whatever"
 

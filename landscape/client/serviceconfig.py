@@ -11,6 +11,7 @@ is_configured_to_run() -> bool
 
 Methods should raise `ServiceConfigException` if necessary.
 """
+
 import os
 import subprocess
 

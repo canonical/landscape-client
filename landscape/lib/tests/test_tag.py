@@ -1,7 +1,6 @@
 import unittest
 
-from landscape.lib.tag import is_valid_tag
-from landscape.lib.tag import is_valid_tag_list
+from landscape.lib.tag import is_valid_tag, is_valid_tag_list
 
 
 class ValidTagTest(unittest.TestCase):

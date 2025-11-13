@@ -1,8 +1,7 @@
 import os
 
 from landscape import VERSION
-from landscape.client import GROUP
-from landscape.client import USER
+from landscape.client import GROUP, USER
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 

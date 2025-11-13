@@ -5,15 +5,13 @@ from pathlib import Path
 
 from twisted.internet import task
 
-from landscape.client import GROUP
-from landscape.client import snap_http
-from landscape.client import USER
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin
-from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.snap_http import INCOMPLETE_STATUSES
-from landscape.client.snap_http import SnapdHttpException
-from landscape.client.snap_http import SUCCESS_STATUSES
+from landscape.client import GROUP, USER, snap_http
+from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
+from landscape.client.snap_http import (
+    INCOMPLETE_STATUSES,
+    SUCCESS_STATUSES,
+    SnapdHttpException,
+)
 from landscape.lib.persist import Persist
 from landscape.message_schemas.server_bound import SNAPS
 

@@ -1,13 +1,10 @@
 import os.path
 import sys
-from argparse import ArgumentParser
-from argparse import SUPPRESS
+from argparse import SUPPRESS, ArgumentParser
+from collections.abc import Sequence
 from logging import getLogger
-from typing import Optional
-from typing import Sequence
 
-from configobj import ConfigObj
-from configobj import ConfigObjError
+from configobj import ConfigObj, ConfigObjError
 
 from landscape.lib import cli
 
@@ -54,13 +51,13 @@ class BaseConfiguration:
     Default values for supported options are set as in make_parser.
     """
 
-    version: Optional[str] = None
+    version: str | None = None
 
     required_options = ()
     unsaved_options = ()
     default_config_filenames: Sequence[str] = ()
-    default_data_dir: Optional[str] = None
-    config_section: Optional[str] = None
+    default_data_dir: str | None = None
+    config_section: str | None = None
 
     def __init__(self):
         self._set_options = {}
@@ -184,10 +181,7 @@ class BaseConfiguration:
         else:
             if not allow_missing:
                 if len(config_filenames) == 1:
-                    message = (
-                        f"error: config file {config_filenames[0]} "
-                        "can't be read"
-                    )
+                    message = f"error: config file {config_filenames[0]} can't be read"
                 else:
                     message = "error: no config file could be read"
                 sys.exit(message)
@@ -254,7 +248,7 @@ class BaseConfiguration:
             )
         except ConfigObjError as e:
             logger = getLogger()
-            logger.warn("ERROR at {}: {}".format(config_source, str(e)))
+            logger.warn(f"ERROR at {config_source}: {str(e)}")
             # Good configuration values are recovered here
             config_obj = e.config
         return config_obj

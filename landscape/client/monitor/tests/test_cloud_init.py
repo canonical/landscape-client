@@ -2,8 +2,7 @@ import json
 from unittest import mock
 
 from landscape.client.monitor.cloudinit import CloudInit
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 def subprocess_cloud_init_mock(*args, **kwargs):

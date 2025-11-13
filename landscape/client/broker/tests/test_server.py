@@ -2,15 +2,12 @@ import random
 from unittest.mock import Mock
 
 from configobj import ConfigObj
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import fail, succeed
 
-from landscape.client.broker.tests.helpers import BrokerServerHelper
-from landscape.client.broker.tests.helpers import RemoteClientHelper
+from landscape.client.broker.tests.helpers import BrokerServerHelper, RemoteClientHelper
 from landscape.client.broker.tests.test_ping import FakePageGetter
 from landscape.client.manager.manager import FAILED
-from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES, LandscapeTest
 
 
 class FakeClient:
@@ -26,7 +23,6 @@ class FakeCreator:
 
 
 class BrokerServerTest(LandscapeTest):
-
     helpers = [BrokerServerHelper]
 
     def test_ping(self):
@@ -60,7 +56,6 @@ class BrokerServerTest(LandscapeTest):
         self.assertNotEqual(disk_session_id1, users_session_id)
 
     def test_send_message(self):
-
         """
         The L{BrokerServer.send_message} method forwards a message to the
         broker's exchanger.
@@ -449,7 +444,6 @@ class BrokerServerTest(LandscapeTest):
 
 
 class EventTest(LandscapeTest):
-
     helpers = [RemoteClientHelper]
 
     def test_resynchronize(self):
@@ -558,7 +552,6 @@ class EventTest(LandscapeTest):
 
 
 class HandlersTest(LandscapeTest):
-
     helpers = [BrokerServerHelper]
 
     def setUp(self):

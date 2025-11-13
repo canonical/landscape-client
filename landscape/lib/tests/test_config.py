@@ -2,17 +2,13 @@ import io
 import os.path
 import sys
 import unittest
-from argparse import ArgumentParser, SUPPRESS
+from argparse import SUPPRESS, ArgumentParser
 from textwrap import dedent
 from unittest import mock
 
-from landscape.lib.config import BaseConfiguration
-from landscape.lib.config import get_bindir
-from landscape.lib.fs import create_text_file
-from landscape.lib.fs import read_text_file
-from landscape.lib.testing import ConfigTestCase
-from landscape.lib.testing import HelperTestCase
-from landscape.lib.testing import LogKeeperHelper
+from landscape.lib.config import BaseConfiguration, get_bindir
+from landscape.lib.fs import create_text_file, read_text_file
+from landscape.lib.testing import ConfigTestCase, HelperTestCase, LogKeeperHelper
 
 
 class BabbleConfiguration(BaseConfiguration):
@@ -31,9 +27,7 @@ class OptionalArgConfiguration(BaseConfiguration):
     def make_parser(self):
         parser = super().make_parser()
         parser.add_argument("--test")
-        parser.add_argument(
-            "--foo-bar", nargs="?", default="foofoo", const="foofoo"
-        )
+        parser.add_argument("--foo-bar", nargs="?", default="foofoo", const="foofoo")
 
         return parser
 
@@ -54,7 +48,6 @@ def cfg_class(section=None, **defaults):
 
 
 class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
-
     helpers = [LogKeeperHelper]
 
     def setUp(self):
@@ -283,9 +276,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.foo_bar, "barbar")
 
         data = read_text_file(self.config_filename)
-        self.assertConfigEqual(
-            data, "[my-config]\nfoo_bar = barbar\ntest = ooga"
-        )
+        self.assertConfigEqual(data, "[my-config]\nfoo_bar = barbar\ntest = ooga")
 
     def test_parse_with_option_excluding_optional_argument(self):
         """
@@ -308,9 +299,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.foo_bar, "foofoo")
 
         data = read_text_file(self.config_filename)
-        self.assertConfigEqual(
-            data, "[my-config]\nfoo_bar = foofoo\ntest = ooga"
-        )
+        self.assertConfigEqual(data, "[my-config]\nfoo_bar = foofoo\ntest = ooga")
 
     # ConfigObj
 
@@ -544,10 +533,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         self.assertEqual(self.config.computer_title, "frog")
         logged = self.logfile.getvalue()
         self.assertIn(
-            (
-                f"WARNING: ERROR at {filename}: Parsing failed with several "
-                "errors."
-            ),
+            (f"WARNING: ERROR at {filename}: Parsing failed with several errors."),
             logged,
         )
         self.assertIn("First error at line 4.", logged)
@@ -688,11 +674,7 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
         data = read_text_file(self.config_filename)
         self.assertConfigEqual(
             data,
-            (
-                "[other]\nfoo = bar\n"
-                "[again]\nx = y\n"
-                "[my-config]\nwhatever = eggs"
-            ),
+            ("[other]\nfoo = bar\n[again]\nx = y\n[my-config]\nwhatever = eggs"),
         )
 
     def test_write_existing_section(self):
@@ -843,7 +825,6 @@ class BaseConfigurationTest(ConfigTestCase, HelperTestCase, unittest.TestCase):
 
 
 class GetBindirTest(unittest.TestCase):
-
     BIN_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 
     def test_config_has_valid_bindir(self):

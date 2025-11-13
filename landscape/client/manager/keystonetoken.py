@@ -1,14 +1,11 @@
 import logging
 import os
-from configparser import ConfigParser
-from configparser import NoOptionError
+from configparser import ConfigParser, NoOptionError
 
-from landscape.client import GROUP
-from landscape.client import USER
+from landscape.client import GROUP, USER
 from landscape.client.monitor.plugin import DataWatcher
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
-
 
 KEYSTONE_CONFIG_FILE = "/etc/keystone/keystone.conf"
 
@@ -71,8 +68,7 @@ class KeystoneToken(DataWatcher):
             admin_token = config.get("DEFAULT", "admin_token")
         except NoOptionError:
             logging.error(
-                "KeystoneToken: No admin_token found in "
-                f"{self._keystone_config_file}",
+                f"KeystoneToken: No admin_token found in {self._keystone_config_file}",
             )
             return None
 

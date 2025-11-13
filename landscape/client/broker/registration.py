@@ -8,6 +8,7 @@ the machinery in this module will notice that we have no identification
 credentials yet and that the server accepts registration messages, so it
 will craft an appropriate one and send it out.
 """
+
 import json
 import logging
 
@@ -19,8 +20,7 @@ from landscape.lib.juju import get_juju_info
 from landscape.lib.network import get_fqdn
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.versioning import is_version_higher
-from landscape.lib.vm_info import get_container_info
-from landscape.lib.vm_info import get_vm_info
+from landscape.lib.vm_info import get_container_info, get_vm_info
 
 
 class RegistrationError(Exception):
@@ -292,8 +292,7 @@ class RegistrationHandler:
         clone = message.get("clone-of")
         if clone is None:
             logging.info(
-                "Client has unknown secure-id for account "
-                f"{cid.account_name}.",
+                f"Client has unknown secure-id for account {cid.account_name}.",
             )
         else:  # Save the secure id as the clone, and clear it so it's renewed
             logging.info(f"Client is clone of computer {clone}")

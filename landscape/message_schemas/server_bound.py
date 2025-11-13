@@ -1,17 +1,19 @@
 # Copyright 2017 Canonical Limited.  All rights reserved.
-from .message import Message
-from landscape.lib.schema import Any
-from landscape.lib.schema import Bool
-from landscape.lib.schema import Bytes
-from landscape.lib.schema import Constant
-from landscape.lib.schema import Dict
-from landscape.lib.schema import Float
-from landscape.lib.schema import Int
-from landscape.lib.schema import KeyDict
-from landscape.lib.schema import List
-from landscape.lib.schema import Tuple
-from landscape.lib.schema import Unicode
+from landscape.lib.schema import (
+    Any,
+    Bool,
+    Bytes,
+    Constant,
+    Dict,
+    Float,
+    Int,
+    KeyDict,
+    List,
+    Tuple,
+    Unicode,
+)
 
+from .message import Message
 
 __all__ = [
     "ACTIVE_PROCESS_INFO",

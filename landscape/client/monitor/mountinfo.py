@@ -4,13 +4,11 @@ import time
 
 from landscape.client.accumulate import Accumulator
 from landscape.client.monitor.plugin import MonitorPlugin
-from landscape.lib.disk import get_mount_info
-from landscape.lib.disk import is_device_removable
+from landscape.lib.disk import get_mount_info, is_device_removable
 from landscape.lib.monitor import CoverageMonitor
 
 
 class MountInfo(MonitorPlugin):
-
     persist_name = "mount-info"
     scope = "disk"
 
@@ -79,9 +77,7 @@ class MountInfo(MonitorPlugin):
                 : self.max_free_space_items_to_exchange
             ]
             message = {"type": "free-space", "free-space": items_to_exchange}
-            self._free_space = self._free_space[
-                self.max_free_space_items_to_exchange :
-            ]
+            self._free_space = self._free_space[self.max_free_space_items_to_exchange :]
             return message
         return None
 
@@ -143,7 +139,6 @@ class MountInfo(MonitorPlugin):
                 and not self.is_device_removable(device)
                 and mount_point not in bound_mount_points
             ):
-
                 yield info
 
     def _get_bound_mount_points(self):
@@ -155,7 +150,7 @@ class MountInfo(MonitorPlugin):
         if not self._mtab_file or not os.path.isfile(self._mtab_file):
             return bound_points
 
-        file = open(self._mtab_file, "r")
+        file = open(self._mtab_file)
         for line in file:
             try:
                 device, mount_point, filesystem, options = line.split()[:4]

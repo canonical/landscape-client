@@ -5,10 +5,7 @@ from landscape.client.broker.store import MessageStore
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.bpickle import dumps
 from landscape.lib.persist import Persist
-from landscape.lib.schema import Bytes
-from landscape.lib.schema import Int
-from landscape.lib.schema import InvalidError
-from landscape.lib.schema import Unicode
+from landscape.lib.schema import Bytes, Int, InvalidError, Unicode
 from landscape.message_schemas.message import Message
 
 
@@ -196,7 +193,7 @@ class MessageStoreTest(LandscapeTest):
         If an exception occurs while deleting it shouldn't affect the next
         message sent
         """
-        rmtree_mock.side_effect = IOError("Error!")
+        rmtree_mock.side_effect = OSError("Error!")
         self.store._directory_size = 1
         self.store._max_dirs = 1
         self.store.add({"type": "data", "data": b"a"})
@@ -387,7 +384,7 @@ class MessageStoreTest(LandscapeTest):
         # writing a file.
         mock_open = mock.mock_open()
         with mock.patch("landscape.lib.fs.open", mock_open):
-            mock_open().write.side_effect = IOError("Sorry, pal!")
+            mock_open().write.side_effect = OSError("Sorry, pal!")
             # This kind of ensures that raising an exception is somewhat
             # similar to unplugging the power -- i.e., we're not relying
             # on special exception-handling in the file-writing code.
