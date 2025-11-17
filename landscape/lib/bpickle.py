@@ -194,6 +194,7 @@ dumps_table.update(
         dict: dumps_dict,
         type(None): dumps_none,
         bytes: dumps_bytes,
+        str: dumps_unicode,
     },
 )
 
@@ -209,13 +210,5 @@ loads_table.update(
         b"n": loads_none,
         b"s": loads_bytes,
         b"u": loads_unicode,
-    },
-)
-
-
-# Python 3.x: We need to map internal strings to UTF-8 encoded strings.
-dumps_table.update(
-    {
-        str: dumps_unicode,
     },
 )
