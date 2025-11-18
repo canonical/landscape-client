@@ -929,9 +929,6 @@ def get_secure_id(config):
 
 
 def main(args, print=print):  # noqa: C901
-    if os.getuid() != 0:
-        sys.exit("landscape-config must be run as root.")
-
     """Interact with the user and the server to set up client configuration."""
     config = LandscapeSetupConfiguration()
     try:
@@ -939,6 +936,9 @@ def main(args, print=print):  # noqa: C901
     except ImportOptionError as error:
         print_text(str(error), error=True)
         sys.exit(1)
+
+    if os.getuid() != 0:
+        sys.exit("landscape-config must be run as root.")
 
     init_app_logging(
         config.log_dir,
