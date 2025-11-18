@@ -102,21 +102,39 @@ def get_invalid_users(users):
 
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
+    # Whether or not config option will be written back to config file
     unsaved_options = (
-        "clones",
-        "start_clones_over",
-        "hostagent_uid",
-        "installation_request_id",
-        "authenticated_attach_code",
         "no_start",
         "disable",
-        "init",
         "silent",
         "ok_no_register",
         "import_from",
         "skip_registration",
         "force_registration",
         "register_if_needed",
+        "is_registered",
+        "actively_registered",
+        "registration_sent",
+        "show",
+        "show-json",
+    )
+
+    # Whether or not config option will be shown in config dumps
+    hidden_options = (
+        "no_start",
+        "disable",
+        "silent",
+        "ok_no_register",
+        "import_from",
+        "skip_registration",
+        "force_registration",
+        "register_if_needed",
+        "clones",
+        "start_clones_over",
+        "hostagent_uid",
+        "installation_request_id",
+        "authenticated_attach_code",
+        "init",
         "is_registered",
         "actively_registered",
         "registration_sent",
@@ -861,7 +879,7 @@ def get_configuration_dump(config):
         if (
             conf_value != SUPPRESS
             and conf_option != "config"
-            and conf_option not in LandscapeSetupConfiguration.unsaved_options
+            and conf_option not in LandscapeSetupConfiguration.hidden_options
         ):
             conf_dump[conf_option] = conf_value
 
