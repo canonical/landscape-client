@@ -929,6 +929,9 @@ def get_secure_id(config):
 
 
 def main(args, print=print):  # noqa: C901
+    if os.getuid() != 0:
+        sys.exit("landscape-config must be run as root.")
+
     """Interact with the user and the server to set up client configuration."""
     config = LandscapeSetupConfiguration()
     try:
@@ -982,9 +985,6 @@ def main(args, print=print):  # noqa: C901
             sys.exit(0)
         else:
             sys.exit(EXIT_NOT_REGISTERED)
-
-    if os.getuid() != 0:
-        sys.exit("landscape-config must be run as root.")
 
     if config.init:
         bootstrap_tree(config)
