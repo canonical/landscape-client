@@ -121,7 +121,7 @@ class Configuration(BaseConfiguration):
         parser.add_argument(
             "-k",
             "--ssl-public-key",
-            dest="ssl_ca",
+            dest="ssl_public_key",
             help="The CA certificate verifies the server.",
         )
         parser.add_argument(
