@@ -116,7 +116,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "actively_registered",
         "registration_sent",
         "show",
-        "show-json",
+        "show_json",
     )
 
     # Whether or not config option will be shown in config dumps
@@ -139,7 +139,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "actively_registered",
         "registration_sent",
         "show",
-        "show-json",
+        "show_json",
     )
 
     encoding = "utf-8"
