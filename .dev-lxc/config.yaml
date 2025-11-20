@@ -9,4 +9,4 @@ config:
 dev-lxc-exec:
   - make depends
   - git submodule update --init
-  - curl -LsSf https://astral.sh/ruff/0.14.5/install.sh | RUFF_INSTALL_DIR=/usr/local/bin sh
+  - curl -LsSf https://astral.sh/ruff/0.14.5/install.sh | sudo RUFF_INSTALL_DIR=/usr/local/bin sh
