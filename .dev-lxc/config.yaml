@@ -4,11 +4,9 @@ config:
     package_upgrade: true
     packages:
       - make
-      - pipx
     runcmd:
       - usermod -a -G ubuntu landscape
 dev-lxc-exec:
   - make depends
   - git submodule update --init
-  - pipx ensurepath
-  - pipx install ruff==0.14.5
+  - curl -LsSf https://astral.sh/ruff/0.14.5/install.sh | sh
