@@ -105,6 +105,9 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
     unsaved_options = (
         "clones",
         "start_clones_over",
+        "hostagent_uid",
+        "installation_request_id",
+        "authenticated_attach_code",
         "no_start",
         "disable",
         "init",
