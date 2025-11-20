@@ -11,4 +11,4 @@ dev-lxc-exec:
   - make depends
   - git submodule update --init
   - pipx ensurepath
-  - pipx install ruff
+  - pipx install ruff==0.14.5
