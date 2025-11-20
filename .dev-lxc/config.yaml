@@ -4,11 +4,10 @@ config:
     package_upgrade: true
     packages:
       - make
-    snap:
-      commands:
-      - [install, ruff]
+      - python3-pip
     runcmd:
       - usermod -a -G ubuntu landscape
 dev-lxc-exec:
   - make depends
   - git submodule update --init
+  - sudo -H pip install --break-system-packages ruff==0.14.5
