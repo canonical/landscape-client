@@ -4,6 +4,9 @@ config:
     package_upgrade: true
     packages:
       - make
+    snap:
+      commands:
+      - [install, ruff]
     runcmd:
       - usermod -a -G ubuntu landscape
 dev-lxc-exec:
