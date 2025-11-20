@@ -1,11 +1,9 @@
 import logging
 from pathlib import Path
-from typing import Optional
 
 from twisted.internet.defer import maybeDeferred
 
-from landscape.client import GROUP
-from landscape.client import USER
+from landscape.client import GROUP, USER
 from landscape.client.broker.client import BrokerClientPlugin
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
@@ -85,7 +83,7 @@ class DataWatcherManager(ManagerPlugin):
     a get_data method
     """
 
-    message_type: Optional[str] = None
+    message_type: str | None = None
 
     def __init__(self):
         super().__init__()
@@ -116,10 +114,10 @@ class DataWatcherManager(ManagerPlugin):
         result = self.get_new_data()
         if not result:
             logging.debug(
-                "{} unchanged so not sending".format(self.message_type),
+                f"{self.message_type} unchanged so not sending",
             )
             return
-        logging.debug("Sending new {} data!".format(self.message_type))
+        logging.debug(f"Sending new {self.message_type} data!")
         message = {"type": self.message_type, self.message_type: result}
         return self.registry.broker.send_message(message, self._session_id)
 

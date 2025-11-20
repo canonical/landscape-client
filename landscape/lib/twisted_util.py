@@ -1,10 +1,8 @@
 import io
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import DeferredList
-from twisted.internet.process import Process
-from twisted.internet.process import ProcessReader
+from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.process import Process, ProcessReader
 from twisted.internet.protocol import ProcessProtocol
 from twisted.python.failure import Failure
 

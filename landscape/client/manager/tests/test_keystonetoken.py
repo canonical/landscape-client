@@ -1,13 +1,10 @@
 import os
 
 from landscape.client.manager.keystonetoken import KeystoneToken
-from landscape.client.tests.helpers import FakePersist
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import FakePersist, LandscapeTest, ManagerHelper
 
 
 class KeystoneTokenTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):

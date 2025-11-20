@@ -10,7 +10,6 @@ from landscape.lib.testing import FakeReactor
 
 
 class BrokerServiceTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):

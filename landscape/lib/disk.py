@@ -2,7 +2,6 @@ import codecs
 import os
 import re
 
-
 # List of filesystem types authorized when generating disk use statistics.
 STABLE_FILESYSTEMS = frozenset(
     [
@@ -126,7 +125,7 @@ def is_device_removable(device):
 
     contents = None
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             contents = f.readline()
     except OSError:
         return False

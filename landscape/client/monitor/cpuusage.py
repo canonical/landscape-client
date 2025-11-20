@@ -92,7 +92,7 @@ class CPUUsage(MonitorPlugin):
         """
         result = None
         try:
-            with open(stat_file, "r") as f:
+            with open(stat_file) as f:
                 # The first line of the file is the CPU information aggregated
                 # across cores.
                 stat = f.readline()

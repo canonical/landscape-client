@@ -12,7 +12,6 @@ from landscape.lib.encoding import encode_values
 
 
 class PackageManager(ManagerPlugin):
-
     run_interval = 1800
     _package_store = None
 

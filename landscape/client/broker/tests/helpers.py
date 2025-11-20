@@ -5,6 +5,7 @@ dependencies. The lowest-level component is a L{BrokerConfiguration} instance,
 the highest-level ones are a full L{BrokerServer} exposed over AMP and
 connected to remote test L{BrokerClient}.
 """
+
 import os
 
 from landscape.client.amp import ComponentPublisher
@@ -14,8 +15,7 @@ from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.exchange import MessageExchange
 from landscape.client.broker.exchangestore import ExchangeStore
 from landscape.client.broker.ping import Pinger
-from landscape.client.broker.registration import Identity
-from landscape.client.broker.registration import RegistrationHandler
+from landscape.client.broker.registration import Identity, RegistrationHandler
 from landscape.client.broker.server import BrokerServer
 from landscape.client.broker.store import get_default_message_store
 from landscape.client.broker.transport import FakeTransport

@@ -2,20 +2,17 @@ import logging
 import os
 import time
 
-from twisted.internet.defer import DeferredList
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import DeferredList, fail, succeed
 
 from landscape.client.accumulate import Accumulator
 from landscape.client.manager.plugin import ManagerPlugin
-from landscape.client.manager.scriptexecution import ProcessFailedError
 from landscape.client.manager.scriptexecution import (
+    ProcessFailedError,
     ProcessTimeLimitReachedError,
+    ScriptRunnerMixin,
 )
-from landscape.client.manager.scriptexecution import ScriptRunnerMixin
 from landscape.lib.scriptcontent import generate_script_hash
-from landscape.lib.user import get_user_info
-from landscape.lib.user import UnknownUserError
+from landscape.lib.user import UnknownUserError, get_user_info
 
 
 class StoreProxy:
@@ -151,7 +148,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         self.registry.store.add_graph(graph_id, filename, user)
 
     def _format_exception(self, e):
-        return "{}: {}".format(e.__class__.__name__, e.args[0])
+        return f"{e.__class__.__name__}: {e.args[0]}"
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
@@ -220,9 +217,9 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 )
             self._data[graph_id]["error"] = failure_value
         elif failure.check(ProcessTimeLimitReachedError):
-            self._data[graph_id][
-                "error"
-            ] = f"Process exceeded the {self.time_limit:d} seconds limit"
+            self._data[graph_id]["error"] = (
+                f"Process exceeded the {self.time_limit:d} seconds limit"
+            )
         else:
             self._data[graph_id]["error"] = self._format_exception(
                 failure.value,

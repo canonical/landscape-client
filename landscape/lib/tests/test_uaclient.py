@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from unittest import TestCase, mock
 
+from landscape.client import IS_CORE, IS_SNAP
 from landscape.lib.uaclient import (
     ConnectivityException,
     ContractAPIException,
@@ -12,9 +13,6 @@ from landscape.lib.uaclient import (
     detach_pro,
     get_pro_status,
 )
-
-from landscape.client import IS_CORE
-from landscape.client import IS_SNAP
 
 if not IS_SNAP and not IS_CORE:
     from uaclient.exceptions import (
@@ -32,27 +30,24 @@ class FakeIsAttached:
 
 
 class TestUAClientWrapper(TestCase):
-
     mock_status_value = {
         "attached": True,
-        "contract": {
-            "id": "fake_contract_id"
-        },
+        "contract": {"id": "fake_contract_id"},
         "expires": "fake_expiration_date",
         "services": [
             {
                 "available": "yes",
                 "entitled": "yes",
                 "name": "anbox-cloud",
-                "status": "disabled"
+                "status": "disabled",
             },
             {
                 "available": "yes",
                 "entitled": "yes",
                 "name": "landscape",
-                "status": "disabled"
-            }
-        ]
+                "status": "disabled",
+            },
+        ],
     }
 
     @mock.patch("landscape.lib.uaclient.status")
@@ -104,11 +99,7 @@ class TestUAClientWrapper(TestCase):
 
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     def test_attach_pro_contract_api_error(self, mock_options):
-        mock_options.side_effect = ContractAPIError(
-            url="url",
-            code="code",
-            body="body"
-        )
+        mock_options.side_effect = ContractAPIError(url="url", code="code", body="body")
 
         with self.assertRaises(ContractAPIException):
             attach_pro("fake-token")
@@ -116,9 +107,7 @@ class TestUAClientWrapper(TestCase):
     @mock.patch("landscape.lib.uaclient.FullTokenAttachOptions")
     def test_attach_pro_lock_held_error(self, mock_options):
         mock_options.side_effect = LockHeldError(
-            lock_request="request",
-            lock_holder=None,
-            pid=1
+            lock_request="request", lock_holder=None, pid=1
         )
 
         with self.assertRaises(LockHeldException):
@@ -141,9 +130,7 @@ class TestUAClientWrapper(TestCase):
 
     @mock.patch("landscape.lib.uaclient.detach")
     @mock.patch("landscape.lib.uaclient.is_attached")
-    def test_detach_token_ubuntu_pro_error(
-        self, mock_is_attached, mock_detach
-    ):
+    def test_detach_token_ubuntu_pro_error(self, mock_is_attached, mock_detach):
         mock_is_attached.return_value = FakeIsAttached(is_attached=True)
         mock_detach.side_effect = UbuntuProError
 
@@ -156,9 +143,7 @@ class TestUAClientWrapper(TestCase):
                 detach_pro()
 
     def test_detach_not_attached(self):
-        with mock.patch(
-            "landscape.lib.uaclient.is_attached"
-        ) as mock_is_attached:
+        with mock.patch("landscape.lib.uaclient.is_attached") as mock_is_attached:
             mock_is_attached.return_value = FakeIsAttached(is_attached=False)
             with self.assertRaises(ProNotAttachedError):
                 detach_pro()

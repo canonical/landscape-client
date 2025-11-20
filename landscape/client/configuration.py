@@ -3,6 +3,7 @@
 This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
+
 import base64
 import getpass
 import io
@@ -17,27 +18,23 @@ import textwrap
 from argparse import SUPPRESS
 from urllib.parse import urlparse
 
-from landscape.client import GROUP
-from landscape.client import IS_SNAP
-from landscape.client import USER
+from landscape.client import GROUP, IS_SNAP, USER
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.service import BrokerService
-from landscape.client.registration import ClientRegistrationInfo
-from landscape.client.registration import register
-from landscape.client.registration import RegistrationException
-from landscape.client.serviceconfig import ServiceConfig
-from landscape.client.serviceconfig import ServiceConfigException
-from landscape.lib.bootstrap import BootstrapDirectory
-from landscape.lib.bootstrap import BootstrapList
-from landscape.lib.fetch import fetch
-from landscape.lib.fetch import FetchError
+from landscape.client.registration import (
+    ClientRegistrationInfo,
+    RegistrationException,
+    register,
+)
+from landscape.client.serviceconfig import ServiceConfig, ServiceConfigException
+from landscape.lib.bootstrap import BootstrapDirectory, BootstrapList
+from landscape.lib.fetch import FetchError, fetch
 from landscape.lib.fs import create_binary_file
 from landscape.lib.logging import init_app_logging
 from landscape.lib.network import get_fqdn
 from landscape.lib.persist import Persist
 from landscape.lib.tag import is_valid_tag
-
 
 EXIT_NOT_REGISTERED = 5
 
@@ -105,7 +102,6 @@ def get_invalid_users(users):
 
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
-
     unsaved_options = (
         "clones",
         "start_clones_over",
@@ -164,8 +160,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         )
                     except Exception:
                         raise ImportOptionError(
-                            "Couldn't read configuration "
-                            f"from {self.import_from}.",
+                            f"Couldn't read configuration from {self.import_from}.",
                         )
             except Exception as error:
                 raise ImportOptionError(str(error))
@@ -242,8 +237,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_argument(
             "--ok-no-register",
             action="store_true",
-            help="Return exit code 0 instead of 2 if the client "
-            "can't be registered.",
+            help="Return exit code 0 instead of 2 if the client can't be registered.",
         )
         parser.add_argument(
             "--silent",
@@ -267,8 +261,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--is-registered",
             action="store_true",
             help="Exit with code 0 (success) if client is "
-            "registered else returns {}. Displays "
-            "registration info.".format(EXIT_NOT_REGISTERED),
+            f"registered else returns {EXIT_NOT_REGISTERED}. Displays "
+            "registration info.",
         )
         parser.add_argument(
             "--skip-registration",
@@ -283,23 +277,21 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_argument(
             "--register-if-needed",
             action="store_true",
-            help=(
-                "Send a new registration request only if one has not been sent"
-            ),
+            help=("Send a new registration request only if one has not been sent"),
         )
         parser.add_argument(
             "--actively-registered",
             action="store_true",
             help="Exit with code 0 (success) if client is "
-            "registered else returns {}. Displays "
-            "registration info.".format(EXIT_NOT_REGISTERED),
+            f"registered else returns {EXIT_NOT_REGISTERED}. Displays "
+            "registration info.",
         )
         parser.add_argument(
             "--registration-sent",
             action="store_true",
             help="Exit with code 0 (success) if client is "
-            "registered else returns {}. Displays "
-            "registration info.".format(EXIT_NOT_REGISTERED),
+            f"registered else returns {EXIT_NOT_REGISTERED}. Displays "
+            "registration info.",
         )
         parser.add_argument(
             "--show",
@@ -490,8 +482,7 @@ class LandscapeSetupScript:
             return  # an access group is already provided, don't ask for one
 
         show_help(
-            "You may provide an access group for this computer "
-            "e.g. webservers.",
+            "You may provide an access group for this computer e.g. webservers.",
         )
         self.prompt("access_group", "Access group", False)
 
@@ -519,8 +510,7 @@ class LandscapeSetupScript:
 
     def query_landscape_edition(self):
         show_help(
-            "Manage this machine with Landscape "
-            "(https://ubuntu.com/landscape):\n",
+            "Manage this machine with Landscape (https://ubuntu.com/landscape):\n",
         )
         options = self.config.get_command_line_options()
         if "ping_url" in options and "url" in options:
@@ -547,15 +537,12 @@ class LandscapeSetupScript:
             self.config.url = f"https://{self.landscape_domain}/message-system"
         else:
             self.landscape_domain = ""
-            self.config.ping_url = self.config._command_line_defaults[
-                "ping_url"
-            ]
+            self.config.ping_url = self.config._command_line_defaults["ping_url"]
             self.config.url = self.config._command_line_defaults["url"]
             if self.config.account_name == "standalone":
                 self.config.account_name = ""
 
     def show_summary(self):
-
         tx = f"""A summary of the provided information:
             Computer's Title: {self.config.computer_title}
             Account Name: {self.config.account_name}
@@ -687,9 +674,7 @@ def setup(config) -> Identity:
     bootstrap_tree(config)
 
     if not config.no_start:
-        if config.silent:
-            ServiceConfig.set_start_on_boot(True)
-        elif not ServiceConfig.is_configured_to_run():
+        if config.silent or not ServiceConfig.is_configured_to_run():
             ServiceConfig.set_start_on_boot(True)
 
     setup_http_proxy(config)
@@ -851,14 +836,10 @@ def registration_info_text(config, registration_status):
     config_path = os.path.abspath(config._config_filename)
 
     text = textwrap.dedent(
-        """
-                           Registered:    {}
-                           Config Path:   {}
-                           Data Path      {}""".format(
-            registration_status,
-            config_path,
-            config.data_path,
-        ),
+        f"""
+                           Registered:    {registration_status}
+                           Config Path:   {config_path}
+                           Data Path      {config.data_path}""",
     )
     if registration_status:
         text += f"\nAccount Name:  {config.account_name}"
@@ -965,8 +946,7 @@ def main(args, print=print):  # noqa: C901
 
     if config.skip_registration and config.force_registration:
         sys.exit(
-            "Do not set both skip registration "
-            "and force registration together.",
+            "Do not set both skip registration and force registration together.",
         )
 
     if config.show:
@@ -982,7 +962,6 @@ def main(args, print=print):  # noqa: C901
     already_registered = registration_sent(config)
 
     if config.is_registered or config.registration_sent:
-
         registration_status = already_registered
 
         info_text = registration_info_text(config, registration_status)
@@ -1029,9 +1008,7 @@ def main(args, print=print):  # noqa: C901
 
     should_register = False
 
-    if config.force_registration:
-        should_register = True
-    elif config.silent and not config.register_if_needed:
+    if config.force_registration or config.silent and not config.register_if_needed:
         should_register = True
     elif config.register_if_needed:
         should_register = not already_registered

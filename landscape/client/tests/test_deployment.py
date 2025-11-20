@@ -1,17 +1,17 @@
 from datetime import datetime
-from unittest import mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
-from landscape.client.deployment import BaseConfiguration
-from landscape.client.deployment import Configuration
-from landscape.client.deployment import convert_arg_to_bool
-from landscape.client.deployment import generate_computer_title
-from landscape.client.deployment import get_versioned_persist
-from landscape.client.deployment import init_logging
+from landscape.client.deployment import (
+    BaseConfiguration,
+    Configuration,
+    convert_arg_to_bool,
+    generate_computer_title,
+    get_versioned_persist,
+    init_logging,
+)
 from landscape.client.snap_http import SnapdResponse
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.fs import create_text_file
-from landscape.lib.fs import read_text_file
+from landscape.lib.fs import create_text_file, read_text_file
 
 
 class BabbleConfiguration(BaseConfiguration):
