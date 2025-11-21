@@ -2489,7 +2489,7 @@ class ConfigurationDumpTest(LandscapeTest):
         config_dump = get_configuration_dump(self.config)
         self.assertEqual(config_dump["CONFIG_FILE"], custom_path)
 
-    def test_unsaved_options_not_displayed(self):
+    def test_hidden_options_not_displayed(self):
         """
         Do not display configuration values for unsaved options,
         which are only meant to be accessed through the command line
@@ -2497,7 +2497,7 @@ class ConfigurationDumpTest(LandscapeTest):
         self.config.load([])
         config_dump = get_configuration_dump(self.config)
 
-        for option in LandscapeSetupConfiguration.unsaved_options:
+        for option in LandscapeSetupConfiguration.hidden_options:
             self.assertNotIn(option, config_dump)
 
     def test_config_options_without_default_displayed(self):
