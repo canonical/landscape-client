@@ -1,19 +1,16 @@
 """Utility functions for exchanging messages synchronously with a Landscape
 Server instance.
 """
-from dataclasses import dataclass
+
 import logging
-from pprint import pformat
 import time
+from dataclasses import dataclass
+from pprint import pformat
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 
 import pycurl
 
-from landscape import SERVER_API
-from landscape import VERSION
+from landscape import SERVER_API, VERSION
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
 from landscape.lib.format import format_delta
@@ -25,19 +22,19 @@ class ServerResponse:
 
     server_api: str
     server_uuid: bytes
-    messages: List[Dict[str, Any]]
-    client_accepted_types_hash: Optional[bytes] = None
-    next_exchange_token: Optional[bytes] = None
-    next_expected_sequence: Optional[int] = None
+    messages: list[dict[str, Any]]
+    client_accepted_types_hash: bytes | None = None
+    next_exchange_token: bytes | None = None
+    next_expected_sequence: int | None = None
 
 
 def exchange_messages(
     payload: dict,
     server_url: str,
     *,
-    cainfo: Optional[str] = None,
-    computer_id: Optional[str] = None,
-    exchange_token: Optional[bytes] = None,
+    cainfo: str | None = None,
+    computer_id: str | None = None,
+    exchange_token: bytes | None = None,
     server_api: str = SERVER_API.decode(),
 ) -> ServerResponse:
     """Sends `payload` via HTTP(S) to `server_url`, parsing and returning the

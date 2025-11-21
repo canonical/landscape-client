@@ -3,17 +3,18 @@ import pprint
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.persist import path_string_to_tuple
-from landscape.lib.persist import path_tuple_to_string
-from landscape.lib.persist import Persist
-from landscape.lib.persist import PersistError
-from landscape.lib.persist import PersistReadOnlyError
-from landscape.lib.persist import PickleBackend
-from landscape.lib.persist import RootedPersist
+from landscape.lib.persist import (
+    Persist,
+    PersistError,
+    PersistReadOnlyError,
+    PickleBackend,
+    RootedPersist,
+    path_string_to_tuple,
+    path_tuple_to_string,
+)
 
 
 class PersistHelpersTest(unittest.TestCase):
-
     paths = [
         ("ab", ("ab",)),
         ("ab.cd", ("ab", "cd")),
@@ -38,7 +39,6 @@ class PersistHelpersTest(unittest.TestCase):
 
 
 class BasePersistTest(unittest.TestCase):
-
     set_items = [
         ("ab", 1),
         ("ab", 2),

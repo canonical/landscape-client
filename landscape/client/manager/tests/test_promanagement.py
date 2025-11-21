@@ -3,7 +3,6 @@ from unittest import mock
 from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.manager.promanagement import ProManagement
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
-
 from landscape.lib.uaclient import (
     ConnectivityException,
     ContractAPIException,
@@ -13,7 +12,6 @@ from landscape.lib.uaclient import (
 
 
 class ProManagementTests(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -29,7 +27,7 @@ class ProManagementTests(LandscapeTest):
         message = {
             "type": "attach-pro",
             "operation-id": 123,
-            "token": "fake-token"
+            "token": "fake-token",
         }
         return self.manager.dispatch_message(message)
 

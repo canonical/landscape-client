@@ -5,7 +5,6 @@ from landscape.client.manager.plugin import ManagerPlugin
 
 
 class FakePackageManager(ManagerPlugin):
-
     run_interval = 1800
     randint = random.randint
 

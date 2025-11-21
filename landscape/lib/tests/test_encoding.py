@@ -1,9 +1,7 @@
 import codecs
 import unittest
 
-from landscape.lib.encoding import encode_if_needed
-from landscape.lib.encoding import encode_values
-
+from landscape.lib.encoding import encode_if_needed, encode_values
 
 EXPECTED_UTF8 = codecs.encode("請不要刪除", "utf-8")
 

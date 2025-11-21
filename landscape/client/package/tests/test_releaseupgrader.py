@@ -5,26 +5,20 @@ import unittest
 from unittest import mock
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, fail, succeed
 
-from landscape.client import GROUP
-from landscape.client import USER
-from landscape.client.manager.manager import FAILED
-from landscape.client.manager.manager import SUCCEEDED
-from landscape.client.package.releaseupgrader import main
-from landscape.client.package.releaseupgrader import ReleaseUpgrader
+from landscape.client import GROUP, USER
+from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.package.releaseupgrader import (
+    ReleaseUpgrader,
     ReleaseUpgraderConfiguration,
+    main,
 )
-from landscape.client.tests.helpers import BrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import BrokerServiceHelper, LandscapeTest
 from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.gpg import InvalidGPGSignature
-from landscape.lib.testing import EnvironSaverHelper
-from landscape.lib.testing import LogKeeperHelper
+from landscape.lib.testing import EnvironSaverHelper, LogKeeperHelper
 
 
 class ReleaseUpgraderConfigurationTest(unittest.TestCase):
@@ -184,8 +178,7 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         def check_failure(failure):
             self.assertIn(
-                "WARNING: Invalid signature for upgrade-tool "
-                "tarball: gpg error",
+                "WARNING: Invalid signature for upgrade-tool tarball: gpg error",
                 self.logfile.getvalue(),
             )
             gpg_mock.assert_called_once_with(
@@ -305,10 +298,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         text = self.upgrader.make_operation_result_text("stdout", "stderr")
         self.assertEqual(
             text,
-            "=== Standard output ===\n\n"
-            "stdout\n\n"
-            "=== Standard error ===\n\n"
-            "stderr\n\n",
+            "=== Standard output ===\n\nstdout\n\n=== Standard error ===\n\nstderr\n\n",
         )
 
     def test_make_operation_result_text_trims_long_files(self):
@@ -344,11 +334,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
         fd.write(
-            "#!/bin/sh\n"
-            "echo $@\n"
-            "echo FOO=$FOO\n"
-            "echo PWD=$PWD\n"
-            "echo out\n",
+            "#!/bin/sh\necho $@\necho FOO=$FOO\necho PWD=$PWD\necho out\n",
         )
         fd.close()
         os.chmod(upgrade_tool_filename, 0o755)
@@ -603,7 +589,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
                 self.assertEqual(
                     out,
-                    (f"--force-apt-update\n{os.getcwd()}\n").encode("utf-8"),
+                    (f"--force-apt-update\n{os.getcwd()}\n").encode(),
                 )
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
@@ -684,7 +670,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                 out, err, code = args
                 self.assertEqual(
                     out,
-                    b"--force-apt-update " b"--config=/some/config\n",
+                    b"--force-apt-update --config=/some/config\n",
                 )
                 self.assertEqual(err, b"")
                 self.assertEqual(code, 0)
@@ -809,8 +795,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                         "type": "operation-result",
                         "operation-id": 100,
                         "status": FAILED,
-                        "result-text": "The system is already "
-                        "running karmic.",
+                        "result-text": "The system is already running karmic.",
                         "result-code": 1,
                     },
                 ],

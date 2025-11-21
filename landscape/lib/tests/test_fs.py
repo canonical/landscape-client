@@ -5,11 +5,13 @@ import unittest
 from unittest.mock import patch
 
 from landscape.lib import testing
-from landscape.lib.fs import append_binary_file
-from landscape.lib.fs import append_text_file
-from landscape.lib.fs import read_binary_file
-from landscape.lib.fs import read_text_file
-from landscape.lib.fs import touch_file
+from landscape.lib.fs import (
+    append_binary_file,
+    append_text_file,
+    read_binary_file,
+    read_text_file,
+    touch_file,
+)
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -135,13 +137,15 @@ class TouchFileTest(BaseTestCase):
         current_time = int(time.time())
         expected_time = current_time - 1
 
-        with patch.object(
-            time,
-            "time",
-            return_value=current_time,
-        ) as time_mock:
-            with patch.object(os, "utime") as utime_mock:
-                touch_file(path, offset_seconds=-1)
+        with (
+            patch.object(
+                time,
+                "time",
+                return_value=current_time,
+            ) as time_mock,
+            patch.object(os, "utime") as utime_mock,
+        ):
+            touch_file(path, offset_seconds=-1)
 
         time_mock.assert_called_once_with()
         utime_mock.assert_called_once_with(

@@ -1,8 +1,7 @@
 import logging
 import os
 
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 from landscape.client.monitor.plugin import MonitorPlugin
 from landscape.client.snap_utils import get_snap_info
@@ -11,8 +10,7 @@ from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import read_text_file
 from landscape.lib.machine_id import get_namespaced_machine_id
 from landscape.lib.network import get_fqdn
-from landscape.lib.os_release import get_os_filename
-from landscape.lib.os_release import parse_os_release
+from landscape.lib.os_release import get_os_filename, parse_os_release
 
 METADATA_RETRY_MAX = 3  # Number of retries to get EC2 meta-data
 

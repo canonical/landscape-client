@@ -3,8 +3,7 @@ import glob
 import os
 import shutil
 
-from setuptools import Command
-from setuptools import setup
+from setuptools import Command, setup
 
 from landscape import PYTHON_VERSION
 
@@ -14,7 +13,6 @@ class CleanCommand(Command):
     user_options = []
 
     def run(self):
-
         for pattern in ["build", "dist", ".eggs", "*.egg-info"]:
             for path in glob.glob(pattern):
                 if os.path.isdir(path):
@@ -61,7 +59,6 @@ def setup_landscape(
     scripts=None,
     **kwargs,
 ):
-
     assert name and description and packages
     kwargs = dict(
         SETUP,
@@ -78,9 +75,9 @@ def setup_landscape(
 
 
 # Import these afterward to avoid circular imports.
+import setup_client  # noqa: E402
 import setup_lib  # noqa: E402
 import setup_sysinfo  # noqa: E402
-import setup_client  # noqa: E402
 
 PACKAGES = []
 MODULES = []

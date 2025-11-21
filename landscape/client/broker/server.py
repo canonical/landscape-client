@@ -42,6 +42,7 @@ Diagram::
                                                       : exchange
 
 """
+
 import logging
 
 from twisted.internet.defer import Deferred
@@ -383,19 +384,16 @@ class BrokerServer:
             and opid is not None
             and message["type"] != "resynchronize"
         ):
-
             mtype = message["type"]
             logging.error(f"Nobody handled the {mtype} message.")
 
-            result_text = """\
-Landscape client failed to handle this request ({}) because the
+            result_text = f"""\
+Landscape client failed to handle this request ({mtype}) because the
 plugin which should handle it isn't available.  This could mean that the
 plugin has been intentionally disabled, or that the client isn't running
 properly, or you may be running an older version of the client that doesn't
 support this feature.
-""".format(
-                mtype,
-            )
+"""
             response = {
                 "type": "operation-result",
                 "status": FAILED,

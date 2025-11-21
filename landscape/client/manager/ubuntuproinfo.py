@@ -1,13 +1,9 @@
 import json
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
 
-from landscape.client import IS_CORE
-from landscape.client import IS_SNAP
+from landscape.client import IS_CORE, IS_SNAP, UA_DATA_DIR
 from landscape.client.manager.plugin import DataWatcherManager
-from landscape.client import UA_DATA_DIR
 from landscape.lib.uaclient import get_pro_status
 
 
@@ -27,8 +23,7 @@ class UbuntuProInfo(DataWatcherManager):
 
     def get_data(self):
         ubuntu_pro_info = get_ubuntu_pro_info()
-        return json.dumps(ubuntu_pro_info, separators=(",", ":"),
-                          sort_keys=True)
+        return json.dumps(ubuntu_pro_info, separators=(",", ":"), sort_keys=True)
 
 
 def uastatus(q):

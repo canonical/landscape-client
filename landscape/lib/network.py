@@ -1,6 +1,7 @@
 """
 Network introspection utilities using ioctl and the /proc filesystem.
 """
+
 import array
 import errno
 import fcntl
@@ -149,10 +150,7 @@ def get_filtered_if_info(filters=(), extended=False):
                 continue
 
             ifaddresses = netifaces.ifaddresses(interface)
-            if (
-                not is_active(ifaddresses)
-                and netifaces.AF_LINK not in ifaddresses
-            ):
+            if not is_active(ifaddresses) and netifaces.AF_LINK not in ifaddresses:
                 continue
 
             ifencoded = interface.encode()
@@ -234,7 +232,7 @@ def get_network_traffic(source_file="/proc/net/dev"):
     Retrieves an array of information regarding the network activity per
     network interface.
     """
-    with open(source_file, "r") as netdev:
+    with open(source_file) as netdev:
         lines = netdev.readlines()
 
     # Parse out the column headers as keys.
@@ -299,11 +297,10 @@ def get_network_interface_speed(sock, interface_name):
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
         res = status_cmd.tobytes()
         speed, duplex = struct.unpack("12xHB28x", res)
-    except (IOError, OSError) as e:
+    except OSError as e:
         if e.errno == errno.EPERM:
             logging.warning(
-                "Could not determine network interface speed, "
-                "operation not permitted.",
+                "Could not determine network interface speed, operation not permitted.",
             )
         elif e.errno != errno.EOPNOTSUPP and e.errno != errno.EINVAL:
             raise e

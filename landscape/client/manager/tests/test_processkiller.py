@@ -3,14 +3,14 @@ import subprocess
 from datetime import datetime
 from unittest.mock import patch
 
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.manager.processkiller import ProcessKiller
-from landscape.client.manager.processkiller import ProcessMismatchError
-from landscape.client.manager.processkiller import ProcessNotFoundError
-from landscape.client.manager.processkiller import SignalProcessError
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.manager.plugin import FAILED, SUCCEEDED
+from landscape.client.manager.processkiller import (
+    ProcessKiller,
+    ProcessMismatchError,
+    ProcessNotFoundError,
+    SignalProcessError,
+)
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.lib.process import ProcessInformation
 from landscape.lib.testing import ProcessDataBuilder
 
