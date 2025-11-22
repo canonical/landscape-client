@@ -2363,6 +2363,7 @@ class RegistrationInfoTest(LandscapeTest):
         """,
         )
 
+        self.mock_getuid = mock.patch("os.getuid", return_value=0).start()
         mock.patch("landscape.client.configuration.init_app_logging").start()
 
         self.addCleanup(mock.patch.stopall)
@@ -2443,6 +2444,7 @@ class ConfigurationDumpTest(LandscapeTest):
         """,
         )
 
+        self.mock_getuid = mock.patch("os.getuid", return_value=0).start()
         mock.patch("landscape.client.configuration.init_app_logging").start()
 
         self.addCleanup(mock.patch.stopall)
