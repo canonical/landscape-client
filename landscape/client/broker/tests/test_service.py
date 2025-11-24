@@ -87,14 +87,26 @@ class BrokerServiceTest(LandscapeTest):
         self.service.pinger.start.assert_called_with()
         self.service.exchanger.stop.assert_called_with()
 
-    def test_service_without_ssl_ca(self):
-        """If the CA is none"""
-        self.config.ssl_ca = None
-        self.service = self.service.__class__(self.config)
-        self.assertIsNone(self.service.config.ssl_ca)
-
     def test_service_with_ssl_ca(self):
         """If the CA is ssl_ca"""
+        self.config.ssl_public_key = None
         self.config.ssl_ca = "/some/key"
         self.service = self.service.__class__(self.config)
         self.assertIsNotNone(self.service.config.ssl_ca)
+        self.assertIsNone(self.service.config.ssl_public_key)
+
+    def test_service_with_ssl_public_key(self):
+        """If the CA is ssl_public_key"""
+        self.config.ssl_ca = None
+        self.config.ssl_public_key = "/some/key"
+        self.service = self.service.__class__(self.config)
+        self.assertIsNotNone(self.service.config.ssl_public_key)
+        self.assertIsNone(self.service.config.ssl_ca)
+
+    def test_service_without_ssl(self):
+        """If the is no ssl_ca or ssl_public_key"""
+        self.config.ssl_ca = None
+        self.config.ssl_public_key = None
+        self.service = self.service.__class__(self.config)
+        self.assertIsNone(self.service.config.ssl_ca)
+        self.assertIsNone(self.service.config.ssl_public_key)

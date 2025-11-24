@@ -102,7 +102,7 @@ class ExchangeHelper(BrokerConfigurationHelper):
         test_case.transport = FakeTransport(
             None,
             test_case.config.url,
-            test_case.config.ssl_ca,
+            test_case.config.ssl_public_key,
         )
         test_case.reactor = FakeReactor()
         test_case.exchange_store = ExchangeStore(

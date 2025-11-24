@@ -2077,7 +2077,7 @@ registration_key = shared-secret
 
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.ServiceConfig")
-    def test_base64_ssl_ca_is_exported_to_file(
+    def test_base64_ssl_public_key_is_exported_to_file(
         self,
         mock_serviceconfig,
         mock_print_text,
@@ -2087,7 +2087,7 @@ registration_key = shared-secret
         config_filename = self.makeFile(f"[client]\ndata_path={data_path}")
         key_filename = os.path.join(
             data_path,
-            os.path.basename(config_filename) + ".ssl_ca",
+            os.path.basename(config_filename) + ".ssl_public_key",
         )
 
         config = self.get_config(
@@ -2117,10 +2117,10 @@ registration_key = shared-secret
 
         options = ConfigParser()
         options.read(config_filename)
-        self.assertEqual(options.get("client", "ssl_ca"), key_filename)
+        self.assertEqual(options.get("client", "ssl_public_key"), key_filename)
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
-    def test_normal_ssl_ca_is_not_exported_to_file(
+    def test_normal_ssl_public_key_is_not_exported_to_file(
         self,
         mock_serviceconfig,
     ):
@@ -2145,13 +2145,13 @@ registration_key = shared-secret
         setup(config)
 
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        key_filename = config_filename + ".ssl_ca"
+        key_filename = config_filename + ".ssl_public_key"
         self.assertFalse(os.path.isfile(key_filename))
 
         options = ConfigParser()
         options.read(config_filename)
         self.assertEqual(
-            options.get("client", "ssl_ca"),
+            options.get("client", "ssl_public_key"),
             "/some/filename",
         )
 
@@ -2269,13 +2269,13 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         """
         L{store_public_key_data} writes the SSL CA supplied by the server to a
         file for later use, this file is called after the name of the
-        configuration file with .ssl_ca.
+        configuration file with .ssl_public_key.
         """
         config = self.get_config([])
         os.mkdir(config.data_path)
         key_filename = os.path.join(
             config.data_path,
-            os.path.basename(config.get_config_filename()) + ".ssl_ca",
+            os.path.basename(config.get_config_filename()) + ".ssl_public_key",
         )
 
         self.assertEqual(
