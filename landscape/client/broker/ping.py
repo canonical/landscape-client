@@ -33,13 +33,13 @@ Diagram::
 
 """
 
+import logging
+from logging import info
+
 try:
     from urllib.parse import urlencode
 except ImportError:
     from urllib import urlencode
-
-from logging import info
-import logging
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
