@@ -734,7 +734,7 @@ class PackageReporter(PackageTaskHandler):
                 return True
         return False
 
-    def _compute_packages_changes(self):  # noqa: max-complexity: 13
+    def _compute_packages_changes(self):  # noqa: C901
         """Analyse changes in the universe of known packages.
 
         This method will verify if there are packages that:
