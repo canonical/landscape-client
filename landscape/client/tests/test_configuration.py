@@ -61,15 +61,6 @@ url = https://landscape.canonical.com/message-system
         return config
 
 
-class LandscapeSetupConfigurationTest(LandscapeConfigurationTest):
-    def test_get_config_with_deprecated_ssl_public_key_option(self):
-        cert_path = "/path/to/some/cert"
-        deprecated_key = "ssl_public_key"
-        filename = self.makeFile(f"[client]\n{deprecated_key} = {cert_path}\n")
-        config = self.get_config(["--config", filename])
-        self.assertEqual(cert_path, config.ssl_ca)
-
-
 class PrintTextTest(LandscapeTest):
     @mock.patch("sys.stdout", new_callable=StringIO)
     def test_default(self, stdout):
@@ -2471,7 +2462,7 @@ class ConfigurationDumpTest(LandscapeTest):
     def test_command_line_overrides(self):
         """
         Options passed to the command line along --show should
-        overwrite both the configuration file and the default
+        overwrite both the configuration file and the defualt
         """
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(self.config_text, path=config_filename)

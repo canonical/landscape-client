@@ -144,20 +144,6 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
 
     encoding = "utf-8"
 
-    def _get_config_object(self, alternative_config=None):
-        config_obj = super()._get_config_object(alternative_config=alternative_config)
-
-        # The ssl_public_key is deprecated in favor of ssl_ca. ConfigObj does not
-        # provide a way to remap keys, so we must do it ourselves.
-        if (
-            "client" in config_obj
-            and "ssl_public_key" in config_obj["client"]
-            and "ssl_ca" not in config_obj["client"]
-        ):
-            config_obj["client"]["ssl_ca"] = config_obj["client"]["ssl_public_key"]
-            del config_obj["client"]["ssl_public_key"]
-        return config_obj
-
     def _load_external_options(self):
         """Handle the --import parameter.
 
