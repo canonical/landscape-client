@@ -937,9 +937,7 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
         self.facade.set_arch("arch")
 
-        hash_id_db_url = (
-            "http://fake.url/path/hash-id-databases/uuid_codename_arch"
-        )
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/uuid_codename_arch"
 
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
