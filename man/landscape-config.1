@@ -86,14 +86,10 @@ The title of this computer.
 The server URL to connect to (default: 'https://landscape.canonical.com/message-system').
 .TP
 .B
-\fB-k\fP SSL_CA, \fB--ssl-ca\fP=SSL_CA
-The CA certificate to
-verify the server with. Accepts a 
-file path or the certificate contents (base64).
-Only used if the server URL
+\fB-k\fP SSL_PUBLIC_KEY, \fB--ssl-public-key\fP=SSL_PUBLIC_KEY
+The SSL CA certificate to
+verify the server with. Only used if the server URL
 to which we connect is https.
-\fB--ssl-public-key\fP=SSL_PUBLIC_KEY (Deprecated) Same as \fB--ssl-ca\fP. Use \fB--ssl-ca\fP instead.
-This option will be removed in the 26.04 release.
 .TP
 .B
 \fB--exchange-interval\fP=INTERVAL
@@ -182,8 +178,8 @@ plugins to load explicitly.
 .TP
 .B
 \fB--manage-sources-list-d\fP [MANAGE_SOURCES_LIST_D]
-Repository profiles manage
-the files in ’etc/apt/sources.list.d'. (default: true)
+Repository profiles manage the files in
+’etc/apt/sources.list.d'. (default: true)
 .TP
 .B
 \fB-n\fP, \fB--no-start\fP

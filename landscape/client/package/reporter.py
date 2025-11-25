@@ -238,13 +238,12 @@ class PackageReporter(PackageTaskHandler):
                 cainfo = self._config.ssl_ca
             elif self._config.ssl_public_key is not None:
                 cainfo = self._config.ssl_public_key
-                logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
             else:
                 cainfo = None
 
             result = fetch_async(
                 url,
-                cainfo=cainfo,
+                cainfo=self._config.get("ssl_public_key"),
                 proxy=proxy,
             )
             result.addCallback(fetch_ok)

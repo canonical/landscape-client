@@ -41,7 +41,10 @@ try:
 except ImportError:
     from urllib import urlencode
 
+from logging import info
+import logging
 from twisted.internet import defer
+
 from twisted.python.failure import Failure
 
 from landscape.lib import bpickle
@@ -144,12 +147,11 @@ class Pinger:
             cainfo = self._config.ssl_ca
         elif self._config.ssl_public_key is not None:
             cainfo = self._config.ssl_public_key
-            logging.warning("`ssl_public_key` is deprecated; use `ssl_ca` instead.")
         else:
             cainfo = None
         self._ping_client = self.ping_client_factory(
             self._reactor,
-            cainfo=cainfo,
+            cainfo=self._config.ssl_public_key,
         )
         self._schedule()
 

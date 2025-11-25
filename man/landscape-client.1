@@ -63,12 +63,10 @@ The URL to perform lightweight exchange initiation
 with.
 .TP
 .B
-\fB-k\fP SSL_CA, \fB--ssl-ca\fP=SSL_CA
-The CA Certificate to verify the server. Accepts a 
-file path or the certificate contents (base64)
-Only used if the given server URL is https.
-\fB--ssl-public-key\fP=SSL_PUBLIC_KEY (Deprecated) Same as \fB--ssl-ca\fP. Use \fB--ssl-ca\fP instead.
-This option will be removed in the 26.04 release.
+\fB-k\fP SSL_PUBLIC_KEY, \fB--ssl-public-key\fP=SSL_PUBLIC_KEY
+The public SSL key to
+verify the server. Only used if the given server
+URL is https.
 .TP
 .B
 \fB--ignore-sigint\fP
