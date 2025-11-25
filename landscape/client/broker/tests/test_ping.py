@@ -318,14 +318,3 @@ class PingerTest(LandscapeTest):
         self.pinger.stop()
         self.reactor.advance(10)
         self.assertEqual([], self.page_getter.fetches)
-
-    def test_ping_with_ssl_ca(self):
-        """If the CA is ssl_ca"""
-        self.config.ssl_ca = "/some/key"
-        self.pinger.start()
-        self.assertIsNotNone(self.config.ssl_ca)
-
-    def test_ping_without_ssl(self):
-        """If the CA is none"""
-        self.pinger.start()
-        self.assertIsNone(self.config.ssl_ca)

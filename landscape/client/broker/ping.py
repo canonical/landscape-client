@@ -33,12 +33,12 @@ Diagram::
 
 """
 
+from logging import info
+
 try:
     from urllib.parse import urlencode
 except ImportError:
     from urllib import urlencode
-
-from logging import info
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
@@ -139,13 +139,9 @@ class Pinger:
 
     def start(self):
         """Start pinging."""
-        if self._config.ssl_ca is not None:
-            cainfo = self._config.ssl_ca
-        else:
-            cainfo = None
         self._ping_client = self.ping_client_factory(
             self._reactor,
-            cainfo=cainfo,
+            cainfo=self._config.ssl_public_key,
         )
         self._schedule()
 

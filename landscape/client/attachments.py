@@ -36,13 +36,9 @@ async def save_attachments(
             # Backward-compatibility with inline attachments.
             data = attachment_id.encode()
         else:
-            if config.ssl_ca is not None:
-                cainfo = config.ssl_ca
-            else:
-                cainfo = None
             data = await fetch_async(
                 root_path + str(attachment_id),
-                cainfo=cainfo,
+                cainfo=config.ssl_public_key,
                 headers=headers,
             )
 
