@@ -27,10 +27,9 @@ OPTIONS
   -u URL, --url=URL          The server URL to connect to.
   --ping-url=PING_URL        The URL to perform lightweight exchange initiation
                              with.
-  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY    The public SSL key to
-                             verify the server. Only used if the given server
-                             URL is https.
-  --ignore-sigint            Ignore interrupt signals.
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY    The public SSL key is 
+                             a CA Certificate to verify the server. Only 
+                             used if the given server URL is https.
   --ignore-sigusr1           Ignore SIGUSR1 signal to rotate logs.
   --daemon                   Fork and run in the background.
   --pid-file=PID_FILE        The file to write the PID to.

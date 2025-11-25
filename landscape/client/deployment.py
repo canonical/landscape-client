@@ -115,7 +115,7 @@ class Configuration(BaseConfiguration):
         parser.add_argument(
             "-k",
             "--ssl-public-key",
-            help="The ssl-public-key is a CA certificate that verifies the server. "
+            help="The ssl-public-key is a CA certificate that verifies the server."
             "Only used if the given URL is https.",
         )
         parser.add_argument(
