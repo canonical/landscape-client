@@ -234,14 +234,9 @@ class PackageReporter(PackageTaskHandler):
             else:
                 proxy = self._config.get("http_proxy")
 
-            if self._config.ssl_ca is not None:
-                cainfo = self._config.ssl_ca
-            else:
-                cainfo = None
-
             result = fetch_async(
                 url,
-                cainfo=cainfo,
+                cainfo=self._config.get("ssl_public_key"),
                 proxy=proxy,
             )
             result.addCallback(fetch_ok)
@@ -730,7 +725,7 @@ class PackageReporter(PackageTaskHandler):
                 return True
         return False
 
-    def _compute_packages_changes(self):  # noqa: max-complexity: 13
+    def _compute_packages_changes(self):  # noqa: C901
         """Analyse changes in the universe of known packages.
 
         This method will verify if there are packages that:

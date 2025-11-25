@@ -836,11 +836,11 @@ class PackageReporterAptTest(LandscapeTest):
     def test_fetch_hash_id_db_with_custom_certificate(self, mock_fetch_async):
         """
         The L{PackageReporter.fetch_hash_id_db} method takes into account the
-        ssl_ca certificate specified in the client configuration.
+        possible custom SSL certificate specified in the client configuration.
         """
 
         self.config.url = "http://fake.url/path/message-system/"
-        self.config.ssl_ca = "/some/key"
+        self.config.ssl_public_key = "/some/key"
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
@@ -855,7 +855,7 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
             hash_id_db_url,
-            cainfo=self.config.ssl_ca,
+            cainfo=self.config.ssl_public_key,
             proxy=None,
         )
 
@@ -865,14 +865,14 @@ class PackageReporterAptTest(LandscapeTest):
         "landscape.client.package.reporter.fetch_async",
         return_value=succeed(b"hash-ids"),
     )
-    def test_fetch_hash_id_db_without_ssl_ca(self, mock_fetch_async):
+    def test_fetch_hash_id_db_without_ssl_public_key(self, mock_fetch_async):
         """
         The L{PackageReporter.fetch_hash_id_db} method takes into account no
-        ssl_ca certificate specified in the client configuration.
+        ssl_public_key certificate specified in the client configuration.
         """
 
         self.config.url = "http://fake.url/path/message-system/"
-        self.config.ssl_ca = None
+        self.config.ssl_public_key = None
 
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
@@ -884,36 +884,7 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
             hash_id_db_url,
-            cainfo=self.config.ssl_ca,
-            proxy=None,
-        )
-
-        return result
-
-    @mock.patch(
-        "landscape.client.package.reporter.fetch_async",
-        return_value=succeed(b"hash-ids"),
-    )
-    def test_fetch_hash_id_db_with_ssl_ca(self, mock_fetch_async):
-        """
-        The L{PackageReporter.fetch_hash_id_db} method takes into account the
-        ssl_ca certificate specified in the client configuration.
-        """
-
-        self.config.url = "http://fake.url/path/message-system/"
-        self.config.ssl_ca = "/some/key"
-
-        message_store = self.broker_service.message_store
-        message_store.set_server_uuid("uuid")
-        self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
-        self.facade.set_arch("arch")
-
-        hash_id_db_url = "http://fake.url/path/hash-id-databases/uuid_codename_arch"
-
-        result = self.reporter.fetch_hash_id_db()
-        mock_fetch_async.assert_called_once_with(
-            hash_id_db_url,
-            cainfo=self.config.ssl_ca,
+            cainfo=self.config.ssl_public_key,
             proxy=None,
         )
 
