@@ -2462,7 +2462,7 @@ class ConfigurationDumpTest(LandscapeTest):
     def test_command_line_overrides(self):
         """
         Options passed to the command line along --show should
-        overwrite both the configuration file and the defualt
+        overwrite both the configuration file and the default
         """
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(self.config_text, path=config_filename)
