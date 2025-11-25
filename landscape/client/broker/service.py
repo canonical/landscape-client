@@ -50,12 +50,7 @@ class BrokerService(LandscapeService):
             f"{self.service_name}.bpickle",
         )
         super().__init__(config)
-        if config.ssl_ca is not None:
-            cainfo = config.ssl_ca
-        elif config.ssl_public_key is not None:
-            cainfo = config.ssl_public_key
-        else:
-            cainfo = None
+
         self.transport = self.transport_factory(
             self.reactor,
             config.url,

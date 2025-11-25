@@ -143,12 +143,6 @@ class Pinger:
 
     def start(self):
         """Start pinging."""
-        if self._config.ssl_ca is not None:
-            cainfo = self._config.ssl_ca
-        elif self._config.ssl_public_key is not None:
-            cainfo = self._config.ssl_public_key
-        else:
-            cainfo = None
         self._ping_client = self.ping_client_factory(
             self._reactor,
             cainfo=self._config.ssl_public_key,
