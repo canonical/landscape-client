@@ -108,7 +108,7 @@ def register(
                 "\nThe server's SSL information is incorrect or fails "
                 "signature verification!\n"
                 "If the server is using a self-signed certificate, please "
-                "ensure you supply it with the --ssl-ca parameter.",
+                "ensure you supply it with the --ssl-public-key parameter.",
             ) from e
 
         raise  # Other exceptions are unexpected and should propagate.
