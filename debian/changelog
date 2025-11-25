@@ -1,3 +1,14 @@
+landscape-client (25.10.1-0landscape0) jammy; urgency=medium
+
+  * refactor: Revert addition of --ssl-ca flag
+  * fix: Move WSL config options out of unsaved_options
+  * build: add ruff to dev-lxc config
+  * fix: landscape-config reads deprecated ssl_public_key field
+  * refactor: clean up bpickle dumps
+  * build: use ruff for formatting and linting
+
+ -- Jacob Chin <jacob.chin@canonical.com>  Tue, 25 Nov 2025 16:27:53 -0500
+
 landscape-client (25.10-0landscape0) jammy; urgency=medium
 
   * build: update snap-http module
