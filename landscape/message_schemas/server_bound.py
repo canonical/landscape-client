@@ -698,6 +698,13 @@ USG_AUDIT = Message(
     },
 )
 
+FDE_RECOVERY_KEY = Message(
+    "fde-recovery-key",
+    {
+        "recovery-key": Unicode(),
+    },
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     CLOUD_INIT,
