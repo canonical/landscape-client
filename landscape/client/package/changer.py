@@ -38,6 +38,7 @@ class UnknownPackageData(Exception):
 
 class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
     """Specialized configuration for the Landscape package-changer."""
+
     def make_parser(self):
         parser = super().make_parser()
 
