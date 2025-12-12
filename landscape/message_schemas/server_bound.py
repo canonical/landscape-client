@@ -63,6 +63,7 @@ __all__ = [
     "SNAPS",
     "SNAP_INFO",
     "UNLICENSED_MESSAGE_SCHEMAS",
+    "FDE_RECOVERY_KEY",
 ]
 
 
@@ -702,7 +703,9 @@ FDE_RECOVERY_KEY = Message(
     "fde-recovery-key",
     {
         "recovery-key": Unicode(),
+        "result": Unicode(),
     },
+    optional=["recovery-key"],
 )
 
 message_schemas = (
@@ -712,6 +715,7 @@ message_schemas = (
     COMPUTER_INFO,
     DISTRIBUTION_INFO,
     HARDWARE_INFO,
+    FDE_RECOVERY_KEY,
     LOAD_AVERAGE,
     MEMORY_INFO,
     RESYNCHRONIZE,
