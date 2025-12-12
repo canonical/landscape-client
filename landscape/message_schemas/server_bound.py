@@ -702,10 +702,13 @@ USG_AUDIT = Message(
 FDE_RECOVERY_KEY = Message(
     "fde-recovery-key",
     {
+        "operation-id": Int(),
         "recovery-key": Unicode(),
-        "result": Unicode(),
+        "result-code": Int(),
+        "result-text": Unicode(),
+        "status": Int(),
     },
-    optional=["recovery-key"],
+    optional=["recovery-key", "result-code", "result-text"],
 )
 
 message_schemas = (

@@ -356,6 +356,12 @@ from landscape.lib.hashlib import md5
 from landscape.lib.message import RESYNC, got_next_expected
 from landscape.lib.versioning import is_version_higher, sort_versions
 
+# Protocol messages! Same constants are defined in the server.
+FAILED = 5
+SUCCEEDED = 6
+
+exchange_state = {}
+
 
 class MessageExchange:
     """Schedule and handle message exchanges with the server.
@@ -764,6 +770,13 @@ class MessageExchange:
                 i = None
             if i is not None:
                 del messages[i:]
+
+            for message in messages:
+                if (
+                    message.get("type") == "fde-recovery-key"
+                    and message.get("status") == SUCCEEDED
+                ):
+                    message["recovery-key"] = exchange_state["recovery-key"]
         else:
             server_api = store.get_server_api()
         payload = {

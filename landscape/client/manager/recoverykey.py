@@ -4,11 +4,12 @@ import os
 import shutil
 from pathlib import Path
 import subprocess
-from typing import Any
+from typing import Any, Tuple
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, ensureDeferred
 
+from landscape.client.broker.exchange import exchange_state
 from landscape.client.attachments import save_attachments
 from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
 from landscape.client.manager.scriptexecution import (
@@ -16,17 +17,19 @@ from landscape.client.manager.scriptexecution import (
     ProcessFailedError,
 )
 
+# FDE_EXECUTABLE = whatever the snapd api is
+FDE_EXECUTABLE = "cat"
+
+
+class FDEKeyError(Exception):
+    """Raised when the FDE key generation fails."""
+
+    def __init__(self, message):
+        self.message = message
+
 
 class FDERecoveryKeyManager(ManagerPlugin):
-    """Plugin that performs Ubuntu Security Guide actions.
-    See https://ubuntu.com/security/certifications/docs/usg for more
-    information.
-
-    It supports two actions:
-        - audit: checks for compliance against a CIS or DISA-STIG profile,
-          creating an XML report.
-        - fix: modifies the system to comply with a CIS or DISA-STIG profile.
-    """
+    """Plugin that generates FDE recovery keys."""
 
     truncation_indicator = "\n**OUTPUT TRUNCATED**"
 
@@ -41,60 +44,49 @@ class FDERecoveryKeyManager(ManagerPlugin):
         return ensureDeferred(self.handle_recovery_key_message(message))
 
     async def handle_recovery_key_message(self, message: dict[str, Any]) -> None:
-        """Executes usg if we can, then responds to `message`.
+        """Generates an FDE recovery key, then responds to `message`.
 
-        If the usg action was "audit", a second message is also sent, reporting
-        the audit result.
+        If the recovery key is successfully generated, we will attempt to add the recovery key
+        to the message just before sending it to server.
 
         :message: A message of type "fde-recovery-key".
         """
         opid = message["operation-id"]
-        runid = message["run-id"]
-
-        # check if the snap is installed
-        # await self._respond(FAILED, "fde recovery key can't be generated", opid)
 
         try:
-            result = await self._generate_recovery_key()
-            await self._respond(SUCCEEDED, result, opid)
+            # check if the snap is installed and it is possible to use
+            # await self._send_fde_recovery_key(opid, FAILED, "fde recovery key can't be generated")
 
-            await self._send_fde_recovery_key(opid, runid)
+            # check if the recovery key is already generated
+            recovery_key_exists = False
+            recovery_key, key_id = await self._generate_recovery_key()
+            result = await self._update_recovery_key(key_id, recovery_key_exists)
+
+            exchange_state["recovery-key"] = recovery_key
+
+            await self._send_fde_recovery_key(opid, SUCCEEDED, result)
         except ProcessFailedError as e:
-            await self._respond(FAILED, e.data, opid)
+            await self._send_fde_recovery_key(opid, FAILED, e.data, e.exit_code)
         except Exception as e:
-            await self._respond(FAILED, str(e), opid)
+            await self._send_fde_recovery_key(opid, FAILED, str(e))
 
-    def _respond(
+    async def _send_fde_recovery_key(
         self,
-        status: int,
-        data: str | bytes,
         opid: int,
-    ) -> Deferred:
-        """Queues sending a result message for the activity to server."""
-        message = {
-            "type": "operation-result",
-            "status": status,
-            "result-text": data,
-            "operation-id": opid,
-        }
+        status: int,
+        result_text: str,
+        result_code: int | None = None,
+    ) -> None:
+        """Queues a `fde-recovery-key` message to Landscape Server."""
 
-        return self.registry.broker.send_message(
-            message,
-            self._session_id,
-            True,
-        )
-
-    async def _send_fde_recovery_key(self, opid: int, runid: str) -> None:
-        """Queues a `fde-recovery-key` message to Landscape Server, containing the
-        intent to include the FDE recovery key.
-        """
         message = {
             "type": "fde-recovery-key",
-            "recovery-key": "",
-            "result": REQUIRES_RECOVERY_KEY,
             "operation-id": opid,
-            "run-id": runid,
+            "status": status,
+            "result-text": result_text,
         }
+        if result_code is not None:
+            message["result-code"] = result_code
 
         return await self.registry.broker.send_message(
             message,
@@ -102,19 +94,13 @@ class FDERecoveryKeyManager(ManagerPlugin):
             True,
         )
 
-    def _spawn_usg(
-        self,
-    ) -> Deferred:
-        """Execute the correct `usg` command for message in a non-blocking
-        subprocess.
+    def _spawn_process(self, args: list[str]) -> Deferred:
+        """Execute the command in a non-blocking subprocess.
 
-        :param action: The USG action to perform - one of "audit" or "fix".
-        :param profile: The USG benchmark profile to use.
-        :param tailoring_file: Path of the customization file to use.
+        :param args: List of arguments to pass to the process.
 
-        :returns: the deferred result of the usg process
+        :returns: the deferred result of the process
         """
-        args = [USG_EXECUTABLE_ABS]
 
         protocol = ProcessAccumulationProtocol(
             self.registry.reactor,
@@ -123,7 +109,7 @@ class FDERecoveryKeyManager(ManagerPlugin):
         )
         reactor.spawnProcess(
             protocol,
-            USG_EXECUTABLE_ABS,
+            FDE_EXECUTABLE,
             args=args,
         )
 
@@ -131,34 +117,41 @@ class FDERecoveryKeyManager(ManagerPlugin):
 
     async def _generate_recovery_key(
         self,
-    ) -> str:
-        """Runs usg, first downloading `tailoring_file` if it's provided.
-        Cleans up the tailoring file as well.
+    ) -> Tuple[str, str]:
+        """Generates the recovery key and a key-id used to update the recovery key keyslots.
 
-        :action: The USG action: `"audit"` or `"fix"`
-        :profile: The USG benchmark profile to use.
-        :tailoring_file: The optional USG tailoring XML file to download from
-            Landscape Server.
-
-        :raises ProcessFailedError: If the usg process exits with an error.
-        :raises HTTPException: If downloading `tailoring_file` fails.
+        :raises ProcessFailedError: If the FDE key process exits with an error.
+        :raises FDEKeyGenerationError: If the process does not return a valid response.
         """
 
         # POST /v2/system-volumes action=generate-recovery-key
-        generation_result = json.loads(
-            subprocess.run(
-                ["cat", "generate-key-output.txt"],
-                check=True,
-                timeout=1,
-            ).stdout
-        )
+        args = ["cat", "generate-key-output.txt"]
+        result = await self._spawn_process(args)
 
-        recovery_key = generation_result["recovery-key"]
-        key_id = generation_result["key-id"]
+        try:
+            generate_result = json.loads(result)
+            recovery_key = generate_result["recovery-key"]
+            key_id = generate_result["key-id"]
+        except (json.JSONDecodeError, KeyError) as e:
+            raise FDEKeyError(f"Failed to parse result: {e}")
 
-        # POST /v2/system-volumes action=add-recovery-key
-        addition_result = subprocess.run(
-            ["cat", "add-key-output.txt"], check=True, timeout=1
-        ).stdout
+        return recovery_key, key_id
 
-        return addition_result
+    async def _update_recovery_key(self, key_id: str, recovery_key_exists: bool) -> str:
+        """Generates the recovery key and a key-id used to update the recovery key keyslots.
+
+        :key_id: The id used to authorize the recovery key update.
+
+        :raises ProcessFailedError: If the call exits with an error.
+        """
+
+        # POST /v2/system-volumes action=? key-id=key_id
+        args = ["cat"]
+        if recovery_key_exists:
+            # action=replace-recovery-key
+            args.append("add-key-output.txt")
+        else:
+            # action=add-recovery-key
+            args.append("add-key-output.txt")
+
+        return await self._spawn_process(args)
