@@ -38,6 +38,21 @@ class UnknownPackageData(Exception):
 
 class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
     """Specialized configuration for the Landscape package-changer."""
+    def make_parser(self):
+        parser = super().make_parser()
+
+        parser.add_argument(
+            "--http-proxy",
+            metavar="URL",
+            help="The URL of the HTTP proxy, if one is needed.",
+        )
+        parser.add_argument(
+            "--https-proxy",
+            metavar="URL",
+            help="The URL of the HTTPS proxy, if one is needed.",
+        )
+
+        return parser
 
     @property
     def binaries_path(self):
@@ -87,6 +102,7 @@ class PackageChanger(PackageTaskHandler):
             config,
             landscape_reactor,
         )
+        self._configure_proxies()
         self._process_factory = process_factory
         if landscape_reactor is None:  # For testing purposes.
             from landscape.client.reactor import LandscapeReactor
@@ -95,6 +111,10 @@ class PackageChanger(PackageTaskHandler):
         else:
             self._landscape_reactor = landscape_reactor
         self.reboot_required_filename = reboot_required_filename
+
+    def _configure_proxies(self):
+        self._facade.http_proxy = self._config.get("http_proxy", None)
+        self._facade.https_proxy = self._config.get("https_proxy", None)
 
     def run(self):
         """

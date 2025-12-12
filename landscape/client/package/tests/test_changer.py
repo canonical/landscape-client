@@ -1612,3 +1612,27 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer._run_reboot(bus=self.dbus_mock)
         self.changer.bus.get_object.assert_called_once()
         self.changer.bus_object.Reboot.assert_called_once()
+
+    def test_http_proxy(self):
+        """
+        If http_proxy or https_proxy are configured, they
+        are set on the apt facade.
+        """
+        http_proxy = "localhost:8888"
+        https_proxy = "localhost:8889"
+        config = PackageChangerConfiguration()
+        config.data_path = self.makeDir()
+        config.load(
+            ["--http-proxy", http_proxy, "--https-proxy", https_proxy],
+        )
+        changer = PackageChanger(
+            self.store,
+            self.facade,
+            self.remote,
+            config,
+            process_factory=self.process_factory,
+            landscape_reactor=self.landscape_reactor,
+        )
+
+        self.assertEqual(http_proxy, changer._facade.http_proxy)
+        self.assertEqual(https_proxy, changer._facade.https_proxy)
