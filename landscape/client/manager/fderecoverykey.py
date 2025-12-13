@@ -1,24 +1,30 @@
-import glob
 import json
-import os
-import shutil
-from pathlib import Path
-import subprocess
 from typing import Any, Tuple
 
-from twisted.internet import reactor
 from twisted.internet.defer import Deferred, ensureDeferred
+from twisted.internet import reactor
+from twisted.internet.threads import deferToThread
 
-from landscape.client.broker.exchange import exchange_state
-from landscape.client.attachments import save_attachments
-from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
+from landscape.client.manager.plugin import (
+    FAILED,
+    SUCCEEDED,
+    ManagerPlugin,
+)
 from landscape.client.manager.scriptexecution import (
     ProcessAccumulationProtocol,
     ProcessFailedError,
 )
+from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
+from landscape.lib.uaclient import (
+    ProManagementError,
+    attach_pro,
+    detach_pro,
+)
 
 # FDE_EXECUTABLE = whatever the snapd api is
 FDE_EXECUTABLE = "cat"
+
+exchange_state = {}
 
 
 class FDEKeyError(Exception):
