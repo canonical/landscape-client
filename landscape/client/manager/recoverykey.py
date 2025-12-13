@@ -64,16 +64,16 @@ class FDERecoveryKeyManager(ManagerPlugin):
 
             exchange_state["recovery-key"] = recovery_key
 
-            await self._send_fde_recovery_key(opid, SUCCEEDED, result)
+            await self._send_fde_recovery_key(opid, True, result)
         except ProcessFailedError as e:
-            await self._send_fde_recovery_key(opid, FAILED, e.data, e.exit_code)
+            await self._send_fde_recovery_key(opid, False, e.data, e.exit_code)
         except Exception as e:
-            await self._send_fde_recovery_key(opid, FAILED, str(e))
+            await self._send_fde_recovery_key(opid, False, str(e))
 
     async def _send_fde_recovery_key(
         self,
         opid: int,
-        status: int,
+        successful: bool,
         result_text: str,
         result_code: int | None = None,
     ) -> None:
@@ -82,7 +82,7 @@ class FDERecoveryKeyManager(ManagerPlugin):
         message = {
             "type": "fde-recovery-key",
             "operation-id": opid,
-            "status": status,
+            "successful": successful,
             "result-text": result_text,
         }
         if result_code is not None:

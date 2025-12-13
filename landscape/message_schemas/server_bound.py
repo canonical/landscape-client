@@ -706,7 +706,7 @@ FDE_RECOVERY_KEY = Message(
         "recovery-key": Unicode(),
         "result-code": Int(),
         "result-text": Unicode(),
-        "status": Int(),
+        "successful": Bool(),
     },
     optional=["recovery-key", "result-code", "result-text"],
 )
