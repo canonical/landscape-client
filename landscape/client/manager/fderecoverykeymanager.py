@@ -155,9 +155,9 @@ class FDERecoveryKeyManager(ManagerPlugin):
         args = ["cat"]
         if recovery_key_exists:
             # action=replace-recovery-key
-            args.append("add-key-output.txt")
+            args.append("/home/ubuntu/landscape-client/add-key-output.txt")
         else:
             # action=add-recovery-key
-            args.append("add-key-output.txt")
+            args.append("/home/ubuntu/landscape-client/add-key-output.txt")
 
         return await self._spawn_process(args)
