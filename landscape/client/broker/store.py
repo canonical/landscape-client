@@ -270,10 +270,7 @@ class MessageStore:
         accepted_types = self.get_accepted_types()
         server_api = self.get_server_api()
         messages = []
-        import logging
-        logging.info(f"accepted types: {accepted_types}")
         for filename in self._walk_pending_messages():
-            logging.info(f"file name {filename} message")
             if max is not None and len(messages) >= max:
                 break
             data = read_binary_file(self._message_dir(filename))
@@ -284,8 +281,6 @@ class MessageStore:
                 logging.exception(e)
                 self._add_flags(filename, BROKEN)
             else:
-                logging.info(f" accepted types {accepted_types}")
-                logging.info(f"message type {message["type"]}")
                 if "type" not in message:
                     # Special case to decode keys for messages which were
                     # serialized by py27 prior to py3 upgrade, and having
@@ -491,8 +486,6 @@ class MessageStore:
 
     def _walk_pending_messages(self):
         """Walk the files which are definitely pending."""
-        import logging
-        logging.info("starting walk")
         pending_offset = self.get_pending_offset()
         for i, filename in enumerate(
             self._walk_messages(exclude=HELD + BROKEN),
@@ -504,8 +497,6 @@ class MessageStore:
         if exclude:
             exclude = set(exclude)
         message_dirs = self._get_sorted_filenames()
-        import logging
-        logging.info(f'message dirs {message_dirs}, {self._message_dir()}')
         for message_dir in message_dirs:
             for filename in self._get_sorted_filenames(message_dir):
                 flags = set(self._get_flags(filename))

@@ -233,9 +233,6 @@ class BrokerServer:
                 "Session ID must be set before attempting to send a message",
             )
 
-        import logging
-
-        logging.info(f"sending message, {message}")
         if self._message_store.is_valid_session_id(session_id):
             return self._exchanger.send(message, urgent=urgent)
 

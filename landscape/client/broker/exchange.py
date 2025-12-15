@@ -346,10 +346,7 @@ Diagram::
 import logging
 import time
 
-from twisted.internet import threads
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet import reactor
-from twisted.internet.threads import blockingCallFromThread
 
 from landscape import CLIENT_API, DEFAULT_SERVER_API, SERVER_API
 from landscape.lib.backoff import ExponentialBackoff
@@ -472,9 +469,6 @@ class MessageExchange:
 
         @param message: Same as in L{MessageStore.add}.
         """
-        import threading
-
-        logging.info(f"sending message in send: {message} {threading.get_ident()}")
         if self._message_is_obsolete(message):
             logging.info(
                 "Response message with operation-id "
@@ -489,9 +483,7 @@ class MessageExchange:
 
         if "timestamp" not in message:
             message["timestamp"] = int(self._reactor.time())
-        logging.info(f"adding message to store: {message}")
         message_id = self._message_store.add(message)
-        logging.info(f"added message to store: {message}")
         if urgent:
             self.schedule_exchange(urgent=True)
         return message_id
@@ -755,17 +747,10 @@ class MessageExchange:
         delivery, up to a maximum of C{max_messages} as passed to
         the L{__init__} method.
         """
-        import logging
-
-        logging.info("making payload")
         store = self._message_store
         accepted_types_digest = self._hash_types(store.get_accepted_types())
         messages = store.get_pending_messages(self._max_messages)
         total_messages = store.count_pending_messages()
-        for message in messages:
-            import logging
-
-            logging.info(f"payload: {message}")
         if messages:
             # Each message is tagged with the API that the client was
             # using at the time the message got added to the store.  The
@@ -781,39 +766,22 @@ class MessageExchange:
             if i is not None:
                 del messages[i:]
 
-            import logging
-
-            logging.info("checking messages for fde recovery key")
             for message in messages:
                 if message.get("type") == "fde-recovery-key" and message.get(
                     "successful"
                 ):
-                    logging.info("found fde recovery key message")
-                    import threading
-
-                    logging.info(f"{threading.get_ident()}")
-
-                    # d = Deferred()
-                    #
-                    def _read_recovery_key():
-                        if "recovery-key" in self._exchange_state:
-                            return self._exchange_state["recovery-key"]
-                        else:
-                            return ""
-
-                    recovery_key = _read_recovery_key()
-
-                    logging.info(f"recovery key {recovery_key}")
-                    if recovery_key:
+                    if "recovery-key" in self._exchange_state:
                         message["recovery-key"] = self._exchange_state["recovery-key"]
-                        logging.info("updated message with recovery key")
+                        logging.debug(
+                            "Updated FDE recovery key message with recovery key."
+                        )
                     else:
                         message["successful"] = False
                         message["result-text"] = (
                             "Could not send the recovery key. Please regenerate it."
                         )
-                        logging.info(
-                            "failed to update message" + str(self._exchange_state)
+                        logging.debug(
+                            "Could not find recovery key to update FDE recovery message."
                         )
         else:
             server_api = store.get_server_api()
