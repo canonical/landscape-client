@@ -100,7 +100,7 @@ import traceback
 import uuid
 
 from landscape import DEFAULT_SERVER_API
-from landscape.lib import bpickle, message
+from landscape.lib import bpickle
 from landscape.lib.fs import create_binary_file, read_binary_file
 from landscape.lib.versioning import is_version_higher, sort_versions
 
