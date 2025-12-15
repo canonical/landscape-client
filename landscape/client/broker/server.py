@@ -232,6 +232,10 @@ class BrokerServer:
             raise RuntimeError(
                 "Session ID must be set before attempting to send a message",
             )
+
+        import logging
+
+        logging.info(f"sending message, {message}")
         if self._message_store.is_valid_session_id(session_id):
             return self._exchanger.send(message, urgent=urgent)
 
@@ -418,3 +422,8 @@ support this feature.
         """
         self._exchanger.stop()
         self._pinger.stop()
+
+    @remote
+    def update_exchange_state(self, key: str, value: str):
+        """Update the exchanger state for in-memory-only data."""
+        self._exchanger.update_exchange_state(key, value)

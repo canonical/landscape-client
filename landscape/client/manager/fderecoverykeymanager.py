@@ -1,6 +1,7 @@
 import json
 from typing import Any, Tuple
 
+from twisted.internet import threads
 from twisted.internet.defer import Deferred, ensureDeferred
 from twisted.internet import reactor
 from twisted.internet.threads import deferToThread
@@ -23,8 +24,6 @@ from landscape.lib.uaclient import (
 
 # FDE_EXECUTABLE = whatever the snapd api is
 FDE_EXECUTABLE = "cat"
-
-exchange_state = {}
 
 
 class FDEKeyError(Exception):
@@ -58,6 +57,9 @@ class FDERecoveryKeyManager(ManagerPlugin):
         :message: A message of type "fde-recovery-key".
         """
         opid = message["operation-id"]
+        import logging
+
+        logging.info("starting handling")
 
         try:
             # check if the snap is installed and it is possible to use
@@ -66,14 +68,22 @@ class FDERecoveryKeyManager(ManagerPlugin):
             # check if the recovery key is already generated
             recovery_key_exists = False
             recovery_key, key_id = await self._generate_recovery_key()
+            logging.info("got recovery key")
             result = await self._update_recovery_key(key_id, recovery_key_exists)
+            logging.info("updated keyslots")
 
-            exchange_state["recovery-key"] = recovery_key
+            self.registry.broker.update_exchange_state("recovery-key", recovery_key)
+
+            import threading
+
+            logging.info(f"saving recovery key {threading.get_ident()}")
 
             await self._send_fde_recovery_key(opid, True, result)
         except ProcessFailedError as e:
+            logging.info("process failed, sending result")
             await self._send_fde_recovery_key(opid, False, e.data, e.exit_code)
         except Exception as e:
+            logging.info("process failed, sending result")
             await self._send_fde_recovery_key(opid, False, str(e))
 
     async def _send_fde_recovery_key(
