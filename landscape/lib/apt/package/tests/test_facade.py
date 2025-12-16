@@ -1320,6 +1320,36 @@ class AptFacadeTest(
             apt_pkg.config.value_list("DPkg::options"),
         )
 
+    def test_perform_changes_with_http_proxy(self):
+        """
+        perform_changes() should configure an http proxy for apt
+        when it is set on the apt facade.
+        """
+        http_proxy = "http://localhost:8888"
+        self.facade.http_proxy = http_proxy
+
+        self.facade.reload_channels()
+        self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual(
+            http_proxy,
+            apt_pkg.config.get("Acquire::http::Proxy"),
+        )
+
+    def test_perform_changes_with_https_proxy(self):
+        """
+        perform_changes() should configure an https proxy for apt
+        when it is set on the apt facade.
+        """
+        https_proxy = "https://localhost:8888"
+        self.facade.https_proxy = https_proxy
+
+        self.facade.reload_channels()
+        self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual(
+            https_proxy,
+            apt_pkg.config.get("Acquire::https::Proxy"),
+        )
+
     def test_perform_changes_with_path(self):
         """
         perform_changes() doesn't set C{PATH} if it's set already.
@@ -1361,7 +1391,7 @@ class AptFacadeTest(
             for line in self.facade.perform_changes().splitlines()
             if line.strip()
         ]
-        # Don't do a plain comparision of the output, since the output
+        # Don't do a plain comparison of the output, since the output
         # in Lucid is slightly different.
         self.assertEqual(4, len(output))
         self.assertTrue(output[0].startswith("Get:1 foo package"))

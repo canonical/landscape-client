@@ -135,6 +135,8 @@ class AptFacade:
     max_dpkg_retries = 12  # number of dpkg retries before we give up
     dpkg_retry_sleep = 5
     _dpkg_status = "/var/lib/dpkg/status"
+    http_proxy = None
+    https_proxy = None
 
     def __init__(
         self,
@@ -739,6 +741,12 @@ class AptFacade:
         self._set_frontend_noninteractive()
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
+
+        if self.http_proxy is not None:
+            apt_pkg.config.set("Acquire::http::Proxy", self.http_proxy)
+
+        if self.https_proxy is not None:
+            apt_pkg.config.set("Acquire::https::Proxy", self.https_proxy)
 
     def _perform_hold_changes(self):
         """

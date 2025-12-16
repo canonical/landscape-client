@@ -90,7 +90,7 @@ class PackageTaskHandler:
     os_release_filename = get_os_filename()
     package_store_class = PackageStore
 
-    # This file is touched after every succesful 'apt-get update' run if the
+    # This file is touched after every successful 'apt-get update' run if the
     # update-notifier-common package is installed.
     update_notifier_stamp = "/var/lib/apt/periodic/update-success-stamp"
 
