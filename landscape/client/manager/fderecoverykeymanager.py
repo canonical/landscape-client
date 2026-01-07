@@ -11,9 +11,10 @@ from landscape.client.manager.scriptexecution import (
     ProcessAccumulationProtocol,
     ProcessFailedError,
 )
+from landscape.lib.user import get_user_info
 
-# FDE_EXECUTABLE = whatever the snapd api is
-FDE_EXECUTABLE = "cat"
+CURL = "curl"
+SNAP_CURL_ARGS = [CURL, "--unix-socket", "/run/snapd.socket"]
 
 
 class FDEKeyError(Exception):
@@ -89,27 +90,6 @@ class FDERecoveryKeyManager(ManagerPlugin):
             True,
         )
 
-    def _spawn_process(self, args: list[str]) -> Deferred:
-        """Execute the command in a non-blocking subprocess.
-
-        :param args: List of arguments to pass to the process.
-
-        :returns: the deferred result of the process
-        """
-
-        protocol = ProcessAccumulationProtocol(
-            self.registry.reactor,
-            self.registry.config.script_output_limit,
-            self.truncation_indicator,
-        )
-        reactor.spawnProcess(
-            protocol,
-            FDE_EXECUTABLE,
-            args=args,
-        )
-
-        return protocol.result_deferred
-
     async def _generate_recovery_key(
         self,
     ) -> Tuple[str, str]:
@@ -120,8 +100,8 @@ class FDERecoveryKeyManager(ManagerPlugin):
         """
 
         # POST /v2/system-volumes action=generate-recovery-key
-        args = ["cat", "/home/ubuntu/landscape-client/generate-key-output.txt"]
-        result = await self._spawn_process(args)
+        body = {"action": "generate-recovery-key"}
+        result = await self._snap_post("v2/system-volumes", body)
 
         try:
             generate_result = json.loads(result)
@@ -141,12 +121,73 @@ class FDERecoveryKeyManager(ManagerPlugin):
         """
 
         # POST /v2/system-volumes action=? key-id=key_id
-        args = ["cat"]
+        body = {"key-id": key_id, "keyslots": [{"name": "landscape-recovery-key"}]}
         if recovery_key_exists:
             # action=replace-recovery-key
-            args.append("/home/ubuntu/landscape-client/add-key-output.txt")
+            body["action"] = "replace-recovery-key"
         else:
             # action=add-recovery-key
-            args.append("/home/ubuntu/landscape-client/add-key-output.txt")
+            body["action"] = "add-recovery-key"
 
-        return await self._spawn_process(args)
+        return await self._snap_post("v2/system-volumes", body)
+
+    def _spawn_process(self, command: str, args: list[str]) -> Deferred:
+        """Execute the command in a non-blocking subprocess.
+
+        :param args: List of arguments to pass to the process.
+
+        :returns: the deferred result of the process
+        """
+
+        protocol = ProcessAccumulationProtocol(
+            self.registry.reactor,
+            self.registry.config.script_output_limit,
+            self.truncation_indicator,
+        )
+        uid, gid, path = get_user_info("root")
+
+        reactor.spawnProcess(
+            protocol,
+            command,
+            args=args,
+            uid=uid,
+            gid=gid,
+            path=path,
+        )
+
+        return protocol.result_deferred
+
+    def _snap_get(self, endpoint: str) -> Deferred:
+        """Spawns a process to call GET on a snapd endpoint.
+
+        :param endpoint: Endpoint to get. Don't include a leading /
+
+        :returns: the deferred result of the process
+        """
+        url = f"http://localhost/{endpoint}"
+
+        args = SNAP_CURL_ARGS + ["-X", "GET", url]
+        return self._spawn_process(CURL, args)
+
+    def _snap_post(self, endpoint: str, body: dict) -> Deferred:
+        """Spawns a process to call POST on a snapd endpoint.
+
+        :param endpoint: Endpoint to get. Don't include a leading /
+        :param body: JSON encodable body to pass to the endpoint.
+
+        :returns: the deferred result of the process
+        """
+        url = f"http://localhost/{endpoint}"
+
+        contents = json.dumps(body)
+
+        args = SNAP_CURL_ARGS + [
+            "-X",
+            "POST",
+            url,
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            contents,
+        ]
+        return self._spawn_process(CURL, args)
