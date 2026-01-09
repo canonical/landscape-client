@@ -24,8 +24,6 @@ class FDEKeyError(Exception):
 class FDERecoveryKeyManager(ManagerPlugin):
     """Plugin that generates FDE recovery keys."""
 
-    truncation_indicator = "\n**OUTPUT TRUNCATED**"
-
     def register(self, client):
         super().register(client)
         client.register_message(
@@ -39,8 +37,9 @@ class FDERecoveryKeyManager(ManagerPlugin):
     async def handle_recovery_key_message(self, message: dict[str, Any]) -> None:
         """Generates an FDE recovery key, then responds to `message`.
 
-        If the recovery key is successfully generated, we will attempt to add the
-        recovery key to the message just before sending it to server.
+        If the recovery key is successfully generated, we will store it in the
+        exchanger in-memory data store and attempt to add the recovery key to
+        the message just before sending it to server.
 
         :message: A message of type "fde-recovery-key".
         """
@@ -49,11 +48,13 @@ class FDERecoveryKeyManager(ManagerPlugin):
         try:
             recovery_key_exists = self._recovery_key_exists()
             recovery_key, key_id = self._generate_recovery_key()
-            result = await self._update_recovery_key(key_id, recovery_key_exists)
+            await self._update_recovery_key(key_id, recovery_key_exists)
 
             self.registry.broker.update_exchange_state("recovery-key", recovery_key)
 
-            await self._send_fde_recovery_key(opid, True, result)
+            await self._send_fde_recovery_key(
+                opid, True, "Generated new FDE recovery key."
+            )
         except FDEKeyError as e:
             await self._send_fde_recovery_key(opid, False, str(e))
         except Exception as e:
@@ -116,11 +117,13 @@ class FDERecoveryKeyManager(ManagerPlugin):
 
         return recovery_key, key_id
 
-    async def _update_recovery_key(self, key_id: str, recovery_key_exists: bool) -> str:
-        """Generates the recovery key and a key-id used to update the
-        recovery key keyslots.
+    async def _update_recovery_key(
+        self, key_id: str, recovery_key_exists: bool
+    ) -> None:
+        """Uses the key-id to add or replace the recovery key keyslots.
 
         :key_id: The id used to authorize the recovery key update.
+        :recovery_key_exists: If True, replaces the recovery key instead of adding it.
 
         :raises FDEKeyError: If the snapd API returns an error.
         """
@@ -132,36 +135,27 @@ class FDERecoveryKeyManager(ManagerPlugin):
         except SnapdHttpException as e:
             raise FDEKeyError(f"Unable to update recovery key: {e}")
 
-        last_status = await self._poll_for_completion(result.change)
-
-        if last_status not in SUCCESS_STATUSES:
-            raise FDEKeyError(
-                f"Unable to verify the recovery key update: {last_status}"
-            )
-
-        return last_status
+        await self._poll_for_completion(result.change)
 
     def _poll_for_completion(self, change_id: str) -> Deferred:
+        """Waits for an async operation to be complete.
+
+        :change_id: The change id for the async operation.
+
+        :raises FDEKeyError: If the snapd API returns an error.
+        """
         interval = getattr(self.registry.config, "snapd_poll_interval", 15)
 
-        last_update = None
-
         def get_status():
-            """
-            Looping function that polls snapd for the status of
-            changes.
-            """
-
             logging.info("Polling snapd for status of pending recovery key update.")
 
             try:
-                last_update = snap_http.check_change(change_id).result
+                status = snap_http.check_change(change_id).result["status"]
             except SnapdHttpException as e:
                 logging.error(f"Error checking status of snap changes: {e}")
                 loop.stop()
                 raise FDEKeyError(str(e))
 
-            status = last_update["status"]
             if status in INCOMPLETE_STATUSES:
                 logging.info(
                     "Incomplete status for recovery key update, waiting...",
@@ -169,11 +163,8 @@ class FDERecoveryKeyManager(ManagerPlugin):
             else:
                 logging.info("Complete status for recovery key update")
                 loop.stop()
-                return
 
         loop = task.LoopingCall(get_status)
         loopDeferred = loop.start(interval)
 
-        return loopDeferred.addCallback(lambda _: last_update["status"]).addErrback(
-            lambda e: e
-        )
+        return loopDeferred
