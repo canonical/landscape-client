@@ -232,7 +232,6 @@ class BrokerServer:
             raise RuntimeError(
                 "Session ID must be set before attempting to send a message",
             )
-
         if self._message_store.is_valid_session_id(session_id):
             return self._exchanger.send(message, urgent=urgent)
 

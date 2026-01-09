@@ -1,9 +1,7 @@
-import json
 import logging
 from typing import Any, Tuple
 
 from twisted.internet import task
-from twisted.internet import reactor
 from twisted.internet.defer import Deferred, ensureDeferred
 
 from landscape.client import snap_http
@@ -41,8 +39,8 @@ class FDERecoveryKeyManager(ManagerPlugin):
     async def handle_recovery_key_message(self, message: dict[str, Any]) -> None:
         """Generates an FDE recovery key, then responds to `message`.
 
-        If the recovery key is successfully generated, we will attempt to add the recovery key
-        to the message just before sending it to server.
+        If the recovery key is successfully generated, we will attempt to add the
+        recovery key to the message just before sending it to server.
 
         :message: A message of type "fde-recovery-key".
         """
@@ -102,7 +100,8 @@ class FDERecoveryKeyManager(ManagerPlugin):
     def _generate_recovery_key(
         self,
     ) -> Tuple[str, str]:
-        """Generates the recovery key and a key-id used to update the recovery key keyslots.
+        """Generates the recovery key and a key-id used to update the
+        recovery key keyslots.
 
         :raises FDEKeyError: If the snapd API returns an error.
         """
@@ -118,7 +117,8 @@ class FDERecoveryKeyManager(ManagerPlugin):
         return recovery_key, key_id
 
     async def _update_recovery_key(self, key_id: str, recovery_key_exists: bool) -> str:
-        """Generates the recovery key and a key-id used to update the recovery key keyslots.
+        """Generates the recovery key and a key-id used to update the
+        recovery key keyslots.
 
         :key_id: The id used to authorize the recovery key update.
 
@@ -135,7 +135,9 @@ class FDERecoveryKeyManager(ManagerPlugin):
         last_status = await self._poll_for_completion(result.change)
 
         if last_status not in SUCCESS_STATUSES:
-            raise FDEKeyError("Could not verify recovery key update.")
+            raise FDEKeyError(
+                f"Unable to verify the recovery key update: {last_status}"
+            )
 
         return last_status
 
@@ -157,7 +159,7 @@ class FDERecoveryKeyManager(ManagerPlugin):
             except SnapdHttpException as e:
                 logging.error(f"Error checking status of snap changes: {e}")
                 loop.stop()
-                return
+                raise FDEKeyError(str(e))
 
             status = last_update["status"]
             if status in INCOMPLETE_STATUSES:
@@ -172,4 +174,6 @@ class FDERecoveryKeyManager(ManagerPlugin):
         loop = task.LoopingCall(get_status)
         loopDeferred = loop.start(interval)
 
-        return loopDeferred.addCallback(lambda _: last_update["status"])
+        return loopDeferred.addCallback(lambda _: last_update["status"]).addErrback(
+            lambda e: e
+        )

@@ -15,6 +15,7 @@ from landscape.lib.hashlib import md5
 from landscape.lib.persist import Persist
 from landscape.lib.schema import Int
 from landscape.message_schemas.message import Message
+from landscape.message_schemas.server_bound import FDE_RECOVERY_KEY
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -776,6 +777,93 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(payload.get("client-api"), CLIENT_API)
         self.assertEqual(payload.get("server-api"), b"1.1")
         self.assertEqual(self.transport.message_api, b"1.1")
+
+    def test_fde_recovery_key_payload_with_recovery_key(self):
+        """
+        When sending a recovery key message to server, the exchanger should
+        add the recovery key from the in-memory exchange state to the message.
+        """
+        self.exchanger.update_exchange_state("recovery-key", "mykey")
+        self.mstore.set_accepted_types([FDE_RECOVERY_KEY.type])
+        self.mstore.add_schema(FDE_RECOVERY_KEY)
+
+        self.mstore.add(
+            {"type": FDE_RECOVERY_KEY.type, "operation-id": 1, "successful": True}
+        )
+        self.exchanger.exchange()
+        payload = self.transport.payloads[0]
+        self.assertMessages(
+            payload["messages"],
+            [
+                {
+                    "type": "fde-recovery-key",
+                    "operation-id": 1,
+                    "successful": True,
+                    "recovery-key": "mykey",
+                    "api": b"3.2",
+                }
+            ],
+        )
+
+    def test_fde_recovery_key_payload_without_recovery_key(self):
+        """
+        When sending a recovery key message to server, if the in-memory exchange
+        state does not have the recovery key, the exchanger should update the message.
+        """
+        self.mstore.set_accepted_types([FDE_RECOVERY_KEY.type])
+        self.mstore.add_schema(FDE_RECOVERY_KEY)
+
+        self.mstore.add(
+            {"type": FDE_RECOVERY_KEY.type, "operation-id": 1, "successful": True}
+        )
+        self.exchanger.exchange()
+
+        payload = self.transport.payloads[0]
+        self.assertMessages(
+            payload["messages"],
+            [
+                {
+                    "type": "fde-recovery-key",
+                    "operation-id": 1,
+                    "successful": False,
+                    "result-text": "Landscape Client could not send the recovery key."
+                    "Please regenerate it.",
+                    "api": b"3.2",
+                }
+            ],
+        )
+
+    def test_fde_recovery_key_payload_with_failure(self):
+        """
+        When sending a recovery key message to server, if the attempt to update
+        the recovery key failed, the exchanger should not update the message.
+        """
+        self.mstore.set_accepted_types([FDE_RECOVERY_KEY.type])
+        self.mstore.add_schema(FDE_RECOVERY_KEY)
+
+        self.mstore.add(
+            {
+                "type": FDE_RECOVERY_KEY.type,
+                "operation-id": 1,
+                "successful": False,
+                "result-text": "Some Failure",
+            }
+        )
+        self.exchanger.exchange()
+
+        payload = self.transport.payloads[0]
+        self.assertMessages(
+            payload["messages"],
+            [
+                {
+                    "type": "fde-recovery-key",
+                    "operation-id": 1,
+                    "successful": False,
+                    "result-text": "Some Failure",
+                    "api": b"3.2",
+                }
+            ],
+        )
 
     def test_exchange_token(self):
         """

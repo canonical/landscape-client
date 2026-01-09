@@ -773,15 +773,17 @@ class MessageExchange:
                     if "recovery-key" in self._exchange_state:
                         message["recovery-key"] = self._exchange_state["recovery-key"]
                         logging.debug(
-                            "Updated FDE recovery key message with recovery key."
+                            "Added the recovery key to the FDE recovery key message."
                         )
                     else:
                         message["successful"] = False
                         message["result-text"] = (
-                            "Could not send the recovery key. Please regenerate it."
+                            "Landscape Client could not send the recovery key."
+                            "Please regenerate it."
                         )
                         logging.debug(
-                            "Could not find recovery key to update FDE recovery message."
+                            "Could not add the recovery key to the FDE recovery key"
+                            "message."
                         )
         else:
             server_api = store.get_server_api()

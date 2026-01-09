@@ -704,11 +704,10 @@ FDE_RECOVERY_KEY = Message(
     {
         "operation-id": Int(),
         "recovery-key": Unicode(),
-        "result-code": Int(),
         "result-text": Unicode(),
         "successful": Bool(),
     },
-    optional=["recovery-key", "result-code", "result-text"],
+    optional=["recovery-key", "result-text"],
 )
 
 message_schemas = (
