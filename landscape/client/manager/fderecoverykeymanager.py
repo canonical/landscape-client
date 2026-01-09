@@ -9,7 +9,7 @@ from landscape.client.manager.plugin import (
     ManagerPlugin,
 )
 from landscape.client.snap_http.http import SnapdHttpException
-from landscape.client.snap_http.types import INCOMPLETE_STATUSES, SUCCESS_STATUSES
+from landscape.client.snap_http.types import INCOMPLETE_STATUSES
 
 KEYSLOT_NAME = "landscape-recovery-key"
 

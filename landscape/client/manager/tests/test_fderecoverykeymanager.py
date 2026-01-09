@@ -1,6 +1,3 @@
-import os
-import tempfile
-import uuid
 from unittest import mock
 
 from twisted.internet.defer import ensureDeferred
@@ -8,15 +5,6 @@ from twisted.internet.defer import ensureDeferred
 from landscape.client.manager.fderecoverykeymanager import (
     FDEKeyError,
     FDERecoveryKeyManager,
-)
-from landscape.client.manager.plugin import FAILED, SUCCEEDED
-from landscape.client.manager.scriptexecution import ProcessFailedError
-from landscape.client.manager.usgmanager import (
-    TAILORING_FILE_DIR,
-    USG_EXECUTABLE,
-    USG_EXECUTABLE_ABS,
-    USG_NOT_FOUND,
-    UsgManager,
 )
 from landscape.client.snap_http.http import SnapdHttpException
 from landscape.client.snap_http.types import SnapdResponse
@@ -219,7 +207,8 @@ class FDERecoveryKeyManagerTests(LandscapeTest):
                             "type": "fde-recovery-key",
                             "operation-id": 1,
                             "successful": False,
-                            "result-text": "Unable to generate recovery key: some error",
+                            "result-text": "Unable to generate recovery key: "
+                            "some error",
                         },
                         self.plugin._session_id,
                         True,
