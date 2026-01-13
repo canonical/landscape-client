@@ -157,11 +157,11 @@ class FDERecoveryKeyManager(ManagerPlugin):
                 raise FDEKeyError(str(e))
 
             if status in INCOMPLETE_STATUSES:
-                logging.info(
+                logging.debug(
                     "Incomplete status for recovery key update, waiting...",
                 )
             else:
-                logging.info("Complete status for recovery key update")
+                logging.debug("Complete status for recovery key update")
                 loop.stop()
 
         loop = task.LoopingCall(get_status)

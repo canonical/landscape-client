@@ -56,12 +56,10 @@ class FDERecoveryKeyManagerTests(LandscapeTest):
 
     def test_add_recovery_key(self):
         """If no landscape recovery key exists, we generate a new one."""
-        deferred = ensureDeferred(
-            self.plugin.handle_recovery_key_message(
-                {
-                    "operation-id": 1,
-                },
-            ),
+        deferred = self.plugin._handle_recovery_key_message(
+            {
+                "operation-id": 1,
+            },
         )
 
         def check(_):
@@ -108,12 +106,10 @@ class FDERecoveryKeyManagerTests(LandscapeTest):
             ),
         ).start()
 
-        deferred = ensureDeferred(
-            self.plugin.handle_recovery_key_message(
-                {
-                    "operation-id": 1,
-                },
-            ),
+        deferred = self.plugin._handle_recovery_key_message(
+            {
+                "operation-id": 1,
+            },
         )
 
         def check(_):
@@ -132,6 +128,52 @@ class FDERecoveryKeyManagerTests(LandscapeTest):
                             "operation-id": 1,
                             "successful": True,
                             "result-text": "Generated new FDE recovery key.",
+                        },
+                        self.plugin._session_id,
+                        True,
+                    ),
+                ],
+            )
+
+        deferred.addCallback(check)
+        return deferred
+
+    def test_malformed_output(self):
+        """
+        If the snapd API does not produce an output that we expect,
+        sends an error message.
+        """
+        self.mock_get_keyslots = mock.patch(
+            MODULE + ".snap_http.get_keyslots",
+            return_value=SnapdResponse(
+                "sync",
+                200,
+                "OK",
+                {
+                    "by-container-role": {
+                        "keyslots": {"landscape-recovery-key": {"type": "recovery"}}
+                    }
+                },
+            ),
+        ).start()
+
+        deferred = self.plugin._handle_recovery_key_message(
+            {
+                "operation-id": 1,
+            },
+        )
+
+        def check(_):
+            self.mock_get_keyslots.assert_called_once_with()
+            self.assertEqual(
+                self.send_message.mock_calls,
+                [
+                    mock.call(
+                        {
+                            "type": "fde-recovery-key",
+                            "operation-id": 1,
+                            "successful": False,
+                            "result-text": mock.ANY,
                         },
                         self.plugin._session_id,
                         True,
@@ -264,10 +306,11 @@ class FDERecoveryKeyManagerTests(LandscapeTest):
         mock_check_changes = mock.patch(
             MODULE + ".snap_http.check_change",
             side_effect=[
-                SnapdResponse("sync", 200, "OK", {"status": "Not Done"}),
+                SnapdResponse("sync", 200, "OK", {"status": "Doing"}),
                 SnapdResponse("sync", 200, "OK", {"status": "Done"}),
             ],
         ).start()
+        self.plugin.registry.config.snapd_poll_interval = 0
 
         deferred = ensureDeferred(
             self.plugin._poll_for_completion("1"),
@@ -279,23 +322,18 @@ class FDERecoveryKeyManagerTests(LandscapeTest):
         deferred.addCallback(check)
         return deferred
 
-    def test_poll_for_completion_fails(self):
+    async def test_poll_for_completion_fails(self):
         """If the call fails, we raise an FDEKeyError."""
         mock_check_changes = mock.patch(
             MODULE + ".snap_http.check_change",
             side_effect=[
-                SnapdResponse("sync", 200, "OK", {"status": "Not Done"}),
+                SnapdResponse("sync", 200, "OK", {"status": "Doing"}),
                 SnapdHttpException("something went wrong"),
             ],
         ).start()
+        self.plugin.registry.config.snapd_poll_interval = 0
 
-        deferred = ensureDeferred(
-            self.plugin._poll_for_completion("1"),
-        )
+        with self.assertRaises(FDEKeyError), self.assertLogs(level="ERROR"):
+            await self.plugin._poll_for_completion("1")
 
-        def check(result):
-            mock_check_changes.assert_called_with("1")
-            self.assertEqual(result, FDEKeyError("something went wrong"))
-
-        deferred.addErrback(check)
-        return deferred
+        mock_check_changes.assert_called_with("1")
