@@ -84,7 +84,7 @@ class FDERecoveryKeyManager(ManagerPlugin):
     def _recovery_key_exists(
         self,
     ) -> bool:
-        """Checks if the Landscape recovery keyslot already exists.
+        """Checks if the Landscape recovery key keyslot already exists.
 
         :raises FDEKeyError: If the snapd API returns an error.
         """
@@ -102,7 +102,7 @@ class FDERecoveryKeyManager(ManagerPlugin):
         self,
     ) -> Tuple[str, str]:
         """Generates the recovery key and a key-id used to update the
-        recovery key keyslots.
+        Landscape recovery key keyslot.
 
         :raises FDEKeyError: If the snapd API returns an error.
         """
@@ -120,9 +120,9 @@ class FDERecoveryKeyManager(ManagerPlugin):
     async def _update_recovery_key(
         self, key_id: str, recovery_key_exists: bool
     ) -> None:
-        """Uses the key-id to add or replace the recovery key keyslots.
+        """Uses the key-id to add or replace the Landscape recovery key keyslot.
 
-        :key_id: The id used to authorize the recovery key update.
+        :key_id: The identifier for the generated recovery key.
         :recovery_key_exists: If True, replaces the recovery key instead of adding it.
 
         :raises FDEKeyError: If the snapd API returns an error.

@@ -767,12 +767,10 @@ class MessageExchange:
                 del messages[i:]
 
             for message in messages:
-                if message.get("type") == "fde-recovery-key" and message.get(
-                    "successful"
-                ):
+                if message.get("type") == "fde-recovery-key" and message["successful"]:
                     if "recovery-key" in self._exchange_state:
                         message["recovery-key"] = self._exchange_state["recovery-key"]
-                        logging.debug(
+                        logging.info(
                             "Added the recovery key to the FDE recovery key message."
                         )
                     else:
@@ -781,7 +779,7 @@ class MessageExchange:
                             "Landscape Client could not send the recovery key."
                             "Please regenerate it."
                         )
-                        logging.debug(
+                        logging.info(
                             "Could not add the recovery key to the FDE recovery key"
                             "message."
                         )
