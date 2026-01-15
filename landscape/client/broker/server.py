@@ -418,3 +418,8 @@ support this feature.
         """
         self._exchanger.stop()
         self._pinger.stop()
+
+    @remote
+    def update_exchange_state(self, key: str, value: str):
+        """Update the exchanger state for in-memory-only data."""
+        self._exchanger.update_exchange_state(key, value)

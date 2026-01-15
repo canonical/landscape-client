@@ -25,6 +25,7 @@ class ManagerConfigurationTest(LandscapeTest):
                 "LivePatch",
                 "UbuntuProRebootRequired",
                 "ProManagement",
+                "FDERecoveryKeyManager",
             ],
             ALL_PLUGINS,
         )

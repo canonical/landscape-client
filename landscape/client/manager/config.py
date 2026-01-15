@@ -17,6 +17,7 @@ ALL_PLUGINS = [
     "LivePatch",
     "UbuntuProRebootRequired",
     "ProManagement",
+    "FDERecoveryKeyManager",
 ]
 
 
