@@ -442,6 +442,17 @@ class BrokerServerTest(LandscapeTest):
         self.reactor.advance(self.config.exchange_interval)
         self.assertEqual([], page_getter.fetches)
 
+    def test_update_exchange_state(self):
+        """
+        The L{BrokerServer.update_exchange_state} updates the exchanger's
+        in-memory data store.
+        """
+        self.assertEqual(self.exchanger._exchange_state, {})
+        self.broker.update_exchange_state("new_key", "new_value")
+
+        self.reactor.advance(self.config.exchange_interval)
+        self.assertEqual(self.exchanger._exchange_state["new_key"], "new_value")
+
 
 class EventTest(LandscapeTest):
     helpers = [RemoteClientHelper]
