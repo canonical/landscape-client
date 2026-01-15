@@ -416,6 +416,7 @@ class MessageExchange:
         self._exchange_store = exchange_store
         self._stopped = False
         self._backoff_counter = ExponentialBackoff(300, 7200)  # 5 to 120 min
+        self._exchange_state = {}
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -764,6 +765,24 @@ class MessageExchange:
                 i = None
             if i is not None:
                 del messages[i:]
+
+            for message in messages:
+                if message.get("type") == "fde-recovery-key" and message["successful"]:
+                    if "recovery-key" in self._exchange_state:
+                        message["recovery-key"] = self._exchange_state["recovery-key"]
+                        logging.info(
+                            "Added the recovery key to the FDE recovery key message."
+                        )
+                    else:
+                        message["successful"] = False
+                        message["result-text"] = (
+                            "Landscape Client could not send the recovery key."
+                            "Please regenerate it."
+                        )
+                        logging.info(
+                            "Could not add the recovery key to the FDE recovery key"
+                            "message."
+                        )
         else:
             server_api = store.get_server_api()
         payload = {
@@ -929,6 +948,9 @@ class MessageExchange:
 
     def get_client_accepted_message_types(self):
         return sorted(self._client_accepted_types)
+
+    def update_exchange_state(self, key: str, value: str):
+        self._exchange_state[key] = value
 
 
 def get_accepted_types_diff(old_types, new_types):

@@ -63,6 +63,7 @@ __all__ = [
     "SNAPS",
     "SNAP_INFO",
     "UNLICENSED_MESSAGE_SCHEMAS",
+    "FDE_RECOVERY_KEY",
 ]
 
 
@@ -698,6 +699,17 @@ USG_AUDIT = Message(
     },
 )
 
+FDE_RECOVERY_KEY = Message(
+    "fde-recovery-key",
+    {
+        "operation-id": Int(),
+        "recovery-key": Unicode(),
+        "result-text": Unicode(),
+        "successful": Bool(),
+    },
+    optional=["recovery-key", "result-text"],
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     CLOUD_INIT,
@@ -705,6 +717,7 @@ message_schemas = (
     COMPUTER_INFO,
     DISTRIBUTION_INFO,
     HARDWARE_INFO,
+    FDE_RECOVERY_KEY,
     LOAD_AVERAGE,
     MEMORY_INFO,
     RESYNCHRONIZE,
