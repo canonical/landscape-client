@@ -1,11 +1,13 @@
 import json
 import os
 import tempfile
+import time
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Queue
 from unittest import mock
 
 from landscape.client.manager.ubuntuproinfo import (
+    TIMEOUT,
     UbuntuProInfo,
     get_ubuntu_pro_info,
     uastatus,
@@ -384,3 +386,15 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertIn("expires", ubuntu_pro_info)
         contract = ubuntu_pro_info["contract"]
         self.assertIn("landscape", contract["products"])
+
+    def test_pro_client_timeout(self):
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.uastatus",
+            new=lambda _: time.sleep(TIMEOUT + 1),
+        ):
+            ubuntu_pro_info = get_ubuntu_pro_info()
+
+        self.assertIn("errors", ubuntu_pro_info)
+        self.assertEqual(ubuntu_pro_info["result"], "failure")
+        error = ubuntu_pro_info["errors"][0]
+        self.assertIn("timed out", error["message"].lower())
