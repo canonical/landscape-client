@@ -955,6 +955,9 @@ def main(args, print=print):  # noqa: C901
         print_text(str(error), error=True)
         sys.exit(1)
 
+    if os.getuid() != 0:
+        sys.exit("landscape-config must be run as root.")
+
     init_app_logging(
         config.log_dir,
         config.log_level,
@@ -1000,9 +1003,6 @@ def main(args, print=print):  # noqa: C901
             sys.exit(0)
         else:
             sys.exit(EXIT_NOT_REGISTERED)
-
-    if os.getuid() != 0:
-        sys.exit("landscape-config must be run as root.")
 
     if config.init:
         bootstrap_tree(config)
