@@ -1,3 +1,10 @@
+landscape-client (26.02-0landscape0) jammy; urgency=medium
+
+  * feat: add FDE recovery key manager plugin
+  * fix: package changer uses proxy when configured
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Mon, 02 Feb 2026 15:57:02 +0000
+
 landscape-client (25.10.1-0landscape0) jammy; urgency=medium
 
   * refactor: Revert addition of --ssl-ca flag
