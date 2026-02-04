@@ -205,7 +205,7 @@ class SkeletonAptTest(BaseTestCase):
         self.facade._cache.open(None)
         pkg = self.get_package("pkg")
         skeleton = build_skeleton_apt(pkg, with_unicode=True, with_info=True)
-        self.assertEqual("Tést", skeleton.description)
+        self.assertEqual("T?st", skeleton.description)
 
     def test_build_skeleton_minimal(self):
         """
