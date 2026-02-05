@@ -611,7 +611,7 @@ class DaemonTestBase(LandscapeTest):
 
         # Do not restart daemons in tests unless explicitly asked to.
         # This helps prevent race conditions where a restarted daemon
-        # cannot find the executable that was removed as part of test cleanup. 
+        # cannot find the executable that was removed as part of test cleanup.
         if not allow_restart:
             daemon.allow_restart = mock.Mock()
             daemon.allow_restart.return_value = False
