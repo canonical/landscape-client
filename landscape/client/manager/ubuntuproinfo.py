@@ -1,6 +1,6 @@
 import json
-from datetime import datetime, timedelta, timezone
 import multiprocessing
+from datetime import datetime, timedelta, timezone
 
 from landscape.client import IS_CORE, IS_SNAP, UA_DATA_DIR
 from landscape.client.manager.plugin import DataWatcherManager

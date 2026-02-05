@@ -1,3 +1,9 @@
+landscape-client (26.02.1-0landscape0) jammy; urgency=medium
+
+  * fix: restore functionality and tests for python 3.14
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Thu, 05 Feb 2026 17:38:31 +0000
+
 landscape-client (26.02-0landscape0) jammy; urgency=medium
 
   * feat: add FDE recovery key manager plugin
