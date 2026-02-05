@@ -596,7 +596,7 @@ class DaemonTestBase(LandscapeTest):
             self.broker_service.stopService()
         super().tearDown()
 
-    def get_daemon(self, **kwargs):
+    def get_daemon(self, allow_restart=False, **kwargs):
         if "username" in kwargs:
 
             class MyDaemon(Daemon):
@@ -608,6 +608,14 @@ class DaemonTestBase(LandscapeTest):
             daemon = Daemon(self.connector, **kwargs)
         daemon.program = self.EXEC_NAME
         daemon.factor = 0.01
+
+        # Do not restart daemons in tests unless explicitly asked to.
+        # This helps prevent race conditions where a restarted daemon
+        # cannot find the executable that was removed as part of test cleanup. 
+        if not allow_restart:
+            daemon.allow_restart = mock.Mock()
+            daemon.allow_restart.return_value = False
+
         return daemon
 
 
@@ -897,7 +905,7 @@ time.sleep(999)
         reactor.callLater(0, mock_reactor_stop)
         reactor.callLater(1, result.callback, None)
 
-        daemon = self.get_daemon(reactor=reactor)
+        daemon = self.get_daemon(reactor=reactor, allow_restart=True)
         daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
@@ -957,7 +965,7 @@ time.sleep(999)
 
         # It's important to call start() shortly after the mocking above,
         # as we don't want anyone else getting the fake time.
-        daemon = self.get_daemon(reactor=reactor)
+        daemon = self.get_daemon(reactor=reactor, allow_restart=True)
         daemon.BIN_DIR = self.config.bindir
         daemon.start()
 

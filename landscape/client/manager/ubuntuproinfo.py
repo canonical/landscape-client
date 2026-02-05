@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta, timezone
-from multiprocessing import Process, Queue
+import multiprocessing
 
 from landscape.client import IS_CORE, IS_SNAP, UA_DATA_DIR
 from landscape.client.manager.plugin import DataWatcherManager
@@ -103,8 +103,9 @@ def get_ubuntu_pro_info() -> dict:
 
         # The status file has more information than `pro status`
     else:
-        q = Queue()
-        p = Process(target=uastatus, args=(q,))
+        ctx = multiprocessing.get_context("fork")
+        q = ctx.Queue()
+        p = ctx.Process(target=uastatus, args=(q,))
         p.start()
         p.join()
 

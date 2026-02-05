@@ -1,8 +1,8 @@
 import json
+import multiprocessing
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
-from multiprocessing import Queue
 from unittest import mock
 
 from landscape.client.manager.ubuntuproinfo import (
@@ -67,6 +67,8 @@ class UbuntuProInfoTest(LandscapeTest):
             ],
         }
 
+        self.ctx = multiprocessing.get_context("fork")
+
         self.addCleanup(mock.patch.stopall)
 
     def test_uastatus(self):
@@ -76,7 +78,7 @@ class UbuntuProInfoTest(LandscapeTest):
             "landscape.client.manager.ubuntuproinfo.get_pro_status"
         ) as mock_status:
             mock_status.return_value = self.mock_status_value
-            q = Queue()
+            q = self.ctx.Queue()
             uastatus(q)
             pro_info = q.get(timeout=30)
 
@@ -199,9 +201,11 @@ class UbuntuProInfoTest(LandscapeTest):
         self.manager.add(plugin)
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.Queue",
-        ) as mock_queue:
+            "landscape.client.manager.ubuntuproinfo.multiprocessing",
+        ) as mock_mp:
+            mock_queue = mock.Mock()
             mock_queue.return_value.get.side_effect = Exception
+            mock_mp.get_context.return_value.Queue = mock_queue
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
