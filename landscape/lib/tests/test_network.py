@@ -231,7 +231,7 @@ class NetworkInfoTest(BaseTestCase):
     @patch("landscape.lib.network.netifaces.interfaces")
     def test_skip_vlan(self, mock_interfaces):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
-        mock_interfaces.side_effect = lambda: (_interfaces() + ["eth0.1"])
+        mock_interfaces.side_effect = lambda: _interfaces() + ["eth0.1"]
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0.1", interfaces)
@@ -239,7 +239,7 @@ class NetworkInfoTest(BaseTestCase):
     @patch("landscape.lib.network.netifaces.interfaces")
     def test_skip_alias(self, mock_interfaces):
         """Interface aliases are not reported by L{get_active_device_info}."""
-        mock_interfaces.side_effect = lambda: (_interfaces() + ["eth0:foo"])
+        mock_interfaces.side_effect = lambda: _interfaces() + ["eth0:foo"]
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("eth0:foo", interfaces)
