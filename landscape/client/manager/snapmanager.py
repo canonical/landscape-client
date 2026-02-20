@@ -5,7 +5,8 @@ from pathlib import Path
 
 from twisted.internet import task
 
-from landscape.client import GROUP, USER, snap_http
+from landscape.client import snap_http
+from landscape.client.environment import GROUP, USER
 from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
 from landscape.client.snap_http import (
     INCOMPLETE_STATUSES,

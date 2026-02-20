@@ -3,8 +3,8 @@ from pathlib import Path
 
 from twisted.internet.defer import maybeDeferred
 
-from landscape.client import GROUP, USER
 from landscape.client.broker.client import BrokerClientPlugin
+from landscape.client.environment import GROUP, USER
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
 from landscape.lib.persist import Persist

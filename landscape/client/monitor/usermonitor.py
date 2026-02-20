@@ -3,8 +3,8 @@ import os.path
 
 from twisted.internet.defer import maybeDeferred
 
-from landscape.client import IS_CORE
 from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
+from landscape.client.environment import IS_CORE
 from landscape.client.monitor.plugin import MonitorPlugin
 from landscape.client.user.changes import UserChanges
 from landscape.client.user.provider import UserProvider

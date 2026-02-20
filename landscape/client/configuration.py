@@ -18,10 +18,10 @@ import textwrap
 from argparse import SUPPRESS
 from urllib.parse import urlparse
 
-from landscape.client import GROUP, IS_SNAP, USER
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.service import BrokerService
+from landscape.client.environment import GROUP, IS_SNAP, USER
 from landscape.client.registration import (
     ClientRegistrationInfo,
     RegistrationException,
