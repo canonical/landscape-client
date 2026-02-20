@@ -1,7 +1,7 @@
 import logging
 
-from landscape.client import IS_CORE
 from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
+from landscape.client.environment import IS_CORE
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector
 from landscape.client.user.management import SnapdUserManagement, UserManagement

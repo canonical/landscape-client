@@ -8,7 +8,7 @@ from landscape.client.manager.plugin import (
     ManagerPlugin,
 )
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-from landscape.lib.uaclient import (
+from landscape.client.uaclient import (
     ProManagementError,
     attach_pro,
     detach_pro,

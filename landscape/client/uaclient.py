@@ -7,7 +7,7 @@ safety checks to ensure we are allowed to use the uaclient methods.
 
 import logging
 
-from landscape.client import IS_CORE, IS_SNAP
+from landscape.client.environment import IS_CORE, IS_SNAP
 
 try:
     if IS_CORE or IS_SNAP:  # pragma: no cover

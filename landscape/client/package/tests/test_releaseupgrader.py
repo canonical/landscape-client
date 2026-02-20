@@ -7,7 +7,7 @@ from unittest import mock
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail, succeed
 
-from landscape.client import GROUP, USER
+from landscape.client.environment import GROUP, USER
 from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.package.releaseupgrader import (
     ReleaseUpgrader,

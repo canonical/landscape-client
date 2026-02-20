@@ -11,7 +11,7 @@ from twisted.internet.utils import getProcessOutput
 from twisted.python.fakepwd import UserDatabase
 
 import landscape.client.watchdog
-from landscape.client import USER
+from landscape.client.environment import USER
 from landscape.client.amp import ComponentConnector
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.reactor import LandscapeReactor

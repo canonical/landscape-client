@@ -8,7 +8,7 @@ import tarfile
 
 from twisted.internet.defer import succeed
 
-from landscape.client import GROUP, USER
+from landscape.client.environment import GROUP, USER
 from landscape.client.manager.manager import FAILED, SUCCEEDED
 from landscape.client.package.reporter import find_reporter_command
 from landscape.client.package.taskhandler import (

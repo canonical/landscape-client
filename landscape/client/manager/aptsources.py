@@ -8,7 +8,7 @@ import uuid
 
 from twisted.internet.defer import succeed
 
-from landscape.client import GROUP, USER
+from landscape.client.environment import GROUP, USER
 from landscape.client.manager.plugin import ManagerPlugin
 from landscape.client.package.reporter import find_reporter_command
 from landscape.constants import FALSE_VALUES

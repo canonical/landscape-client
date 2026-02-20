@@ -9,7 +9,7 @@ import os
 
 import pytest
 
-from landscape.lib import uaclient
+from landscape.client import uaclient
 
 
 @pytest.mark.integration
