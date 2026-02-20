@@ -1,13 +1,9 @@
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
 import glob
 import logging
 import os
 import re
 import time
+import urllib.parse as urlparse
 from argparse import ArgumentTypeError
 
 import apt_pkg
