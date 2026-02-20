@@ -15,7 +15,7 @@ _DEPRECATION_MSG = (
 )
 
 
-def __getattr__(name):
+def __getattr__(name):  # pragma: no cover
     if name in __all__:
         import warnings
 
@@ -27,5 +27,5 @@ def __getattr__(name):
     raise AttributeError(f"module 'landscape.client' has no attribute '{name}'")
 
 
-def __dir__():
+def __dir__():  # pragma: no cover
     return __all__
