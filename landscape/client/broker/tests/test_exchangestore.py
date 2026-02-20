@@ -1,9 +1,5 @@
+import sqlite3
 import time
-
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
 
 from landscape.client.broker.exchangestore import ExchangeStore
 from landscape.client.tests.helpers import LandscapeTest
