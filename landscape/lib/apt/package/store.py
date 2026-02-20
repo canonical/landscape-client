@@ -1,11 +1,7 @@
 """Provide access to the persistent data used by L{PackageTaskHandler}s."""
 
+import sqlite3
 import time
-
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
 
 from landscape.lib import bpickle
 from landscape.lib.store import with_cursor

@@ -1,11 +1,7 @@
 """Functions used by all sqlite-backed stores."""
 
+import sqlite3
 from functools import wraps
-
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
 
 
 def with_cursor(method):
