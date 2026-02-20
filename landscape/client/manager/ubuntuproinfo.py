@@ -2,9 +2,9 @@ import json
 import multiprocessing
 from datetime import datetime, timedelta, timezone
 
-from landscape.client import IS_CORE, IS_SNAP, UA_DATA_DIR
+from landscape.client.environment import IS_CORE, IS_SNAP, UA_DATA_DIR
 from landscape.client.manager.plugin import DataWatcherManager
-from landscape.lib.uaclient import get_pro_status
+from landscape.client.uaclient import get_pro_status
 
 
 class UbuntuProInfo(DataWatcherManager):

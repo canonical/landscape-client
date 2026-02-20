@@ -6,7 +6,7 @@ from unittest.mock import Mock, call, patch
 
 from twisted.internet.defer import Deferred
 
-from landscape.client import GROUP, USER
+from landscape.client.environment import GROUP, USER
 from landscape.client.manager.manager import FAILED
 from landscape.client.package.changer import (
     DEPENDENCY_ERROR_RESULT,

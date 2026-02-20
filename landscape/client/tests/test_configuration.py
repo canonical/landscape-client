@@ -8,7 +8,6 @@ from unittest import mock
 
 from twisted.internet.defer import succeed
 
-from landscape.client import GROUP, USER
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.client.configuration import (
@@ -34,6 +33,7 @@ from landscape.client.configuration import (
     show_help,
     store_public_key_data,
 )
+from landscape.client.environment import GROUP, USER
 from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
