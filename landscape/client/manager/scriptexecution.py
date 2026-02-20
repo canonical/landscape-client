@@ -14,8 +14,8 @@ from twisted.internet.defer import Deferred, ensureDeferred, fail, succeed
 from twisted.internet.error import ProcessDone
 from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client import IS_SNAP
 from landscape.client.attachments import save_attachments
+from landscape.client.environment import IS_SNAP
 from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fetch import HTTPCodeError

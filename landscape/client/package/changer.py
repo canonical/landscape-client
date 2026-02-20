@@ -9,7 +9,7 @@ import dbus
 from twisted.internet import reactor
 from twisted.internet.defer import maybeDeferred, succeed
 
-from landscape.client import GROUP, USER
+from landscape.client.environment import GROUP, USER
 from landscape.client.manager.manager import FAILED
 from landscape.client.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
 from landscape.client.package.reporter import find_reporter_command

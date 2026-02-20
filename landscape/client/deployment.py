@@ -11,7 +11,8 @@ from logging import debug, info
 from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
-from landscape.client import DEFAULT_CONFIG, GROUP, USER, snap_http
+from landscape.client import snap_http
+from landscape.client.environment import DEFAULT_CONFIG, GROUP, USER
 from landscape.client.snap_utils import get_snap_info
 from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging

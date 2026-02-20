@@ -1,21 +1,31 @@
-import os
+__all__ = [
+    "IS_CORE",
+    "IS_SNAP",
+    "USER",
+    "GROUP",
+    "UA_DATA_DIR",
+    "DEFAULT_CONFIG",
+]
 
-IS_SNAP = os.getenv("LANDSCAPE_CLIENT_SNAP")
-IS_CORE = os.getenv("SNAP_SAVE_DATA") is not None
 
-USER = os.getenv("LANDSCAPE_CLIENT_USER")
-if USER and os.getenv("LANDSCAPE_CLIENT_BUILDING"):
-    GROUP = USER
-else:
-    USER = "root" if IS_SNAP else "landscape"
-    GROUP = "root" if IS_SNAP else "landscape"
-
-DEFAULT_CONFIG = (
-    "/etc/landscape-client.conf" if IS_SNAP else "/etc/landscape/client.conf"
+_DEPRECATION_MSG = (
+    "Direct import from 'landscape.client' is deprecated "
+    "and will be removed in landscape-client 28.0X. "
+    "Import from 'landscape.client.environment' instead."
 )
 
-UA_DATA_DIR = (
-    "/var/lib/snapd/hostfs/var/lib/ubuntu-advantage"
-    if IS_SNAP
-    else "/var/lib/ubuntu-advantage"
-)
+
+def __getattr__(name):  # pragma: no cover
+    if name in __all__:
+        import warnings
+
+        import landscape.client.environment as env
+
+        warnings.warn(_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
+        return getattr(env, name)
+
+    raise AttributeError(f"module 'landscape.client' has no attribute '{name}'")
+
+
+def __dir__():  # pragma: no cover
+    return __all__

@@ -2,7 +2,7 @@ import logging
 import os
 from configparser import ConfigParser, NoOptionError
 
-from landscape.client import GROUP, USER
+from landscape.client.environment import GROUP, USER
 from landscape.client.monitor.plugin import DataWatcher
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist

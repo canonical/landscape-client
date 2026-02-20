@@ -21,13 +21,13 @@ from twisted.internet.defer import Deferred, succeed
 from twisted.internet.error import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client import GROUP, IS_SNAP, USER
 from landscape.client.broker.amp import (
     RemoteBrokerConnector,
     RemoteManagerConnector,
     RemoteMonitorConnector,
 )
 from landscape.client.deployment import Configuration, convert_arg_to_bool, init_logging
+from landscape.client.environment import GROUP, IS_SNAP, USER
 from landscape.client.reactor import LandscapeReactor
 from landscape.lib.bootstrap import BootstrapDirectory, BootstrapFile, BootstrapList
 from landscape.lib.config import get_bindir
