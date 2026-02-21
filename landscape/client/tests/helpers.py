@@ -280,17 +280,17 @@ class FakePersist:
         self.called = True
 
 
-script = """\
+@contextmanager
+def ready_subprocess(test_case, basename):  # pragma: no cover
+
+    script = """\
 #!/usr/bin/python3
 import sys
 sys.stdout.write("R\\n")
 sys.stdout.flush()
 sys.stdin.read(1)
-"""
+    """
 
-
-@contextmanager
-def ready_subprocess(test_case, basename):  # pragma: no cover
     app = test_case.makeFile(script, basename=basename)
     os.chmod(app, 0o755)
     call = subprocess.Popen(
