@@ -1,7 +1,5 @@
 import errno
 import os
-import subprocess
-import textwrap
 from unittest import mock
 
 from twisted.internet.error import CannotListenError, ConnectError
@@ -10,7 +8,7 @@ from twisted.internet.task import Clock
 from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
 from landscape.client.deployment import Configuration
 from landscape.client.reactor import LandscapeReactor
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import LandscapeTest, ready_subprocess
 from landscape.lib.amp import MethodCallError
 from landscape.lib.testing import FakeReactor
 
@@ -220,31 +218,19 @@ class ComponentConnectorTest(LandscapeTest):
         """Publisher raises lock error if a valid lock is held."""
         sock_path = os.path.join(self.config.sockets_path, "test.sock")
         lock_path = f"{sock_path}.lock"
-        # fake a landscape process
-        app = self.makeFile(
-            textwrap.dedent(
-                """\
-            #!/usr/bin/python3
-            import time
-            time.sleep(10)
-        """,
-            ),
-            basename="landscape-manager",
-        )
-        os.chmod(app, 0o755)
-        call = subprocess.Popen([app])
-        self.addCleanup(call.terminate)
-        os.symlink(str(call.pid), lock_path)
 
         component = MockComponent()
         # Test the actual Unix reactor implementation. Fakes won't do.
         reactor = LandscapeReactor()
         publisher = ComponentPublisher(component, reactor, self.config)
 
-        with self.assertRaises(CannotListenError):
-            publisher.start()
+        with ready_subprocess(self, "landscape-manager") as call:
+            os.symlink(str(call.pid), lock_path)
 
-        # ensure lock was not replaced
-        self.assertEqual(str(call.pid), os.readlink(lock_path))
-        mock_kill.assert_called_with(call.pid, 0)
-        reactor._cleanup()
+            with self.assertRaises(CannotListenError):
+                publisher.start()
+
+            # ensure lock was not replaced
+            self.assertEqual(str(call.pid), os.readlink(lock_path))
+            mock_kill.assert_called_with(call.pid, 0)
+            reactor._cleanup()
