@@ -290,7 +290,7 @@ sys.stdin.read(1)
 
 
 @contextmanager
-def ready_subprocess(test_case, basename):
+def ready_subprocess(test_case, basename): # pragma: no cover
     app = test_case.makeFile(script, basename=basename)
     os.chmod(app, 0o755)
     call = subprocess.Popen(
