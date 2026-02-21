@@ -26,7 +26,6 @@ import sys
 
 __all__ = [
     "Persist",
-    "PickleBackend",
     "BPickleBackend",
     "path_string_to_tuple",
     "path_tuple_to_string",
@@ -64,7 +63,15 @@ class Persist:
 
     """
 
-    def __init__(self, backend=None, filename=None, user=None, group=None):
+    def __init__(
+        self,
+        backend=None,
+        filename=None,
+        user=None,
+        group=None,
+        file_mode=None,
+        directory_mode=None,
+    ):
         """
         @param backend: The backend to use. If none is specified,
             L{BPickleBackend} will be used.
@@ -87,6 +94,8 @@ class Persist:
         self.filename = filename
         if filename is not None and os.path.exists(filename):
             self.load(filename)
+        self._file_mode = file_mode
+        self._directory_mode = directory_mode
 
     def _get_readonly(self):
         return self._readonly
@@ -163,7 +172,9 @@ class Persist:
         dirname = os.path.dirname(filepath)
         if dirname and not os.path.isdir(dirname):
             os.makedirs(dirname)
-        self._backend.save(filepath, self._hardmap)
+        if dirname and (mode := self._directory_mode) is not None:
+            os.chmod(dirname, mode=mode)
+        self._backend.save(filepath, self._hardmap, mode=self._file_mode)
 
         if self._user is not None or self._group is not None:
             try:
@@ -171,7 +182,7 @@ class Persist:
                     shutil.chown(dirname, user=self._user, group=self._group)
                 shutil.chown(filepath, user=self._user, group=self._group)
             except PermissionError:
-                # A perist directory has been selected that can't be owned by
+                # A persist directory has been selected that can't be owned by
                 # landscape:landscape. This often happens in /tmp for tests,
                 # but there could be other reasons. Just leave it be.
                 pass
@@ -499,7 +510,7 @@ class Backend:
     object is of type C{dict}, then the child keys will be the keys of the
     dictionary, otherwise if the node object is of type C{list} or C{tuple}
     the child element keys are the indexes of the available items, or the value
-    of items theselves.
+    of items themselves.
 
     The root node object is always a C{dict}.
 
@@ -613,24 +624,6 @@ class Backend:
         return NotImplemented
 
 
-class PickleBackend(Backend):
-    def __init__(self):
-        import pickle
-
-        self._pickle = pickle
-
-    def new(self):
-        return {}
-
-    def load(self, filepath):
-        with open(filepath, "rb") as fd:
-            return self._pickle.load(fd)
-
-    def save(self, filepath, map):
-        with open(filepath, "wb") as fd:
-            self._pickle.dump(map, fd, 2)
-
-
 class BPickleBackend(Backend):
     def __init__(self):
         from landscape.lib import bpickle
@@ -644,6 +637,8 @@ class BPickleBackend(Backend):
         with open(filepath, "rb") as fd:
             return self._bpickle.loads(fd.read())
 
-    def save(self, filepath, map):
+    def save(self, filepath, map, mode=None):
         with open(filepath, "wb") as fd:
             fd.write(self._bpickle.dumps(map))
+        if mode is not None:
+            os.chmod(filepath, mode=mode)

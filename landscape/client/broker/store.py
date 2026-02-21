@@ -73,7 +73,7 @@ Ouch! This means that something bad happened and our peer has somehow lost not
 only the two messages that we sent in the last batch, but also the last three
 messages of the former batch :(
 
-Luckly we've kept enough old messages around that we can try to send them
+Luckily we've kept enough old messages around that we can try to send them
 again, we update our sequence and pending offset and the store looks like::
 
     sequence: 6
@@ -100,6 +100,7 @@ import traceback
 import uuid
 
 from landscape import DEFAULT_SERVER_API
+from landscape.client.environment import DIRECTORY_MODE, FILE_MODE
 from landscape.lib import bpickle
 from landscape.lib.fs import create_binary_file, read_binary_file
 from landscape.lib.versioning import is_version_higher, sort_versions
@@ -151,6 +152,7 @@ class MessageStore:
         message_dir = self._message_dir()
         if not os.path.isdir(message_dir):
             os.makedirs(message_dir)
+        os.chmod(message_dir, mode=DIRECTORY_MODE)
 
     def commit(self):
         """Persist metadata to disk."""
@@ -447,7 +449,7 @@ class MessageStore:
 
         filename = self._get_next_message_filename()
         temp_path = filename + ".tmp"
-        create_binary_file(temp_path, message_data)
+        create_binary_file(temp_path, message_data, mode=FILE_MODE)
         os.rename(temp_path, filename)
 
         if not self.accepts(message["type"]):
@@ -468,7 +470,7 @@ class MessageStore:
         if message_dirs:
             newest_dir = message_dirs[-1]
         else:
-            os.makedirs(self._message_dir("0"))
+            os.makedirs(self._message_dir("0"), mode=DIRECTORY_MODE)
             newest_dir = "0"
 
         message_filenames = self._get_sorted_filenames(newest_dir)
@@ -479,7 +481,7 @@ class MessageStore:
             filename = self._message_dir(newest_dir, filename)
         else:
             newest_dir = self._message_dir(str(int(newest_dir) + 1))
-            os.makedirs(newest_dir)
+            os.makedirs(newest_dir, mode=DIRECTORY_MODE)
             filename = os.path.join(newest_dir, "0")
 
         return filename

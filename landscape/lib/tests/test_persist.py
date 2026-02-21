@@ -7,7 +7,6 @@ from landscape.lib.persist import (
     Persist,
     PersistError,
     PersistReadOnlyError,
-    PickleBackend,
     RootedPersist,
     path_string_to_tuple,
     path_tuple_to_string,
@@ -457,11 +456,6 @@ class SaveLoadPersistTest(testing.FSTestCase, BasePersistTest):
         persist.load(filename)
 
         self.assertEqual(persist.get("a"), 1)
-
-
-class PicklePersistTest(GeneralPersistTest, SaveLoadPersistTest):
-    def build_persist(self, *args, **kwargs):
-        return Persist(PickleBackend(), *args, **kwargs)
 
 
 class RootedPersistTest(GeneralPersistTest):

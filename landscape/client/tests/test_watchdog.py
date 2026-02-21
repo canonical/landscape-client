@@ -1396,14 +1396,14 @@ class WatchDogServiceTest(LandscapeTest):
         def mode(*suffix):
             return stat.S_IMODE(os.stat(path(*suffix)).st_mode)
 
-        self.assertEqual(mode(), 0o755)
-        self.assertEqual(mode("messages"), 0o755)
-        self.assertEqual(mode("package"), 0o755)
-        self.assertEqual(mode("package/hash-id"), 0o755)
-        self.assertEqual(mode("package/binaries"), 0o755)
+        self.assertEqual(mode(), 0o750)
+        self.assertEqual(mode("messages"), 0o750)
+        self.assertEqual(mode("package"), 0o750)
+        self.assertEqual(mode("package/hash-id"), 0o750)
+        self.assertEqual(mode("package/binaries"), 0o750)
         self.assertEqual(mode("sockets"), 0o750)
-        self.assertEqual(mode("custom-graph-scripts"), 0o755)
-        self.assertEqual(mode("package/database"), 0o644)
+        self.assertEqual(mode("custom-graph-scripts"), 0o750)
+        self.assertEqual(mode("package/database"), 0o640)
 
 
 STUB_BROKER = """\

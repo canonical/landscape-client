@@ -1,3 +1,6 @@
+import os
+from unittest import mock
+
 from twisted.internet.defer import Deferred
 
 from landscape.client.manager.plugin import (
@@ -142,6 +145,8 @@ class StubDataWatchingPlugin(DataWatcherManager):
 class DataWatcherManagerTest(LandscapeTest):
     helpers = [ManagerHelper]
 
+    @mock.patch("landscape.client.manager.plugin.FILE_MODE", 0o666)
+    @mock.patch("landscape.client.manager.plugin.DIRECTORY_MODE", 0o700)
     def setUp(self):
         LandscapeTest.setUp(self)
         self.plugin = StubDataWatchingPlugin("hello world")
@@ -159,3 +164,9 @@ class DataWatcherManagerTest(LandscapeTest):
             "hello world",
         )
         self.assertEqual(self.plugin.get_new_data(), None)
+
+    def test_persist_has_file_and_directory_permissions(self):
+        self.plugin._persist.save()
+        self.assertEqual(0o666, os.stat(self.plugin._persist_filename).st_mode & 0o777)
+        directory_name = os.path.dirname(self.plugin._persist_filename)
+        self.assertEqual(0o700, os.stat(directory_name).st_mode & 0o777)

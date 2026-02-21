@@ -116,7 +116,6 @@ def get_ubuntu_pro_info() -> dict:
             return _ubuntu_pro_error_message(
                 "Issue processing pro info.", "tools-error"
             )
-
     return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
 
