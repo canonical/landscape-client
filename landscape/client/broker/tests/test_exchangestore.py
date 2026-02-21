@@ -1,5 +1,7 @@
+import os
 import sqlite3
 import time
+from unittest import mock
 
 from landscape.client.broker.exchangestore import ExchangeStore
 from landscape.client.tests.helpers import LandscapeTest
@@ -86,3 +88,27 @@ class ExchangeStoreTest(LandscapeTest):
         self.assertEqual([456], self.store2.all_operation_ids())
         self.store2.add_message_context(567, "def", "change-packages")
         self.assertEqual([456, 567], self.store1.all_operation_ids())
+
+    @mock.patch("landscape.client.broker.exchangestore.FILE_MODE", 0o666)
+    def test_initialization_creates_store_with_file_mode(self):
+        new_file = self.makeFile()
+        with self.assertRaises(FileNotFoundError):
+            os.stat(new_file)
+
+        ExchangeStore(new_file)
+
+        self.assertEqual(0o666, os.stat(new_file).st_mode & 0o777)
+
+    def test_initialization_alters_existing_file_mode(self):
+        self.store1.add_message_context(234, "bcd", "change-packages")
+        os.stat(self.filename)  # exists
+        old_file_mode = os.stat(self.filename).st_mode & 0o777
+        new_file_mode = 0o666
+        self.assertNotEqual(new_file_mode, old_file_mode)
+
+        with mock.patch(
+            "landscape.client.broker.exchangestore.FILE_MODE", new_file_mode
+        ):
+            ExchangeStore(self.filename)
+
+        self.assertEqual(new_file_mode, os.stat(self.filename).st_mode & 0o777)

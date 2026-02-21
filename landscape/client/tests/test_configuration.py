@@ -33,7 +33,7 @@ from landscape.client.configuration import (
     show_help,
     store_public_key_data,
 )
-from landscape.client.environment import GROUP, USER
+from landscape.client.environment import DIRECTORY_MODE, FILE_MODE, GROUP, USER
 from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
@@ -582,8 +582,8 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
 
         config = self.get_config([], data_path=client_path)
         bootstrap_tree(config)
-        mock_chmod.assert_any_call(client_path, 0o755)
-        mock_chmod.assert_called_with(annotations_path, 0o755)
+        mock_chmod.assert_any_call(client_path, 0o750)
+        mock_chmod.assert_called_with(annotations_path, 0o750)
         self.assertTrue(os.path.isdir(client_path))
         self.assertTrue(os.path.isdir(annotations_path))
 
@@ -2544,7 +2544,7 @@ class SetSecureIdTest(LandscapeTest):
 
     @mock.patch("landscape.client.configuration.Persist")
     @mock.patch("landscape.client.configuration.Identity")
-    def test_function(self, Identity, Persist):
+    def test_set_secure_id(self, Identity, Persist):
         config = mock.Mock(data_path="/tmp/landscape")
 
         set_secure_id(config, "fancysecureid")
@@ -2553,6 +2553,8 @@ class SetSecureIdTest(LandscapeTest):
             filename="/tmp/landscape/broker.bpickle",
             user=USER,
             group=GROUP,
+            file_mode=FILE_MODE,
+            directory_mode=DIRECTORY_MODE,
         )
         Persist().save.assert_called_once_with()
         Identity.assert_called_once_with(config, Persist())
@@ -2562,7 +2564,7 @@ class SetSecureIdTest(LandscapeTest):
 class GetSecureIdTest(LandscapeTest):
     @mock.patch("landscape.client.configuration.Persist")
     @mock.patch("landscape.client.configuration.Identity")
-    def test_function(self, Identity, Persist):
+    def test_get_secure_id(self, Identity, Persist):
         config = mock.Mock(data_path="/tmp/landscape")
 
         set_secure_id(config, "fancysecureid")

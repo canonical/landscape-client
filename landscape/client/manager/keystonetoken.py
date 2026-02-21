@@ -2,7 +2,7 @@ import logging
 import os
 from configparser import ConfigParser, NoOptionError
 
-from landscape.client.environment import GROUP, USER
+from landscape.client.environment import DIRECTORY_MODE, FILE_MODE, GROUP, USER
 from landscape.client.monitor.plugin import DataWatcher
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
@@ -18,7 +18,7 @@ class KeystoneToken(DataWatcher):
 
     message_type = "keystone-token"
     message_key = "data"
-    run_interval = 60 * 15
+    run_interval = 60 * 15  # 15 minutes
     scope = "openstack"
 
     def __init__(self, keystone_config_file=KEYSTONE_CONFIG_FILE):
@@ -34,6 +34,8 @@ class KeystoneToken(DataWatcher):
             filename=self._persist_filename,
             user=USER,
             group=GROUP,
+            file_mode=FILE_MODE,
+            directory_mode=DIRECTORY_MODE,
         )
         self.registry.reactor.call_every(
             self.registry.config.flush_interval,

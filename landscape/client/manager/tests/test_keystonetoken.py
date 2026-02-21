@@ -1,4 +1,5 @@
 import os
+from unittest import mock
 
 from landscape.client.manager.keystonetoken import KeystoneToken
 from landscape.client.tests.helpers import FakePersist, LandscapeTest, ManagerHelper
@@ -74,10 +75,12 @@ class KeystoneTokenTest(LandscapeTest):
         message = self.plugin.get_message()
         self.assertIs(None, message)
 
-    def test_flush_persists_data_to_disk(self):
+    @mock.patch("landscape.client.manager.keystonetoken.FILE_MODE", 0o666)
+    @mock.patch("landscape.client.manager.keystonetoken.DIRECTORY_MODE", 0o700)
+    def test_flush_persists_data_to_disk_with_permissions(self):
         """
         The plugin's C{flush} method is called every C{flush_interval} and
-        creates the perists file.
+        creates the persist file.
         """
         flush_interval = self.config.flush_interval
         persist_filename = os.path.join(
@@ -89,6 +92,9 @@ class KeystoneTokenTest(LandscapeTest):
         self.manager.add(self.plugin)
         self.reactor.advance(flush_interval)
         self.assertTrue(os.path.exists(persist_filename))
+        self.assertEqual(0o666, os.stat(persist_filename).st_mode & 0o777)
+        directory_name = os.path.dirname(persist_filename)
+        self.assertEqual(0o700, os.stat(directory_name).st_mode & 0o777)
 
     def test_resynchronize_message_calls_reset_method(self):
         """

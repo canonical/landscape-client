@@ -27,7 +27,13 @@ from landscape.client.broker.amp import (
     RemoteMonitorConnector,
 )
 from landscape.client.deployment import Configuration, convert_arg_to_bool, init_logging
-from landscape.client.environment import GROUP, IS_SNAP, USER
+from landscape.client.environment import (
+    DIRECTORY_MODE,
+    FILE_MODE,
+    GROUP,
+    IS_SNAP,
+    USER,
+)
 from landscape.client.reactor import LandscapeReactor
 from landscape.lib.bootstrap import BootstrapDirectory, BootstrapFile, BootstrapList
 from landscape.lib.config import get_bindir
@@ -641,26 +647,52 @@ class WatchDogService(Service):
 
 bootstrap_list = BootstrapList(
     [
-        BootstrapDirectory("$data_path", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/package", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/package/hash-id", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/package/binaries", USER, GROUP, 0o755),
+        BootstrapDirectory(
+            "$data_path", username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
+        BootstrapDirectory(
+            "$data_path/package", username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
+        BootstrapDirectory(
+            "$data_path/package/hash-id",
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
+        ),
+        BootstrapDirectory(
+            "$data_path/package/binaries",
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
+        ),
         BootstrapDirectory(
             "$data_path/package/upgrade-tool",
-            USER,
-            "root",
-            0o755,
+            username=USER,
+            group="root",
+            mode=DIRECTORY_MODE,
         ),
-        BootstrapDirectory("$data_path/messages", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/sockets", USER, GROUP, 0o750),
+        BootstrapDirectory(
+            "$data_path/messages",
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
+        ),
+        BootstrapDirectory(
+            "$data_path/sockets", username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
         BootstrapDirectory(
             "$data_path/custom-graph-scripts",
-            USER,
-            GROUP,
-            0o755,
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
         ),
-        BootstrapDirectory("$log_dir", USER, GROUP, 0o755),
-        BootstrapFile("$data_path/package/database", USER, GROUP, 0o644),
+        BootstrapDirectory("$log_dir", username=USER, group=GROUP, mode=DIRECTORY_MODE),
+        BootstrapFile(
+            "$data_path/package/database",
+            username=USER,
+            group=GROUP,
+            mode=FILE_MODE,
+        ),
     ],
 )
 

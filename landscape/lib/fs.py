@@ -4,7 +4,7 @@ import os
 import time
 
 
-def create_text_file(path, content):
+def create_text_file(path, content, mode=None):
     """Create a file with the given content.
 
     The content is encoded with utf-8 before writing.
@@ -12,10 +12,10 @@ def create_text_file(path, content):
     @param path: The path to the file.
     @param content: The content to be written in the file.
     """
-    create_binary_file(path, content.encode("utf-8"))
+    create_binary_file(path, content.encode("utf-8"), mode=mode)
 
 
-def create_binary_file(path, content):
+def create_binary_file(path, content, mode=None):
     """Create a file with the given binary content.
 
     @param path: The path to the file.
@@ -23,6 +23,8 @@ def create_binary_file(path, content):
     """
     with open(path, "wb") as fd:
         fd.write(content)
+    if mode is not None:
+        os.chmod(path, mode=mode)
 
 
 def append_text_file(path, content):
@@ -101,7 +103,7 @@ read_file = read_binary_file
 create_file = create_binary_file
 
 
-def touch_file(path, offset_seconds=None):
+def touch_file(path, offset_seconds=None, mode=None):
     """Touch a file, creating it if it doesn't exist.
 
     @param path: the path to the file to be touched.
@@ -116,3 +118,6 @@ def touch_file(path, offset_seconds=None):
     else:
         touch_time = None
     os.utime(path, touch_time)
+
+    if mode is not None:
+        os.chmod(path, mode=mode)

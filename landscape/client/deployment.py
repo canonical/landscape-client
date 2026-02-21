@@ -12,7 +12,13 @@ from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
 from landscape.client import snap_http
-from landscape.client.environment import DEFAULT_CONFIG, GROUP, USER
+from landscape.client.environment import (
+    DEFAULT_CONFIG,
+    DIRECTORY_MODE,
+    FILE_MODE,
+    GROUP,
+    USER,
+)
 from landscape.client.snap_utils import get_snap_info
 from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging
@@ -161,7 +167,7 @@ class Configuration(BaseConfiguration):
         )
         parser.add_argument(
             "--snap-monitor-interval",
-            default=30 * 60,
+            default=30 * 60,  # 30 minutes
             type=int,
             help="The interval between snap monitor runs (default 1800).",
         )
@@ -245,6 +251,8 @@ def get_versioned_persist(service):
         filename=service.persist_filename,
         user=USER,
         group=GROUP,
+        file_mode=FILE_MODE,
+        directory_mode=DIRECTORY_MODE,
     )
     upgrade_manager = UPGRADE_MANAGERS[service.service_name]
     if os.path.exists(service.persist_filename):
