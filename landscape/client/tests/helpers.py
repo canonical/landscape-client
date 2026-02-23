@@ -1,5 +1,9 @@
+import os
 import pprint
+import selectors
+import subprocess
 import unittest.mock
+from contextlib import contextmanager
 
 from landscape.client.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
@@ -274,3 +278,37 @@ class FakePersist:
 
     def remove(self, key):
         self.called = True
+
+
+@contextmanager
+def ready_subprocess(test_case, basename):  # pragma: no cover
+
+    script = """\
+#!/usr/bin/python3
+import sys
+sys.stdout.write("R\\n")
+sys.stdout.flush()
+sys.stdin.read(1)
+    """
+
+    app = test_case.makeFile(script, basename=basename)
+    os.chmod(app, 0o755)
+    call = subprocess.Popen(
+        [app],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    sel = selectors.DefaultSelector()
+    sel.register(call.stdout.fileno(), selectors.EVENT_READ)
+    try:
+        events = sel.select(timeout=10)
+        if not events:
+            raise AssertionError("timed out waiting for process")
+        line = call.stdout.readline()
+        if line != "R\n":
+            raise AssertionError(f"unexpected output from process: {line!r}")
+        yield call
+    finally:
+        sel.close()
+        call.kill()
