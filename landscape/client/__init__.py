@@ -7,7 +7,6 @@ __all__ = [
     "DEFAULT_CONFIG",
 ]
 
-
 _DEPRECATION_MSG = (
     "Direct import from 'landscape.client' is deprecated "
     "and will be removed in landscape-client 28.0X. "
