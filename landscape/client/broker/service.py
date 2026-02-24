@@ -1,6 +1,7 @@
 """Deployment code for the monitor."""
 
 import os
+from pathlib import Path
 
 from landscape.client.amp import ComponentPublisher
 from landscape.client.broker.config import BrokerConfiguration
@@ -133,14 +134,14 @@ class BrokerService(LandscapeService):
         for root, directories, files in os.walk(self._config.message_store_path):
             os.chmod(root, mode=DIRECTORY_MODE)
             for file in files:
-                file_path = os.path.join(root, file)
-                if not os.path.islink(file_path):
-                    os.chmod(file_path, mode=FILE_MODE)
+                file_path = Path(root) / file
+                if not file_path.is_symlink():
+                    file_path.chmod(FILE_MODE)
 
             for directory in directories:
-                directory_path = os.path.join(root, directory)
-                if not os.path.islink(directory_path):
-                    os.chmod(directory_path, mode=DIRECTORY_MODE)
+                directory_path = Path(root) / directory
+                if not directory_path.is_symlink():
+                    directory_path.chmod(DIRECTORY_MODE)
 
 
 def run(args):
