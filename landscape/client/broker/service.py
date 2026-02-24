@@ -1,6 +1,7 @@
 """Deployment code for the monitor."""
 
 import os
+from pathlib import Path
 
 from landscape.client.amp import ComponentPublisher
 from landscape.client.broker.config import BrokerConfiguration
@@ -11,6 +12,7 @@ from landscape.client.broker.registration import Identity, RegistrationHandler
 from landscape.client.broker.server import BrokerServer
 from landscape.client.broker.store import get_default_message_store
 from landscape.client.broker.transport import HTTPTransport
+from landscape.client.environment import DIRECTORY_MODE, FILE_MODE
 from landscape.client.service import LandscapeService, run_landscape_service
 from landscape.client.watchdog import bootstrap_list
 
@@ -111,6 +113,7 @@ class BrokerService(LandscapeService):
             data_path=self._config.data_path,
             log_dir=self._config.log_dir,
         )
+        self.set_message_permissions()
         self.publisher.start()
         self.exchanger.start()
         self.pinger.start()
@@ -122,6 +125,23 @@ class BrokerService(LandscapeService):
         self.pinger.stop()
         super().stopService()
         return deferred
+
+    def set_message_permissions(self):
+        """
+        Sets correct permissions on all message files and message
+        directories.
+        """
+        for root, directories, files in os.walk(self._config.message_store_path):
+            os.chmod(root, mode=DIRECTORY_MODE)
+            for file in files:
+                file_path = Path(root) / file
+                if not file_path.is_symlink():
+                    file_path.chmod(FILE_MODE)
+
+            for directory in directories:
+                directory_path = Path(root) / directory
+                if not directory_path.is_symlink():
+                    directory_path.chmod(DIRECTORY_MODE)
 
 
 def run(args):
