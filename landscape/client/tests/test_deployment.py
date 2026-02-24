@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from unittest import TestCase, mock
 
@@ -392,6 +393,25 @@ class GetVersionedPersistTest(LandscapeTest):
         ):
             persist = get_versioned_persist(FakeService())
             mock_monitor.apply.assert_called_with(persist)
+
+    @mock.patch("landscape.client.deployment.FILE_MODE", 0o666)
+    @mock.patch("landscape.client.deployment.DIRECTORY_MODE", 0o700)
+    def test_persist_has_file_and_directory_permissions(self):
+        class FakeService:
+            persist_filename = self.makePersistFile(content="")
+            service_name = "monitor"
+
+        mock_monitor = mock.Mock()
+        with mock.patch.dict(
+            "landscape.client.upgraders.UPGRADE_MANAGERS",
+            {"monitor": mock_monitor},
+        ):
+            persist = get_versioned_persist(FakeService())
+
+        file_name = persist.filename
+        directory_name = os.path.dirname(file_name)
+        self.assertEqual(0o666, os.stat(file_name).st_mode & 0o777)
+        self.assertEqual(0o700, os.stat(directory_name).st_mode & 0o777)
 
 
 class GenerateComputerTitleTest(TestCase):

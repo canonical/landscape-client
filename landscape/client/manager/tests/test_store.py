@@ -1,3 +1,6 @@
+import os
+from unittest import mock
+
 from landscape.client.manager.store import ManagerStore
 from landscape.client.tests.helpers import LandscapeTest
 
@@ -60,3 +63,22 @@ class ManagerStoreTest(LandscapeTest):
         self.store.set_graph_accumulate(1, 4567, 2.0)
         accumulate = self.store.get_graph_accumulate(1)
         self.assertEqual(accumulate, (1, 4567, 2.0))
+
+    @mock.patch("landscape.client.manager.store.FILE_MODE", 0o666)
+    def test_init_creates_db_file_with_permissions(self):
+        filename = self.makeFile()
+        with self.assertRaises(FileNotFoundError):
+            os.stat(filename)
+
+        ManagerStore(filename)
+
+        self.assertEqual(0o666, os.stat(filename).st_mode & 0o777)
+
+    @mock.patch("landscape.client.manager.store.FILE_MODE", 0o666)
+    def test_init_updates_db_file_permissions(self):
+        mode = 0o666
+        self.assertNotEqual(mode, os.stat(self.filename).st_mode & 0o777)
+
+        ManagerStore(self.filename)
+
+        self.assertEqual(mode, os.stat(self.filename).st_mode & 0o777)

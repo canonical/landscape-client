@@ -21,7 +21,13 @@ from urllib.parse import urlparse
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.service import BrokerService
-from landscape.client.environment import GROUP, IS_SNAP, USER
+from landscape.client.environment import (
+    DIRECTORY_MODE,
+    FILE_MODE,
+    GROUP,
+    IS_SNAP,
+    USER,
+)
 from landscape.client.registration import (
     ClientRegistrationInfo,
     RegistrationException,
@@ -712,6 +718,8 @@ def setup(config) -> Identity:
         ),
         user=USER,
         group=GROUP,
+        file_mode=FILE_MODE,
+        directory_mode=DIRECTORY_MODE,
     )
 
     return Identity(config, persist)
@@ -736,13 +744,14 @@ def restart_client(config):
 def bootstrap_tree(config):
     """Create the client directories tree."""
     bootstrap_list = [
-        BootstrapDirectory("$data_path", USER, GROUP, 0o755),
-        BootstrapDirectory("$annotations_path", USER, GROUP, 0o755),
+        BootstrapDirectory(
+            config.data_path, username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
+        BootstrapDirectory(
+            config.annotations_path, username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
     ]
-    BootstrapList(bootstrap_list).bootstrap(
-        data_path=config.data_path,
-        annotations_path=config.annotations_path,
-    )
+    BootstrapList(bootstrap_list).bootstrap()
 
 
 def store_public_key_data(config, certificate_data):
@@ -823,13 +832,7 @@ def registration_sent(config):
     clear with what is performed. This is the legacy behaviour of
     --is-registered and the name will be removed in the 26.04 release.
     """
-    persist_filename = os.path.join(
-        config.data_path,
-        f"{BrokerService.service_name}.bpickle",
-    )
-    persist = Persist(filename=persist_filename, user=USER, group=GROUP)
-    identity = Identity(config, persist)
-    return bool(identity.secure_id)
+    return bool(get_secure_id(config))
 
 
 def actively_registered(config):
@@ -925,6 +928,8 @@ def set_secure_id(config, new_id, insecure_id=None):
         ),
         user=USER,
         group=GROUP,
+        file_mode=FILE_MODE,
+        directory_mode=DIRECTORY_MODE,
     )
     identity = Identity(config, persist)
     identity.secure_id = new_id

@@ -8,6 +8,8 @@ from landscape.lib import testing
 from landscape.lib.fs import (
     append_binary_file,
     append_text_file,
+    create_binary_file,
+    create_text_file,
     read_binary_file,
     read_text_file,
     touch_file,
@@ -155,6 +157,54 @@ class TouchFileTest(BaseTestCase):
 
         self.assertFileContent(path, b"")
 
+    def test_touch_file_with_mode(self):
+        path = self.makeFile(content="")
+        original_mode = os.stat(path).st_mode & 0o777
+        new_mode = 0o666
+        self.assertNotEqual(original_mode, new_mode)
+
+        touch_file(path, mode=new_mode)
+
+        actual_mode = os.stat(path).st_mode & 0o777
+        self.assertEqual(new_mode, actual_mode)
+
+    def test_touch_file_with_mode_none(self):
+        path = self.makeFile(content="")
+        original_mode = os.stat(path).st_mode & 0o777
+
+        touch_file(path, mode=None)
+
+        actual_mode = os.stat(path).st_mode & 0o777
+        self.assertEqual(original_mode, actual_mode)
+
+    def test_touch_file_creates_new_empty_file(self):
+        path = self.makeDir() + "new_file"
+
+        with self.assertRaises(FileNotFoundError):
+            os.stat(path)
+
+        touch_file(path)
+
+        with open(path, "rb") as f:
+            content = f.read()
+        self.assertEqual(b"", content)
+
+    def test_touch_file_creates_new_file_with_mode(self):
+        path = self.makeDir() + "new_file"
+        mode = 0o666
+
+        with self.assertRaises(FileNotFoundError):
+            os.stat(path)
+
+        touch_file(path, mode=mode)
+
+        with open(path, "rb") as f:
+            content = f.read()
+        self.assertEqual(b"", content)
+
+        actual_mode = os.stat(path).st_mode & 0o777
+        self.assertEqual(mode, actual_mode)
+
 
 class AppendFileTest(BaseTestCase):
     def test_append_existing_text_file(self):
@@ -190,3 +240,135 @@ class AppendFileTest(BaseTestCase):
         new_file = os.path.join(self.makeDir(), "new_file")
         append_binary_file(new_file, b"contents \xe2\x98\x83")
         self.assertFileContent(new_file, b"contents \xe2\x98\x83")
+
+
+class TestCreateBinaryFile(BaseTestCase):
+    def setUp(self):
+        self.temp_dir = self.makeDir()
+
+    def test_create_binary_file(self):
+        path = os.path.join(self.temp_dir, "test.bin")
+        content = b"Hello, World!"
+        create_binary_file(path, content)
+
+        self.assertTrue(os.path.exists(path))
+        with open(path, "rb") as f:
+            self.assertEqual(f.read(), content)
+
+    def test_create_binary_file_with_mode(self):
+        """Test creating a file with a specific mode."""
+        path = os.path.join(self.temp_dir, "test_mode.bin")
+        content = b"Hello, World!"
+        mode = 0o600
+
+        create_binary_file(path, content, mode=mode)
+
+        self.assertTrue(os.path.exists(path))
+        with open(path, "rb") as f:
+            self.assertEqual(f.read(), content)
+
+        actual_mode = os.stat(path).st_mode & 0o777
+        self.assertEqual(actual_mode, mode)
+
+    def test_create_binary_file_with_mode_none(self):
+        path1 = os.path.join(self.temp_dir, "test_none.bin")
+        path2 = os.path.join(self.temp_dir, "test_omitted.bin")
+        content = b"Same content"
+
+        create_binary_file(path1, content, mode=None)
+        create_binary_file(path2, content)
+
+        self.assertTrue(os.path.exists(path1))
+        self.assertTrue(os.path.exists(path2))
+
+        with open(path1, "rb") as f1, open(path2, "rb") as f2:
+            self.assertEqual(f1.read(), f2.read())
+
+        mode1 = os.stat(path1).st_mode & 0o777
+        mode2 = os.stat(path2).st_mode & 0o777
+        self.assertEqual(mode1, mode2)
+
+    def test_create_binary_file_overwrites_existing(self):
+        path = os.path.join(self.temp_dir, "overwrite.bin")
+        initial_content = b"Old content"
+        new_content = b"New content"
+        mode = 0o600
+
+        # Create file initially
+        with open(path, "wb") as f:
+            f.write(initial_content)
+
+        # Update via function
+        create_binary_file(path, new_content, mode=mode)
+
+        with open(path, "rb") as f:
+            self.assertEqual(f.read(), new_content)
+
+        actual_mode = os.stat(path).st_mode & 0o777
+        self.assertEqual(actual_mode, mode)
+
+
+class TestCreateTextFile(BaseTestCase):
+    def setUp(self):
+        self.temp_dir = self.makeDir()
+
+    def test_create_text_file(self):
+        path = os.path.join(self.temp_dir, "test.txt")
+        content = "Hello, World!"
+        create_text_file(path, content)
+
+        self.assertTrue(os.path.exists(path))
+        with open(path, "r") as f:
+            self.assertEqual(f.read(), content)
+
+    def test_create_text_file_with_mode(self):
+        """Test creating a file with a specific mode."""
+        path = os.path.join(self.temp_dir, "test_mode.txt")
+        content = "Hello, World!"
+        mode = 0o600
+
+        create_text_file(path, content, mode=mode)
+
+        self.assertTrue(os.path.exists(path))
+        with open(path, "r") as f:
+            self.assertEqual(f.read(), content)
+
+        actual_mode = os.stat(path).st_mode & 0o777
+        self.assertEqual(actual_mode, mode)
+
+    def test_create_text_file_with_mode_none(self):
+        path1 = os.path.join(self.temp_dir, "test_none.txt")
+        path2 = os.path.join(self.temp_dir, "test_omitted.txt")
+        content = "Same content"
+
+        create_text_file(path1, content, mode=None)
+        create_text_file(path2, content)
+
+        self.assertTrue(os.path.exists(path1))
+        self.assertTrue(os.path.exists(path2))
+
+        with open(path1, "r") as f1, open(path2, "r") as f2:
+            self.assertEqual(f1.read(), f2.read())
+
+        mode1 = os.stat(path1).st_mode & 0o777
+        mode2 = os.stat(path2).st_mode & 0o777
+        self.assertEqual(mode1, mode2)
+
+    def test_create_text_file_overwrites_existing(self):
+        path = os.path.join(self.temp_dir, "overwrite.txt")
+        initial_content = "Old content"
+        new_content = "New content"
+        mode = 0o600
+
+        # Create file initially
+        with open(path, "w") as f:
+            f.write(initial_content)
+
+        # Update via function
+        create_text_file(path, new_content, mode=mode)
+
+        with open(path, "r") as f:
+            self.assertEqual(f.read(), new_content)
+
+        actual_mode = os.stat(path).st_mode & 0o777
+        self.assertEqual(actual_mode, mode)

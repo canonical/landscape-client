@@ -102,7 +102,8 @@ class LandscapeTest(
 
         The possible .old persist file is cleaned up after the test.
         """
-        return self.makeFile(*args, backupsuffix=".old", **kwargs)
+        directory = self.makeDir()
+        return self.makeFile(*args, dirname=directory, backupsuffix=".old", **kwargs)
 
 
 class LandscapeIsolatedTest(LandscapeTest):
