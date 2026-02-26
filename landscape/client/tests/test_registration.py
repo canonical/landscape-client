@@ -1,8 +1,6 @@
 """Unit tests for registration utility functions."""
-from unittest import mock, TestCase
 
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
+from unittest import TestCase, mock
 
 from landscape.client.exchange import ServerResponse
 from landscape.client.registration import (
@@ -10,6 +8,7 @@ from landscape.client.registration import (
     RegistrationException,
     register,
 )
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 
 
 class RegisterTestCase(TestCase):
@@ -58,27 +57,20 @@ class RegisterTestCase(TestCase):
             computer_title="Test Computer",
         )
 
-        self.exchange_messages_mock.side_effect = HTTPCodeError(
-            http_code=404,
-            body=""
-        )
+        self.exchange_messages_mock.side_effect = HTTPCodeError(http_code=404, body="")
 
         with self.assertRaises(RegistrationException):
             register(client_info, "https://my-server.local/message-system")
 
     def test_exchange_http_code_error_non_404(self):
-        """If a non-404 is raised during the message exchange, it is re-raised.
-        """
+        """If a non-404 is raised during the message exchange, it is re-raised."""
         client_info = ClientRegistrationInfo(
             access_group="",
             account_name="testy",
             computer_title="Test Computer",
         )
 
-        self.exchange_messages_mock.side_effect = HTTPCodeError(
-            http_code=400,
-            body=""
-        )
+        self.exchange_messages_mock.side_effect = HTTPCodeError(http_code=400, body="")
 
         with self.assertRaises(HTTPCodeError):
             register(client_info, "https://my-server.local/message-system")
@@ -93,10 +85,7 @@ class RegisterTestCase(TestCase):
             computer_title="Test Computer",
         )
 
-        self.exchange_messages_mock.side_effect = PyCurlError(
-            error_code=60,
-            message=""
-        )
+        self.exchange_messages_mock.side_effect = PyCurlError(error_code=60, message="")
 
         with self.assertRaises(RegistrationException):
             register(client_info, "https://my-server.local/message-system")
@@ -111,10 +100,7 @@ class RegisterTestCase(TestCase):
             computer_title="Test Computer",
         )
 
-        self.exchange_messages_mock.side_effect = PyCurlError(
-            error_code=61,
-            message=""
-        )
+        self.exchange_messages_mock.side_effect = PyCurlError(error_code=61, message="")
 
         with self.assertRaises(PyCurlError):
             register(client_info, "https://my-server.local/message-system")

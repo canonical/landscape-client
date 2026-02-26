@@ -1,6 +1,5 @@
 import re
 
-
 _tag_check = re.compile(r"^\w+[\w-]*$", re.UNICODE)
 
 

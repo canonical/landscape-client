@@ -5,10 +5,7 @@ from landscape.client.broker.store import MessageStore
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.bpickle import dumps
 from landscape.lib.persist import Persist
-from landscape.lib.schema import Bytes
-from landscape.lib.schema import Int
-from landscape.lib.schema import InvalidError
-from landscape.lib.schema import Unicode
+from landscape.lib.schema import Bytes, Int, InvalidError, Unicode
 from landscape.message_schemas.message import Message
 
 
@@ -196,7 +193,7 @@ class MessageStoreTest(LandscapeTest):
         If an exception occurs while deleting it shouldn't affect the next
         message sent
         """
-        rmtree_mock.side_effect = IOError("Error!")
+        rmtree_mock.side_effect = OSError("Error!")
         self.store._directory_size = 1
         self.store._max_dirs = 1
         self.store.add({"type": "data", "data": b"a"})
@@ -387,7 +384,7 @@ class MessageStoreTest(LandscapeTest):
         # writing a file.
         mock_open = mock.mock_open()
         with mock.patch("landscape.lib.fs.open", mock_open):
-            mock_open().write.side_effect = IOError("Sorry, pal!")
+            mock_open().write.side_effect = OSError("Sorry, pal!")
             # This kind of ensures that raising an exception is somewhat
             # similar to unplugging the power -- i.e., we're not relying
             # on special exception-handling in the file-writing code.
@@ -448,7 +445,7 @@ class MessageStoreTest(LandscapeTest):
 
     def test_coercion(self):
         """
-        When adding a message to the mesage store, it should be
+        When adding a message to the message store, it should be
         coerced according to the message schema for the type of the
         message.
         """
@@ -761,3 +758,32 @@ class MessageStoreTest(LandscapeTest):
         self.assertIsInstance(message["api"], bytes)  # api is bytes
         self.assertEqual("data", message["type"])  # message type is decoded
         self.assertEqual(b"A thing", message["data"])  # other are kept as-is
+
+    @mock.patch("landscape.client.broker.store.FILE_MODE", 0o666)
+    def test_add_sets_correct_file_permissions(self):
+        # store.add returns the inode for the file with the message
+        message_id = self.store.add({"type": "empty"})
+
+        message_file_path = ""
+        for file_name in self.store._walk_messages():
+            if os.stat(file_name).st_ino == message_id:
+                message_file_path = file_name
+                break
+
+        self.assertTrue(message_file_path)
+        self.assertEqual(message_id, os.stat(message_file_path).st_ino)
+        self.assertEqual(0o666, os.stat(message_file_path).st_mode & 0o777)
+
+    @mock.patch("landscape.client.broker.store.DIRECTORY_MODE", 0o700)
+    def test_init_sets_directory_permissions(self):
+        persist = Persist(filename=self.persist_filename)
+        store = MessageStore(persist, self.temp_dir)
+
+        self.assertEqual(0o700, os.stat(store._message_dir()).st_mode & 0o777)
+
+    @mock.patch("landscape.client.broker.store.DIRECTORY_MODE", 0o700)
+    def test_message_directories_have_correct_permissions(self):
+        file_name = self.store._get_next_message_filename()
+        message_directory = os.path.dirname(file_name)
+
+        self.assertEqual(0o700, os.stat(message_directory).st_mode & 0o777)

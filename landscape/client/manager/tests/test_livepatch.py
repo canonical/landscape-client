@@ -1,6 +1,7 @@
 import json
-import yaml
 from unittest import mock
+
+import yaml
 
 from landscape.client.manager.livepatch import LivePatch, get_livepatch_status
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
@@ -133,9 +134,7 @@ class LivePatchTest(LandscapeTest):
 
         invalid_data = ""
         with mock.patch("subprocess.run") as run_mock:
-            run_mock.return_value = mock.Mock(
-                stdout=invalid_data, stderr="Error"
-            )
+            run_mock.return_value = mock.Mock(stdout=invalid_data, stderr="Error")
             run_mock.return_value.returncode = 1
             self.manager.add(plugin)
             plugin.run()

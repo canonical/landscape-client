@@ -1,15 +1,15 @@
 import unittest
 
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import fail, succeed
 
 from landscape.lib import testing
-from landscape.lib.cloud import _fetch_ec2_item
-from landscape.lib.cloud import EC2_API
-from landscape.lib.cloud import fetch_ec2_meta_data
-from landscape.lib.cloud import MAX_LENGTH
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
+from landscape.lib.cloud import (
+    EC2_API,
+    MAX_LENGTH,
+    _fetch_ec2_item,
+    fetch_ec2_meta_data,
+)
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 
 
 class CloudTest(

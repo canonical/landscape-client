@@ -1,7 +1,6 @@
 import unittest
 
-from landscape.lib.schema import Constant
-from landscape.lib.schema import Int
+from landscape.lib.schema import Constant, Int
 from landscape.message_schemas.message import Message
 
 

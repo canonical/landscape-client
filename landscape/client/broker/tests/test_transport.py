@@ -3,8 +3,7 @@ import os
 from twisted.internet import reactor
 from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.internet.threads import deferToThread
-from twisted.web import resource
-from twisted.web import server
+from twisted.web import resource, server
 
 from landscape import VERSION
 from landscape.client.broker.transport import HTTPTransport
@@ -25,7 +24,6 @@ BADPUBKEY = sibpath("badpublic.ssl")
 
 
 class DataCollectingResource(resource.Resource):
-
     request = content = None
 
     def getChild(self, request, name):  # noqa: N802
@@ -38,7 +36,6 @@ class DataCollectingResource(resource.Resource):
 
 
 class HTTPTransportTest(LandscapeTest):
-
     helpers = [LogKeeperHelper]
 
     def setUp(self):

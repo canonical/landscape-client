@@ -4,8 +4,7 @@ from unittest import mock
 
 from landscape.lib import testing
 from landscape.lib.fs import create_text_file
-from landscape.lib.process import calculate_pcpu
-from landscape.lib.process import ProcessInformation
+from landscape.lib.process import ProcessInformation, calculate_pcpu
 
 
 class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
@@ -88,8 +87,8 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
             process_info = ProcessInformation("/proc")
             processes = list(process_info.get_all_process_info())
             calls = [
-                mock.call("/proc/12345/cmdline", "r"),
-                mock.call("/proc/12345/status", "r"),
+                mock.call("/proc/12345/cmdline"),
+                mock.call("/proc/12345/status"),
             ]
             open_mock.assert_has_calls(calls)
         self.assertEqual(processes, [])
@@ -134,7 +133,6 @@ class ProcessInfoTest(testing.FSTestCase, unittest.TestCase):
 
 
 class CalculatePCPUTest(unittest.TestCase):
-
     """
     calculate_pcpu is lifted directly from procps/ps/output.c (it's called
     "pcpu" in there).

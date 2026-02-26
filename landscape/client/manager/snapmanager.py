@@ -5,15 +5,14 @@ from pathlib import Path
 
 from twisted.internet import task
 
-from landscape.client import GROUP
 from landscape.client import snap_http
-from landscape.client import USER
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin
-from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.snap_http import INCOMPLETE_STATUSES
-from landscape.client.snap_http import SnapdHttpException
-from landscape.client.snap_http import SUCCESS_STATUSES
+from landscape.client.environment import DIRECTORY_MODE, FILE_MODE, GROUP, USER
+from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
+from landscape.client.snap_http import (
+    INCOMPLETE_STATUSES,
+    SUCCESS_STATUSES,
+    SnapdHttpException,
+)
 from landscape.lib.persist import Persist
 from landscape.message_schemas.server_bound import SNAPS
 
@@ -272,10 +271,16 @@ class SnapManager(BaseSnapManager):
             self.registry.config.data_path,
             "snaps.bpickle",
         )
+        # Note: The _persist for the SnapManager is an in-memory
+        # store only. If that ever changes, we need to apply the correct
+        # permissions to the stored data. The modes are applied here
+        # now regardless.
         self._persist = Persist(
             filename=self._persist_filename,
             user=USER,
             group=GROUP,
+            file_mode=FILE_MODE,
+            directory_mode=DIRECTORY_MODE,
         )
         self.call_on_accepted(self.message_type, self._send_snap_update)
 

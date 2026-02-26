@@ -10,12 +10,15 @@ This module implements a few conveniences built around L{landscape.lib.amp} to
 let the various services connect to each other in an easy and idiomatic way,
 and have them respond to standard requests like "ping" or "exit".
 """
+
 import logging
 import os
 
-from landscape.lib.amp import MethodCallClientFactory
-from landscape.lib.amp import MethodCallServerFactory
-from landscape.lib.amp import RemoteObject
+from landscape.lib.amp import (
+    MethodCallClientFactory,
+    MethodCallServerFactory,
+    RemoteObject,
+)
 
 
 class ComponentPublisher:

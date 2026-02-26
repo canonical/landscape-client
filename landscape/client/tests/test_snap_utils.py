@@ -1,12 +1,9 @@
-from unittest import mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import yaml
 
-from landscape.client.snap_http import SnapdHttpException
-from landscape.client.snap_http import SnapdResponse
+from landscape.client.snap_http import SnapdHttpException, SnapdResponse
 from landscape.client.snap_utils import get_assertions
-
 
 TEST_SERIAL_ASSERTION = """type: serial
 authority-id: canonical

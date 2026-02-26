@@ -2,11 +2,12 @@ from unittest import mock
 
 from landscape.client.snap_http import SnapdHttpException
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.user.management import SnapdUserManagement
-from landscape.client.user.management import UserManagement
-from landscape.client.user.management import UserManagementError
-from landscape.client.user.provider import GroupNotFoundError
-from landscape.client.user.provider import UserNotFoundError
+from landscape.client.user.management import (
+    SnapdUserManagement,
+    UserManagement,
+    UserManagementError,
+)
+from landscape.client.user.provider import GroupNotFoundError, UserNotFoundError
 from landscape.client.user.tests.helpers import FakeUserProvider
 from landscape.lib.testing import MockPopen
 
@@ -511,8 +512,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         self.log_helper.ignore_errors(UserNotFoundError)
         data = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         popen = MockPopen(
-            "/usr/sbin/deluser: Only root may remove a user or "
-            "group from the system.",
+            "/usr/sbin/deluser: Only root may remove a user or group from the system.",
             [1],
         )
         provider = FakeUserProvider(
@@ -837,8 +837,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         groups = [("bizdev", "x", 50, [])]
         popen = MockPopen(
-            "/usr/sbin/deluser: Only root may remove a user or "
-            "group from the system.",
+            "/usr/sbin/deluser: Only root may remove a user or group from the system.",
             [1],
         )
         provider = FakeUserProvider(

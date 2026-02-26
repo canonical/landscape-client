@@ -2,14 +2,11 @@ import logging
 import signal
 
 from twisted.application.app import startApplication
-from twisted.application.service import Application
-from twisted.application.service import Service
+from twisted.application.service import Application, Service
 
-from landscape.client.deployment import get_versioned_persist
-from landscape.client.deployment import init_logging
+from landscape.client.deployment import get_versioned_persist, init_logging
 from landscape.client.reactor import LandscapeReactor
-from landscape.lib.logging import LoggingAttributeError
-from landscape.lib.logging import rotate_logs
+from landscape.lib.logging import LoggingAttributeError, rotate_logs
 
 
 class LandscapeService(Service):

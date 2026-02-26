@@ -1,22 +1,18 @@
 import logging
 import os
 import pwd
-from unittest import mock
-from unittest import skipIf
+from unittest import mock, skipIf
 
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
 from landscape.client.manager.customgraph import CustomGraphPlugin
 from landscape.client.manager.store import ManagerStore
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
-from landscape.lib.testing import DummyProcess
-from landscape.lib.testing import StubProcessFactory
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.lib.testing import DummyProcess, StubProcessFactory
 
 
 class CustomGraphManagerTests(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -192,16 +188,12 @@ class CustomGraphManagerTests(LandscapeTest):
                             123: {
                                 "error": "",
                                 "values": [(300, 1.0)],
-                                "script-hash": (
-                                    b"483f2304b49063680c75e3c9e09cf6d0"
-                                ),
+                                "script-hash": (b"483f2304b49063680c75e3c9e09cf6d0"),
                             },
                             124: {
                                 "error": "",
                                 "values": [(300, 2.0)],
-                                "script-hash": (
-                                    b"73a74b1530b2256db7edacb9b9cc385e"
-                                ),
+                                "script-hash": (b"73a74b1530b2256db7edacb9b9cc385e"),
                             },
                         },
                         "type": "custom-graph",
@@ -226,9 +218,7 @@ class CustomGraphManagerTests(LandscapeTest):
                             123: {
                                 "error": " (process exited with code 1)",
                                 "values": [],
-                                "script-hash": (
-                                    b"eaca3ba1a3bf1948876eba320148c5e9"
-                                ),
+                                "script-hash": (b"eaca3ba1a3bf1948876eba320148c5e9"),
                             },
                         },
                         "type": "custom-graph",
@@ -264,9 +254,7 @@ class CustomGraphManagerTests(LandscapeTest):
                                     "number: 'foobar'"
                                 ),
                                 "values": [],
-                                "script-hash": (
-                                    b"baab6c16d9143523b7865d46896e4596"
-                                ),
+                                "script-hash": (b"baab6c16d9143523b7865d46896e4596"),
                             },
                         },
                         "type": "custom-graph",
@@ -298,13 +286,10 @@ class CustomGraphManagerTests(LandscapeTest):
                         "data": {
                             123: {
                                 "error": (
-                                    "NoOutputError: Script did not output "
-                                    "any value"
+                                    "NoOutputError: Script did not output any value"
                                 ),
                                 "values": [],
-                                "script-hash": (
-                                    b"baab6c16d9143523b7865d46896e4596"
-                                ),
+                                "script-hash": (b"baab6c16d9143523b7865d46896e4596"),
                             },
                         },
                         "type": "custom-graph",
@@ -338,19 +323,14 @@ class CustomGraphManagerTests(LandscapeTest):
                         "data": {
                             123: {
                                 "error": (
-                                    "NoOutputError: Script did not output "
-                                    "any value"
+                                    "NoOutputError: Script did not output any value"
                                 ),
-                                "script-hash": (
-                                    b"baab6c16d9143523b7865d46896e4596"
-                                ),
+                                "script-hash": (b"baab6c16d9143523b7865d46896e4596"),
                                 "values": [],
                             },
                             124: {
                                 "error": "",
-                                "script-hash": (
-                                    b"baab6c16d9143523b7865d46896e4596"
-                                ),
+                                "script-hash": (b"baab6c16d9143523b7865d46896e4596"),
                                 "values": [(300, 0.5)],
                             },
                         },
@@ -388,19 +368,14 @@ class CustomGraphManagerTests(LandscapeTest):
                                     "InvalidFormatError: Failed to convert "
                                     "to number: 'foo'"
                                 ),
-                                "script-hash": (
-                                    b"baab6c16d9143523b7865d46896e4596"
-                                ),
+                                "script-hash": (b"baab6c16d9143523b7865d46896e4596"),
                                 "values": [],
                             },
                             124: {
                                 "error": (
-                                    "NoOutputError: Script did not output "
-                                    "any value"
+                                    "NoOutputError: Script did not output any value"
                                 ),
-                                "script-hash": (
-                                    b"baab6c16d9143523b7865d46896e4596"
-                                ),
+                                "script-hash": (b"baab6c16d9143523b7865d46896e4596"),
                                 "values": [],
                             },
                         },
@@ -502,9 +477,7 @@ class CustomGraphManagerTests(LandscapeTest):
                     {
                         "data": {
                             123: {
-                                "error": (
-                                    "UnknownUserError: Unknown user 'foo'"
-                                ),
+                                "error": ("UnknownUserError: Unknown user 'foo'"),
                                 "script-hash": b"",
                                 "values": [],
                             },
@@ -541,12 +514,8 @@ class CustomGraphManagerTests(LandscapeTest):
                     {
                         "data": {
                             123: {
-                                "error": (
-                                    "Process exceeded the 10 seconds limit"
-                                ),
-                                "script-hash": (
-                                    b"9893532233caff98cd083a116b013c0b"
-                                ),
+                                "error": ("Process exceeded the 10 seconds limit"),
+                                "script-hash": (b"9893532233caff98cd083a116b013c0b"),
                                 "values": [],
                             },
                         },
@@ -801,9 +770,7 @@ class CustomGraphManagerTests(LandscapeTest):
                         "data": {
                             123: {
                                 "error": "",
-                                "script-hash": (
-                                    b"991e15a81929c79fe1d243b2afd99c62"
-                                ),
+                                "script-hash": (b"991e15a81929c79fe1d243b2afd99c62"),
                                 "values": [],
                             },
                         },
@@ -896,9 +863,7 @@ class CustomGraphManagerTests(LandscapeTest):
         C{call_if_accepted} on the broker and return immediately an empty list
         of results.
         """
-        self.graph_manager.registry.broker.call_if_accepted = (
-            lambda *args: 1 / 0
-        )
+        self.graph_manager.registry.broker.call_if_accepted = lambda *args: 1 / 0
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
@@ -932,11 +897,8 @@ class CustomGraphManagerTests(LandscapeTest):
                     {
                         "data": {
                             123: {
-                                "error": "UnknownUserError: "
-                                f"Unknown user '{username}'",
-                                "script-hash": (
-                                    b"9893532233caff98cd083a116b013c0b"
-                                ),
+                                "error": f"UnknownUserError: Unknown user '{username}'",
+                                "script-hash": (b"9893532233caff98cd083a116b013c0b"),
                                 "values": [],
                             },
                         },

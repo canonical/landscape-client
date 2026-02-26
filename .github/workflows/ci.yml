@@ -12,11 +12,15 @@ jobs:
           submodules: true
       - run: make depends-ci
       - run: make check TRIAL=/usr/bin/trial3
-  lint:
+      
+  run-ruff:
+    if: '!github.event.pull_request.draft'
     runs-on: ubuntu-latest
+  
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - run: make depends
-      - run: make lint
+  
+      - uses: astral-sh/ruff-action@v3
+      - run: make ruff-check

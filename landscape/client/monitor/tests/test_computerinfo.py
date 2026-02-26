@@ -2,19 +2,13 @@ import os
 import re
 from unittest import mock
 
-from twisted.internet.defer import fail
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import succeed
+from twisted.internet.defer import fail, inlineCallbacks, succeed
 
-from landscape.client.monitor.computerinfo import ComputerInfo
-from landscape.client.monitor.computerinfo import METADATA_RETRY_MAX
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
+from landscape.client.monitor.computerinfo import METADATA_RETRY_MAX, ComputerInfo
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import create_text_file
-from landscape.lib.machine_id import get_namespaced_machine_id
-from landscape.lib.machine_id import MACHINE_ID_SIZE
+from landscape.lib.machine_id import MACHINE_ID_SIZE, get_namespaced_machine_id
 
 SAMPLE_OS_RELEASE = """PRETTY_NAME="Ubuntu 22.04.3 LTS"
 NAME="Ubuntu"
@@ -575,8 +569,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_ec2_meta_data()
         self.assertIn(
-            "INFO: No cloud meta-data available. Server returned "
-            "HTTP code 404",
+            "INFO: No cloud meta-data available. Server returned HTTP code 404",
             self.logfile.getvalue(),
         )
         self.assertEqual(None, result)

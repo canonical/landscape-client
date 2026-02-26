@@ -2,8 +2,7 @@ import os
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.vm_info import get_container_info
-from landscape.lib.vm_info import get_vm_info
+from landscape.lib.vm_info import get_container_info, get_vm_info
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):

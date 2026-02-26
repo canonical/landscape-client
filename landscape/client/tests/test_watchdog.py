@@ -6,32 +6,31 @@ import time
 from unittest import mock
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, fail, succeed
 from twisted.internet.utils import getProcessOutput
 from twisted.python.fakepwd import UserDatabase
 
 import landscape.client.watchdog
-from landscape.client import USER
 from landscape.client.amp import ComponentConnector
 from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.environment import USER
 from landscape.client.reactor import LandscapeReactor
 from landscape.client.tests.clock import Clock
-from landscape.client.tests.helpers import FakeBrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.watchdog import bootstrap_list
-from landscape.client.watchdog import Broker
-from landscape.client.watchdog import Daemon
-from landscape.client.watchdog import ExecutableNotFoundError
-from landscape.client.watchdog import Manager
-from landscape.client.watchdog import MAXIMUM_CONSECUTIVE_RESTARTS
-from landscape.client.watchdog import Monitor
-from landscape.client.watchdog import RESTART_BURST_DELAY
-from landscape.client.watchdog import run
-from landscape.client.watchdog import WatchDog
-from landscape.client.watchdog import WatchDogConfiguration
-from landscape.client.watchdog import WatchDogService
+from landscape.client.tests.helpers import FakeBrokerServiceHelper, LandscapeTest
+from landscape.client.watchdog import (
+    MAXIMUM_CONSECUTIVE_RESTARTS,
+    RESTART_BURST_DELAY,
+    Broker,
+    Daemon,
+    ExecutableNotFoundError,
+    Manager,
+    Monitor,
+    WatchDog,
+    WatchDogConfiguration,
+    WatchDogService,
+    bootstrap_list,
+    run,
+)
 from landscape.lib.encoding import encode_values
 from landscape.lib.fs import read_text_file
 from landscape.lib.testing import EnvironSaverHelper
@@ -530,8 +529,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         down.
         """
         self.log_helper.ignore_errors(
-            "Couldn't request that broker gracefully shut down; "
-            "killing forcefully.",
+            "Couldn't request that broker gracefully shut down; killing forcefully.",
         )
         clock = Clock()
         dog = WatchDog(
@@ -561,17 +559,14 @@ class NonMockerWatchDogTests(LandscapeTest):
 
 
 class StubBroker:
-
     name = "broker"
 
 
 class RemoteStubBrokerConnector(ComponentConnector):
-
     component = StubBroker
 
 
 class DaemonTestBase(LandscapeTest):
-
     connector_factory = RemoteStubBrokerConnector
 
     EXEC_NAME = "landscape-broker"
@@ -601,7 +596,7 @@ class DaemonTestBase(LandscapeTest):
             self.broker_service.stopService()
         super().tearDown()
 
-    def get_daemon(self, **kwargs):
+    def get_daemon(self, allow_restart=False, **kwargs):
         if "username" in kwargs:
 
             class MyDaemon(Daemon):
@@ -613,6 +608,14 @@ class DaemonTestBase(LandscapeTest):
             daemon = Daemon(self.connector, **kwargs)
         daemon.program = self.EXEC_NAME
         daemon.factor = 0.01
+
+        # Do not restart daemons in tests unless explicitly asked to.
+        # This helps prevent race conditions where a restarted daemon
+        # cannot find the executable that was removed as part of test cleanup.
+        if not allow_restart:
+            daemon.allow_restart = mock.Mock()
+            daemon.allow_restart.return_value = False
+
         return daemon
 
 
@@ -887,8 +890,7 @@ time.sleep(999)
             )
 
             self.assertTrue(
-                "Can't keep landscape-broker running."
-                in self.logfile.getvalue(),
+                "Can't keep landscape-broker running." in self.logfile.getvalue(),
             )
             self.assertCountEqual([True], stopped)
             reactor.stop = stop[0]
@@ -903,7 +905,7 @@ time.sleep(999)
         reactor.callLater(0, mock_reactor_stop)
         reactor.callLater(1, result.callback, None)
 
-        daemon = self.get_daemon(reactor=reactor)
+        daemon = self.get_daemon(reactor=reactor, allow_restart=True)
         daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
@@ -935,8 +937,7 @@ time.sleep(999)
             )
 
             self.assertTrue(
-                "Can't keep landscape-broker running."
-                in self.logfile.getvalue(),
+                "Can't keep landscape-broker running." in self.logfile.getvalue(),
             )
             self.assertCountEqual([True], stopped)
             reactor.stop = stop[0]
@@ -964,7 +965,7 @@ time.sleep(999)
 
         # It's important to call start() shortly after the mocking above,
         # as we don't want anyone else getting the fake time.
-        daemon = self.get_daemon(reactor=reactor)
+        daemon = self.get_daemon(reactor=reactor, allow_restart=True)
         daemon.BIN_DIR = self.config.bindir
         daemon.start()
 
@@ -1107,7 +1108,6 @@ time.sleep(999)
 
 
 class DaemonBrokerTest(DaemonTestBase):
-
     helpers = [FakeBrokerServiceHelper]
 
     @property
@@ -1384,9 +1384,7 @@ class WatchDogServiceTest(LandscapeTest):
             log_dir,
             "package/database",
         ]
-        calls = [
-            mock.call(path(path_comps), 1234, 5678) for path_comps in paths
-        ]
+        calls = [mock.call(path(path_comps), 1234, 5678) for path_comps in paths]
         mock_chown.assert_has_calls([mock.call(path(), 1234, 5678)] + calls)
         self.assertTrue(os.path.isdir(path()))
         self.assertTrue(os.path.isdir(path("package")))
@@ -1398,14 +1396,14 @@ class WatchDogServiceTest(LandscapeTest):
         def mode(*suffix):
             return stat.S_IMODE(os.stat(path(*suffix)).st_mode)
 
-        self.assertEqual(mode(), 0o755)
-        self.assertEqual(mode("messages"), 0o755)
-        self.assertEqual(mode("package"), 0o755)
-        self.assertEqual(mode("package/hash-id"), 0o755)
-        self.assertEqual(mode("package/binaries"), 0o755)
+        self.assertEqual(mode(), 0o750)
+        self.assertEqual(mode("messages"), 0o750)
+        self.assertEqual(mode("package"), 0o750)
+        self.assertEqual(mode("package/hash-id"), 0o750)
+        self.assertEqual(mode("package/binaries"), 0o750)
         self.assertEqual(mode("sockets"), 0o750)
-        self.assertEqual(mode("custom-graph-scripts"), 0o755)
-        self.assertEqual(mode("package/database"), 0o644)
+        self.assertEqual(mode("custom-graph-scripts"), 0o750)
+        self.assertEqual(mode("package/database"), 0o640)
 
 
 STUB_BROKER = """\
@@ -1448,7 +1446,6 @@ class FakeReactor(Clock):
 
 
 class WatchDogRunTests(LandscapeTest):
-
     helpers = [EnvironSaverHelper]
 
     def setUp(self):

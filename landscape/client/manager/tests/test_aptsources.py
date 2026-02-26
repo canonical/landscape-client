@@ -1,15 +1,12 @@
 import os
 from unittest import mock
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.client.manager.aptsources import AptSources
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.plugin import FAILED, SUCCEEDED
 from landscape.client.package.reporter import find_reporter_command
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class FakeStatResult:
@@ -170,13 +167,9 @@ class AptSourcesTests(LandscapeTest):
         When getting a repository message without sources, AptSources
         restores the previous files in sources.list.d.
         """
-        FILE_1_LIST = os.path.join(
-            self.sourceslist.SOURCES_LIST_D, "file1.list"
-        )
+        FILE_1_LIST = os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list")
 
-        FILE_2_SOURCES = os.path.join(
-            self.sourceslist.SOURCES_LIST_D, "file2.sources"
-        )
+        FILE_2_SOURCES = os.path.join(self.sourceslist.SOURCES_LIST_D, "file2.sources")
         with open(
             FILE_1_LIST,
             "w",
@@ -391,13 +384,9 @@ class AptSourcesTests(LandscapeTest):
         are renamed to .save when a message is received
         if config says to manage them, which is the default.
         """
-        FILE_1_LIST = os.path.join(
-            self.sourceslist.SOURCES_LIST_D, "file1.list"
-        )
+        FILE_1_LIST = os.path.join(self.sourceslist.SOURCES_LIST_D, "file1.list")
 
-        FILE_2_SOURCES = os.path.join(
-            self.sourceslist.SOURCES_LIST_D, "file2.sources"
-        )
+        FILE_2_SOURCES = os.path.join(self.sourceslist.SOURCES_LIST_D, "file2.sources")
         with open(
             FILE_1_LIST,
             "w",
@@ -443,13 +432,9 @@ class AptSourcesTests(LandscapeTest):
         are not renamed to .save when a message is received
         if config says not to manage them
         """
-        FILE_3_LIST = os.path.join(
-            self.sourceslist.SOURCES_LIST_D, "file3.list"
-        )
+        FILE_3_LIST = os.path.join(self.sourceslist.SOURCES_LIST_D, "file3.list")
 
-        FILE_4_SOURCES = os.path.join(
-            self.sourceslist.SOURCES_LIST_D, "file4.sources"
-        )
+        FILE_4_SOURCES = os.path.join(self.sourceslist.SOURCES_LIST_D, "file4.sources")
         with open(
             FILE_3_LIST,
             "w",
@@ -545,7 +530,7 @@ class AptSourcesTests(LandscapeTest):
         gpg_dirpath = self.sourceslist.TRUSTED_GPG_D
         for filename in os.listdir(gpg_dirpath):
             filepath = os.path.join(gpg_dirpath, filename)
-            with open(filepath, "r") as fh:
+            with open(filepath) as fh:
                 keys.append(fh.read())
 
         self.assertCountEqual(keys, gpg_keys)
@@ -610,20 +595,22 @@ class AptSourcesTests(LandscapeTest):
 
         self.sourceslist._run_process = _run_process
 
-        with mock.patch.multiple(
-            "landscape.client.manager.aptsources",
-            USER="root",
-            GROUP="root",
+        with (
+            mock.patch.multiple(
+                "landscape.client.manager.aptsources",
+                USER="root",
+                GROUP="root",
+            ),
+            mock.patch("os.getuid") as getuid,
         ):
-            with mock.patch("os.getuid") as getuid:
-                getuid.return_value = 0
-                self.manager.dispatch_message(
-                    {
-                        "type": "apt-sources-replace",
-                        "sources": [],
-                        "gpg-keys": [],
-                        "operation-id": 1,
-                    },
-                )
+            getuid.return_value = 0
+            self.manager.dispatch_message(
+                {
+                    "type": "apt-sources-replace",
+                    "sources": [],
+                    "gpg-keys": [],
+                    "operation-id": 1,
+                },
+            )
 
         return deferred

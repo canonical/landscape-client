@@ -2,12 +2,10 @@ import os
 from unittest import mock
 
 from landscape.client.monitor.aptpreferences import AptPreferences
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class AptPreferencesTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

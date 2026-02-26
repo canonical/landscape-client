@@ -6,7 +6,6 @@ from landscape.lib.testing import EnvironSaverHelper
 
 
 class ConfigurationTests(LandscapeTest):
-
     helpers = [EnvironSaverHelper]
 
     def test_loading_sets_http_proxies(self):

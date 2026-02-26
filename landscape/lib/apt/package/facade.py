@@ -17,12 +17,15 @@ from apt.progress.base import InstallProgress
 from apt.progress.text import AcquireProgress
 from aptsources.sourceslist import SourcesList
 
+from landscape.lib.fs import (
+    append_text_file,
+    create_text_file,
+    read_binary_file,
+    read_text_file,
+    touch_file,
+)
+
 from .skeleton import build_skeleton_apt
-from landscape.lib.fs import append_text_file
-from landscape.lib.fs import create_text_file
-from landscape.lib.fs import read_binary_file
-from landscape.lib.fs import read_text_file
-from landscape.lib.fs import touch_file
 
 
 class TransactionError(Exception):
@@ -69,7 +72,6 @@ class LandscapeAcquireProgress(AcquireProgress):
 
 
 class LandscapeInstallProgress(InstallProgress):
-
     dpkg_exited = None
     old_excepthook = None
 
@@ -133,6 +135,8 @@ class AptFacade:
     max_dpkg_retries = 12  # number of dpkg retries before we give up
     dpkg_retry_sleep = 5
     _dpkg_status = "/var/lib/dpkg/status"
+    http_proxy = None
+    https_proxy = None
 
     def __init__(
         self,
@@ -288,7 +292,6 @@ class AptFacade:
         if self.refetch_package_index or (
             force_reload_binaries and os.path.exists(internal_sources_list)
         ):
-
             # Try to update only the internal repos, if the python-apt
             # version is new enough to accept a sources_list parameter.
             new_apt_args = {}
@@ -570,9 +573,7 @@ class AptFacade:
         @param name: The name the returned packages should have.
         """
         return [
-            version
-            for version in self.get_packages()
-            if version.package.name == name
+            version for version in self.get_packages() if version.package.name == name
         ]
 
     def _is_package_broken(self, package):
@@ -631,17 +632,13 @@ class AptFacade:
         # Build tuples of (package, version) so that we can do
         # comparison checks. Same versions of different packages compare
         # as being the same, so we need to include the package as well.
-        all_changes = [
-            (version.package, version) for version in requested_changes
-        ]
+        all_changes = [(version.package, version) for version in requested_changes]
         versions_to_be_changed = set()
         for package in self._cache.get_changes():
             if not self._is_main_architecture(package):
                 continue
             versions = self._get_changed_versions(package)
-            versions_to_be_changed.update(
-                (package, version) for version in versions
-            )
+            versions_to_be_changed.update((package, version) for version in versions)
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
@@ -653,10 +650,7 @@ class AptFacade:
         """Return a string representation of a specific dependency relation."""
         info = dep_relation.target_pkg.name
         if dep_relation.target_ver:
-            info += " ({} {})".format(
-                dep_relation.comp_type,
-                dep_relation.target_ver,
-            )
+            info += f" ({dep_relation.comp_type} {dep_relation.target_ver})"
         reason = " but is not installable"
         if dep_relation.target_pkg.name in self._cache:
             dep_package = self._cache[dep_relation.target_pkg.name]
@@ -685,7 +679,6 @@ class AptFacade:
                     package.current_state == apt_pkg.CURSTATE_INSTALLED
                     or depcache.marked_install(package)
                 ) and not depcache.marked_delete(package):
-
                     return is_positive
         return not is_positive
 
@@ -749,6 +742,12 @@ class AptFacade:
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
 
+        if self.http_proxy is not None:
+            apt_pkg.config.set("Acquire::http::Proxy", self.http_proxy)
+
+        if self.https_proxy is not None:
+            apt_pkg.config.set("Acquire::https::Proxy", self.https_proxy)
+
     def _perform_hold_changes(self):
         """
         Perform pending hold operations on packages.
@@ -769,10 +768,7 @@ class AptFacade:
                 "Cannot perform the changes, since the following "
                 + "packages are not installed: {}".format(
                     ", ".join(
-                        [
-                            version.package.name
-                            for version in sorted(not_installed)
-                        ],
+                        [version.package.name for version in sorted(not_installed)],
                     ),
                 ),
             )
@@ -833,9 +829,7 @@ class AptFacade:
                         install_output_path,
                     )
                     error = TransactionError(
-                        exc.args[0]
-                        + "\n\nPackage operation log:\n"
-                        + result_text,
+                        exc.args[0] + "\n\nPackage operation log:\n" + result_text,
                     )
                     # No need to retry SystemError, since it's most
                     # likely a permanent error.
@@ -879,8 +873,7 @@ class AptFacade:
             # installed packages from auto-removal, while allowing upgrades
             # of auto-removable packages.
             is_manual = (
-                not version.package.installed
-                or not version.package.is_auto_installed
+                not version.package.installed or not version.package.is_auto_installed
             )
 
             # Set auto_fix=False to avoid removing the package we asked to
@@ -893,9 +886,7 @@ class AptFacade:
     def _preprocess_removes(self, fixer):
         held_package_names = set()
 
-        package_installs = {
-            version.package for version in self._version_installs
-        }
+        package_installs = {version.package for version in self._version_installs}
 
         package_upgrades = {
             version.package

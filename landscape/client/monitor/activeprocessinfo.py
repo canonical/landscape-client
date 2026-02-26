@@ -7,7 +7,6 @@ from landscape.lib.process import ProcessInformation
 
 
 class ActiveProcessInfo(DataWatcher):
-
     message_type = "active-process-info"
     scope = "process"
 

@@ -26,6 +26,7 @@ Currently:
  * L{twisted.internet.base.DelayedCall}, which didn't grow its
    C{seconds} argument until after Twisted 2.2.
 """
+
 import traceback
 
 from twisted.internet import error
@@ -100,7 +101,6 @@ class Clock:
 
 
 class DelayedCall:
-
     # enable .debug to record creator call stack, and it will be logged if
     # an exception occurs while the function is being run
     debug = False
@@ -255,10 +255,7 @@ class DelayedCall:
             if self.kw:
                 li.append(
                     ", ".join(
-                        [
-                            "{}={}".format(k, reflect.safe_repr(v))
-                            for (k, v) in self.kw.items()
-                        ],
+                        [f"{k}={reflect.safe_repr(v)}" for (k, v) in self.kw.items()],
                     ),
                 )
             li.append(")")

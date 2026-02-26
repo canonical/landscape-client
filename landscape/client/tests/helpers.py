@@ -1,8 +1,11 @@
+import os
 import pprint
+import selectors
+import subprocess
 import unittest.mock
+from contextlib import contextmanager
 
-from landscape.client.broker.amp import FakeRemoteBroker
-from landscape.client.broker.amp import RemoteBrokerConnector
+from landscape.client.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.service import BrokerService
 from landscape.client.broker.transport import FakeTransport
@@ -16,7 +19,6 @@ from landscape.client.watchdog import bootstrap_list
 from landscape.lib import testing
 from landscape.lib.persist import Persist
 from landscape.lib.testing import FakeReactor
-
 
 DEFAULT_ACCEPTED_TYPES = [
     "accepted-types",
@@ -52,8 +54,7 @@ class MessageTestCase(unittest.TestCase):
         if obtained_len < expected_len:
             extra = pprint.pformat(expected[-diff:])
             raise self.failureException(
-                f"Expected the following {diff:d} additional "
-                f"messages:\n{extra}",
+                f"Expected the following {diff:d} additional messages:\n{extra}",
             )
         elif expected_len < obtained_len:
             extra = pprint.pformat(obtained[-diff:])
@@ -101,7 +102,8 @@ class LandscapeTest(
 
         The possible .old persist file is cleaned up after the test.
         """
-        return self.makeFile(*args, backupsuffix=".old", **kwargs)
+        directory = self.makeDir()
+        return self.makeFile(*args, dirname=directory, backupsuffix=".old", **kwargs)
 
 
 class LandscapeIsolatedTest(LandscapeTest):
@@ -277,3 +279,37 @@ class FakePersist:
 
     def remove(self, key):
         self.called = True
+
+
+@contextmanager
+def ready_subprocess(test_case, basename):  # pragma: no cover
+
+    script = """\
+#!/usr/bin/python3
+import sys
+sys.stdout.write("R\\n")
+sys.stdout.flush()
+sys.stdin.read(1)
+    """
+
+    app = test_case.makeFile(script, basename=basename)
+    os.chmod(app, 0o755)
+    call = subprocess.Popen(
+        [app],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    sel = selectors.DefaultSelector()
+    sel.register(call.stdout.fileno(), selectors.EVENT_READ)
+    try:
+        events = sel.select(timeout=10)
+        if not events:
+            raise AssertionError("timed out waiting for process")
+        line = call.stdout.readline()
+        if line != "R\n":
+            raise AssertionError(f"unexpected output from process: {line!r}")
+        yield call
+    finally:
+        sel.close()
+        call.kill()

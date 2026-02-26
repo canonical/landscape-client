@@ -10,16 +10,20 @@ from unittest import mock
 from twisted.internet.defer import Deferred
 
 from landscape.lib.fs import create_text_file
-from landscape.lib.testing import ConfigTestCase
-from landscape.lib.testing import HelperTestCase
-from landscape.lib.testing import StandardIOHelper
-from landscape.lib.testing import TwistedTestCase
-from landscape.sysinfo.deployment import ALL_PLUGINS
-from landscape.sysinfo.deployment import get_landscape_log_directory
-from landscape.sysinfo.deployment import plugin_list
-from landscape.sysinfo.deployment import run
-from landscape.sysinfo.deployment import setup_logging
-from landscape.sysinfo.deployment import SysInfoConfiguration
+from landscape.lib.testing import (
+    ConfigTestCase,
+    HelperTestCase,
+    StandardIOHelper,
+    TwistedTestCase,
+)
+from landscape.sysinfo.deployment import (
+    ALL_PLUGINS,
+    SysInfoConfiguration,
+    get_landscape_log_directory,
+    plugin_list,
+    run,
+    setup_logging,
+)
 from landscape.sysinfo.load import Load
 from landscape.sysinfo.network import Network
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
@@ -109,8 +113,11 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
 
         fake_stderr = io.StringIO()
 
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             self.configuration.load(
                 ["--sysinfo-plugins", fake_plugin, "-d", self.makeDir()],
@@ -128,8 +135,11 @@ class DeploymentTest(ConfigTestCase, unittest.TestCase):
 
         fake_stderr = io.StringIO()
 
-        with self.assertRaises(SystemExit) as ctx, contextlib.redirect_stderr(
-            fake_stderr,
+        with (
+            self.assertRaises(SystemExit) as ctx,
+            contextlib.redirect_stderr(
+                fake_stderr,
+            ),
         ):
             self.configuration.load(
                 [
@@ -176,7 +186,6 @@ class RunTest(
     TwistedTestCase,
     unittest.TestCase,
 ):
-
     helpers = [StandardIOHelper]
 
     def setUp(self):
@@ -344,21 +353,26 @@ class RunTest(
         self.assertFalse(logger.propagate)
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
-        with mock.patch.object(
-            os,
-            "getuid",
-            return_value=0,
-        ) as mock_getuid, mock.patch.object(
-            os.path,
-            "isdir",
-            return_value=False,
-        ) as mock_isdir, mock.patch.object(
-            os,
-            "mkdir",
-        ) as mock_mkdir, mock.patch(
-            "logging.open",
-            create=True,
-        ) as mock_open:
+        with (
+            mock.patch.object(
+                os,
+                "getuid",
+                return_value=0,
+            ) as mock_getuid,
+            mock.patch.object(
+                os.path,
+                "isdir",
+                return_value=False,
+            ) as mock_isdir,
+            mock.patch.object(
+                os,
+                "mkdir",
+            ) as mock_mkdir,
+            mock.patch(
+                "logging.open",
+                create=True,
+            ) as mock_open,
+        ):
             logger = getLogger("landscape-sysinfo")
             self.assertEqual(logger.handlers, [])
 
@@ -392,7 +406,7 @@ class RunTest(
         setup_logging_mock.assert_called_once_with()
 
     def test_run_setup_logging_exits_gracefully(self):
-        io_error = IOError("Read-only filesystem.")
+        io_error = OSError("Read-only filesystem.")
         with mock.patch(
             "landscape.sysinfo.deployment.setup_logging",
             side_effect=io_error,

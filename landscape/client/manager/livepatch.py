@@ -2,6 +2,7 @@ import json
 import logging
 import subprocess
 import traceback
+
 import yaml
 
 from landscape.client.manager.plugin import DataWatcherManager
@@ -42,9 +43,7 @@ def _parse_humane(output):
             value = value.strip().strip('"').strip("'")
             data[key] = value
         else:
-            raise yaml.YAMLError(
-                "Input is not a list of key/value pairs: " + output
-            )
+            raise yaml.YAMLError("Input is not a list of key/value pairs: " + output)
 
     return data
 

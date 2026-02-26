@@ -1,9 +1,6 @@
 import unittest
 
-from landscape.lib.format import expandvars
-from landscape.lib.format import format_delta
-from landscape.lib.format import format_object
-from landscape.lib.format import format_percent
+from landscape.lib.format import expandvars, format_delta, format_object, format_percent
 
 
 def function():

@@ -19,15 +19,11 @@ def update_ssl_cert(cert: str) -> str | None:
     if not os.path.isdir(cert_path):
         os.makedirs(cert_path)
 
-    cert_path = os.path.join(cert_path, "ssl-ca.crt")
+    cert_path = os.path.join(cert_path, "ssl-public-key.crt")
     with open(cert_path, 'w') as f:
         f.write(cert)
 
     return str(cert_path)
-
-def update_ssl_cert_deprecated(cert:str) -> str | None:
-    print("DEPRECATION: ssl-public-key is deprecated. Use 'ssl-ca' instead.")
-    return update_ssl_cert(cert)
 
 config = Configuration()
 config.load([])
@@ -38,8 +34,7 @@ config_entries = [
     ("computer-title", "computer_title", None),
     ("landscape-url", "url", lambda url: f"{url}/message-system"),
     ("landscape-ping-url", "ping_url", lambda url: f"{url}/ping"),
-    ("ssl-ca", "ssl_ca", update_ssl_cert),
-    ("ssl-public-key", "ssl_public_key", update_ssl_cert_deprecated),
+    ("ssl-public-key", "ssl_public_key", update_ssl_cert),
     ("log-level", "log_level", None),
     ("script-users", "script_users", None),
     ("manager-plugins", "manager_plugins", None),

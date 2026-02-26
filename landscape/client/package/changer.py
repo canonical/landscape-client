@@ -7,27 +7,27 @@ import time
 
 import dbus
 from twisted.internet import reactor
-from twisted.internet.defer import maybeDeferred
-from twisted.internet.defer import succeed
+from twisted.internet.defer import maybeDeferred, succeed
 
-from landscape.client import GROUP
-from landscape.client import USER
+from landscape.client.environment import GROUP, USER
 from landscape.client.manager.manager import FAILED
 from landscape.client.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
 from landscape.client.package.reporter import find_reporter_command
-from landscape.client.package.taskhandler import PackageTaskError
-from landscape.client.package.taskhandler import PackageTaskHandler
 from landscape.client.package.taskhandler import (
+    PackageTaskError,
+    PackageTaskHandler,
     PackageTaskHandlerConfiguration,
+    run_task_handler,
 )
-from landscape.client.package.taskhandler import run_task_handler
-from landscape.constants import DEPENDENCY_ERROR_RESULT
-from landscape.constants import ERROR_RESULT
-from landscape.constants import POLICY_ALLOW_ALL_CHANGES
-from landscape.constants import POLICY_ALLOW_INSTALLS
-from landscape.constants import POLICY_STRICT
-from landscape.constants import SUCCESS_RESULT
-from landscape.constants import UNKNOWN_PACKAGE_DATA_TIMEOUT
+from landscape.constants import (
+    DEPENDENCY_ERROR_RESULT,
+    ERROR_RESULT,
+    POLICY_ALLOW_ALL_CHANGES,
+    POLICY_ALLOW_INSTALLS,
+    POLICY_STRICT,
+    SUCCESS_RESULT,
+    UNKNOWN_PACKAGE_DATA_TIMEOUT,
+)
 from landscape.lib.config import get_bindir
 from landscape.lib.fs import create_binary_file
 
@@ -38,6 +38,22 @@ class UnknownPackageData(Exception):
 
 class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
     """Specialized configuration for the Landscape package-changer."""
+
+    def make_parser(self):
+        parser = super().make_parser()
+
+        parser.add_argument(
+            "--http-proxy",
+            metavar="URL",
+            help="The URL of the HTTP proxy, if one is needed.",
+        )
+        parser.add_argument(
+            "--https-proxy",
+            metavar="URL",
+            help="The URL of the HTTPS proxy, if one is needed.",
+        )
+
+        return parser
 
     @property
     def binaries_path(self):
@@ -87,6 +103,7 @@ class PackageChanger(PackageTaskHandler):
             config,
             landscape_reactor,
         )
+        self._configure_proxies()
         self._process_factory = process_factory
         if landscape_reactor is None:  # For testing purposes.
             from landscape.client.reactor import LandscapeReactor
@@ -95,6 +112,10 @@ class PackageChanger(PackageTaskHandler):
         else:
             self._landscape_reactor = landscape_reactor
         self.reboot_required_filename = reboot_required_filename
+
+    def _configure_proxies(self):
+        self._facade.http_proxy = self._config.get("http_proxy", None)
+        self._facade.https_proxy = self._config.get("https_proxy", None)
 
     def run(self):
         """
@@ -158,8 +179,7 @@ class PackageChanger(PackageTaskHandler):
                 "type": "change-packages-result",
                 "operation-id": task.data["operation-id"],
                 "result-code": ERROR_RESULT,
-                "result-text": "Package data has changed. "
-                "Please retry the operation.",
+                "result-text": "Package data has changed. Please retry the operation.",
             }
             return self._broker.send_message(message, self._session_id)
         else:
@@ -414,8 +434,7 @@ class PackageChanger(PackageTaskHandler):
             response["must-remove"] = sorted(package_change_result.removals)
 
         logging.info(
-            "Queuing response with change package results to "
-            "exchange urgently.",
+            "Queuing response with change package results to exchange urgently.",
         )
 
         deferred = self._broker.send_message(response, self._session_id, True)

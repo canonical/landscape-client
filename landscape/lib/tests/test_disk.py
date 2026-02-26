@@ -3,10 +3,12 @@ import unittest
 from unittest.mock import patch
 
 from landscape.lib import testing
-from landscape.lib.disk import _get_device_removable_file_path
-from landscape.lib.disk import get_filesystem_for_path
-from landscape.lib.disk import get_mount_info
-from landscape.lib.disk import is_device_removable
+from landscape.lib.disk import (
+    _get_device_removable_file_path,
+    get_filesystem_for_path,
+    get_mount_info,
+    is_device_removable,
+)
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -41,8 +43,7 @@ class DiskUtilitiesTest(BaseTestCase):
         """
         self.read_access = read_access
         content = "\n".join(
-            f"/dev/sda{i:d} {point} {fs} rw 0 0"
-            for i, point in enumerate(points)
+            f"/dev/sda{i:d} {point} {fs} rw 0 0" for i, point in enumerate(points)
         )
         f = open(self.mount_file, "w")
         f.write(content)

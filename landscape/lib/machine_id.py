@@ -22,7 +22,7 @@ MACHINE_ID_SIZE = 32
 
 
 def _get_machine_id() -> str:
-    with open(MACHINE_ID_FILE, "r") as f:
+    with open(MACHINE_ID_FILE) as f:
         machine_id = f.read(MACHINE_ID_SIZE)
     return machine_id
 

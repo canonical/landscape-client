@@ -4,26 +4,27 @@ import subprocess
 import sys
 import time
 from argparse import SUPPRESS
-from datetime import datetime
-from datetime import timezone
-from logging import debug
-from logging import info
-from typing import Sequence
+from collections.abc import Sequence
+from datetime import datetime, timezone
+from logging import debug, info
 
 from twisted.logger import globalLogBeginner
 
 from landscape import VERSION
-from landscape.client import DEFAULT_CONFIG
-from landscape.client import GROUP
 from landscape.client import snap_http
-from landscape.client import USER
+from landscape.client.environment import (
+    DEFAULT_CONFIG,
+    DIRECTORY_MODE,
+    FILE_MODE,
+    GROUP,
+    USER,
+)
 from landscape.client.snap_utils import get_snap_info
 from landscape.client.upgraders import UPGRADE_MANAGERS
 from landscape.lib import logging
 from landscape.lib.config import BaseConfiguration as _BaseConfiguration
 from landscape.lib.format import expandvars
-from landscape.lib.network import get_active_device_info
-from landscape.lib.network import get_fqdn
+from landscape.lib.network import get_active_device_info, get_fqdn
 from landscape.lib.persist import Persist
 
 
@@ -50,7 +51,6 @@ def _is_script(filename=sys.argv[0], _scriptdir=os.path.abspath("scripts")):
 
 
 class BaseConfiguration(_BaseConfiguration):
-
     version = VERSION
 
     default_config_filename = DEFAULT_CONFIG
@@ -102,7 +102,6 @@ class Configuration(BaseConfiguration):
               - C{log_level} (C{"info"})
               - C{url} (C{"http://landscape.canonical.com/message-system"})
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
-              - C{ssl_ca}
               - C{ssl_public_key}
               - C{ignore_sigint} (C{False})
               - C{stagger_launch} (C{0.1})
@@ -121,15 +120,10 @@ class Configuration(BaseConfiguration):
             default="http://landscape.canonical.com/ping",
         )
         parser.add_argument(
-            "--ssl-ca",
-            dest="ssl_ca",
-            help="The CA certificate verifies the server.",
-        )
-        parser.add_argument(
             "-k",
             "--ssl-public-key",
-            dest="ssl_ca",
-            help="The CA certificate verifies the server.",
+            help="The ssl-public-key is a CA certificate that verifies the server."
+            "Only used if the given URL is https.",
         )
         parser.add_argument(
             "--ignore-sigint",
@@ -147,8 +141,7 @@ class Configuration(BaseConfiguration):
             "--package-monitor-interval",
             default=30 * 60,
             type=int,
-            help="The interval between package monitor runs "
-            "(default: 1800).",
+            help="The interval between package monitor runs (default: 1800).",
         )
         parser.add_argument(
             "--apt-update-interval",
@@ -161,8 +154,7 @@ class Configuration(BaseConfiguration):
             default=5 * 60,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between flushes to disk "
-            "for persistent data.",
+            help="The number of seconds between flushes to disk for persistent data.",
         )
         parser.add_argument(
             "--stagger-launch",
@@ -175,7 +167,7 @@ class Configuration(BaseConfiguration):
         )
         parser.add_argument(
             "--snap-monitor-interval",
-            default=30 * 60,
+            default=30 * 60,  # 30 minutes
             type=int,
             help="The interval between snap monitor runs (default 1800).",
         )
@@ -259,6 +251,8 @@ def get_versioned_persist(service):
         filename=service.persist_filename,
         user=USER,
         group=GROUP,
+        file_mode=FILE_MODE,
+        directory_mode=DIRECTORY_MODE,
     )
     upgrade_manager = UPGRADE_MANAGERS[service.service_name]
     if os.path.exists(service.persist_filename):

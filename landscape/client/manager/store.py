@@ -1,13 +1,13 @@
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
+import sqlite3
 
+from landscape.client.environment import FILE_MODE
 from landscape.lib.apt.package.store import with_cursor
+from landscape.lib.fs import touch_file
 
 
 class ManagerStore:
     def __init__(self, filename):
+        touch_file(filename, mode=FILE_MODE)
         self._db = sqlite3.connect(filename)
         ensure_schema(self._db)
 
@@ -37,8 +37,7 @@ class ManagerStore:
             )
         else:
             cursor.execute(
-                "INSERT INTO graph (graph_id, filename, user) "
-                "VALUES (?, ?, ?)",
+                "INSERT INTO graph (graph_id, filename, user) VALUES (?, ?, ?)",
                 (graph_id, filename, user),
             )
 

@@ -1,8 +1,7 @@
 from functools import partial
 from operator import itemgetter
 
-from netifaces import AF_INET
-from netifaces import AF_INET6
+from netifaces import AF_INET, AF_INET6
 from twisted.internet.defer import succeed
 
 from landscape.lib.network import get_active_device_info

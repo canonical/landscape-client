@@ -1,14 +1,11 @@
 from unittest.mock import patch
 
 from landscape.client.monitor.snapservicesmonitor import SnapServicesMonitor
-from landscape.client.snap_http import SnapdHttpException
-from landscape.client.snap_http import SnapdResponse
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.snap_http import SnapdHttpException, SnapdResponse
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class SnapServicesMonitorTest(LandscapeTest):
-
     helpers = [MonitorHelper]
 
     def setUp(self):

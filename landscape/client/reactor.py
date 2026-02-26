@@ -1,6 +1,7 @@
 """
 Extend the regular Twisted reactor with event-handling features.
 """
+
 from landscape.client.lockfile import patch_lockfile
 from landscape.lib.reactor import EventHandlingReactor
 

@@ -4,12 +4,7 @@ PYTHON ?= python3
 SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
 TRIAL ?= -m landscape.lib.run_tests
 TRIAL_ARGS ?=
-PRE_COMMIT ?= $(HOME)/.local/bin/pre-commit
 
-# PEP8 rules ignored:
-# W503 https://www.flake8rules.com/rules/W503.html
-# E203 Whitespace before ':' (enforced by Black)
-PEP8_IGNORED = W503,E203
 
 .PHONY: help
 help:  ## Print help about available targets
@@ -18,13 +13,12 @@ help:  ## Print help about available targets
 .PHONY: depends
 depends:
 	sudo apt update && sudo apt-get -y install python3-configobj python3-coverage \
-		python3-flake8 python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted\
+		python3-mock python3-netifaces python3-pip python3-pycurl python3-twisted\
 		net-tools
 
 .PHONY: depends-dev
 depends-dev: depends
-	pip install pre-commit jinja2-cli
-	$(PRE_COMMIT) install
+	pip install jinja2-cli ruff coverage[toml]
 
 # -common seems a catch-22, but this is just a shortcut to
 # initialize user and dirs, some used through tests.
@@ -53,16 +47,18 @@ coverage:
 	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) -m coverage run $(TRIAL) --unclean-warnings landscape
 	PYTHONPATH=$(PYTHONPATH):$(CURDIR) LC_ALL=C $(PYTHON) -m coverage xml
 
+.PHONY: ruff-fix
+ruff-fix:
+	ruff check --fix
+	ruff format
+
+.PHONY: ruff-check
+ruff-check:
+	ruff check
+	ruff format --check
+
 .PHONY: lint
-lint:
-	$(PYTHON) -m flake8 --ignore $(PEP8_IGNORED) `find landscape -name \*.py`
-
-.PHONY: pyflakes
-pyflakes:
-	-pyflakes `find landscape -name \*.py`
-
-pre-commit:
-	-pre-commit run -a
+lint: ruff-fix
 
 .PHONY: clean
 clean:

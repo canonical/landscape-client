@@ -1,10 +1,8 @@
 import unittest
 
-from landscape.lib.testing import FSTestCase
-from landscape.lib.testing import TwistedTestCase
+from landscape.lib.testing import FSTestCase, TwistedTestCase
 from landscape.sysinfo.memory import Memory
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
-
 
 MEMINFO_SAMPLE = """
 MemTotal:      2074536 kB

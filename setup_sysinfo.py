@@ -3,7 +3,6 @@ import sys
 
 from landscape import UPSTREAM_VERSION
 
-
 NAME = "Landscape Sysinfo"
 DESCRIPTION = "Landscape Client"
 PACKAGES = [

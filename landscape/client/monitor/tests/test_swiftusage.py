@@ -1,12 +1,10 @@
 from unittest import skipUnless
-from unittest.mock import ANY
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 from twisted.internet.defer import succeed
 
 from landscape.client.monitor.swiftusage import SwiftUsage
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 
 try:
     from swift.cli.recon import Scout

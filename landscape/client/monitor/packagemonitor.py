@@ -10,7 +10,6 @@ from landscape.lib.encoding import encode_values
 
 
 class PackageMonitor(MonitorPlugin):
-
     run_interval = 1800
     scope = "package"
 
@@ -85,7 +84,6 @@ class PackageMonitor(MonitorPlugin):
                 return arch
 
         if getattr(self, "_fake_reporter", None) is None:
-
             from landscape.client.package.reporter import (
                 FakeReporter,
                 PackageReporterConfiguration,
@@ -95,8 +93,7 @@ class PackageMonitor(MonitorPlugin):
             package_facade = FakeFacade()
             package_config = PackageReporterConfiguration()
             package_config.load(
-                args
-                + ["-d", self.config.data_path, "-l", self.config.log_dir],
+                args + ["-d", self.config.data_path, "-l", self.config.log_dir],
             )
             package_store = FakePackageStore(package_config.store_filename)
             self._fake_reporter = FakeReporter(

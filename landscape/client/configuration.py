@@ -3,6 +3,7 @@
 This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
+
 import base64
 import getpass
 import io
@@ -17,27 +18,29 @@ import textwrap
 from argparse import SUPPRESS
 from urllib.parse import urlparse
 
-from landscape.client import GROUP
-from landscape.client import IS_SNAP
-from landscape.client import USER
 from landscape.client.broker.config import BrokerConfiguration
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.service import BrokerService
-from landscape.client.registration import ClientRegistrationInfo
-from landscape.client.registration import register
-from landscape.client.registration import RegistrationException
-from landscape.client.serviceconfig import ServiceConfig
-from landscape.client.serviceconfig import ServiceConfigException
-from landscape.lib.bootstrap import BootstrapDirectory
-from landscape.lib.bootstrap import BootstrapList
-from landscape.lib.fetch import fetch
-from landscape.lib.fetch import FetchError
+from landscape.client.environment import (
+    DIRECTORY_MODE,
+    FILE_MODE,
+    GROUP,
+    IS_SNAP,
+    USER,
+)
+from landscape.client.registration import (
+    ClientRegistrationInfo,
+    RegistrationException,
+    register,
+)
+from landscape.client.serviceconfig import ServiceConfig, ServiceConfigException
+from landscape.lib.bootstrap import BootstrapDirectory, BootstrapList
+from landscape.lib.fetch import FetchError, fetch
 from landscape.lib.fs import create_binary_file
 from landscape.lib.logging import init_app_logging
 from landscape.lib.network import get_fqdn
 from landscape.lib.persist import Persist
 from landscape.lib.tag import is_valid_tag
-
 
 EXIT_NOT_REGISTERED = 5
 
@@ -105,16 +108,10 @@ def get_invalid_users(users):
 
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
-
+    # Whether or not config option will be written back to config file
     unsaved_options = (
-        "clones",
-        "start_clones_over",
-        "hostagent_uid",
-        "installation_request_id",
-        "authenticated_attach_code",
         "no_start",
         "disable",
-        "init",
         "silent",
         "ok_no_register",
         "import_from",
@@ -125,7 +122,30 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         "actively_registered",
         "registration_sent",
         "show",
-        "show-json",
+        "show_json",
+    )
+
+    # Whether or not config option will be shown in config dumps
+    hidden_options = (
+        "no_start",
+        "disable",
+        "silent",
+        "ok_no_register",
+        "import_from",
+        "skip_registration",
+        "force_registration",
+        "register_if_needed",
+        "clones",
+        "start_clones_over",
+        "hostagent_uid",
+        "installation_request_id",
+        "authenticated_attach_code",
+        "init",
+        "is_registered",
+        "actively_registered",
+        "registration_sent",
+        "show",
+        "show_json",
     )
 
     encoding = "utf-8"
@@ -164,8 +184,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         )
                     except Exception:
                         raise ImportOptionError(
-                            "Couldn't read configuration "
-                            f"from {self.import_from}.",
+                            f"Couldn't read configuration from {self.import_from}.",
                         )
             except Exception as error:
                 raise ImportOptionError(str(error))
@@ -242,8 +261,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_argument(
             "--ok-no-register",
             action="store_true",
-            help="Return exit code 0 instead of 2 if the client "
-            "can't be registered.",
+            help="Return exit code 0 instead of 2 if the client can't be registered.",
         )
         parser.add_argument(
             "--silent",
@@ -267,8 +285,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             "--is-registered",
             action="store_true",
             help="Exit with code 0 (success) if client is "
-            "registered else returns {}. Displays "
-            "registration info.".format(EXIT_NOT_REGISTERED),
+            f"registered else returns {EXIT_NOT_REGISTERED}. Displays "
+            "registration info.",
         )
         parser.add_argument(
             "--skip-registration",
@@ -283,23 +301,21 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_argument(
             "--register-if-needed",
             action="store_true",
-            help=(
-                "Send a new registration request only if one has not been sent"
-            ),
+            help=("Send a new registration request only if one has not been sent"),
         )
         parser.add_argument(
             "--actively-registered",
             action="store_true",
             help="Exit with code 0 (success) if client is "
-            "registered else returns {}. Displays "
-            "registration info.".format(EXIT_NOT_REGISTERED),
+            f"registered else returns {EXIT_NOT_REGISTERED}. Displays "
+            "registration info.",
         )
         parser.add_argument(
             "--registration-sent",
             action="store_true",
             help="Exit with code 0 (success) if client is "
-            "registered else returns {}. Displays "
-            "registration info.".format(EXIT_NOT_REGISTERED),
+            f"registered else returns {EXIT_NOT_REGISTERED}. Displays "
+            "registration info.",
         )
         parser.add_argument(
             "--show",
@@ -490,8 +506,7 @@ class LandscapeSetupScript:
             return  # an access group is already provided, don't ask for one
 
         show_help(
-            "You may provide an access group for this computer "
-            "e.g. webservers.",
+            "You may provide an access group for this computer e.g. webservers.",
         )
         self.prompt("access_group", "Access group", False)
 
@@ -519,8 +534,7 @@ class LandscapeSetupScript:
 
     def query_landscape_edition(self):
         show_help(
-            "Manage this machine with Landscape "
-            "(https://ubuntu.com/landscape):\n",
+            "Manage this machine with Landscape (https://ubuntu.com/landscape):\n",
         )
         options = self.config.get_command_line_options()
         if "ping_url" in options and "url" in options:
@@ -547,15 +561,12 @@ class LandscapeSetupScript:
             self.config.url = f"https://{self.landscape_domain}/message-system"
         else:
             self.landscape_domain = ""
-            self.config.ping_url = self.config._command_line_defaults[
-                "ping_url"
-            ]
+            self.config.ping_url = self.config._command_line_defaults["ping_url"]
             self.config.url = self.config._command_line_defaults["url"]
             if self.config.account_name == "standalone":
                 self.config.account_name = ""
 
     def show_summary(self):
-
         tx = f"""A summary of the provided information:
             Computer's Title: {self.config.computer_title}
             Account Name: {self.config.account_name}
@@ -667,11 +678,11 @@ def decode_base64_ssl_public_certificate(config):
     """
     # WARNING: ssl_public_certificate is misnamed, it's not the key of the
     # certificate, but the actual certificate itself.
-    if config.ssl_ca and config.ssl_ca.startswith("base64:"):
+    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
         decoded_cert = base64.decodebytes(
-            config.ssl_ca[7:].encode("ascii"),
+            config.ssl_public_key[7:].encode("ascii"),
         )
-        config.ssl_ca = store_public_key_data(config, decoded_cert)
+        config.ssl_public_key = store_public_key_data(config, decoded_cert)
 
 
 def setup(config) -> Identity:
@@ -687,9 +698,7 @@ def setup(config) -> Identity:
     bootstrap_tree(config)
 
     if not config.no_start:
-        if config.silent:
-            ServiceConfig.set_start_on_boot(True)
-        elif not ServiceConfig.is_configured_to_run():
+        if config.silent or not ServiceConfig.is_configured_to_run():
             ServiceConfig.set_start_on_boot(True)
 
     setup_http_proxy(config)
@@ -709,6 +718,8 @@ def setup(config) -> Identity:
         ),
         user=USER,
         group=GROUP,
+        file_mode=FILE_MODE,
+        directory_mode=DIRECTORY_MODE,
     )
 
     return Identity(config, persist)
@@ -733,13 +744,14 @@ def restart_client(config):
 def bootstrap_tree(config):
     """Create the client directories tree."""
     bootstrap_list = [
-        BootstrapDirectory("$data_path", USER, GROUP, 0o755),
-        BootstrapDirectory("$annotations_path", USER, GROUP, 0o755),
+        BootstrapDirectory(
+            config.data_path, username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
+        BootstrapDirectory(
+            config.annotations_path, username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
     ]
-    BootstrapList(bootstrap_list).bootstrap(
-        data_path=config.data_path,
-        annotations_path=config.annotations_path,
-    )
+    BootstrapList(bootstrap_list).bootstrap()
 
 
 def store_public_key_data(config, certificate_data):
@@ -751,11 +763,11 @@ def store_public_key_data(config, certificate_data):
     @param certificate_data: a string of data that represents the contents of
     the file to be written.
     @return the L{BrokerConfiguration} object that was passed in, updated to
-    reflect the path of the ssl_ca file.
+    reflect the path of the ssl_public_key file.
     """
     key_filename = os.path.join(
         config.data_path,
-        os.path.basename(config.get_config_filename() + ".ssl_ca"),
+        os.path.basename(config.get_config_filename() + ".ssl_public_key"),
     )
     print_text(f"Writing SSL CA certificate to {key_filename}...")
     create_binary_file(key_filename, certificate_data)
@@ -785,7 +797,7 @@ def attempt_registration(
             registration_info = register(
                 client_info,
                 config.url,
-                cainfo=config.ssl_ca,
+                cainfo=config.ssl_public_key,
             )
 
             break
@@ -820,13 +832,7 @@ def registration_sent(config):
     clear with what is performed. This is the legacy behaviour of
     --is-registered and the name will be removed in the 26.04 release.
     """
-    persist_filename = os.path.join(
-        config.data_path,
-        f"{BrokerService.service_name}.bpickle",
-    )
-    persist = Persist(filename=persist_filename, user=USER, group=GROUP)
-    identity = Identity(config, persist)
-    return bool(identity.secure_id)
+    return bool(get_secure_id(config))
 
 
 def actively_registered(config):
@@ -851,14 +857,10 @@ def registration_info_text(config, registration_status):
     config_path = os.path.abspath(config._config_filename)
 
     text = textwrap.dedent(
-        """
-                           Registered:    {}
-                           Config Path:   {}
-                           Data Path      {}""".format(
-            registration_status,
-            config_path,
-            config.data_path,
-        ),
+        f"""
+                           Registered:    {registration_status}
+                           Config Path:   {config_path}
+                           Data Path      {config.data_path}""",
     )
     if registration_status:
         text += f"\nAccount Name:  {config.account_name}"
@@ -880,7 +882,7 @@ def get_configuration_dump(config):
         if (
             conf_value != SUPPRESS
             and conf_option != "config"
-            and conf_option not in LandscapeSetupConfiguration.unsaved_options
+            and conf_option not in LandscapeSetupConfiguration.hidden_options
         ):
             conf_dump[conf_option] = conf_value
 
@@ -926,6 +928,8 @@ def set_secure_id(config, new_id, insecure_id=None):
         ),
         user=USER,
         group=GROUP,
+        file_mode=FILE_MODE,
+        directory_mode=DIRECTORY_MODE,
     )
     identity = Identity(config, persist)
     identity.secure_id = new_id
@@ -965,8 +969,7 @@ def main(args, print=print):  # noqa: C901
 
     if config.skip_registration and config.force_registration:
         sys.exit(
-            "Do not set both skip registration "
-            "and force registration together.",
+            "Do not set both skip registration and force registration together.",
         )
 
     if config.show:
@@ -982,7 +985,6 @@ def main(args, print=print):  # noqa: C901
     already_registered = registration_sent(config)
 
     if config.is_registered or config.registration_sent:
-
         registration_status = already_registered
 
         info_text = registration_info_text(config, registration_status)
@@ -1029,9 +1031,7 @@ def main(args, print=print):  # noqa: C901
 
     should_register = False
 
-    if config.force_registration:
-        should_register = True
-    elif config.silent and not config.register_if_needed:
+    if config.force_registration or config.silent and not config.register_if_needed:
         should_register = True
     elif config.register_if_needed:
         should_register = not already_registered

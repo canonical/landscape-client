@@ -1,12 +1,14 @@
 import unittest
 
-from landscape.lib.sequenceranges import add_to_ranges
-from landscape.lib.sequenceranges import find_ranges_index
-from landscape.lib.sequenceranges import ranges_to_sequence
-from landscape.lib.sequenceranges import remove_from_ranges
-from landscape.lib.sequenceranges import sequence_to_ranges
-from landscape.lib.sequenceranges import SequenceError
-from landscape.lib.sequenceranges import SequenceRanges
+from landscape.lib.sequenceranges import (
+    SequenceError,
+    SequenceRanges,
+    add_to_ranges,
+    find_ranges_index,
+    ranges_to_sequence,
+    remove_from_ranges,
+    sequence_to_ranges,
+)
 
 
 class SequenceRangesTest(unittest.TestCase):

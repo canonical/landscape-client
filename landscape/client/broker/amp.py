@@ -1,15 +1,11 @@
-from twisted.internet.defer import execute
-from twisted.internet.defer import maybeDeferred
-from twisted.internet.defer import succeed
+from twisted.internet.defer import execute, maybeDeferred, succeed
 
-from landscape.client.amp import ComponentConnector
-from landscape.client.amp import get_remote_methods
+from landscape.client.amp import ComponentConnector, get_remote_methods
 from landscape.client.broker.client import BrokerClient
 from landscape.client.broker.server import BrokerServer
 from landscape.client.manager.manager import Manager
 from landscape.client.monitor.monitor import Monitor
-from landscape.lib.amp import MethodCallArgument
-from landscape.lib.amp import RemoteObject
+from landscape.lib.amp import MethodCallArgument, RemoteObject
 
 
 class RemoteBroker(RemoteObject):
@@ -120,6 +116,4 @@ def get_component_registry():
         RemoteMonitorConnector,
         RemoteManagerConnector,
     ]
-    return {
-        connector.component.name: connector for connector in all_connectors
-    }
+    return {connector.component.name: connector for connector in all_connectors}

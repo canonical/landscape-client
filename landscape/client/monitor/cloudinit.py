@@ -5,7 +5,6 @@ from landscape.client.monitor.plugin import DataWatcher
 
 
 class CloudInit(DataWatcher):
-
     message_type = "cloud-init"
     message_key = message_type
     scope = message_type

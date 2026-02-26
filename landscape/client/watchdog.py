@@ -4,40 +4,38 @@ The WatchDog must run as root, because it spawns the Landscape Manager.
 
 The main C{landscape-client} program uses this watchdog.
 """
+
 import errno
 import os
 import pwd
 import signal
 import sys
 import time
-from logging import error
-from logging import info
-from logging import warning
-from resource import RLIMIT_NOFILE
-from resource import setrlimit
+from logging import error, info, warning
+from resource import RLIMIT_NOFILE, setrlimit
 
 from twisted.application.app import startApplication
-from twisted.application.service import Application
-from twisted.application.service import Service
+from twisted.application.service import Application, Service
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet.error import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from landscape.client import GROUP
-from landscape.client import IS_SNAP
-from landscape.client import USER
-from landscape.client.broker.amp import RemoteBrokerConnector
-from landscape.client.broker.amp import RemoteManagerConnector
-from landscape.client.broker.amp import RemoteMonitorConnector
-from landscape.client.deployment import Configuration
-from landscape.client.deployment import convert_arg_to_bool
-from landscape.client.deployment import init_logging
+from landscape.client.broker.amp import (
+    RemoteBrokerConnector,
+    RemoteManagerConnector,
+    RemoteMonitorConnector,
+)
+from landscape.client.deployment import Configuration, convert_arg_to_bool, init_logging
+from landscape.client.environment import (
+    DIRECTORY_MODE,
+    FILE_MODE,
+    GROUP,
+    IS_SNAP,
+    USER,
+)
 from landscape.client.reactor import LandscapeReactor
-from landscape.lib.bootstrap import BootstrapDirectory
-from landscape.lib.bootstrap import BootstrapFile
-from landscape.lib.bootstrap import BootstrapList
+from landscape.lib.bootstrap import BootstrapDirectory, BootstrapFile, BootstrapList
 from landscape.lib.config import get_bindir
 from landscape.lib.encoding import encode_values
 from landscape.lib.log import log_failure
@@ -329,10 +327,7 @@ class WatchedProcessProtocol(ProcessProtocol):
         """The process has ended; restart it."""
         if self._delayed_really_kill is not None:
             self._delayed_really_kill.cancel()
-        if (
-            self._delayed_terminate is not None
-            and self._delayed_terminate.active()
-        ):
+        if self._delayed_terminate is not None and self._delayed_terminate.active():
             self._delayed_terminate.cancel()
         if self._wait_result is not None:
             self._wait_result.callback(None)
@@ -382,9 +377,7 @@ class WatchDog:
         self.monitor = monitor
         self.manager = manager
         self.daemons = [
-            daemon
-            for daemon in [self.broker, self.monitor, self.manager]
-            if daemon
+            daemon for daemon in [self.broker, self.monitor, self.manager] if daemon
         ]
         self.reactor = reactor
         self._checking = None
@@ -575,7 +568,6 @@ class WatchDogService(Service):
             log_dir=self._config.log_dir,
         )
         if self._config.clones > 0:
-
             # Let clones open an appropriate number of fds
             setrlimit(
                 RLIMIT_NOFILE,
@@ -603,8 +595,7 @@ class WatchDogService(Service):
         def start_if_not_running(running_daemons):
             if running_daemons:
                 error(
-                    "ERROR: The following daemons are already "
-                    "running: {}".format(
+                    "ERROR: The following daemons are already running: {}".format(
                         ", ".join(x.program for x in running_daemons),
                     ),
                 )
@@ -656,26 +647,52 @@ class WatchDogService(Service):
 
 bootstrap_list = BootstrapList(
     [
-        BootstrapDirectory("$data_path", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/package", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/package/hash-id", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/package/binaries", USER, GROUP, 0o755),
+        BootstrapDirectory(
+            "$data_path", username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
+        BootstrapDirectory(
+            "$data_path/package", username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
+        BootstrapDirectory(
+            "$data_path/package/hash-id",
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
+        ),
+        BootstrapDirectory(
+            "$data_path/package/binaries",
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
+        ),
         BootstrapDirectory(
             "$data_path/package/upgrade-tool",
-            USER,
-            "root",
-            0o755,
+            username=USER,
+            group="root",
+            mode=DIRECTORY_MODE,
         ),
-        BootstrapDirectory("$data_path/messages", USER, GROUP, 0o755),
-        BootstrapDirectory("$data_path/sockets", USER, GROUP, 0o750),
+        BootstrapDirectory(
+            "$data_path/messages",
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
+        ),
+        BootstrapDirectory(
+            "$data_path/sockets", username=USER, group=GROUP, mode=DIRECTORY_MODE
+        ),
         BootstrapDirectory(
             "$data_path/custom-graph-scripts",
-            USER,
-            GROUP,
-            0o755,
+            username=USER,
+            group=GROUP,
+            mode=DIRECTORY_MODE,
         ),
-        BootstrapDirectory("$log_dir", USER, GROUP, 0o755),
-        BootstrapFile("$data_path/package/database", USER, GROUP, 0o644),
+        BootstrapDirectory("$log_dir", username=USER, group=GROUP, mode=DIRECTORY_MODE),
+        BootstrapFile(
+            "$data_path/package/database",
+            username=USER,
+            group=GROUP,
+            mode=FILE_MODE,
+        ),
     ],
 )
 

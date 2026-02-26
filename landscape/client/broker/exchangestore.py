@@ -1,11 +1,10 @@
 """Provide access to the persistent data used by the L{MessageExchange}."""
+
+import sqlite3
 import time
 
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
-
+from landscape.client.environment import FILE_MODE
+from landscape.lib.fs import touch_file
 from landscape.lib.store import with_cursor
 
 
@@ -21,7 +20,7 @@ class MessageContext:
 
     This data will be used to detect secure ID changes between the time at
     which the request message came in and the completion of the request.
-    If the secure ID did change the result message is obolete and will not be
+    If the secure ID did change the result message is obsolete and will not be
     sent to the server.
 
     @param db: the sqlite database handle.
@@ -57,6 +56,7 @@ class ExchangeStore:
 
     def __init__(self, filename):
         self._filename = filename
+        touch_file(self._filename, mode=FILE_MODE)
 
     def _ensure_schema(self):
         ensure_exchange_schema(self._db)

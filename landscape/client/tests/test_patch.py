@@ -1,7 +1,6 @@
 import sqlite3
 
-from landscape.client.patch import SQLiteUpgradeManager
-from landscape.client.patch import UpgradeManager
+from landscape.client.patch import SQLiteUpgradeManager, UpgradeManager
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.persist import Persist
 

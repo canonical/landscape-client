@@ -33,15 +33,15 @@ Diagram::
 
 """
 
+from logging import info
+
 try:
     from urllib.parse import urlencode
 except ImportError:
     from urllib import urlencode
 
-from logging import info
-
-from twisted.python.failure import Failure
 from twisted.internet import defer
+from twisted.python.failure import Failure
 
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
@@ -139,13 +139,9 @@ class Pinger:
 
     def start(self):
         """Start pinging."""
-        if self._config.ssl_ca is not None:
-            cainfo = self._config.ssl_ca
-        else:
-            cainfo = None
         self._ping_client = self.ping_client_factory(
             self._reactor,
-            cainfo=cainfo,
+            cainfo=self._config.ssl_public_key,
         )
         self._schedule()
 
@@ -162,8 +158,7 @@ class Pinger:
     def _got_result(self, exchange):
         if exchange:
             info(
-                "Ping indicates message available. "
-                "Scheduling an urgent exchange.",
+                "Ping indicates message available. Scheduling an urgent exchange.",
             )
             self._exchanger.schedule_exchange(urgent=True)
 
@@ -185,8 +180,7 @@ class Pinger:
             self._config.ping_interval = message["ping"]
             self._config.write()
             info(
-                f"Ping interval set to {self._config.ping_interval:d} "
-                "seconds.",
+                f"Ping interval set to {self._config.ping_interval:d} seconds.",
             )
         if self._call_id is not None:
             self._reactor.cancel_call(self._call_id)

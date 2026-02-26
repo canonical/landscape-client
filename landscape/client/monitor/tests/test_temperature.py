@@ -3,8 +3,7 @@ import tempfile
 from unittest import mock
 
 from landscape.client.monitor.temperature import Temperature
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.tests.test_sysstats import SysfsThermalZoneTest
 
 

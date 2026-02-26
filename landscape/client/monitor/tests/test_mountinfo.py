@@ -3,8 +3,7 @@ import tempfile
 from unittest import mock
 
 from landscape.client.monitor.mountinfo import MountInfo
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.testing import mock_counter
 
 
@@ -517,9 +516,7 @@ addr=ennui 0 0
         plugin.run()
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        messages = [
-            message for message in messages if message["type"] == "mount-info"
-        ]
+        messages = [message for message in messages if message["type"] == "mount-info"]
         expected_message = {
             "type": "mount-info",
             "mount-info": [

@@ -1,8 +1,7 @@
 from unittest import mock
 
 from landscape.client.monitor.cephusage import CephUsage
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import MonitorHelper
+from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.fs import touch_file
 
 
@@ -128,8 +127,7 @@ class CephUsagePluginTest(LandscapeTest):
         plugin._has_rados = False
         self.assertFalse(plugin._should_run())
         logging.assert_called_once_with(
-            "This machine does not appear to be a Ceph machine. "
-            "Deactivating plugin.",
+            "This machine does not appear to be a Ceph machine. Deactivating plugin.",
         )
 
     def test_wb_should_run(self):

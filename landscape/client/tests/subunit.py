@@ -71,7 +71,6 @@ class TestProtocolServer:
             self.state == TestProtocolServer.TEST_STARTED
             and self.current_test_description == line[offset:-1]
         ):
-
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
             self.client.adderror(self._current_test, RemoteError(""))
@@ -91,7 +90,6 @@ class TestProtocolServer:
             self.state == TestProtocolServer.TEST_STARTED
             and self.current_test_description == line[offset:-1]
         ):
-
             self.state = TestProtocolServer.OUTSIDE_TEST
             self.current_test_description = None
             self.client.addfailure(self._current_test, RemoteError())
@@ -110,7 +108,6 @@ class TestProtocolServer:
             self.state == TestProtocolServer.TEST_STARTED
             and self.current_test_description == line[offset:-1]
         ):
-
             self.client.addsuccess(self._current_test)
             self.client.stopTest(self._current_test)
             self.current_test_description = None
@@ -180,8 +177,7 @@ class TestProtocolServer:
             self.client.adderror(
                 self._current_test,
                 RemoteError(
-                    "lost connection during test "
-                    f"'{self.current_test_description}'",
+                    f"lost connection during test '{self.current_test_description}'",
                 ),
             )
             self.client.stopTest(self._current_test)

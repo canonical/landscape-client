@@ -2,7 +2,6 @@ import apt
 
 from landscape.lib.hashlib import sha1
 
-
 PACKAGE = 1 << 0
 PROVIDES = 1 << 1
 REQUIRES = 1 << 2
@@ -23,7 +22,6 @@ class PackageTypeError(Exception):
 
 
 class PackageSkeleton:
-
     section = None
     summary = None
     description = None
@@ -107,7 +105,6 @@ def parse_record_dependencies(
     # Prepare list of dependencies
     relations = set()
     for dependency in dependencies:
-
         # Process dependency
         depend = []
         if isinstance(dependency, apt.package.Dependency):

@@ -31,11 +31,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 This file is modified from the original to work with python3, but should be
 wire compatible and behave the same way (bugs notwithstanding).
 """
-from typing import Callable
-from typing import Dict
 
-dumps_table: Dict[type, Callable] = {}
-loads_table: Dict[bytes, Callable] = {}
+from collections.abc import Callable
+
+dumps_table: dict[type, Callable] = {}
+loads_table: dict[bytes, Callable] = {}
 
 
 def dumps(obj, _dt=dumps_table):
@@ -65,24 +65,24 @@ def loads(byte_string, _lt=loads_table, as_is=False):
 
 
 def dumps_bool(obj):
-    return (f"b{int(obj):d}").encode("utf-8")
+    return (f"b{int(obj):d}").encode()
 
 
 def dumps_int(obj):
-    return (f"i{obj:d};").encode("utf-8")
+    return (f"i{obj:d};").encode()
 
 
 def dumps_float(obj):
-    return (f"f{obj!r};").encode("utf-8")
+    return (f"f{obj!r};").encode()
 
 
 def dumps_bytes(obj):
-    return (f"s{len(obj):d}:").encode("utf-8") + obj
+    return (f"s{len(obj):d}:").encode() + obj
 
 
 def dumps_unicode(obj):
     bobj = obj.encode("utf-8")
-    return (f"u{len(bobj):d}:{obj}").encode("utf-8")
+    return (f"u{len(bobj):d}:{obj}").encode()
 
 
 def dumps_list(obj, _dt=dumps_table):
@@ -194,6 +194,7 @@ dumps_table.update(
         dict: dumps_dict,
         type(None): dumps_none,
         bytes: dumps_bytes,
+        str: dumps_unicode,
     },
 )
 
@@ -209,13 +210,5 @@ loads_table.update(
         b"n": loads_none,
         b"s": loads_bytes,
         b"u": loads_unicode,
-    },
-)
-
-
-# Python 3.x: We need to map internal strings to UTF-8 encoded strings.
-dumps_table.update(
-    {
-        str: dumps_unicode,
     },
 )

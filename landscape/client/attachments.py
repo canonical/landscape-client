@@ -1,8 +1,7 @@
 import os
 
 from landscape import VERSION
-from landscape.client import GROUP
-from landscape.client import USER
+from landscape.client.environment import GROUP, USER
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 
@@ -37,13 +36,9 @@ async def save_attachments(
             # Backward-compatibility with inline attachments.
             data = attachment_id.encode()
         else:
-            if config.ssl_ca is not None:
-                cainfo = config.ssl_ca
-            else:
-                cainfo = None
             data = await fetch_async(
                 root_path + str(attachment_id),
-                cainfo=cainfo,
+                cainfo=config.ssl_public_key,
                 headers=headers,
             )
 

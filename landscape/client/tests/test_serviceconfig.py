@@ -1,14 +1,15 @@
 import importlib
 import os
 import subprocess
-from unittest import mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import landscape.client.serviceconfig as serviceconfig
-from landscape.client.serviceconfig import SNAPCTL
-from landscape.client.serviceconfig import SnapdConfig
-from landscape.client.serviceconfig import SYSTEMCTL
-from landscape.client.serviceconfig import SystemdConfig
+from landscape.client.serviceconfig import (
+    SNAPCTL,
+    SYSTEMCTL,
+    SnapdConfig,
+    SystemdConfig,
+)
 
 
 class SystemdConfigTestCase(TestCase):

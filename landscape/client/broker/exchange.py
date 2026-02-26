@@ -346,21 +346,15 @@ Diagram::
 import logging
 import time
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, succeed
 
-from landscape import CLIENT_API
-from landscape import DEFAULT_SERVER_API
-from landscape import SERVER_API
+from landscape import CLIENT_API, DEFAULT_SERVER_API, SERVER_API
 from landscape.lib.backoff import ExponentialBackoff
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.format import format_delta
 from landscape.lib.hashlib import md5
-from landscape.lib.message import got_next_expected
-from landscape.lib.message import RESYNC
-from landscape.lib.versioning import is_version_higher
-from landscape.lib.versioning import sort_versions
+from landscape.lib.message import RESYNC, got_next_expected
+from landscape.lib.versioning import is_version_higher, sort_versions
 
 
 class MessageExchange:
@@ -422,6 +416,7 @@ class MessageExchange:
         self._exchange_store = exchange_store
         self._stopped = False
         self._backoff_counter = ExponentialBackoff(300, 7200)  # 5 to 120 min
+        self._exchange_state = {}
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -441,8 +436,7 @@ class MessageExchange:
         context = self._exchange_store.get_message_context(operation_id)
         if context is None:
             logging.warning(
-                "No message context for message with "
-                f"operation-id: {operation_id}",
+                f"No message context for message with operation-id: {operation_id}",
             )
             return False
 
@@ -551,8 +545,7 @@ class MessageExchange:
         if "exchange" in message:
             self._config.exchange_interval = message["exchange"]
             logging.info(
-                "Exchange interval set "
-                f"to {self._config.exchange_interval:d} seconds.",
+                f"Exchange interval set to {self._config.exchange_interval:d} seconds.",
             )
         if "urgent-exchange" in message:
             self._config.urgent_exchange_interval = message["urgent-exchange"]
@@ -585,8 +578,7 @@ class MessageExchange:
         start_time = time.time()
         if self._urgent_exchange:
             logging.info(
-                "Starting urgent message exchange "
-                f"with {self._transport.get_url()}.",
+                f"Starting urgent message exchange with {self._transport.get_url()}.",
             )
         else:
             logging.info(
@@ -694,10 +686,7 @@ class MessageExchange:
         # It's a bit tricky to test as it is preventing rehooking 'exchange'
         # while there's a background thread doing the exchange itself.
         if not self._exchanging and (
-            force
-            or self._exchange_id is None
-            or urgent
-            and not self._urgent_exchange
+            force or self._exchange_id is None or urgent and not self._urgent_exchange
         ):
             if urgent:
                 self._urgent_exchange = True
@@ -711,8 +700,7 @@ class MessageExchange:
             backoff_delay = self._backoff_counter.get_random_delay()
             if backoff_delay:
                 logging.warning(
-                    "Server is busy. Backing off client for {} "
-                    "seconds".format(backoff_delay),
+                    f"Server is busy. Backing off client for {backoff_delay} seconds",
                 )
                 interval += backoff_delay
 
@@ -777,6 +765,24 @@ class MessageExchange:
                 i = None
             if i is not None:
                 del messages[i:]
+
+            for message in messages:
+                if message.get("type") == "fde-recovery-key" and message["successful"]:
+                    if "recovery-key" in self._exchange_state:
+                        message["recovery-key"] = self._exchange_state["recovery-key"]
+                        logging.info(
+                            "Added the recovery key to the FDE recovery key message."
+                        )
+                    else:
+                        message["successful"] = False
+                        message["result-text"] = (
+                            "Landscape Client could not send the recovery key."
+                            "Please regenerate it."
+                        )
+                        logging.info(
+                            "Could not add the recovery key to the FDE recovery key"
+                            "message."
+                        )
         else:
             server_api = store.get_server_api()
         payload = {
@@ -942,6 +948,9 @@ class MessageExchange:
 
     def get_client_accepted_message_types(self):
         return sorted(self._client_accepted_types)
+
+    def update_exchange_state(self, key: str, value: str):
+        self._exchange_state[key] = value
 
 
 def get_accepted_types_diff(old_types, new_types):

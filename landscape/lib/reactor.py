@@ -1,6 +1,7 @@
 """
 Extend the regular Twisted reactor with event-handling features.
 """
+
 import logging
 import time
 
@@ -104,8 +105,7 @@ class EventHandlingReactorMixin:
                 raise
             except Exception:
                 logging.exception(
-                    "Error running event handler %s for "
-                    "event type %r with args %r %r.",
+                    "Error running event handler %s for event type %r with args %r %r.",
                     format_object(handler),
                     event_type,
                     args,

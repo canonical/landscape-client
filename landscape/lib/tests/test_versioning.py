@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from landscape.lib.versioning import is_version_higher
-from landscape.lib.versioning import sort_versions
+from landscape.lib.versioning import is_version_higher, sort_versions
 
 
 class IsVersionHigherTest(TestCase):

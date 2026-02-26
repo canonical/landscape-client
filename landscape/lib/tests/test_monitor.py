@@ -1,11 +1,13 @@
 import unittest
 
 from landscape.lib import testing
-from landscape.lib.monitor import BurstMonitor
-from landscape.lib.monitor import CoverageMonitor
-from landscape.lib.monitor import FrequencyMonitor
-from landscape.lib.monitor import Monitor
-from landscape.lib.monitor import Timer
+from landscape.lib.monitor import (
+    BurstMonitor,
+    CoverageMonitor,
+    FrequencyMonitor,
+    Monitor,
+    Timer,
+)
 
 
 class ReactorHavingTest(testing.HelperTestCase, unittest.TestCase):

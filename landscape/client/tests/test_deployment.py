@@ -1,17 +1,18 @@
+import os
 from datetime import datetime
-from unittest import mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
-from landscape.client.deployment import BaseConfiguration
-from landscape.client.deployment import Configuration
-from landscape.client.deployment import convert_arg_to_bool
-from landscape.client.deployment import generate_computer_title
-from landscape.client.deployment import get_versioned_persist
-from landscape.client.deployment import init_logging
+from landscape.client.deployment import (
+    BaseConfiguration,
+    Configuration,
+    convert_arg_to_bool,
+    generate_computer_title,
+    get_versioned_persist,
+    init_logging,
+)
 from landscape.client.snap_http import SnapdResponse
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.fs import create_text_file
-from landscape.lib.fs import read_text_file
+from landscape.lib.fs import create_text_file, read_text_file
 
 
 class BabbleConfiguration(BaseConfiguration):
@@ -213,23 +214,16 @@ class ConfigurationTest(LandscapeTest):
         )
 
     def test_ssl_public_key_option(self):
-        """Ensure parser accepts --ssl-public-key"""
+        """Ensure options.ssl_public_key option can be read by parse_args."""
         options = self.parser.parse_args(
             ["--ssl-public-key", "/tmp/somekeyfile.ssl"],
         )
-        self.assertEqual(options.ssl_ca, "/tmp/somekeyfile.ssl")
+        self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
 
-    def test_ssl_ca_option(self):
-        """Ensure options.ssl_ca option can be read by parse_args."""
-        options = self.parser.parse_args(
-            ["--ssl-ca", "/tmp/somekeyfile.ssl"],
-        )
-        self.assertEqual(options.ssl_ca, "/tmp/somekeyfile.ssl")
-
-    def test_ssl_ca_default(self):
-        """Ensure parse_args sets appropriate ssl_ca default."""
+    def test_ssl_public_key_default(self):
+        """Ensure parse_args sets appropriate ssl_public_key default."""
         options = self.parser.parse_args([])
-        self.assertEqual(options.ssl_ca, None)
+        self.assertEqual(options.ssl_public_key, None)
 
     def test_ignore_sigint_option(self):
         """Ensure options.ignore_sigint option can be read by parse_args."""
@@ -399,6 +393,25 @@ class GetVersionedPersistTest(LandscapeTest):
         ):
             persist = get_versioned_persist(FakeService())
             mock_monitor.apply.assert_called_with(persist)
+
+    @mock.patch("landscape.client.deployment.FILE_MODE", 0o666)
+    @mock.patch("landscape.client.deployment.DIRECTORY_MODE", 0o700)
+    def test_persist_has_file_and_directory_permissions(self):
+        class FakeService:
+            persist_filename = self.makePersistFile(content="")
+            service_name = "monitor"
+
+        mock_monitor = mock.Mock()
+        with mock.patch.dict(
+            "landscape.client.upgraders.UPGRADE_MANAGERS",
+            {"monitor": mock_monitor},
+        ):
+            persist = get_versioned_persist(FakeService())
+
+        file_name = persist.filename
+        directory_name = os.path.dirname(file_name)
+        self.assertEqual(0o666, os.stat(file_name).st_mode & 0o777)
+        self.assertEqual(0o700, os.stat(directory_name).st_mode & 0o777)
 
 
 class GenerateComputerTitleTest(TestCase):

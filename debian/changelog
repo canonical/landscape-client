@@ -1,3 +1,40 @@
+landscape-client (26.02.1-0landscape0) jammy; urgency=medium
+
+  * fix: restore functionality and tests for python 3.14
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Thu, 05 Feb 2026 17:38:31 +0000
+
+landscape-client (26.02-0landscape0) jammy; urgency=medium
+
+  * feat: add FDE recovery key manager plugin
+  * fix: package changer uses proxy when configured
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Mon, 02 Feb 2026 15:57:02 +0000
+
+landscape-client (25.10.1-0landscape0) jammy; urgency=medium
+
+  * refactor: Revert addition of --ssl-ca flag
+  * fix: Move WSL config options out of unsaved_options
+  * build: add ruff to dev-lxc config
+  * fix: landscape-config reads deprecated ssl_public_key field
+  * refactor: clean up bpickle dumps
+  * build: use ruff for formatting and linting
+
+ -- Jacob Chin <jacob.chin@canonical.com>  Tue, 25 Nov 2025 16:27:53 -0500
+
+landscape-client (25.10-0landscape0) jammy; urgency=medium
+
+  * build: update snap-http module
+  * build: release 25.10
+
+ -- Spencer Runde <spencer.runde@canonical.com>  Wed, 29 Oct 2025 12:59:24 -0500
+
+landscape-client (25.10~rc3-0landscape0) jammy; urgency=medium
+
+  * fix: don't explicitly make root owner of the executables
+
+ -- Ardavan Behnia <ardavan.behnia@canonical.com>  Thu, 23 Oct 2025 15:29:06 -0700
+
 landscape-client (25.10~rc2-0landscape0) jammy; urgency=medium
 
   * fix: add python version variable for setup.py

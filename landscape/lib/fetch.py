@@ -205,10 +205,7 @@ def fetch_to_files(urls, directory, logger=None, **kwargs):
     def log_error(failure, url):
         if logger:
             logger(
-                "Couldn't fetch file from {} ({})".format(
-                    url,
-                    str(failure.value),
-                ),
+                f"Couldn't fetch file from {url} ({str(failure.value)})",
             )
         return failure
 

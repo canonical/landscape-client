@@ -1,17 +1,19 @@
 # Copyright 2017 Canonical Limited.  All rights reserved.
-from .message import Message
-from landscape.lib.schema import Any
-from landscape.lib.schema import Bool
-from landscape.lib.schema import Bytes
-from landscape.lib.schema import Constant
-from landscape.lib.schema import Dict
-from landscape.lib.schema import Float
-from landscape.lib.schema import Int
-from landscape.lib.schema import KeyDict
-from landscape.lib.schema import List
-from landscape.lib.schema import Tuple
-from landscape.lib.schema import Unicode
+from landscape.lib.schema import (
+    Any,
+    Bool,
+    Bytes,
+    Constant,
+    Dict,
+    Float,
+    Int,
+    KeyDict,
+    List,
+    Tuple,
+    Unicode,
+)
 
+from .message import Message
 
 __all__ = [
     "ACTIVE_PROCESS_INFO",
@@ -61,6 +63,7 @@ __all__ = [
     "SNAPS",
     "SNAP_INFO",
     "UNLICENSED_MESSAGE_SCHEMAS",
+    "FDE_RECOVERY_KEY",
 ]
 
 
@@ -696,6 +699,17 @@ USG_AUDIT = Message(
     },
 )
 
+FDE_RECOVERY_KEY = Message(
+    "fde-recovery-key",
+    {
+        "operation-id": Int(),
+        "recovery-key": Unicode(),
+        "result-text": Unicode(),
+        "successful": Bool(),
+    },
+    optional=["recovery-key", "result-text"],
+)
+
 message_schemas = (
     ACTIVE_PROCESS_INFO,
     CLOUD_INIT,
@@ -703,6 +717,7 @@ message_schemas = (
     COMPUTER_INFO,
     DISTRIBUTION_INFO,
     HARDWARE_INFO,
+    FDE_RECOVERY_KEY,
     LOAD_AVERAGE,
     MEMORY_INFO,
     RESYNCHRONIZE,

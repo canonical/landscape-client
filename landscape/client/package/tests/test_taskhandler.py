@@ -1,29 +1,21 @@
 import os
-from unittest.mock import ANY
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import ANY, Mock, patch
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import fail
-from twisted.internet.defer import succeed
+from twisted.internet.defer import Deferred, fail, succeed
 
 from landscape.client.broker.amp import RemoteBrokerConnector
-from landscape.client.package.taskhandler import LazyRemoteBroker
-from landscape.client.package.taskhandler import PackageTaskHandler
 from landscape.client.package.taskhandler import (
+    LazyRemoteBroker,
+    PackageTaskHandler,
     PackageTaskHandlerConfiguration,
+    run_task_handler,
 )
-from landscape.client.package.taskhandler import run_task_handler
-from landscape.client.tests.helpers import BrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import BrokerServiceHelper, LandscapeTest
 from landscape.lib.apt.package.facade import AptFacade
-from landscape.lib.apt.package.store import HashIdStore
-from landscape.lib.apt.package.store import PackageStore
+from landscape.lib.apt.package.store import HashIdStore, PackageStore
 from landscape.lib.apt.package.testing import AptFacadeHelper
 from landscape.lib.lock import lock_path
-from landscape.lib.testing import EnvironSaverHelper
-from landscape.lib.testing import FakeReactor
-
+from landscape.lib.testing import EnvironSaverHelper, FakeReactor
 
 SAMPLE_OS_RELEASE = "VERSION_CODENAME=codename\n"
 

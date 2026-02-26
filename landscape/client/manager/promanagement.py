@@ -1,18 +1,18 @@
+import json
+
 from twisted.internet.threads import deferToThread
 
 from landscape.client.manager.plugin import (
     FAILED,
-    ManagerPlugin,
     SUCCEEDED,
+    ManagerPlugin,
 )
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-from landscape.lib.uaclient import (
+from landscape.client.uaclient import (
     ProManagementError,
     attach_pro,
     detach_pro,
 )
-
-import json
 
 
 class ProManagement(ManagerPlugin):
@@ -53,18 +53,10 @@ class ProManagement(ManagerPlugin):
         return d
 
     def _respond_success_attach(self, data, opid):
-        return self._respond(
-            SUCCEEDED,
-            json.dumps(get_ubuntu_pro_info()),
-            opid
-        )
+        return self._respond(SUCCEEDED, json.dumps(get_ubuntu_pro_info()), opid)
 
     def _respond_success_detach(self, data, opid):
-        return self._respond(
-            SUCCEEDED,
-            "Succeeded in detaching pro token.",
-            opid
-        )
+        return self._respond(SUCCEEDED, "Succeeded in detaching pro token.", opid)
 
     def _respond_failure(self, failure, opid):
         try:

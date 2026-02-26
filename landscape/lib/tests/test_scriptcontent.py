@@ -1,7 +1,6 @@
 import unittest
 
-from landscape.lib.scriptcontent import build_script
-from landscape.lib.scriptcontent import generate_script_hash
+from landscape.lib.scriptcontent import build_script, generate_script_hash
 
 
 class ScriptContentTest(unittest.TestCase):

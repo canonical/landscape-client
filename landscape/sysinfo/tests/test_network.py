@@ -1,7 +1,6 @@
 import unittest
 
-from netifaces import AF_INET
-from netifaces import AF_INET6
+from netifaces import AF_INET, AF_INET6
 
 from landscape.lib.testing import TwistedTestCase
 from landscape.sysinfo.network import Network

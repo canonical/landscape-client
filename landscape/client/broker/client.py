@@ -1,14 +1,10 @@
 import random
 import sys
 import traceback
-from logging import debug
-from logging import error
-from logging import exception
-from logging import info
+from logging import debug, error, exception, info
 from typing import TYPE_CHECKING
 
-from twisted.internet.defer import maybeDeferred
-from twisted.internet.defer import succeed
+from twisted.internet.defer import maybeDeferred, succeed
 
 from landscape.client.amp import remote
 from landscape.lib.format import format_object

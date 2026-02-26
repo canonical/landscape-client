@@ -1,8 +1,7 @@
 import logging
 import time
 
-from landscape.lib.format import format_delta
-from landscape.lib.format import format_percent
+from landscape.lib.format import format_delta, format_percent
 
 
 class Timer:
@@ -204,8 +203,7 @@ class FrequencyMonitor(Monitor):
     def log(self):
         if self.warn():
             logging.warning(
-                "Only %d of %d minimum expected %s events "
-                "occurred in the last %s.",
+                "Only %d of %d minimum expected %s events occurred in the last %s.",
                 self.count,
                 self.expected_count,
                 self.event_name,

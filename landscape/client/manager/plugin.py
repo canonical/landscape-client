@@ -1,12 +1,10 @@
 import logging
 from pathlib import Path
-from typing import Optional
 
 from twisted.internet.defer import maybeDeferred
 
-from landscape.client import GROUP
-from landscape.client import USER
 from landscape.client.broker.client import BrokerClientPlugin
+from landscape.client.environment import DIRECTORY_MODE, FILE_MODE, GROUP, USER
 from landscape.lib.format import format_object
 from landscape.lib.log import log_failure
 from landscape.lib.persist import Persist
@@ -85,7 +83,7 @@ class DataWatcherManager(ManagerPlugin):
     a get_data method
     """
 
-    message_type: Optional[str] = None
+    message_type: str | None = None
 
     def __init__(self):
         super().__init__()
@@ -97,10 +95,16 @@ class DataWatcherManager(ManagerPlugin):
             self.registry.config.data_path,
             self.message_type + ".manager.bpkl",
         )
+        # Note: The _persist for a DataWatcherManager is an in-memory
+        # store only. If that ever changes, we need to apply the correct
+        # permissions to the stored data. The modes are applied here
+        # now regardless.
         self._persist = Persist(
             filename=self._persist_filename,
             user=USER,
             group=GROUP,
+            file_mode=FILE_MODE,
+            directory_mode=DIRECTORY_MODE,
         )
         self.call_on_accepted(self.message_type, self.send_message)
 
@@ -116,10 +120,10 @@ class DataWatcherManager(ManagerPlugin):
         result = self.get_new_data()
         if not result:
             logging.debug(
-                "{} unchanged so not sending".format(self.message_type),
+                f"{self.message_type} unchanged so not sending",
             )
             return
-        logging.debug("Sending new {} data!".format(self.message_type))
+        logging.debug(f"Sending new {self.message_type} data!")
         message = {"type": self.message_type, self.message_type: result}
         return self.registry.broker.send_message(message, self._session_id)
 

@@ -1,9 +1,7 @@
 import logging
 import unittest
 
-from landscape.lib.logging import init_app_logging
-from landscape.lib.logging import LoggingAttributeError
-from landscape.lib.logging import rotate_logs
+from landscape.lib.logging import LoggingAttributeError, init_app_logging, rotate_logs
 from landscape.lib.testing import FSTestCase
 
 

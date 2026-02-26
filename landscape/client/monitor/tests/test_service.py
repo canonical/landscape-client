@@ -1,18 +1,14 @@
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from landscape.client.monitor.computerinfo import ComputerInfo
-from landscape.client.monitor.config import ALL_PLUGINS
-from landscape.client.monitor.config import MonitorConfiguration
+from landscape.client.monitor.config import ALL_PLUGINS, MonitorConfiguration
 from landscape.client.monitor.loadaverage import LoadAverage
 from landscape.client.monitor.service import MonitorService
-from landscape.client.tests.helpers import FakeBrokerServiceHelper
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.tests.helpers import FakeBrokerServiceHelper, LandscapeTest
 from landscape.lib.testing import FakeReactor
 
 
 class MonitorServiceTest(LandscapeTest):
-
     helpers = [FakeBrokerServiceHelper]
 
     def setUp(self):
@@ -62,12 +58,14 @@ class MonitorServiceTest(LandscapeTest):
         """
         self.service.config.load(["--monitor-plugins", "ComputerInfo"])
 
-        with self.assertLogs(level="WARN") as cm:
-            with patch(
+        with (
+            self.assertLogs(level="WARN") as cm,
+            patch(
                 "landscape.client.monitor.service.namedClass",
-            ) as namedClass:
-                namedClass.side_effect = Exception("Is there life on Mars?")
-                plugins = self.service.get_plugins()
+            ) as namedClass,
+        ):
+            namedClass.side_effect = Exception("Is there life on Mars?")
+            plugins = self.service.get_plugins()
 
         self.assertEqual(len(plugins), 0)
         self.assertIn("Unable to load", cm.output[0])

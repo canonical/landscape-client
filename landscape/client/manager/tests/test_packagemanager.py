@@ -6,8 +6,7 @@ from twisted.internet.defer import Deferred
 from landscape.client.manager.packagemanager import PackageManager
 from landscape.client.package.changer import PackageChanger
 from landscape.client.package.releaseupgrader import ReleaseUpgrader
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.lib.apt.package.store import PackageStore
 from landscape.lib.testing import EnvironSaverHelper
 
@@ -114,7 +113,7 @@ class PackageManagerTest(LandscapeTest):
                 PackageChanger,
             )
             # Method is called once for registration, then again explicitly.
-            self.assertEquals(2, self.package_manager.spawn_handler.call_count)
+            self.assertEqual(2, self.package_manager.spawn_handler.call_count)
 
     def test_run_on_package_data_changed(self):
         """
@@ -132,7 +131,7 @@ class PackageManagerTest(LandscapeTest):
                 PackageChanger,
             )
             # Method is called once for registration, then again explicitly.
-            self.assertEquals(2, self.package_manager.spawn_handler.call_count)
+            self.assertEqual(2, self.package_manager.spawn_handler.call_count)
 
     def test_spawn_release_upgrader_on_run_if_message_accepted(self):
         """
@@ -149,7 +148,7 @@ class PackageManagerTest(LandscapeTest):
                 ReleaseUpgrader,
             )
             # Method is called once for registration, then again explicitly.
-            self.assertEquals(2, self.package_manager.spawn_handler.call_count)
+            self.assertEqual(2, self.package_manager.spawn_handler.call_count)
 
     def test_change_packages_handling(self):
         self.manager.add(self.package_manager)

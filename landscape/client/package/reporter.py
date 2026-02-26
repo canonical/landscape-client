@@ -1,40 +1,35 @@
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
-from argparse import ArgumentTypeError
-import logging
-import time
-import os
 import glob
-import apt_pkg
+import logging
+import os
 import re
+import time
+import urllib.parse as urlparse
+from argparse import ArgumentTypeError
 
+import apt_pkg
 from twisted.internet.defer import (
     Deferred,
-    succeed,
     inlineCallbacks,
     returnValue,
+    succeed,
 )
 
-from landscape.lib import bpickle
-from landscape.lib.apt.package.store import (
-    UnknownHashIDRequest,
-    FakePackageStore,
-)
-from landscape.lib.config import get_bindir
-from landscape.lib.sequenceranges import sequence_to_ranges
-from landscape.lib.twisted_util import gather_results, spawn_process
-from landscape.lib.fetch import fetch_async
-from landscape.lib.fs import touch_file, create_binary_file
-from landscape.lib.os_release import parse_os_release
 from landscape.client.package.taskhandler import (
-    PackageTaskHandlerConfiguration,
     PackageTaskHandler,
+    PackageTaskHandlerConfiguration,
     run_task_handler,
 )
-
+from landscape.lib import bpickle
+from landscape.lib.apt.package.store import (
+    FakePackageStore,
+    UnknownHashIDRequest,
+)
+from landscape.lib.config import get_bindir
+from landscape.lib.fetch import fetch_async
+from landscape.lib.fs import create_binary_file, touch_file
+from landscape.lib.os_release import parse_os_release
+from landscape.lib.sequenceranges import sequence_to_ranges
+from landscape.lib.twisted_util import gather_results, spawn_process
 
 HASH_ID_REQUEST_TIMEOUT = 7200
 DEFAULT_UNKNOWN_HASHES_PER_REQUEST = 500
@@ -235,14 +230,9 @@ class PackageReporter(PackageTaskHandler):
             else:
                 proxy = self._config.get("http_proxy")
 
-            if self._config.ssl_ca is not None:
-                cainfo = self._config.ssl_ca
-            else:
-                cainfo = None
-
             result = fetch_async(
                 url,
-                cainfo=cainfo,
+                cainfo=self._config.get("ssl_public_key"),
                 proxy=proxy,
             )
             result.addCallback(fetch_ok)
@@ -643,9 +633,7 @@ class PackageReporter(PackageTaskHandler):
         if not unknown_hashes:
             result = succeed(None)
         else:
-            max_unknown_hashes_per_request = (
-                self._config.max_unknown_hashes_per_request
-            )
+            max_unknown_hashes_per_request = self._config.max_unknown_hashes_per_request
             unknown_hashes = sorted(unknown_hashes)
             unknown_hashes = unknown_hashes[:max_unknown_hashes_per_request]
 
@@ -733,7 +721,7 @@ class PackageReporter(PackageTaskHandler):
                 return True
         return False
 
-    def _compute_packages_changes(self):  # noqa: max-complexity: 13
+    def _compute_packages_changes(self):  # noqa: C901
         """Analyse changes in the universe of known packages.
 
         This method will verify if there are packages that:

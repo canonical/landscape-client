@@ -1,14 +1,11 @@
 from unittest import mock
 
-from landscape.client.broker.tests.helpers import RemoteBrokerHelper
-from landscape.client.broker.tests.helpers import RemoteClientHelper
-from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES
-from landscape.client.tests.helpers import LandscapeTest
+from landscape.client.broker.tests.helpers import RemoteBrokerHelper, RemoteClientHelper
+from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES, LandscapeTest
 from landscape.lib.amp import MethodCallError
 
 
 class RemoteBrokerTest(LandscapeTest):
-
     helpers = [RemoteBrokerHelper]
 
     def test_ping(self):
@@ -216,7 +213,6 @@ class RemoteBrokerTest(LandscapeTest):
 
 
 class RemoteClientTest(LandscapeTest):
-
     helpers = [RemoteClientHelper]
 
     def test_ping(self):

@@ -3,22 +3,16 @@ import os
 import shutil
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, ensureDeferred
 
 from landscape.client.attachments import save_attachments
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin
-from landscape.client.manager.plugin import SUCCEEDED
+from landscape.client.manager.plugin import FAILED, SUCCEEDED, ManagerPlugin
 from landscape.client.manager.scriptexecution import (
     ProcessAccumulationProtocol,
+    ProcessFailedError,
 )
-from landscape.client.manager.scriptexecution import ProcessFailedError
 
 REBOOT_REQUIRED_FILE = "/var/run/reboot-required"
 REBOOT_REQUIRED_PKGS_FILE = REBOOT_REQUIRED_FILE + ".pkgs"
@@ -57,7 +51,7 @@ class UsgManager(ManagerPlugin):
     def _handle_usg_message(self, message):
         return ensureDeferred(self.handle_usg_message(message))
 
-    async def handle_usg_message(self, message: Dict[str, Any]) -> None:
+    async def handle_usg_message(self, message: dict[str, Any]) -> None:
         """Executes usg if we can, then responds to `message`.
 
         If the usg action was "audit", a second message is also sent, reporting
@@ -93,7 +87,7 @@ class UsgManager(ManagerPlugin):
         except Exception as e:
             await self._respond(FAILED, str(e), opid)
 
-    def _get_last_audit_results(self) -> Union[str, None]:
+    def _get_last_audit_results(self) -> str | None:
         """Returns the file path of the most recently produced audit report. If
         no audit reports exist, returns `None`.
         """
@@ -112,7 +106,7 @@ class UsgManager(ManagerPlugin):
     def _respond(
         self,
         status: int,
-        data: Union[str, bytes],
+        data: str | bytes,
         opid: int,
     ) -> Deferred:
         """Queues sending a result message for the activity to server."""
@@ -131,8 +125,8 @@ class UsgManager(ManagerPlugin):
 
     async def _save_attachment(
         self,
-        attachment: Union[Tuple[str, int], None],
-    ) -> Union[str, None]:
+        attachment: tuple[str, int] | None,
+    ) -> str | None:
         """Downloads `attachment` from Landscape Server and saves it in the
         data directory's `TAILORING_FILE_DIR`.
 
@@ -191,7 +185,7 @@ class UsgManager(ManagerPlugin):
         path.touch(exist_ok=True)
 
         if os.path.exists(REBOOT_REQUIRED_PKGS_FILE):
-            with open(REBOOT_REQUIRED_PKGS_FILE, "r") as reboot_required_pkg:
+            with open(REBOOT_REQUIRED_PKGS_FILE) as reboot_required_pkg:
                 if any(line == USG_EXECUTABLE for line in reboot_required_pkg):
                     # It's already in there, no need to add it.
                     return
@@ -203,7 +197,7 @@ class UsgManager(ManagerPlugin):
         self,
         action: str,
         profile: str | None,
-        tailoring_file: Optional[str] = None,
+        tailoring_file: str | None = None,
     ) -> Deferred:
         """Execute the correct `usg` command for message in a non-blocking
         subprocess.
@@ -238,7 +232,7 @@ class UsgManager(ManagerPlugin):
         self,
         action: str,
         profile: str | None,
-        tailoring_file: Union[Tuple[str, int], None],
+        tailoring_file: tuple[str, int] | None,
     ) -> str:
         """Runs usg, first downloading `tailoring_file` if it's provided.
         Cleans up the tailoring file as well.

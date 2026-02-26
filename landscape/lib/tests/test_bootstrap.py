@@ -1,13 +1,14 @@
 import os
 import unittest
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from landscape.lib import testing
-from landscape.lib.bootstrap import BootstrapDirectory
-from landscape.lib.bootstrap import BootstrapFile
-from landscape.lib.bootstrap import BootstrapList
-from landscape.lib.bootstrap import BootstrapPath
+from landscape.lib.bootstrap import (
+    BootstrapDirectory,
+    BootstrapFile,
+    BootstrapList,
+    BootstrapPath,
+)
 
 
 class BaseTestCase(testing.FSTestCase, unittest.TestCase):
@@ -15,7 +16,6 @@ class BaseTestCase(testing.FSTestCase, unittest.TestCase):
 
 
 class BootstrapPathTest(BaseTestCase):
-
     bootstrap_class = BootstrapPath
 
     def setUp(self):
@@ -99,7 +99,6 @@ class BootstrapPathTest(BaseTestCase):
 
 
 class BootstrapCreationTest(BootstrapPathTest):
-
     bootstrap_class = BootstrapFile
 
     def exists(self, path):
@@ -121,7 +120,6 @@ class BootstrapFileTest(BootstrapCreationTest):
 
 
 class BootstrapDirectoryTest(BootstrapCreationTest):
-
     bootstrap_class = BootstrapDirectory
 
     def exists(self, path):

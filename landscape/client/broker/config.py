@@ -1,4 +1,5 @@
 """Configuration class for the broker."""
+
 import os
 
 from landscape.client.deployment import Configuration
@@ -91,8 +92,7 @@ class BrokerConfiguration(Configuration):
         )
         parser.add_argument(
             "--tags",
-            help="Comma separated list of tag names to be sent "
-            "to the server.",
+            help="Comma separated list of tag names to be sent to the server.",
         )
         parser.add_argument(
             "--hostagent-uid",

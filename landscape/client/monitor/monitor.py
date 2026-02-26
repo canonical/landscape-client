@@ -1,4 +1,5 @@
 """The Landscape monitor plugin system."""
+
 import os
 
 from landscape.client.broker.client import BrokerClient

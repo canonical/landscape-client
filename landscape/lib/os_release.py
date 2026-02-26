@@ -1,4 +1,5 @@
 """Get information from os-release."""
+
 import os
 
 OS_RELEASE_FILENAME = "/var/lib/snapd/hostfs/etc/os-release"

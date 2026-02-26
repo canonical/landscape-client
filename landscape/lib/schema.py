@@ -110,7 +110,7 @@ class Unicode:
                 value = value.decode(self.encoding)
             except UnicodeDecodeError as e:
                 raise InvalidError(
-                    "{!r} can't be decoded: {}".format(value, str(e)),
+                    f"{value!r} can't be decoded: {str(e)}",
                 )
         if not isinstance(value, str):
             raise InvalidError(f"{value!r} isn't a unicode")
@@ -155,8 +155,7 @@ class Tuple:
             raise InvalidError(f"{value!r} is not a tuple")
         if len(value) != len(self.schema):
             raise InvalidError(
-                f"Need {len(self.schema)} items, "
-                f"got {len(value)} in {value!r}",
+                f"Need {len(self.schema)} items, got {len(value)} in {value!r}",
             )
         new_value = []
         for schema, value in zip(self.schema, value):

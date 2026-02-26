@@ -38,13 +38,9 @@ OPTIONS
                            used for registering clients.
   -t TITLE, --computer-title=TITLE   The title of this computer.
   -u URL, --url=URL        The server URL to connect to (default: 'https://landscape.canonical.com/message-system').
-  -k SSL_CA, --ssl-ca=SSL_CA  The CA certificate to
-                              verify the server with. Accepts a 
-                              file path or the certificate contents (base64).
-                              Only used if the server URL
-                              to which we connect is https.
-  --ssl-public-key=SSL_PUBLIC_KEY (Deprecated) Same as --ssl-ca. Use --ssl-ca instead.
-                                  This option will be removed in the 26.04 release.
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The public SSL key is 
+                             a CA Certificate to verify the server. Only 
+                             used if the given server URL is https.
   --exchange-interval=INTERVAL   The number of seconds between server
                            exchanges (default: 900).
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent

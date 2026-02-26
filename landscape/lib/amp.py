@@ -44,20 +44,20 @@ See also::
 
 for more details about the Twisted AMP protocol.
 """
+
 from uuid import uuid4
 
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import maybeDeferred
-from twisted.internet.defer import succeed
-from twisted.internet.protocol import ReconnectingClientFactory
-from twisted.internet.protocol import ServerFactory
-from twisted.protocols.amp import AMP
-from twisted.protocols.amp import Argument
-from twisted.protocols.amp import Command
-from twisted.protocols.amp import CommandLocator
-from twisted.protocols.amp import Integer
-from twisted.protocols.amp import MAX_VALUE_LENGTH
-from twisted.protocols.amp import String
+from twisted.internet.defer import Deferred, maybeDeferred, succeed
+from twisted.internet.protocol import ReconnectingClientFactory, ServerFactory
+from twisted.protocols.amp import (
+    AMP,
+    MAX_VALUE_LENGTH,
+    Argument,
+    Command,
+    CommandLocator,
+    Integer,
+    String,
+)
 from twisted.python.failure import Failure
 
 from landscape.lib import bpickle

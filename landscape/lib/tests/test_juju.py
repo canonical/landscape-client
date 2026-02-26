@@ -5,7 +5,6 @@ from collections import namedtuple
 from landscape.lib import testing
 from landscape.lib.juju import get_juju_info
 
-
 SAMPLE_JUJU_INFO = json.dumps(
     {
         "environment-uuid": "DEAD-BEEF",
@@ -26,7 +25,6 @@ SAMPLE_JUJU_INFO_2 = json.dumps(
 
 
 class JujuTest(testing.HelperTestCase, testing.FSTestCase, unittest.TestCase):
-
     Config = namedtuple("Config", ["juju_filename"])
 
     def setUp(self):

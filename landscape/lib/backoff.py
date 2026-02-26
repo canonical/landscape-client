@@ -8,7 +8,6 @@ class ExponentialBackoff:
     """
 
     def __init__(self, start_delay, max_delay):
-
         self._error_count = 0  # A tally of server errors
 
         self._start_delay = start_delay

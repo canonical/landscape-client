@@ -1,7 +1,4 @@
-from landscape.client.upgraders import broker
-from landscape.client.upgraders import monitor
-from landscape.client.upgraders import package
-
+from landscape.client.upgraders import broker, monitor, package
 
 UPGRADE_MANAGERS = {
     # these should not be hardcoded

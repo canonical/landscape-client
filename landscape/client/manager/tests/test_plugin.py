@@ -1,14 +1,18 @@
+import os
+from unittest import mock
+
 from twisted.internet.defer import Deferred
 
-from landscape.client.manager.plugin import FAILED
-from landscape.client.manager.plugin import ManagerPlugin, DataWatcherManager
-from landscape.client.manager.plugin import SUCCEEDED
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.manager.plugin import (
+    FAILED,
+    SUCCEEDED,
+    DataWatcherManager,
+    ManagerPlugin,
+)
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 class BrokerPluginTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
     def test_call_with_operation_result_success(self):
@@ -129,7 +133,6 @@ class BrokerPluginTest(LandscapeTest):
 
 
 class StubDataWatchingPlugin(DataWatcherManager):
-
     message_type = "wubble"
 
     def __init__(self, data=None):
@@ -140,9 +143,10 @@ class StubDataWatchingPlugin(DataWatcherManager):
 
 
 class DataWatcherManagerTest(LandscapeTest):
-
     helpers = [ManagerHelper]
 
+    @mock.patch("landscape.client.manager.plugin.FILE_MODE", 0o666)
+    @mock.patch("landscape.client.manager.plugin.DIRECTORY_MODE", 0o700)
     def setUp(self):
         LandscapeTest.setUp(self)
         self.plugin = StubDataWatchingPlugin("hello world")
@@ -160,3 +164,9 @@ class DataWatcherManagerTest(LandscapeTest):
             "hello world",
         )
         self.assertEqual(self.plugin.get_new_data(), None)
+
+    def test_persist_has_file_and_directory_permissions(self):
+        self.plugin._persist.save()
+        self.assertEqual(0o666, os.stat(self.plugin._persist_filename).st_mode & 0o777)
+        directory_name = os.path.dirname(self.plugin._persist_filename)
+        self.assertEqual(0o700, os.stat(directory_name).st_mode & 0o777)

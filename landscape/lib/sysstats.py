@@ -31,9 +31,7 @@ class MemoryStats:
                     data[key] = int(value.split()[0])
 
         self.total_memory = data["MemTotal"] // 1024
-        self.free_memory = (
-            data["MemFree"] + data["Buffers"] + data["Cached"]
-        ) // 1024
+        self.free_memory = (data["MemFree"] + data["Buffers"] + data["Cached"]) // 1024
         self.total_swap = data["SwapTotal"] // 1024
         self.free_swap = data["SwapFree"] // 1024
 
@@ -88,7 +86,7 @@ def get_uptime(uptime_file="/proc/uptime"):
     This parses a file in /proc/uptime format and returns a floating point
     version of the first value (the actual uptime).
     """
-    with open(uptime_file, "r") as ufile:
+    with open(uptime_file) as ufile:
         data = ufile.readline()
     up, idle = data.split()
     return float(up)
@@ -107,7 +105,6 @@ def get_thermal_zones(thermal_zone_path=None):
 
 
 class ThermalZone:
-
     temperature = None
     temperature_value = None
     temperature_unit = None
@@ -129,9 +126,8 @@ class ThermalZone:
                     line = f.readline()
                     self.temperature_value = int(line.strip()) / 1000.0
                     self.temperature_unit = "C"
-                    self.temperature = "{:.1f} {}".format(
-                        self.temperature_value,
-                        self.temperature_unit,
+                    self.temperature = (
+                        f"{self.temperature_value:.1f} {self.temperature_unit}"
                     )
         except (ValueError, OSError):
             pass
@@ -222,15 +218,11 @@ class BootTimes:
             for info in reader.login_info():
                 if info.tty_device.startswith("~"):
                     timestamp = to_timestamp(info.entry_time)
-                    if (
-                        info.username == "reboot"
-                        and timestamp > self._last_boot
-                    ):
+                    if info.username == "reboot" and timestamp > self._last_boot:
                         reboot_times.append(timestamp)
                         self._last_boot = timestamp
                     elif (
-                        info.username == "shutdown"
-                        and timestamp > self._last_shutdown
+                        info.username == "shutdown" and timestamp > self._last_shutdown
                     ):
                         shutdown_times.append(timestamp)
                         self._last_shutdown = timestamp

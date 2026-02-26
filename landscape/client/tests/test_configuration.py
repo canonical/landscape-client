@@ -1,43 +1,43 @@
+import json
 import os
 import textwrap
 import unittest
 from configparser import ConfigParser
 from io import StringIO
-import json
 from unittest import mock
 
 from twisted.internet.defer import succeed
 
-from landscape.client import GROUP
-from landscape.client import USER
 from landscape.client.broker.registration import Identity
 from landscape.client.broker.tests.helpers import BrokerConfigurationHelper
-from landscape.client.configuration import actively_registered
-from landscape.client.configuration import bootstrap_tree
-from landscape.client.configuration import configuration_dump_json
-from landscape.client.configuration import configuration_dump_text
-from landscape.client.configuration import ConfigurationError
-from landscape.client.configuration import EXIT_NOT_REGISTERED
-from landscape.client.configuration import get_configuration_dump
-from landscape.client.configuration import get_secure_id
-from landscape.client.configuration import ImportOptionError
-from landscape.client.configuration import LandscapeSetupConfiguration
-from landscape.client.configuration import LandscapeSetupScript
-from landscape.client.configuration import main
-from landscape.client.configuration import print_text
-from landscape.client.configuration import prompt_yes_no
-from landscape.client.configuration import registration_info_text
-from landscape.client.configuration import registration_sent
-from landscape.client.configuration import restart_client
-from landscape.client.configuration import set_secure_id
-from landscape.client.configuration import setup
-from landscape.client.configuration import show_help
-from landscape.client.configuration import store_public_key_data
+from landscape.client.configuration import (
+    EXIT_NOT_REGISTERED,
+    ConfigurationError,
+    ImportOptionError,
+    LandscapeSetupConfiguration,
+    LandscapeSetupScript,
+    actively_registered,
+    bootstrap_tree,
+    configuration_dump_json,
+    configuration_dump_text,
+    get_configuration_dump,
+    get_secure_id,
+    main,
+    print_text,
+    prompt_yes_no,
+    registration_info_text,
+    registration_sent,
+    restart_client,
+    set_secure_id,
+    setup,
+    show_help,
+    store_public_key_data,
+)
+from landscape.client.environment import DIRECTORY_MODE, FILE_MODE, GROUP, USER
 from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.fetch import HTTPCodeError
-from landscape.lib.fetch import PyCurlError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
 from landscape.lib.testing import EnvironSaverHelper
@@ -544,8 +544,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         If an access group is not provided, the user should be prompted for it.
         """
         help_snippet = (
-            "You may provide an access group for this computer "
-            "e.g. webservers."
+            "You may provide an access group for this computer e.g. webservers."
         )
         self.script.prompt = mock.Mock()
         self.script.query_access_group()
@@ -583,8 +582,8 @@ class BootstrapTreeTest(LandscapeConfigurationTest):
 
         config = self.get_config([], data_path=client_path)
         bootstrap_tree(config)
-        mock_chmod.assert_any_call(client_path, 0o755)
-        mock_chmod.assert_called_with(annotations_path, 0o755)
+        mock_chmod.assert_any_call(client_path, 0o750)
+        mock_chmod.assert_called_with(annotations_path, 0o750)
         self.assertTrue(os.path.isdir(client_path))
         self.assertTrue(os.path.isdir(annotations_path))
 
@@ -595,7 +594,6 @@ def noop_print(*args, **kws):
 
 
 class ConfigurationFunctionsTest(LandscapeConfigurationTest):
-
     helpers = [EnvironSaverHelper]
 
     def setUp(self):
@@ -1371,8 +1369,8 @@ registration_key = shared-secret
             "registration_key = Old Password\n"
             "http_proxy = http://old.proxy\n"
             "https_proxy = https://old.proxy\n"
-            "data_path = {}\n"
-            "url = http://url\n".format(data_path),
+            f"data_path = {data_path}\n"
+            "url = http://url\n",
         )
 
     @mock.patch("landscape.client.configuration.input", return_value="")
@@ -1414,8 +1412,8 @@ registration_key = shared-secret
         the client failed to be restarted), an informative message is printed
         and the script exits.
         """
-        mock_serviceconfig.restart_landscape.side_effect = (
-            ServiceConfigException("Couldn't restart the Landscape client.")
+        mock_serviceconfig.restart_landscape.side_effect = ServiceConfigException(
+            "Couldn't restart the Landscape client."
         )
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
@@ -1440,8 +1438,8 @@ registration_key = shared-secret
         Exit code 0 will be returned if the client fails to be restarted and
         --ok-no-register was passed.
         """
-        mock_serviceconfig.restart_landscape.side_effect = (
-            ServiceConfigException("Couldn't restart the Landscape client.")
+        mock_serviceconfig.restart_landscape.side_effect = ServiceConfigException(
+            "Couldn't restart the Landscape client."
         )
 
         config = self.get_config(
@@ -1759,9 +1757,7 @@ registration_key = shared-secret
             self.get_config,
             ["--import", import_filename],
         )
-        expected_message = (
-            f"Couldn't read configuration from {import_filename}."
-        )
+        expected_message = f"Couldn't read configuration from {import_filename}."
         self.assertEqual(str(error), expected_message)
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
@@ -2072,7 +2068,7 @@ registration_key = shared-secret
 
     @mock.patch("landscape.client.configuration.print_text")
     @mock.patch("landscape.client.configuration.ServiceConfig")
-    def test_base64_ssl_ca_is_exported_to_file(
+    def test_base64_ssl_public_key_is_exported_to_file(
         self,
         mock_serviceconfig,
         mock_print_text,
@@ -2082,7 +2078,7 @@ registration_key = shared-secret
         config_filename = self.makeFile(f"[client]\ndata_path={data_path}")
         key_filename = os.path.join(
             data_path,
-            os.path.basename(config_filename) + ".ssl_ca",
+            os.path.basename(config_filename) + ".ssl_public_key",
         )
 
         config = self.get_config(
@@ -2112,10 +2108,10 @@ registration_key = shared-secret
 
         options = ConfigParser()
         options.read(config_filename)
-        self.assertEqual(options.get("client", "ssl_ca"), key_filename)
+        self.assertEqual(options.get("client", "ssl_public_key"), key_filename)
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
-    def test_normal_ssl_ca_is_not_exported_to_file(
+    def test_normal_ssl_public_key_is_not_exported_to_file(
         self,
         mock_serviceconfig,
     ):
@@ -2140,13 +2136,13 @@ registration_key = shared-secret
         setup(config)
 
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
-        key_filename = config_filename + ".ssl_ca"
+        key_filename = config_filename + ".ssl_public_key"
         self.assertFalse(os.path.isfile(key_filename))
 
         options = ConfigParser()
         options.read(config_filename)
         self.assertEqual(
-            options.get("client", "ssl_ca"),
+            options.get("client", "ssl_public_key"),
             "/some/filename",
         )
 
@@ -2243,7 +2239,6 @@ class FauxConnection:
 
 
 class FauxConnector:
-
     was_disconnected = False
 
     def __init__(self, reactor=None, config=None):
@@ -2265,13 +2260,13 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
         """
         L{store_public_key_data} writes the SSL CA supplied by the server to a
         file for later use, this file is called after the name of the
-        configuration file with .ssl_ca.
+        configuration file with .ssl_public_key.
         """
         config = self.get_config([])
         os.mkdir(config.data_path)
         key_filename = os.path.join(
             config.data_path,
-            os.path.basename(config.get_config_filename()) + ".ssl_ca",
+            os.path.basename(config.get_config_filename()) + ".ssl_public_key",
         )
 
         self.assertEqual(
@@ -2285,7 +2280,6 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
 
 
 class IsRegisteredTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
@@ -2343,7 +2337,6 @@ class IsRegisteredTest(LandscapeTest):
 
 
 class RegistrationInfoTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
@@ -2353,15 +2346,12 @@ class RegistrationInfoTest(LandscapeTest):
         self.account_name = "world"
         self.data_path = self.makeDir()
         self.config_text = textwrap.dedent(
-            """
+            f"""
             [client]
             computer_title = hello
-            account_name = {}
-            data_path = {}
-        """.format(
-                self.account_name,
-                self.data_path,
-            ),
+            account_name = {self.account_name}
+            data_path = {self.data_path}
+        """,
         )
 
         mock.patch("landscape.client.configuration.init_app_logging").start()
@@ -2428,7 +2418,6 @@ class RegistrationInfoTest(LandscapeTest):
 
 
 class ConfigurationDumpTest(LandscapeTest):
-
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
@@ -2438,13 +2427,11 @@ class ConfigurationDumpTest(LandscapeTest):
         self.log_level = "critical"
 
         self.config_text = textwrap.dedent(
-            """
+            f"""
             [client]
-            log_level = {}
+            log_level = {self.log_level}
             custom_option = custom_value
-        """.format(
-                self.log_level,
-            ),
+        """,
         )
 
         mock.patch("landscape.client.configuration.init_app_logging").start()
@@ -2459,7 +2446,7 @@ class ConfigurationDumpTest(LandscapeTest):
         self.config.load([])
         log_level_default = self.config._command_line_defaults["log_level"]
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["log_level"] , log_level_default)
+        self.assertEqual(config_dump["log_level"], log_level_default)
 
     def test_config_file_overrides(self):
         """
@@ -2470,18 +2457,18 @@ class ConfigurationDumpTest(LandscapeTest):
         self.makeFile(self.config_text, path=config_filename)
         self.config.load([])
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["log_level"] , self.log_level)
+        self.assertEqual(config_dump["log_level"], self.log_level)
 
     def test_command_line_overrides(self):
         """
         Options passed to the command line along --show should
-        overwrite both the configuration file and the defualt
+        overwrite both the configuration file and the default
         """
         config_filename = self.config.default_config_filenames[0]
         self.makeFile(self.config_text, path=config_filename)
         self.config.load(["--log-level", "debug"])
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["log_level"] , "debug")
+        self.assertEqual(config_dump["log_level"], "debug")
 
     def test_custom_config_path(self):
         """
@@ -2491,9 +2478,9 @@ class ConfigurationDumpTest(LandscapeTest):
         custom_path = self.makeFile(self.config_text)
         self.config.load(["-c", custom_path])
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["CONFIG_FILE"] , custom_path)
+        self.assertEqual(config_dump["CONFIG_FILE"], custom_path)
 
-    def test_unsaved_options_not_displayed(self):
+    def test_hidden_options_not_displayed(self):
         """
         Do not display configuration values for unsaved options,
         which are only meant to be accessed through the command line
@@ -2501,7 +2488,7 @@ class ConfigurationDumpTest(LandscapeTest):
         self.config.load([])
         config_dump = get_configuration_dump(self.config)
 
-        for option in LandscapeSetupConfiguration.unsaved_options:
+        for option in LandscapeSetupConfiguration.hidden_options:
             self.assertNotIn(option, config_dump)
 
     def test_config_options_without_default_displayed(self):
@@ -2513,19 +2500,19 @@ class ConfigurationDumpTest(LandscapeTest):
         self.makeFile(self.config_text, path=config_filename)
         self.config.load([])
         config_dump = get_configuration_dump(self.config)
-        self.assertEquals(config_dump["custom_option"], "custom_value")
+        self.assertEqual(config_dump["custom_option"], "custom_value")
 
     def test_text_alphabetical_ordering(self):
         self.config.load([])
         config_text = configuration_dump_text(self.config)
         config_text_lines = config_text.split("\n")
-        self.assertEquals(config_text_lines, sorted(config_text_lines))
+        self.assertEqual(config_text_lines, sorted(config_text_lines))
 
     def test_pure_json(self):
         self.config.load([])
         config_dump = get_configuration_dump(self.config)
         config_json = configuration_dump_json(self.config)
-        self.assertEquals(json.loads(config_json), config_dump)
+        self.assertEqual(json.loads(config_json), config_dump)
 
     @mock.patch("landscape.client.configuration.configuration_dump_text")
     def test_show_argument(self, fake_config_dump):
@@ -2557,7 +2544,7 @@ class SetSecureIdTest(LandscapeTest):
 
     @mock.patch("landscape.client.configuration.Persist")
     @mock.patch("landscape.client.configuration.Identity")
-    def test_function(self, Identity, Persist):
+    def test_set_secure_id(self, Identity, Persist):
         config = mock.Mock(data_path="/tmp/landscape")
 
         set_secure_id(config, "fancysecureid")
@@ -2566,6 +2553,8 @@ class SetSecureIdTest(LandscapeTest):
             filename="/tmp/landscape/broker.bpickle",
             user=USER,
             group=GROUP,
+            file_mode=FILE_MODE,
+            directory_mode=DIRECTORY_MODE,
         )
         Persist().save.assert_called_once_with()
         Identity.assert_called_once_with(config, Persist())
@@ -2575,7 +2564,7 @@ class SetSecureIdTest(LandscapeTest):
 class GetSecureIdTest(LandscapeTest):
     @mock.patch("landscape.client.configuration.Persist")
     @mock.patch("landscape.client.configuration.Identity")
-    def test_function(self, Identity, Persist):
+    def test_get_secure_id(self, Identity, Persist):
         config = mock.Mock(data_path="/tmp/landscape")
 
         set_secure_id(config, "fancysecureid")

@@ -1,5 +1,6 @@
 import os
-from unittest.mock import Mock
+import stat
+from unittest.mock import Mock, patch
 
 from landscape.client.broker.amp import RemoteBrokerConnector
 from landscape.client.broker.service import BrokerService
@@ -9,15 +10,15 @@ from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.testing import FakeReactor
 
 
-class BrokerServiceTest(LandscapeTest):
+class FakeBrokerService(BrokerService):
+    reactor_factory = FakeReactor
 
+
+class BrokerServiceTest(LandscapeTest):
     helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
         super().setUp()
-
-        class FakeBrokerService(BrokerService):
-            reactor_factory = FakeReactor
 
         self.service = FakeBrokerService(self.config)
 
@@ -88,14 +89,74 @@ class BrokerServiceTest(LandscapeTest):
         self.service.pinger.start.assert_called_with()
         self.service.exchanger.stop.assert_called_with()
 
-    def test_service_without_ssl_ca(self):
-        """If the CA is none"""
-        self.config.ssl_ca = None
-        self.service = self.service.__class__(self.config)
-        self.assertIsNone(self.service.config.ssl_ca)
+    @patch("landscape.client.broker.service.FILE_MODE", 0o666)
+    @patch("landscape.client.broker.service.DIRECTORY_MODE", 0o700)
+    def test_sets_correct_permissions_on_files_and_dirs(self):
+        FILE_MODE = 0o666
+        DIRECTORY_MODE = 0o700
 
-    def test_service_with_ssl_ca(self):
-        """If the CA is ssl_ca"""
-        self.config.ssl_ca = "/some/key"
-        self.service = self.service.__class__(self.config)
-        self.assertIsNotNone(self.service.config.ssl_ca)
+        message_directory = os.path.join(self.config.data_path, "messages")
+        dir1 = self.makeDir(dirname=message_directory)
+        file1 = self.makeFile(content="hello", dirname=dir1)
+        file2 = self.makeFile(content="world", dirname=message_directory)
+
+        os.chmod(message_directory, 0o755)
+        os.chmod(dir1, 0o755)
+        os.chmod(file1, 0o644)
+        os.chmod(file2, 0o644)
+
+        instance = FakeBrokerService(self.config)
+        instance.set_message_permissions()
+
+        self.assertEqual(
+            stat.S_IMODE(os.stat(message_directory).st_mode), DIRECTORY_MODE
+        )
+        self.assertEqual(stat.S_IMODE(os.stat(dir1).st_mode), DIRECTORY_MODE)
+        self.assertEqual(stat.S_IMODE(os.stat(file1).st_mode), FILE_MODE)
+        self.assertEqual(stat.S_IMODE(os.stat(file2).st_mode), FILE_MODE)
+
+    @patch("landscape.client.broker.service.FILE_MODE", 0o666)
+    @patch("landscape.client.broker.service.DIRECTORY_MODE", 0o700)
+    def test_sets_correct_permissions_on_files_and_dirs_with_symlink(self):
+        FILE_MODE = 0o666
+        DIRECTORY_MODE = 0o700
+
+        message_directory = os.path.join(self.config.data_path, "messages")
+        dir1 = self.makeDir(dirname=message_directory)
+        file1 = self.makeFile(content="hello", dirname=dir1)
+        # file2 is outside the message directory
+        file2 = self.makeFile(content="world", dirname=self.config.data_path)
+
+        symlink_path = os.path.join(message_directory, "link-to-file2")
+        os.symlink(file2, symlink_path)
+
+        os.chmod(message_directory, 0o755)
+        os.chmod(dir1, 0o755)
+        os.chmod(file1, 0o644)
+        os.chmod(file2, 0o644)
+
+        instance = FakeBrokerService(self.config)
+        instance.set_message_permissions()
+
+        self.assertEqual(
+            stat.S_IMODE(os.stat(message_directory).st_mode),
+            DIRECTORY_MODE,
+        )
+        self.assertEqual(
+            stat.S_IMODE(os.stat(dir1).st_mode),
+            DIRECTORY_MODE,
+        )
+        self.assertEqual(
+            stat.S_IMODE(os.stat(file1).st_mode),
+            FILE_MODE,
+        )
+
+        self.assertTrue(os.path.islink(symlink_path))
+        self.assertEqual(
+            os.readlink(symlink_path),
+            file2,
+        )
+        self.assertEqual(
+            stat.S_IMODE(os.stat(file2).st_mode),
+            0o644,
+        )

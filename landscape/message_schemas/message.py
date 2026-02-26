@@ -1,8 +1,4 @@
-from landscape.lib.schema import Any
-from landscape.lib.schema import Bytes
-from landscape.lib.schema import Constant
-from landscape.lib.schema import Float
-from landscape.lib.schema import KeyDict
+from landscape.lib.schema import Any, Bytes, Constant, Float, KeyDict
 
 
 class Message(KeyDict):

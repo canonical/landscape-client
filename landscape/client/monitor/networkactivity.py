@@ -2,12 +2,12 @@
 A monitor that collects data on network activity, and sends messages
 with the inbound/outbound traffic per interface per step interval.
 """
+
 import time
 
 from landscape.client.accumulate import Accumulator
 from landscape.client.monitor.plugin import MonitorPlugin
-from landscape.lib.network import get_network_traffic
-from landscape.lib.network import is_64
+from landscape.lib.network import get_network_traffic, is_64
 
 
 class NetworkActivity(MonitorPlugin):

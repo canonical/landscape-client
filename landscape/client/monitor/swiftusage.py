@@ -10,8 +10,8 @@ from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.network import get_active_device_info
 
 try:
-    from swift.common.ring import Ring
     from swift.cli.recon import Scout
+    from swift.common.ring import Ring
 
     has_swift = True
 except (ImportError, AttributeError):

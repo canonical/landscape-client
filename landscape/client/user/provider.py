@@ -109,7 +109,6 @@ class UserProviderBase:
 
 
 class UserProvider(UserProviderBase):
-
     popen = subprocess.Popen
 
     passwd_fields = [
@@ -144,7 +143,6 @@ class UserProvider(UserProviderBase):
         # the system default encoding.
         with open(
             self._passwd_file,
-            "r",
             encoding="utf-8",
             errors="replace",
         ) as passwd_file:
@@ -158,9 +156,7 @@ class UserProvider(UserProviderBase):
             for row in reader:
                 current_line += 1
                 # This skips the NIS user marker in the passwd file.
-                if row["username"].startswith("+") or row[
-                    "username"
-                ].startswith("-"):
+                if row["username"].startswith("+") or row["username"].startswith("-"):
                     continue
                 gecos = row["gecos"]
 
@@ -190,7 +186,7 @@ class UserProvider(UserProviderBase):
         usernames).
         """
         group_data = []
-        group_file = open(self._group_file, "r")
+        group_file = open(self._group_file)
         reader = csv.DictReader(
             group_file,
             fieldnames=self.group_fields,

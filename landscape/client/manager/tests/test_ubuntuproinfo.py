@@ -1,22 +1,22 @@
 import json
+import multiprocessing
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
-from multiprocessing import Queue
 from unittest import mock
 
 from landscape.client.manager.ubuntuproinfo import (
+    UbuntuProInfo,
     get_ubuntu_pro_info,
     uastatus,
-    UbuntuProInfo,
 )
-from landscape.client.tests.helpers import LandscapeTest
-from landscape.client.tests.helpers import ManagerHelper
+from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 def uastatus_mock_maker(ret_val):
     def uastatus_mock(q):
         q.put(ret_val)
+
     return uastatus_mock
 
 
@@ -33,43 +33,41 @@ class UbuntuProInfoTest(LandscapeTest):
         """Mock value that `ua.status` will return"""
         self.mock_status_value = {
             "attached": True,
-            "contract": {
-                "id": "fake_contract_id"
-            },
+            "contract": {"id": "fake_contract_id"},
             "services": [
                 {
                     "available": "yes",
                     "entitled": "yes",
                     "name": "anbox-cloud",
-                    "status": "disabled"
+                    "status": "disabled",
                 },
                 {
                     "available": "yes",
                     "entitled": "yes",
                     "name": "landscape",
-                    "status": "disabled"
-                }
-            ]
+                    "status": "disabled",
+                },
+            ],
         }
 
         self.mock_status_value_no_pro = {
             "attached": False,
-            "contract": {
-                "id": "fake_contract_id"
-            },
+            "contract": {"id": "fake_contract_id"},
             "services": [
                 {
                     "available": "yes",
                     "name": "anbox-cloud",
-                    "status": "disabled"
+                    "status": "disabled",
                 },
                 {
                     "available": "yes",
                     "name": "landscape",
-                    "status": "disabled"
-                }
-            ]
+                    "status": "disabled",
+                },
+            ],
         }
+
+        self.ctx = multiprocessing.get_context("fork")
 
         self.addCleanup(mock.patch.stopall)
 
@@ -80,7 +78,7 @@ class UbuntuProInfoTest(LandscapeTest):
             "landscape.client.manager.ubuntuproinfo.get_pro_status"
         ) as mock_status:
             mock_status.return_value = self.mock_status_value
-            q = Queue()
+            q = self.ctx.Queue()
             uastatus(q)
             pro_info = q.get(timeout=30)
 
@@ -101,12 +99,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
         result = json.loads(messages[0]["ubuntu-pro-info"])
@@ -139,12 +133,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                expected,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(expected, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
     def test_serializable_already(self):
@@ -175,12 +165,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertTrue(len(messages) > 0)
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                fake_val,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(fake_val, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
     def test_ubuntu_pro_info_no_pro(self):
@@ -201,9 +187,9 @@ class UbuntuProInfoTest(LandscapeTest):
             json.dumps(
                 self.mock_status_value_no_pro,
                 separators=(",", ":"),
-                default=str
+                default=str,
             ),
-            messages[0]["ubuntu-pro-info"]
+            messages[0]["ubuntu-pro-info"],
         )
 
         result = json.loads(messages[0]["ubuntu-pro-info"])
@@ -215,9 +201,11 @@ class UbuntuProInfoTest(LandscapeTest):
         self.manager.add(plugin)
 
         with mock.patch(
-            "landscape.client.manager.ubuntuproinfo.Queue",
-        ) as mock_queue:
+            "landscape.client.manager.ubuntuproinfo.multiprocessing",
+        ) as mock_mp:
+            mock_queue = mock.Mock()
             mock_queue.return_value.get.side_effect = Exception
+            mock_mp.get_context.return_value.Queue = mock_queue
             plugin.run()
 
         messages = self.mstore.get_pending_messages()
@@ -264,12 +252,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
         with mock.patch(
@@ -296,12 +280,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
         new_mock_status_value = self.mock_status_value
@@ -315,12 +295,8 @@ class UbuntuProInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEqual(2, len(messages))
         self.assertEqual(
-            json.dumps(
-                new_mock_status_value,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[1]["ubuntu-pro-info"]
+            json.dumps(new_mock_status_value, separators=(",", ":"), default=str),
+            messages[1]["ubuntu-pro-info"],
         )
 
     def test_persistence_reset(self):
@@ -339,12 +315,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(1, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[0])
         self.assertEqual(
-            json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[0]["ubuntu-pro-info"]
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
+            messages[0]["ubuntu-pro-info"],
         )
 
         plugin._reset()
@@ -359,12 +331,8 @@ class UbuntuProInfoTest(LandscapeTest):
         self.assertEqual(2, len(messages))
         self.assertTrue("ubuntu-pro-info" in messages[1])
         self.assertEqual(
-            json.dumps(
-                self.mock_status_value,
-                separators=(",", ":"),
-                default=str
-            ),
-            messages[1]["ubuntu-pro-info"]
+            json.dumps(self.mock_status_value, separators=(",", ":"), default=str),
+            messages[1]["ubuntu-pro-info"],
         )
 
     @mock.patch.multiple(
@@ -384,7 +352,7 @@ class UbuntuProInfoTest(LandscapeTest):
                     "id": "zYxWvU_sRqPoNmLkJiHgFeDcBa9876543210ZyXwVuTsRqPon",
                     "name": "jane.doe@example.com",
                 },
-                "foo": "bar"
+                "foo": "bar",
             }
             json.dump(mocked_info, fp)
 

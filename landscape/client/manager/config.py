@@ -3,7 +3,6 @@ import os
 from landscape.client.deployment import Configuration
 from landscape.client.manager.scriptexecution import ALL_USERS
 
-
 ALL_PLUGINS = [
     "ProcessKiller",
     "PackageManager",
@@ -18,6 +17,7 @@ ALL_PLUGINS = [
     "LivePatch",
     "UbuntuProRebootRequired",
     "ProManagement",
+    "FDERecoveryKeyManager",
 ]
 
 

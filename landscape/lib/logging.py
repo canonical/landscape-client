@@ -61,10 +61,7 @@ def init_app_logging(logdir, level="info", progname=None, quiet=False):
             logging.Formatter(FORMAT),
             sys.stdout if not quiet else None,
         )
-        msg = (
-            f"Unknown level {level!r}, conversion to "
-            f"logging code was {levelcode!r}"
-        )
+        msg = f"Unknown level {level!r}, conversion to logging code was {levelcode!r}"
         logging.error(msg)
         raise LoggingAttributeError(msg)
 

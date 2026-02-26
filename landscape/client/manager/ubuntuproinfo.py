@@ -1,14 +1,10 @@
 import json
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
-from multiprocessing import Process, Queue
+import multiprocessing
+from datetime import datetime, timedelta, timezone
 
-from landscape.client import IS_CORE
-from landscape.client import IS_SNAP
+from landscape.client.environment import IS_CORE, IS_SNAP, UA_DATA_DIR
 from landscape.client.manager.plugin import DataWatcherManager
-from landscape.client import UA_DATA_DIR
-from landscape.lib.uaclient import get_pro_status
+from landscape.client.uaclient import get_pro_status
 
 
 class UbuntuProInfo(DataWatcherManager):
@@ -27,8 +23,7 @@ class UbuntuProInfo(DataWatcherManager):
 
     def get_data(self):
         ubuntu_pro_info = get_ubuntu_pro_info()
-        return json.dumps(ubuntu_pro_info, separators=(",", ":"),
-                          sort_keys=True)
+        return json.dumps(ubuntu_pro_info, separators=(",", ":"), sort_keys=True)
 
 
 def uastatus(q):
@@ -108,8 +103,9 @@ def get_ubuntu_pro_info() -> dict:
 
         # The status file has more information than `pro status`
     else:
-        q = Queue()
-        p = Process(target=uastatus, args=(q,))
+        ctx = multiprocessing.get_context("fork")
+        q = ctx.Queue()
+        p = ctx.Process(target=uastatus, args=(q,))
         p.start()
         p.join()
 
@@ -120,7 +116,6 @@ def get_ubuntu_pro_info() -> dict:
             return _ubuntu_pro_error_message(
                 "Issue processing pro info.", "tools-error"
             )
-
     return {k: pro_info[k] for k in keys_to_keep if k in pro_info}
 
 
