@@ -94,10 +94,10 @@ def get_uptime(uptime_file="/proc/uptime"):
 
 def get_thermal_zones(thermal_zone_path=None):
     if thermal_zone_path is None:
-        if os.path.isdir("/sys/class/hwmon"):
-            thermal_zone_path = "/sys/class/hwmon/*/temp*_input"
-        elif os.path.isdir("/sys/class/thermal"):
+        if os.path.isdir("/sys/class/thermal"):
             thermal_zone_path = "/sys/class/thermal/*/temp"
+        elif os.path.isdir("/sys/class/hwmon"):
+            thermal_zone_path = "/sys/class/hwmon/*/temp*_input"
         else:
             thermal_zone_path = "/proc/acpi/thermal_zone/*/temperature"
     for temperature_path in sorted(glob.glob(thermal_zone_path)):
