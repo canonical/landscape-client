@@ -52,22 +52,14 @@ from landscape.client.manager.manager import FAILED
 from landscape.lib.twisted_util import gather_results
 
 
-def event(method):
-    """Turns a L{BrokerServer} method into an event broadcaster.
-
-    When the decorated method is called, an event is fired on all connected
-    clients. The event will have the same name as the method being called,
-    except that any underscore in the method name will be replaced with a dash.
+def broadcast_event(event_type, clients, *args, **kwargs):
     """
-    event_type = method.__name__.replace("_", "-")
-
-    def broadcast_event(self, *args, **kwargs):
-        fired = []
-        for client in self.get_clients():
-            fired.append(client.fire_event(event_type, *args, **kwargs))
-        return gather_results(fired)
-
-    return broadcast_event
+    Fire an event on all provided clients.
+    """
+    fired = []
+    for client in clients:
+        fired.append(client.fire_event(event_type, *args, **kwargs))
+    return gather_results(fired)
 
 
 class BrokerServer:
@@ -315,13 +307,13 @@ class BrokerServer:
 
         return clients_stopped.addBoth(schedule_reactor_stop)
 
-    @event
-    def resynchronize(self):
+    def resynchronize(self, scopes=None):
         """Broadcast a C{resynchronize} event to the clients."""
+        return broadcast_event("resynchronize", self.get_clients(), scopes=scopes)
 
-    @event
     def impending_exchange(self):
         """Broadcast an C{impending-exchange} event to the clients."""
+        return broadcast_event("impending-exchange", self.get_clients())
 
     @remote
     def listen_events(self, event_types):
@@ -345,21 +337,24 @@ class BrokerServer:
             calls.append(call)
         return deferred
 
-    @event
     def broker_reconnect(self):
         """Broadcast a C{broker-reconnect} event to the clients."""
+        return broadcast_event("broker-reconnect", self.get_clients())
 
-    @event
     def server_uuid_changed(self, old_uuid, new_uuid):
         """Broadcast a C{server-uuid-changed} event to the clients."""
+        return broadcast_event(
+            "server-uuid-changed", self.get_clients(), old_uuid, new_uuid
+        )
 
-    @event
     def message_type_acceptance_changed(self, type, accepted):
-        pass
+        return broadcast_event(
+            "message-type-acceptance-changed", self.get_clients(), type, accepted
+        )
 
-    @event
     def package_data_changed(self):
         """Fire a package-data-changed event in the reactor of each client."""
+        return broadcast_event("package-data-changed", self.get_clients())
 
     def broadcast_message(self, message):
         """Call the C{message} method of all the registered plugins.
