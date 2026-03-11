@@ -30,7 +30,8 @@ class CleanCommand(Command):
     def initialize_options(self):
         self.all = True
 
-    def finalize_options(self): ...
+    def finalize_options(self):
+        pass
 
 
 SETUP = dict(
