@@ -16,7 +16,7 @@ class CleanCommand(Command):
     def run(self):
         for pattern in ["build", "dist", ".eggs", "*.egg-info"]:
             for path in Path(".").glob(pattern):
-                if path.is_dir(path):
+                if path.is_dir():
                     shutil.rmtree(path)
 
         # Recursively remove __pycache__ and compiled files
