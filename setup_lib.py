@@ -1,6 +1,4 @@
 #!/usr/bin/python
-
-
 NAME = ("landscape-lib",)
 DESCRIPTION = "Common code used by Landscape applications"
 PACKAGES = [
@@ -9,27 +7,16 @@ PACKAGES = [
     "landscape.lib.apt.package",
     "landscape.message_schemas",
 ]
-MODULES = [
-    "landscape.__init__",
-    "landscape.constants",
-]
+MODULES = ["landscape.__init__", "landscape.constants"]
 SCRIPTS = []
 
 # Dependencies
-
-DEB_REQUIRES = [
-    "lsb-release",
-    "lshw",
-]
-REQUIRES = [
-    "twisted",
-    "configobj",
-    # apt (from python3-apt)
-]
+DEB_REQUIRES = ["lsb-release", "lshw"]
+REQUIRES = ["twisted", "configobj"]
 
 
 if __name__ == "__main__":
-    from setup import setup_landscape
+    from setup_common import setup_landscape
 
     setup_landscape(
         name=NAME,

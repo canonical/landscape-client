@@ -283,7 +283,6 @@ class FakePersist:
 
 @contextmanager
 def ready_subprocess(test_case, basename):  # pragma: no cover
-
     script = """\
 #!/usr/bin/python3
 import sys
