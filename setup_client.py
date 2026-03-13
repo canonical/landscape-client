@@ -1,6 +1,4 @@
 #!/usr/bin/python
-import sys
-
 from landscape import UPSTREAM_VERSION
 
 NAME = "Landscape Client"
@@ -28,25 +26,19 @@ MODULES = [
     "landscape.client.sysvconfig",
     "landscape.client.watchdog",
 ]
-SCRIPTS = []
-if sys.version_info[0] > 2:
-    SCRIPTS += [
-        "scripts/landscape-client",
-        "scripts/landscape-config",
-        "scripts/landscape-broker",
-        "scripts/landscape-manager",
-        "scripts/landscape-monitor",
-        "scripts/landscape-package-changer",
-        "scripts/landscape-package-reporter",
-        "scripts/landscape-release-upgrader",
-    ]
+SCRIPTS = [
+    "scripts/landscape-client",
+    "scripts/landscape-config",
+    "scripts/landscape-broker",
+    "scripts/landscape-manager",
+    "scripts/landscape-monitor",
+    "scripts/landscape-package-changer",
+    "scripts/landscape-package-reporter",
+    "scripts/landscape-release-upgrader",
+]
 
 # Dependencies
-
-DEB_REQUIRES = [
-    "ca-certificates",
-    # python3-pycurl
-]
+DEB_REQUIRES = ["ca-certificates"]
 REQUIRES = [
     "pycurl",
     f"landscape-lib={UPSTREAM_VERSION}",
@@ -55,7 +47,7 @@ REQUIRES = [
 
 
 if __name__ == "__main__":
-    from setup import setup_landscape
+    from setup_common import setup_landscape
 
     setup_landscape(
         name=NAME,
