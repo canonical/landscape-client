@@ -104,6 +104,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(self.identity.secure_id, "abc")
         self.assertEqual(self.identity.insecure_id, "def")
 
+    def test_set_id_without_insecure_id_preserves_existing(self):
+        self.identity.insecure_id = "existing-insecure"
+        self.exchanger.handle_message(
+            {"type": b"set-id", "id": b"abc"},
+        )
+        self.assertEqual(self.identity.secure_id, "abc")
+        self.assertEqual(self.identity.insecure_id, "existing-insecure")
+
     def test_registration_done_event(self):
         """
         When new ids are received from the server, a "registration-done"
