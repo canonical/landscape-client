@@ -180,10 +180,11 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.handler.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
 
         # Undetermined arch
-        self.facade.set_arch(None)
-
-        # Go!
-        result = self.handler.use_hash_id_db()
+        with patch(
+            "landscape.lib.apt.package.facade.AptFacade.get_arch",
+            return_value=None
+        ):
+            result = self.handler.use_hash_id_db()
 
         # The failure should be properly logged
         logging_mock.assert_called_with(

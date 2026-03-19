@@ -702,9 +702,11 @@ class PackageReporterAptTest(LandscapeTest):
         self.reporter.os_release_filename = self.makeFile(SAMPLE_OS_RELEASE)
 
         # Undetermined arch
-        self.facade.set_arch("")
+        with mock.patch(
+            "landscape.lib.apt.package.facade.AptFacade.get_arch", return_value=None
+        ):
+            result = self.reporter.fetch_hash_id_db()
 
-        result = self.reporter.fetch_hash_id_db()
         logging_mock.assert_called_once_with(
             "Couldn't determine which hash=>id database to use: "
             "unknown dpkg architecture",
