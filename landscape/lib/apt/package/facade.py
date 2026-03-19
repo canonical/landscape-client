@@ -487,8 +487,6 @@ class AptFacade:
 
         Setting multiple architectures isn't supported.
         """
-        if architecture is None:
-            architecture = ""
         # From oneiric and onwards Architectures is used to set which
         # architectures can be installed, in case multiple architectures
         # are supported. We force it to be single architecture, until we
