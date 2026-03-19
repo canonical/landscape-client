@@ -1,3 +1,11 @@
+landscape-client (26.02.2-0landscape0) jammy; urgency=medium
+
+  * fix: restore tests for amd64v3
+  * fix: use github API releases page for uscan watch
+  * fix: add deterministic sub-process generation for flaky tests
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Thu, 19 Mar 2026 14:46:10 +0000
+
 landscape-client (26.02.1-0landscape0) jammy; urgency=medium
 
   * fix: restore functionality and tests for python 3.14
