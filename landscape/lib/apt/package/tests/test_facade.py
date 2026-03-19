@@ -901,7 +901,7 @@ class AptFacadeTest(
     def test_set_arch_none(self):
         """
         C{None} cannot be passed to C{set_arch()}. This was previously allowed for
-        compatibility with C{SmartFacade}, which has been removed. 
+        compatibility with C{SmartFacade}, which has been removed.
         """
         with self.assertRaises(TypeError):
             self.facade.set_arch(None)

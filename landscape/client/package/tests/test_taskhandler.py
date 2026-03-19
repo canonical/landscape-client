@@ -182,7 +182,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Undetermined arch
         with patch(
             "landscape.lib.apt.package.facade.AptFacade.get_arch",
-            return_value=None
+            return_value="",
         ):
             result = self.handler.use_hash_id_db()
 

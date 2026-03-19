@@ -703,7 +703,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         # Undetermined arch
         with mock.patch(
-            "landscape.lib.apt.package.facade.AptFacade.get_arch", return_value=None
+            "landscape.lib.apt.package.facade.AptFacade.get_arch",
+            return_value="",
         ):
             result = self.reporter.fetch_hash_id_db()
 
