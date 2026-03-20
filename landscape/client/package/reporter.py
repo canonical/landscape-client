@@ -340,8 +340,7 @@ class PackageReporter(PackageTaskHandler):
                 and uid == UID_ROOT
             ):
                 logging.info(
-                    "Found ubuntu-release-upgrader running (pid: %d)",
-                    pid,
+                    f"Found ubuntu-release-upgrader running (pid: {pid})"
                 )
                 return True
         return False
