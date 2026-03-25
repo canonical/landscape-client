@@ -1,3 +1,9 @@
+landscape-client (26.02.3-0landscape0) jammy; urgency=medium
+
+  * fix: correct string formatting for ubuntu release upgrader log
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Wed, 25 Mar 2026 22:47:43 +0000
+
 landscape-client (26.02.2-0landscape0) jammy; urgency=medium
 
   * fix: restore tests for amd64v3
