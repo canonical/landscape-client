@@ -3,9 +3,10 @@
 
 name: landscape-client
 base: {{ base }}
-version: '24.12'
+version: '26.02'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
+license: GPL-2.0-only
 summary: Client for the Canonical systems management product Landscape
 description: |
   Landcape is a web-based tool for managing Ubuntu systems. This snap, or the
@@ -147,6 +148,7 @@ parts:
       - ubuntu-advantage-tools
     override-stage: |
       craftctl default
+
       # Copy the scripts over
       mkdir -p ${SNAPCRAFT_PRIME}/usr/bin/
       cp -r ${SNAPCRAFT_PART_SRC}/scripts/. ${SNAPCRAFT_PRIME}/usr/bin/
@@ -157,5 +159,6 @@ parts:
       - logrotate
     override-prime: |
       craftctl default
+
       cp ${SNAPCRAFT_PART_SRC}/debian/landscape-client.logrotate ${SNAPCRAFT_PRIME}/etc/logrotate.conf
       sed -i 's/systemctl kill --signal=USR1 --kill-who=main/snapctl restart/' ${SNAPCRAFT_PRIME}/etc/logrotate.conf
