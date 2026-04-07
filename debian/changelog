@@ -1,3 +1,12 @@
+landscape-client (26.08~beta.1-0landscape0) jammy; urgency=medium
+
+  * fix: correct string formatting for ubuntu release upgrader log
+  * fix: restore tests for amd64v3
+  * fix: data file permissions are too lax (LP: #2121558)
+  * fix: add deterministic sub-process generation for flaky tests
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Tue, 07 Apr 2026 18:28:24 -0400
+
 landscape-client (26.02.1-0landscape0) jammy; urgency=medium
 
   * fix: restore functionality and tests for python 3.14
