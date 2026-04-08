@@ -17,16 +17,26 @@ on:
         description: "Git ref to build from (branch name, tag, commit SHA, etc.)"
         required: true
         type: string
+    outputs:
+      debbuildid:
+        description: "ID of the deb build artifact"
+        value: ${{ jobs.build-jammy.outputs.debbuildid }}
+      sourcebuildid:
+        description: "ID of the source build artifact"
+        value: ${{ jobs.build-jammy.outputs.sourcebuildid }}
 
-  # Run on any tag pushes
+  # Run on any non-beta tag pushes (beta tags are for the PPA deploy workflow)
   push:
-    tags:
-      - "**"
+    tags-ignore:
+      - "[0-9][0-9].[0-9][0-9]-beta**"
 
 jobs:
   build-jammy:
     name: Build Jammy
     runs-on: ubuntu-22.04
+    outputs:
+      debbuildid: ${{ steps.upload-deb-build.outputs.artifact-id }}
+      sourcebuildid: ${{ steps.upload-source-build.outputs.artifact-id }}
 
     steps:
       # Get the reference to build from, if provided.
@@ -64,16 +74,20 @@ jobs:
           mv ../deb-build/ ./
 
       - name: Upload source build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
+        id: upload-source-build
         with:
           name: source-build
           path: ./source-build/
 
       - name: Upload deb build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
+        id: upload-deb-build
         with:
           name: deb-build
           path: ./deb-build/
 
       - run: |
           echo "::notice::Built from ref: ${{ steps.get-reference.outputs.ref }}"
+          echo "::notice::Deb build artifact ID: ${{ steps.upload-deb-build.outputs.artifact-id }}"
+          echo "::notice::Source build artifact ID: ${{ steps.upload-source-build.outputs.artifact-id }}"
