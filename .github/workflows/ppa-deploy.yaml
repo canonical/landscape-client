@@ -1,0 +1,67 @@
+name: PPA Deploy
+
+on:
+
+  # Enable manual run, must specify target PPA
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build from"
+        required: false
+        default: "main"
+      target-ppa:
+        description: "Target PPA for publishing"
+        required: true
+        default: "landscape/self-hosted-daily"
+
+  # Run on any beta tag pushes
+  push:
+    tags:
+      - "[0-9][0-9].[0-9][0-9]-beta**"
+
+jobs:
+  calculate-ppa:
+    runs-on: [self-hosted, noble, amd64]
+    outputs:
+      ppa: ${{ steps.calc.outputs.ppa }}
+    steps:
+      - name: Calculate target PPA
+        id: calc
+        run: |
+          PPA="${{ inputs.target-ppa || 'landscape/self-hosted-beta' }}"
+          echo "ppa=$PPA" >> "$GITHUB_OUTPUT"
+
+  build:
+    uses: ./.github/workflows/build-jammy.yaml
+    with:
+      ref: ${{ inputs.ref || 'main' }}
+
+  ppa-upload:
+    needs: [calculate-ppa, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install upload dependenies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dput devscripts
+
+      - name: Import GPG key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.LAUNCHPAD_GPG_PRIVATE_KEY }}
+        run: echo "$GPG_PRIVATE_KEY" | gpg --batch --import --yes
+
+      - name: Download landscape-client source artifacts
+        uses: actions/download-artifact@v7
+        with:
+          artifact-ids: ${{ needs.build.outputs.sourcebuildid }}
+          path: .
+
+      - name: Sign the build
+        run: |
+          KEY_ID=$(gpg --list-secret-keys | grep -B 1 "landscape-server-bot" | head -n 1 | xargs)
+          debsign -k"$KEY_ID" ./*_source.changes
+
+      - name: Upload to PPA
+        run: |
+          TARGET_PPA="${{ needs.calculate-ppa.outputs.ppa }}"
+          dput ppa:$TARGET_PPA ./*_source.changes
