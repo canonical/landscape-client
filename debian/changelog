@@ -1,3 +1,9 @@
+landscape-client (26.08~beta.1.1-0landscape0) jammy; urgency=medium
+
+  * fix: snap builds & installation
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Fri, 10 Apr 2026 18:00:56 -0400
+
 landscape-client (26.08~beta.1-0landscape0) jammy; urgency=medium
 
   * fix: correct string formatting for ubuntu release upgrader log
