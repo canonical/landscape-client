@@ -1,4 +1,4 @@
-landscape-client (26.08~beta.1.1-0landscape0) jammy; urgency=medium
+landscape-client (26.08~beta.2-0landscape0) jammy; urgency=medium
 
   * fix: snap builds & installation
 
