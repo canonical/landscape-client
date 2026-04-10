@@ -10,6 +10,7 @@ PACKAGES = [
     "landscape.client.monitor",
     "landscape.client.package",
     "landscape.client.snap_http",
+    "landscape.client.snap_http.api",
     "landscape.client.upgraders",
     "landscape.client.user",
 ]
