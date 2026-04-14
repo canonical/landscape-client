@@ -191,6 +191,50 @@ class BrokerServerTest(LandscapeTest):
         result = self.broker.register_client("test")
         return result.addCallback(assert_registered)
 
+    def test_register_client_disconnects_existing_connector(self):
+        """
+        The L{BrokerServer.register_client} method cleans up any existing
+        connector instances for the same component by popping them from the
+        registry and calling their C{disconnect()} method before installing the
+        new connector.
+        """
+
+        class StaleConnector:
+            def __init__(self):
+                self.disconnect_called = False
+
+            def disconnect(self):
+                self.disconnect_called = True
+
+        # Client that should be disconnected when a new
+        # connector with the same name is registered
+        stale_connector = StaleConnector()
+        old_client = FakeClient()
+        self.broker._registered_clients["test"] = old_client
+        self.broker._connectors[old_client] = stale_connector
+
+        # Another client that should not be disconnected
+        safe_connector = StaleConnector()
+        safe_client = FakeClient()
+        self.broker._registered_clients["other"] = safe_client
+        self.broker._connectors[safe_client] = safe_connector
+
+        def assert_cleaned_up(ignored):
+            self.assertTrue(stale_connector.disconnect_called)
+            self.assertFalse(safe_connector.disconnect_called)
+            self.assertNotEqual(
+                self.broker.get_connector("test"),
+                stale_connector,
+            )
+            self.assertEqual(
+                self.broker.get_connector("other"),
+                safe_connector,
+            )
+
+        self.broker.connectors_registry = {"test": FakeCreator}
+        result = self.broker.register_client("test")
+        return result.addCallback(assert_cleaned_up)
+
     def test_stop_clients(self):
         """
         The L{BrokerServer.stop_clients} method calls the C{exit} method

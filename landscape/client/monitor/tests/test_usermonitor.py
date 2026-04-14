@@ -5,7 +5,7 @@ from twisted.internet.defer import fail
 
 import landscape.client.monitor.usermonitor
 from landscape.client.amp import ComponentPublisher
-from landscape.client.manager.usermanager import UserManager
+from landscape.client.manager.usermanager import RemoteUserManagerConnector, UserManager
 from landscape.client.monitor.usermonitor import RemoteUserMonitorConnector, UserMonitor
 from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.client.user.tests.helpers import FakeUserProvider
@@ -532,6 +532,45 @@ class UserMonitorTest(LandscapeTest):
         result.addCallback(lambda remote: remote.detect_changes(1001))
         result.addCallback(got_result)
         result.addCallback(lambda x: connector.disconnect())
+        return result
+
+    def test_detect_changes_disconnects_on_fail(self):
+        """
+        When L{UserMonitor.detect_changes} fails during the data fetch phase,
+        the underlying C{RemoteUserManagerConnector.disconnect()} method is
+        still reliably executed via addBoth.
+        """
+
+        class CallTracker:
+            called = False
+
+        original_disconnect = RemoteUserManagerConnector.disconnect
+
+        def mock_disconnect(self, *args, **kwargs):
+            CallTracker.called = True
+            return original_disconnect(self, *args, **kwargs)
+
+        self.patch(RemoteUserManagerConnector, "disconnect", mock_disconnect)
+        self.broker_service.message_store.set_accepted_types(["users"])
+        self.monitor.add(self.plugin)
+
+        # Force the authentic IPC socket to return an AMP error,
+        # simulating failure
+        failure = fail(RuntimeError("Injected test failure"))
+        self.user_manager.get_locked_usernames = Mock(return_value=failure)
+
+        connector = RemoteUserMonitorConnector(self.reactor, self.config)
+        result = connector.connect()
+        result.addCallback(lambda remote: remote.detect_changes())
+
+        def assert_disconnect(ignored):
+            self.assertTrue(CallTracker.called)
+
+        # The detect_changes call returns the RPC deferred which swallows the
+        # errback internally into a SUCCESS of None due to
+        # `result.addErrback(lambda f: self._detect_changes([], operation_id))`.
+        result.addBoth(lambda x: connector.disconnect())
+        result.addBoth(assert_disconnect)
         return result
 
     def test_detect_changes_clears_user_provider_if_flag_file_exists(self):
