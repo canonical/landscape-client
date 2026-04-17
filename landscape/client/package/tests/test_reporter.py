@@ -2397,6 +2397,8 @@ class PackageReporterAptTest(LandscapeTest):
 
         result.addCallback(callback)
         return result
+
+    def test_run_apt_update_error_on_cache_file(self):
         """
         L{PackageReporter.run_apt_update} succeeds if the command fails because
         one of the cache files is not found. This generally occurs if 'apt-get
