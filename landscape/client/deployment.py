@@ -212,7 +212,7 @@ class Configuration(BaseConfiguration):
 
     @property
     def juju_filename(self):
-        """The path to the previously sinlge juju-info file for
+        """The path to the previously single juju-info file for
         backwards-compatibility."""
         return os.path.join(self.data_path, "juju-info.json")
 
