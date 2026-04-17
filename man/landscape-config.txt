@@ -54,6 +54,9 @@ OPTIONS
                            monitor runs (default: 1800).
   --apt-update-interval=APT_UPDATE_INTERVAL  The interval between apt update
                            runs (default: 21600).
+  --apt-update-timeout=APT_UPDATE_TIMEOUT  The maximum time in seconds to wait
+                           for apt update to complete before killing it
+                           (default: 1800).
   --flush-interval         The number of seconds between flushes to disk for
                            persisent data.
   --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to stagger various

@@ -150,6 +150,13 @@ class Configuration(BaseConfiguration):
             help="The interval between apt update runs (default: 21600).",
         )
         parser.add_argument(
+            "--apt-update-timeout",
+            default=30 * 60,
+            type=int,
+            help="The maximum time in seconds to wait for apt update to "
+            "complete before killing it (default: 1800).",
+        )
+        parser.add_argument(
             "--flush-interval",
             default=5 * 60,
             type=int,

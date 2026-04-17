@@ -14,6 +14,7 @@ from twisted.internet.defer import Deferred, fail, inlineCallbacks, succeed
 
 from landscape.client.package import reporter
 from landscape.client.package.reporter import (
+    APT_UPDATE_TIMEOUT_EXIT_CODE,
     DEFAULT_UNKNOWN_HASHES_PER_REQUEST,
     HASH_ID_REQUEST_TIMEOUT,
     MAX_UNKNOWN_HASHES_PER_REQUEST,
@@ -2303,7 +2304,12 @@ class PackageReporterAptTest(LandscapeTest):
         self.successResultOf(update_result)
 
         mock_spawn_process.assert_called_once_with(
-            self.reporter.apt_update_filename,
+            "/usr/bin/timeout",
+            args=(
+                "--kill-after=10s",
+                str(self.config.apt_update_timeout),
+                self.reporter.apt_update_filename,
+            ),
             env={"http_proxy": "http://proxy_server:8080"},
         )
 
@@ -2325,11 +2331,72 @@ class PackageReporterAptTest(LandscapeTest):
         self.successResultOf(update_result)
 
         mock_spawn_process.assert_called_once_with(
-            self.reporter.apt_update_filename,
+            "/usr/bin/timeout",
+            args=(
+                "--kill-after=10s",
+                str(self.config.apt_update_timeout),
+                self.reporter.apt_update_filename,
+            ),
             env={"https_proxy": "http://proxy_server:8443"},
         )
 
-    def test_run_apt_update_error_on_cache_file(self):
+    @mock.patch(
+        "landscape.client.package.reporter.spawn_process",
+        return_value=succeed((b"", b"", 0)),
+    )
+    def test_run_apt_update_uses_timeout_wrapper(self, mock_spawn_process):
+        """
+        The PackageReporter.run_apt_update method wraps the apt-update call
+        with /usr/bin/timeout using the configured apt_update_timeout value.
+        """
+        self.config.apt_update_timeout = 600
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+
+        update_result = self.reporter.run_apt_update()
+        self.reactor.advance(0)
+        self.successResultOf(update_result)
+
+        mock_spawn_process.assert_called_once_with(
+            "/usr/bin/timeout",
+            args=(
+                "--kill-after=10s",
+                "600",
+                self.reporter.apt_update_filename,
+            ),
+            env={},
+        )
+
+    @mock.patch("logging.warning", spec=logging.warning, return_value=None)
+    def test_run_apt_update_timeout_warning(self, logging_mock):
+        """
+        When apt-update is killed by the timeout wrapper (exit code 124),
+        PackageReporter.run_apt_update logs a clear timeout-specific warning
+        in addition to the generic failure warning.
+        """
+        self.config.apt_update_timeout = 300
+
+        spawn_patcher = mock.patch.object(
+            reporter,
+            "spawn_process",
+            return_value=succeed((b"", b"", APT_UPDATE_TIMEOUT_EXIT_CODE)),
+        )
+        spawn_patcher.start()
+        self.addCleanup(spawn_patcher.stop)
+
+        result = self.reporter.run_apt_update()
+        self.reactor.advance(0)
+
+        def callback(args):
+            out, err, code = args
+            self.assertEqual(APT_UPDATE_TIMEOUT_EXIT_CODE, code)
+            timeout_call = mock.call(
+                f"'{self.reporter.apt_update_filename}' timed out after "
+                f"{self.config.apt_update_timeout} seconds.",
+            )
+            self.assertIn(timeout_call, logging_mock.call_args_list)
+
+        result.addCallback(callback)
+        return result
         """
         L{PackageReporter.run_apt_update} succeeds if the command fails because
         one of the cache files is not found. This generally occurs if 'apt-get

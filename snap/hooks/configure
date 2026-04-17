@@ -48,6 +48,7 @@ config_entries = [
     ("flush-interval", "flush_interval", None),
     ("exchange-interval", "exchange_interval", None),
     ("apt-update-interval", "apt_update_interval", None),
+    ("apt-update-timeout", "apt_update_timeout", None),
     ("cloud", "cloud", None),
 ]
 

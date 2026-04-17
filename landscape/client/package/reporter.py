@@ -38,6 +38,7 @@ LOCK_RETRY_DELAYS = [0, 20, 40]
 PYTHON_BIN = "/usr/bin/python3"
 RELEASE_UPGRADER_PATTERN = "/tmp/ubuntu-release-upgrader-"
 UID_ROOT = "0"
+APT_UPDATE_TIMEOUT_EXIT_CODE = 124
 
 
 def sources_list(string: str) -> set[str]:
@@ -391,6 +392,12 @@ class PackageReporter(PackageTaskHandler):
                             )
                             continue
 
+                    if code == APT_UPDATE_TIMEOUT_EXIT_CODE:
+                        logging.warning(
+                            f"'{self.apt_update_filename}' timed out after "
+                            f"{self._config.apt_update_timeout} seconds.",
+                        )
+
                     logging.warning(
                         "'%s' exited with status %d (%s)",
                         self.apt_update_filename,
@@ -442,7 +449,15 @@ class PackageReporter(PackageTaskHandler):
             env["https_proxy"] = self._config.https_proxy
 
         try:
-            result = spawn_process(self.apt_update_filename, env=env)
+            result = spawn_process(
+                "/usr/bin/timeout",
+                args=(
+                    "--kill-after=10s",
+                    str(self._config.apt_update_timeout),
+                    self.apt_update_filename,
+                ),
+                env=env,
+            )
         except Exception as e:
             return deferred.callback((b"", str(e).encode(), e.errno))
 
