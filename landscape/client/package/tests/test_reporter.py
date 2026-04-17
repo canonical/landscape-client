@@ -14,6 +14,7 @@ from twisted.internet.defer import Deferred, fail, inlineCallbacks, succeed
 
 from landscape.client.package import reporter
 from landscape.client.package.reporter import (
+    APT_UPDATE_SIGKILL_EXIT_CODE,
     APT_UPDATE_TIMEOUT_EXIT_CODE,
     DEFAULT_UNKNOWN_HASHES_PER_REQUEST,
     HASH_ID_REQUEST_TIMEOUT,
@@ -2389,6 +2390,38 @@ class PackageReporterAptTest(LandscapeTest):
         def callback(args):
             out, err, code = args
             self.assertEqual(APT_UPDATE_TIMEOUT_EXIT_CODE, code)
+            timeout_call = mock.call(
+                f"'{self.reporter.apt_update_filename}' timed out after "
+                f"{self.config.apt_update_timeout} seconds.",
+            )
+            self.assertIn(timeout_call, logging_mock.call_args_list)
+
+        result.addCallback(callback)
+        return result
+
+    @mock.patch("logging.warning", spec=logging.warning, return_value=None)
+    def test_run_apt_update_sigkill_warning(self, logging_mock):
+        """
+        When apt-update is sig killed by the timeout wrapper (exit code 137),
+        PackageReporter.run_apt_update logs a clear timeout-specific warning
+        in addition to the generic failure warning.
+        """
+        self.config.apt_update_timeout = 300
+
+        spawn_patcher = mock.patch.object(
+            reporter,
+            "spawn_process",
+            return_value=succeed((b"", b"", APT_UPDATE_SIGKILL_EXIT_CODE)),
+        )
+        spawn_patcher.start()
+        self.addCleanup(spawn_patcher.stop)
+
+        result = self.reporter.run_apt_update()
+        self.reactor.advance(0)
+
+        def callback(args):
+            out, err, code = args
+            self.assertEqual(APT_UPDATE_SIGKILL_EXIT_CODE, code)
             timeout_call = mock.call(
                 f"'{self.reporter.apt_update_filename}' timed out after "
                 f"{self.config.apt_update_timeout} seconds.",

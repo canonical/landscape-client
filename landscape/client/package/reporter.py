@@ -39,6 +39,7 @@ PYTHON_BIN = "/usr/bin/python3"
 RELEASE_UPGRADER_PATTERN = "/tmp/ubuntu-release-upgrader-"
 UID_ROOT = "0"
 APT_UPDATE_TIMEOUT_EXIT_CODE = 124
+APT_UPDATE_SIGKILL_EXIT_CODE = 137
 
 
 def sources_list(string: str) -> set[str]:
@@ -392,7 +393,10 @@ class PackageReporter(PackageTaskHandler):
                             )
                             continue
 
-                    if code == APT_UPDATE_TIMEOUT_EXIT_CODE:
+                    if code in (
+                        APT_UPDATE_TIMEOUT_EXIT_CODE,
+                        APT_UPDATE_SIGKILL_EXIT_CODE,
+                    ):
                         logging.warning(
                             f"'{self.apt_update_filename}' timed out after "
                             f"{self._config.apt_update_timeout} seconds.",
