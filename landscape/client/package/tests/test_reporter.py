@@ -2525,7 +2525,7 @@ class PackageReporterAptTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_detect_packages_does_not_creates_stamp_files(self):
+    def test_detect_packages_does_not_create_stamp_files(self):
         """
         Stamp file is created if not present, and the method returns
         that the information changed in that case.
