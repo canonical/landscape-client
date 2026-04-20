@@ -2,6 +2,7 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
 PYTHON ?= python3
 SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
+SNAP_BASE ?= core24
 TRIAL ?= -m landscape.lib.run_tests
 TRIAL_ARGS ?=
 
@@ -116,7 +117,7 @@ etags:
 
 .PHONY: snap-yaml
 snap-yaml:
-	jinja2 snap/snapcraft.yaml.j2 -D base=core24 > snap/snapcraft.yaml
+	jinja2 snap/snapcraft.yaml.j2 -D base=$(SNAP_BASE) > snap/snapcraft.yaml
 
 .PHONY: snap-install
 snap-install:
@@ -137,7 +138,7 @@ snap-shell: snap-install
 
 .PHONY: snap-debug
 snap-debug: snap-yaml
-	$(SNAPCRAFT) -v --debug
+	$(SNAPCRAFT) pack -v --debug
 
 .PHONY: snap-clean
 snap-clean: snap-remove
@@ -147,7 +148,7 @@ snap-clean: snap-remove
 
 .PHONY: snap
 snap: snap-yaml
-	$(SNAPCRAFT)
+	$(SNAPCRAFT) pack
 
 # TICS expects coverage info to be in ./coverage/.coverage
 .PHONY: prepare-tics-analysis

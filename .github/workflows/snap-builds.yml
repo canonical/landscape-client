@@ -1,0 +1,46 @@
+name: Test Snap Builds
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'snap/**'
+      - 'setup*.py'
+      - 'snap-http/**'
+      - 'landscape/client/snap_http'
+      - 'scripts/**'
+      - '.github/workflows/snap-builds.yml'
+
+jobs:
+  test-snap-builds:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base: ["core24", "core22"]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Generate snapcraft.yaml
+        run: |
+          pip install --user jinja2-cli
+          jinja2 snap/snapcraft.yaml.j2 -D base=${{ matrix.base }} > snap/snapcraft.yaml
+
+      - name: LXD setup
+        uses: canonical/setup-lxd@main
+
+      - name: Build snap
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft pack
+
+      - name: Install snap
+        run: sudo snap install --dangerous landscape-client_*.snap
+
+      - name: Smoke test
+        run: |
+          landscape-client.config --help
+          test -f /var/snap/landscape-client/common/etc/landscape-client.conf

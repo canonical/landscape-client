@@ -3,9 +3,10 @@
 
 name: landscape-client
 base: {{ base }}
-version: '24.12'
+version: '26.02'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
+license: GPL-2.0-only
 summary: Client for the Canonical systems management product Landscape
 description: |
   Landcape is a web-based tool for managing Ubuntu systems. This snap, or the
@@ -109,23 +110,20 @@ parts:
     build-packages:
       - gawk
       - libdistro-info-perl
+      - locales-all
       - lsb-release
       - net-tools
       - po-debconf
       - python3-apt
       - python3-configobj
+      - python3-dbus
       - python3-dev
+      - python3-netifaces
+      - python3-pycurl
       - python3-setuptools
       - python3-twisted
-      - python3-pycurl
-      - python3-netifaces
       - python3-yaml
       - ubuntu-advantage-tools
-      - locales-all
-      - python3-dbus
-    override-build: |
-      make build
-      craftctl default
     stage-packages:
       - adduser
       - bc
@@ -138,15 +136,17 @@ parts:
       - python3
       - python3-apt
       - python3-configobj
+      - python3-dbus
       - python3-gdbm
       - python3-netifaces
+      - python3-pkg-resources
       - python3-pycurl
-      - python3-twisted
       - python3-setuptools
-      - python3-dbus
+      - python3-twisted
       - ubuntu-advantage-tools
     override-stage: |
       craftctl default
+
       # Copy the scripts over
       mkdir -p ${SNAPCRAFT_PRIME}/usr/bin/
       cp -r ${SNAPCRAFT_PART_SRC}/scripts/. ${SNAPCRAFT_PRIME}/usr/bin/
@@ -157,5 +157,6 @@ parts:
       - logrotate
     override-prime: |
       craftctl default
+
       cp ${SNAPCRAFT_PART_SRC}/debian/landscape-client.logrotate ${SNAPCRAFT_PRIME}/etc/logrotate.conf
       sed -i 's/systemctl kill --signal=USR1 --kill-who=main/snapctl restart/' ${SNAPCRAFT_PRIME}/etc/logrotate.conf
