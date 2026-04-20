@@ -6,14 +6,19 @@ _access_group=$(snapctl get access-group)
 _account=$(snapctl get account-name)
 _registration_key=$(snapctl get registration-key)
 _title=$(snapctl get computer-title)
-_url=$(snapctl get landscape-url)
+_url=$(snapctl get url)
+_ping_url=$(snapctl get ping-url)
 _log_level=$(snapctl get log-level)
 _script_users=$(snapctl get script-users)
 _manager_plugins=$(snapctl get manager-plugins)
 _monitor_plugins=$(snapctl get monitor-plugins)
 
 if [ -z "$_url" ]; then
-  _url="https://landscape.canonical.com"
+  _url="https://landscape.canonical.com/message-system"
+fi
+
+if [ -z "$_ping_url" ]; then
+  _ping_url="http://landscape.canonical.com/ping"
 fi
 
 if [ -z "$_log_level" ]; then
@@ -36,8 +41,8 @@ cat > "$CLIENT_CONF" << EOF
 [client]
 account_name = $_account
 computer_title = $_title
-url = ${_url}/message-system
-ping_url = ${_url}/ping
+url = $_url
+ping_url = $_ping_url
 log_level = $_log_level
 script_users = $_script_users
 manager_plugins = $_manager_plugins
