@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# This hook reads snap options set via `snap set`, writes them to
+# landscape-client.conf, and then unsets them.
+# The landscape-client.conf file is the single source of truth,
+# snap options are transient inputs only.
 
 import os
 import subprocess
@@ -6,13 +11,10 @@ import subprocess
 from landscape.client.deployment import Configuration
 
 
-def _snapctl(action, setting):
-    snapctl = subprocess.run(
-        ["snapctl", action, setting],
-        capture_output=True,
-        text=True,
-    )
+def _snapctl(*args):
+    snapctl = subprocess.run(["snapctl", *args], capture_output=True, text=True)
     return snapctl.stdout
+
 
 def update_ssl_cert(cert: str) -> str | None:
     cert_path = os.path.join(os.getenv("SNAP_COMMON"), "etc/ssl/certs")
@@ -28,12 +30,13 @@ def update_ssl_cert(cert: str) -> str | None:
 config = Configuration()
 config.load([])
 
+# Each entry in config_entries maps a snap option to a landscape
+# config key, with an optional mapping applied to the value.
 config_entries = [
-    # (snapctl key, landscape client config key, mapping function)
     ("account-name", "account_name", None),
     ("computer-title", "computer_title", None),
-    ("landscape-url", "url", lambda url: f"{url}/message-system"),
-    ("landscape-ping-url", "ping_url", lambda url: f"{url}/ping"),
+    ("url", "url", None),
+    ("ping-url", "ping_url", None),
     ("ssl-public-key", "ssl_public_key", update_ssl_cert),
     ("log-level", "log_level", None),
     ("script-users", "script_users", None),
@@ -52,8 +55,15 @@ config_entries = [
     ("cloud", "cloud", None),
 ]
 
+# Deprecated keys kept for backward compatibility.
+# New keys take precedence.
+legacy_config_entries = [
+    ("landscape-url", "url", lambda url: f"{url}/message-system"),
+    ("landscape-ping-url", "ping_url", lambda url: f"{url}/ping"),
+]
+
 changed = set()
-for snapctl_key, landscape_key, mapping_fn in config_entries:
+for snapctl_key, landscape_key, mapping_fn in [*legacy_config_entries, *config_entries]:
     value = _snapctl("get", snapctl_key).strip()
     if not value:
         # empty, value has not changed
@@ -67,7 +77,6 @@ for snapctl_key, landscape_key, mapping_fn in config_entries:
 
 config.write()
 
-# unset the values from snapctl so that in the next run
-#  we know what has changed
-# the landscape-client.conf file is still the main source of truth
-_snapctl("unset", " ".join(changed))
+# Unset changed keys so that on the next run we know what has changed.
+if changed:
+    _snapctl("unset", *changed)
