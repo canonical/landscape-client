@@ -150,6 +150,13 @@ class Configuration(BaseConfiguration):
             help="The interval between apt update runs (default: 21600).",
         )
         parser.add_argument(
+            "--apt-update-timeout",
+            default=30 * 60,
+            type=int,
+            help="The maximum time in seconds to wait for apt update to "
+            "complete before killing it (default: 1800).",
+        )
+        parser.add_argument(
             "--flush-interval",
             default=5 * 60,
             type=int,
@@ -205,7 +212,7 @@ class Configuration(BaseConfiguration):
 
     @property
     def juju_filename(self):
-        """The path to the previously sinlge juju-info file for
+        """The path to the previously single juju-info file for
         backwards-compatibility."""
         return os.path.join(self.data_path, "juju-info.json")
 
