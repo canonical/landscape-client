@@ -1,3 +1,10 @@
+landscape-client (26.08~beta.3-0landscape0) jammy; urgency=medium
+
+  * fix(snap): make url options consistent with landscape-config
+  * feat: add configurable timeout for apt-update (LP: #2131251)
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Fri, 24 Apr 2026 18:11:56 -0400
+
 landscape-client (26.08~beta.2-0landscape0) jammy; urgency=medium
 
   * fix: snap builds & installation
