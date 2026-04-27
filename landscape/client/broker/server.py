@@ -161,6 +161,12 @@ class BrokerServer:
 
         @param name: The name of the client, such a C{monitor} or C{manager}.
         """
+        # disconnect old connector if it exists:
+        old_remote_client = self._registered_clients.get(name)
+        if old_remote_client is not None:
+            old_connector = self._connectors.pop(old_remote_client)
+            if old_connector is not None:
+                old_connector.disconnect()
         connector_class = self.connectors_registry.get(name)
         connector = connector_class(self._reactor, self._config)
 
