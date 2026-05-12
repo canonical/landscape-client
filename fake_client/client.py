@@ -214,6 +214,7 @@ def _build_distribution_info_message(state: FakeClientState) -> dict:
 
 def _build_processor_info_message(state: FakeClientState) -> list[dict]:
     """Build processor-info message."""
+    rng = random.Random(state.client_id)
     processors = []
     for i in range(state.num_cpus):
         processors.append(
@@ -221,7 +222,7 @@ def _build_processor_info_message(state: FakeClientState) -> list[dict]:
                 "processor-id": i,
                 "vendor": state.cpu_model.split()[0],
                 "model": state.cpu_model,
-                "cache-size": random.choice([256, 512, 1024, 2048, 4096]),
+                "cache-size": rng.choice([256, 512, 1024, 2048, 4096]),
             }
         )
     return [
@@ -471,6 +472,8 @@ def _handle_activity_message(
 
     elif msg_type == "accepted-types":
         types = message.get("types", [])
+        # MD5 is used here for compatibility with the Landscape protocol
+        # which uses MD5 for accepted-types hashing (change detection only).
         h = hashlib.md5(  # noqa: S324
             b";".join(sorted(t.encode() for t in types)),
         ).digest()
