@@ -272,13 +272,22 @@ class RegistrationHandler:
             logging.info(f"Overwriting secure_id with '{cid.secure_id}'")
 
         cid.secure_id = message.get("id")
-        cid.insecure_id = message.get("insecure-id")
+        insecure_id = message.get("insecure-id")
+        if insecure_id is not None:
+            cid.insecure_id = insecure_id
+        else:
+            logging.warning(
+                "Server did not provide insecure-id in set-id message; "
+                "keeping existing value: %s",
+                cid.insecure_id,
+            )
         logging.info(
             "Using new secure-id ending with %s for account %s.",
             cid.secure_id[-10:],
             cid.account_name,
         )
         logging.debug("Using new secure-id: %s", cid.secure_id)
+        logging.debug("Using insecure-id: %s", cid.insecure_id)
         self._reactor.fire("registration-done")
         self._reactor.fire("resynchronize-clients")
 
