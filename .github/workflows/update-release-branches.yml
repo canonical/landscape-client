@@ -11,6 +11,8 @@ jobs:
     strategy:
       matrix:
         include:
+          - branch: core-26
+            base: core26
           - branch: core-24
             base: core24
           - branch: core-22
