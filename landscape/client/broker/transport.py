@@ -14,10 +14,11 @@ class HTTPTransport:
     @param pubkey: SSH public key used for secure communication.
     """
 
-    def __init__(self, reactor, url, pubkey=None):
+    def __init__(self, reactor, url, pubkey=None, http_client="pycurl"):
         self._reactor = reactor
         self._url = url
         self._pubkey = pubkey
+        self._http_client = http_client
 
     def get_url(self):
         """Get the URL of the remote message system."""
@@ -53,6 +54,7 @@ class HTTPTransport:
                 computer_id=computer_id,
                 exchange_token=exchange_token,
                 server_api=message_api.decode(),
+                http_client=self._http_client,
             )
         except Exception:
             return None
@@ -70,7 +72,7 @@ class HTTPTransport:
 class FakeTransport:
     """Fake transport for testing purposes."""
 
-    def __init__(self, reactor=None, url=None, pubkey=None):
+    def __init__(self, reactor=None, url=None, pubkey=None, http_client="pycurl"):
         self._pubkey = pubkey
         self.payloads = []
         self.responses = []

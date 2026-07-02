@@ -36,6 +36,7 @@ def exchange_messages(
     computer_id: str | None = None,
     exchange_token: bytes | None = None,
     server_api: str = SERVER_API.decode(),
+    http_client: str = "pycurl",
 ) -> ServerResponse:
     """Sends `payload` via HTTP(S) to `server_url`, parsing and returning the
     response.
@@ -47,6 +48,7 @@ def exchange_messages(
     :param computer_id: The computer ID to send the message as.
     :param exchange_token: Token included in the exchange to prove client
         identity.
+    :param http_client: The HTTP client to use ('pycurl' or 'urllib').
     """
     start_time = time.time()
     logging.debug(f"Sending payload:\n{pformat(payload)}")
@@ -64,7 +66,9 @@ def exchange_messages(
     if exchange_token:
         headers["X-Exchange-Token"] = exchange_token.decode()
 
-    curl = pycurl.Curl()
+    curl = None
+    if http_client == "pycurl":
+        curl = pycurl.Curl()
 
     try:
         response_bytes = fetch(
@@ -74,6 +78,7 @@ def exchange_messages(
             headers=headers,
             cainfo=cainfo,
             curl=curl,
+            http_client=http_client,
         )
     except Exception:
         logging.exception(f"Error contacting the server at {server_url}.")
