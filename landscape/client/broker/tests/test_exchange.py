@@ -10,7 +10,7 @@ from landscape.client.broker.store import MessageStore
 from landscape.client.broker.tests.helpers import ExchangeHelper
 from landscape.client.broker.transport import FakeTransport
 from landscape.client.tests.helpers import DEFAULT_ACCEPTED_TYPES, LandscapeTest
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError, TransportError
 from landscape.lib.hashlib import md5
 from landscape.lib.persist import Persist
 from landscape.lib.schema import Int
@@ -1366,7 +1366,7 @@ class MessageExchangeTest(LandscapeTest):
 
         self.reactor.call_on("exchange-failed", failed_exchange)
         self.transport.responses.append(
-            PyCurlError(60, "Failed to communicate."),
+            TransportError(60, "Failed to communicate."),
         )
         self.exchanger.exchange()
         self.assertEqual([None], events)
@@ -1385,7 +1385,7 @@ class MessageExchangeTest(LandscapeTest):
 
         self.reactor.call_on("exchange-failed", failed_exchange)
         self.transport.responses.append(
-            PyCurlError(10, "Failed to communicate."),  # Not 60
+            TransportError(10, "Failed to communicate."),  # Not 60
         )
         self.exchanger.exchange()
         self.assertEqual([None], events)

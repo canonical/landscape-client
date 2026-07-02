@@ -37,7 +37,7 @@ from landscape.client.environment import DIRECTORY_MODE, FILE_MODE, GROUP, USER
 from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError, TransportError
 from landscape.lib.fs import read_binary_file
 from landscape.lib.persist import Persist
 from landscape.lib.testing import EnvironSaverHelper
@@ -1966,7 +1966,7 @@ registration_key = shared-secret
         mock_fetch,
         mock_print_text,
     ):
-        mock_fetch.side_effect = PyCurlError(60, "pycurl message")
+        mock_fetch.side_effect = TransportError(60, "pycurl message")
 
         config_filename = self.makeFile("", basename="final_config")
 

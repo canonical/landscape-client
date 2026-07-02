@@ -6,7 +6,7 @@ from twisted.internet.defer import fail, inlineCallbacks, succeed
 
 from landscape.client.monitor.computerinfo import METADATA_RETRY_MAX, ComputerInfo
 from landscape.client.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError, TransportError
 from landscape.lib.fs import create_text_file
 from landscape.lib.machine_id import MACHINE_ID_SIZE, get_namespaced_machine_id
 
@@ -543,11 +543,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
     def test_fetch_ec2_meta_data_no_cloud_api_max_retry(self):
         """
         L{_fetch_ec2_meta_data} returns C{None} when faced with no EC2 cloud
-        API service and reports the specific C{PyCurlError} upon message
+        API service and reports the specific C{TransportError} upon message
         exchange when L{_cloud_retries} equals C{METADATA_RETRY_MAX}.
         """
-        self.log_helper.ignore_errors(PyCurlError)
-        self.add_query_result("instance-id", PyCurlError(60, "pycurl error"))
+        self.log_helper.ignore_errors(TransportError)
+        self.add_query_result("instance-id", TransportError(60, "pycurl error"))
         plugin = ComputerInfo(fetch_async=self.fetch_func)
         plugin._cloud_retries = METADATA_RETRY_MAX
         result = yield plugin._fetch_ec2_meta_data()
