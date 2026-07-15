@@ -16,7 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        base: ["core24", "core22"]
+        base: ["core26", "core24", "core22"]
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v6
@@ -35,7 +36,7 @@ jobs:
       - name: Build snap
         run: |
           sudo snap install snapcraft --classic
-          snapcraft pack
+          snapcraft pack --verbosity=debug
 
       - name: Install snap
         run: sudo snap install --dangerous landscape-client_*.snap

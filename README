@@ -119,6 +119,12 @@ building and testing the snap. To generate the snap's `snapcraft.yaml` file:
 make snap-yaml
 ```
 
+By default this targets `core26`. To target a different base, pass `SNAP_BASE`:
+
+```shell
+make snap-yaml SNAP_BASE=core24
+```
+
 To simply build the snap with the minimum of debug information displayed:
 
 ```shell
@@ -237,6 +243,7 @@ The landscape-client snap is automatically built from the most recent commit on 
 
 | Core Base | Edge Channel | Build Recipe                                                               |
 |-----------|--------------|----------------------------------------------------------------------------|
+| 26        | `26/edge`    | [core-26](https://launchpad.net/~landscape/landscape-client/+snap/core-26) |
 | 24        | `24/edge`    | [core-24](https://launchpad.net/~landscape/landscape-client/+snap/core-24) |
 | 22        | `22/edge`    | [core-22](https://launchpad.net/~landscape/landscape-client/+snap/core-22) |
 
