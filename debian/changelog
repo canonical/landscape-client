@@ -1,3 +1,10 @@
+landscape-client (26.08~beta.4-0landscape0) jammy; urgency=medium
+
+  * fix: set User-Agent for ping requests
+  * fix: disconnect connectors on error paths to prevent socket leak (LP: #2147687)
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Fri, 22 May 2026 16:44:53 -0400
+
 landscape-client (26.08~beta.3-0landscape0) jammy; urgency=medium
 
   * fix(snap): make url options consistent with landscape-config
