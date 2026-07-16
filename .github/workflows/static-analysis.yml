@@ -10,13 +10,13 @@ jobs:
     runs-on: [self-hosted, linux, amd64, tiobe, noble]
     steps:
       - name: Checkout master branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           submodules: true
       - name: Make coverage report for TiCS
         run: make prepare-tics-analysis
       - name: TICS GitHub Action
-        uses: tiobe/tics-github-action@v3
+        uses: tiobe/tics-github-action@74bf696843d3f0980ae6d7a810abe40f82dfcd17 # v3.11.0
         with:
           mode: qserver
           project: landscape-client
