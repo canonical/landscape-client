@@ -1,6 +1,6 @@
 name: landscape-client
 base: core22
-version: '26.02'
+version: '26.08'
 icon: snap/gui/landscape-logo-256.png
 website: https://ubuntu.com/landscape
 license: GPL-2.0-only
@@ -19,6 +19,7 @@ architectures:
   - build-on: [ppc64el]
   - build-on: [s390x]
   - build-on: [riscv64]
+
 confinement: strict
 
 environment:
@@ -89,9 +90,17 @@ layout:
     bind: $SNAP_DATA/var/log/landscape
 
 parts:
+  python-runtime:
+    plugin: nil
+    stage-packages:
+      - python3.10
+
   landscape-client:
+    after: [python-runtime]
     plugin: python
     source: .
+    override-build: |
+      pip install --target=${CRAFT_PART_INSTALL}/lib/python3.10/site-packages .
     build-packages:
       - gawk
       - libdistro-info-perl
@@ -118,23 +127,27 @@ parts:
       - lsb-base
       - lsb-release
       - lshw
-      - python3
       - python3-apt
       - python3-configobj
       - python3-dbus
       - python3-gdbm
       - python3-netifaces
+      - python3-packaging
       - python3-pkg-resources
       - python3-pycurl
       - python3-setuptools
       - python3-twisted
       - ubuntu-advantage-tools
-    override-stage: |
+    override-prime: |
       craftctl default
 
       # Copy the scripts over
       mkdir -p ${SNAPCRAFT_PRIME}/usr/bin/
       cp -r ${SNAPCRAFT_PART_SRC}/scripts/. ${SNAPCRAFT_PRIME}/usr/bin/
+
+      # Rewrite shebangs to use the snap-local python3
+      sed -i '1s|#!/usr/bin/python3|#!/usr/bin/env python3|' ${SNAPCRAFT_PRIME}/usr/bin/landscape-*
+
   logrotate:
     plugin: nil
     source: .
