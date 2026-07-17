@@ -45,7 +45,7 @@ jobs:
         run: echo "ref=${{ github.event.inputs.ref || github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
 
       - name: Check out Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ steps.get-reference.outputs.ref }}
           submodules: true
@@ -74,14 +74,14 @@ jobs:
           mv ../deb-build/ ./
 
       - name: Upload source build
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         id: upload-source-build
         with:
           name: source-build
           path: ./source-build/
 
       - name: Upload deb build
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         id: upload-deb-build
         with:
           name: deb-build
