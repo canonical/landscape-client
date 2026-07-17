@@ -31,7 +31,7 @@ jobs:
           jinja2 snap/snapcraft.yaml.j2 -D base=${{ matrix.base }} > snap/snapcraft.yaml
 
       - name: LXD setup
-        uses: canonical/setup-lxd@main
+        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
 
       - name: Build snap
         run: |
