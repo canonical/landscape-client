@@ -42,7 +42,7 @@ jobs:
       # Get the reference to build from, if provided.
       - name: Get reference to build from
         id: get-reference
-        run: echo "ref=${{ github.event.inputs.ref || github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
+        run: echo "ref=${{ inputs.ref || github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
 
       - name: Check out Git repository
         uses: actions/checkout@v4
