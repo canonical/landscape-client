@@ -125,6 +125,10 @@ By default this targets `core26`. To target a different base, pass `SNAP_BASE`:
 make snap-yaml SNAP_BASE=core24
 ```
 
+When making significant changes to `snap/snapcraft.yaml.j2`, validate against
+Launchpad using `snapcraft remote-build --build-for=<arch> -v` in addition to the [GitHub Actions workflow](.github/workflows/snap-builds.yml).
+The two build environments differ and a build can pass on GitHub while failing on Launchpad.
+
 To simply build the snap with the minimum of debug information displayed:
 
 ```shell
@@ -248,3 +252,5 @@ The landscape-client snap is automatically built from the most recent commit on 
 | 22        | `22/edge`    | [core-22](https://launchpad.net/~landscape/landscape-client/+snap/core-22) |
 
 Other channels (`<base>/beta`, `<base>/candidate`, `<base>/stable`) are promoted and released manually.
+
+For the team maintaining this snap, see the [internal support documentation](https://documentation.ubuntu.com/telemetry-internal/en/latest/how-to/support/landscape-client/) for release procedures and common support tasks.
