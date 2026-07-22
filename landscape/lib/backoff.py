@@ -29,15 +29,14 @@ class ExponentialBackoff:
         self._max_effective_error_count: int = 1
 
         # Calculate the smallest error count that meets or exceeds max_delay
-        if (self._start_delay > 0) and (self._max_delay > self._start_delay):
+        if self._max_delay > self._start_delay > 0:
             self._max_effective_error_count = math.ceil(
                 math.log2(self._max_delay / self._start_delay) + 1
             )
 
     def decrease(self) -> None:
         """Decreases error count with zero being the lowest"""
-        self._error_count -= 1
-        self._error_count = max(self._error_count, 0)
+        self._error_count = max(self._error_count - 1, 0)
 
     def increase(self) -> None:
         """
