@@ -28,7 +28,7 @@ class ExponentialBackoff:
         self._max_delay = max_delay
         self._max_effective_error_count: int = 1
 
-        # Calculate he smallest error count that meets or exceeds max_delay
+        # Calculate the smallest error count that meets or exceeds max_delay
         if (self._start_delay > 0) and (self._max_delay > self._start_delay):
             self._max_effective_error_count = math.ceil(
                 math.log2(self._max_delay / self._start_delay) + 1
@@ -40,7 +40,10 @@ class ExponentialBackoff:
         self._error_count = max(self._error_count, 0)
 
     def increase(self) -> None:
-        """Increases error count but not higher than gives the max delay"""
+        """
+        Increases the error count, capped at the limit needed
+        to reach the maximum delay.
+        """
         if self._error_count < self._max_effective_error_count:
             self._error_count += 1
 
