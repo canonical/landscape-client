@@ -1,3 +1,17 @@
+"""
+Exponential Backoff Utility.
+
+This module provides an implementation of an exponential backoff algorithm.
+
+It features:
+- Exponentially increasing delays based on consecutive error counts.
+- A configurable maximum delay ceiling to prevent unbounded waits.
+- Gradual recovery by stepping down the error count on success.
+- Randomized jitter to prevent "thundering herd" scenarios when multiple
+  clients are retrying simultaneously.
+"""
+
+import math
 import random
 
 
@@ -7,23 +21,30 @@ class ExponentialBackoff:
     exponentially.
     """
 
-    def __init__(self, start_delay, max_delay):
+    def __init__(self, start_delay: int, max_delay: int):
         self._error_count = 0  # A tally of server errors
 
         self._start_delay = start_delay
         self._max_delay = max_delay
+        self._max_effective_error_count: int = 1
 
-    def decrease(self):
+        # Calculate he smallest error count that meets or exceeds max_delay
+        if (self._start_delay > 0) and (self._max_delay > self._start_delay):
+            self._max_effective_error_count = math.ceil(
+                math.log2(self._max_delay / self._start_delay) + 1
+            )
+
+    def decrease(self) -> None:
         """Decreases error count with zero being the lowest"""
         self._error_count -= 1
         self._error_count = max(self._error_count, 0)
 
-    def increase(self):
+    def increase(self) -> None:
         """Increases error count but not higher than gives the max delay"""
-        if self.get_delay() < self._max_delay:
+        if self._error_count < self._max_effective_error_count:
             self._error_count += 1
 
-    def get_delay(self):
+    def get_delay(self) -> int:
         """
         Calculates the delay using formula that gives this chart. In this
         specific example start is 5 seconds and max is 60 seconds
@@ -36,12 +57,12 @@ class ExponentialBackoff:
                 5      60 (max)
         """
         if self._error_count:
-            delay = (2 ** (self._error_count - 1)) * self._start_delay
+            delay = self._start_delay << (self._error_count - 1)
         else:
             delay = 0
         return min(int(delay), self._max_delay)
 
-    def get_random_delay(self, stagger_fraction=0.25):
+    def get_random_delay(self, stagger_fraction: float = 0.25) -> int:
         """
         Adds randomness to the specified stagger of the delay. For example
         for a delay of 12 and 25% stagger, it works out to 9 + rand(0,3)
