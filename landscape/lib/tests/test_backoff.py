@@ -67,20 +67,21 @@ class TestBackoff(LandscapeTest):
     @mock.patch("landscape.lib.backoff.random.random")
     def test_get_random_delay(self, mock_random):
         """Test the random delay calculation boundaries"""
-        backoff_counter = ExponentialBackoff(4, 10)
-        backoff_counter.increase()  # Delay is now 4
+        backoff_counter = ExponentialBackoff(100, 1000)
+        backoff_counter.increase()  # Delay is now 100
 
         # Test the lower bound (random() returns 0.0)
         mock_random.return_value = 0.0
-        # For a delay of 4 with 25% stagger, non-random part is 3.
-        # 3 + (1 * 0.0) = 3
-        self.assertEqual(backoff_counter.get_random_delay(stagger_fraction=0.25), 3)
+        # For a delay of 100 with 25% stagger, non-random part is 75.
+        # 75 + (25 * 0.0) = 75
+        self.assertEqual(backoff_counter.get_random_delay(stagger_fraction=0.25), 75)
 
-        # Test the upper bound (random() returns 0.99)
+        # Test the upper bound (random() approaches 1.0 but never reaches it)
         mock_random.return_value = 0.9999
-        # 3 + (1 * ~1.0) = 3 (truncated to int)
-        self.assertEqual(backoff_counter.get_random_delay(stagger_fraction=0.25), 3)
+        # 75 + (25 * 0.9999) = 99.9975 (truncated to int)
+        self.assertEqual(backoff_counter.get_random_delay(stagger_fraction=0.25), 99)
 
-        # At exactly 1.0 it would be 4
-        mock_random.return_value = 1.0
-        self.assertEqual(backoff_counter.get_random_delay(stagger_fraction=0.25), 4)
+        # Test the median to ensure standard math is applied correctly
+        mock_random.return_value = 0.5
+        # 75 + (25 * 0.5) = 87.5 (truncated to int)
+        self.assertEqual(backoff_counter.get_random_delay(stagger_fraction=0.25), 87)
