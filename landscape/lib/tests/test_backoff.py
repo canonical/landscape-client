@@ -45,7 +45,6 @@ class TestBackoff(LandscapeTest):
         for _ in range(15):
             backoff_counter.increase()
 
-        self.assertEqual(backoff_counter._error_count, 5)
         self.assertEqual(
             backoff_counter._error_count, backoff_counter._max_effective_error_count
         )

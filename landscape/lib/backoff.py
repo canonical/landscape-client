@@ -43,8 +43,7 @@ class ExponentialBackoff:
         Increases the error count, capped at the limit needed
         to reach the maximum delay.
         """
-        if self._error_count < self._max_effective_error_count:
-            self._error_count += 1
+        self._error_count = min(self._error_count + 1, self._max_effective_error_count)
 
     def get_delay(self) -> int:
         """
