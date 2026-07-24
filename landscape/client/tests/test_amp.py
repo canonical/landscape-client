@@ -1,5 +1,6 @@
 import errno
 import os
+import socket as socket_module
 from unittest import mock
 
 from twisted.internet.error import CannotListenError, ConnectError
@@ -64,6 +65,47 @@ class ComponentPublisherTest(LandscapeTest):
         result = self.remote.non_remote()
         failure = self.failureResultOf(result)
         self.assertTrue(failure.check(MethodCallError))
+
+
+class ComponentPublisherStaleSocketTest(LandscapeTest):
+    """The publisher recovers from a stale socket left by a dead process."""
+
+    def setUp(self):
+        super().setUp()
+        self.config = Configuration()
+        self.config.data_path = self.makeDir()
+        self.makeDir(path=self.config.sockets_path)
+        self.sock_path = os.path.join(self.config.sockets_path, "test.sock")
+
+    def test_recovers_from_stale_socket(self):
+        """A leftover socket with no live listener is removed and re-bound."""
+        # Simulate a SIGKILLed component: a bound socket file with nobody
+        # listening on it (close immediately, leaving the file behind).
+        stale = socket_module.socket(socket_module.AF_UNIX, socket_module.SOCK_STREAM)
+        stale.bind(self.sock_path)
+        stale.close()
+        self.assertTrue(os.path.exists(self.sock_path))
+
+        # Test the actual Unix reactor implementation. Fakes won't do.
+        reactor = LandscapeReactor()
+        publisher = ComponentPublisher(MockComponent(), reactor, self.config)
+        publisher.start()  # must not raise CannotListenError
+        self.assertTrue(os.path.exists(self.sock_path))
+        publisher.stop()
+        reactor._cleanup()
+
+    def test_refuses_socket_with_live_listener(self):
+        """A socket still served by a live process is left untouched."""
+        live = socket_module.socket(socket_module.AF_UNIX, socket_module.SOCK_STREAM)
+        live.bind(self.sock_path)
+        live.listen(1)
+        self.addCleanup(live.close)
+
+        reactor = LandscapeReactor()
+        publisher = ComponentPublisher(MockComponent(), reactor, self.config)
+        with self.assertRaises(CannotListenError):
+            publisher.start()
+        reactor._cleanup()
 
 
 class ComponentConnectorTest(LandscapeTest):
