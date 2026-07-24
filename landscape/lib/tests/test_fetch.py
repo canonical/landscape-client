@@ -1,5 +1,11 @@
+import gzip
+import io
 import os
+import ssl
 import unittest
+import urllib.error
+import urllib.request
+import zlib
 from threading import local
 from unittest import mock
 
@@ -9,7 +15,8 @@ from twisted.internet.defer import FirstError
 from landscape.lib import testing
 from landscape.lib.fetch import (
     HTTPCodeError,
-    PyCurlError,
+    TransportError,
+    _NoRedirectHandler,
     fetch,
     fetch_async,
     fetch_many_async,
@@ -289,13 +296,10 @@ class FetchTest(
 
     def test_pycurl_error(self):
         curl = CurlStub(error=pycurl.error(60, "pycurl error"))
-        try:
+        with self.assertRaises(TransportError) as cm:
             fetch("http://example.com", curl=curl)
-        except PyCurlError as error:
-            self.assertEqual(error.error_code, 60)
-            self.assertEqual(error.message, "pycurl error")
-        else:
-            self.fail("PyCurlError not raised")
+        self.assertEqual(cm.exception.error_code, 60)
+        self.assertEqual(cm.exception.message, "pycurl error")
 
     def test_pycurl_insecure(self):
         curl = CurlStub(b"result")
@@ -324,14 +328,14 @@ class FetchTest(
 
     def test_pycurl_error_str(self):
         self.assertEqual(
-            str(PyCurlError(60, "pycurl error")),
+            str(TransportError(60, "pycurl error")),
             "Error 60: pycurl error",
         )
 
     def test_pycurl_error_repr(self):
         self.assertEqual(
-            repr(PyCurlError(60, "pycurl error")),
-            "<PyCurlError args=(60, 'pycurl error')>",
+            repr(TransportError(60, "pycurl error")),
+            "<TransportError args=(60, 'pycurl error')>",
         )
 
     def test_pycurl_follow_true(self):
@@ -594,3 +598,349 @@ class FetchTest(
 
         result.addErrback(check_error)
         return result
+
+    def _urllib_opener(
+        self,
+        mock_build_opener,
+        body=b"result",
+        code=200,
+        headers=None,
+    ):
+        """Configure C{mock_build_opener} with an opener returning a response
+        with the given C{body}, HTTP C{code} and C{headers}, and return the
+        opener mock for further assertions.
+        """
+        response = mock.MagicMock()
+        response.read.return_value = body
+        response.getcode.return_value = code
+        response.headers = {} if headers is None else headers
+
+        opener = mock.MagicMock()
+        opener.open.return_value = response
+        mock_build_opener.return_value = opener
+        return opener
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_basic(self, mock_build_opener):
+        """The C{urllib} backend performs a GET request and returns the body."""
+        opener = self._urllib_opener(mock_build_opener)
+
+        result = fetch("http://example.com", http_client="urllib")
+        self.assertEqual(result, b"result")
+
+        opener.open.assert_called_once()
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.full_url, "http://example.com")
+        self.assertEqual(req.get_method(), "GET")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_post(self, mock_build_opener):
+        """With C{post=True} the C{urllib} backend issues a POST request."""
+        opener = self._urllib_opener(mock_build_opener)
+
+        result = fetch("http://example.com", post=True, http_client="urllib")
+        self.assertEqual(result, b"result")
+
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.get_method(), "POST")
+        self.assertEqual(req.data, b"")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_post_data(self, mock_build_opener):
+        """POST C{data} is encoded and sent as the request body."""
+        opener = self._urllib_opener(mock_build_opener)
+
+        result = fetch(
+            "http://example.com",
+            post=True,
+            data="post-data",
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.get_method(), "POST")
+        self.assertEqual(req.data, b"post-data")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_headers(self, mock_build_opener):
+        """If provided, headers are set on the request."""
+        opener = self._urllib_opener(mock_build_opener)
+
+        result = fetch(
+            "http://example.com",
+            headers={"Custom-Header": "value"},
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.get_header("Custom-header"), "value")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_user_agent(self, mock_build_opener):
+        """If provided, the user-agent is set in the request."""
+        opener = self._urllib_opener(mock_build_opener)
+
+        result = fetch(
+            "http://example.com",
+            user_agent="my-user-agent",
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.get_header("User-agent"), "my-user-agent")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_proxy(self, mock_build_opener):
+        """If provided, the proxy is set for both http and https."""
+        self._urllib_opener(mock_build_opener)
+
+        result = fetch(
+            "http://example.com",
+            proxy="http://127.0.0.1:8080",
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+
+        handlers = mock_build_opener.call_args[0]
+        proxy_handlers = [
+            h for h in handlers if isinstance(h, urllib.request.ProxyHandler)
+        ]
+        self.assertEqual(len(proxy_handlers), 1)
+        self.assertEqual(
+            proxy_handlers[0].proxies,
+            {"http": "http://127.0.0.1:8080", "https": "http://127.0.0.1:8080"},
+        )
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_follow_false(self, mock_build_opener):
+        """With C{follow=False} a no-redirect handler is installed."""
+        self._urllib_opener(mock_build_opener)
+
+        result = fetch("http://example.com", follow=False, http_client="urllib")
+        self.assertEqual(result, b"result")
+
+        handlers = mock_build_opener.call_args[0]
+        redirect_handlers = [
+            h for h in handlers if isinstance(h, urllib.request.HTTPRedirectHandler)
+        ]
+        self.assertEqual(len(redirect_handlers), 1)
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_non_200(self, mock_build_opener):
+        """A non-200 response raises L{HTTPCodeError} with code and body."""
+        self._urllib_opener(mock_build_opener, body=b"error body", code=404)
+
+        with self.assertRaises(HTTPCodeError) as cm:
+            fetch("http://example.com", http_client="urllib")
+        self.assertEqual(cm.exception.http_code, 404)
+        self.assertEqual(cm.exception.body, b"error body")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_ssl_verification_error(self, mock_build_opener):
+        """An SSL certificate verification failure maps to error code 60."""
+        opener = mock.MagicMock()
+        reason = ssl.SSLCertVerificationError(1, "self-signed certificate")
+        opener.open.side_effect = urllib.error.URLError(reason)
+        mock_build_opener.return_value = opener
+
+        with self.assertRaises(TransportError) as cm:
+            fetch("https://example.com", http_client="urllib")
+        self.assertEqual(cm.exception.error_code, 60)
+        self.assertIn("self-signed certificate", cm.exception.message)
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_ssl_error(self, mock_build_opener):
+        """A generic SSL error maps to error code 35."""
+        opener = mock.MagicMock()
+        reason = ssl.SSLError("some ssl error")
+        opener.open.side_effect = urllib.error.URLError(reason)
+        mock_build_opener.return_value = opener
+
+        with self.assertRaises(TransportError) as cm:
+            fetch("https://example.com", http_client="urllib")
+        self.assertEqual(cm.exception.error_code, 35)
+        self.assertIn("some ssl error", cm.exception.message)
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_other_error(self, mock_build_opener):
+        """A non-SSL connection error maps to error code 7."""
+        opener = mock.MagicMock()
+        opener.open.side_effect = urllib.error.URLError("connection refused")
+        mock_build_opener.return_value = opener
+
+        with self.assertRaises(TransportError) as cm:
+            fetch("http://example.com", http_client="urllib")
+        self.assertEqual(cm.exception.error_code, 7)
+        self.assertIn("connection refused", cm.exception.message)
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_gzip(self, mock_build_opener):
+        """A gzip-encoded response body is transparently decompressed."""
+        self._urllib_opener(
+            mock_build_opener,
+            body=gzip.compress(b"gzip-decoded"),
+            headers={"Content-Encoding": "gzip"},
+        )
+
+        result = fetch("http://example.com", http_client="urllib")
+        self.assertEqual(result, b"gzip-decoded")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_deflate(self, mock_build_opener):
+        """A deflate-encoded response body is transparently decompressed."""
+        self._urllib_opener(
+            mock_build_opener,
+            body=zlib.compress(b"deflate-decoded"),
+            headers={"Content-Encoding": "deflate"},
+        )
+
+        result = fetch("http://example.com", http_client="urllib")
+        self.assertEqual(result, b"deflate-decoded")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_bytes_url(self, mock_build_opener):
+        """A C{bytes} URL is decoded before the request is built."""
+        opener = self._urllib_opener(mock_build_opener)
+
+        result = fetch(b"http://example.com", http_client="urllib")
+        self.assertEqual(result, b"result")
+
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.full_url, "http://example.com")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_bytes_user_agent(self, mock_build_opener):
+        """A C{bytes} user-agent is decoded before being set as a header."""
+        opener = self._urllib_opener(mock_build_opener)
+
+        result = fetch(
+            "http://example.com",
+            user_agent=b"my-user-agent",
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.get_header("User-agent"), "my-user-agent")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_bytes_proxy(self, mock_build_opener):
+        """A C{bytes} proxy is decoded before the proxy handler is built."""
+        self._urllib_opener(mock_build_opener)
+
+        result = fetch(
+            "http://example.com",
+            proxy=b"http://127.0.0.1:8080",
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+
+        handlers = mock_build_opener.call_args[0]
+        proxy_handlers = [
+            h for h in handlers if isinstance(h, urllib.request.ProxyHandler)
+        ]
+        self.assertEqual(len(proxy_handlers), 1)
+        self.assertEqual(
+            proxy_handlers[0].proxies,
+            {"http": "http://127.0.0.1:8080", "https": "http://127.0.0.1:8080"},
+        )
+
+    @mock.patch("landscape.lib.fetch.ssl.create_default_context")
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_insecure(self, mock_build_opener, mock_create_ctx):
+        """With C{insecure=True} over HTTPS certificate checks are disabled."""
+        self._urllib_opener(mock_build_opener)
+        ctx = mock_create_ctx.return_value
+
+        result = fetch(
+            "https://example.com",
+            insecure=True,
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+        self.assertFalse(ctx.check_hostname)
+        self.assertEqual(ctx.verify_mode, ssl.CERT_NONE)
+
+    @mock.patch("landscape.lib.fetch.ssl.create_default_context")
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_cainfo(self, mock_build_opener, mock_create_ctx):
+        """Over HTTPS a readable cainfo file is loaded into the SSL context."""
+        self._urllib_opener(mock_build_opener)
+        ctx = mock_create_ctx.return_value
+        cainfo = self.makeFile("cert-data")
+
+        result = fetch(
+            "https://example.com",
+            cainfo=cainfo,
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+        ctx.load_verify_locations.assert_called_once_with(cafile=cainfo)
+
+    @mock.patch("landscape.lib.fetch.warning")
+    @mock.patch("landscape.lib.fetch.ssl.create_default_context")
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_cainfo_not_accessible(
+        self,
+        mock_build_opener,
+        mock_create_ctx,
+        mock_warning,
+    ):
+        """Over HTTPS an unreadable cainfo path logs a warning and is skipped."""
+        self._urllib_opener(mock_build_opener)
+        ctx = mock_create_ctx.return_value
+
+        result = fetch(
+            "https://example.com",
+            cainfo="/nonexistent/path/cert.pem",
+            http_client="urllib",
+        )
+        self.assertEqual(result, b"result")
+        mock_warning.assert_called_once()
+        ctx.load_verify_locations.assert_not_called()
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_http_error(self, mock_build_opener):
+        """An C{HTTPError} from the opener is raised as L{HTTPCodeError}."""
+        opener = mock.MagicMock()
+        opener.open.side_effect = urllib.error.HTTPError(
+            "http://example.com",
+            500,
+            "Server Error",
+            {},
+            io.BytesIO(b"error body"),
+        )
+        mock_build_opener.return_value = opener
+
+        with self.assertRaises(HTTPCodeError) as cm:
+            fetch("http://example.com", http_client="urllib")
+        self.assertEqual(cm.exception.http_code, 500)
+        self.assertEqual(cm.exception.body, b"error body")
+
+    @mock.patch("landscape.lib.fetch.urllib.request.build_opener")
+    def test_urllib_unexpected_error(self, mock_build_opener):
+        """An unexpected error is wrapped in L{TransportError} with code 0."""
+        opener = mock.MagicMock()
+        opener.open.side_effect = ValueError("boom")
+        mock_build_opener.return_value = opener
+
+        with self.assertRaises(TransportError) as cm:
+            fetch("http://example.com", http_client="urllib")
+        self.assertEqual(cm.exception.error_code, 0)
+        self.assertIn("boom", cm.exception.message)
+
+    def test_no_redirect_handler_returns_none(self):
+        """C{_NoRedirectHandler} suppresses redirects by returning C{None}."""
+        handler = _NoRedirectHandler()
+        result = handler.redirect_request(
+            None,
+            None,
+            302,
+            "Found",
+            {},
+            "http://example.com/other",
+        )
+        self.assertIsNone(result)

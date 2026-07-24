@@ -1,6 +1,11 @@
+import gzip
 import io
 import os
+import ssl
 import sys
+import urllib.error
+import urllib.request
+import zlib
 from argparse import ArgumentParser
 from logging import warning
 
@@ -24,7 +29,7 @@ class HTTPCodeError(FetchError):
         return f"<HTTPCodeError http_code={self.http_code:d}>"
 
 
-class PyCurlError(FetchError):
+class TransportError(FetchError):
     def __init__(self, error_code, message):
         self.error_code = error_code
         self._message = message
@@ -33,11 +38,135 @@ class PyCurlError(FetchError):
         return f"Error {self.error_code:d}: {self.message}"
 
     def __repr__(self):
-        return f"<PyCurlError args=({self.error_code:d}, '{self.message}')>"
+        return f"<TransportError args=({self.error_code:d}, '{self.message}')>"
 
     @property
     def message(self):
         return self._message
+
+
+# Backwards-compatible alias for external importers of landscape-lib that
+# referenced the old name. Deprecated: use TransportError instead.
+PyCurlError = TransportError
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """A redirect handler that stops urllib from following HTTP redirects."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _maybe_decompress(body, content_encoding):
+    """Decompress C{body} according to the given C{Content-Encoding} value."""
+    content_encoding = (content_encoding or "").lower()
+    if "gzip" in content_encoding:
+        return gzip.decompress(body)
+    if "deflate" in content_encoding:
+        return zlib.decompress(body)
+    return body
+
+
+def _fetch_urllib(
+    url,
+    post=False,
+    data="",
+    headers={},
+    cainfo=None,
+    connect_timeout=30,
+    insecure=False,
+    follow=True,
+    user_agent=None,
+    proxy=None,
+):
+    """Retrieve a URL using the stdlib urllib backend.
+
+    See L{fetch} for the meaning of the parameters. Failures are translated
+    into the same L{HTTPCodeError} and L{TransportError} exceptions raised by
+    the pycurl backend so that callers can handle both backends uniformly.
+    """
+    if isinstance(url, bytes):
+        url = url.decode("ascii")
+
+    if not isinstance(data, bytes):
+        data = data.encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=data if post else None,
+        method="POST" if post else "GET",
+    )
+
+    req.add_header("Accept-Encoding", "gzip, deflate")
+
+    if headers:
+        for key, value in headers.items():
+            req.add_header(key, value)
+
+    if user_agent is not None:
+        if isinstance(user_agent, bytes):
+            user_agent = user_agent.decode("ascii")
+        req.add_header("User-Agent", user_agent)
+
+    ctx = None
+    if url.startswith("https:"):
+        ctx = ssl.create_default_context()
+        if insecure:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        elif cainfo:
+            if not os.access(cainfo, os.R_OK):
+                warning(
+                    "SSL certificate provided is not accessible by landscape "
+                    + "client. Please place in directory that is readable such "
+                    + "as '/etc/ssl/certs'",
+                )
+            else:
+                ctx.load_verify_locations(cafile=cainfo)
+
+    handlers = []
+    if proxy is not None:
+        if isinstance(proxy, bytes):
+            proxy = proxy.decode("ascii")
+        handlers.append(
+            urllib.request.ProxyHandler({"http": proxy, "https": proxy}),
+        )
+
+    if not follow:
+        handlers.append(_NoRedirectHandler())
+
+    if ctx is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=ctx))
+
+    opener = urllib.request.build_opener(*handlers)
+
+    try:
+        response = opener.open(req, timeout=connect_timeout)
+        body = response.read()
+        http_code = response.getcode()
+    except urllib.error.HTTPError as e:
+        body = _maybe_decompress(e.read(), e.headers.get("Content-Encoding"))
+        raise HTTPCodeError(e.code, body)
+    except urllib.error.URLError as e:
+        # Map urllib/ssl failures onto the libcurl error codes that callers
+        # (e.g. registration.register) already branch on, so error handling
+        # is uniform across the pycurl and urllib backends.
+        reason = e.reason
+        if isinstance(reason, ssl.SSLCertVerificationError):
+            raise TransportError(60, str(reason)) from e  # CURLE_SSL_CACERT
+        elif isinstance(reason, ssl.SSLError):
+            raise TransportError(35, str(reason)) from e  # CURLE_SSL_CONNECT_ERROR
+        else:
+            raise TransportError(7, str(e)) from e  # CURLE_COULDNT_CONNECT
+    except Exception as e:
+        raise TransportError(0, str(e)) from e  # unknown/unclassified error
+
+    body = _maybe_decompress(body, response.headers.get("Content-Encoding"))
+
+    if http_code != 200:
+        raise HTTPCodeError(http_code, body)
+
+    return body
 
 
 def fetch(
@@ -53,6 +182,7 @@ def fetch(
     follow=True,
     user_agent=None,
     proxy=None,
+    http_client="pycurl",
 ):
     """Retrieve a URL and return the content.
 
@@ -70,7 +200,22 @@ def fetch(
     @param follow: If True, follow HTTP redirects (default True).
     @param user_agent: The user-agent to set in the request.
     @param proxy: The proxy url to use for the request.
+    @param http_client: The HTTP backend to use ('pycurl' or 'urllib').
     """
+    if http_client == "urllib":
+        return _fetch_urllib(
+            url,
+            post=post,
+            data=data,
+            headers=headers,
+            cainfo=cainfo,
+            connect_timeout=connect_timeout,
+            insecure=insecure,
+            follow=follow,
+            user_agent=user_agent,
+            proxy=proxy,
+        )
+
     import pycurl
 
     if not isinstance(data, bytes):
@@ -130,7 +275,7 @@ def fetch(
     try:
         curl.perform()
     except pycurl.error as e:
-        raise PyCurlError(e.args[0], e.args[1])
+        raise TransportError(e.args[0], e.args[1]) from e
 
     body = input.getvalue()
 

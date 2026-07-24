@@ -111,6 +111,12 @@ class BrokerConfiguration(Configuration):
             "--authenticated-attach-code",
             help="A one-time-use, Landscape server-generated code.",
         )
+        parser.add_argument(
+            "--http-client",
+            default="pycurl",
+            choices=["pycurl", "urllib"],
+            help="The HTTP client to use for server communication (pycurl or urllib).",
+        )
 
         return parser
 
