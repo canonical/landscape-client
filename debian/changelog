@@ -1,3 +1,9 @@
+landscape-client (26.08-0landscape0) jammy; urgency=medium
+
+  * refactor: cap error count for exponential backoff
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Mon, 10 Aug 2026 12:00:24 -0400
+
 landscape-client (26.08~beta.4-0landscape0) jammy; urgency=medium
 
   * fix: set User-Agent for ping requests
