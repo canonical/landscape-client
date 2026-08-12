@@ -77,6 +77,11 @@ for snapctl_key, landscape_key, mapping_fn in [*legacy_config_entries, *config_e
 
 config.write()
 
+# May contain sensitive values (e.g. registration_key); keep it locked down.
+# config.write() doesn't reset permissions on an existing file, but this is
+# defense-in-depth for cases where the underlying file didn't already exist.
+os.chmod(config.get_config_filename(), 0o600)
+
 # Unset changed keys so that on the next run we know what has changed.
 if changed:
     _snapctl("unset", *changed)
