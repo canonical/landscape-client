@@ -56,3 +56,6 @@ fi
 if [ -n "$_registration_key" ]; then
   echo "registration_key = $_registration_key" >> "$CLIENT_CONF"
 fi
+
+# May contain sensitive values (e.g. registration_key); keep it locked down.
+chmod 600 "$CLIENT_CONF"
