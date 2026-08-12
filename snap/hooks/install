@@ -1,5 +1,17 @@
 #!/bin/sh -e
 
+# The "layout: bind-file" entry in snapcraft.yaml makes snapd auto-create
+# $SNAP_COMMON/etc/landscape-client.conf (if it doesn't exist yet) before any
+# hook runs, so that it can be bind-mounted onto /etc/landscape-client.conf.
+# Snapd always creates such placeholder files with mode 0755, which is too
+# permissive for a config file that may contain secrets (e.g. registration
+# key). Lock it down here, since this hook runs first and permissions set on
+# the underlying $SNAP_COMMON file propagate through the bind mount.
+CLIENT_CONF="${SNAP_COMMON}/etc/landscape-client.conf"
+mkdir -p "$(dirname "$CLIENT_CONF")"
+touch "$CLIENT_CONF"
+chmod 600 "$CLIENT_CONF"
+
 if [ "$( snapctl model | awk '/^classic:/ { print $2 }' )" != "true" ]
 then snapctl start --enable "$SNAP_INSTANCE_NAME.landscape-client"
 fi
