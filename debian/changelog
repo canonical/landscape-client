@@ -1,3 +1,10 @@
+landscape-client (26.08.1-0landscape0) jammy; urgency=medium
+
+  * fix: broker stale socket recovery
+  * fix: client config file permissions in snap (LP: #2161005)
+
+ -- David McLain <david.mclain@canonical.com>  Fri, 28 Aug 2026 17:15:39 -0500
+
 landscape-client (26.08-0landscape0) jammy; urgency=medium
 
   * refactor: cap error count for exponential backoff
