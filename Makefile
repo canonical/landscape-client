@@ -2,7 +2,7 @@ PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man
 PYTHON ?= python3
 SNAPCRAFT = SNAPCRAFT_BUILD_INFO=1 snapcraft
-SNAP_BASE ?= core24
+SNAP_BASE ?= core26
 TRIAL ?= -m landscape.lib.run_tests
 TRIAL_ARGS ?=
 

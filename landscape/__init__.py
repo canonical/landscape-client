@@ -1,6 +1,6 @@
-DEBIAN_REVISION = "-0landscape0"
-UPSTREAM_VERSION = "26.08~beta.2"
-PYTHON_VERSION = "26.8b2"
+DEBIAN_REVISION = ""
+UPSTREAM_VERSION = "26.08"
+PYTHON_VERSION = "26.8"
 VERSION = f"{UPSTREAM_VERSION}{DEBIAN_REVISION}"
 
 # The minimum server API version that all Landscape servers are known to speak

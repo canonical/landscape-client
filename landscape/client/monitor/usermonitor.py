@@ -104,7 +104,7 @@ class UserMonitor(MonitorPlugin):
 
             result = user_manager_connector.connect()
             result.addCallback(get_locked_usernames)
-            result.addCallback(disconnect)
+            result.addBoth(disconnect)
             result.addCallback(self._detect_changes, operation_id)
             result.addErrback(lambda f: self._detect_changes([], operation_id))
         return result

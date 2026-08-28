@@ -1,3 +1,23 @@
+landscape-client (26.08-0landscape0) jammy; urgency=medium
+
+  * refactor: cap error count for exponential backoff
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Wed, 12 Aug 2026 11:10:43 -0400
+
+landscape-client (26.08~beta.4-0landscape0) jammy; urgency=medium
+
+  * fix: set User-Agent for ping requests
+  * fix: disconnect connectors on error paths to prevent socket leak (LP: #2147687)
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Fri, 22 May 2026 16:44:53 -0400
+
+landscape-client (26.08~beta.3-0landscape0) jammy; urgency=medium
+
+  * fix(snap): make url options consistent with landscape-config
+  * feat: add configurable timeout for apt-update (LP: #2131251)
+
+ -- Joey Mucci <joseph.mucci@canonical.com>  Fri, 24 Apr 2026 18:11:56 -0400
+
 landscape-client (26.08~beta.2-0landscape0) jammy; urgency=medium
 
   * fix: snap builds & installation

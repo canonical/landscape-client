@@ -1,8 +1,14 @@
 import os
 from unittest.mock import Mock, patch
 
+from twisted.internet.defer import fail
+
 from landscape.client.manager.plugin import FAILED, SUCCEEDED
-from landscape.client.manager.usermanager import RemoteUserManagerConnector, UserManager
+from landscape.client.manager.usermanager import (
+    RemoteUserManagerConnector,
+    RemoteUserMonitorConnector,
+    UserManager,
+)
 from landscape.client.monitor.usermonitor import UserMonitor
 from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.client.user.provider import UserManagementError
@@ -119,6 +125,50 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         )
 
         result.addCallback(handle_callback)
+        return result
+
+    def test_message_dispatch_disconnects_on_fail(self):
+        """
+        When L{UserManager._message_dispatch} experiences a failure while
+        performing an operation, the underlying
+        C{RemoteUserMonitorConnector.disconnect()} method is still reliably
+        executed.
+        """
+
+        class CallTracker:
+            called = False
+
+        original_disconnect = RemoteUserMonitorConnector.disconnect
+
+        def mock_disconnect(conn_self, *args, **kwargs):
+            CallTracker.called = True
+            return original_disconnect(conn_self, *args, **kwargs)
+
+        self.patch(RemoteUserMonitorConnector, "disconnect", mock_disconnect)
+
+        self.setup_environment(
+            users=[("jdoe", "x", 1000, 1000, "JD", "/home/jdoe", "/bin/sh")],
+            groups=[("users", "x", 1000, ["jdoe"])],
+            shadow_file=self.shadow_file,
+        )
+
+        message = {
+            "type": "add-user",
+            "operation-id": 1,
+            "username": "jdoe",
+        }
+
+        # Override the perform_operation handler to fail intentionally
+        failure = fail(RuntimeError("Injected test failure"))
+        self.plugins[1]._perform_operation = Mock(return_value=failure)
+
+        result = self.plugins[1]._message_dispatch(message)
+
+        def assert_disconnect(ignored):
+            self.assertTrue(CallTracker.called)
+
+        result = self.assertFailure(result, RuntimeError)
+        result.addBoth(assert_disconnect)
         return result
 
     def test_add_user_event_utf8(self):

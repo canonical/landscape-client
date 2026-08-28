@@ -43,6 +43,7 @@ except ImportError:
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
+from landscape import VERSION
 from landscape.lib import bpickle
 from landscape.lib.fetch import fetch
 from landscape.lib.log import log_failure
@@ -69,7 +70,10 @@ class PingClient:
             and False otherwise.
         """
         if insecure_id is not None:
-            headers = {"Content-Type": "application/x-www-form-urlencoded"}
+            headers = {
+                "User-Agent": f"landscape-client/{VERSION}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
             data = urlencode({"insecure_id": insecure_id})
             page_deferred = defer.Deferred()
 

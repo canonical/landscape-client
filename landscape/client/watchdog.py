@@ -183,9 +183,9 @@ class Daemon:
         @see: L{RemoteLandscapeComponentCreator.connect}.
         """
 
-        def disconnect(ignored):
+        def disconnect(result):
             self._connector.disconnect()
-            return True
+            return result
 
         connected = self._connector.connect(
             self.max_retries,
@@ -193,7 +193,7 @@ class Daemon:
             quiet=True,
         )
         connected.addCallback(lambda remote: getattr(remote, name)())
-        connected.addCallback(disconnect)
+        connected.addBoth(disconnect)
         connected.addErrback(lambda x: False)
         return connected
 

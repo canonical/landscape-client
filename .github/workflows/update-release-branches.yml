@@ -8,19 +8,24 @@ on:
 jobs:
   update-release-branches:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
+          - branch: core-26
+            base: core26
           - branch: core-24
             base: core24
           - branch: core-22
             base: core22
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
         run: |

@@ -1120,6 +1120,36 @@ class DaemonBrokerTest(DaemonTestBase):
         result.addCallback(self.assertTrue)
         return result
 
+    def test_is_running_disconnects_on_fail(self):
+        """
+        When L{Daemon.is_running} experiences a failure while pinging the
+        remote, the underlying connector's C{disconnect()} method is still
+        reliably executed.
+        """
+
+        class FakeRemote:
+            def ping(self):
+                return fail(RuntimeError("Simulated ping timeout/error"))
+
+        class FakeConnector:
+            def __init__(self):
+                self.disconnect_called = False
+
+            def connect(self, *args, **kwargs):
+                return succeed(FakeRemote())
+
+            def disconnect(self):
+                self.disconnect_called = True
+
+        fake_con = FakeConnector()
+        self.daemon._connector = fake_con
+
+        def assert_disconnect(ignored):
+            self.assertTrue(fake_con.disconnect_called)
+
+        result = self.daemon.is_running()
+        return self.assertFailure(result, RuntimeError).addBoth(assert_disconnect)
+
 
 class WatchDogOptionsTest(LandscapeTest):
     def setUp(self):

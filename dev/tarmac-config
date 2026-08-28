@@ -1,5 +1,0 @@
-[lp:landscape-client]
-verify_command = make check
-voting_criteria = Approve >= 2, Disapprove == 0
-commit_message_template = Merge <branch_name> [f=<bugs_fixed>] [r=<approved_by_nicks>] [a=<author>]\n<commit_message>
-set_milestone = True

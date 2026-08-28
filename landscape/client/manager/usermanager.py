@@ -91,11 +91,15 @@ class UserManager(ManagerPlugin):
             self._user_monitor = user_monitor
             return user_monitor.detect_changes()
 
+        def disconnect(result):
+            user_monitor_connector.disconnect()
+            return result
+
         result = user_monitor_connector.connect()
         result.addCallback(detect_changes)
         result.addCallback(self._perform_operation, message)
         result.addCallback(self._send_changes, message)
-        result.addCallback(lambda x: user_monitor_connector.disconnect())
+        result.addBoth(disconnect)
         return result
 
     def _perform_operation(self, result, message):

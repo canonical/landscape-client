@@ -1,5 +1,6 @@
 from twisted.internet.defer import fail
 
+from landscape import VERSION
 from landscape.client.broker.ping import PingClient, Pinger
 from landscape.client.broker.tests.helpers import ExchangeHelper
 from landscape.client.tests.helpers import LandscapeTest
@@ -66,7 +67,10 @@ class PingClientTest(LandscapeTest):
                 (
                     url,
                     True,
-                    {"Content-Type": "application/x-www-form-urlencoded"},
+                    {
+                        "User-Agent": f"landscape-client/{VERSION}",
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
                     "insecure_id=10",
                 ),
             ],
