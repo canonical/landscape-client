@@ -6,7 +6,13 @@ from unittest import mock
 from twisted.internet.error import CannotListenError, ConnectError
 from twisted.internet.task import Clock
 
-from landscape.client.amp import ComponentConnector, ComponentPublisher, remote
+from landscape.client.amp import (
+    ComponentConnector,
+    ComponentPublisher,
+    _remove_socket_file,
+    _socket_has_no_live_listener,
+    remote,
+)
 from landscape.client.deployment import Configuration
 from landscape.client.reactor import LandscapeReactor
 from landscape.client.tests.helpers import LandscapeTest, ready_subprocess
@@ -276,3 +282,67 @@ class ComponentConnectorTest(LandscapeTest):
             self.assertEqual(str(call.pid), os.readlink(lock_path))
             mock_kill.assert_called_with(call.pid, 0)
             reactor._cleanup()
+
+
+class SocketHasNoLiveListenerTest(LandscapeTest):
+    def test_missing_path_has_no_listener(self):
+        """A path that does not exist has no live listener."""
+        path = os.path.join(self.makeDir(), "missing.sock")
+        self.assertTrue(_socket_has_no_live_listener(path))
+
+    def test_stale_socket_refusing_connection(self):
+        """
+        A socket file with nothing accepting connections raises OSError on
+        connect and is reported as having no live listener.
+        """
+        path = os.path.join(self.makeDir(), "stale.sock")
+        stale = socket_module.socket(
+            socket_module.AF_UNIX,
+            socket_module.SOCK_STREAM,
+        )
+        stale.bind(path)
+        stale.close()
+        self.assertTrue(os.path.exists(path))
+        self.assertTrue(_socket_has_no_live_listener(path))
+
+    def test_live_listener_is_detected(self):
+        """A socket with a listener accepting connections is reported live."""
+        path = os.path.join(self.makeDir(), "live.sock")
+        live = socket_module.socket(
+            socket_module.AF_UNIX,
+            socket_module.SOCK_STREAM,
+        )
+        live.bind(path)
+        live.listen(1)
+        self.addCleanup(live.close)
+        self.assertFalse(_socket_has_no_live_listener(path))
+
+
+class RemoveSocketFileTest(LandscapeTest):
+    def test_remove_socket_file(self):
+        """A regular socket file is unlinked."""
+        path = os.path.join(self.makeDir(), "test.sock")
+        with open(path, "w"):
+            pass
+        self.assertTrue(os.path.exists(path))
+        _remove_socket_file(path)
+        self.assertFalse(os.path.exists(path))
+
+    def test_remove_directory_left_behind(self):
+        """A directory left in place of a socket is removed with rmdir."""
+        path = os.path.join(self.makeDir(), "stale")
+        os.mkdir(path)
+        self.assertTrue(os.path.isdir(path))
+        self.assertFalse(os.path.islink(path))
+        _remove_socket_file(path)
+        self.assertFalse(os.path.exists(path))
+
+    def test_remove_symlink_to_directory(self):
+        """A symlink pointing at a directory is unlinked rather than rmdir'd."""
+        target = self.makeDir()
+        path = os.path.join(self.makeDir(), "link")
+        os.symlink(target, path)
+        self.assertTrue(os.path.islink(path))
+        _remove_socket_file(path)
+        self.assertFalse(os.path.lexists(path))
+        self.assertTrue(os.path.isdir(target))
