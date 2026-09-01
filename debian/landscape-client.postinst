@@ -37,7 +37,8 @@ url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
 data_path = /var/lib/landscape/client
 END
-            chown landscape:landscape "$TEMPFILE"
+            chmod 0640 "$TEMPFILE"
+            chown root:landscape "$TEMPFILE"
             mv "$TEMPFILE" "$CONFIG_FILE"
 
             # Get configuration values from debconf
@@ -81,8 +82,8 @@ END
             fi
         else
             # Fix non-private permissions
-            chmod 0600 $CONFIG_FILE
-            chown landscape:landscape $CONFIG_FILE
+            chmod 0640 "$CONFIG_FILE"
+            chown root:landscape "$CONFIG_FILE"
         fi
 
         # Remove statoverride for smart-update, if there's one
