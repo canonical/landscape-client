@@ -8,7 +8,7 @@ from landscape.client.registration import (
     RegistrationException,
     register,
 )
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError, TransportError
 
 
 class RegisterTestCase(TestCase):
@@ -85,7 +85,10 @@ class RegisterTestCase(TestCase):
             computer_title="Test Computer",
         )
 
-        self.exchange_messages_mock.side_effect = PyCurlError(error_code=60, message="")
+        self.exchange_messages_mock.side_effect = TransportError(
+            error_code=60,
+            message="",
+        )
 
         with self.assertRaises(RegistrationException):
             register(client_info, "https://my-server.local/message-system")
@@ -100,9 +103,12 @@ class RegisterTestCase(TestCase):
             computer_title="Test Computer",
         )
 
-        self.exchange_messages_mock.side_effect = PyCurlError(error_code=61, message="")
+        self.exchange_messages_mock.side_effect = TransportError(
+            error_code=61,
+            message="",
+        )
 
-        with self.assertRaises(PyCurlError):
+        with self.assertRaises(TransportError):
             register(client_info, "https://my-server.local/message-system")
 
     def test_no_messages(self):
@@ -146,3 +152,24 @@ class RegisterTestCase(TestCase):
             register(client_info, "https://my-server.local/message-system")
 
         self.assertIn("Did not receive ID", str(exc_context.exception))
+
+    def test_exchange_pycurl_error_gnutls_depth_limit(self):
+        """If a pycurl error 35 with GnuTLS depth limit -101 occurs, it is caught
+        and a helpful RegistrationException is raised.
+        """
+        client_info = ClientRegistrationInfo(
+            access_group="",
+            account_name="testy",
+            computer_title="Test Computer",
+        )
+
+        self.exchange_messages_mock.side_effect = TransportError(
+            error_code=35,
+            message="server cert verify failed: -101",
+        )
+
+        with self.assertRaises(RegistrationException) as exc_context:
+            register(client_info, "https://my-server.local/message-system")
+
+        self.assertIn("GnuTLS depth limit", str(exc_context.exception))
+        self.assertIn("--http-client urllib", str(exc_context.exception))

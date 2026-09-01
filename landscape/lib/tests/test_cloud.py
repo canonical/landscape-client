@@ -9,7 +9,7 @@ from landscape.lib.cloud import (
     _fetch_ec2_item,
     fetch_ec2_meta_data,
 )
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError, TransportError
 
 
 class CloudTest(
@@ -141,8 +141,8 @@ class CloudTest(
         L{_fetch_ec2_item} returns a deferred C{Failure} containing the error
         message when faced with no EC2 cloud API service.
         """
-        self.log_helper.ignore_errors(PyCurlError)
-        self.add_query_result("other-id", PyCurlError(60, "pycurl error"))
+        self.log_helper.ignore_errors(TransportError)
+        self.add_query_result("other-id", TransportError(60, "pycurl error"))
         accumulate = []
         deferred = _fetch_ec2_item(
             "other-id",
@@ -157,8 +157,8 @@ class CloudTest(
         L{_fetch_ec2_meta_data} sets C{follow} to C{False} to avoid following
         HTTP redirects.
         """
-        self.log_helper.ignore_errors(PyCurlError)
-        self.add_query_result("other-id", PyCurlError(60, "pycurl error"))
+        self.log_helper.ignore_errors(TransportError)
+        self.add_query_result("other-id", TransportError(60, "pycurl error"))
         accumulate = []
         deferred = _fetch_ec2_item(
             "other-id",
