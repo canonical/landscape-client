@@ -44,6 +44,18 @@ plugs:
   snapd-control-managed:
     interface: snapd-control
     refresh-schedule: managed
+  # TODO: replace f22PSauKuNkwQTM9Wz67ZCjNACuSjjhN with the canonical account
+  # once the confdb-schema is created under that account or transferred to it.
+  landscape-client-admin:
+    interface: confdb
+    account: f22PSauKuNkwQTM9Wz67ZCjNACuSjjhN
+    view: landscape-client/admin
+    role: custodian
+  landscape-client-state:
+    interface: confdb
+    account: f22PSauKuNkwQTM9Wz67ZCjNACuSjjhN
+    view: landscape-client/state
+    role: custodian
 
 slots:
   annotations:
