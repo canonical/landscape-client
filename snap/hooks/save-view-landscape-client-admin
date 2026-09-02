@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 #
-# This hook reads snap options set via `snap set`, writes them to
-# landscape-client.conf, and then unsets them.
-# The landscape-client.conf file is the single source of truth,
-# snap options are transient inputs only.
+# This hook is invoked by snapd whenever a write is made through the
+# landscape-client/admin confdb view. It reads the newly written values back
+# out and persists them to landscape-client.conf.
 
+import json
 import os
 import subprocess
 import sys
@@ -25,19 +25,11 @@ def _snapctl(*args):
 config = Configuration()
 config.load([])
 
-# Deprecated keys kept for backward compatibility.
-# New keys take precedence.
-legacy_config_entries = [
-    ("landscape-url", "url", lambda url: f"{url}/message-system"),
-    ("landscape-ping-url", "ping_url", lambda url: f"{url}/ping"),
-]
+raw = _snapctl("get", "--view", ":landscape-client-admin", "-d")
+values = json.loads(raw) if raw else {}
 
-changed = set()
-for snapctl_key, landscape_key, mapping_fn in [
-    *legacy_config_entries,
-    *CONFIG_ENTRIES,
-]:
-    value = _snapctl("get", snapctl_key)
+for confdb_key, landscape_key, mapping_fn in CONFIG_ENTRIES:
+    value = values.get(confdb_key)
     if not value:
         # empty, value has not changed
         continue
@@ -46,7 +38,6 @@ for snapctl_key, landscape_key, mapping_fn in [
         value = mapping_fn(value)
 
     setattr(config, landscape_key, value)
-    changed.add(snapctl_key)
 
 config.write()
 
@@ -54,7 +45,3 @@ config.write()
 # config.write() doesn't reset permissions on an existing file, but this is
 # defense-in-depth for cases where the underlying file didn't already exist.
 os.chmod(config.get_config_filename(), 0o600)
-
-# Unset changed keys so that on the next run we know what has changed.
-if changed:
-    _snapctl("unset", *changed)
