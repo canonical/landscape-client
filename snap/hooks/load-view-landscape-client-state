@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+#
+# This hook is invoked by snapd whenever a read is made through the
+# landscape-client/state confdb view. It reads the current values out of
+# landscape-client.conf and passes them back to snapd.
+
+import subprocess
+import sys
+
+from landscape.client.deployment import Configuration
+from landscape.client.snap_config import CONFIG_ENTRIES
+
+
+def _snapctl(*args):
+    result = subprocess.run(["snapctl", *args], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stderr.strip(), file=sys.stderr)
+        sys.exit(1)
+
+    return result.stdout.strip()
+
+
+config = Configuration()
+config.load([])
+
+settings = []
+for confdb_key, landscape_key, _ in CONFIG_ENTRIES:
+    value = getattr(config, landscape_key, None)
+    if value in (None, ""):
+        # not set, leave it absent from the view
+        continue
+
+    settings.append(f"{confdb_key}={value}")
+
+if settings:
+    _snapctl("set", "--view", ":landscape-client-admin", *settings)

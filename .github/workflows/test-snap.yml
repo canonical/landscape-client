@@ -1,0 +1,105 @@
+name: Test Snap
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'snap/**'
+      - 'setup*.py'
+      - 'snap-http/**'
+      - 'landscape/client/snap_http'
+      - 'landscape/client/snap_config.py'
+      - 'scripts/**'
+      - '.github/workflows/test-snap.yml'
+
+jobs:
+  test-snap:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base: ["core26", "core24", "core22"]
+      fail-fast: false
+    env:
+      # TODO: replace with the canonical account once the confdb schema is
+      # created under that account or transferred to it.
+      CONFDB_ACCOUNT_ID: f22PSauKuNkwQTM9Wz67ZCjNACuSjjhN
+      CONFDB_ACCOUNT_KEY: -vtoKUiMBQW08EG3HlyFYUxxa7Svz2xhg6baPpjUyDvH0MPeCfogBQoAaneZuPbp
+      CONF_FILE: /var/snap/landscape-client/common/etc/landscape-client.conf
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Generate snapcraft.yaml
+        run: |
+          pip install --user jinja2-cli
+          jinja2 snap/snapcraft.yaml.j2 -D base=${{ matrix.base }} > snap/snapcraft.yaml
+
+      - name: LXD setup
+        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
+
+      - name: Build snap
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft pack --verbosity=debug
+
+      - name: Install & set up snap
+        run: |
+          sudo snap install --dangerous landscape-client_*.snap
+
+          sudo snap set system experimental.confdb=true
+
+          sudo snap connect landscape-client:landscape-client-admin
+          sudo snap connect landscape-client:landscape-client-state
+
+      - name: Smoke test
+        run: |
+          landscape-client.config --help
+          test -f "$CONF_FILE"
+
+      - name: Fetch and ack confdb-schema assertion
+        run: |
+          sudo snap known account --remote account-id="$CONFDB_ACCOUNT_ID" \
+            > /tmp/account.assert
+          sudo snap ack /tmp/account.assert
+
+          sudo snap known account-key --remote public-key-sha3-384="$CONFDB_ACCOUNT_KEY" \
+            > /tmp/account-key.assert
+          sudo snap ack /tmp/account-key.assert
+
+          sudo snap known confdb-schema --remote account-id="$CONFDB_ACCOUNT_ID" \
+            name=landscape-client > /tmp/confdb-schema.assert
+          sudo snap ack /tmp/confdb-schema.assert
+
+      - name: Test plain snap options mechanism
+        run: |
+          sudo snap set landscape-client url=https://landscape.example.com/message-system
+          sudo snap set landscape-client account-name=test-account computer-title="Test Machine"
+
+          sudo grep -q "account_name = test-account" "$CONF_FILE"
+          sudo grep -q "url = https://landscape.example.com/message-system" "$CONF_FILE"
+          sudo grep -q "computer_title = Test Machine" "$CONF_FILE"
+
+      - name: Test confdb admin view
+        run: |
+          sudo snap set "$CONFDB_ACCOUNT_ID/landscape-client/admin" \
+            account-name=confdb-demo exchange-interval=300
+          sudo snap set "$CONFDB_ACCOUNT_ID/landscape-client/admin" \
+            registration-key=super-secret-key
+
+          sudo grep -q "account_name = confdb-demo" "$CONF_FILE"
+          sudo grep -q "exchange_interval = 300" "$CONF_FILE"
+          sudo grep -q "registration_key = super-secret-key" "$CONF_FILE"
+
+      - name: Test confdb state view
+        run: |
+          sudo snap get "$CONFDB_ACCOUNT_ID/landscape-client/state" -d > /tmp/state.json
+
+          test "$(jq -r '.["account-name"]' /tmp/state.json)" = "confdb-demo"
+          test "$(jq -r '.["exchange-interval"]' /tmp/state.json)" = "300"
+          test "$(jq -r '.["url"]' /tmp/state.json)" = "https://landscape.example.com/message-system"
+
+          # registration-key is a secret & isn't exposed on the state view
+          test "$(jq -r 'has("registration-key")' /tmp/state.json)" = "false"
