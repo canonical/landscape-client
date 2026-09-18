@@ -59,6 +59,7 @@ class ExchangeMessagesTestCase(TestCase):
             },
             cainfo="mycainfo",
             curl=mock.ANY,
+            http_client="pycurl",
         )
         self.assertEqual(self.logging_mock.debug.call_count, 2)
         self.logging_mock.info.assert_called_once()
