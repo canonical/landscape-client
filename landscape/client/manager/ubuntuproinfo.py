@@ -22,12 +22,16 @@ class UbuntuProInfo(DataWatcherManager):
     run_interval = 900  # 15 minutes
 
     def get_data(self):
-        ubuntu_pro_info = get_ubuntu_pro_info()
+        config = getattr(self, "config", None) or getattr(
+            getattr(self, "registry", None), "config", None
+        )
+        data_path = getattr(config, "data_path", None) if config else None
+        ubuntu_pro_info = get_ubuntu_pro_info(data_path=data_path)
         return json.dumps(ubuntu_pro_info, separators=(",", ":"), sort_keys=True)
 
 
-def uastatus(q):
-    pro_info = get_pro_status()
+def uastatus(q, data_path=None):
+    pro_info = get_pro_status(data_path=data_path)
     q.put(pro_info)
 
 
@@ -41,7 +45,7 @@ def serialize_datetimes(obj):
     return obj
 
 
-def get_ubuntu_pro_info() -> dict:
+def get_ubuntu_pro_info(data_path: str | None = None) -> dict:
     """Query ua tools for Ubuntu Pro status as JSON, parsing it to a dict.
 
     If we are running on Ubuntu Core, Pro does not exist.  Include a mocked
@@ -105,7 +109,7 @@ def get_ubuntu_pro_info() -> dict:
     else:
         ctx = multiprocessing.get_context("fork")
         q = ctx.Queue()
-        p = ctx.Process(target=uastatus, args=(q,))
+        p = ctx.Process(target=uastatus, args=(q, data_path))
         p.start()
         p.join()
 

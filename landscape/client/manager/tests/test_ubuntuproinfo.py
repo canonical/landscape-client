@@ -14,7 +14,7 @@ from landscape.client.tests.helpers import LandscapeTest, ManagerHelper
 
 
 def uastatus_mock_maker(ret_val):
-    def uastatus_mock(q):
+    def uastatus_mock(q, *args, **kwargs):
         q.put(ret_val)
 
     return uastatus_mock
@@ -83,6 +83,19 @@ class UbuntuProInfoTest(LandscapeTest):
             pro_info = q.get(timeout=30)
 
             self.assertEqual(self.mock_status_value, pro_info)
+
+    def test_uastatus_with_data_path(self):
+        mock.patch.stopall()
+        with mock.patch(
+            "landscape.client.manager.ubuntuproinfo.get_pro_status"
+        ) as mock_status:
+            mock_status.return_value = self.mock_status_value
+            q = self.ctx.Queue()
+            uastatus(q, data_path="/var/lib/landscape/client")
+            pro_info = q.get(timeout=30)
+
+            self.assertEqual(self.mock_status_value, pro_info)
+            mock_status.assert_called_once_with(data_path="/var/lib/landscape/client")
 
     def test_ubuntu_pro_info(self):
         """Tests calling `ua status`."""
