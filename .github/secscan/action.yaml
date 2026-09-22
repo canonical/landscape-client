@@ -55,6 +55,9 @@ outputs:
   results-location:
     description: 'Path to the file containing the scan results.'
     value: ${{ steps.run-secscan.outputs.results-location }}
+  scan-id:
+    description: 'Token/ID of the submitted scan.'
+    value: ${{ steps.run-secscan.outputs.scan-id }}
 
 runs:
   using: "composite"
@@ -82,30 +85,27 @@ runs:
         [ -n "${CYCLE}" ] && ssdlc_args+=(--ssdlc-cycle "${CYCLE}")
 
         RESULTS_PATH="$(realpath "${RESULTS_FILE}")"
+        TOKEN_FILE="$(mktemp)"
+
+        submit_args=(--scanner "${SCANNER}" --type package)
         if [ "${ARTIFACT_TYPE}" = "snap" ]; then
           if [ -n "${SNAP_REVISION}" ]; then
             if [ -n "${SNAP_CHANNEL}" ] || [ -n "${SNAP_ARCH}" ] || [ -n "${SNAP_BASE}" ]; then
               echo "::error::'revision' is mutually exclusive with 'channel', 'snap-arch', and 'snap-base'" >&2
               exit 1
             fi
-            snap_target="landscape-client=${SNAP_REVISION}"
+            target="landscape-client=${SNAP_REVISION}"
           elif [ -n "${SNAP_CHANNEL}" ] || [ -n "${SNAP_ARCH}" ] || [ -n "${SNAP_BASE}" ]; then
             if [ -z "${SNAP_CHANNEL}" ] || [ -z "${SNAP_ARCH}" ] || [ -z "${SNAP_BASE}" ]; then
               echo "::error::snap scan by channel requires 'channel', 'snap-arch', and 'snap-base' together" >&2
               exit 1
             fi
-            snap_target="landscape-client/${SNAP_CHANNEL}@${SNAP_ARCH}/${SNAP_BASE}"
+            target="landscape-client/${SNAP_CHANNEL}@${SNAP_ARCH}/${SNAP_BASE}"
           else
             echo "::error::snap scan requires 'revision', or 'channel', 'snap-arch', and 'snap-base'" >&2
             exit 1
           fi
-          secscan-client submit \
-            --scanner "${SCANNER}" \
-            --type package \
-            --format snap \
-            "${ssdlc_args[@]}" \
-            --wait-and-print \
-            "${snap_target}" | tee "${RESULTS_PATH}"
+          submit_args+=(--format snap)
         else
           if [ -z "${DEB_PATH}" ]; then
             echo "::error::deb scan requires 'deb-path'" >&2
@@ -115,16 +115,51 @@ runs:
           for pocket in ${BASE_POCKETS}; do
             pocket_args+=(--base-pocket "$pocket")
           done
-          secscan-client submit \
-            --scanner "${SCANNER}" \
-            --type package \
-            --format deb \
-            --base "${BASE}" \
-            --base-arch "${BASE_ARCH}" \
-            "${pocket_args[@]}" \
-            "${ssdlc_args[@]}" \
-            --wait-and-print \
-            "${DEB_PATH}" | tee "${RESULTS_PATH}"
+          submit_args+=(--format deb --base "${BASE}" --base-arch "${BASE_ARCH}" "${pocket_args[@]}")
+          target="${DEB_PATH}"
+        fi
+        submit_args+=("${ssdlc_args[@]}")
+
+        # Submit and capture the scan token so we can wait/log/result even on failure.
+        echo "::group::secscan submit (${ARTIFACT_TYPE} scan of '${target}')"
+        set +e
+        secscan-client submit --token "${TOKEN_FILE}" "${submit_args[@]}" "${target}"
+        submit_rc=$?
+        set -e
+        echo "::endgroup::"
+        if [ "${submit_rc}" -ne 0 ]; then
+          echo "::error::secscan submit failed (rc=${submit_rc}) for ${ARTIFACT_TYPE} target '${target}'" >&2
+          exit 1
+        fi
+
+        SCAN_ID="$(cat "${TOKEN_FILE}")"
+        if [ -z "${SCAN_ID}" ]; then
+          echo "::error::secscan submit did not return a scan token" >&2
+          exit 1
+        fi
+        echo "::notice::secscan scan token: ${SCAN_ID}"
+        echo "scan-id=${SCAN_ID}" >> "$GITHUB_OUTPUT"
+
+        set +e
+        secscan-client wait --token "${TOKEN_FILE}"
+        wait_rc=$?
+        set -e
+
+        SCAN_STATUS="$(secscan-client status --token "${TOKEN_FILE}" 2>/dev/null || echo 'unknown')"
+        echo "::notice::secscan scan ${SCAN_ID} status: ${SCAN_STATUS}"
+
+        # Always capture the log and results, regardless of scan outcome.
+        echo "::group::secscan log (${SCAN_ID})"
+        secscan-client log --token "${TOKEN_FILE}" || echo "::warning::could not fetch scan log for ${SCAN_ID}"
+        echo "::endgroup::"
+
+        echo "::group::secscan result (${SCAN_ID})"
+        secscan-client result --token "${TOKEN_FILE}" | tee "${RESULTS_PATH}" || echo "::warning::could not fetch scan result for ${SCAN_ID}"
+        echo "::endgroup::"
+
+        if [ "${wait_rc}" -ne 0 ] || echo "${SCAN_STATUS}" | grep -qiE 'fail|error'; then
+          echo "::error::secscan scan ${SCAN_ID} did not complete successfully (status=${SCAN_STATUS}, rc=${wait_rc})" >&2
+          exit 1
         fi
 
         echo "results-location=${RESULTS_PATH}" >> "$GITHUB_OUTPUT"
