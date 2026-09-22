@@ -1,67 +1,124 @@
-name: PPA Deploy
+name: Security Scan
 
 on:
+  # Run every Monday at 06:00 UTC
+  schedule:
+    - cron: "0 6 * * 1"
 
-  # Enable manual run, must specify target PPA
+  # Enable manual run
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Git ref to build from"
-        required: false
-        default: "main"
-      target-ppa:
-        description: "Target PPA for publishing"
+      scanner:
+        description: 'Scanner to use, e.g. "osv" or "trivy".'
         required: true
-        default: "landscape/self-hosted-daily"
+      artifact-type:
+        description: 'Type of artifact to scan: "deb" or "snap".'
+        required: true
 
-  # Run on any beta tag pushes
-  push:
-    tags:
-      - "[0-9][0-9].[0-9][0-9]-beta**"
+      # deb: built from this git ref by the build-jammy workflow
+      ref:
+        description: 'Git ref to build the deb from (defaults to the default branch).'
+        required: false
+      base:
+        description: 'Base Ubuntu release to scan against, e.g. noble.'
+        required: false
+      base-arch:
+        description: 'Base architecture to scan against, e.g. amd64.'
+        required: false
+      base-pockets:
+        description: 'Space-separated list of base pockets to scan against.'
+        required: false
+
+      # Specify revision OR channel, arch, and base for snap scans
+      revision:
+        description: 'Revision of the snap to scan.'
+        required: false
+      channel:
+        description: 'Channel of the snap to scan, e.g. stable.'
+        required: false
+      snap-arch:
+        description: 'Architecture of the snap to scan, e.g. arm64.'
+        required: false
+      snap-base:
+        description: 'Base of the snap to scan, e.g. ubuntu@22.04.'
+        required: false
+
+      product-version:
+        description: 'Version of the artifact being scanned'
+        required: false
+      release-channel:
+        description: 'Release channel of the scanned artifact'
+        required: false
+      cycle:
+        description: 'Cycle the scan is submitted for, such as 26.10'
+        required: false
 
 jobs:
-  calculate-ppa:
-    runs-on: [self-hosted, noble, amd64]
+  prepare:
+    runs-on: ubuntu-latest
     outputs:
-      ppa: ${{ steps.calc.outputs.ppa }}
+      # Scheduled runs scan both artifact types; manual runs scan the selected one.
+      artifact-type: ${{ github.event_name == 'schedule' && '["deb", "snap"]' || format('["{0}"]', inputs.artifact-type) }}
+      # Scheduled runs use both scanners; manual runs use the selected one.
+      scanner: ${{ github.event_name == 'schedule' && '["osv", "trivy"]' || format('["{0}"]', inputs.scanner) }}
     steps:
-      - name: Calculate target PPA
-        id: calc
-        run: |
-          PPA="${{ inputs.target-ppa || 'landscape/self-hosted-beta' }}"
-          echo "ppa=$PPA" >> "$GITHUB_OUTPUT"
+      - run: 'true'
 
+  # Build the deb to scan from the given ref (defaults to the default branch).
+  # Skipped when no deb leg is scheduled (e.g. a manual snap-only run).
   build:
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.artifact-type), 'deb')
     uses: ./.github/workflows/build-jammy.yaml
     with:
-      ref: ${{ inputs.ref || 'main' }}
+      ref: ${{ inputs.ref || '' }}
 
-  ppa-upload:
-    needs: [calculate-ppa, build]
-    runs-on: ubuntu-latest
+  secscan:
+    needs: [prepare, build]
+    if: always() && needs.prepare.result == 'success' && needs.build.result != 'failure' && needs.build.result != 'cancelled'
+    runs-on: [self-hosted]
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact-type: ${{ fromJSON(needs.prepare.outputs.artifact-type) }}
+        scanner: ${{ fromJSON(needs.prepare.outputs.scanner) }}
     steps:
-      - name: Install upload dependenies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y dput devscripts
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Import GPG key
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.LAUNCHPAD_GPG_PRIVATE_KEY }}
-        run: echo "$GPG_PRIVATE_KEY" | gpg --batch --import --yes
-
-      - name: Download landscape-client source artifacts
+      - name: Download built deb
+        if: matrix.artifact-type == 'deb'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          artifact-ids: ${{ needs.build.outputs.sourcebuildid }}
-          path: .
+          name: deb-build
+          path: deb-build
 
-      - name: Sign the build
-        run: |
-          KEY_ID=$(gpg --list-secret-keys | grep -B 1 "landscape-server-bot" | head -n 1 | xargs)
-          debsign -k"$KEY_ID" ./*_source.changes
+      - name: Resolve deb path
+        if: matrix.artifact-type == 'deb'
+        id: deb-path
+        run: echo "path=$(ls deb-build/landscape-client_*.deb | head -n1)" >> "$GITHUB_OUTPUT"
 
-      - name: Upload to PPA
-        run: |
-          TARGET_PPA="${{ needs.calculate-ppa.outputs.ppa }}"
-          dput ppa:$TARGET_PPA ./*_source.changes
+      - name: Run secscan
+        id: secscan
+        uses: ./.github/secscan
+        with:
+          scanner: ${{ matrix.scanner }}
+          artifact-type: ${{ matrix.artifact-type }}
+          deb-path: ${{ steps.deb-path.outputs.path }}
+          base: ${{ github.event_name == 'schedule' && 'noble' || inputs.base }}
+          base-arch: ${{ github.event_name == 'schedule' && 'amd64' || inputs.base-arch }}
+          base-pockets: ${{ inputs.base-pockets }}
+          revision: ${{ inputs.revision }}
+          channel: ${{ github.event_name == 'schedule' && 'stable' || inputs.channel }}
+          snap-arch: ${{ github.event_name == 'schedule' && 'amd64' || inputs.snap-arch }}
+          snap-base: ${{ github.event_name == 'schedule' && 'ubuntu@24.04' || inputs.snap-base }}
+          product-version: ${{ inputs.product-version }}
+          release-channel: ${{ inputs.release-channel }}
+          cycle: ${{ inputs.cycle }}
+          results-file: secscan-results-${{ matrix.artifact-type }}-${{ matrix.scanner }}.txt
+
+      - name: Upload scan results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: secscan-results-${{ matrix.artifact-type }}-${{ matrix.scanner }}
+          path: ${{ steps.secscan.outputs.results-location }}

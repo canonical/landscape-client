@@ -1,0 +1,146 @@
+name: 'Run the secscan tool'
+description: 'Run the secscan tool against a landscape-client package (deb or snap).'
+
+inputs:
+  scanner:
+    description: 'Scanner to use, e.g. "osv" or "trivy".'
+    required: true
+  artifact-type:
+    description: 'Type of artifact to scan: "deb" or "snap".'
+    required: true
+
+  deb-path:
+    description: 'Path to the .deb file to scan.'
+    required: false
+  base:
+    description: 'Base Ubuntu release to scan against, e.g. noble.'
+    required: false
+  base-arch:
+    description: 'Base architecture to scan against, e.g. amd64.'
+    required: false
+  base-pockets:
+    description: 'Space-separated list of base pockets to scan against.'
+    required: false
+
+  # Specify revision, OR channel + snap-arch + snap-base together, for snap scans
+  revision:
+    description: 'Revision of the snap to scan.'
+    required: false
+  channel:
+    description: 'Channel of the snap to scan, e.g. stable.'
+    required: false
+  snap-arch:
+    description: 'Architecture of the snap to scan, e.g. arm64.'
+    required: false
+  snap-base:
+    description: 'Base of the snap to scan, e.g. ubuntu@22.04.'
+    required: false
+
+  product-version:
+    description: 'Version of the artifact being scanned'
+    required: false
+  release-channel:
+    description: 'Release channel of the scanned artifact'
+    required: false
+  cycle:
+    description: 'Cycle the scan is submitted for, such as 26.10'
+    required: false
+
+  results-file:
+    description: 'Path to write the scan results to.'
+    required: true
+    default: 'secscan-results.txt'
+
+outputs:
+  results-location:
+    description: 'Path to the file containing the scan results.'
+    value: ${{ steps.run-secscan.outputs.results-location }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo snap install canonical-secscan-client
+        sudo snap connect canonical-secscan-client:home :home
+    - name: Run secscan tool
+      id: run-secscan
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if [ "${ARTIFACT_TYPE}" != "deb" ] && [ "${ARTIFACT_TYPE}" != "snap" ]; then
+          echo "::error::'artifact-type' must be 'deb' or 'snap'" >&2
+          exit 1
+        fi
+
+        ssdlc_args=()
+        ssdlc_args+=(--ssdlc-product-name landscape-client)
+        [ -n "${RELEASE_CHANNEL}" ] && ssdlc_args+=(--ssdlc-product-channel "${RELEASE_CHANNEL}")
+        [ -n "${PRODUCT_VERSION}" ] && ssdlc_args+=(--ssdlc-product-version "${PRODUCT_VERSION}")
+        [ -n "${CYCLE}" ] && ssdlc_args+=(--ssdlc-cycle "${CYCLE}")
+
+        RESULTS_PATH="$(realpath "${RESULTS_FILE}")"
+        if [ "${ARTIFACT_TYPE}" = "snap" ]; then
+          if [ -n "${SNAP_REVISION}" ]; then
+            if [ -n "${SNAP_CHANNEL}" ] || [ -n "${SNAP_ARCH}" ] || [ -n "${SNAP_BASE}" ]; then
+              echo "::error::'revision' is mutually exclusive with 'channel', 'snap-arch', and 'snap-base'" >&2
+              exit 1
+            fi
+            snap_target="landscape-client=${SNAP_REVISION}"
+          elif [ -n "${SNAP_CHANNEL}" ] || [ -n "${SNAP_ARCH}" ] || [ -n "${SNAP_BASE}" ]; then
+            if [ -z "${SNAP_CHANNEL}" ] || [ -z "${SNAP_ARCH}" ] || [ -z "${SNAP_BASE}" ]; then
+              echo "::error::snap scan by channel requires 'channel', 'snap-arch', and 'snap-base' together" >&2
+              exit 1
+            fi
+            snap_target="landscape-client/${SNAP_CHANNEL}@${SNAP_ARCH}/${SNAP_BASE}"
+          else
+            echo "::error::snap scan requires 'revision', or 'channel', 'snap-arch', and 'snap-base'" >&2
+            exit 1
+          fi
+          secscan-client submit \
+            --scanner "${SCANNER}" \
+            --type package \
+            --format snap \
+            "${ssdlc_args[@]}" \
+            --wait-and-print \
+            "${snap_target}" | tee "${RESULTS_PATH}"
+        else
+          if [ -z "${DEB_PATH}" ]; then
+            echo "::error::deb scan requires 'deb-path'" >&2
+            exit 1
+          fi
+          pocket_args=()
+          for pocket in ${BASE_POCKETS}; do
+            pocket_args+=(--base-pocket "$pocket")
+          done
+          secscan-client submit \
+            --scanner "${SCANNER}" \
+            --type package \
+            --format deb \
+            --base "${BASE}" \
+            --base-arch "${BASE_ARCH}" \
+            "${pocket_args[@]}" \
+            "${ssdlc_args[@]}" \
+            --wait-and-print \
+            "${DEB_PATH}" | tee "${RESULTS_PATH}"
+        fi
+
+        echo "results-location=${RESULTS_PATH}" >> "$GITHUB_OUTPUT"
+      env:
+        NO_PROXY: .internal
+        SCANNER: ${{ inputs.scanner }}
+        ARTIFACT_TYPE: ${{ inputs.artifact-type }}
+        DEB_PATH: ${{ inputs.deb-path }}
+        BASE: ${{ inputs.base }}
+        BASE_ARCH: ${{ inputs.base-arch }}
+        BASE_POCKETS: ${{ inputs.base-pockets }}
+        SNAP_REVISION: ${{ inputs.revision }}
+        SNAP_CHANNEL: ${{ inputs.channel }}
+        SNAP_ARCH: ${{ inputs.snap-arch }}
+        SNAP_BASE: ${{ inputs.snap-base }}
+        PRODUCT_VERSION: ${{ inputs.product-version }}
+        RELEASE_CHANNEL: ${{ inputs.release-channel }}
+        CYCLE: ${{ inputs.cycle }}
+        RESULTS_FILE: ${{ inputs.results-file }}
