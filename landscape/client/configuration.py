@@ -798,6 +798,7 @@ def attempt_registration(
                 client_info,
                 config.url,
                 cainfo=config.ssl_public_key,
+                http_client=config.http_client,
             )
 
             break

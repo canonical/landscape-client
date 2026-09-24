@@ -350,7 +350,7 @@ from twisted.internet.defer import Deferred, succeed
 
 from landscape import CLIENT_API, DEFAULT_SERVER_API, SERVER_API
 from landscape.lib.backoff import ExponentialBackoff
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError, TransportError
 from landscape.lib.format import format_delta
 from landscape.lib.hashlib import md5
 from landscape.lib.message import RESYNC, got_next_expected
@@ -639,7 +639,7 @@ class MessageExchange:
                     self._backoff_counter.increase()
 
             ssl_error = False
-            if isinstance(error, PyCurlError) and error.error_code == 60:
+            if isinstance(error, TransportError) and error.error_code == 60:
                 # The error returned is an SSL error, most likely the server
                 # is using a self-signed certificate. Let's fire a special
                 # event so that the GUI can display a nice message.
