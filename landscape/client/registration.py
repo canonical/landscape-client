@@ -13,7 +13,7 @@ from typing import Any
 from landscape.client.broker.registration import Identity
 from landscape.client.exchange import exchange_messages
 from landscape.client.manager.ubuntuproinfo import get_ubuntu_pro_info
-from landscape.lib.fetch import HTTPCodeError, PyCurlError
+from landscape.lib.fetch import HTTPCodeError, TransportError
 from landscape.lib.machine_id import get_namespaced_machine_id
 from landscape.lib.network import get_fqdn
 from landscape.lib.vm_info import get_container_info, get_vm_info
@@ -81,6 +81,7 @@ def register(
     server_url: str,
     *,
     cainfo: str | None = None,
+    http_client: str = "pycurl",
 ) -> RegistrationInfo:
     """Sends a registration message to the server at `server_url`, returning
     registration info if successful.
@@ -90,7 +91,9 @@ def register(
     message = _create_message(client_info)
 
     try:
-        response = exchange_messages(message, server_url, cainfo=cainfo)
+        response = exchange_messages(
+            message, server_url, cainfo=cainfo, http_client=http_client
+        )
     except HTTPCodeError as e:
         if e.http_code == 404:
             # Most likely cause is that we are trying to speak to a server with
@@ -102,7 +105,22 @@ def register(
             ) from e
 
         raise  # Other exceptions are unexpected and should propagate.
-    except PyCurlError as e:
+    except TransportError as e:
+        # GnuTLS rejects certificate chains deeper than its hard-coded limit
+        # with error -101; pycurl surfaces this as error 35. There is no
+        # structured signal for it, so we match on the message text.
+        if e.error_code == 35 and (
+            "-101" in e.message or "constraint" in e.message.lower()
+        ):
+            raise RegistrationException(
+                "\nThe server certificate verification failed with a "
+                "GnuTLS depth limit / constraint error (-101).\n"
+                "This usually happens when the certificate chain is too "
+                "deep for GnuTLS.\n"
+                "You can try registering using the urllib HTTP client by "
+                "adding the --http-client urllib option.",
+            ) from e
+
         if e.error_code == 60:
             raise RegistrationException(
                 "\nThe server's SSL information is incorrect or fails "
