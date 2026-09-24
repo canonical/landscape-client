@@ -507,11 +507,15 @@ class EventTest(LandscapeTest):
         event to all connected clients.
         """
         callback = Mock(return_value="foo")
+
+        def assert_called(ignored):
+            callback.assert_called_once_with(scopes=["somescope"])
+
         self.client_reactor.call_on("resynchronize", callback)
-        return self.assertSuccess(
-            self.broker.resynchronize(["foo"]),
-            [["foo"]],
+        deferred = self.assertSuccess(
+            self.broker.resynchronize(scopes=["somescope"]), [["foo"]]
         )
+        return deferred.addCallback(assert_called)
 
     def test_impending_exchange(self):
         """
@@ -713,4 +717,4 @@ class HandlersTest(LandscapeTest):
         """
         self.client.fire_event = Mock(return_value=succeed(None))
         self.reactor.fire("resynchronize-clients")
-        self.client.fire_event.assert_called_once_with("resynchronize")
+        self.client.fire_event.assert_called_once_with("resynchronize", scopes=None)
