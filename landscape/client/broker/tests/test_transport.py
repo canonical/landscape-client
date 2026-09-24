@@ -9,7 +9,7 @@ from landscape import VERSION
 from landscape.client.broker.transport import HTTPTransport
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib import bpickle
-from landscape.lib.fetch import PyCurlError
+from landscape.lib.fetch import TransportError
 from landscape.lib.testing import LogKeeperHelper
 
 
@@ -167,7 +167,7 @@ class HTTPTransportTest(LandscapeTest):
         specified public key, then the client should immediately end
         the connection without uploading any message data.
         """
-        self.log_helper.ignore_errors(PyCurlError)
+        self.log_helper.ignore_errors(TransportError)
         r = DataCollectingResource()
         context_factory = DefaultOpenSSLContextFactory(BADPRIVKEY, BADPUBKEY)
         port = reactor.listenSSL(
