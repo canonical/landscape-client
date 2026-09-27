@@ -71,6 +71,8 @@ runs:
 
         mkdir -p "${RESULTS_DIR}"
 
+        secscan-client --batch submit --token blackduck-charm.token --scanner blackduck --type package --format charm landscape-client/stable@amd64/ubuntu@24.04 --wait-and-print
+
         secscan_command=(secscan-client)
         if [ "$USE_BATCH" = "true" ]; then
           secscan_command+=(--batch)
