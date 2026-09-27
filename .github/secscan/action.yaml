@@ -1,63 +1,57 @@
 name: 'Run the secscan tool'
-description: 'Run the secscan tool against a landscape-client package (deb or snap).'
+description: 'Run the secscan tool against landscape-client deb/snap/charm'
 
 inputs:
-  scanner:
-    description: 'Scanner to use, e.g. "osv" or "trivy".'
-    required: true
-  artifact-type:
-    description: 'Type of artifact to scan: "deb" or "snap".'
+  results-dir:
+    description: 'Prefix for the path to write the scan results to.'
     required: true
 
+  scanner:
+    description: 'Name of the scanner to pass to secscan'
+    required: true
+  use-batch: 
+    description: 'Whether to use batch mode for the scan.'
+    required: true
+  
   deb-path:
     description: 'Path to the .deb file to scan.'
-    required: false
-  base:
-    description: 'Base Ubuntu release to scan against, e.g. noble.'
-    required: false
-  base-arch:
-    description: 'Base architecture to scan against, e.g. amd64.'
-    required: false
-  base-pockets:
-    description: 'Space-separated list of base pockets to scan against.'
-    required: false
-
-  # Specify revision, OR channel + snap-arch + snap-base together, for snap scans
-  revision:
-    description: 'Revision of the snap to scan.'
-    required: false
-  channel:
-    description: 'Channel of the snap to scan, e.g. stable.'
-    required: false
-  snap-arch:
-    description: 'Architecture of the snap to scan, e.g. arm64.'
-    required: false
-  snap-base:
-    description: 'Base of the snap to scan, e.g. ubuntu@22.04.'
-    required: false
-
-  product-version:
-    description: 'Version of the artifact being scanned'
-    required: false
-  release-channel:
-    description: 'Release channel of the scanned artifact'
-    required: false
-  cycle:
-    description: 'Cycle the scan is submitted for, such as 26.10'
-    required: false
-
-  results-file:
-    description: 'Path to write the scan results to.'
     required: true
-    default: 'secscan-results.txt'
+  deb-base:
+    description: 'Base Ubuntu release to scan against'
+    required: true
+  deb-arch:
+    description: 'Base architecture to scan against'
+    required: true
+  deb-pockets:
+    description: 'Space-separated list of base pockets to scan against.'
+    required: true
 
-outputs:
-  results-location:
-    description: 'Path to the file containing the scan results.'
-    value: ${{ steps.run-secscan.outputs.results-location }}
-  scan-id:
-    description: 'Token/ID of the submitted scan.'
-    value: ${{ steps.run-secscan.outputs.scan-id }}
+  snap-channel:
+    description: 'Channel of the snap to scan'
+    required: true
+
+  charm-risk:
+    description: 'Risk level of the charm artifact'
+    required: true
+  charm-arch:
+    description: 'Architecture of the charm artifact'
+    required: true
+  charm-base:
+    description: 'Base of the charm artifact'
+    required: true
+
+  ssdlc-version:
+    description: 'Version of the artifact being scanned'
+    required: true
+    default: ''
+  ssdlc-risk:
+    description: 'Risk level of the scanned artifact'
+    required: true
+    default: ''
+  ssdlc-cycle:
+    description: 'Cycle the scan is submitted for'
+    required: true
+    default: ''
 
 runs:
   using: "composite"
@@ -71,111 +65,57 @@ runs:
       id: run-secscan
       shell: bash
       run: |
-        set -euo pipefail
+        ## This is designed to try to run all three types of scans.
+        ## If there is a failure in one, it should not prevent the others from running.
 
-        if [ "${ARTIFACT_TYPE}" != "deb" ] && [ "${ARTIFACT_TYPE}" != "snap" ]; then
-          echo "::error::'artifact-type' must be 'deb' or 'snap'" >&2
-          exit 1
+        mkdir -p "${RESULTS_DIR}"
+
+        secscan_command=(secscan-client)
+        if [ "$USE_BATCH" = "true" ]; then
+          secscan_command+=(--batch)
         fi
 
-        ssdlc_args=()
-        ssdlc_args+=(--ssdlc-product-name landscape-client)
-        [ -n "${RELEASE_CHANNEL}" ] && ssdlc_args+=(--ssdlc-product-channel "${RELEASE_CHANNEL}")
-        [ -n "${PRODUCT_VERSION}" ] && ssdlc_args+=(--ssdlc-product-version "${PRODUCT_VERSION}")
-        [ -n "${CYCLE}" ] && ssdlc_args+=(--ssdlc-cycle "${CYCLE}")
+        ssdlc_args=(--ssdlc-product-name landscape-client)
+        [ -n "${SSDLC_VERSION}" ] && ssdlc_args+=(--ssdlc-product-version "${SSDLC_VERSION}")
+        [ -n "${SSDLC_RISK}" ] && ssdlc_args+=(--ssdlc-risk "${SSDLC_RISK}")
+        [ -n "${SSDLC_CYCLE}" ] && ssdlc_args+=(--ssdlc-cycle "${SSDLC_CYCLE}")
 
-        RESULTS_PATH="$(realpath "${RESULTS_FILE}")"
-        TOKEN_FILE="$(mktemp)"
-
-        submit_args=(--scanner "${SCANNER}" --type package)
-        if [ "${ARTIFACT_TYPE}" = "snap" ]; then
-          if [ -n "${SNAP_REVISION}" ]; then
-            if [ -n "${SNAP_CHANNEL}" ] || [ -n "${SNAP_ARCH}" ] || [ -n "${SNAP_BASE}" ]; then
-              echo "::error::'revision' is mutually exclusive with 'channel', 'snap-arch', and 'snap-base'" >&2
-              exit 1
-            fi
-            target="landscape-client=${SNAP_REVISION}"
-          elif [ -n "${SNAP_CHANNEL}" ] || [ -n "${SNAP_ARCH}" ] || [ -n "${SNAP_BASE}" ]; then
-            if [ -z "${SNAP_CHANNEL}" ] || [ -z "${SNAP_ARCH}" ] || [ -z "${SNAP_BASE}" ]; then
-              echo "::error::snap scan by channel requires 'channel', 'snap-arch', and 'snap-base' together" >&2
-              exit 1
-            fi
-            target="landscape-client/${SNAP_CHANNEL}@${SNAP_ARCH}/${SNAP_BASE}"
-          else
-            echo "::error::snap scan requires 'revision', or 'channel', 'snap-arch', and 'snap-base'" >&2
-            exit 1
-          fi
-          submit_args+=(--format snap)
+        SNAP_REVISION=$(snap info landscape-client | grep "${SNAP_CHANNEL}" | grep -Eo "\([0-9]+\)" | tr -d "()")
+        if [ -z "${SNAP_REVISION}" ]; then
+          echo "::error::Failed to determine snap revision for channel '${SNAP_CHANNEL}'" >&2
         else
-          if [ -z "${DEB_PATH}" ]; then
-            echo "::error::deb scan requires 'deb-path'" >&2
-            exit 1
-          fi
+          "${secscan_command[@]}" submit --token snap.token --scanner "${SCANNER}" --type package --format snap \
+            "${ssdlc_args[@]}" --wait-and-print landscape-client="${SNAP_REVISION}" | tee "${RESULTS_DIR}/snap.txt"
+          "${secscan_command[@]}" log --token snap.token | tee "${RESULTS_DIR}/snap.log"
+        fi
+
+        if [ -z "${DEB_PATH}" ]; then
+          echo "::error::Deb path is not set" >&2
+        else
           pocket_args=()
-          for pocket in ${BASE_POCKETS}; do
+          for pocket in ${DEB_POCKETS}; do
             pocket_args+=(--base-pocket "$pocket")
           done
-          submit_args+=(--format deb --base "${BASE}" --base-arch "${BASE_ARCH}" "${pocket_args[@]}")
-          target="${DEB_PATH}"
-        fi
-        submit_args+=("${ssdlc_args[@]}")
-
-        # Submit and capture the scan token so we can wait/log/result even on failure.
-        echo "::group::secscan submit (${ARTIFACT_TYPE} scan of '${target}')"
-        set +e
-        secscan-client submit --token "${TOKEN_FILE}" "${submit_args[@]}" "${target}"
-        submit_rc=$?
-        set -e
-        echo "::endgroup::"
-        if [ "${submit_rc}" -ne 0 ]; then
-          echo "::error::secscan submit failed (rc=${submit_rc}) for ${ARTIFACT_TYPE} target '${target}'" >&2
-          exit 1
+          "${secscan_command[@]}" submit --token deb.token --scanner "${SCANNER}" --type package --format deb --base "${DEB_BASE}" \
+            --base-arch "${DEB_ARCH}" "${pocket_args[@]}" "${ssdlc_args[@]}" --wait-and-print "${DEB_PATH}" | tee "${RESULTS_DIR}/deb.txt"
+          "${secscan_command[@]}" log --token deb.token | tee "${RESULTS_DIR}/deb.log"
         fi
 
-        SCAN_ID="$(cat "${TOKEN_FILE}")"
-        if [ -z "${SCAN_ID}" ]; then
-          echo "::error::secscan submit did not return a scan token" >&2
-          exit 1
-        fi
-        echo "::notice::secscan scan token: ${SCAN_ID}"
-        echo "scan-id=${SCAN_ID}" >> "$GITHUB_OUTPUT"
-
-        set +e
-        secscan-client wait --token "${TOKEN_FILE}"
-        wait_rc=$?
-        set -e
-
-        SCAN_STATUS="$(secscan-client status --token "${TOKEN_FILE}" 2>/dev/null || echo 'unknown')"
-        echo "::notice::secscan scan ${SCAN_ID} status: ${SCAN_STATUS}"
-
-        # Always capture the log and results, regardless of scan outcome.
-        echo "::group::secscan log (${SCAN_ID})"
-        secscan-client log --token "${TOKEN_FILE}" || echo "::warning::could not fetch scan log for ${SCAN_ID}"
-        echo "::endgroup::"
-
-        echo "::group::secscan result (${SCAN_ID})"
-        secscan-client result --token "${TOKEN_FILE}" | tee "${RESULTS_PATH}" || echo "::warning::could not fetch scan result for ${SCAN_ID}"
-        echo "::endgroup::"
-
-        if [ "${wait_rc}" -ne 0 ] || echo "${SCAN_STATUS}" | grep -qiE 'fail|error'; then
-          echo "::error::secscan scan ${SCAN_ID} did not complete successfully (status=${SCAN_STATUS}, rc=${wait_rc})" >&2
-          exit 1
-        fi
-
-        echo "results-location=${RESULTS_PATH}" >> "$GITHUB_OUTPUT"
+        "${secscan_command[@]}" submit --token charm.token --scanner "${SCANNER}" --type package --format charm \
+          "${ssdlc_args[@]}" --wait-and-print landscape-client/"${CHARM_RISK}"@"${CHARM_ARCH}"/"${CHARM_BASE}" | tee "${RESULTS_DIR}/charm.txt"
+        "${secscan_command[@]}" log --token charm.token | tee "${RESULTS_DIR}/charm.log"
       env:
-        NO_PROXY: .internal
+        RESULTS_DIR: ${{ inputs.results-dir }}
         SCANNER: ${{ inputs.scanner }}
-        ARTIFACT_TYPE: ${{ inputs.artifact-type }}
+        USE_BATCH: ${{ inputs.use-batch }}
         DEB_PATH: ${{ inputs.deb-path }}
-        BASE: ${{ inputs.base }}
-        BASE_ARCH: ${{ inputs.base-arch }}
-        BASE_POCKETS: ${{ inputs.base-pockets }}
-        SNAP_REVISION: ${{ inputs.revision }}
-        SNAP_CHANNEL: ${{ inputs.channel }}
-        SNAP_ARCH: ${{ inputs.snap-arch }}
-        SNAP_BASE: ${{ inputs.snap-base }}
-        PRODUCT_VERSION: ${{ inputs.product-version }}
-        RELEASE_CHANNEL: ${{ inputs.release-channel }}
-        CYCLE: ${{ inputs.cycle }}
-        RESULTS_FILE: ${{ inputs.results-file }}
+        DEB_BASE: ${{ inputs.deb-base }}
+        DEB_ARCH: ${{ inputs.deb-arch }}
+        DEB_POCKETS: ${{ inputs.deb-pockets }}
+        SNAP_CHANNEL: ${{ inputs.snap-channel }}
+        CHARM_RISK: ${{ inputs.charm-risk }}
+        CHARM_ARCH: ${{ inputs.charm-arch }}
+        CHARM_BASE: ${{ inputs.charm-base }}
+        SSDLC_VERSION: ${{ inputs.ssdlc-version }}
+        SSDLC_RISK: ${{ inputs.ssdlc-risk }}
+        SSDLC_CYCLE: ${{ inputs.ssdlc-cycle }}
