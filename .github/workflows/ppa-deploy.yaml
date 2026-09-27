@@ -68,31 +68,9 @@ on:
         required: false
 
 jobs:
-  build:
-    uses: ./.github/workflows/build-jammy.yaml
-    with:
-      ref: ${{ inputs.ref }}
-
   secscan:
-    needs: [build]
-    if: ${{ !cancelled() }}
     runs-on: [self-hosted]
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Download built deb
-        if: needs.build.result == 'success'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: deb-build
-          path: deb-build
-
-      - name: Resolve deb path
-        if: needs.build.result == 'success'
-        id: deb-path
-        run: echo "path=$(ls deb-build/landscape-client_*.deb | head -n1)" >> "$GITHUB_OUTPUT"
-
       - name: Run secscan
         id: secscan
         uses: ./.github/secscan
@@ -100,7 +78,7 @@ jobs:
           results-dir: ${{ inputs.results-dir || 'secscan-results' }}
           scanner: ${{ inputs.scanner || 'trivy' }}
           use-batch: ${{ inputs.use-batch || 'true' }}
-          deb-path: ${{ steps.deb-path.outputs.path }}
+          deb-path: ${{ '' }}
           deb-base: ${{ inputs.deb-base || 'noble' }}
           deb-arch: ${{ inputs.deb-arch || 'amd64' }}
           deb-pockets: ${{ inputs.deb-pockets || '' }}
