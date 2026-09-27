@@ -84,15 +84,6 @@ runs:
           ssdlc_args+=(--ssdlc-cycle "${SSDLC_CYCLE}")
         fi
 
-        SNAP_REVISION=$(snap info landscape-client | grep "${SNAP_CHANNEL}" | grep -Eo "\([0-9]+\)" | tr -d "()")
-        if [ -z "${SNAP_REVISION}" ]; then
-          echo "::error::Failed to determine snap revision for channel '${SNAP_CHANNEL}'" >&2
-        else
-          "${secscan_command[@]}" submit --token snap.token --scanner "${SCANNER}" --type package --format snap \
-            "${ssdlc_args[@]}" --wait-and-print landscape-client="${SNAP_REVISION}" | tee "${RESULTS_DIR}/snap.txt"
-          "${secscan_command[@]}" log --token snap.token | tee "${RESULTS_DIR}/snap.log"
-        fi
-
         if [ -z "${DEB_PATH}" ]; then
           echo "::error::Deb path is not set" >&2
         else
@@ -100,15 +91,25 @@ runs:
           for pocket in ${DEB_POCKETS}; do
             pocket_args+=(--base-pocket "$pocket")
           done
-          "${secscan_command[@]}" submit --token deb.token --scanner "${SCANNER}" --type package --format deb --base "${DEB_BASE}" \
+          "${secscan_command[@]}" submit --token ~/deb.token --scanner "${SCANNER}" --type package --format deb --base "${DEB_BASE}" \
             --base-arch "${DEB_ARCH}" "${pocket_args[@]}" "${ssdlc_args[@]}" --wait-and-print "${DEB_PATH}" | tee "${RESULTS_DIR}/deb.txt"
-          "${secscan_command[@]}" log --token deb.token | tee "${RESULTS_DIR}/deb.log"
+          "${secscan_command[@]}" log --token ~/deb.token | tee "${RESULTS_DIR}/deb.log"
         fi
 
-        "${secscan_command[@]}" submit --token charm.token --scanner "${SCANNER}" --type package --format charm \
+        SNAP_REVISION=$(snap info landscape-client | grep "${SNAP_CHANNEL}" | grep -Eo "\([0-9]+\)" | tr -d "()")
+        if [ -z "${SNAP_REVISION}" ]; then
+          echo "::error::Failed to determine snap revision for channel '${SNAP_CHANNEL}'" >&2
+        else
+          "${secscan_command[@]}" submit --token ~/snap.token --scanner "${SCANNER}" --type package --format snap \
+            "${ssdlc_args[@]}" --wait-and-print landscape-client="${SNAP_REVISION}" | tee "${RESULTS_DIR}/snap.txt"
+          "${secscan_command[@]}" log --token ~/snap.token | tee "${RESULTS_DIR}/snap.log"
+        fi
+
+        "${secscan_command[@]}" submit --token ~/charm.token --scanner "${SCANNER}" --type package --format charm \
           "${ssdlc_args[@]}" --wait-and-print landscape-client/"${CHARM_RISK}"@"${CHARM_ARCH}"/"${CHARM_BASE}" | tee "${RESULTS_DIR}/charm.txt"
-        "${secscan_command[@]}" log --token charm.token | tee "${RESULTS_DIR}/charm.log"
+        "${secscan_command[@]}" log --token ~/charm.token | tee "${RESULTS_DIR}/charm.log"
       env:
+        NO_PROXY: .internal
         RESULTS_DIR: ${{ inputs.results-dir }}
         SCANNER: ${{ inputs.scanner }}
         USE_BATCH: ${{ inputs.use-batch }}
