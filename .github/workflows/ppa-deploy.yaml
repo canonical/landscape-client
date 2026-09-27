@@ -37,8 +37,7 @@ on:
         default: 'amd64'
       deb-pockets:
         description: 'Space-separated list of base pockets to scan against.'
-        required: true
-        default: ""
+        required: false
 
       snap-channel:
         description: 'Channel of the snap to scan'

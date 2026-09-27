@@ -24,7 +24,7 @@ inputs:
     required: true
   deb-pockets:
     description: 'Space-separated list of base pockets to scan against.'
-    required: true
+    required: false
 
   snap-channel:
     description: 'Channel of the snap to scan'
@@ -67,6 +67,7 @@ runs:
       run: |
         ## This is designed to try to run all three types of scans.
         ## If there is a failure in one, it should not prevent the others from running.
+        set +e
 
         mkdir -p "${RESULTS_DIR}"
 
@@ -75,10 +76,13 @@ runs:
           secscan_command+=(--batch)
         fi
 
-        ssdlc_args=(--ssdlc-product-name landscape-client)
-        [ -n "${SSDLC_VERSION}" ] && ssdlc_args+=(--ssdlc-product-version "${SSDLC_VERSION}")
-        [ -n "${SSDLC_RISK}" ] && ssdlc_args+=(--ssdlc-risk "${SSDLC_RISK}")
-        [ -n "${SSDLC_CYCLE}" ] && ssdlc_args+=(--ssdlc-cycle "${SSDLC_CYCLE}")
+        ssdlc_args=()
+        if [ -n "${SSDLC_VERSION}" ] && [ -n "${SSDLC_RISK}" ] && [ -n "${SSDLC_CYCLE}" ]; then
+          ssdlc_args+=(--ssdlc-product-name landscape-client)
+          ssdlc_args+=(--ssdlc-product-version "${SSDLC_VERSION}")
+          ssdlc_args+=(--ssdlc-risk "${SSDLC_RISK}")
+          ssdlc_args+=(--ssdlc-cycle "${SSDLC_CYCLE}")
+        fi
 
         SNAP_REVISION=$(snap info landscape-client | grep "${SNAP_CHANNEL}" | grep -Eo "\([0-9]+\)" | tr -d "()")
         if [ -z "${SNAP_REVISION}" ]; then
