@@ -106,6 +106,7 @@ runs:
         "${secscan_command[@]}" submit --scanner "${SCANNER}" --type package --format charm \
           "${ssdlc_args[@]}" --wait-and-print landscape-client/"${CHARM_RISK}"@"${CHARM_ARCH}"/"${CHARM_BASE}" | tee "${RESULTS_DIR}/charm.txt"
       env:
+        NO_PROXY: ".internal"
         RESULTS_DIR: ${{ inputs.results-dir }}
         SCANNER: ${{ inputs.scanner }}
         USE_BATCH: ${{ inputs.use-batch }}
