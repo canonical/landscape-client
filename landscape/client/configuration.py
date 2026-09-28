@@ -150,6 +150,12 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
 
     encoding = "utf-8"
 
+    def load_command_line(self, args):
+        super().load_command_line(args)
+        if self._command_line_options.get("positional"):
+            extra = " ".join(self._command_line_options["positional"])
+            self._parser.error(f"unrecognized arguments: {extra}")
+
     def _load_external_options(self):
         """Handle the --import parameter.
 

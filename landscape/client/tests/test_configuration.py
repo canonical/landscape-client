@@ -60,6 +60,17 @@ url = https://landscape.canonical.com/message-system
         config.load(args)
         return config
 
+    def test_positional_arguments_rejected(self):
+        """
+        Positional arguments (such as 'unregister') cause ArgumentParser
+        to exit with error code 2 instead of starting setup (LP: #2028517).
+        """
+        with mock.patch("sys.stderr", new_callable=StringIO) as stderr:
+            with self.assertRaises(SystemExit) as cm:
+                self.get_config(["unregister"])
+            self.assertEqual(cm.exception.code, 2)
+            self.assertIn("unrecognized arguments: unregister", stderr.getvalue())
+
 
 class PrintTextTest(LandscapeTest):
     @mock.patch("sys.stdout", new_callable=StringIO)
