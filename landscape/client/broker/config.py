@@ -59,21 +59,24 @@ class BrokerConfiguration(Configuration):
             default=15 * 60,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between server exchanges.",
+            help="The number of seconds between server exchanges "
+            "(default: 900, min: 60, max: 86400).",
         )
         parser.add_argument(
             "--urgent-exchange-interval",
             default=1 * 60,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between urgent server exchanges.",
+            help="The number of seconds between urgent server exchanges "
+            "(default: 60, min: 10, max: 3600).",
         )
         parser.add_argument(
             "--ping-interval",
             default=30,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between pings.",
+            help="The number of seconds between pings "
+            "(default: 30, min: 10, max: 3600).",
         )
         parser.add_argument(
             "--http-proxy",

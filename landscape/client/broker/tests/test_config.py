@@ -83,16 +83,50 @@ class ConfigurationTests(LandscapeTest):
         filename = self.makeFile(
             "[client]\n"
             "urgent_exchange_interval = 12\n"
-            "exchange_interval = 34\n"
-            "ping_interval = 6\n",
+            "exchange_interval = 345\n"
+            "ping_interval = 16\n",
         )
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])
 
         self.assertEqual(configuration.urgent_exchange_interval, 12)
-        self.assertEqual(configuration.exchange_interval, 34)
-        self.assertEqual(configuration.ping_interval, 6)
+        self.assertEqual(configuration.exchange_interval, 345)
+        self.assertEqual(configuration.ping_interval, 16)
+
+    def test_exchange_intervals_are_clamped(self):
+        """
+        Exchange and ping intervals outside their bounds are clamped. An
+        urgent exchange interval below 10 seconds would otherwise crash the
+        exchanger, which schedules a notification 10 seconds beforehand.
+        """
+        configuration = BrokerConfiguration()
+        configuration.load(
+            [
+                "--url",
+                "whatever",
+                "--exchange-interval",
+                "5",
+                "--urgent-exchange-interval",
+                "0",
+                "--ping-interval",
+                "999999",
+            ],
+        )
+
+        self.assertEqual(configuration.exchange_interval, 60)
+        self.assertEqual(configuration.urgent_exchange_interval, 10)
+        self.assertEqual(configuration.ping_interval, 3600)
+
+    def test_intervals_set_at_runtime_are_clamped(self):
+        """
+        Intervals set at runtime, such as by the server's set-intervals
+        message, are clamped as well.
+        """
+        configuration = BrokerConfiguration()
+        configuration.load(["--url", "whatever"])
+        configuration.exchange_interval = -1
+        self.assertEqual(configuration.exchange_interval, 60)
 
     def test_tag_handling(self):
         """
