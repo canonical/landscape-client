@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from unittest import TestCase, mock
 
@@ -12,6 +13,7 @@ from landscape.client.uaclient import (
     attach_pro,
     detach_pro,
     get_pro_status,
+    uaclient_environment,
 )
 
 if not IS_SNAP and not IS_CORE:
@@ -147,3 +149,34 @@ class TestUAClientWrapper(TestCase):
             mock_is_attached.return_value = FakeIsAttached(is_attached=False)
             with self.assertRaises(ProNotAttachedError):
                 detach_pro()
+
+    @mock.patch("landscape.client.uaclient.status")
+    @mock.patch("landscape.client.uaclient.UAConfig")
+    def test_get_pro_status_with_data_path(self, mock_uaconfig, mock_status):
+        mock_uaconfig.return_value = None
+
+        def check_env(config):
+            self.assertEqual(
+                os.environ.get("XDG_CACHE_HOME"),
+                os.path.join("/tmp/test_data_path", "cache"),
+            )
+            return self.mock_status_value
+
+        mock_status.side_effect = check_env
+
+        pro_status = get_pro_status(data_path="/tmp/test_data_path")
+        self.assertEqual(self.mock_status_value, pro_status)
+        self.assertNotEqual(
+            os.environ.get("XDG_CACHE_HOME"),
+            os.path.join("/tmp/test_data_path", "cache"),
+        )
+
+    def test_uaclient_environment_restores_env(self):
+        test_data_path = "/tmp/test_landscape_data"
+        expected_cache = os.path.join(test_data_path, "cache")
+        orig_xdg = os.environ.get("XDG_CACHE_HOME")
+
+        with uaclient_environment(test_data_path):
+            self.assertEqual(os.environ.get("XDG_CACHE_HOME"), expected_cache)
+
+        self.assertEqual(os.environ.get("XDG_CACHE_HOME"), orig_xdg)

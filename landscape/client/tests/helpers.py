@@ -63,7 +63,7 @@ class MessageTestCase(unittest.TestCase):
             )
 
 
-def fake_pro_info_func(q):
+def fake_pro_info_func(q, *args, **kwargs):
     q.put({})
 
 
