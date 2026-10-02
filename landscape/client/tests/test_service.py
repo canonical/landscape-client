@@ -1,11 +1,12 @@
 import logging
 import signal
+from unittest import mock
 
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
 from landscape.client.deployment import Configuration
-from landscape.client.service import LandscapeService
+from landscape.client.service import LandscapeService, run_landscape_service
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.testing import FakeReactor
 
@@ -95,3 +96,18 @@ class LandscapeServiceTest(LandscapeTest):
 
         handler = signal.getsignal(signal.SIGUSR1)
         self.assertFalse(handler)
+
+    def test_warns_about_out_of_bounds_intervals(self):
+        configuration = mock.Mock(clones=0, ignore_sigint=False)
+        configuration_class = mock.Mock(return_value=configuration)
+        service_class = mock.Mock()
+        service_class.service_name = "test"
+
+        with (
+            mock.patch("landscape.client.service.init_logging"),
+            mock.patch("landscape.client.service.Application"),
+            mock.patch("landscape.client.service.startApplication"),
+        ):
+            run_landscape_service(configuration_class, service_class, [])
+
+        configuration.warn_out_of_bounds_intervals.assert_called_once_with()

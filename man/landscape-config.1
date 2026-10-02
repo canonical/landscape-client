@@ -94,16 +94,17 @@ used if the given server URL is https.
 .B
 \fB--exchange-interval\fP=INTERVAL
 The number of seconds between server
-exchanges (default: 900).
+exchanges (default: 900, min: 60, max: 86400).
 .TP
 .B
 \fB--urgent-exchange-interval\fP=INTERVAL
 The number of seconds between urgent
-server exchanges (default: 60).
+server exchanges (default: 60, min: 10, max: 3600).
 .TP
 .B
 \fB--ping-interval\fP=INTERVAL
-The number of seconds between pings (default: 30).
+The number of seconds between pings (default: 30,
+min: 10, max: 3600).
 .TP
 .B
 \fB--ping-url\fP=PING_URL
@@ -113,22 +114,24 @@ with (default: 'http://landscape.canonical.com/ping').
 .B
 \fB--package-monitor-interval\fP=PACKAGE_MONITOR_INTERVAL
 The interval between
-package monitor runs (default: 1800).
+package monitor runs (default: 1800, min: 60,
+max: 86400).
 .TP
 .B
 \fB--snap-monitor-interval\fP=SNAP_MONITOR_INTERVAL
 The interval between snap
-monitor runs (default: 1800).
+monitor runs (default: 1800, min: 60, max: 86400).
 .TP
 .B
 \fB--apt-update-interval\fP=APT_UPDATE_INTERVAL
 The interval between apt update
-runs (default: 21600).
+runs (default: 21600, min: 600, max: 604800).
 .TP
 .B
 \fB--flush-interval\fP
 The number of seconds between flushes to disk for
-persisent data.
+persistent data (default: 300, min: 10,
+max: 3600).
 .TP
 .B
 \fB--stagger-launch\fP=STAGGER_RATIO

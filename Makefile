@@ -100,7 +100,7 @@ run:
 		-a onward -t "John's PC" \
 		-u http://localhost:8080/message-system \
 		-d $(MESSAGE_DIR) \
-		--urgent-exchange-interval=5 \
+		--urgent-exchange-interval=10 \
 		--log-level=debug \
 		--ping-url=http://localhost:8081/ping \
 
