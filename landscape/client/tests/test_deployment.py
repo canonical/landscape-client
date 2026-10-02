@@ -263,6 +263,15 @@ class ConfigurationTest(LandscapeTest):
             log,
         )
 
+    def test_warn_skips_missing_interval_options(self):
+        """Missing interval options are ignored."""
+        with mock.patch.object(
+            BaseConfiguration,
+            "__getattr__",
+            side_effect=AttributeError,
+        ):
+            self.config.warn_out_of_bounds_intervals()
+            
     def test_no_warning_for_intervals_within_bounds(self):
         """Nothing is logged when all intervals are within their bounds."""
         self.config.load([], accept_nonexistent_default_config=True)
