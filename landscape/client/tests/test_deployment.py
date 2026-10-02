@@ -272,6 +272,13 @@ class ConfigurationTest(LandscapeTest):
         ):
             self.config.warn_out_of_bounds_intervals()
 
+    def test_warn_skips_unset_interval_options(self):
+        """Interval options without a value are ignored."""
+        self.config.load([], accept_nonexistent_default_config=True)
+        self.config.flush_interval = None
+        self.config.warn_out_of_bounds_intervals()
+        self.assertEqual(self.logfile.getvalue(), "")
+
     def test_no_warning_for_intervals_within_bounds(self):
         """Nothing is logged when all intervals are within their bounds."""
         self.config.load([], accept_nonexistent_default_config=True)
