@@ -152,11 +152,11 @@ class Configuration(BaseConfiguration):
                     f"{maximum}. Using {maximum} seconds instead.",
                 )
 
-    def interval_help(self, name, description):
+    def interval_help(self, name, description, default):
         """Return help text for an interval option, including its bounds."""
         bounds = INTERVAL_BOUNDS[name]
         return (
-            f"{description} (default: %(default)s, "
+            f"{description} (default: {default}, "
             f"min: {bounds.minimum}, max: {bounds.maximum})."
         )
 
@@ -212,6 +212,7 @@ class Configuration(BaseConfiguration):
             help=self.interval_help(
                 "package_monitor_interval",
                 "The number of seconds between package monitor runs",
+                30 * 60,
             ),
         )
         parser.add_argument(
@@ -219,7 +220,9 @@ class Configuration(BaseConfiguration):
             default=6 * 60 * 60,
             type=int,
             help=self.interval_help(
-                "apt_update_interval", "The number of seconds between apt update runs"
+                "apt_update_interval",
+                "The number of seconds between apt update runs",
+                6 * 60 * 60,
             ),
         )
         parser.add_argument(
@@ -237,6 +240,7 @@ class Configuration(BaseConfiguration):
             help=self.interval_help(
                 "flush_interval",
                 "The number of seconds between flushes to disk for persistent data",
+                5 * 60,
             ),
         )
         parser.add_argument(
@@ -255,6 +259,7 @@ class Configuration(BaseConfiguration):
             help=self.interval_help(
                 "snap_monitor_interval",
                 "The number of seconds between snap monitor runs",
+                30 * 60,
             ),
         )
         parser.add_argument(

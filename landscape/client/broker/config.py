@@ -61,7 +61,8 @@ class BrokerConfiguration(Configuration):
             type=int,
             metavar="INTERVAL",
             help=self.interval_help(
-                "exchange_interval", "The number of seconds between server exchanges"
+                "exchange_interval", "The number of seconds between server exchanges",
+                15 * 60,
             ),
         )
         parser.add_argument(
@@ -72,6 +73,7 @@ class BrokerConfiguration(Configuration):
             help=self.interval_help(
                 "urgent_exchange_interval",
                 "The number of seconds between urgent server exchanges",
+                1 * 60,
             ),
         )
         parser.add_argument(
@@ -80,7 +82,8 @@ class BrokerConfiguration(Configuration):
             type=int,
             metavar="INTERVAL",
             help=self.interval_help(
-                "ping_interval", "The number of seconds between pings"
+                "ping_interval", "The number of seconds between pings",
+                30,
             ),
         )
         parser.add_argument(
