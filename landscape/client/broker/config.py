@@ -61,7 +61,8 @@ class BrokerConfiguration(Configuration):
             type=int,
             metavar="INTERVAL",
             help=self.interval_help(
-                "exchange_interval", "The number of seconds between server exchanges",
+                "exchange_interval",
+                "The number of seconds between server exchanges",
                 15 * 60,
             ),
         )
@@ -82,7 +83,8 @@ class BrokerConfiguration(Configuration):
             type=int,
             metavar="INTERVAL",
             help=self.interval_help(
-                "ping_interval", "The number of seconds between pings",
+                "ping_interval",
+                "The number of seconds between pings",
                 30,
             ),
         )
