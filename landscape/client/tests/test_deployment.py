@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest import TestCase, mock
 
 from landscape.client.deployment import (
+    INTERVAL_BOUNDS,
     BaseConfiguration,
     Configuration,
     convert_arg_to_bool,
@@ -184,8 +185,6 @@ class ConfigurationTest(LandscapeTest):
         options = self.parser.parse_args([])
         self.assertEqual(options.quiet, False)
 
-    # other options
-
     def test_url_option(self):
         """Ensure options.url option can be read by parse_args."""
         options = self.parser.parse_args(
@@ -198,15 +197,15 @@ class ConfigurationTest(LandscapeTest):
         options = self.parser.parse_args([])
         self.assertEqual(options.url, self.config.DEFAULT_URL)
 
-    # interval bounds
-
     def test_interval_within_bounds(self):
-        """Interval values within their bounds are returned unchanged."""
         self.config.load(
-            ["--flush-interval", "123"],
+            ["--flush-interval", str(INTERVAL_BOUNDS["flush_interval"].minimum + 1)],
             accept_nonexistent_default_config=True,
         )
-        self.assertEqual(self.config.flush_interval, 123)
+        self.assertEqual(
+            self.config.flush_interval,
+            INTERVAL_BOUNDS["flush_interval"].minimum + 1,
+        )
 
     def test_interval_below_minimum_is_clamped(self):
         """
@@ -214,25 +213,45 @@ class ConfigurationTest(LandscapeTest):
         intervals can crash the client.
         """
         self.config.load(
-            ["--flush-interval", "0", "--package-monitor-interval", "-5"],
+            [
+                "--flush-interval",
+                str(INTERVAL_BOUNDS["flush_interval"].minimum - 1),
+                "--package-monitor-interval",
+                str(INTERVAL_BOUNDS["package_monitor_interval"].minimum - 1),
+            ],
             accept_nonexistent_default_config=True,
         )
-        self.assertEqual(self.config.flush_interval, 10)
-        self.assertEqual(self.config.package_monitor_interval, 60)
+        self.assertEqual(
+            self.config.flush_interval,
+            INTERVAL_BOUNDS["flush_interval"].minimum,
+        )
+        self.assertEqual(
+            self.config.package_monitor_interval,
+            INTERVAL_BOUNDS["package_monitor_interval"].minimum,
+        )
 
     def test_interval_above_maximum_is_clamped(self):
         """Interval values above their maximum are clamped to it."""
         self.config.load(
-            ["--apt-update-interval", "99999999"],
+            [
+                "--apt-update-interval",
+                str(INTERVAL_BOUNDS["apt_update_interval"].maximum + 1),
+            ],
             accept_nonexistent_default_config=True,
         )
-        self.assertEqual(self.config.apt_update_interval, 7 * 24 * 60 * 60)
+        self.assertEqual(
+            self.config.apt_update_interval,
+            INTERVAL_BOUNDS["apt_update_interval"].maximum,
+        )
 
     def test_interval_from_config_file_is_clamped(self):
         """Interval values read from the config file are clamped too."""
         filename = self.makeFile("[client]\nsnap_monitor_interval = 1\n")
         self.config.load(["--config", filename])
-        self.assertEqual(self.config.snap_monitor_interval, 60)
+        self.assertEqual(
+            self.config.snap_monitor_interval,
+            INTERVAL_BOUNDS["snap_monitor_interval"].minimum,
+        )
 
     def test_clamped_interval_is_not_written(self):
         """
@@ -246,20 +265,29 @@ class ConfigurationTest(LandscapeTest):
 
     def test_warn_out_of_bounds_intervals(self):
         """A warning is logged for each interval outside its bounds."""
+        flush_minimum = INTERVAL_BOUNDS["flush_interval"].minimum
+        apt_update_maximum = INTERVAL_BOUNDS["apt_update_interval"].maximum
         self.config.load(
-            ["--flush-interval", "1", "--apt-update-interval", "99999999"],
+            [
+                "--flush-interval",
+                str(flush_minimum - 1),
+                "--apt-update-interval",
+                str(apt_update_maximum + 1),
+            ],
             accept_nonexistent_default_config=True,
         )
         self.config.warn_out_of_bounds_intervals()
         log = self.logfile.getvalue()
         self.assertIn(
-            "flush_interval is set to 1 seconds, below the minimum of 10. "
-            "Using 10 seconds instead.",
+            f"flush_interval is set to {flush_minimum - 1} seconds, below "
+            f"the minimum of {flush_minimum}. "
+            f"Using {flush_minimum} seconds instead.",
             log,
         )
         self.assertIn(
-            "apt_update_interval is set to 99999999 seconds, above the maximum "
-            "of 604800. Using 604800 seconds instead.",
+            f"apt_update_interval is set to {apt_update_maximum + 1} seconds, "
+            "above the maximum "
+            f"of {apt_update_maximum}. Using {apt_update_maximum} seconds instead.",
             log,
         )
 

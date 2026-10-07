@@ -1,6 +1,7 @@
 import os
 
 from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.deployment import INTERVAL_BOUNDS
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.testing import EnvironSaverHelper
 
@@ -100,23 +101,28 @@ class ConfigurationTests(LandscapeTest):
         urgent exchange interval below 10 seconds would otherwise crash the
         exchanger, which schedules a notification 10 seconds beforehand.
         """
+        exchange_minimum = INTERVAL_BOUNDS["exchange_interval"].minimum
+        urgent_exchange_minimum = INTERVAL_BOUNDS["urgent_exchange_interval"].minimum
+        ping_maximum = INTERVAL_BOUNDS["ping_interval"].maximum
         configuration = BrokerConfiguration()
         configuration.load(
             [
                 "--url",
                 "whatever",
                 "--exchange-interval",
-                "5",
+                str(exchange_minimum - 1),
                 "--urgent-exchange-interval",
-                "0",
+                str(urgent_exchange_minimum - 1),
                 "--ping-interval",
-                "999999",
+                str(ping_maximum + 1),
             ],
         )
 
-        self.assertEqual(configuration.exchange_interval, 60)
-        self.assertEqual(configuration.urgent_exchange_interval, 10)
-        self.assertEqual(configuration.ping_interval, 3600)
+        self.assertEqual(configuration.exchange_interval, exchange_minimum)
+        self.assertEqual(
+            configuration.urgent_exchange_interval, urgent_exchange_minimum
+        )
+        self.assertEqual(configuration.ping_interval, ping_maximum)
 
     def test_intervals_set_at_runtime_are_clamped(self):
         """
@@ -126,7 +132,10 @@ class ConfigurationTests(LandscapeTest):
         configuration = BrokerConfiguration()
         configuration.load(["--url", "whatever"])
         configuration.exchange_interval = -1
-        self.assertEqual(configuration.exchange_interval, 60)
+        self.assertEqual(
+            configuration.exchange_interval,
+            INTERVAL_BOUNDS["exchange_interval"].minimum,
+        )
 
     def test_tag_handling(self):
         """
