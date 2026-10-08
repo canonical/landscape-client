@@ -967,6 +967,7 @@ def main(args, print=print):  # noqa: C901
         "landscape-config",
         config.quiet,
     )
+    config.warn_out_of_bounds_intervals()
 
     if config.skip_registration and config.force_registration:
         sys.exit(
