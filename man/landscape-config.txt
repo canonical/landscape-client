@@ -42,23 +42,26 @@ OPTIONS
                              a CA Certificate to verify the server. Only 
                              used if the given server URL is https.
   --exchange-interval=INTERVAL   The number of seconds between server
-                           exchanges (default: 900).
+                           exchanges (default: 900, min: 60, max: 86400).
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent
-                           server exchanges (default: 60).
-  --ping-interval=INTERVAL  The number of seconds between pings (default: 30).
+                           server exchanges (default: 60, min: 10, max: 3600).
+  --ping-interval=INTERVAL  The number of seconds between pings (default: 30,
+                           min: 10, max: 3600).
   --ping-url=PING_URL      The URL to perform lightweight exchange initiation
                            with (default: 'http://landscape.canonical.com/ping').
   --package-monitor-interval=PACKAGE_MONITOR_INTERVAL  The interval between
-                           package monitor runs (default: 1800).
+                           package monitor runs (default: 1800, min: 60,
+                           max: 86400).
   --snap-monitor-interval=SNAP_MONITOR_INTERVAL  The interval between snap
-                           monitor runs (default: 1800).
+                           monitor runs (default: 1800, min: 60, max: 86400).
   --apt-update-interval=APT_UPDATE_INTERVAL  The interval between apt update
-                           runs (default: 21600).
+                           runs (default: 21600, min: 600, max: 604800).
   --apt-update-timeout=APT_UPDATE_TIMEOUT  The maximum time in seconds to wait
                            for apt update to complete before killing it
                            (default: 1800).
   --flush-interval=INTERVAL   The number of seconds between flushes to disk for
-                           persistent data.
+                           persistent data (default: 300, min: 10,
+                           max: 3600).
   --stagger-launch=STAGGER_RATIO  Ratio, between 0 and 1, by which to stagger various
                            tasks of landscape.
   --http-proxy=URL         The URL of the HTTP proxy, if one is needed.

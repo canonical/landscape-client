@@ -1,6 +1,7 @@
 import os
 
 from landscape.client.broker.config import BrokerConfiguration
+from landscape.client.deployment import INTERVAL_BOUNDS
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.testing import EnvironSaverHelper
 
@@ -83,16 +84,58 @@ class ConfigurationTests(LandscapeTest):
         filename = self.makeFile(
             "[client]\n"
             "urgent_exchange_interval = 12\n"
-            "exchange_interval = 34\n"
-            "ping_interval = 6\n",
+            "exchange_interval = 345\n"
+            "ping_interval = 16\n",
         )
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])
 
         self.assertEqual(configuration.urgent_exchange_interval, 12)
-        self.assertEqual(configuration.exchange_interval, 34)
-        self.assertEqual(configuration.ping_interval, 6)
+        self.assertEqual(configuration.exchange_interval, 345)
+        self.assertEqual(configuration.ping_interval, 16)
+
+    def test_exchange_intervals_are_clamped(self):
+        """
+        Exchange and ping intervals outside their bounds are clamped. An
+        urgent exchange interval below 10 seconds would otherwise crash the
+        exchanger, which schedules a notification 10 seconds beforehand.
+        """
+        exchange_minimum = INTERVAL_BOUNDS["exchange_interval"].minimum
+        urgent_exchange_minimum = INTERVAL_BOUNDS["urgent_exchange_interval"].minimum
+        ping_maximum = INTERVAL_BOUNDS["ping_interval"].maximum
+        configuration = BrokerConfiguration()
+        configuration.load(
+            [
+                "--url",
+                "whatever",
+                "--exchange-interval",
+                str(exchange_minimum - 1),
+                "--urgent-exchange-interval",
+                str(urgent_exchange_minimum - 1),
+                "--ping-interval",
+                str(ping_maximum + 1),
+            ],
+        )
+
+        self.assertEqual(configuration.exchange_interval, exchange_minimum)
+        self.assertEqual(
+            configuration.urgent_exchange_interval, urgent_exchange_minimum
+        )
+        self.assertEqual(configuration.ping_interval, ping_maximum)
+
+    def test_intervals_set_at_runtime_are_clamped(self):
+        """
+        Intervals set at runtime, such as by the server's set-intervals
+        message, are clamped as well.
+        """
+        configuration = BrokerConfiguration()
+        configuration.load(["--url", "whatever"])
+        configuration.exchange_interval = -1
+        self.assertEqual(
+            configuration.exchange_interval,
+            INTERVAL_BOUNDS["exchange_interval"].minimum,
+        )
 
     def test_tag_handling(self):
         """
