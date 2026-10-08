@@ -81,6 +81,7 @@ def run_landscape_service(configuration_class, service_class, args):
         init_logging(configuration, service_class.service_name)
     except LoggingAttributeError:
         return
+    configuration.warn_out_of_bounds_intervals()
     application = Application(f"landscape-{service_class.service_name}")
     service = service_class(configuration)
     service.setServiceParent(application)

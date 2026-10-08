@@ -6,7 +6,8 @@ import time
 from argparse import SUPPRESS
 from collections.abc import Sequence
 from datetime import datetime, timezone
-from logging import debug, info
+from logging import debug, info, warning
+from typing import NamedTuple
 
 from twisted.logger import globalLogBeginner
 
@@ -26,6 +27,33 @@ from landscape.lib.config import BaseConfiguration as _BaseConfiguration
 from landscape.lib.format import expandvars
 from landscape.lib.network import get_active_device_info, get_fqdn
 from landscape.lib.persist import Persist
+
+MINUTE = 60
+HOUR = 60 * MINUTE
+DAY = 24 * HOUR
+
+
+class IntervalBounds(NamedTuple):
+    """Minimum and maximum values, in seconds, for interval options"""
+
+    minimum: int
+    maximum: int
+
+
+# Values outside bounds are clamped, as intervals that are too short can
+# crash the client (e.g. by scheduling calls with a negative delay) or overload
+# it and the server, while intervals that are too long leave the client unmanaged.
+INTERVAL_BOUNDS = {
+    "exchange_interval": IntervalBounds(MINUTE, DAY),
+    # The exchanger notifies plugins 10 seconds before each exchange, so
+    # anything shorter results in a negative delay.
+    "urgent_exchange_interval": IntervalBounds(10, HOUR),
+    "ping_interval": IntervalBounds(10, HOUR),
+    "package_monitor_interval": IntervalBounds(MINUTE, DAY),
+    "snap_monitor_interval": IntervalBounds(MINUTE, DAY),
+    "apt_update_interval": IntervalBounds(10 * MINUTE, 7 * DAY),
+    "flush_interval": IntervalBounds(10, HOUR),
+}
 
 
 def init_logging(configuration, program_name):
@@ -92,6 +120,46 @@ class Configuration(BaseConfiguration):
 
     DEFAULT_URL = "https://landscape.canonical.com/message-system"
 
+    def __getattr__(self, name):
+        """Return the option value, clamped to its bounds for intervals.
+
+        @see: L{INTERVAL_BOUNDS}
+        """
+        value = super().__getattr__(name)
+        bounds = INTERVAL_BOUNDS.get(name)
+        if bounds is not None and value is not None:
+            minimum, maximum = bounds
+            value = max(minimum, min(int(value), maximum))
+        return value
+
+    def warn_out_of_bounds_intervals(self):
+        """Log a warning for each interval option set outside its bounds."""
+        for name, (minimum, maximum) in INTERVAL_BOUNDS.items():
+            try:
+                value = super().__getattr__(name)
+            except AttributeError:
+                continue  # Not an option of this configuration.
+            if value is None:
+                continue
+            if int(value) < minimum:
+                warning(
+                    f"{name} is set to {value} seconds, below the minimum of "
+                    f"{minimum}. Using {minimum} seconds instead.",
+                )
+            elif int(value) > maximum:
+                warning(
+                    f"{name} is set to {value} seconds, above the maximum of "
+                    f"{maximum}. Using {maximum} seconds instead.",
+                )
+
+    def interval_help(self, name, description, default):
+        """Return help text for an interval option, including its bounds."""
+        bounds = INTERVAL_BOUNDS[name]
+        return (
+            f"{description} (default: {default}, "
+            f"min: {bounds.minimum}, max: {bounds.maximum})."
+        )
+
     def make_parser(self):
         """Parser factory for supported options.
 
@@ -141,13 +209,21 @@ class Configuration(BaseConfiguration):
             "--package-monitor-interval",
             default=30 * 60,
             type=int,
-            help="The interval between package monitor runs (default: 1800).",
+            help=self.interval_help(
+                "package_monitor_interval",
+                "The number of seconds between package monitor runs",
+                30 * 60,
+            ),
         )
         parser.add_argument(
             "--apt-update-interval",
             default=6 * 60 * 60,
             type=int,
-            help="The interval between apt update runs (default: 21600).",
+            help=self.interval_help(
+                "apt_update_interval",
+                "The number of seconds between apt update runs",
+                6 * 60 * 60,
+            ),
         )
         parser.add_argument(
             "--apt-update-timeout",
@@ -161,7 +237,11 @@ class Configuration(BaseConfiguration):
             default=5 * 60,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between flushes to disk for persistent data.",
+            help=self.interval_help(
+                "flush_interval",
+                "The number of seconds between flushes to disk for persistent data",
+                5 * 60,
+            ),
         )
         parser.add_argument(
             "--stagger-launch",
@@ -176,7 +256,11 @@ class Configuration(BaseConfiguration):
             "--snap-monitor-interval",
             default=30 * 60,  # 30 minutes
             type=int,
-            help="The interval between snap monitor runs (default 1800).",
+            help=self.interval_help(
+                "snap_monitor_interval",
+                "The number of seconds between snap monitor runs",
+                30 * 60,
+            ),
         )
         parser.add_argument(
             "--script-tempdir",

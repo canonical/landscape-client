@@ -30,6 +30,7 @@ class BrokerConfiguration(Configuration):
               - C{computer_title}
               - C{exchange_interval} (C{15*60})
               - C{urgent_exchange_interval} (C{1*60})
+              - C{ping_interval} (C{30})
               - C{http_proxy}
               - C{https_proxy}
               - C{hostagent_uid}
@@ -59,21 +60,33 @@ class BrokerConfiguration(Configuration):
             default=15 * 60,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between server exchanges.",
+            help=self.interval_help(
+                "exchange_interval",
+                "The number of seconds between server exchanges",
+                15 * 60,
+            ),
         )
         parser.add_argument(
             "--urgent-exchange-interval",
             default=1 * 60,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between urgent server exchanges.",
+            help=self.interval_help(
+                "urgent_exchange_interval",
+                "The number of seconds between urgent server exchanges",
+                1 * 60,
+            ),
         )
         parser.add_argument(
             "--ping-interval",
             default=30,
             type=int,
             metavar="INTERVAL",
-            help="The number of seconds between pings.",
+            help=self.interval_help(
+                "ping_interval",
+                "The number of seconds between pings",
+                30,
+            ),
         )
         parser.add_argument(
             "--http-proxy",
