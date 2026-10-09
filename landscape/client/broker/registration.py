@@ -251,7 +251,10 @@ class RegistrationHandler:
         with_tags = f"and tags {tags} " if tags else ""
         with_group = f"in access group '{group}' " if group else ""
 
-        message["ubuntu_pro_info"] = json.dumps(get_ubuntu_pro_info())
+        data_path = getattr(self._config, "data_path", None) if self._config else None
+        message["ubuntu_pro_info"] = json.dumps(
+            get_ubuntu_pro_info(data_path=data_path)
+        )
 
         logging.info(
             f"Queueing message to register with account {account_name!r} "

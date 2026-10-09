@@ -55,7 +55,9 @@ class ClientRegistrationInfo:
             hostname=get_fqdn(),
             registration_password=identity.registration_key,
             tags=identity.tags,
-            ubuntu_pro_info=json.dumps(get_ubuntu_pro_info()),
+            ubuntu_pro_info=json.dumps(
+                get_ubuntu_pro_info(data_path=getattr(identity, "data_path", None))
+            ),
             vm_info=get_vm_info(),
             machine_id=get_namespaced_machine_id(),
         )

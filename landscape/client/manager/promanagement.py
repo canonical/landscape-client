@@ -36,7 +36,12 @@ class ProManagement(ManagerPlugin):
         """
         opid = message["operation-id"]
         token = message["token"]
-        d = deferToThread(attach_pro, token)
+        data_path = (
+            getattr(self.config, "data_path", None)
+            if getattr(self, "config", None)
+            else None
+        )
+        d = deferToThread(attach_pro, token, data_path=data_path)
         d.addCallback(self._respond_success_attach, opid)
         d.addErrback(self._respond_failure, opid)
         return d
@@ -47,13 +52,27 @@ class ProManagement(ManagerPlugin):
         detaching a pro token.
         """
         opid = message["operation-id"]
-        d = deferToThread(detach_pro)
+        data_path = (
+            getattr(self.config, "data_path", None)
+            if getattr(self, "config", None)
+            else None
+        )
+        d = deferToThread(detach_pro, data_path=data_path)
         d.addCallback(self._respond_success_detach, opid)
         d.addErrback(self._respond_failure, opid)
         return d
 
     def _respond_success_attach(self, data, opid):
-        return self._respond(SUCCEEDED, json.dumps(get_ubuntu_pro_info()), opid)
+        data_path = (
+            getattr(self.config, "data_path", None)
+            if getattr(self, "config", None)
+            else None
+        )
+        return self._respond(
+            SUCCEEDED,
+            json.dumps(get_ubuntu_pro_info(data_path=data_path)),
+            opid,
+        )
 
     def _respond_success_detach(self, data, opid):
         return self._respond(SUCCEEDED, "Succeeded in detaching pro token.", opid)
