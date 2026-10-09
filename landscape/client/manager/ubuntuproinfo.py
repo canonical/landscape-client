@@ -6,6 +6,8 @@ from landscape.client.environment import IS_CORE, IS_SNAP, UA_DATA_DIR
 from landscape.client.manager.plugin import DataWatcherManager
 from landscape.client.uaclient import get_pro_status
 
+TIMEOUT = 5  # seconds
+
 
 class UbuntuProInfo(DataWatcherManager):
     """
@@ -107,10 +109,18 @@ def get_ubuntu_pro_info() -> dict:
         q = ctx.Queue()
         p = ctx.Process(target=uastatus, args=(q,))
         p.start()
-        p.join()
+        p.join(timeout=TIMEOUT)
+
+        if p.is_alive():
+            p.terminate()
+            p.join(timeout=1)
+            return _ubuntu_pro_error_message(
+                "Pro client timed out connecting to contracts server.",
+                "timeout",
+            )
 
         try:
-            pro_info = q.get(timeout=5)
+            pro_info = q.get(timeout=1)
             pro_info = serialize_datetimes(pro_info)
         except Exception:
             return _ubuntu_pro_error_message(
