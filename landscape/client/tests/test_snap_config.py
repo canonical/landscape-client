@@ -2,7 +2,11 @@ import os
 import tempfile
 from unittest import TestCase, mock
 
-from landscape.client.snap_config import CONFIG_ENTRIES, update_ssl_cert
+from landscape.client.snap_config import (
+    CONFIG_ENTRIES,
+    update_ssl_ca_cert,
+    update_ssl_cert,
+)
 
 
 class ConfigEntriesTest(TestCase):
@@ -51,3 +55,15 @@ class UpdateSSLCertTest(TestCase):
         self.assertEqual(result, cert_path)
         with open(cert_path) as f:
             self.assertEqual(f.read(), "fake-cert-content")
+
+    def test_update_ssl_ca_cert_uses_separate_file(self):
+        public_key_path = update_ssl_cert("old-cert-content")
+
+        result = update_ssl_ca_cert("new-cert-content")
+
+        cert_dir = os.path.join(self.tempdir.name, "etc/ssl/certs")
+        self.assertEqual(result, os.path.join(cert_dir, "ssl-ca.crt"))
+        with open(result) as f:
+            self.assertEqual(f.read(), "new-cert-content")
+        with open(public_key_path) as f:
+            self.assertEqual(f.read(), "old-cert-content")

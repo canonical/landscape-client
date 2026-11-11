@@ -111,3 +111,4 @@ class LandscapeServiceTest(LandscapeTest):
             run_landscape_service(configuration_class, service_class, [])
 
         configuration.warn_out_of_bounds_intervals.assert_called_once()
+        configuration.warn_deprecated_options.assert_called_once()

@@ -152,6 +152,29 @@ class Configuration(BaseConfiguration):
                     f"{maximum}. Using {maximum} seconds instead.",
                 )
 
+    def get_ssl_ca(self):
+        """Return the CA certificate used to verify the server.
+
+        C{ssl_ca} takes precedence over the deprecated C{ssl_public_key}.
+        """
+        return self.ssl_ca or self.ssl_public_key
+
+    def warn_deprecated_options(self):
+        """Log a warning when a deprecated option is in use."""
+        if not self.ssl_public_key:
+            return
+        if self.ssl_ca:
+            warning(
+                "Both ssl_ca and the deprecated ssl_public_key options are "
+                "set. Using ssl_ca and ignoring ssl_public_key.",
+            )
+        else:
+            warning(
+                "The ssl_public_key option (-k/--ssl-public-key) is deprecated "
+                "and will be removed in a future release. Use ssl_ca "
+                "(--ssl-ca) instead.",
+            )
+
     def interval_help(self, name, description, default):
         """Return help text for an interval option, including its bounds."""
         bounds = INTERVAL_BOUNDS[name]
@@ -170,6 +193,7 @@ class Configuration(BaseConfiguration):
               - C{log_level} (C{"info"})
               - C{url} (C{"http://landscape.canonical.com/message-system"})
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
+              - C{ssl_ca}
               - C{ssl_public_key}
               - C{ignore_sigint} (C{False})
               - C{stagger_launch} (C{0.1})
@@ -188,10 +212,16 @@ class Configuration(BaseConfiguration):
             default="http://landscape.canonical.com/ping",
         )
         parser.add_argument(
+            "--ssl-ca",
+            help="The CA certificate used to verify the server. "
+            "Only used if the given URL is https. "
+            "Takes precedence over --ssl-public-key.",
+        )
+        parser.add_argument(
             "-k",
             "--ssl-public-key",
-            help="The ssl-public-key is a CA certificate that verifies the server."
-            "Only used if the given URL is https.",
+            help="Deprecated: use --ssl-ca instead. The CA certificate used "
+            "to verify the server. Only used if the given URL is https.",
         )
         parser.add_argument(
             "--ignore-sigint",

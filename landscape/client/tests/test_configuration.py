@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import textwrap
 import unittest
@@ -38,7 +39,8 @@ from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.fetch import HTTPCodeError, TransportError
-from landscape.lib.fs import read_binary_file
+from landscape.lib.fs import read_binary_file, read_text_file
+from landscape.lib.logging import init_app_logging
 from landscape.lib.persist import Persist
 from landscape.lib.testing import EnvironSaverHelper
 
@@ -1132,6 +1134,24 @@ registration_key = shared-secret
         )
         mock_register.assert_not_called()
 
+    @mock.patch("landscape.client.configuration.setup")
+    def test_main_warns_when_ssl_public_key_is_set(self, mock_setup):
+        main(
+            [
+                "-c",
+                self.make_working_config(),
+                "--ssl-public-key",
+                "/path/to/ca.crt",
+                "--skip-registration",
+                "--silent",
+            ],
+            print=noop_print,
+        )
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            self.logfile.getvalue(),
+        )
+
     @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.sys.exit")
     @mock.patch("landscape.client.configuration.input")
@@ -1545,6 +1565,47 @@ registration_key = shared-secret
             mock.ANY,
             "fake-secure-id",
             10,
+        )
+
+    @mock.patch(
+        "landscape.client.configuration.ClientRegistrationInfo.from_identity",
+    )
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch("landscape.client.configuration.set_secure_id")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_register_prefers_ssl_ca(
+        self,
+        mock_setup,
+        mock_register,
+        mock_set_secure_id,
+        mock_restart_client,
+        mock_client_info,
+    ):
+        mock_register.return_value = RegistrationInfo(
+            10,
+            "fake-secure-id",
+            "fake-server-uuid",
+        )
+
+        self.assertRaises(
+            SystemExit,
+            main,
+            [
+                "--silent",
+                "-c",
+                self.make_working_config(),
+                "--ssl-ca",
+                "/path/to/new.crt",
+                "--ssl-public-key",
+                "/path/to/old.crt",
+            ],
+            print=noop_print,
+        )
+
+        self.assertEqual(
+            mock_register.call_args.kwargs["cainfo"],
+            "/path/to/new.crt",
         )
 
     @mock.patch("landscape.client.configuration.input")
@@ -2110,6 +2171,48 @@ registration_key = shared-secret
         options.read(config_filename)
         self.assertEqual(options.get("client", "ssl_public_key"), key_filename)
 
+    @mock.patch("landscape.client.configuration.print_text")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_base64_ssl_ca_and_ssl_public_key_are_exported_separately(
+        self,
+        mock_serviceconfig,
+        mock_print_text,
+    ):
+        data_path = self.makeDir()
+        config_filename = self.makeFile(f"[client]\ndata_path={data_path}")
+        prefix = os.path.join(data_path, os.path.basename(config_filename))
+
+        config = self.get_config(
+            [
+                "--silent",
+                "-c",
+                config_filename,
+                "-u",
+                "url",
+                "-a",
+                "account",
+                "-t",
+                "title",
+                "--ssl-ca",
+                "base64:TmV3IENB",
+                "--ssl-public-key",
+                "base64:T2xkIENB",
+            ],
+        )
+        config.data_path = data_path
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+        for option, contents in (
+            ("ssl_ca", "New CA"),
+            ("ssl_public_key", "Old CA"),
+        ):
+            key_filename = f"{prefix}.{option}"
+            with open(key_filename) as fh:
+                self.assertEqual(contents, fh.read())
+            self.assertEqual(options.get("client", option), key_filename)
+
     @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_normal_ssl_public_key_is_not_exported_to_file(
         self,
@@ -2537,6 +2640,41 @@ class ConfigurationDumpTest(LandscapeTest):
         )
         fake_config_dump.assert_called_once()
         self.assertEqual(0, exception.code)
+
+    @mock.patch("sys.stdout", new_callable=StringIO)
+    def test_show_json_with_deprecated_ssl_public_key(self, stdout):
+        config_filename = self.makeFile("[client]\nssl_public_key = /path/to/ca.crt\n")
+        log_dir = self.makeDir()
+        logger = logging.getLogger()
+        original_handlers = logger.handlers[:]
+        original_level = logger.level
+
+        def cleanup_logging():
+            for handler in logger.handlers[:]:
+                if handler not in original_handlers:
+                    logger.removeHandler(handler)
+                    handler.close()
+            logger.setLevel(original_level)
+
+        self.addCleanup(cleanup_logging)
+        with mock.patch(
+            "landscape.client.configuration.init_app_logging",
+            side_effect=init_app_logging,
+        ):
+            exception = self.assertRaises(
+                SystemExit,
+                main,
+                ["--config", config_filename, "--log-dir", log_dir, "--show-json"],
+            )
+
+        self.assertEqual(0, exception.code)
+        self.assertEqual(
+            json.loads(stdout.getvalue())["ssl_public_key"], "/path/to/ca.crt"
+        )
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            read_text_file(os.path.join(log_dir, "landscape-config.log")),
+        )
 
 
 class SetSecureIdTest(LandscapeTest):

@@ -38,6 +38,12 @@ class BrokerServiceTest(LandscapeTest):
         self.assertTrue(isinstance(self.service.transport, HTTPTransport))
         self.assertEqual(self.service.transport.get_url(), self.config.url)
 
+    def test_transport_prefers_ssl_ca(self):
+        self.config.ssl_ca = "/path/to/new.crt"
+        self.config.ssl_public_key = "/path/to/old.crt"
+        service = FakeBrokerService(self.config)
+        self.assertEqual(service.transport._pubkey, "/path/to/new.crt")
+
     def test_message_store(self):
         """
         A L{BrokerService} instance has a proper C{message_store} attribute.

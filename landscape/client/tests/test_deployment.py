@@ -1,4 +1,5 @@
 import os
+from configparser import ConfigParser
 from datetime import datetime
 from unittest import TestCase, mock
 
@@ -339,6 +340,91 @@ class ConfigurationTest(LandscapeTest):
         """Ensure parse_args sets appropriate ssl_public_key default."""
         options = self.parser.parse_args([])
         self.assertEqual(options.ssl_public_key, None)
+
+    def test_warn_deprecated_ssl_public_key_from_command_line(self):
+        self.config.load(
+            ["-k", "/path/to/ca.crt"],
+            accept_nonexistent_default_config=True,
+        )
+        self.config.warn_deprecated_options()
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            self.logfile.getvalue(),
+        )
+        self.assertIn("Use ssl_ca (--ssl-ca) instead.", self.logfile.getvalue())
+        self.assertEqual(self.config.ssl_public_key, "/path/to/ca.crt")
+
+    def test_warn_deprecated_ssl_public_key_from_config_file(self):
+        filename = self.makeFile("[client]\nssl_public_key = /path/to/ca.crt\n")
+        self.config.load(["--config", filename])
+        self.config.warn_deprecated_options()
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            self.logfile.getvalue(),
+        )
+        self.assertEqual(self.config.ssl_public_key, "/path/to/ca.crt")
+
+    def test_no_deprecation_warning_for_unset_ssl_public_key(self):
+        self.config.load([], accept_nonexistent_default_config=True)
+        for value in (None, ""):
+            self.config.ssl_public_key = value
+            self.config.warn_deprecated_options()
+        self.assertEqual(self.logfile.getvalue(), "")
+
+    def test_ssl_ca_option(self):
+        options = self.parser.parse_args(["--ssl-ca", "/path/to/ca.crt"])
+        self.assertEqual(options.ssl_ca, "/path/to/ca.crt")
+        self.assertIsNone(options.ssl_public_key)
+
+    def test_ssl_ca_and_ssl_public_key_are_separate_config_keys(self):
+        filename = self.makeFile(
+            "[client]\nssl_ca = /path/to/new.crt\nssl_public_key = /path/to/old.crt\n",
+        )
+        self.config.load(["--config", filename])
+        self.config.write()
+
+        options = ConfigParser()
+        options.read(filename)
+        self.assertEqual(options.get("client", "ssl_ca"), "/path/to/new.crt")
+        self.assertEqual(
+            options.get("client", "ssl_public_key"),
+            "/path/to/old.crt",
+        )
+
+    def test_get_ssl_ca(self):
+        self.config.load([], accept_nonexistent_default_config=True)
+        cases = [
+            (None, None, None),
+            (None, "", ""),
+            (None, "/old.crt", "/old.crt"),
+            ("", "/old.crt", "/old.crt"),
+            ("/new.crt", None, "/new.crt"),
+            ("/new.crt", "/old.crt", "/new.crt"),
+        ]
+        for ssl_ca, ssl_public_key, expected in cases:
+            self.config.ssl_ca = ssl_ca
+            self.config.ssl_public_key = ssl_public_key
+            self.assertEqual(self.config.get_ssl_ca(), expected)
+
+    def test_no_deprecation_warning_for_ssl_ca(self):
+        self.config.load(
+            ["--ssl-ca", "/path/to/ca.crt"],
+            accept_nonexistent_default_config=True,
+        )
+        self.config.warn_deprecated_options()
+        self.assertEqual(self.logfile.getvalue(), "")
+
+    def test_warn_ssl_public_key_ignored_when_ssl_ca_is_set(self):
+        self.config.load(
+            ["--ssl-ca", "/path/to/new.crt", "-k", "/path/to/old.crt"],
+            accept_nonexistent_default_config=True,
+        )
+        self.config.warn_deprecated_options()
+        self.assertIn(
+            "Both ssl_ca and the deprecated ssl_public_key options are set. "
+            "Using ssl_ca and ignoring ssl_public_key.",
+            self.logfile.getvalue(),
+        )
 
     def test_ignore_sigint_option(self):
         """Ensure options.ignore_sigint option can be read by parse_args."""
