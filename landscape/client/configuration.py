@@ -673,16 +673,18 @@ def check_script_users(config):
 
 def decode_base64_ssl_public_certificate(config):
     """
-    Decode base64 encoded SSL certificate and push that back into place in the
-    config object.
+    Decode base64 encoded SSL CA certificates and push them back into place
+    in the config object.
     """
-    # WARNING: ssl_public_certificate is misnamed, it's not the key of the
-    # certificate, but the actual certificate itself.
-    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
-        decoded_cert = base64.decodebytes(
-            config.ssl_public_key[7:].encode("ascii"),
-        )
-        config.ssl_public_key = store_public_key_data(config, decoded_cert)
+    for option in ("ssl_ca", "ssl_public_key"):
+        value = getattr(config, option)
+        if value and value.startswith("base64:"):
+            decoded_cert = base64.decodebytes(value[7:].encode("ascii"))
+            setattr(
+                config,
+                option,
+                store_public_key_data(config, decoded_cert, option),
+            )
 
 
 def setup(config) -> Identity:
@@ -754,7 +756,7 @@ def bootstrap_tree(config):
     BootstrapList(bootstrap_list).bootstrap()
 
 
-def store_public_key_data(config, certificate_data):
+def store_public_key_data(config, certificate_data, option="ssl_public_key"):
     """
     Write out the data from the SSL certificate provided to us, either from a
     bootstrap.conf file, or from EC2-style user-data.
@@ -762,12 +764,13 @@ def store_public_key_data(config, certificate_data):
     @param config:  The L{BrokerConfiguration} object in use.
     @param certificate_data: a string of data that represents the contents of
     the file to be written.
-    @return the L{BrokerConfiguration} object that was passed in, updated to
-    reflect the path of the ssl_public_key file.
+    @param option: the name of the option the certificate was given for,
+    used as the file suffix.
+    @return the path of the written certificate file.
     """
     key_filename = os.path.join(
         config.data_path,
-        os.path.basename(config.get_config_filename() + ".ssl_public_key"),
+        os.path.basename(config.get_config_filename() + "." + option),
     )
     print_text(f"Writing SSL CA certificate to {key_filename}...")
     create_binary_file(key_filename, certificate_data)
@@ -797,7 +800,7 @@ def attempt_registration(
             registration_info = register(
                 client_info,
                 config.url,
-                cainfo=config.ssl_public_key,
+                cainfo=config.get_ssl_ca(),
                 http_client=config.http_client,
             )
 

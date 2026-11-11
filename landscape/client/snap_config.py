@@ -3,16 +3,20 @@
 import os
 
 
-def update_ssl_cert(cert: str) -> str:
+def update_ssl_cert(cert: str, filename: str = "ssl-public-key.crt") -> str:
     cert_path = os.path.join(os.getenv("SNAP_COMMON"), "etc/ssl/certs")
     if not os.path.isdir(cert_path):
         os.makedirs(cert_path)
 
-    cert_path = os.path.join(cert_path, "ssl-public-key.crt")
+    cert_path = os.path.join(cert_path, filename)
     with open(cert_path, "w") as f:
         f.write(cert)
 
     return str(cert_path)
+
+
+def update_ssl_ca_cert(cert: str) -> str:
+    return update_ssl_cert(cert, "ssl-ca.crt")
 
 
 # Each entry maps a snap config key to a landscape config key,

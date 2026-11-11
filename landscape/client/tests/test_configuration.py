@@ -1567,6 +1567,47 @@ registration_key = shared-secret
             10,
         )
 
+    @mock.patch(
+        "landscape.client.configuration.ClientRegistrationInfo.from_identity",
+    )
+    @mock.patch("landscape.client.configuration.restart_client")
+    @mock.patch("landscape.client.configuration.set_secure_id")
+    @mock.patch("landscape.client.configuration.register")
+    @mock.patch("landscape.client.configuration.setup")
+    def test_register_prefers_ssl_ca(
+        self,
+        mock_setup,
+        mock_register,
+        mock_set_secure_id,
+        mock_restart_client,
+        mock_client_info,
+    ):
+        mock_register.return_value = RegistrationInfo(
+            10,
+            "fake-secure-id",
+            "fake-server-uuid",
+        )
+
+        self.assertRaises(
+            SystemExit,
+            main,
+            [
+                "--silent",
+                "-c",
+                self.make_working_config(),
+                "--ssl-ca",
+                "/path/to/new.crt",
+                "--ssl-public-key",
+                "/path/to/old.crt",
+            ],
+            print=noop_print,
+        )
+
+        self.assertEqual(
+            mock_register.call_args.kwargs["cainfo"],
+            "/path/to/new.crt",
+        )
+
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.attempt_registration")
     @mock.patch(
@@ -2129,6 +2170,48 @@ registration_key = shared-secret
         options = ConfigParser()
         options.read(config_filename)
         self.assertEqual(options.get("client", "ssl_public_key"), key_filename)
+
+    @mock.patch("landscape.client.configuration.print_text")
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_base64_ssl_ca_and_ssl_public_key_are_exported_separately(
+        self,
+        mock_serviceconfig,
+        mock_print_text,
+    ):
+        data_path = self.makeDir()
+        config_filename = self.makeFile(f"[client]\ndata_path={data_path}")
+        prefix = os.path.join(data_path, os.path.basename(config_filename))
+
+        config = self.get_config(
+            [
+                "--silent",
+                "-c",
+                config_filename,
+                "-u",
+                "url",
+                "-a",
+                "account",
+                "-t",
+                "title",
+                "--ssl-ca",
+                "base64:TmV3IENB",
+                "--ssl-public-key",
+                "base64:T2xkIENB",
+            ],
+        )
+        config.data_path = data_path
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+        for option, contents in (
+            ("ssl_ca", "New CA"),
+            ("ssl_public_key", "Old CA"),
+        ):
+            key_filename = f"{prefix}.{option}"
+            with open(key_filename) as fh:
+                self.assertEqual(contents, fh.read())
+            self.assertEqual(options.get("client", option), key_filename)
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_normal_ssl_public_key_is_not_exported_to_file(

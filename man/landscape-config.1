@@ -86,9 +86,16 @@ The title of this computer.
 The server URL to connect to (default: 'https://landscape.canonical.com/message-system').
 .TP
 .B
+\fB--ssl-ca\fP=SSL_CA
+The CA certificate used to verify the server.
+Only used if the given server URL is https. Takes
+precedence over \fB--ssl-public-key\fP.
+.TP
+.B
 \fB-k\fP SSL_PUBLIC_KEY, \fB--ssl-public-key\fP=SSL_PUBLIC_KEY
-Deprecated. The CA certificate used to verify the server.
-Only used if the given server URL is https.
+Deprecated: use \fB--ssl-ca\fP instead. The CA certificate used to
+verify the server. Only used if the given server
+URL is https.
 .TP
 .B
 \fB--exchange-interval\fP=INTERVAL

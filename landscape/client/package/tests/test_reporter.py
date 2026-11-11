@@ -845,6 +845,7 @@ class PackageReporterAptTest(LandscapeTest):
         """
 
         self.config.url = "http://fake.url/path/message-system/"
+        self.config.ssl_ca = "/some/ca"
         self.config.ssl_public_key = "/some/key"
 
         # Fake uuid, codename and arch
@@ -860,7 +861,7 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter.fetch_hash_id_db()
         mock_fetch_async.assert_called_once_with(
             hash_id_db_url,
-            cainfo=self.config.ssl_public_key,
+            cainfo="/some/ca",
             proxy=None,
         )
 
