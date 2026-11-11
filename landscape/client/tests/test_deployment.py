@@ -340,6 +340,35 @@ class ConfigurationTest(LandscapeTest):
         options = self.parser.parse_args([])
         self.assertEqual(options.ssl_public_key, None)
 
+    def test_warn_deprecated_ssl_public_key_from_command_line(self):
+        self.config.load(
+            ["-k", "/path/to/ca.crt"],
+            accept_nonexistent_default_config=True,
+        )
+        self.config.warn_deprecated_options()
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            self.logfile.getvalue(),
+        )
+        self.assertEqual(self.config.ssl_public_key, "/path/to/ca.crt")
+
+    def test_warn_deprecated_ssl_public_key_from_config_file(self):
+        filename = self.makeFile("[client]\nssl_public_key = /path/to/ca.crt\n")
+        self.config.load(["--config", filename])
+        self.config.warn_deprecated_options()
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            self.logfile.getvalue(),
+        )
+        self.assertEqual(self.config.ssl_public_key, "/path/to/ca.crt")
+
+    def test_no_deprecation_warning_for_unset_ssl_public_key(self):
+        self.config.load([], accept_nonexistent_default_config=True)
+        for value in (None, ""):
+            self.config.ssl_public_key = value
+            self.config.warn_deprecated_options()
+        self.assertEqual(self.logfile.getvalue(), "")
+
     def test_ignore_sigint_option(self):
         """Ensure options.ignore_sigint option can be read by parse_args."""
         options = self.parser.parse_args(["--ignore-sigint"])

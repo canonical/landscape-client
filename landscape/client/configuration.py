@@ -965,9 +965,10 @@ def main(args, print=print):  # noqa: C901
         config.log_dir,
         config.log_level,
         "landscape-config",
-        config.quiet,
+        config.quiet or config.show or config.show_json,
     )
     config.warn_out_of_bounds_intervals()
+    config.warn_deprecated_options()
 
     if config.skip_registration and config.force_registration:
         sys.exit(

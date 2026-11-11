@@ -152,6 +152,14 @@ class Configuration(BaseConfiguration):
                     f"{maximum}. Using {maximum} seconds instead.",
                 )
 
+    def warn_deprecated_options(self):
+        """Log a warning when a deprecated option is in use."""
+        if self.ssl_public_key:
+            warning(
+                "The ssl_public_key option (-k/--ssl-public-key) is deprecated "
+                "and will be removed in a future release.",
+            )
+
     def interval_help(self, name, description, default):
         """Return help text for an interval option, including its bounds."""
         bounds = INTERVAL_BOUNDS[name]
@@ -190,7 +198,7 @@ class Configuration(BaseConfiguration):
         parser.add_argument(
             "-k",
             "--ssl-public-key",
-            help="The ssl-public-key is a CA certificate that verifies the server."
+            help="Deprecated: the CA certificate used to verify the server. "
             "Only used if the given URL is https.",
         )
         parser.add_argument(

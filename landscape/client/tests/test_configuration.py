@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import textwrap
 import unittest
@@ -38,7 +39,8 @@ from landscape.client.registration import RegistrationInfo
 from landscape.client.serviceconfig import ServiceConfigException
 from landscape.client.tests.helpers import LandscapeTest
 from landscape.lib.fetch import HTTPCodeError, TransportError
-from landscape.lib.fs import read_binary_file
+from landscape.lib.fs import read_binary_file, read_text_file
+from landscape.lib.logging import init_app_logging
 from landscape.lib.persist import Persist
 from landscape.lib.testing import EnvironSaverHelper
 
@@ -1131,6 +1133,24 @@ registration_key = shared-secret
             print=noop_print,
         )
         mock_register.assert_not_called()
+
+    @mock.patch("landscape.client.configuration.setup")
+    def test_main_warns_when_ssl_public_key_is_set(self, mock_setup):
+        main(
+            [
+                "-c",
+                self.make_working_config(),
+                "--ssl-public-key",
+                "/path/to/ca.crt",
+                "--skip-registration",
+                "--silent",
+            ],
+            print=noop_print,
+        )
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            self.logfile.getvalue(),
+        )
 
     @mock.patch("landscape.client.configuration.restart_client")
     @mock.patch("landscape.client.configuration.sys.exit")
@@ -2537,6 +2557,41 @@ class ConfigurationDumpTest(LandscapeTest):
         )
         fake_config_dump.assert_called_once()
         self.assertEqual(0, exception.code)
+
+    @mock.patch("sys.stdout", new_callable=StringIO)
+    def test_show_json_with_deprecated_ssl_public_key(self, stdout):
+        config_filename = self.makeFile("[client]\nssl_public_key = /path/to/ca.crt\n")
+        log_dir = self.makeDir()
+        logger = logging.getLogger()
+        original_handlers = logger.handlers[:]
+        original_level = logger.level
+
+        def cleanup_logging():
+            for handler in logger.handlers[:]:
+                if handler not in original_handlers:
+                    logger.removeHandler(handler)
+                    handler.close()
+            logger.setLevel(original_level)
+
+        self.addCleanup(cleanup_logging)
+        with mock.patch(
+            "landscape.client.configuration.init_app_logging",
+            side_effect=init_app_logging,
+        ):
+            exception = self.assertRaises(
+                SystemExit,
+                main,
+                ["--config", config_filename, "--log-dir", log_dir, "--show-json"],
+            )
+
+        self.assertEqual(0, exception.code)
+        self.assertEqual(
+            json.loads(stdout.getvalue())["ssl_public_key"], "/path/to/ca.crt"
+        )
+        self.assertIn(
+            "ssl_public_key option (-k/--ssl-public-key) is deprecated",
+            read_text_file(os.path.join(log_dir, "landscape-config.log")),
+        )
 
 
 class SetSecureIdTest(LandscapeTest):
