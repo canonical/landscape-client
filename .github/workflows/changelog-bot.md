@@ -24,12 +24,11 @@ permissions:
 # the documentation repo (all branches) for the shared release-notes PR.
 checkout:
   - fetch-depth: 0
+  # canonical/landscape-documentation is a public repo, so the checkout needs
+  # no token.
   - repository: canonical/landscape-documentation
     path: ./landscape-documentation
     fetch: ["*"]
-    # Only used to fetch the docs repo's refs at setup; contents:read on
-    # canonical/landscape-documentation is enough.
-    github-token: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
 
 engine:
   id: copilot
