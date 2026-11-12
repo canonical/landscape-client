@@ -20,11 +20,10 @@ permissions:
 
 # The default checkout is shallow (fetch-depth 1) with no tags, which makes the
 # agent see only the latest commit. Fetch full history and tags so it can diff
-# against the last release and read the commit log.
+# against the last release and read the commit log. A second checkout fetches
+# the documentation repo (all branches) for the shared release-notes PR.
 checkout:
   - fetch-depth: 0
-  # The docs repo is checked out alongside so the agent can draft user-facing
-  # release notes in the shared docs PR (see the prompt below).
   - repository: canonical/landscape-documentation
     path: ./landscape-documentation
     fetch: ["*"]
@@ -59,16 +58,31 @@ safe-outputs:
     allowed-repos: ["canonical/landscape-documentation"]
     preserve-branch-name: true
     recreate-ref: true
+    # The bot only ever prepends to debian/changelog, bumps the version
+    # constants in landscape/__init__.py, or edits release-notes pages in the
+    # docs repo; the handler rejects any other path outright.
+    allowed-files: ["debian/changelog", "landscape/__init__.py", "docs/reference/release-notes/*.md"]
+    # gh-aw allowed-files filters by path only, not diff status, so "prepend a
+    # new block, never rewrite existing changelog content" for debian/changelog
+    # is enforced by the prompt, not the handler.
   push-to-pull-request-branch:
     target: "*"
     target-repo: canonical/landscape-documentation
     required-labels: [changelog, automation]
+    # Docs PR updates may only touch release-notes pages (including index.md).
+    allowed-files: ["docs/reference/release-notes/*.md"]
     max: 1
 ---
 
 # Biweekly changelog update
 
-You maintain the Debian changelog for Landscape Client. Your job is to draft a new release block summarizing recent user-facing changes and open a pull request with it.
+You maintain the Debian changelog for Landscape Client. Your job is to draft a new release block summarizing recent user-facing changes and open a pull request with it. You also maintain the Landscape Client island in the shared docs release-notes pull request (see "Docs release notes (shared PR)" below).
+
+## Hard prohibitions
+
+- NEVER edit, reformat, or delete any existing `debian/changelog` block; release blocks are historical records. You only ever PREPEND one new block at the top of the file.
+- In this repository, only ever touch `debian/changelog` and `landscape/__init__.py`. In the `./landscape-documentation` checkout, only ever touch release-notes pages, and only inside your own island markers.
+- These limits are mechanically enforced by the pull-request handlers: any other path is rejected from the delivered patch outright.
 
 ## Biweekly gate
 
@@ -84,23 +98,33 @@ This run was triggered by the `${{ github.event_name }}` event. Use that value l
 1. The changelog lives at `debian/changelog`. Read its top block to find the most recent version, which looks like `landscape-client (26.08.1-0landscape0) jammy; urgency=medium`.
 2. Determine the last release point with `git describe --tags --abbrev=0 --match '[0-9][0-9].[0-9][0-9]*' --exclude 'import/*' --exclude 'applied/*'`. Release tags look like `26.08.1` or `26.08-beta.4` (note: tags use a hyphen where the changelog uses a tilde). The `--exclude` flags are required because this repo carries gbp import tags under the `import/*` and `applied/*` namespaces that must not be mistaken for releases. If `git describe` fails, fall back to the version parsed from the top changelog block.
 3. Collect commit subjects since that point with `git log <last>..HEAD --no-merges --pretty=%s`.
+4. Deduplicate against the top changelog block. A release pull request can be merged before its tag is pushed, so the tag from step 2 sometimes lags `debian/changelog` by one release and step 3 then re-collects commits that are already released per the changelog. For each collected commit, compare its subject with every bullet in the TOP block of `debian/changelog`: normalize both sides first (drop the conventional-commit type prefix and any `(scope)`, `(#1234)`, Jira, and `(LP: #NNNN)` references, then compare case-insensitively). Drop the commits that already have a matching bullet. If nothing remains, stop and make no changes.
 
 ## Select user-facing commits only
 
-Include only conventional commits that a Landscape administrator would notice:
+Include only commits that a Landscape administrator would notice. Commit subjects in this repo are conventional commits; match type prefixes case-insensitively and use your judgment for non-conforming subjects.
 
 - **Include**: `feat:`, `fix:`, `perf:`, and any breaking change (a `!` before the colon, e.g. `feat!:` / `fix!:`).
 - **Maybe Include**: `refactor: ` commits, only if they are user-facing.
 - **Exclude**: `chore:`, `ci:`, `test:`, `build:`, `docs:`, and `style:`, commits,
-  plus anything that only touches tooling, tests, or CI.
+  plus anything that only touches tooling, tests, or CI, and any dependency bumps.
+
+Breaking changes are not always flagged in the subject. For every selected commit, also inspect the full commit message with `git show -s --format=%B <sha>` and look for `BREAKING CHANGE:` or `BREAKING-CHANGE:` footers. A commit carrying such a footer is a breaking change even when its subject has no `!` — classify it as breaking and note the breaking nature in the docs island bullet.
 
 Add each selected commit's subject line, including its type prefix and any `(LP: #NNNN)` Launchpad references, but excluding any `(scope)` after the type prefix. Proofread and correct any obvious spelling or grammar errors. Remove Jira issue references such as `LNDENG-5678` wherever they occur in the subject, and strip any trailing GitHub pull request reference such as ` (#1234)`. Do **not** strip `(LP: #NNNN)` references. If there are no user-facing commits, stop and make no changes.
+
+## Review the commits
+
+Flag-only: never edit or delete existing changelog content, and never silently drop an ambiguous commit. List every flag under a `Changelog entries to review` heading in the pull request body, one bullet per commit with the reason and evidence (commit SHA, PR links). If no pull request is opened, report the flags in your run summary instead — never open a pull request just to report flags.
+
+- **Fix for an unreleased regression**: for a `fix:` commit F, take the hunks F modified (`git show -U0 F`) and run `git blame --porcelain -L <start>,<end> F^ -- <file>` to find the commits that introduced those lines. If they ALL fall inside your scan window (i.e. after the last release point), the bug never shipped: drop the commit from the changelog block and the docs island, and flag it. A PR title or body that references another PR merged in the same window is supporting evidence. If the blame results are mixed, keep the commit in the block and mark the flag "possible", not certain.
+- **No pull request reference**: the subject has no trailing ` (#1234)`, so its coverage cannot be cross-checked against a merged PR. Still include the commit if it is user-facing, but flag it so a human can confirm.
 
 ## Sort the commits
 
 Group the commits by their type. Adhere to the following order.
 
-- Breaking changes (!)
+- Breaking changes (a `!` in the subject or a `BREAKING CHANGE:`/`BREAKING-CHANGE:` footer)
 - `feat`
 - `fix`
 - `perf`
@@ -142,20 +166,24 @@ If for some reason the existing version is older than anticipated, still update 
 
 ## Open the pull request
 
-Open a pull request with the change. Use a title like `release for 26.08~beta.<N+1> for jammy` (the `build: ` prefix is added automatically) and a body that lists the included commits, explains the chosen next version, and notes that only user-facing changes were selected.
+Open a pull request with the change. Use a title like `release 26.08~beta.<N+1> for jammy` (the `build: ` prefix is added automatically, matching this repo's release-PR titles such as `build: release 26.08~beta.4 for jammy`) and a body that lists the included commits, explains the chosen next version, notes that only user-facing changes were selected, and includes the `Changelog entries to review` heading when any commits were flagged. If no commits survived selection and review, do nothing — do not open an empty pull request.
 
 ## Docs release notes (shared PR)
 
-In addition to the Debian changelog, you maintain one island in ONE SHARED pull request against `canonical/landscape-documentation` that drafts the user-facing release notes for the in-development Landscape release. NEVER open a separate per-repo docs PR.
+In addition to the Debian changelog, you maintain one island in ONE SHARED pull request against `canonical/landscape-documentation` that drafts the user-facing release notes for the in-development Landscape release. NEVER open a separate per-repo docs PR: find the shared PR and push to it.
+
+The docs work happens in the separate `./landscape-documentation` checkout. The hard prohibitions above apply to this repository (landscape-client) only; editing the release-notes page inside your own island in the docs checkout is expected and allowed.
+
+Your island content derives from ALL user-facing commits selected above, excluding only the commits dropped in "Review the commits" as certain fixes for unreleased regressions.
 
 1. Determine the in-development Landscape release `YY.MM`: Landscape releases are `YY.04` and `YY.10`. From today's date, the in-development release is the next boundary strictly in the future (before April -> `YY.04`; before October -> `YY.10`; otherwise `(YY+1).04`). As of November 2026 this is **27.04** (betas are underway), so the target page is `docs/reference/release-notes/27.04-release-notes.md`.
 2. Find the shared docs PR: use the GitHub tools to list open PRs in `canonical/landscape-documentation` with labels `changelog` and `automation` (title starts with `build: `). If one exists, this is THE docs PR — use it regardless of which `YY.MM` page it targets.
 3. If a docs PR exists:
-   - In the `./landscape-documentation` checkout, check out that PR's head branch (PR refs were fetched via the wildcard fetch; e.g. `git checkout <branch>` after identifying it, or `git fetch origin pull/<N>/head:<branch>`).
+   - In the `./landscape-documentation` checkout, check out that PR's head branch (branches were fetched via the wildcard fetch at setup: `git checkout <branch>`). If the branch is not among the fetched refs, skip the docs work for this run — the agent has no credentials to fetch it.
+   - Other Landscape bots push to this same shared branch, so the checkout (fetched at setup time) may be stale and another bot may push while you work. The agent environment has NO git credentials — `git fetch` fails here, so NEVER attempt to fetch or rebase. Work from the PR branch ref as fetched at setup; keep every edit strictly inside your own island markers so it applies cleanly over the other bots' island updates. `push_to_pull_request_branch` applies your patch to the branch's live tip in a credentialed job; if a concurrent push made it conflict, the delivery fails safely — do not retry, the next run redoes the work. NEVER force-push over another bot's commits.
    - Update ONLY your own island (see below). If the release-notes page for the in-development version does not exist on that branch, create it from the template below and add it to the toctree in `docs/reference/release-notes/index.md` (newest non-LTS page goes directly under the LTS entries, matching existing ordering).
-   - Before committing, re-sync onto the branch's latest tip: `git fetch origin pull/<N>/head` (or `git fetch origin <branch>`), then rebase/reset your work onto the fetched tip so the push is a fast-forward. Several changelog bots update this same shared branch.
    - Commit in the docs checkout and deliver via `push_to_pull_request_branch` with `pull_request_number` set to the docs PR number.
-4. If no docs PR exists: skip the docs release-notes work for this run entirely. You NEVER create the shared docs PR — only landscape-server's changelog bot creates it, which avoids several bots racing to create the same PR. (Your in-repo changelog work above is unaffected.)
+4. If no docs PR exists: skip the docs release-notes work for this run entirely — make no changes in the `./landscape-documentation` checkout. You NEVER create the shared docs PR — only landscape-server's changelog bot creates it, which avoids several bots racing to create the same PR. (Your in-repo changelog work above is unaffected.)
 5. If you have no user-facing changes this cycle, leave your island untouched; do not create or update the docs PR. (Your own-repo changelog PR logic is unaffected.)
 
 ### Your island
