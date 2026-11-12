@@ -33,7 +33,7 @@ checkout:
 
 engine:
   id: copilot
-  model: sonnet
+  model: kimi-k3
 
 # Only the shell commands the agent needs to inspect history and format dates.
 tools:
