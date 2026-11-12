@@ -27,7 +27,9 @@ checkout:
   - repository: canonical/landscape-documentation
     path: ./landscape-documentation
     fetch: ["*"]
-    github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+    # Only used to fetch the docs repo's refs at setup; contents:read on
+    # canonical/landscape-documentation is enough.
+    github-token: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
 
 engine:
   id: copilot
@@ -41,31 +43,31 @@ tools:
     - "safeoutputs"
   edit:
 
-# The agent never pushes directly; its file edits are turned into a pull request.
-# One token governs both PR handlers (gh-aw requirement when two handlers touch
-# the same repo). COPILOT_GITHUB_TOKEN needs contents:write and
-# pull-requests:write on canonical/landscape-documentation for the cross-repo
-# docs PR.
+# The agent never pushes directly; its file edits are turned into pull
+# requests. The create handler only ever opens the own-repo changelog PR, so
+# it uses the default GITHUB_TOKEN (like landscape-server's merged bot). The
+# push handler delivers island updates to the shared docs PR in
+# canonical/landscape-documentation, so it gets LANDSCAPE_DOCS_TOKEN, which
+# needs contents:write and pull-requests:write on that repo.
 safe-outputs:
-  github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
   create-pull-request:
     title-prefix: "build: "
     labels: [changelog, automation]
     team-reviewers: [canonical/landscape]
     draft: false
     if-no-changes: ignore
-    max: 2                      # own-repo changelog PR + docs PR
-    allowed-repos: ["canonical/landscape-documentation"]
+    max: 1                      # only ever the own-repo changelog PR
     preserve-branch-name: true
     recreate-ref: true
-    # The bot only ever prepends to debian/changelog, bumps the version
-    # constants in landscape/__init__.py, or edits release-notes pages in the
-    # docs repo; the handler rejects any other path outright.
-    allowed-files: ["debian/changelog", "landscape/__init__.py", "docs/reference/release-notes/*.md"]
+    # The bot only ever prepends to debian/changelog or bumps the version
+    # constants in landscape/__init__.py; the handler rejects any other path
+    # outright.
+    allowed-files: ["debian/changelog", "landscape/__init__.py"]
     # gh-aw allowed-files filters by path only, not diff status, so "prepend a
     # new block, never rewrite existing changelog content" for debian/changelog
     # is enforced by the prompt, not the handler.
   push-to-pull-request-branch:
+    github-token: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
     target: "*"
     target-repo: canonical/landscape-documentation
     required-labels: [changelog, automation]
@@ -170,21 +172,21 @@ Open a pull request with the change. Use a title like `release 26.08~beta.<N+1> 
 
 ## Docs release notes (shared PR)
 
-In addition to the Debian changelog, you maintain one island in ONE SHARED pull request against `canonical/landscape-documentation` that drafts the user-facing release notes for the in-development Landscape release. NEVER open a separate per-repo docs PR: find the shared PR and push to it.
+In addition to the Debian changelog, you maintain one island in ONE SHARED pull request against `canonical/landscape-documentation` that drafts the user-facing release notes for the in-development Landscape release. That shared PR is created centrally: a scheduled `release-notes-draft` workflow in canonical/landscape-documentation opens it weekly (based on `develop`, pre-seeded with all eight islands, labeled `changelog` + `automation`, titled `build: draft release notes for Landscape YY.MM`). You NEVER create a docs PR yourself — find the shared PR and push your island to it, or skip the docs work if none is open.
 
 The docs work happens in the separate `./landscape-documentation` checkout. The hard prohibitions above apply to this repository (landscape-client) only; editing the release-notes page inside your own island in the docs checkout is expected and allowed.
 
 Your island content derives from ALL user-facing commits selected above, excluding only the commits dropped in "Review the commits" as certain fixes for unreleased regressions.
 
 1. Determine the in-development Landscape release `YY.MM`: Landscape releases are `YY.04` and `YY.10`. From today's date, the in-development release is the next boundary strictly in the future (before April -> `YY.04`; before October -> `YY.10`; otherwise `(YY+1).04`). As of November 2026 this is **27.04** (betas are underway), so the target page is `docs/reference/release-notes/27.04-release-notes.md`.
-2. Find the shared docs PR: use the GitHub tools to list open PRs in `canonical/landscape-documentation` with labels `changelog` and `automation` (title starts with `build: `). If one exists, this is THE docs PR — use it regardless of which `YY.MM` page it targets.
+2. Find the shared docs PR: use the GitHub tools to list open PRs in `canonical/landscape-documentation` with labels `changelog` and `automation` (titled `build: draft release notes for Landscape YY.MM`). If one exists, this is THE docs PR — use it regardless of which `YY.MM` page it targets.
 3. If a docs PR exists:
    - In the `./landscape-documentation` checkout, check out that PR's head branch (branches were fetched via the wildcard fetch at setup: `git checkout <branch>`). If the branch is not among the fetched refs, skip the docs work for this run — the agent has no credentials to fetch it.
    - Other Landscape bots push to this same shared branch, so the checkout (fetched at setup time) may be stale and another bot may push while you work. The agent environment has NO git credentials — `git fetch` fails here, so NEVER attempt to fetch or rebase. Work from the PR branch ref as fetched at setup; keep every edit strictly inside your own island markers so it applies cleanly over the other bots' island updates. `push_to_pull_request_branch` applies your patch to the branch's live tip in a credentialed job; if a concurrent push made it conflict, the delivery fails safely — do not retry, the next run redoes the work. NEVER force-push over another bot's commits.
    - Update ONLY your own island (see below). If the release-notes page for the in-development version does not exist on that branch, create it from the template below and add it to the toctree in `docs/reference/release-notes/index.md` (newest non-LTS page goes directly under the LTS entries, matching existing ordering).
    - Commit in the docs checkout and deliver via `push_to_pull_request_branch` with `pull_request_number` set to the docs PR number.
-4. If no docs PR exists: skip the docs release-notes work for this run entirely — make no changes in the `./landscape-documentation` checkout. You NEVER create the shared docs PR — only landscape-server's changelog bot creates it, which avoids several bots racing to create the same PR. (Your in-repo changelog work above is unaffected.)
-5. If you have no user-facing changes this cycle, leave your island untouched; do not create or update the docs PR. (Your own-repo changelog PR logic is unaffected.)
+4. If no docs PR exists, skip the docs release-notes work for this run entirely — make no changes in the `./landscape-documentation` checkout. The shared PR is created weekly by the `release-notes-draft` workflow in canonical/landscape-documentation; if none is open when you run (for example before that workflow's next weekly firing), the next run picks the work up. NEVER create the shared docs PR yourself — no changelog bot does. (Your in-repo changelog work above is unaffected.)
+5. If you have no user-facing changes this cycle, leave your island untouched; do not update the docs PR. (Your own-repo changelog PR logic is unaffected.)
 
 ### Your island
 
