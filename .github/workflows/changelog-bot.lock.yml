@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v4","frontmatter_hash":"cbdc62d234c57beec323121f1c08b8d0c760fb283177a39ed03ee6dec3ac8222","body_hash":"127edf7413aec56f54651c8d76321f76e36f8df791456695422a7d202791da2f","compiler_version":"v0.89.21","strict":true,"agent_id":"copilot","agent_model":"sonnet","engine_versions":{"copilot":"1.0.87"}}
-# gh-aw-manifest: {"version":1,"secrets":["COPILOT_GITHUB_TOKEN","GH_AW_CI_TRIGGER_TOKEN","GH_AW_DEFAULT_OTLP_ENDPOINT","GH_AW_DEFAULT_OTLP_HEADERS","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"3d3c42e5aac5ba805825da76410c181273ba90b1","version":"v7.0.1"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9.0.0"},{"repo":"actions/setup-node","sha":"820762786026740c76f36085b0efc47a31fe5020","version":"v7.0.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"924af5fdc64061cfbf66fb584c8b07e2ac230c60","version":"v0.89.21"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.28.23","digest":"sha256:2c78aaba1c108e130e2d6d01e4f2cca334ea04c53e6f258913ac34173fe7e3b2","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.28.23@sha256:2c78aaba1c108e130e2d6d01e4f2cca334ea04c53e6f258913ac34173fe7e3b2"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.28.23","digest":"sha256:c15c3d1208df10c5b588a3657be53742aa982ae0909d1eb1812525268794ca64","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.28.23@sha256:c15c3d1208df10c5b588a3657be53742aa982ae0909d1eb1812525268794ca64"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.28.23","digest":"sha256:02ffc56dd40158223064ef03a78c2d9717473c93723b4e403d455ea6f0b09ae0","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.28.23@sha256:02ffc56dd40158223064ef03a78c2d9717473c93723b4e403d455ea6f0b09ae0"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.4.25","digest":"sha256:9be0a86220e807a0ecc89e53d7453468f7a53fbc6b3d1efd2299025ffe01d086","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.4.25@sha256:9be0a86220e807a0ecc89e53d7453468f7a53fbc6b3d1efd2299025ffe01d086"},{"image":"ghcr.io/github/gh-aw-node","digest":"sha256:11c2c544876cdbaffefe0f7f1283b74838c209654b4934a78e23ed11f750490f","pinned_image":"ghcr.io/github/gh-aw-node@sha256:11c2c544876cdbaffefe0f7f1283b74838c209654b4934a78e23ed11f750490f"},{"image":"ghcr.io/github/github-mcp-server:v1.12.2","digest":"sha256:508a0857ec762b1ab1cece29193345b501fab1dd9d1228a7b617062954cecac6","pinned_image":"ghcr.io/github/github-mcp-server:v1.12.2@sha256:508a0857ec762b1ab1cece29193345b501fab1dd9d1228a7b617062954cecac6"}],"mcp_servers":[{"name":"github","tools":["get_commit","get_file_contents","get_latest_release","get_me","get_pull_request","get_pull_request_comments","get_pull_request_diff","get_pull_request_files","get_pull_request_review_comments","get_pull_request_reviews","get_pull_request_status","get_release_by_tag","get_tag","issue_read","list_branches","list_commits","list_issue_types","list_issues","list_pull_requests","list_releases","list_starred_repositories","list_tags","pull_request_read","search_code","search_issues","search_pull_requests","search_repositories"]},{"name":"safeoutputs","tools":["create_pull_request","missing_data","missing_tool","noop","push_to_pull_request_branch"]}]}
+# gh-aw-metadata: {"schema_version":"v4","frontmatter_hash":"4a1db5a81b754be867f6fcbeb68ea3c3399ab3296377a3aac47a50210603f811","body_hash":"ead1e8163f2a9190436c6db9388199b7b034d863a3530ad3e55555a8c9cbfd3c","compiler_version":"v0.89.21","strict":true,"agent_id":"copilot","agent_model":"sonnet","engine_versions":{"copilot":"1.0.87"}}
+# gh-aw-manifest: {"version":1,"secrets":["COPILOT_GITHUB_TOKEN","GH_AW_CI_TRIGGER_TOKEN","GH_AW_DEFAULT_OTLP_ENDPOINT","GH_AW_DEFAULT_OTLP_HEADERS","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN","LANDSCAPE_DOCS_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"3d3c42e5aac5ba805825da76410c181273ba90b1","version":"v7.0.1"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9.0.0"},{"repo":"actions/setup-node","sha":"820762786026740c76f36085b0efc47a31fe5020","version":"v7.0.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"924af5fdc64061cfbf66fb584c8b07e2ac230c60","version":"v0.89.21"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.28.23","digest":"sha256:2c78aaba1c108e130e2d6d01e4f2cca334ea04c53e6f258913ac34173fe7e3b2","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.28.23@sha256:2c78aaba1c108e130e2d6d01e4f2cca334ea04c53e6f258913ac34173fe7e3b2"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.28.23","digest":"sha256:c15c3d1208df10c5b588a3657be53742aa982ae0909d1eb1812525268794ca64","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.28.23@sha256:c15c3d1208df10c5b588a3657be53742aa982ae0909d1eb1812525268794ca64"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.28.23","digest":"sha256:02ffc56dd40158223064ef03a78c2d9717473c93723b4e403d455ea6f0b09ae0","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.28.23@sha256:02ffc56dd40158223064ef03a78c2d9717473c93723b4e403d455ea6f0b09ae0"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.4.25","digest":"sha256:9be0a86220e807a0ecc89e53d7453468f7a53fbc6b3d1efd2299025ffe01d086","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.4.25@sha256:9be0a86220e807a0ecc89e53d7453468f7a53fbc6b3d1efd2299025ffe01d086"},{"image":"ghcr.io/github/gh-aw-node","digest":"sha256:11c2c544876cdbaffefe0f7f1283b74838c209654b4934a78e23ed11f750490f","pinned_image":"ghcr.io/github/gh-aw-node@sha256:11c2c544876cdbaffefe0f7f1283b74838c209654b4934a78e23ed11f750490f"},{"image":"ghcr.io/github/github-mcp-server:v1.12.2","digest":"sha256:508a0857ec762b1ab1cece29193345b501fab1dd9d1228a7b617062954cecac6","pinned_image":"ghcr.io/github/github-mcp-server:v1.12.2@sha256:508a0857ec762b1ab1cece29193345b501fab1dd9d1228a7b617062954cecac6"}],"mcp_servers":[{"name":"github","tools":["get_commit","get_file_contents","get_latest_release","get_me","get_pull_request","get_pull_request_comments","get_pull_request_diff","get_pull_request_files","get_pull_request_review_comments","get_pull_request_reviews","get_pull_request_status","get_release_by_tag","get_tag","issue_read","list_branches","list_commits","list_issue_types","list_issues","list_pull_requests","list_releases","list_starred_repositories","list_tags","pull_request_read","search_code","search_issues","search_pull_requests","search_repositories"]},{"name":"safeoutputs","tools":["create_pull_request","missing_data","missing_tool","noop","push_to_pull_request_branch"]}]}
 # This file was automatically generated by gh-aw (v0.89.21). DO NOT EDIT. To debug this workflow, load the skill at https://github.com/github/gh-aw/blob/main/debug.md
 #
 #    ___                   _   _
@@ -32,6 +32,7 @@
 #   - GH_AW_GITHUB_MCP_SERVER_TOKEN
 #   - GH_AW_GITHUB_TOKEN
 #   - GITHUB_TOKEN
+#   - LANDSCAPE_DOCS_TOKEN
 #
 # Custom actions used:
 #   - actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -278,7 +279,7 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_PROMPT_CONTENT_0000: "<system>\n"
-          GH_AW_PROMPT_CONTENT_0001: "<safe-output-tools>\nTools: create_pull_request(max:2), push_to_pull_request_branch, missing_tool, missing_data, noop\n"
+          GH_AW_PROMPT_CONTENT_0001: "<safe-output-tools>\nTools: create_pull_request, push_to_pull_request_branch, missing_tool, missing_data, noop\n"
           GH_AW_PROMPT_CONTENT_0002: "</safe-output-tools>\n"
           GH_AW_PROMPT_CONTENT_0003: "<github-context>\nThe following GitHub context information is available for this workflow:\n{{#if github.actor}}\n- **actor**: __GH_AW_GITHUB_ACTOR__\n{{/if}}\n{{#if github.repository}}\n- **repository**: __GH_AW_GITHUB_REPOSITORY__\n{{/if}}\n{{#if github.workspace}}\n- **workspace**: __GH_AW_GITHUB_WORKSPACE__\n{{/if}}\n{{#if github.event.issue.number || (github.aw.context.item_type == 'issue' && github.aw.context.item_number)}}\n- **issue-number**: #__GH_AW_EXPR_802A9F6A__\n{{/if}}\n{{#if github.event.discussion.number || (github.aw.context.item_type == 'discussion' && github.aw.context.item_number)}}\n- **discussion-number**: #__GH_AW_EXPR_1A3A194A__\n{{/if}}\n{{#if github.event.pull_request.number || (github.aw.context.item_type == 'pull_request' && github.aw.context.item_number)}}\n- **pull-request-number**: #__GH_AW_EXPR_463A214A__\n{{/if}}\n{{#if github.event.comment.id || github.aw.context.comment_id}}\n- **comment-id**: __GH_AW_EXPR_FF1D34CE__\n{{/if}}\n{{#if github.run_id}}\n- **workflow-run-id**: __GH_AW_GITHUB_RUN_ID__\n{{/if}}\n- **checkouts**: The following repositories have been checked out and are available in the workspace:\n  - repo `__GH_AW_GITHUB_REPOSITORY__` → `__GH_AW_GITHUB_WORKSPACE__` (cwd) [full history, all branches available as remote-tracking refs]\n  - repo `canonical/landscape-documentation` → `__GH_AW_GITHUB_WORKSPACE__/landscape-documentation` [shallow clone, fetch-depth=1 (default)] [additional refs fetched: *]\n  - **Note**: The workspace path reported above may contain a separate shallow, credential-free checkout of the host repository. Use the exact checkout path shown for the repository you need. Before concluding that a branch is unavailable, confirm your working directory matches that path and inspect refs there. If the branch is not present in that checkout and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: [\"refs/pulls/open/*\"]` for all open PR refs, or `fetch: [\"main\", \"feature/my-branch\"]` for specific branches).\n  - **Warning: No git credentials are available to the agent.** Credentials are\n    intentionally removed after the checkout step for security. This means any git\n    operation that needs to authenticate to the remote will fail. In private repositories, that includes:\n    - `git fetch`, `git pull`, `git clone`, and `git push` (direct push, not via safe-output tools)\n    - Checking out or switching to a remote branch that is not already fetched\n    - Deepening a shallow clone (`git fetch --unshallow`)\n    - On-demand blob fetches in partial/blobless clones (operations on files not in the initial checkout)\n    Do NOT attempt to configure credentials, run `git credential fill`, or modify `.gitconfig` —\n    authentication will not succeed. If you encounter credential prompts or authentication errors,\n    stop immediately and report the limitation rather than spending turns trying to work around it.\n</github-context>\n\n"
           GH_AW_PROMPT_CONTENT_0004: "</system>\n"
@@ -472,10 +473,10 @@ jobs:
           persist-credentials: false
           repository: canonical/landscape-documentation
           path: ./landscape-documentation
-          token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          token: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
       - name: Fetch additional refs for canonical/landscape-documentation
         env:
-          GH_AW_FETCH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_AW_FETCH_TOKEN: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
         run: |
           header=$(printf "x-access-token:%s" "${GH_AW_FETCH_TOKEN}" | base64 -w 0)
           git -C "${{ github.workspace }}/./landscape-documentation" -c "http.extraheader=Authorization: Basic ${header}" fetch origin --depth=1 '+refs/heads/*:refs/remotes/origin/*'
@@ -486,7 +487,7 @@ jobs:
           GH_AW_CHECKOUT_MANIFEST_COUNT: "1"
           GH_AW_CHECKOUT_REPO_0: "canonical/landscape-documentation"
           GH_AW_CHECKOUT_PATH_0: "./landscape-documentation"
-          GH_AW_CHECKOUT_TOKEN_0: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_AW_CHECKOUT_TOKEN_0: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
         with:
           script: |
             const path = require('path');
@@ -522,9 +523,9 @@ jobs:
           github.event.pull_request || github.event.issue.pull_request || github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.aw_context || '{}').item_type == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN || secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN || secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
@@ -578,7 +579,8 @@ jobs:
         env:
           GH_AW_FILE_ROOT: "${{ runner.temp }}/gh-aw"
           GH_AW_FILE_CONFIG: "{\"files\":[{\"path\":\"safeoutputs/config.json\",\"content_env\":\"GH_AW_SAFE_OUTPUTS_CONFIG\"}]}"
-          GH_AW_SAFE_OUTPUTS_CONFIG: "{\"create_pull_request\":{\"allowed_files\":[\"debian/changelog\",\"landscape/__init__.py\",\"docs/reference/release-notes/*.md\"],\"allowed_repos\":[\"canonical/landscape-documentation\"],\"draft\":false,\"if_no_changes\":\"ignore\",\"labels\":[\"changelog\",\"automation\"],\"max\":2,\"max_patch_files\":100,\"max_patch_size\":4096,\"preserve_branch_name\":true,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"recreate_ref\":true,\"team_reviewers\":[\"canonical/landscape\"],\"title_prefix\":\"build: \"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"push_to_pull_request_branch\":{\"allowed_files\":[\"docs/reference/release-notes/*.md\"],\"if_no_changes\":\"warn\",\"max\":1,\"max_patch_size\":4096,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"required_labels\":[\"changelog\",\"automation\"],\"target\":\"*\",\"target-repo\":\"canonical/landscape-documentation\"},\"report_incomplete\":{}}"
+          GH_AW_SAFE_OUTPUTS_CONFIG: "{\"create_pull_request\":{\"allowed_files\":[\"debian/changelog\",\"landscape/__init__.py\"],\"draft\":false,\"if_no_changes\":\"ignore\",\"labels\":[\"changelog\",\"automation\"],\"max\":1,\"max_patch_files\":100,\"max_patch_size\":4096,\"preserve_branch_name\":true,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"recreate_ref\":true,\"team_reviewers\":[\"canonical/landscape\"],\"title_prefix\":\"build: \"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"push_to_pull_request_branch\":{\"allowed_files\":[\"docs/reference/release-notes/*.md\"],\"github-token\":\"${GH_AW_SECRET_LANDSCAPE_DOCS_TOKEN}\",\"if_no_changes\":\"warn\",\"max\":1,\"max_patch_size\":4096,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"required_labels\":[\"changelog\",\"automation\"],\"target\":\"*\",\"target-repo\":\"canonical/landscape-documentation\"},\"report_incomplete\":{}}"
+          GH_AW_SECRET_LANDSCAPE_DOCS_TOKEN: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
         with:
           script: |
             const path = require('path');
@@ -592,15 +594,10 @@ jobs:
           GH_AW_TOOLS_META_JSON: |
             {
               "description_suffixes": {
-                "create_pull_request": " CONSTRAINTS: Maximum 2 pull request(s) can be created. Title will be prefixed with \"build: \". Labels [\"changelog\" \"automation\"] will be automatically added.",
+                "create_pull_request": " CONSTRAINTS: Maximum 1 pull request(s) can be created. Title will be prefixed with \"build: \". Labels [\"changelog\" \"automation\"] will be automatically added.",
                 "push_to_pull_request_branch": " CONSTRAINTS: Maximum 1 push(es) can be made."
               },
-              "repo_params": {
-                "create_pull_request": {
-                  "description": "Target repository for this operation in 'owner/repo' format. Must be the target-repo or in the allowed-repos list.",
-                  "type": "string"
-                }
-              },
+              "repo_params": {},
               "dynamic_tools": []
             }
           GH_AW_VALIDATION_JSON: |
@@ -1085,11 +1082,12 @@ jobs:
             const { main } = require(path.join(actionsDir, 'redact_secrets.cjs'));
             await main();
         env:
-          GH_AW_SECRET_NAMES: 'COPILOT_GITHUB_TOKEN,GH_AW_GITHUB_MCP_SERVER_TOKEN,GH_AW_GITHUB_TOKEN,GITHUB_TOKEN'
+          GH_AW_SECRET_NAMES: 'COPILOT_GITHUB_TOKEN,GH_AW_GITHUB_MCP_SERVER_TOKEN,GH_AW_GITHUB_TOKEN,GITHUB_TOKEN,LANDSCAPE_DOCS_TOKEN'
           SECRET_COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           SECRET_GH_AW_GITHUB_MCP_SERVER_TOKEN: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN }}
           SECRET_GH_AW_GITHUB_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
           SECRET_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SECRET_LANDSCAPE_DOCS_TOKEN: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
       - name: Append agent step summary
         if: always()
         run: bash "${RUNNER_TEMP}/gh-aw/actions/append_agent_step_summary.sh"
@@ -1388,7 +1386,7 @@ jobs:
           GH_AW_AMBIENT_CONTEXT: ${{ needs.agent.outputs.ambient_context }}
           GH_AW_WORKFLOW_ID: "changelog-bot"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
@@ -1407,7 +1405,7 @@ jobs:
           GH_AW_DETECTION_CONCLUSION: ${{ needs.detection.outputs.detection_conclusion }}
           GH_AW_DETECTION_REASON: ${{ needs.detection.outputs.detection_reason }}
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
@@ -1424,7 +1422,7 @@ jobs:
           GH_AW_WORKFLOW_NAME: "Biweekly changelog update"
           GH_AW_WORKFLOW_SOURCE_URL: "${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/.github/workflows/changelog-bot.md"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
@@ -1441,7 +1439,7 @@ jobs:
           GH_AW_WORKFLOW_NAME: "Biweekly changelog update"
           GH_AW_WORKFLOW_SOURCE_URL: "${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/.github/workflows/changelog-bot.md"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
@@ -1497,7 +1495,7 @@ jobs:
           GH_AW_MISSING_DATA_REPORT_AS_FAILURE: "true"
           GH_AW_TIMEOUT_MINUTES: "${{ fromJSON(vars.GH_AW_DEFAULT_TIMEOUT_MINUTES || '20') }}"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
@@ -1516,7 +1514,7 @@ jobs:
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_REPORT_FAILED_JOBS: "true"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
@@ -1899,7 +1897,7 @@ jobs:
         with:
           persist-credentials: true
           fetch-depth: 0
-          token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          token: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
       - name: Checkout canonical/landscape-documentation into ./landscape-documentation
         if: (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'create_pull_request') || (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'push_to_pull_request_branch')
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1907,11 +1905,11 @@ jobs:
           persist-credentials: true
           repository: canonical/landscape-documentation
           path: ./landscape-documentation
-          token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          token: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
       - name: Fetch additional refs for canonical/landscape-documentation
         if: (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'create_pull_request') || (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'push_to_pull_request_branch')
         env:
-          GH_AW_FETCH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_AW_FETCH_TOKEN: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
         run: |
           header=$(printf "x-access-token:%s" "${GH_AW_FETCH_TOKEN}" | base64 -w 0)
           git -C "${{ github.workspace }}/./landscape-documentation" -c "http.extraheader=Authorization: Basic ${header}" fetch origin --depth=1 '+refs/heads/*:refs/remotes/origin/*'
@@ -1920,7 +1918,7 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
-          GIT_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GIT_TOKEN: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
           GH_AW_SUBREPO_0: "canonical/landscape-documentation"
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/configure_git_credentials.sh"
@@ -1946,11 +1944,11 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,s.symcb.com,s.symcd.com,security.ubuntu.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_pull_request\":{\"allowed_files\":[\"debian/changelog\",\"landscape/__init__.py\",\"docs/reference/release-notes/*.md\"],\"allowed_repos\":[\"canonical/landscape-documentation\"],\"draft\":false,\"if_no_changes\":\"ignore\",\"labels\":[\"changelog\",\"automation\"],\"max\":2,\"max_patch_files\":100,\"max_patch_size\":4096,\"preserve_branch_name\":true,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"recreate_ref\":true,\"team_reviewers\":[\"canonical/landscape\"],\"title_prefix\":\"build: \"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"push_to_pull_request_branch\":{\"allowed_files\":[\"docs/reference/release-notes/*.md\"],\"if_no_changes\":\"warn\",\"max\":1,\"max_patch_size\":4096,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"required_labels\":[\"changelog\",\"automation\"],\"target\":\"*\",\"target-repo\":\"canonical/landscape-documentation\"},\"report_incomplete\":{}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_pull_request\":{\"allowed_files\":[\"debian/changelog\",\"landscape/__init__.py\"],\"draft\":false,\"if_no_changes\":\"ignore\",\"labels\":[\"changelog\",\"automation\"],\"max\":1,\"max_patch_files\":100,\"max_patch_size\":4096,\"preserve_branch_name\":true,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"recreate_ref\":true,\"team_reviewers\":[\"canonical/landscape\"],\"title_prefix\":\"build: \"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"push_to_pull_request_branch\":{\"allowed_files\":[\"docs/reference/release-notes/*.md\"],\"github-token\":\"${{ secrets.LANDSCAPE_DOCS_TOKEN }}\",\"if_no_changes\":\"warn\",\"max\":1,\"max_patch_size\":4096,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"AGENTS.md\"],\"protected_files_policy\":\"request-review\",\"required_labels\":[\"changelog\",\"automation\"],\"target\":\"*\",\"target-repo\":\"canonical/landscape-documentation\"},\"report_incomplete\":{}}"
           GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const path = require('path');
             const actionsDir = path.join(process.env.RUNNER_TEMP, 'gh-aw', 'actions');
