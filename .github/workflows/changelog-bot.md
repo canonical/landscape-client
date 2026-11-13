@@ -1,5 +1,5 @@
 ---
-# Biweekly changelog PR bot (GitHub Agentic Workflow).
+# Weekly changelog PR bot (GitHub Agentic Workflow).
 #
 # This is the gh-aw SOURCE file. After editing, regenerate the compiled
 # GitHub Actions workflow with:
@@ -9,10 +9,8 @@
 # and commit the generated `.github/workflows/changelog-bot.lock.yml` alongside it.
 
 on:
-  # Cron cannot express "every other Saturday", so we fire every Saturday at
-  # around 12:00 UTC and the prompt gates on ISO-week parity (see the body below).
   schedule: weekly on saturday around 12:00 UTC
-  # Allow maintainers to trigger a run on demand (ignores the biweekly gate).
+  # Allow maintainers to trigger a run on demand.
   workflow_dispatch:
 
 permissions:
@@ -83,7 +81,7 @@ safe-outputs:
     max: 1
 ---
 
-# Biweekly changelog update
+# Weekly changelog update
 
 You maintain the Debian changelog for Landscape Client. Your job is to draft a new release block summarizing recent user-facing changes and open a pull request with it. You also maintain the Landscape Client island in the shared docs release-notes pull request (see "Docs release notes (shared PR)" below).
 
@@ -92,15 +90,6 @@ You maintain the Debian changelog for Landscape Client. Your job is to draft a n
 - NEVER edit, reformat, or delete any existing `debian/changelog` block; release blocks are historical records. You only ever PREPEND one new block at the top of the file.
 - In this repository, only ever touch `debian/changelog` and `landscape/__init__.py`. In the `./landscape-documentation` checkout, only ever touch release-notes pages, and only inside your own island markers.
 - These limits are mechanically enforced by the pull-request handlers: any other path is rejected from the delivered patch outright.
-
-## Biweekly gate
-
-This workflow is scheduled every Saturday but should only act every **other** Saturday. Releases publish on **odd** ISO weeks.
-
-This run was triggered by the `${{ github.event_name }}` event. Use that value literally to decide whether the gate applies:
-
-1. If the triggering event is `workflow_dispatch`, always proceed regardless of the week number (manual runs bypass the biweekly gate entirely).
-2. Otherwise (a `schedule` run), run `date +%V` to get the current ISO week number. If that week number is **even**, stop immediately and make no changes — do not open a pull request. Only proceed on **odd** weeks.
 
 ## Gather the commits
 
