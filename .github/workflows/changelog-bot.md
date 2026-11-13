@@ -31,12 +31,12 @@ checkout:
     fetch: ["*"]
 
 engine:
-  id: pi
-  # Inference runs on the Gemini gateway via GEMINI_API_KEY. The OpenRouter
-  # route was dropped: its vendored model ids (moonshotai/kimi-k3) cannot be
-  # expressed under gh-aw's one-slash model grammar (github/gh-aw#77514), and
-  # the bare id fails the gateway availability check.
-  model: google/gemini-3.5-flash
+  id: gemini
+  # The native Gemini engine uses GEMINI_API_KEY directly and takes an exact
+  # model id, avoiding the pi engine's model-grammar rejection of vendored
+  # OpenRouter ids (github/gh-aw#77514). Gemini does not resolve gh-aw model
+  # aliases, so this must be an exact id.
+  model: gemini-3.5-flash
   env:
     GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
