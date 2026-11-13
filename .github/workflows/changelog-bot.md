@@ -14,6 +14,12 @@ on:
   schedule: weekly on saturday around 12:00 UTC
   # Allow maintainers to trigger a run on demand (ignores the biweekly gate).
   workflow_dispatch:
+  # TEMPORARY: exercise the workflow end to end on this PR before merge. Revert
+  # before merging. forks: ["*"] lets the PR run with repo secrets, matching the
+  # DISA STIG evaluator's pull_request trigger.
+  pull_request:
+    types: [synchronize]
+    forks: ["*"]
 
 permissions:
   contents: read
