@@ -32,19 +32,16 @@ checkout:
 
 engine:
   id: pi
-  # OpenRouter runs as a custom OpenAI-compatible route (no credential-
-  # isolated AWF route exists for it). The model token cannot contain a
-  # second slash (gh-aw MAF grammar), so the vendor prefix of OpenRouter
-  # model ids is dropped; the bare token resolves to moonshotai/kimi-k3
-  # at the endpoint (verified against the OpenRouter API).
-  model: openrouter/kimi-k3
-  model-provider: openai
+  # Inference runs on the Gemini gateway via GEMINI_API_KEY. The OpenRouter
+  # route was dropped: its vendored model ids (moonshotai/kimi-k3) cannot be
+  # expressed under gh-aw's one-slash model grammar (github/gh-aw#77514), and
+  # the bare id fails the gateway availability check.
+  model: google/gemini-3.5-flash
   env:
-    OPENAI_BASE_URL: https://openrouter.ai/api/v1
-    OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
 network:
-  allowed: [defaults, openrouter.ai]
+  allowed: [defaults]
 
 # Shell access for inspecting history and formatting dates. The pi engine
 # cannot allowlist individual commands, so bash is open; the AWF sandbox,
