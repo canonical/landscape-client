@@ -31,15 +31,26 @@ checkout:
     fetch: ["*"]
 
 engine:
-  id: copilot
-  model: kimi
+  id: pi
+  # OpenRouter runs as a custom OpenAI-compatible route (no credential-
+  # isolated AWF route exists for it). The model token cannot contain a
+  # second slash (gh-aw MAF grammar), so the vendor prefix of OpenRouter
+  # model ids is dropped; the bare token resolves to moonshotai/kimi-k3
+  # at the endpoint (verified against the OpenRouter API).
+  model: openrouter/kimi-k3
+  model-provider: openai
+  env:
+    OPENAI_BASE_URL: https://openrouter.ai/api/v1
+    OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
-# Only the shell commands the agent needs to inspect history and format dates.
+network:
+  allowed: [defaults, openrouter.ai]
+
+# Shell access for inspecting history and formatting dates. The pi engine
+# cannot allowlist individual commands, so bash is open; the AWF sandbox,
+# network allowlist, and safe-output handlers still confine the run.
 tools:
-  bash:
-    - "git"
-    - "date"
-    - "safeoutputs"
+  bash: ["*"]
   edit:
 
 # The agent never pushes directly; its file edits are turned into pull
