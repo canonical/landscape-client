@@ -49,12 +49,14 @@ tools:
   edit:
 
 # The agent never pushes directly; its file edits are turned into pull
-# requests. The create handler only ever opens the own-repo changelog PR, so
-# it uses the default GITHUB_TOKEN (like landscape-server's merged bot). The
-# push handler delivers island updates to the shared docs PR in
-# canonical/landscape-documentation, so it gets LANDSCAPE_DOCS_TOKEN, which
-# needs contents:write and pull-requests:write on that repo.
+# requests. gh-aw binds the whole safe_outputs job to a single credential for
+# its git checkouts and pushes (github/gh-aw#77580), and the default
+# GITHUB_TOKEN cannot write to canonical/landscape-documentation. Both
+# handlers therefore run under LANDSCAPE_CHANGELOG_TOKEN, a fine-grained PAT
+# with contents/pull-requests read+write on this repo and
+# canonical/landscape-documentation (canonical/landscape-internal-docs#385).
 safe-outputs:
+  github-token: ${{ secrets.LANDSCAPE_CHANGELOG_TOKEN }}
   create-pull-request:
     title-prefix: "build: "
     labels: [changelog, automation]
@@ -72,7 +74,7 @@ safe-outputs:
     # new block, never rewrite existing changelog content" for debian/changelog
     # is enforced by the prompt, not the handler.
   push-to-pull-request-branch:
-    github-token: ${{ secrets.LANDSCAPE_DOCS_TOKEN }}
+    github-token: ${{ secrets.LANDSCAPE_CHANGELOG_TOKEN }}
     target: "*"
     target-repo: canonical/landscape-documentation
     required-labels: [changelog, automation]
