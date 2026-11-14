@@ -13,6 +13,12 @@ on:
   # Allow maintainers to trigger a run on demand.
   workflow_dispatch:
 
+# Run on the Canonical self-hosted fleet. The agent and threat-detection jobs
+# need Docker/AWF and target the noble amd64 runners; the framework and
+# safe_outputs jobs only need the self-hosted label.
+runs-on: [self-hosted, noble, amd64]
+runs-on-slim: self-hosted
+
 permissions:
   contents: read
 
@@ -57,6 +63,9 @@ tools:
 # canonical/landscape-documentation (canonical/landscape-internal-docs#385).
 safe-outputs:
   github-token: ${{ secrets.LANDSCAPE_CHANGELOG_TOKEN }}
+  runs-on: self-hosted
+  threat-detection:
+    runs-on: [self-hosted, noble, amd64]
   create-pull-request:
     title-prefix: "build: "
     labels: [changelog, automation]
