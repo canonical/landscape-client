@@ -31,6 +31,19 @@ jobs:
           node-version: "24"
   detection:
     pre-steps:
+      - name: Install modern gh CLI
+        run: |
+          GH_VERSION="2.83.1"
+          GH_SHA256="1c5252d4ce3db07b51c01ff0b909583da6364ff3fdc06d0c2e75e62dc0380a34"
+          tmp="$(mktemp -d)"
+          curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o "$tmp/gh.tgz"
+          echo "${GH_SHA256}  $tmp/gh.tgz" | sha256sum -c -
+          tar -xzf "$tmp/gh.tgz" -C "$tmp"
+          install -m 0755 "$tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh
+          rm -rf "$tmp"
+          gh version
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Install GitHub Copilot CLI
         run: |
           export NPM_CONFIG_PREFIX="$HOME/.npm-global"
