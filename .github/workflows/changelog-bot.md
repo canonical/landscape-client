@@ -22,6 +22,29 @@ runs-on-slim: self-hosted
 permissions:
   contents: read
 
+jobs:
+  activation:
+    pre-steps:
+      - name: Setup modern Node for gh-aw runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+pre-steps:
+  - name: Install modern gh CLI
+    run: |
+      GH_VERSION="2.83.1"
+      GH_SHA256="1c5252d4ce3db07b51c01ff0b909583da6364ff3fdc06d0c2e75e62dc0380a34"
+      tmp="$(mktemp -d)"
+      curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o "$tmp/gh.tgz"
+      echo "${GH_SHA256}  $tmp/gh.tgz" | sha256sum -c -
+      tar -xzf "$tmp/gh.tgz" -C "$tmp"
+      install -m 0755 "$tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh
+      rm -rf "$tmp"
+      gh version
+    env:
+      GH_TOKEN: ${{ github.token }}
+
 # The default checkout is shallow (fetch-depth 1) with no tags, which makes the
 # agent see only the latest commit. Fetch full history and tags so it can diff
 # against the last release and read the commit log. A second checkout fetches
