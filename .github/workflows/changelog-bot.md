@@ -108,6 +108,10 @@ safe-outputs:
   runs-on: self-hosted
   threat-detection:
     runs-on: [self-hosted, noble, amd64]
+    # The detection job inherits the agent's engine by default; the external
+    # threat-detect binary only supports the Copilot CLI, so pin it here.
+    # Runs with COPILOT_GITHUB_TOKEN.
+    engine: copilot
   create-pull-request:
     title-prefix: "build: "
     labels: [changelog, automation]
