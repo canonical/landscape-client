@@ -101,10 +101,10 @@ checkout:
 engine:
   id: pi
   # Inference runs on OpenRouter via the pi engine. The vendored model id
-  # (moonshotai/kimi-k3) requires gh-aw v1.3.0+: earlier compilers reject the
-  # two-slash form under the model-identifier grammar (github/gh-aw#77514,
-  # fixed by #77562). OPENROUTER_API_KEY supplies the credential.
-  model: openrouter/moonshotai/kimi-k3
+  # requires gh-aw v1.3.0+: earlier compilers reject the two-slash form under
+  # the model-identifier grammar (github/gh-aw#77514, fixed by #77562).
+  # OPENROUTER_API_KEY supplies the credential.
+  model: openrouter/deepseek/deepseek-v4.1-flash-1017
   model-provider: openai
   env:
     OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -136,12 +136,21 @@ safe-outputs:
     # threat-detect binary only supports the Copilot CLI, so pin it here.
     # Runs with COPILOT_GITHUB_TOKEN.
     engine: copilot
+    # Detection must also pin its own model: without it the job inherits the
+    # agent's OpenRouter model id, which the Copilot CLI cannot serve (400
+    # "model is retired or unavailable"). Use a Copilot-catalog model
+    # (github/gh-aw#78414).
+    model: claude-haiku-5.5
   create-pull-request:
     title-prefix: "build: "
     labels: [changelog, automation]
     team-reviewers: [canonical/landscape]
     draft: false
     if-no-changes: ignore
+    # Push with a plain git push rather than the createCommitOnBranch GraphQL
+    # path: that path produces commits GitHub does not mark verified for this
+    # bot token, and pushSignedCommits then refuses to publish the branch.
+    signed-commits: false
     max: 1                      # only ever the own-repo changelog PR
     preserve-branch-name: true
     recreate-ref: true
@@ -157,8 +166,17 @@ safe-outputs:
     target: "*"
     target-repo: canonical/landscape-documentation
     required-labels: [changelog, automation]
+    # Push with a plain git push rather than the createCommitOnBranch GraphQL
+    # path: that path produces commits GitHub does not mark verified for this
+    # bot token, and pushSignedCommits then refuses to publish the branch.
+    signed-commits: false
     # Docs PR updates may only touch release-notes pages (including index.md).
     allowed-files: ["docs/reference/release-notes/*.md"]
+    max: 1
+  # When a run finds no user-facing commits, the agent comments its
+  # classification table on the open changelog PR instead of stopping silently.
+  add-comment:
+    github-token: ${{ secrets.LANDSCAPE_CHANGELOG_TOKEN }}
     max: 1
 ---
 
@@ -176,21 +194,36 @@ You maintain the Debian changelog for Landscape Client. Your job is to draft a n
 
 1. The changelog lives at `debian/changelog`. Read its top block to find the most recent version, which looks like `landscape-client (26.08.1-0landscape0) jammy; urgency=medium`.
 2. Determine the last release point with `git describe --tags --abbrev=0 --match '[0-9][0-9].[0-9][0-9]*' --exclude 'import/*' --exclude 'applied/*'`. Release tags look like `26.08.1` or `26.08-beta.4` (note: tags use a hyphen where the changelog uses a tilde). The `--exclude` flags are required because this repo carries gbp import tags under the `import/*` and `applied/*` namespaces that must not be mistaken for releases. If `git describe` fails, fall back to the version parsed from the top changelog block.
-3. Collect commit subjects since that point with `git log <last>..HEAD --no-merges --pretty=%s`.
-4. Deduplicate against the top changelog block. A release pull request can be merged before its tag is pushed, so the tag from step 2 sometimes lags `debian/changelog` by one release and step 3 then re-collects commits that are already released per the changelog. For each collected commit, compare its subject with every bullet in the TOP block of `debian/changelog`: normalize both sides first (drop the conventional-commit type prefix and any `(scope)`, `(#1234)`, Jira, and `(LP: #NNNN)` references, then compare case-insensitively). Drop the commits that already have a matching bullet. If nothing remains, stop and make no changes.
+3. Collect commit subjects since that point against the repository's default branch, not the ref this run was dispatched on: `git log <last>..origin/main --no-merges --pretty=%s`. Always use `origin/main` for the range — a `workflow_dispatch` run may check out a bot or feature branch whose own commits are automation churn, and those must never be classified as product changes. If `origin/main` is not present locally, use the checked-out HEAD and say so in the run output.
+4. Deduplicate against the top changelog block. A release pull request can be merged before its tag is pushed, so the tag from step 2 sometimes lags `debian/changelog` by one release and step 3 then re-collects commits that are already released per the changelog. For each collected commit, compare its subject with every bullet in the TOP block of `debian/changelog`: normalize both sides first (drop the conventional-commit type prefix and any `(scope)`, `(#1234)`, Jira, and `(LP: #NNNN)` references, then compare case-insensitively). Drop the commits that already have a matching bullet; the classification table below covers only the commits that remain.
 
 ## Select user-facing commits only
 
-Include only commits that a Landscape administrator would notice. Commit subjects in this repo are conventional commits; match type prefixes case-insensitively and use your judgment for non-conforming subjects.
+Do not decide from memory or by skimming. Work from the exact `git log` output you collected and classify every commit, one line at a time. Commit subjects in this repo are conventional commits; match type prefixes case-insensitively and use your judgment for non-conforming subjects.
 
-- **Include**: `feat:`, `fix:`, `perf:`, and any breaking change (a `!` before the colon, e.g. `feat!:` / `fix!:`).
-- **Maybe Include**: `refactor: ` commits, only if they are user-facing.
-- **Exclude**: `chore:`, `ci:`, `test:`, `build:`, `docs:`, and `style:`, commits,
-  plus anything that only touches tooling, tests, or CI, and any dependency bumps.
+First, write out a classification table with one row per commit, in this exact format:
+
+```
+| # | type | user-facing? | subject |
+|---|------|--------------|---------|
+| 1 | feat | yes | add hash-id component to snap |
+```
+
+Rules for the `user-facing?` column:
+
+- **yes**: `feat:`, `fix:`, `perf:`, and any breaking change (a `!` before the colon, e.g. `feat!:` / `fix!:`).
+- **maybe**: `refactor:` commits, only if they are user-facing.
+- **no**: `chore:`, `ci:`, `test:`, `build:`, `docs:`, and `style:` commits, plus anything that only touches tooling, tests, or CI, and any dependency bumps.
+
+After the table, write the count: `Included: N of M`. `N` is the number of rows marked `yes` (count a `maybe` as included only if you marked it yes). If the table has fewer rows than the number of lines in your `git log` output, you dropped commits — redo the table until every commit appears.
+
+**Only if `N` is 0** may you skip drafting a new release block and opening a pull request. In that case do not stay silent: find the open changelog pull request in this repository (label `changelog`) and post a comment on it containing the full classification table and the line `Included: 0 of M`, so a human can see exactly which commits were considered and why nothing was drafted. If no open changelog PR exists, report the table in your run summary instead.
+
+If `N` is 1 or more, you MUST continue and open a pull request. Never stop just because most commits are chores; a single `feat:` or `fix:` means proceed.
 
 Breaking changes are not always flagged in the subject. For every selected commit, also inspect the full commit message with `git show -s --format=%B <sha>` and look for `BREAKING CHANGE:` or `BREAKING-CHANGE:` footers. A commit carrying such a footer is a breaking change even when its subject has no `!` — classify it as breaking and note the breaking nature in the docs island bullet.
 
-Add each selected commit's subject line, including its type prefix and any `(LP: #NNNN)` Launchpad references, but excluding any `(scope)` after the type prefix. Proofread and correct any obvious spelling or grammar errors. Remove Jira issue references such as `LNDENG-5678` wherever they occur in the subject, and strip any trailing GitHub pull request reference such as ` (#1234)`. Do **not** strip `(LP: #NNNN)` references. If there are no user-facing commits, stop and make no changes.
+Add each selected commit's subject line, including its type prefix and any `(LP: #NNNN)` Launchpad references, but excluding any `(scope)` after the type prefix. Proofread and correct any obvious spelling or grammar errors. Remove Jira issue references such as `LNDENG-5678` wherever they occur in the subject, and strip any trailing GitHub pull request reference such as ` (#1234)`. Do **not** strip `(LP: #NNNN)` references.
 
 ## Review the commits
 
@@ -245,7 +278,14 @@ If for some reason the existing version is older than anticipated, still update 
 
 ## Open the pull request
 
-Open a pull request with the change. Use a title like `release 26.08~beta.<N+1> for jammy` (the `build: ` prefix is added automatically, matching this repo's release-PR titles such as `build: release 26.08~beta.4 for jammy`) and a body that lists the included commits, explains the chosen next version, notes that only user-facing changes were selected, and includes the `Changelog entries to review` heading when any commits were flagged. If no commits survived selection and review, do nothing — do not open an empty pull request.
+Before making any edit, create your working branch from the default branch, not from the ref this run was dispatched on: `git checkout -b <branch> origin/main`. The dispatch ref may be a bot or feature branch carrying automation commits; if you commit on top of it, the resulting PR contains all of those commits. The PR must contain ONLY the changelog and version-bump commit on top of `origin/main`.
+
+First check for an existing open changelog pull request in this repository (label `changelog`). Exactly one should ever be open at a time.
+
+- If one is already open, do NOT open a second. Check whether its release block already covers the commits you selected (the version and the listed subjects). If it does, make no changes and note that the existing PR is already current. If it is missing any of your selected commits, update that PR's branch with the corrected block rather than opening a new PR.
+- Only if no changelog PR is open, open one with the change. Use a title like `release 26.08~beta.<N+1> for jammy` (the `build: ` prefix is added automatically, matching this repo's release-PR titles such as `build: release 26.08~beta.4 for jammy`) and a body that lists the included commits, explains the chosen next version, notes that only user-facing changes were selected, and includes the `Changelog entries to review` heading when any commits were flagged.
+
+Never open a second changelog PR while one is open.
 
 ## Docs release notes (shared PR)
 
