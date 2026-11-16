@@ -99,14 +99,16 @@ checkout:
     fetch: ["*"]
 
 engine:
-  id: gemini
-  # The native Gemini engine uses GEMINI_API_KEY directly and takes an exact
-  # model id, avoiding the pi engine's model-grammar rejection of vendored
-  # OpenRouter ids (github/gh-aw#77514). Gemini does not resolve gh-aw model
-  # aliases, so this must be an exact id.
-  model: gemini-3.5-flash
+  id: pi
+  # Inference runs on OpenRouter via the pi engine. The vendored model id
+  # (moonshotai/kimi-k3) requires gh-aw v1.3.0+: earlier compilers reject the
+  # two-slash form under the model-identifier grammar (github/gh-aw#77514,
+  # fixed by #77562). OPENROUTER_API_KEY supplies the credential.
+  model: openrouter/moonshotai/kimi-k3
+  model-provider: openai
   env:
-    GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    OPENAI_BASE_URL: https://openrouter.ai/api/v1
 
 network:
   allowed: [defaults]
