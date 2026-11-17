@@ -26,7 +26,7 @@ jobs:
   activation:
     pre-steps:
       - name: Setup modern Node for gh-aw runtime
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
   detection:
@@ -80,9 +80,11 @@ steps:
         exit 0
       fi
       COMPOSE_VERSION="v5.5.0"
+      COMPOSE_SHA256="c57ab918abd5b05ca7e7d0f275875dd1330a695074f309dc9eab1b49efafcd4b"
       mkdir -p ~/.docker/cli-plugins
       curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
         -o ~/.docker/cli-plugins/docker-compose
+      echo "${COMPOSE_SHA256}  ~/.docker/cli-plugins/docker-compose" | sha256sum -c -
       chmod +x ~/.docker/cli-plugins/docker-compose
       docker compose version
 
