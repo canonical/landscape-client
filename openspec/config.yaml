@@ -1,0 +1,7 @@
+schema: spec-driven
+githubCopilot:
+  cloudAgent: true
+
+references:
+  - id: landscape-internal-docs
+    remote: git@github.com:canonical/landscape-internal-docs.git
