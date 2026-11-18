@@ -3,8 +3,6 @@ Hold constants used across landscape, to reduce import size when one only needs
 to look at those values.
 """
 
-APT_PREFERENCES_SIZE_LIMIT = 1048576  # 1 MByte
-
 # The name "UBUNTU" is used in the variable name due to the fact that the path
 # is Ubuntu-specific, taken from /etc/login.defs.
 UBUNTU_PATH = ":".join(

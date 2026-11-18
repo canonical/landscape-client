@@ -43,7 +43,6 @@ __all__ = [
     "TEST",
     "CUSTOM_GRAPH",
     "REBOOT_REQUIRED",
-    "APT_PREFERENCES",
     "NETWORK_DEVICE",
     "NETWORK_ACTIVITY",
     "REBOOT_REQUIRED_INFO",
@@ -552,11 +551,6 @@ REBOOT_REQUIRED_INFO = Message(
     optional=["flag", "packages"],
 )
 
-APT_PREFERENCES = Message(
-    "apt-preferences",
-    {"data": Any(Dict(Unicode(), Unicode()), Constant(None))},
-)
-
 # The network-device message is split in two top level keys because we don't
 # support adding sub-keys in a backwards-compatible way (only top-level keys).
 # New servers will see an optional device-speeds key, and old servers will
@@ -739,7 +733,6 @@ message_schemas = (
     TEST,
     CUSTOM_GRAPH,
     REBOOT_REQUIRED,
-    APT_PREFERENCES,
     NETWORK_DEVICE,
     NETWORK_ACTIVITY,
     REBOOT_REQUIRED_INFO,
