@@ -81,11 +81,14 @@ steps:
       fi
       COMPOSE_VERSION="v5.5.0"
       COMPOSE_SHA256="c57ab918abd5b05ca7e7d0f275875dd1330a695074f309dc9eab1b49efafcd4b"
-      mkdir -p ~/.docker/cli-plugins
+      # Use an expanded $HOME path: sha256sum -c does not expand a quoted "~",
+      # so a "~/.docker/..." checksum line fails with "No such file or directory".
+      COMPOSE_DEST="$HOME/.docker/cli-plugins/docker-compose"
+      mkdir -p "$(dirname "$COMPOSE_DEST")"
       curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
-        -o ~/.docker/cli-plugins/docker-compose
-      echo "${COMPOSE_SHA256}  ~/.docker/cli-plugins/docker-compose" | sha256sum -c -
-      chmod +x ~/.docker/cli-plugins/docker-compose
+        -o "$COMPOSE_DEST"
+      echo "${COMPOSE_SHA256}  ${COMPOSE_DEST}" | sha256sum -c -
+      chmod +x "$COMPOSE_DEST"
       docker compose version
 
 # The default checkout is shallow (fetch-depth 1) with no tags, which makes the
