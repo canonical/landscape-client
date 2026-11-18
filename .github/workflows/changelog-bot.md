@@ -99,7 +99,7 @@ Rules for the `user-facing?` column:
 
 After the table, write the count: `Included: N of M`. `N` is the number of rows marked `yes` (count a `maybe` as included only if you marked it yes). If the table has fewer rows than the number of lines in your `git log` output, you dropped commits — redo the table until every commit appears.
 
-**Only if `N` is 0** may you skip drafting a new release block and opening a pull request. In that case do not stay silent: find the open changelog pull request in this repository (label `changelog`) and post a comment on it containing the full classification table and the line `Included: 0 of M`, so a human can see exactly which commits were considered and why nothing was drafted. If no open changelog PR exists, report the table in your run summary instead.
+**Only if `N` is 0** may you skip drafting a new release block and opening a pull request. In that case do not stay silent: find the open changelog pull request in this repository (label `changelog`) and post a comment on it containing the full classification table and the line `Included: 0 of M`, so a human can see exactly which commits were considered and why nothing was drafted. If no open changelog PR exists, report the table in a `noop` call instead (see "End every run with a safe output").
 
 If `N` is 1 or more, you MUST continue and open a pull request. Never stop just because most commits are chores; a single `feat:` or `fix:` means proceed.
 
@@ -164,10 +164,14 @@ Before making any edit, create your working branch from the default branch, not 
 
 First check for an existing open changelog pull request in this repository (label `changelog`). Exactly one should ever be open at a time.
 
-- If one is already open, do NOT open a second. Check whether its release block already covers the commits you selected (the version and the listed subjects). If it does, make no changes and note that the existing PR is already current. If it is missing any of your selected commits, post the missing entries as a comment on that PR with `add_comment` and stop; there is no handler that pushes to an existing own-repo pull request branch, so do not claim you updated it and do not open a second PR.
+- If one is already open, do NOT open a second. Check whether its release block already covers the commits you selected (the version and the listed subjects). If it does, make no changes and end the run with a `noop` call naming that PR number and the commits it already covers. If it is missing any of your selected commits, post the missing entries as a comment on that PR with `add_comment` and stop; there is no handler that pushes to an existing own-repo pull request branch, so do not claim you updated it and do not open a second PR.
 - Only if no changelog PR is open, open one with the change. Use a title like `release 26.08~beta.<N+1> for jammy` (the `build: ` prefix is added automatically, matching this repo's release-PR titles such as `build: release 26.08~beta.4 for jammy`) and a body that lists the included commits, explains the chosen next version, notes that only user-facing changes were selected, and includes the `Changelog entries to review` heading when any commits were flagged.
 
 Never open a second changelog PR while one is open.
+
+## End every run with a safe output
+
+Every run must end with exactly one safe-output call, chosen from: `create_pull_request` (you opened or updated the changelog PR), `add_comment` (you reported a table or missing entries on an existing PR), `push_to_pull_request_branch` (you updated the docs island). Any other outcome — no user-facing commits and no open PR, an existing PR already current, or the docs shared PR being absent — ends with a `noop` call whose message states which case applied and, where relevant, carries the full classification table with its `Included: N of M` line. Never finish a run without calling one of these tools, and never leave that explanation only in your reasoning.
 
 ## Docs release notes (shared PR)
 
