@@ -229,7 +229,7 @@ Rules:
 
 File `docs/reference/release-notes/YY.MM-release-notes.md` (dots in the filename, matching `26.10-release-notes.md`; anchor uses dashes):
 
-```markdown
+````markdown
 ---
 myst:
   html_meta:
@@ -243,7 +243,7 @@ myst:
 
 ```{note}
 This page is a draft maintained automatically until release.
-```
+````
 
 ## Highlights
 
