@@ -11,7 +11,6 @@ ALL_PLUGINS = [
     "PackageMonitor",
     "UserMonitor",
     "RebootRequired",
-    "AptPreferences",
     "NetworkActivity",
     "NetworkDevice",
     "UpdateManager",
