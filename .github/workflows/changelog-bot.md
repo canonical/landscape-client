@@ -51,7 +51,6 @@ safe-outputs:
     # bot token, and pushSignedCommits then refuses to publish the branch.
     signed-commits: false
     max: 1                      # only ever the own-repo changelog PR
-    preserve-branch-name: true
     recreate-ref: true
     # The bot only ever prepends to debian/changelog or bumps the version
     # constants in landscape/__init__.py; the handler rejects any other path
@@ -60,6 +59,8 @@ safe-outputs:
     # gh-aw allowed-files filters by path only, not diff status, so "prepend a
     # new block, never rewrite existing changelog content" for debian/changelog
     # is enforced by the prompt, not the handler.
+  add-comment:
+    target: "*"
 ---
 
 # Weekly changelog update
