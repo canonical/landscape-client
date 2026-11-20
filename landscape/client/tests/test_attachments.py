@@ -100,6 +100,30 @@ class SaveAttachmentsTest(TestCase):
         deferred.addBoth(check)
         return deferred
 
+    def test_save_attachments_uses_configured_ssl_ca(self):
+        """Attachments are fetched with the CA certificate from the config."""
+        self.config.get_ssl_ca.return_value = "/path/to/ca.crt"
+        self.fetch_async.return_value = b"Contents of attachment 1\n"
+
+        deferred = ensureDeferred(
+            save_attachments(
+                self.config,
+                (("attachment-1.txt", 1),),
+                self.dest,
+                uid=self.uid,
+                gid=self.gid,
+            ),
+        )
+
+        def check(_):
+            self.assertEqual(
+                self.fetch_async.call_args.kwargs["cainfo"],
+                "/path/to/ca.crt",
+            )
+
+        deferred.addBoth(check)
+        return deferred
+
     def test_save_attachment_inline(self):
         """A 'legacy' attachment inline in the parameters is simply saved."""
         deferred = ensureDeferred(

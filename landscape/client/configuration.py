@@ -671,7 +671,7 @@ def check_script_users(config):
             config.include_manager_plugins = "ScriptExecution"
 
 
-def decode_base64_ssl_public_certificate(config):
+def decode_base64_ssl_certificates(config):
     """
     Decode base64 encoded SSL CA certificates and push them back into place
     in the config object.
@@ -710,7 +710,7 @@ def setup(config) -> Identity:
     else:
         script = LandscapeSetupScript(config)
         script.run()
-    decode_base64_ssl_public_certificate(config)
+    decode_base64_ssl_certificates(config)
     config.write()
 
     persist = Persist(

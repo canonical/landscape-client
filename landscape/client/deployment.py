@@ -153,7 +153,7 @@ class Configuration(BaseConfiguration):
                 )
 
     def get_ssl_ca(self):
-        """Return the CA certificate used to verify the server.
+        """Return the configured CA certificate path used to verify the server.
 
         C{ssl_ca} takes precedence over the deprecated C{ssl_public_key}.
         """

@@ -2208,10 +2208,11 @@ registration_key = shared-secret
             ("ssl_ca", "New CA"),
             ("ssl_public_key", "Old CA"),
         ):
-            key_filename = f"{prefix}.{option}"
-            with open(key_filename) as fh:
-                self.assertEqual(contents, fh.read())
-            self.assertEqual(options.get("client", option), key_filename)
+            with self.subTest(option=option):
+                key_filename = f"{prefix}.{option}"
+                with open(key_filename) as fh:
+                    self.assertEqual(contents, fh.read())
+                self.assertEqual(options.get("client", option), key_filename)
 
     @mock.patch("landscape.client.configuration.ServiceConfig")
     def test_normal_ssl_public_key_is_not_exported_to_file(

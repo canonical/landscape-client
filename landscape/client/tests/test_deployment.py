@@ -402,9 +402,10 @@ class ConfigurationTest(LandscapeTest):
             ("/new.crt", "/old.crt", "/new.crt"),
         ]
         for ssl_ca, ssl_public_key, expected in cases:
-            self.config.ssl_ca = ssl_ca
-            self.config.ssl_public_key = ssl_public_key
-            self.assertEqual(self.config.get_ssl_ca(), expected)
+            with self.subTest(ssl_ca=ssl_ca, ssl_public_key=ssl_public_key):
+                self.config.ssl_ca = ssl_ca
+                self.config.ssl_public_key = ssl_public_key
+                self.assertEqual(self.config.get_ssl_ca(), expected)
 
     def test_no_deprecation_warning_for_ssl_ca(self):
         self.config.load(
