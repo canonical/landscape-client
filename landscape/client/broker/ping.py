@@ -145,7 +145,7 @@ class Pinger:
         """Start pinging."""
         self._ping_client = self.ping_client_factory(
             self._reactor,
-            cainfo=self._config.ssl_public_key,
+            cainfo=self._config.get_ssl_ca(),
         )
         self._schedule()
 

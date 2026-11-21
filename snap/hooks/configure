@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 from landscape.client.deployment import Configuration
-from landscape.client.snap_config import CONFIG_ENTRIES
+from landscape.client.snap_config import CONFIG_ENTRIES, update_ssl_ca_cert
 
 
 def _snapctl(*args):
@@ -32,10 +32,16 @@ legacy_config_entries = [
     ("landscape-ping-url", "ping_url", lambda url: f"{url}/ping"),
 ]
 
+# Not in CONFIG_ENTRIES because the confdb schema does not define it.
+snap_only_config_entries = [
+    ("ssl-ca", "ssl_ca", update_ssl_ca_cert),
+]
+
 changed = set()
 for snapctl_key, landscape_key, mapping_fn in [
     *legacy_config_entries,
     *CONFIG_ENTRIES,
+    *snap_only_config_entries,
 ]:
     value = _snapctl("get", snapctl_key)
     if not value:

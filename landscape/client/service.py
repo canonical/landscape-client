@@ -82,6 +82,7 @@ def run_landscape_service(configuration_class, service_class, args):
     except LoggingAttributeError:
         return
     configuration.warn_out_of_bounds_intervals()
+    configuration.warn_deprecated_options()
     application = Application(f"landscape-{service_class.service_name}")
     service = service_class(configuration)
     service.setServiceParent(application)

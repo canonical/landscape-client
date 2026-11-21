@@ -38,7 +38,7 @@ async def save_attachments(
         else:
             data = await fetch_async(
                 root_path + str(attachment_id),
-                cainfo=config.ssl_public_key,
+                cainfo=config.get_ssl_ca(),
                 headers=headers,
             )
 

@@ -159,6 +159,16 @@ class PingerTest(LandscapeTest):
         )
         self.assertEqual(pinger.ping_client_factory, PingClient)
 
+    def test_start_uses_configured_ssl_ca(self):
+        """
+        L{Pinger.start} should create the ping client with the CA
+        certificate from the configuration.
+        """
+        self.config.ssl_ca = "/path/to/ca.crt"
+        self.config.ssl_public_key = "/path/to/old.crt"
+        self.pinger.start()
+        self.assertEqual(self.pinger._ping_client._cainfo, "/path/to/ca.crt")
+
     def test_occasional_ping(self):
         """
         The L{Pinger} should be able to occasionally ask if there are

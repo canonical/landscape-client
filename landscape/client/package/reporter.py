@@ -234,7 +234,7 @@ class PackageReporter(PackageTaskHandler):
 
             result = fetch_async(
                 url,
-                cainfo=self._config.get("ssl_public_key"),
+                cainfo=self._config.get_ssl_ca(),
                 proxy=proxy,
             )
             result.addCallback(fetch_ok)

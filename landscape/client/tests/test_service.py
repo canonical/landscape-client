@@ -111,3 +111,18 @@ class LandscapeServiceTest(LandscapeTest):
             run_landscape_service(configuration_class, service_class, [])
 
         configuration.warn_out_of_bounds_intervals.assert_called_once()
+
+    def test_warns_about_deprecated_options(self):
+        configuration = mock.Mock(clones=0, ignore_sigint=False)
+        configuration_class = mock.Mock(return_value=configuration)
+        service_class = mock.Mock()
+        service_class.service_name = "test"
+
+        with (
+            mock.patch("landscape.client.service.init_logging"),
+            mock.patch("landscape.client.service.Application"),
+            mock.patch("landscape.client.service.startApplication"),
+        ):
+            run_landscape_service(configuration_class, service_class, [])
+
+        configuration.warn_deprecated_options.assert_called_once()
