@@ -59,6 +59,8 @@ class BrokerService(LandscapeService):
             config.url,
             config.ssl_public_key,
             http_client=config.http_client,
+            ssl_client_cert=config.ssl_client_cert,
+            ssl_client_private_key=config.ssl_client_private_key,
         )
         self.message_store = get_default_message_store(
             self.persist,

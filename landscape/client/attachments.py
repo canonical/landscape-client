@@ -40,6 +40,8 @@ async def save_attachments(
                 root_path + str(attachment_id),
                 cainfo=config.ssl_public_key,
                 headers=headers,
+                ssl_client_cert=config.ssl_client_cert,
+                ssl_client_private_key=config.ssl_client_private_key,
             )
 
         full_filename = os.path.join(dest, filename)

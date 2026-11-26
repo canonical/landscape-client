@@ -13,6 +13,7 @@ import os
 import pwd
 import re
 import shlex
+import ssl
 import sys
 import textwrap
 from argparse import SUPPRESS
@@ -671,6 +672,36 @@ def check_script_users(config):
             config.include_manager_plugins = "ScriptExecution"
 
 
+def check_ssl_client_cert(config):
+    """
+    If a client certificate is configured, ensure the client can use it for
+    mutual TLS, so a misconfiguration fails now rather than on every exchange
+    with the server.
+    """
+    cert = config.get("ssl_client_cert")
+    key = config.get("ssl_client_private_key")
+    if not cert and not key:
+        return
+
+    if not (cert and key):
+        raise ConfigurationError(
+            "Both ssl_client_cert and ssl_client_private_key must be set to "
+            "use a client certificate.",
+        )
+
+    # Load the pair the same way it is used for TLS, so missing or invalid
+    # files and a key that does not match the certificate are all reported.
+    try:
+        ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT).load_cert_chain(
+            certfile=cert,
+            keyfile=key,
+        )
+    except OSError as e:  # Includes ssl.SSLError.
+        raise ConfigurationError(
+            f"Cannot load the SSL client certificate {cert} with key {key}: {e}.",
+        ) from e
+
+
 def decode_base64_ssl_public_certificate(config):
     """
     Decode base64 encoded SSL certificate and push that back into place in the
@@ -709,6 +740,7 @@ def setup(config) -> Identity:
         script = LandscapeSetupScript(config)
         script.run()
     decode_base64_ssl_public_certificate(config)
+    check_ssl_client_cert(config)
     config.write()
 
     persist = Persist(
@@ -799,6 +831,8 @@ def attempt_registration(
                 config.url,
                 cainfo=config.ssl_public_key,
                 http_client=config.http_client,
+                ssl_client_cert=config.ssl_client_cert,
+                ssl_client_private_key=config.ssl_client_private_key,
             )
 
             break

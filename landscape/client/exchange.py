@@ -37,6 +37,8 @@ def exchange_messages(
     exchange_token: bytes | None = None,
     server_api: str = SERVER_API.decode(),
     http_client: str = "pycurl",
+    ssl_client_cert: str | None = None,
+    ssl_client_private_key: str | None = None,
 ) -> ServerResponse:
     """Sends `payload` via HTTP(S) to `server_url`, parsing and returning the
     response.
@@ -49,6 +51,9 @@ def exchange_messages(
     :param exchange_token: Token included in the exchange to prove client
         identity.
     :param http_client: The HTTP client to use ('pycurl' or 'urllib').
+    :param ssl_client_cert: Path to a client certificate for mutual TLS.
+    :param ssl_client_private_key: Path to the private key of
+        `ssl_client_cert`.
     """
     start_time = time.time()
     logging.debug(f"Sending payload:\n{pformat(payload)}")
@@ -79,6 +84,8 @@ def exchange_messages(
             cainfo=cainfo,
             curl=curl,
             http_client=http_client,
+            ssl_client_cert=ssl_client_cert,
+            ssl_client_private_key=ssl_client_private_key,
         )
     except Exception:
         logging.exception(f"Error contacting the server at {server_url}.")

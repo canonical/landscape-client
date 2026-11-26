@@ -171,6 +171,8 @@ class Configuration(BaseConfiguration):
               - C{url} (C{"http://landscape.canonical.com/message-system"})
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
               - C{ssl_public_key}
+              - C{ssl_client_cert}
+              - C{ssl_client_private_key}
               - C{ignore_sigint} (C{False})
               - C{stagger_launch} (C{0.1})
         """
@@ -192,6 +194,16 @@ class Configuration(BaseConfiguration):
             "--ssl-public-key",
             help="The ssl-public-key is a CA certificate that verifies the server."
             "Only used if the given URL is https.",
+        )
+        parser.add_argument(
+            "--ssl-client-cert",
+            help="Path to a PEM client certificate for mutual TLS with the "
+            "server. Requires --ssl-client-private-key. Only sent over https "
+            "when the server requests a client certificate.",
+        )
+        parser.add_argument(
+            "--ssl-client-private-key",
+            help="Path to the PEM private key of --ssl-client-cert.",
         )
         parser.add_argument(
             "--ignore-sigint",

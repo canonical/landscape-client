@@ -18,6 +18,7 @@ from landscape.client.configuration import (
     LandscapeSetupScript,
     actively_registered,
     bootstrap_tree,
+    check_ssl_client_cert,
     configuration_dump_json,
     configuration_dump_text,
     get_configuration_dump,
@@ -882,6 +883,29 @@ url = https://landscape.canonical.com/message-system
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_with_unusable_client_cert(self, mock_serviceconfig):
+        """setup() aborts before writing the config when the client
+        certificate cannot be used."""
+        cert = self.makeFile("not a certificate")
+        key = self.makeFile("not a key")
+        config = self.get_config(
+            [
+                "--silent",
+                "-a",
+                "account",
+                "-t",
+                "rex",
+                "--ssl-client-cert",
+                cert,
+                "--ssl-client-private-key",
+                key,
+            ],
+        )
+        with mock.patch.object(type(config), "write") as mock_write:
+            self.assertRaises(ConfigurationError, setup, config)
+        mock_write.assert_not_called()
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.ServiceConfig")
@@ -2572,3 +2596,18 @@ class GetSecureIdTest(LandscapeTest):
         secure_id = get_secure_id(config)
 
         self.assertEqual(secure_id, "fancysecureid")
+
+
+class CheckSSLClientCertTest(LandscapeTest):
+    def _config(self, cert, key):
+        values = {"ssl_client_cert": cert, "ssl_client_private_key": key}
+        return mock.Mock(get=lambda name, default=None: values.get(name, default))
+
+    def test_cert_without_key(self):
+        """A cert without its key is rejected."""
+        with self.assertRaises(ConfigurationError) as cm:
+            check_ssl_client_cert(self._config("/etc/landscape/client.pem", None))
+        self.assertIn(
+            "Both ssl_client_cert and ssl_client_private_key",
+            str(cm.exception),
+        )
