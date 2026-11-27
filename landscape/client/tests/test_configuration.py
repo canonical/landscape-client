@@ -1,6 +1,7 @@
 import getpass
 import json
 import os
+import pwd
 import textwrap
 import unittest
 from configparser import ConfigParser
@@ -24,6 +25,7 @@ from landscape.client.configuration import (
     configuration_dump_text,
     get_configuration_dump,
     get_secure_id,
+    is_readable_by,
     main,
     print_text,
     prompt_yes_no,
@@ -2634,4 +2636,36 @@ class CheckSSLClientCertTest(LandscapeTest):
         self.assertEqual(
             str(cm.exception),
             f"{key} must be readable by the {getpass.getuser()} user.",
+        )
+
+    def test_is_readable_by_other_user(self):
+        """The check runs as the other user, and the original ids are restored
+        afterwards."""
+        user = pwd.struct_passwd(("landscape", "x", 100, 101, "", "/", ""))
+        calls = mock.Mock()
+        calls.access.return_value = False
+        with (
+            mock.patch("pwd.getpwnam", return_value=user),
+            mock.patch("os.geteuid", return_value=0),
+            mock.patch("os.getegid", return_value=0),
+            mock.patch("os.getgroups", return_value=[0]),
+            mock.patch("os.getgrouplist", return_value=[101]),
+            mock.patch("os.setgroups", calls.setgroups),
+            mock.patch("os.setegid", calls.setegid),
+            mock.patch("os.seteuid", calls.seteuid),
+            mock.patch("os.access", calls.access),
+        ):
+            self.assertFalse(is_readable_by("/some/file", "landscape"))
+
+        self.assertEqual(
+            calls.mock_calls,
+            [
+                mock.call.setgroups([101]),
+                mock.call.setegid(101),
+                mock.call.seteuid(100),
+                mock.call.access("/some/file", os.R_OK, effective_ids=True),
+                mock.call.seteuid(0),
+                mock.call.setegid(0),
+                mock.call.setgroups([0]),
+            ],
         )
