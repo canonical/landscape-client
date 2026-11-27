@@ -12,13 +12,26 @@ class HTTPTransport:
 
     @param url: URL of the remote Landscape server message system.
     @param pubkey: SSH public key used for secure communication.
+    @param ssl_client_cert: Path to a client certificate for mutual TLS.
+    @param ssl_client_private_key: Path to the private key of
+        C{ssl_client_cert}.
     """
 
-    def __init__(self, reactor, url, pubkey=None, http_client="pycurl"):
+    def __init__(
+        self,
+        reactor,
+        url,
+        pubkey=None,
+        http_client="pycurl",
+        ssl_client_cert=None,
+        ssl_client_private_key=None,
+    ):
         self._reactor = reactor
         self._url = url
         self._pubkey = pubkey
         self._http_client = http_client
+        self._ssl_client_cert = ssl_client_cert
+        self._ssl_client_private_key = ssl_client_private_key
 
     def get_url(self):
         """Get the URL of the remote message system."""
@@ -55,6 +68,8 @@ class HTTPTransport:
                 exchange_token=exchange_token,
                 server_api=message_api.decode(),
                 http_client=self._http_client,
+                ssl_client_cert=self._ssl_client_cert,
+                ssl_client_private_key=self._ssl_client_private_key,
             )
         except Exception:
             return None
@@ -72,8 +87,18 @@ class HTTPTransport:
 class FakeTransport:
     """Fake transport for testing purposes."""
 
-    def __init__(self, reactor=None, url=None, pubkey=None, http_client="pycurl"):
+    def __init__(
+        self,
+        reactor=None,
+        url=None,
+        pubkey=None,
+        http_client="pycurl",
+        ssl_client_cert=None,
+        ssl_client_private_key=None,
+    ):
         self._pubkey = pubkey
+        self._ssl_client_cert = ssl_client_cert
+        self._ssl_client_private_key = ssl_client_private_key
         self.payloads = []
         self.responses = []
         self._current_response = 0

@@ -1,5 +1,6 @@
 import os
 
+from OpenSSL import SSL
 from twisted.internet import reactor
 from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.internet.threads import deferToThread
@@ -21,6 +22,19 @@ PRIVKEY = sibpath("private.ssl")
 PUBKEY = sibpath("public.ssl")
 BADPRIVKEY = sibpath("badprivate.ssl")
 BADPUBKEY = sibpath("badpublic.ssl")
+
+
+def mtls_context_factory():
+    """A server TLS context that requires a client certificate issued by
+    PUBKEY (a self-signed CA certificate)."""
+    context_factory = DefaultOpenSSLContextFactory(PRIVKEY, PUBKEY)
+    context = context_factory.getContext()
+    context.load_verify_locations(PUBKEY)
+    context.set_verify(
+        SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT,
+        lambda connection, x509, errnum, errdepth, ok: bool(ok),
+    )
+    return context_factory
 
 
 class DataCollectingResource(resource.Resource):
@@ -197,3 +211,44 @@ class HTTPTransportTest(LandscapeTest):
 
         result.addErrback(got_result)
         return result
+
+    def _assert_mtls_accepts_client_cert(self, http_client):
+        """Exchange a payload with a server that requires a client certificate
+        signed by PUBKEY, presenting the PUBKEY/PRIVKEY pair."""
+        resource = DataCollectingResource()
+        port = reactor.listenSSL(
+            0,
+            server.Site(resource),
+            mtls_context_factory(),
+            interface="127.0.0.1",
+        )
+        self.ports.append(port)
+        transport = HTTPTransport(
+            None,
+            f"https://localhost:{port.getHost().port:d}/",
+            PUBKEY,
+            http_client=http_client,
+            ssl_client_cert=PUBKEY,
+            ssl_client_private_key=PRIVKEY,
+        )
+        result = deferToThread(
+            transport.exchange,
+            "HI",
+            computer_id="34",
+            message_api=b"X.Y",
+        )
+
+        def check(ignored):
+            self.assertEqual(bpickle.loads(resource.content), "HI")
+
+        return result.addCallback(check)
+
+    def test_mtls_with_client_cert_pycurl(self):
+        """A server requiring a client certificate accepts the configured
+        one."""
+        return self._assert_mtls_accepts_client_cert("pycurl")
+
+    def test_mtls_with_client_cert_urllib(self):
+        """The urllib backend presents the configured client certificate
+        too."""
+        return self._assert_mtls_accepts_client_cert("urllib")

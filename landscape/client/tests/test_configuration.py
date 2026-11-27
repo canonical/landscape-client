@@ -1,5 +1,7 @@
+import getpass
 import json
 import os
+import pwd
 import textwrap
 import unittest
 from configparser import ConfigParser
@@ -18,10 +20,12 @@ from landscape.client.configuration import (
     LandscapeSetupScript,
     actively_registered,
     bootstrap_tree,
+    check_ssl_client_cert,
     configuration_dump_json,
     configuration_dump_text,
     get_configuration_dump,
     get_secure_id,
+    is_readable_by,
     main,
     print_text,
     prompt_yes_no,
@@ -882,6 +886,32 @@ url = https://landscape.canonical.com/message-system
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
         mock_serviceconfig.set_start_on_boot.assert_called_once_with(True)
+
+    @mock.patch("landscape.client.configuration.ServiceConfig")
+    def test_silent_setup_with_unusable_client_cert(self, mock_serviceconfig):
+        """setup() aborts before writing the config when the client
+        certificate cannot be used."""
+        cert = self.makeFile("not a certificate")
+        key = self.makeFile("not a key")
+        config = self.get_config(
+            [
+                "--silent",
+                "-a",
+                "account",
+                "-t",
+                "rex",
+                "--ssl-client-cert",
+                cert,
+                "--ssl-client-private-key",
+                key,
+            ],
+        )
+        with (
+            mock.patch("landscape.client.configuration.USER", getpass.getuser()),
+            mock.patch.object(type(config), "write") as mock_write,
+        ):
+            self.assertRaises(ConfigurationError, setup, config)
+        mock_write.assert_not_called()
 
     @mock.patch("landscape.client.configuration.input")
     @mock.patch("landscape.client.configuration.ServiceConfig")
@@ -2572,3 +2602,70 @@ class GetSecureIdTest(LandscapeTest):
         secure_id = get_secure_id(config)
 
         self.assertEqual(secure_id, "fancysecureid")
+
+
+class CheckSSLClientCertTest(LandscapeTest):
+    def _config(self, cert, key):
+        values = {"ssl_client_cert": cert, "ssl_client_private_key": key}
+        return mock.Mock(get=lambda name, default=None: values.get(name, default))
+
+    def test_cert_without_key(self):
+        """A cert without its key is rejected."""
+        with self.assertRaises(ConfigurationError) as cm:
+            check_ssl_client_cert(self._config("/etc/landscape/client.pem", None))
+        self.assertIn(
+            "Both ssl_client_cert and ssl_client_private_key",
+            str(cm.exception),
+        )
+
+    def test_not_readable_by_service_user(self):
+        """A cert or key the client services' user can't read is rejected."""
+        if os.getuid() == 0:
+            self.skipTest("root can read any file")
+        cert = self.makeFile("cert")
+        key = self.makeFile("key")
+        os.chmod(key, 0)
+
+        with mock.patch(
+            "landscape.client.configuration.USER",
+            getpass.getuser(),
+        ):
+            with self.assertRaises(ConfigurationError) as cm:
+                check_ssl_client_cert(self._config(cert, key))
+
+        self.assertEqual(
+            str(cm.exception),
+            f"{key} must be readable by the {getpass.getuser()} user.",
+        )
+
+    def test_is_readable_by_other_user(self):
+        """The check runs as the other user, and the original ids are restored
+        afterwards."""
+        user = pwd.struct_passwd(("landscape", "x", 100, 101, "", "/", ""))
+        calls = mock.Mock()
+        calls.access.return_value = False
+        with (
+            mock.patch("pwd.getpwnam", return_value=user),
+            mock.patch("os.geteuid", return_value=0),
+            mock.patch("os.getegid", return_value=0),
+            mock.patch("os.getgroups", return_value=[0]),
+            mock.patch("os.getgrouplist", return_value=[101]),
+            mock.patch("os.setgroups", calls.setgroups),
+            mock.patch("os.setegid", calls.setegid),
+            mock.patch("os.seteuid", calls.seteuid),
+            mock.patch("os.access", calls.access),
+        ):
+            self.assertFalse(is_readable_by("/some/file", "landscape"))
+
+        self.assertEqual(
+            calls.mock_calls,
+            [
+                mock.call.setgroups([101]),
+                mock.call.setegid(101),
+                mock.call.seteuid(100),
+                mock.call.access("/some/file", os.R_OK, effective_ids=True),
+                mock.call.seteuid(0),
+                mock.call.setegid(0),
+                mock.call.setgroups([0]),
+            ],
+        )

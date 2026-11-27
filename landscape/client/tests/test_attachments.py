@@ -22,6 +22,8 @@ class SaveAttachmentsTest(TestCase):
         self.config = mock.Mock(
             url="https://example.com/",
             data_path=self.dest,
+            ssl_client_cert=None,
+            ssl_client_private_key=None,
         )
 
         self.persist = Persist(
@@ -72,11 +74,15 @@ class SaveAttachmentsTest(TestCase):
                         "https://example.com/attachment/1",
                         cainfo=mock.ANY,
                         headers=headers,
+                        ssl_client_cert=None,
+                        ssl_client_private_key=None,
                     ),
                     mock.call(
                         "https://example.com/attachment/2",
                         cainfo=mock.ANY,
                         headers=headers,
+                        ssl_client_cert=None,
+                        ssl_client_private_key=None,
                     ),
                 ],
             )
@@ -98,6 +104,31 @@ class SaveAttachmentsTest(TestCase):
                 self.assertEqual("Contents of attachment 2\n", a2fp.read())
 
         deferred.addBoth(check)
+        return deferred
+
+    def test_save_attachments_ssl_client_cert(self):
+        """Attachments are downloaded with the configured client cert."""
+        self.config.ssl_client_cert = "/etc/landscape/client.pem"
+        self.config.ssl_client_private_key = "/etc/landscape/client.key"
+        self.fetch_async.side_effect = [b"Contents of attachment 1\n"]
+
+        deferred = ensureDeferred(
+            save_attachments(
+                self.config,
+                (("attachment-1.txt", 1),),
+                self.dest,
+            ),
+        )
+
+        def check(_):
+            kwargs = self.fetch_async.call_args.kwargs
+            self.assertEqual(kwargs["ssl_client_cert"], "/etc/landscape/client.pem")
+            self.assertEqual(
+                kwargs["ssl_client_private_key"],
+                "/etc/landscape/client.key",
+            )
+
+        deferred.addCallback(check)
         return deferred
 
     def test_save_attachment_inline(self):

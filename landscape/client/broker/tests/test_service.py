@@ -38,6 +38,20 @@ class BrokerServiceTest(LandscapeTest):
         self.assertTrue(isinstance(self.service.transport, HTTPTransport))
         self.assertEqual(self.service.transport.get_url(), self.config.url)
 
+    def test_transport_ssl_client_cert(self):
+        """The transport is given the configured client certificate."""
+        self.config.ssl_client_cert = "/etc/landscape/client.pem"
+        self.config.ssl_client_private_key = "/etc/landscape/client.key"
+        service = FakeBrokerService(self.config)
+        self.assertEqual(
+            service.transport._ssl_client_cert,
+            "/etc/landscape/client.pem",
+        )
+        self.assertEqual(
+            service.transport._ssl_client_private_key,
+            "/etc/landscape/client.key",
+        )
+
     def test_message_store(self):
         """
         A L{BrokerService} instance has a proper C{message_store} attribute.

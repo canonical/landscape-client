@@ -87,6 +87,8 @@ def _fetch_urllib(
     follow=True,
     user_agent=None,
     proxy=None,
+    ssl_client_cert=None,
+    ssl_client_private_key=None,
 ):
     """Retrieve a URL using the stdlib urllib backend.
 
@@ -132,6 +134,12 @@ def _fetch_urllib(
                 )
             else:
                 ctx.load_verify_locations(cafile=cainfo)
+
+        if ssl_client_cert and ssl_client_private_key:
+            ctx.load_cert_chain(
+                certfile=ssl_client_cert,
+                keyfile=ssl_client_private_key,
+            )
 
     handlers = []
     if proxy is not None:
@@ -223,6 +231,8 @@ def fetch(
     user_agent=None,
     proxy=None,
     http_client="pycurl",
+    ssl_client_cert=None,
+    ssl_client_private_key=None,
 ):
     """Retrieve a URL and return the content.
 
@@ -241,6 +251,10 @@ def fetch(
     @param user_agent: The user-agent to set in the request.
     @param proxy: The proxy url to use for the request.
     @param http_client: The HTTP backend to use ('pycurl' or 'urllib').
+    @param ssl_client_cert: Path to a PEM client certificate presented to the
+        server for mutual TLS, if the server requests one.
+    @param ssl_client_private_key: Path to the PEM private key of
+        C{ssl_client_cert}. Both must be set for a certificate to be sent.
     """
     if http_client == "urllib":
         return _fetch_urllib(
@@ -255,6 +269,8 @@ def fetch(
             follow=follow,
             user_agent=user_agent,
             proxy=proxy,
+            ssl_client_cert=ssl_client_cert,
+            ssl_client_private_key=ssl_client_private_key,
         )
 
     import pycurl
@@ -285,6 +301,10 @@ def fetch(
             )
             # log error here
         curl.setopt(pycurl.CAINFO, cainfo.encode("ascii"))
+
+    if ssl_client_cert and ssl_client_private_key:
+        curl.setopt(pycurl.SSLCERT, ssl_client_cert.encode("ascii"))
+        curl.setopt(pycurl.SSLKEY, ssl_client_private_key.encode("ascii"))
 
     if headers:
         curl.setopt(

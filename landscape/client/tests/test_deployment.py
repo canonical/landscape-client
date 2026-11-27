@@ -340,6 +340,22 @@ class ConfigurationTest(LandscapeTest):
         options = self.parser.parse_args([])
         self.assertEqual(options.ssl_public_key, None)
 
+    def test_ssl_client_cert_options(self):
+        """The client certificate options can be read by parse_args."""
+        options = self.parser.parse_args(
+            [
+                "--ssl-client-cert",
+                "/etc/landscape/client.pem",
+                "--ssl-client-private-key",
+                "/etc/landscape/client.key",
+            ],
+        )
+        self.assertEqual(options.ssl_client_cert, "/etc/landscape/client.pem")
+        self.assertEqual(
+            options.ssl_client_private_key,
+            "/etc/landscape/client.key",
+        )
+
     def test_ignore_sigint_option(self):
         """Ensure options.ignore_sigint option can be read by parse_args."""
         options = self.parser.parse_args(["--ignore-sigint"])

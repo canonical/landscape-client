@@ -82,6 +82,8 @@ def register(
     *,
     cainfo: str | None = None,
     http_client: str = "pycurl",
+    ssl_client_cert: str | None = None,
+    ssl_client_private_key: str | None = None,
 ) -> RegistrationInfo:
     """Sends a registration message to the server at `server_url`, returning
     registration info if successful.
@@ -92,7 +94,12 @@ def register(
 
     try:
         response = exchange_messages(
-            message, server_url, cainfo=cainfo, http_client=http_client
+            message,
+            server_url,
+            cainfo=cainfo,
+            http_client=http_client,
+            ssl_client_cert=ssl_client_cert,
+            ssl_client_private_key=ssl_client_private_key,
         )
     except HTTPCodeError as e:
         if e.http_code == 404:

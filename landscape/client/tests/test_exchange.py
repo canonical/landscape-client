@@ -60,6 +60,8 @@ class ExchangeMessagesTestCase(TestCase):
             cainfo="mycainfo",
             curl=mock.ANY,
             http_client="pycurl",
+            ssl_client_cert=None,
+            ssl_client_private_key=None,
         )
         self.assertEqual(self.logging_mock.debug.call_count, 2)
         self.logging_mock.info.assert_called_once()
@@ -80,6 +82,32 @@ class ExchangeMessagesTestCase(TestCase):
         self.logging_mock.exception.assert_called_once_with(
             "Error contacting the server at https://my-server.local/message-system."
         )
+
+    def test_fetch_exception_with_pycurl_suggests_urllib(self):
+        """If the HTTP `fetch` with pycurl raises an exception, using urllib
+        for a more detailed error is suggested."""
+        self.fetch_mock.side_effect = Exception("OOPS")
+
+        with self.assertRaises(Exception):
+            exchange_messages({"messages": []}, "https://my-server.local/")
+
+        self.logging_mock.warning.assert_called_once_with(
+            "Set http_client = urllib for a more detailed error."
+        )
+
+    def test_fetch_exception_with_urllib(self):
+        """If the HTTP `fetch` with urllib raises an exception, nothing more is
+        suggested."""
+        self.fetch_mock.side_effect = Exception("OOPS")
+
+        with self.assertRaises(Exception):
+            exchange_messages(
+                {"messages": []},
+                "https://my-server.local/",
+                http_client="urllib",
+            )
+
+        self.logging_mock.warning.assert_not_called()
 
     def test_bpickle_exception(self):
         """If the deserialization of the server response raises an exception,

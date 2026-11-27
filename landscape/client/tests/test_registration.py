@@ -47,6 +47,33 @@ class RegisterTestCase(TestCase):
         self.assertEqual(registration_info.secure_id, "mysecureid")
         self.assertEqual(registration_info.server_uuid, b"thisisaserveruuid")
 
+    def test_ssl_client_cert_passed_to_exchange(self):
+        """The client certificate options are passed to the exchange."""
+        client_info = ClientRegistrationInfo(
+            access_group="",
+            account_name="testy",
+            computer_title="Test Computer",
+        )
+        self.exchange_messages_mock.return_value = ServerResponse(
+            "3.2",
+            b"thisisaserveruuid",
+            [{"type": "set-id", "id": "mysecureid", "insecure-id": 1}],
+        )
+
+        register(
+            client_info,
+            "https://my-server.local/message-system",
+            ssl_client_cert="/etc/landscape/client.pem",
+            ssl_client_private_key="/etc/landscape/client.key",
+        )
+
+        kwargs = self.exchange_messages_mock.call_args.kwargs
+        self.assertEqual(kwargs["ssl_client_cert"], "/etc/landscape/client.pem")
+        self.assertEqual(
+            kwargs["ssl_client_private_key"],
+            "/etc/landscape/client.key",
+        )
+
     def test_exchange_http_code_error_404(self):
         """If a 404 is raised during the message exchange, a
         `RegistrationException` is raised.

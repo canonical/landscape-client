@@ -69,6 +69,18 @@ a CA Certificate to verify the server. Only
 used if the given server URL is https.
 .TP
 .B
+\fB--ssl-client-cert\fP=SSL_CLIENT_CERT
+A PEM client certificate for mutual
+TLS. Requires \fB--ssl-client-private-key\fP. Only
+sent over https when the server requests it.
+.TP
+.B
+\fB--ssl-client-private-key\fP=SSL_CLIENT_PRIVATE_KEY
+The PEM private key of
+\fB--ssl-client-cert\fP. Both files must be readable
+by the "landscape" user.
+.TP
+.B
 \fB--ignore-sigusr1\fP
 Ignore SIGUSR1 signal to rotate logs.
 .TP
