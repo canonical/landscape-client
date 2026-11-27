@@ -45,8 +45,8 @@ OPTIONS
                              TLS. Requires --ssl-client-private-key. Only
                              sent over https when the server requests it.
   --ssl-client-private-key=SSL_CLIENT_PRIVATE_KEY   The PEM private key of
-                             --ssl-client-cert. It must be readable by the
-                             "landscape" user.
+                             --ssl-client-cert. Both files must be readable
+                             by the "landscape" user.
   --exchange-interval=INTERVAL   The number of seconds between server
                            exchanges (default: 900, min: 60, max: 86400).
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent

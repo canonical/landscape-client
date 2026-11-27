@@ -1,3 +1,4 @@
+import getpass
 import json
 import os
 import textwrap
@@ -903,7 +904,10 @@ url = https://landscape.canonical.com/message-system
                 key,
             ],
         )
-        with mock.patch.object(type(config), "write") as mock_write:
+        with (
+            mock.patch("landscape.client.configuration.USER", getpass.getuser()),
+            mock.patch.object(type(config), "write") as mock_write,
+        ):
             self.assertRaises(ConfigurationError, setup, config)
         mock_write.assert_not_called()
 
@@ -2610,4 +2614,24 @@ class CheckSSLClientCertTest(LandscapeTest):
         self.assertIn(
             "Both ssl_client_cert and ssl_client_private_key",
             str(cm.exception),
+        )
+
+    def test_not_readable_by_service_user(self):
+        """A cert or key the client services' user can't read is rejected."""
+        if os.getuid() == 0:
+            self.skipTest("root can read any file")
+        cert = self.makeFile("cert")
+        key = self.makeFile("key")
+        os.chmod(key, 0)
+
+        with mock.patch(
+            "landscape.client.configuration.USER",
+            getpass.getuser(),
+        ):
+            with self.assertRaises(ConfigurationError) as cm:
+                check_ssl_client_cert(self._config(cert, key))
+
+        self.assertEqual(
+            str(cm.exception),
+            f"{key} must be readable by the {getpass.getuser()} user.",
         )

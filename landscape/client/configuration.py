@@ -672,6 +672,26 @@ def check_script_users(config):
             config.include_manager_plugins = "ScriptExecution"
 
 
+def is_readable_by(path, user):
+    """Check whether `user` can read `path`, by temporarily acting as `user`.
+    Changing to another user requires running as root, as landscape-config
+    does."""
+    pw = pwd.getpwnam(user)
+    if os.geteuid() == pw.pw_uid:
+        return os.access(path, os.R_OK)
+
+    euid, egid, groups = os.geteuid(), os.getegid(), os.getgroups()
+    os.setgroups(os.getgrouplist(user, pw.pw_gid))
+    os.setegid(pw.pw_gid)
+    os.seteuid(pw.pw_uid)
+    try:
+        return os.access(path, os.R_OK, effective_ids=True)
+    finally:
+        os.seteuid(euid)
+        os.setegid(egid)
+        os.setgroups(groups)
+
+
 def check_ssl_client_cert(config):
     """
     If a client certificate is configured, ensure the client can use it for
@@ -688,6 +708,11 @@ def check_ssl_client_cert(config):
             "Both ssl_client_cert and ssl_client_private_key must be set to "
             "use a client certificate.",
         )
+
+    # landscape-config runs as root, but the client services run as USER.
+    for path in (cert, key):
+        if os.path.exists(path) and not is_readable_by(path, USER):
+            raise ConfigurationError(f"{path} must be readable by the {USER} user.")
 
     # Load the pair the same way it is used for TLS, so missing or invalid
     # files and a key that does not match the certificate are all reported.
