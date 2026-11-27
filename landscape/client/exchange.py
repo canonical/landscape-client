@@ -89,6 +89,8 @@ def exchange_messages(
         )
     except Exception:
         logging.exception(f"Error contacting the server at {server_url}.")
+        if http_client != "urllib":
+            logging.warning("Set http_client = urllib for a more detailed error.")
         raise
 
     logging.info(
